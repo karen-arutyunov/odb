@@ -71,31 +71,12 @@ private:
     cp_binding_level* level = NAMESPACE_LEVEL (ns);
     tree decl = level->names;
 
+    // Traverse declarations.
+    //
     for (; decl != NULL_TREE; decl = TREE_CHAIN (decl))
     {
       switch (TREE_CODE (decl))
       {
-        /*
-          case FUNCTION_DECL:
-          {
-          if (DECL_ANTICIPATED (decl))
-          break;
-
-          warning (0, G_ ("function declaration %s"),
-          IDENTIFIER_POINTER (DECL_NAME (decl)));
-          break;
-          }
-        */
-
-        /*
-          case RECORD_TYPE:
-          {
-          warning (0, G_ ("class declaration %s"),
-          IDENTIFIER_POINTER (DECL_NAME (decl)));
-          break;
-          }
-        */
-
       case TYPE_DECL:
         {
           if (DECL_ARTIFICIAL (decl))
@@ -116,20 +97,9 @@ private:
 
           break;
         }
-      case NAMESPACE_DECL:
-        {
-          tree target = DECL_NAMESPACE_ALIAS (decl);
-          assert (target != NULL_TREE);
-
-          warning (0, G_ ("namespace alias declaration %s=%s in %s:%i"),
-                   IDENTIFIER_POINTER (DECL_NAME (decl)),
-                   IDENTIFIER_POINTER (DECL_NAME (target)),
-                   DECL_SOURCE_FILE (decl),
-                   DECL_SOURCE_LINE (decl));
-          break;
-        }
       default:
         {
+          /*
           if (!DECL_IS_BUILTIN (decl))
           {
             tree name = DECL_NAME (decl);
@@ -148,17 +118,14 @@ private:
                        DECL_SOURCE_LINE (decl));
             }
           }
+          */
           break;
         }
       }
-
-      //warning (0, G_ ("declaration %u"), (int) (TREE_CODE (decl)));
-
-
-      //warning (0, G_ ("declaration %s"),
-      //         IDENTIFIER_POINTER (DECL_NAME (decl)));
     }
 
+    // Traverse namespaces.
+    //
     for(decl = level->namespaces; decl != NULL_TREE; decl = TREE_CHAIN (decl))
     {
       if (DECL_NAMESPACE_STD_P (decl) || DECL_IS_BUILTIN (decl))
@@ -259,8 +226,7 @@ private:
         }
       default:
         {
-          //if (!DECL_IS_BUILTIN (decl))
-          //{
+          /*
           tree name = DECL_NAME (decl);
 
           if (name != NULL_TREE)
@@ -276,7 +242,7 @@ private:
                      DECL_SOURCE_FILE (decl),
                      DECL_SOURCE_LINE (decl));
           }
-          //}
+          */
           break;
         }
       }
@@ -286,26 +252,6 @@ private:
 private:
   string file_;
 };
-
-extern "C" void
-start_unit_callback (void* gcc_data, void* user_data)
-{
-  warning (0, G_ ("strating unit processing"));
-}
-
-extern "C" void
-finish_type_callback (void* gcc_data, void* user_data)
-{
-  warning (0, G_ ("finished type processing"));
-}
-
-extern "C" void
-finish_unit_callback (void* gcc_data, void* user_data)
-{
-  //traverse_namespace (global_namespace);
-  //done = true;
-  warning (0, G_ ("finished unit processing"));
-}
 
 extern "C" void
 gate_callback (void* gcc_data, void* user_data)
@@ -319,29 +265,22 @@ gate_callback (void* gcc_data, void* user_data)
   }
 
   exit (0);
-
-  // Disable every pass.
-  //
-  /*
-  warning (0, G_ ("disabling pass %s"), current_pass->name);
-  *static_cast<int*> (gcc_data) = 0;
-  */
 }
 
 extern "C" int
 plugin_init (struct plugin_name_args *plugin_info,
              struct plugin_gcc_version *version)
 {
-  warning (0, G_ ("strating plugin %s"), plugin_info->base_name);
+  warning (0, G_ ("starting plugin %s"), plugin_info->base_name);
 
   // Disable assembly output.
   //
   asm_file_name = HOST_BIT_BUCKET;
 
-  //register_callback (plugin_info->base_name, PLUGIN_START_UNIT, &start_unit_callback, NULL);
-  //register_callback (plugin_info->base_name, PLUGIN_FINISH_TYPE, &finish_type_callback, NULL);
-  //register_callback (plugin_info->base_name, PLUGIN_FINISH_UNIT, &finish_unit_callback, NULL);
-  register_callback (plugin_info->base_name, PLUGIN_OVERRIDE_GATE, &gate_callback, NULL);
+  register_callback (plugin_info->base_name,
+                     PLUGIN_OVERRIDE_GATE,
+                     &gate_callback,
+                     NULL);
 
   return 0;
 }
