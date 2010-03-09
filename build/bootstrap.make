@@ -43,18 +43,25 @@ cleandoc: $(out_base)/.cleandoc
 
 endif
 
-# If we don't have dependency auto-generation then we need to manually
-# make sure that C++ header files are compiled before C++ source files.
-# To do this we make the object files ($2) depend in order-only on
-# generated files ($3).
+ifdef cxx_id
+
+# It would be better to do these checks in the script once instead
+# of for every makefile.
 #
-ifeq ($(cxx_id),generic)
+ifneq ($(MAKECMDGOALS),disfigure)
 
-define include-dep
-$(if $2,$(eval $2: | $3))
-endef
+ifneq ($(cxx_id),gnu)
+$(error only GNU g++ can be used to build the ODB compiler)
+endif
 
-else
+$(call include,$(bld_root)/cxx/gnu/configuration.make)
+
+ifdef cxx_gnu
+ifeq ($(shell $(cxx_gnu) -print-file-name=plugin),plugin)
+$(error $(cxx_gnu) does not support plugins)
+endif
+endif
+endif # disfigure
 
 define include-dep
 $(call -include,$1)

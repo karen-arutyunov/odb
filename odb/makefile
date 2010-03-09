@@ -83,7 +83,7 @@ $(call include,$(bld_root)/cxx/o-e.make)
 
 # Custom rules for the plugin.
 #
-ifdef cxx_id
+ifdef cxx_gnu
 
 $(cxx_pobj): cxx_pic_options := -fPIC
 
