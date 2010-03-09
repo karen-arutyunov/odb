@@ -31,6 +31,7 @@ extern "C"
 #include "cp/name-lookup.h"
 }
 
+#include <map>
 #include <string>
 #include <cassert>
 
@@ -46,32 +47,41 @@ int plugin_is_GPL_compatible;
 //
 // * Will need to disable as many warnings as possible.
 //
+// * How am I going to handle a case where the type of a private
+//   member is also private (i.e., local class or typedef -- fairly
+//   common).
+//
 
 enum class_access { ca_public, ca_protected, ca_private };
 const char* class_access_str[] = {"public", "protected", "private"};
 
-class collector
+class traverser
 {
 public:
-  collector ()
+  traverser ()
       : file_ (main_input_filename)
   {
   }
 
   void
-  traverse (tree global_scope)
+  traverse (tree scope)
   {
-    traverse_namespace (global_scope);
+    // First collect all the declarations we are interested in
+    // in the line-decl map so that they appear in the source
+    // code order.
+    //
+    collect (scope);
+    emit ();
   }
 
 private:
   void
-  traverse_namespace (tree ns)
+  collect (tree ns)
   {
     cp_binding_level* level = NAMESPACE_LEVEL (ns);
     tree decl = level->names;
 
-    // Traverse declarations.
+    // Collect declarations.
     //
     for (; decl != NULL_TREE; decl = TREE_CHAIN (decl))
     {
@@ -79,20 +89,12 @@ private:
       {
       case TYPE_DECL:
         {
-          if (DECL_ARTIFICIAL (decl))
+          if (DECL_ARTIFICIAL (decl) &&
+              DECL_NAME (decl) != NULL_TREE &&
+              TREE_CODE (TREE_TYPE (decl)) == RECORD_TYPE &&
+              DECL_SOURCE_FILE (decl) == file_)
           {
-            tree type = TREE_TYPE (decl);
-            tree name = DECL_NAME (decl);
-
-            if (name != NULL_TREE && TREE_CODE (type) == RECORD_TYPE)
-            {
-              warning (0, G_ ("class declaration %s in %s:%i"),
-                       IDENTIFIER_POINTER (name),
-                       DECL_SOURCE_FILE (decl),
-                       DECL_SOURCE_LINE (decl));
-
-              traverse_class (type);
-            }
+            decls_[DECL_SOURCE_LINE (decl)] = decl;
           }
 
           break;
@@ -128,31 +130,51 @@ private:
     //
     for(decl = level->namespaces; decl != NULL_TREE; decl = TREE_CHAIN (decl))
     {
-      if (DECL_NAMESPACE_STD_P (decl) || DECL_IS_BUILTIN (decl))
-        continue;
-
-      tree name = DECL_NAME (decl);
-
-      if (name == NULL_TREE)
+      if (!DECL_NAMESPACE_STD_P (decl) &&
+          !DECL_IS_BUILTIN (decl) &&
+          DECL_SOURCE_FILE (decl) == file_)
       {
-        warning (0, G_ ("anonymous namespace declaration in %s:%i"),
-                 DECL_SOURCE_FILE (decl),
-                 DECL_SOURCE_LINE (decl));
-      }
-      else
-      {
+        tree name = DECL_NAME (decl);
+
         warning (0, G_ ("namespace declaration %s in %s:%i"),
-                 IDENTIFIER_POINTER (name),
+                 name ? IDENTIFIER_POINTER (name) : "<anonymous>",
                  DECL_SOURCE_FILE (decl),
                  DECL_SOURCE_LINE (decl));
-      }
 
-      traverse_namespace (decl);
+        collect (decl);
+      }
     }
   }
 
   void
-  traverse_class (tree c)
+  emit ()
+  {
+    for (decl_map::const_iterator i (decls_.begin ()), e (decls_.end ());
+         i != e; ++i)
+    {
+      tree decl (i->second);
+
+      switch (TREE_CODE (decl))
+      {
+      case TYPE_DECL:
+        {
+          tree type = TREE_TYPE (decl);
+          tree name = DECL_NAME (decl);
+
+          warning (0, G_ ("class declaration %s in %s:%i"),
+                   IDENTIFIER_POINTER (name),
+                   DECL_SOURCE_FILE (decl),
+                   DECL_SOURCE_LINE (decl));
+
+          emit_class (type);
+          break;
+        }
+      }
+    }
+  }
+
+  void
+  emit_class (tree c)
   {
     // Traverse base information.
     //
@@ -250,7 +272,10 @@ private:
   }
 
 private:
+  typedef map<size_t, tree> decl_map;
+
   string file_;
+  decl_map decls_;
 };
 
 extern "C" void
@@ -260,8 +285,8 @@ gate_callback (void* gcc_data, void* user_data)
 
   if (!errorcount && !sorrycount)
   {
-    collector c;
-    c.traverse (global_namespace);
+    traverser t;
+    t.traverse (global_namespace);
   }
 
   exit (0);
