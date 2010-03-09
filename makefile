@@ -4,7 +4,7 @@ PLUGIN_INC := $(shell $(GXX) -print-file-name=plugin)
 src := plugin.cxx
 obj := $(src:.cxx=.o)
 
-sunrise.so: $(obj)
+odb.so: $(obj)
 	$(GXX) -shared -o $@ $(CXXFLAGS) $(LDFLAGS) $^ $(LIBS)
 
 %.o: %.cxx
@@ -13,11 +13,11 @@ sunrise.so: $(obj)
 # Test.
 #
 .PHONY: test
-test: sunrise.so test.cxx
-	$(GXX) -x c++ -S -fplugin=./sunrise.so test.cxx
+test: odb.so test.cxx
+	$(GXX) -x c++ -S -fplugin=./odb.so test.cxx
 
 # Clean.
 #
 .PHONY: clean
 clean:
-	rm -f *.o sunrise.so
+	rm -f *.o odb.so
