@@ -41,10 +41,6 @@ int plugin_is_GPL_compatible;
 
 // TODO:
 //
-//
-// * Can plugin define a macro which can then be tested in the code?
-//   A wrapper that calls g++ with plugin can do that easily.
-//
 // * Will need to disable as many warnings as possible.
 //
 // * How am I going to handle a case where the type of a private
