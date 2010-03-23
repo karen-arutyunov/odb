@@ -8,7 +8,14 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 # Plugin units.
 #
 cxx_ptun := plugin.cxx
-cxx_ptun +=
+
+cxx_ptun +=               \
+semantics/class.cxx       \
+semantics/derived.cxx     \
+semantics/elements.cxx    \
+semantics/fundamental.cxx \
+semantics/namespace.cxx   \
+semantics/unit.cxx
 
 # Driver units
 #

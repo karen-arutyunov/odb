@@ -253,7 +253,7 @@ plugin_path (string const& drv)
 
   for (size_t b (0), e (paths.find (':')); b != string::npos;)
   {
-    string p (paths, b, e - b);
+    string p (paths, b, e != string::npos ? e - b : e);
 
     // Empty path (i.e., a double colon or a colon at the beginning
     // or end of PATH) means search in the current dirrectory.
