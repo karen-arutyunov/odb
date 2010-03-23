@@ -284,91 +284,7 @@ private:
       {
       case TYPE_DECL:
         {
-          tree t (TREE_TYPE (decl));
-          tree decl_name (DECL_NAME (decl));
-          char const* name (IDENTIFIER_POINTER (decl_name));
-
-          if (DECL_ARTIFICIAL (decl) && TREE_CODE (t) == RECORD_TYPE)
-          {
-            // If we have an anonymous class typedef, use the user-
-            // supplied name instead of the synthesized one. ARM
-            // says that in typedef struct {} S; S becomes struct's
-            // name.
-            //
-            if (ANON_AGGRNAME_P (decl_name))
-            {
-              tree d (TYPE_NAME (t));
-
-              if (d != NULL_TREE &&
-                  !DECL_ARTIFICIAL (d) &&
-                  DECL_NAME (d) != NULL_TREE &&
-                  !ANON_AGGRNAME_P (DECL_NAME (d)))
-              {
-                decl = d;
-                decl_name = DECL_NAME (decl);
-                name = IDENTIFIER_POINTER (decl_name);
-              }
-              else
-              {
-                // This type has only the synthesized name which means that
-                // it is either typedef'ed as a derived type or it is used
-                // to declare a varibale or similar. The first case will be
-                // covered by the typedef handling code below. The second
-                // case we don't care about.
-                //
-                break;
-              }
-            }
-
-            path file (DECL_SOURCE_FILE (decl));
-            size_t line (DECL_SOURCE_LINE (decl));
-            size_t clmn (DECL_SOURCE_COLUMN (decl));
-
-            warning (0, G_ ("start class declaration %s in %s:%d"),
-                     name,
-                     DECL_SOURCE_FILE (decl),
-                     DECL_SOURCE_LINE (decl));
-
-            class_& node (emit_class (t, file, line, clmn));
-
-            if (COMPLETE_TYPE_P (t))
-              unit_->new_edge<defines> (*scope_, node, name);
-            else
-              unit_->new_edge<declares> (*scope_, node, name);
-
-            warning (0, G_ ("end class declaration %s (%p) in %s:%d"),
-                     name,
-                     &node,
-                     DECL_SOURCE_FILE (decl),
-                     DECL_SOURCE_LINE (decl));
-          }
-          else
-          {
-            // Normal typedef. We need to detect and ignore the anonymous
-            // class typedef case described above since we already used
-            // this name to define the class.
-            //
-            if (TREE_CODE (t) == RECORD_TYPE &&
-                TYPE_NAME (TYPE_MAIN_VARIANT (t)) == decl)
-              break;
-
-            path f (DECL_SOURCE_FILE (decl));
-            size_t l (DECL_SOURCE_LINE (decl));
-            size_t c (DECL_SOURCE_COLUMN (decl));
-
-            type& node (emit_type (t, f, l, c));
-            unit_->new_edge<typedefs> (*scope_, node, name);
-
-            string s (emit_type_name (t, false));
-
-            warning (0, G_ ("typedef declaration %s (%p) -> %s  in %s:%i"),
-                     s.c_str (),
-                     &node,
-                     name,
-                     DECL_SOURCE_FILE (decl),
-                     DECL_SOURCE_LINE (decl));
-          }
-
+          emit_type_decl (decl);
           break;
         }
       case TEMPLATE_DECL:
@@ -376,6 +292,98 @@ private:
           break;
         }
       }
+    }
+  }
+
+  // Emit a type declaration. This is either a class definition/declaration
+  // or a typedef.
+  //
+  void
+  emit_type_decl (tree decl)
+  {
+    tree t (TREE_TYPE (decl));
+    tree decl_name (DECL_NAME (decl));
+    char const* name (IDENTIFIER_POINTER (decl_name));
+
+    if (DECL_ARTIFICIAL (decl) && TREE_CODE (t) == RECORD_TYPE)
+    {
+      // If we have an anonymous class typedef, use the user-
+      // supplied name instead of the synthesized one. ARM
+      // says that in typedef struct {} S; S becomes struct's
+      // name.
+      //
+      if (ANON_AGGRNAME_P (decl_name))
+      {
+        tree d (TYPE_NAME (t));
+
+        if (d != NULL_TREE &&
+            !DECL_ARTIFICIAL (d) &&
+            DECL_NAME (d) != NULL_TREE &&
+            !ANON_AGGRNAME_P (DECL_NAME (d)))
+        {
+          decl = d;
+          decl_name = DECL_NAME (decl);
+          name = IDENTIFIER_POINTER (decl_name);
+        }
+        else
+        {
+          // This type has only the synthesized name which means that
+          // it is either typedef'ed as a derived type or it is used
+          // to declare a varibale or similar. The first case will be
+          // covered by the typedef handling code below. The second
+          // case will be covere by emit_type().
+          //
+          return;
+        }
+      }
+
+      path file (DECL_SOURCE_FILE (decl));
+      size_t line (DECL_SOURCE_LINE (decl));
+      size_t clmn (DECL_SOURCE_COLUMN (decl));
+
+      warning (0, G_ ("start class declaration %s in %s:%d"),
+               name,
+               DECL_SOURCE_FILE (decl),
+               DECL_SOURCE_LINE (decl));
+
+      class_& node (emit_class (t, file, line, clmn));
+
+      if (COMPLETE_TYPE_P (t))
+        unit_->new_edge<defines> (*scope_, node, name);
+      else
+        unit_->new_edge<declares> (*scope_, node, name);
+
+      warning (0, G_ ("end class declaration %s (%p) in %s:%d"),
+               name,
+               &node,
+               DECL_SOURCE_FILE (decl),
+               DECL_SOURCE_LINE (decl));
+    }
+    else
+    {
+      // Normal typedef. We need to detect and ignore the anonymous
+      // class typedef case described above since we already used
+      // this name to define the class.
+      //
+      if (TREE_CODE (t) == RECORD_TYPE &&
+          TYPE_NAME (TYPE_MAIN_VARIANT (t)) == decl)
+        return;
+
+      path f (DECL_SOURCE_FILE (decl));
+      size_t l (DECL_SOURCE_LINE (decl));
+      size_t c (DECL_SOURCE_COLUMN (decl));
+
+      type& node (emit_type (t, f, l, c));
+      unit_->new_edge<typedefs> (*scope_, node, name);
+
+      string s (emit_type_name (t, false));
+
+      warning (0, G_ ("typedef declaration %s (%p) -> %s  in %s:%i"),
+               s.c_str (),
+               &node,
+               name,
+               DECL_SOURCE_FILE (decl),
+               DECL_SOURCE_LINE (decl));
     }
   }
 
@@ -451,50 +459,26 @@ private:
         *class_node, dynamic_cast<class_&> (*base_node), a, virt);
     }
 
-    // Traverse data members.
+    // Collect members so that we can traverse then in the source
+    // code order.
     //
+    decl_set decls;
+
     for (tree d (TYPE_FIELDS (c)); d != NULL_TREE ; d = TREE_CHAIN (d))
     {
-      //if (DECL_ARTIFICIAL (field))
-      //  continue;
-
-      // if (TREE_CODE (field) == TYPE_DECL && TREE_TYPE (field) == c)
-      //   continue;
-
       switch (TREE_CODE (d))
       {
+      case TYPE_DECL:
+        {
+          if (!DECL_SELF_REFERENCE_P (d))
+            decls.insert (d);
+          break;
+        }
       case FIELD_DECL:
         {
           if (!DECL_ARTIFICIAL (d))
-          {
-            tree t (TREE_TYPE (d));
-            char const* name (IDENTIFIER_POINTER (DECL_NAME (d)));
-
-            path file (DECL_SOURCE_FILE (d));
-            size_t line (DECL_SOURCE_LINE (d));
-            size_t clmn (DECL_SOURCE_COLUMN (d));
-
-            string type_name (emit_type_name (t));
-
-            access a (decl_access (d));
-
-            type& type_node (emit_type (t, file, line, clmn));
-            data_member& member_node (
-              unit_->new_node<data_member> (file, line, clmn));
-
-            unit_->new_edge<belongs> (member_node, type_node);
-            unit_->new_edge<names> (*class_node, member_node, name, a);
-
-            warning (0, G_ ("\t%s data member %s (%p) %s in %s:%i"),
-                     a.string (),
-                     type_name.c_str (),
-                     &type_node,
-                     name,
-                     file.string ().c_str (),
-                     line);
-
-            break;
-          }
+            decls.insert (d);
+          break;
         }
       default:
         {
@@ -515,6 +499,51 @@ private:
                      DECL_SOURCE_LINE (d));
           }
           */
+          break;
+        }
+      }
+    }
+
+    for (decl_set::const_iterator i (decls.begin ()), e (decls.end ());
+         i != e; ++i)
+    {
+      tree d (*i);
+
+      switch (TREE_CODE (d))
+      {
+      case TYPE_DECL:
+        {
+          emit_type_decl (d);
+          break;
+        }
+      case FIELD_DECL:
+        {
+          tree t (TREE_TYPE (d));
+          char const* name (IDENTIFIER_POINTER (DECL_NAME (d)));
+
+          path file (DECL_SOURCE_FILE (d));
+          size_t line (DECL_SOURCE_LINE (d));
+          size_t clmn (DECL_SOURCE_COLUMN (d));
+
+          string type_name (emit_type_name (t));
+
+          access a (decl_access (d));
+
+          type& type_node (emit_type (t, file, line, clmn));
+          data_member& member_node (
+            unit_->new_node<data_member> (file, line, clmn));
+
+          unit_->new_edge<belongs> (member_node, type_node);
+          unit_->new_edge<names> (*class_node, member_node, name, a);
+
+          warning (0, G_ ("\t%s data member %s (%p) %s in %s:%i"),
+                   a.string (),
+                   type_name.c_str (),
+                   &type_node,
+                   name,
+                   file.string ().c_str (),
+                   line);
+
           break;
         }
       }
