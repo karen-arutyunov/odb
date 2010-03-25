@@ -7,10 +7,15 @@
 #define ODB_SEMANTICS_HXX
 
 #include <semantics/class.hxx>
+#include <semantics/class-template.hxx>
 #include <semantics/derived.hxx>
 #include <semantics/elements.hxx>
+#include <semantics/enum.hxx>
 #include <semantics/fundamental.hxx>
 #include <semantics/namespace.hxx>
+#include <semantics/template.hxx>
+#include <semantics/union.hxx>
+#include <semantics/union-template.hxx>
 #include <semantics/unit.hxx>
 
 #endif // ODB_SEMANTICS_HXX

@@ -1,11 +1,11 @@
-// file      : odb/semantics/class.cxx
+// file      : odb/semantics/union.cxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
 
-#include <semantics/class.hxx>
+#include <semantics/union.hxx>
 
 namespace semantics
 {
@@ -19,18 +19,10 @@ namespace semantics
       {
         using compiler::type_info;
 
-        // inherits
+        // union_
         //
         {
-          type_info ti (typeid (inherits));
-          ti.add_base (typeid (edge));
-          insert (ti);
-        }
-
-        // class_
-        //
-        {
-          type_info ti (typeid (class_));
+          type_info ti (typeid (union_));
           ti.add_base (typeid (type));
           ti.add_base (typeid (scope));
           insert (ti);

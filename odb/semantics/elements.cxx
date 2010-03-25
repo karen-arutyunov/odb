@@ -149,6 +149,23 @@ namespace semantics
           ti.add_base (typeid (node));
           insert (ti);
         }
+
+        // data_member
+        //
+        {
+          type_info ti (typeid (data_member));
+          ti.add_base (typeid (nameable));
+          ti.add_base (typeid (instance));
+          insert (ti);
+        }
+
+        // unsupported_type
+        //
+        {
+          type_info ti (typeid (unsupported_type));
+          ti.add_base (typeid (type));
+          insert (ti);
+        }
       }
     } init_;
   }

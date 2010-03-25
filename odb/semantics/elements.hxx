@@ -543,6 +543,41 @@ namespace semantics
   private:
     belongs_type* belongs_;
   };
+
+  // Data member for class and union types.
+  //
+  class data_member: public nameable, public instance
+  {
+  public:
+    data_member (path const& file, size_t line, size_t column)
+        : node (file, line, column)
+    {
+    }
+  };
+
+  // Unsupported type.
+  //
+  class unsupported_type: public type
+  {
+  public:
+    string const&
+    type_name () const
+    {
+      return type_name_;
+    }
+
+  public:
+    unsupported_type (path const& file,
+                      size_t line,
+                      size_t column,
+                      string const& type_name)
+        : node (file, line, column), type_name_ (type_name)
+    {
+    }
+
+  private:
+    string const type_name_;
+  };
 }
 
 #include <semantics/elements.ixx>

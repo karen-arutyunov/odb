@@ -9,12 +9,17 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 #
 cxx_ptun := plugin.cxx
 
-cxx_ptun +=               \
-semantics/class.cxx       \
-semantics/derived.cxx     \
-semantics/elements.cxx    \
-semantics/fundamental.cxx \
-semantics/namespace.cxx   \
+cxx_ptun +=                  \
+semantics/class.cxx          \
+semantics/class-template.cxx \
+semantics/derived.cxx        \
+semantics/elements.cxx       \
+semantics/enum.cxx           \
+semantics/fundamental.cxx    \
+semantics/namespace.cxx      \
+semantics/template.cxx       \
+semantics/union.cxx          \
+semantics/union-template.cxx \
 semantics/unit.cxx
 
 # Driver units

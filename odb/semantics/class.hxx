@@ -13,19 +13,6 @@ namespace semantics
 {
   class class_;
 
-  //
-  //
-  class data_member: public nameable, public instance
-  {
-  public:
-    data_member (path const& file, size_t line, size_t column)
-        : node (file, line, column)
-    {
-    }
-  };
-
-  //
-  //
   class inherits: public edge
   {
   public:
@@ -83,7 +70,7 @@ namespace semantics
 
   //
   //
-  class class_: public type, public scope
+  class class_: public virtual type, public scope
   {
   private:
     typedef std::vector<inherits*> inherits_list;
@@ -126,6 +113,11 @@ namespace semantics
     // Resolve conflict between scope::scope and nameable::scope.
     //
     using nameable::scope;
+
+  protected:
+    class_ ()
+    {
+    }
 
   private:
     inherits_list inherits_;
