@@ -754,7 +754,20 @@ private:
         }
       case FIELD_DECL:
         {
-          tree t (TREE_TYPE (d));
+          // If this is a bit-field then TREE_TYPE may be a modified type
+          // with lesser precision. In this case, DECL_BIT_FIELD_TYPE
+          // will be the type that was original specified. Use that type
+          // for now. Furthermore, bitfields can be anonymous, which we
+          // ignore.
+          //
+          //
+          bool bf (DECL_C_BIT_FIELD (d));
+
+          if (bf && DECL_NAME (d) == 0)
+            break;
+
+          tree t (bf ? DECL_BIT_FIELD_TYPE (d) : TREE_TYPE (d));
+
           char const* name (IDENTIFIER_POINTER (DECL_NAME (d)));
 
           path file (DECL_SOURCE_FILE (d));
