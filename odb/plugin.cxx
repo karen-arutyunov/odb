@@ -992,6 +992,16 @@ private:
              size_t line,
              size_t clmn)
   {
+    {
+      warning (0, G_ ("%s %p; main %p"),
+               tree_code_name[TREE_CODE (t)],
+               t,
+               TYPE_MAIN_VARIANT (t));
+
+      for (tree v (TYPE_MAIN_VARIANT (t)); v != 0; v = TYPE_NEXT_VARIANT (v))
+        warning (0, G_ ("\t variant %p"), v);
+    }
+
     node* n (unit_->find (TYPE_MAIN_VARIANT (t)));
 
     type& r (n != 0
@@ -1300,15 +1310,6 @@ private:
   string
   emit_type_name (tree type, bool direct = true)
   {
-    {
-      warning (0, G_ ("type object %p; main %p"),
-               type,
-               TYPE_MAIN_VARIANT (type));
-
-      for (tree v (TYPE_MAIN_VARIANT (type)); v != 0; v = TYPE_NEXT_VARIANT (v))
-        warning (0, G_ ("\t variant %p"), v);
-    }
-
     // First see if there is a "direct" name for this type.
     //
     if (direct)
@@ -1350,10 +1351,11 @@ private:
         {
           type = TYPE_MAIN_VARIANT (type);
 
-          // Ordinary class.
+          // Ordinary class. Some synthesized stuff (e.g., member-function-
+          // pointer-struct) can be really anonymous so check that.
           //
-          tree decl (TYPE_NAME (type));
-          r = IDENTIFIER_POINTER (DECL_NAME (decl)) + r;
+          tree name (TYPE_NAME (type));
+          r = (name ? IDENTIFIER_POINTER (DECL_NAME (name)) : "<anonymous>") + r;
         }
         else
         {
