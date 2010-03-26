@@ -325,7 +325,7 @@ namespace semantics
     array_type* array_;
   };
 
-  class array: public type
+  class array: public derived_type
   {
   public:
     typedef semantics::contains contains_type;
