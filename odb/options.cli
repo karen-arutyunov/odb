@@ -1,0 +1,34 @@
+// file      : odb/options.cli
+// author    : Boris Kolpackov <boris@codesynthesis.com>
+// copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
+// license   : GNU GPL v2; see accompanying LICENSE file
+
+include <string>;
+include <vector>;
+
+class options
+{
+  //
+  // Wrapper options. These are not passed to the plugin.
+  //
+
+  bool --help {"Print usage information and exit."};
+  bool --version {"Print version and exit."};
+
+
+  // This is a "fake" option in that it is actually handled by
+  // argv_file_scanner. We have it here to get the documentation.
+  //
+  std::string --options-file
+  {
+    "<file>",
+    "Read additional options from <file> with each option appearing on a
+     separate line optionally followed by space and an option value. Empty
+     lines and lines starting with \cb{#} are ignored. The semantics of
+     providing options in a file is equivalent to providing the same set
+     of options in the same order on the command line at the point where the
+     \cb{--options-file} option is specified except that shell escaping and
+     quoting is not required. Repeat this option to specify more than one
+     options files."
+  };
+};

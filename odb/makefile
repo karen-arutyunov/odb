@@ -22,14 +22,18 @@ semantics/union.cxx          \
 semantics/union-template.cxx \
 semantics/unit.cxx
 
-# Driver units
+# Driver units.
 #
 cxx_dtun := odb.cxx
 
+# Options file.
+#
+cli_tun := options.cli
+
 #
 #
-cxx_pobj  := $(addprefix $(out_base)/,$(cxx_ptun:.cxx=.o))
-cxx_dobj  := $(addprefix $(out_base)/,$(cxx_dtun:.cxx=.o))
+cxx_pobj  := $(addprefix $(out_base)/,$(cxx_ptun:.cxx=.o) $(cli_tun:.cli=.o))
+cxx_dobj  := $(addprefix $(out_base)/,$(cxx_dtun:.cxx=.o) $(cli_tun:.cli=.o))
 cxx_pod   := $(cxx_pobj:.o=.o.d)
 cxx_dod   := $(cxx_dobj:.o=.o.d)
 
@@ -41,6 +45,10 @@ install  := $(out_base)/.install
 # Import.
 #
 $(call import,\
+  $(scf_root)/import/cli/stub.make,\
+  cli: cli,cli-rules: cli_rules)
+
+$(call import,\
   $(scf_root)/import/libcutl/stub.make,\
   l: cutl.l,cpp-options: cutl.l.cpp-options)
 
@@ -51,6 +59,12 @@ $(odb_so): $(cxx_pobj) $(cutl.l)
 
 $(cxx_dobj) $(cxx_dod): cpp_options := -I$(src_base)
 $(cxx_pobj) $(cxx_dobj) $(cxx_pod) $(cxx_dod): $(cutl.l.cpp-options)
+
+genf := $(cli_tun:.cli=.hxx) $(cli_tun:.cli=.ixx) $(cli_tun:.cli=.cxx)
+gen  := $(addprefix $(out_base)/,$(genf))
+
+$(gen): cli := $(cli)
+$(gen): cli_options := --generate-file-scanner --guard-prefix ODB
 
 $(call include-dep,$(cxx_pod))
 $(call include-dep,$(cxx_dod))
@@ -89,6 +103,7 @@ endif
 # Rules.
 #
 $(call include,$(bld_root)/install.make)
+$(call include,$(cli_rules))
 $(call include,$(bld_root)/cxx/cxx-d.make)
 $(call include,$(bld_root)/cxx/cxx-o.make)
 $(call include,$(bld_root)/cxx/o-e.make)
