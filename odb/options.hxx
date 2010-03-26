@@ -301,6 +301,9 @@ class options
   const bool&
   version () const;
 
+  const bool&
+  trace () const;
+
   const std::string&
   options_file () const;
 
@@ -318,6 +321,7 @@ class options
   public:
   bool help_;
   bool version_;
+  bool trace_;
   std::string options_file_;
 };
 

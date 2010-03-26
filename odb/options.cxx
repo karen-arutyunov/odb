@@ -490,6 +490,7 @@ options (int& argc,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  trace_ (),
   options_file_ ()
 {
   ::cli::argv_scanner s (argc, argv, erase);
@@ -505,6 +506,7 @@ options (int start,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  trace_ (),
   options_file_ ()
 {
   ::cli::argv_scanner s (start, argc, argv, erase);
@@ -520,6 +522,7 @@ options (int& argc,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  trace_ (),
   options_file_ ()
 {
   ::cli::argv_scanner s (argc, argv, erase);
@@ -537,6 +540,7 @@ options (int start,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  trace_ (),
   options_file_ ()
 {
   ::cli::argv_scanner s (start, argc, argv, erase);
@@ -550,6 +554,7 @@ options (::cli::scanner& s,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  trace_ (),
   options_file_ ()
 {
   _parse (s, opt, arg);
@@ -561,6 +566,8 @@ print_usage (::std::ostream& os)
   os << "--help                Print usage information and exit." << ::std::endl;
 
   os << "--version             Print version and exit." << ::std::endl;
+
+  os << "--trace               Trace the compilation process." << ::std::endl;
 
   os << "--options-file <file> Read additional options from <file> with each option" << ::std::endl
      << "                      appearing on a separate line optionally followed by space" << ::std::endl
@@ -581,6 +588,8 @@ struct _cli_options_map_init
     &::cli::thunk< options, bool, &options::help_ >;
     _cli_options_map_["--version"] = 
     &::cli::thunk< options, bool, &options::version_ >;
+    _cli_options_map_["--trace"] = 
+    &::cli::thunk< options, bool, &options::trace_ >;
     _cli_options_map_["--options-file"] = 
     &::cli::thunk< options, std::string, &options::options_file_ >;
   }

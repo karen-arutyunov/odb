@@ -11,7 +11,9 @@
 #include <memory>  // std::auto_ptr
 #include <cassert>
 #include <sstream>
+#include <iostream>
 
+#include <options.hxx>
 #include <semantics.hxx>
 
 #ifndef LOCATION_COLUMN
@@ -32,39 +34,14 @@ class parser
 public:
   typedef semantics::access access;
 
-  parser ()
+  parser (options const& ops)
+      : ops_ (ops), trace (ops.trace ()), ts (cerr)
   {
   }
 
   auto_ptr<semantics::unit>
   parse (tree global_scope, path const& main_file)
   {
-    /*
-    for (size_t i (0); i < line_table->used; ++i)
-    {
-      const line_map* m (line_table->maps + i);
-      warning (0, G_ ("line map to %s reason %d"), m->to_file, m->reason);
-    }
-
-    for (size_t i (0); i < line_table->used; ++i)
-    {
-      const line_map* m (line_table->maps + i);
-
-      if (MAIN_FILE_P (m) || m->reason != LC_ENTER)
-        continue;
-
-      const line_map* i (INCLUDED_FROM (line_table, m));
-
-      if (!MAIN_FILE_P (i))
-        continue;
-
-      warning (0, G_ ("#includ %s at %s:%d"),
-               m->to_file,
-               i->to_file,
-               LAST_SOURCE_LINE (i));
-    }
-    */
-
     auto_ptr<unit> u (new unit (main_file));
     unit_ = u.get ();
     scope_ = unit_;
@@ -117,25 +94,6 @@ private:
       {
       case TYPE_DECL:
         {
-          /*
-          location_t l (DECL_SOURCE_LOCATION (decl));
-
-          if (l > BUILTINS_LOCATION)
-          {
-            warning (0, G_ ("decl in %s"), DECL_SOURCE_FILE (decl));
-
-            const line_map* map = linemap_lookup (line_table, l);
-
-            if (map != 0 && !MAIN_FILE_P (map))
-            {
-              map = INCLUDED_FROM (line_table, map);
-              warning (0, G_ ("included from %s:%d"),
-                       map->to_file,
-                       LAST_SOURCE_LINE (map));
-            }
-          }
-          */
-
           if (DECL_NAME (decl) != NULL_TREE)
             decls_.insert (decl);
 
@@ -145,30 +103,6 @@ private:
         {
           if (DECL_CLASS_TEMPLATE_P (decl))
             decls_.insert (decl);
-          break;
-        }
-      default:
-        {
-          /*
-          if (!DECL_IS_BUILTIN (decl))
-          {
-            tree name = DECL_NAME (decl);
-
-            if (name != NULL_TREE)
-            {
-              warning (0, G_ ("some declaration %s in %s:%i"),
-                       IDENTIFIER_POINTER (name),
-                       DECL_SOURCE_FILE (decl),
-                       DECL_SOURCE_LINE (decl));
-            }
-            else
-            {
-              warning (0, G_ ("some unnamed declaration in %s:%i"),
-                       DECL_SOURCE_FILE (decl),
-                       DECL_SOURCE_LINE (decl));
-            }
-          }
-          */
           break;
         }
       }
@@ -182,12 +116,15 @@ private:
 
       if (!DECL_IS_BUILTIN (decl))
       {
-        tree name = DECL_NAME (decl);
+        if (trace)
+        {
+          tree dn (DECL_NAME (decl));
+          char const* name (dn ? IDENTIFIER_POINTER (dn) : "<anonymous>");
 
-        warning (0, G_ ("namespace declaration %s in %s:%i"),
-                 name ? IDENTIFIER_POINTER (name) : "<anonymous>",
-                 DECL_SOURCE_FILE (decl),
-                 DECL_SOURCE_LINE (decl));
+          ts << "namespace " << name << " at "
+             << DECL_SOURCE_FILE (decl) << ":"
+             << DECL_SOURCE_LINE (decl) << endl;
+        }
 
         collect (decl);
       }
@@ -229,10 +166,10 @@ private:
         {
           string n (ns, b, e == string::npos ? e : e - b);
 
-          warning (0, G_ ("creating namespace %s for %s:%d"),
-                   n.c_str (),
-                   DECL_SOURCE_FILE (decl),
-                   DECL_SOURCE_LINE (decl));
+          if (trace)
+            ts << "creating namespace " << n << " for "
+               << DECL_SOURCE_FILE (decl) << ":"
+               << DECL_SOURCE_LINE (decl) << endl;
 
           // Use the declarations's file, line, and column as an
           // approximation for this namespace origin.
@@ -317,11 +254,10 @@ private:
       size_t line (DECL_SOURCE_LINE (decl));
       size_t clmn (DECL_SOURCE_COLUMN (decl));
 
-      warning (0, G_ ("start %s declaration %s in %s:%d"),
-               tree_code_name[tc],
-               name,
-               DECL_SOURCE_FILE (decl),
-               DECL_SOURCE_LINE (decl));
+      if (trace)
+        ts << "start " <<  tree_code_name[tc] << " " << name << " at "
+           << DECL_SOURCE_FILE (decl) << ":"
+           << DECL_SOURCE_LINE (decl) << endl;
 
       type* node (0);
 
@@ -349,12 +285,11 @@ private:
       else
         unit_->new_edge<declares> (*scope_, *node, name);
 
-      warning (0, G_ ("end %s declaration %s (%p) in %s:%d"),
-               tree_code_name[tc],
-               name,
-               node,
-               DECL_SOURCE_FILE (decl),
-               DECL_SOURCE_LINE (decl));
+      if (trace)
+        ts << "end " <<  tree_code_name[tc] << " " << name
+           << " (" << node << ") at "
+           << DECL_SOURCE_FILE (decl) << ":"
+           << DECL_SOURCE_LINE (decl) << endl;
     }
     else
     {
@@ -375,14 +310,14 @@ private:
       type& node (emit_type (t, f, l, c));
       unit_->new_edge<typedefs> (*scope_, node, name);
 
-      string s (emit_type_name (t, false));
+      if (trace)
+      {
+        string s (emit_type_name (t, false));
 
-      warning (0, G_ ("typedef declaration %s (%p) -> %s  in %s:%i"),
-               s.c_str (),
-               &node,
-               name,
-               DECL_SOURCE_FILE (decl),
-               DECL_SOURCE_LINE (decl));
+        ts << "typedef " << s << " (" << &node << ") -> " << name << " at "
+           << DECL_SOURCE_FILE (decl) << ":"
+           << DECL_SOURCE_LINE (decl) << endl;
+      }
     }
   }
 
@@ -396,48 +331,46 @@ private:
     tree t (TREE_TYPE (DECL_TEMPLATE_RESULT (decl)));
     int tc (TREE_CODE (t));
 
-    warning (0, G_ ("%s template (%p) %s (%p) %s"),
-             tree_code_name[tc],
-             decl,
-             IDENTIFIER_POINTER (DECL_NAME (decl)),
-             t,
-             tree_code_name[TREE_CODE (t)]);
-
-    warning (0, G_ ("specialization:"));
-
-    for (tree s (DECL_TEMPLATE_SPECIALIZATIONS (decl));
-         s != NULL_TREE; s = TREE_CHAIN (s))
+    if (trace)
     {
-      tree t (TREE_TYPE (s));
-      tree d (TYPE_NAME (t));
+      ts << tree_code_name[tc] << " template (" << decl << ") "
+         << IDENTIFIER_POINTER (DECL_NAME (decl)) << " (" << t << ") at "
+         << DECL_SOURCE_FILE (decl) << ":"
+         << DECL_SOURCE_LINE (decl) << endl;
 
-      warning (0, G_ ("\tspecialization %p at %s:%d"),
-               t,
-               DECL_SOURCE_FILE (d),
-               DECL_SOURCE_LINE (d));
-    }
+      ts << "specializations:" << endl;
 
-    warning (0, G_ ("instantiations:"));
+      for (tree s (DECL_TEMPLATE_SPECIALIZATIONS (decl));
+           s != NULL_TREE; s = TREE_CHAIN (s))
+      {
+        tree t (TREE_TYPE (s));
+        tree d (TYPE_NAME (t));
 
-    for (tree i (DECL_TEMPLATE_INSTANTIATIONS (decl));
-         i != NULL_TREE; i = TREE_CHAIN (i))
-    {
-      tree t (TREE_VALUE (i));
-      tree d (TYPE_NAME (t));
+        ts << "\tspecialization" << t << " at "
+           << DECL_SOURCE_FILE (d) << ":"
+           << DECL_SOURCE_LINE (d) << endl;
+      }
 
-              warning (0, G_ ("\tinstantiation %p at %s:%d"),
-                       t,
-                       DECL_SOURCE_FILE (d),
-                       DECL_SOURCE_LINE (d));
+      ts << "instantiations:" << endl;
+
+      for (tree i (DECL_TEMPLATE_INSTANTIATIONS (decl));
+           i != NULL_TREE; i = TREE_CHAIN (i))
+      {
+        tree t (TREE_VALUE (i));
+        tree d (TYPE_NAME (t));
+
+        ts << "\tinstantiation" << t << " at "
+           << DECL_SOURCE_FILE (d) << ":"
+           << DECL_SOURCE_LINE (d) << endl;
+      }
     }
 
     char const* name (IDENTIFIER_POINTER (DECL_NAME (decl)));
 
-    warning (0, G_ ("start %s template %s in %s:%d"),
-             tree_code_name[tc],
-             name,
-             DECL_SOURCE_FILE (decl),
-             DECL_SOURCE_LINE (decl));
+    if (trace)
+      ts << "start " <<  tree_code_name[tc] << " template " << name << " at "
+         << DECL_SOURCE_FILE (decl) << ":"
+         << DECL_SOURCE_LINE (decl) << endl;
 
     type_template* t_node (0);
 
@@ -451,12 +384,11 @@ private:
     else
       unit_->new_edge<declares> (*scope_, *t_node, name);
 
-    warning (0, G_ ("end %s template %s (%p) in %s:%d"),
-             tree_code_name[tc],
-             name,
-             t_node,
-             DECL_SOURCE_FILE (decl),
-             DECL_SOURCE_LINE (decl));
+    if (trace)
+      ts << "end " <<  tree_code_name[tc] << " template " << name
+         << " (" << t_node << ") at "
+         << DECL_SOURCE_FILE (decl) << ":"
+         << DECL_SOURCE_LINE (decl) << endl;
   }
 
   class_template&
@@ -664,21 +596,23 @@ private:
       if (node* n = unit_->find (base))
       {
         b_node = &dynamic_cast<class_&> (*n);
-        name = IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (base)));
+
+        if (trace)
+          name = IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (base)));
       }
       else
       {
         b_node = &dynamic_cast<class_&> (emit_type (base, file, line, clmn));
-        name = emit_type_name (base);
+
+        if (trace)
+          name = emit_type_name (base);
       }
 
       unit_->new_edge<inherits> (*c_node, *b_node, a, virt);
 
-      warning (0, G_ ("\t%s%s base %s (%p)"),
-               a.string (),
-               (virt ? " virtual" : ""),
-               name.c_str (),
-               static_cast<type*> (b_node));
+      if (trace)
+        ts << "\t" << a.string () << (virt ? " virtual" : "") << " base "
+           << name << " (" << static_cast<type*> (b_node) << ")" << endl;
     }
 
     // Collect member declarations so that we can traverse them in
@@ -706,27 +640,6 @@ private:
         {
           if (!DECL_ARTIFICIAL (d))
             decls.insert (d);
-          break;
-        }
-      default:
-        {
-          /*
-          tree name = DECL_NAME (d);
-
-          if (name != NULL_TREE)
-          {
-            warning (0, G_ ("\tsome declaration %s in %s:%i"),
-                     IDENTIFIER_POINTER (name),
-                     DECL_SOURCE_FILE (d),
-                     DECL_SOURCE_LINE (d));
-          }
-          else
-          {
-            warning (0, G_ ("\tsome unnamed declaration in %s:%i"),
-                     DECL_SOURCE_FILE (d),
-                     DECL_SOURCE_LINE (d));
-          }
-          */
           break;
         }
       }
@@ -774,8 +687,6 @@ private:
           size_t line (DECL_SOURCE_LINE (d));
           size_t clmn (DECL_SOURCE_COLUMN (d));
 
-          string type_name (emit_type_name (t));
-
           access a (decl_access (d));
 
           type& type_node (emit_type (t, file, line, clmn));
@@ -785,13 +696,14 @@ private:
           unit_->new_edge<belongs> (member_node, type_node);
           unit_->new_edge<names> (*c_node, member_node, name, a);
 
-          warning (0, G_ ("\t%s data member %s (%p) %s in %s:%i"),
-                   a.string (),
-                   type_name.c_str (),
-                   &type_node,
-                   name,
-                   file.string ().c_str (),
-                   line);
+          if (trace)
+          {
+            string type_name (emit_type_name (t));
+
+            ts << "\t" << a.string () << " data member " << type_name
+               << " (" << &type_node << ") " << name << " at "
+               << file << ":" << line << endl;
+          }
 
           break;
         }
@@ -856,27 +768,6 @@ private:
             decls.insert (d);
           break;
         }
-      default:
-        {
-          /*
-          tree name = DECL_NAME (d);
-
-          if (name != NULL_TREE)
-          {
-            warning (0, G_ ("\tsome declaration %s in %s:%i"),
-                     IDENTIFIER_POINTER (name),
-                     DECL_SOURCE_FILE (d),
-                     DECL_SOURCE_LINE (d));
-          }
-          else
-          {
-            warning (0, G_ ("\tsome unnamed declaration in %s:%i"),
-                     DECL_SOURCE_FILE (d),
-                     DECL_SOURCE_LINE (d));
-          }
-          */
-          break;
-        }
       }
     }
 
@@ -909,8 +800,6 @@ private:
           size_t line (DECL_SOURCE_LINE (d));
           size_t clmn (DECL_SOURCE_COLUMN (d));
 
-          string type_name (emit_type_name (t));
-
           access a (decl_access (d));
 
           type& type_node (emit_type (t, file, line, clmn));
@@ -920,13 +809,14 @@ private:
           unit_->new_edge<belongs> (member_node, type_node);
           unit_->new_edge<names> (*u_node, member_node, name, a);
 
-          warning (0, G_ ("\t%s union member %s (%p) %s in %s:%i"),
-                   a.string (),
-                   type_name.c_str (),
-                   &type_node,
-                   name,
-                   file.string ().c_str (),
-                   line);
+          if (trace)
+          {
+            string type_name (emit_type_name (t));
+
+            ts << "\t" << a.string () << " union member " << type_name
+               << " (" << &type_node << ") " << name << " at "
+               << file << ":" << line << endl;
+          }
 
           break;
         }
@@ -975,10 +865,8 @@ private:
       enumerator& er_node = unit_->new_node<enumerator> (file, line, clmn);
       unit_->new_edge<enumerates> (*e_node, er_node);
 
-      warning (0, G_ ("\tenumerator %s in %s:%d"),
-               name,
-               file.string ().c_str (),
-               line);
+      if (trace)
+        ts << "\tenumerator " << name << " at " << file << ":" << line << endl;
     }
 
     return *e_node;
@@ -992,26 +880,25 @@ private:
              size_t line,
              size_t clmn)
   {
+    tree mv (TYPE_MAIN_VARIANT (t));
+
+    if (trace)
     {
-      warning (0, G_ ("%s %p; main %p"),
-               tree_code_name[TREE_CODE (t)],
-               t,
-               TYPE_MAIN_VARIANT (t));
+      ts << tree_code_name[TREE_CODE (t)] << " " << t
+         << " main " << mv << endl;
 
       for (tree v (TYPE_MAIN_VARIANT (t)); v != 0; v = TYPE_NEXT_VARIANT (v))
-        warning (0, G_ ("\t variant %p"), v);
+        ts << "\tvariant " << v << endl;
     }
 
-    node* n (unit_->find (TYPE_MAIN_VARIANT (t)));
+    node* n (unit_->find (mv));
 
     type& r (n != 0
              ? dynamic_cast<type&> (*n)
              : create_type (t, file, line, clmn));
 
-    if (n != 0)
-      warning (0, G_ ("emit_type: found node %p for type %p"),
-               &r,
-               TYPE_MAIN_VARIANT (t));
+    if (trace && n != 0)
+      ts << "found node " << &r << " for type " << mv << endl;
 
     if (cp_type_quals (t) == TYPE_UNQUALIFIED)
       return r;
@@ -1029,7 +916,9 @@ private:
 
       if (q.const_ () == qc && q.volatile_ () == qv && q.restrict_ () == qr)
       {
-        warning (0, G_ ("emit_type: found qualifier variant %p"), &q);
+        if (trace)
+          ts << "found qualifier variant " << &q << endl;
+
         return q;
       }
     }
@@ -1077,10 +966,9 @@ private:
           t = TYPE_MAIN_VARIANT (t);
           tree d (TYPE_NAME (t));
 
-          warning (0, G_ ("start anon/stub %s declaration in %s:%d"),
-                   tree_code_name[tc],
-                   file.string ().c_str (),
-                   line);
+          if (trace)
+            ts << "start anon/stub " << tree_code_name[tc] << " at "
+               << file << ":" << line << endl;
 
           if (d == NULL_TREE || ANON_AGGRNAME_P (DECL_NAME (d)))
           {
@@ -1104,11 +992,9 @@ private:
               r = &emit_union<union_> (t, f, l, c, true);
           }
 
-          warning (0, G_ ("end anon/stub %s declaration (%p) in %s:%d"),
-                   tree_code_name[tc],
-                   r,
-                   file.string ().c_str (),
-                   line);
+          if (trace)
+            ts << "end anon/stub " << tree_code_name[tc] << " (" << r << ")"
+               << " at " << file << ":" << line << endl;
         }
         else
         {
@@ -1130,30 +1016,24 @@ private:
             t_node = &dynamic_cast<type_template&> (*n);
           else
           {
-            warning (0, G_ ("start stub %s template for (%p) in %s:%d"),
-                     tree_code_name[tc],
-                     decl,
-                     file.string ().c_str (),
-                     line);
+            if (trace)
+              ts << "start stub " << tree_code_name[tc] << " template for ("
+                 << decl << ") at " << file << ":" << line << endl;
 
             if (tc == RECORD_TYPE)
               t_node = &emit_class_template (decl, true);
             else
               t_node = &emit_union_template (decl, true);
 
-            warning (0, G_ ("end stub %s template (%p) in %s:%d"),
-                     tree_code_name[tc],
-                     t_node,
-                     file.string ().c_str (),
-                     line);
+            if (trace)
+              ts << "end stub " << tree_code_name[tc] << " template ("
+                 << t_node << ") at " << file << ":" << line << endl;
           }
 
-          warning (0, G_ ("start %s instantiation (%p) for template (%p) in %s:%d"),
-                   tree_code_name[tc],
-                   t,
-                   t_node,
-                   file.string ().c_str (),
-                   line);
+          if (trace)
+            ts << "start " << tree_code_name[tc] << " instantiation ("
+               << t << ") for template (" << t_node << ")"
+               << " at " << file << ":" << line << endl;
 
           type_instantiation* i_node (0);
 
@@ -1162,11 +1042,10 @@ private:
           else
             i_node = &emit_union<union_instantiation> (t, file, line, clmn);
 
-          warning (0, G_ ("end %s instantiation (%p) in %s:%d"),
-                   tree_code_name[tc],
-                   static_cast<type*> (i_node),
-                   file.string ().c_str (),
-                   line);
+          if (trace)
+            ts << "end " << tree_code_name[tc] << " instantiation ("
+               << static_cast<type*> (i_node) << ")"
+               << " at " << file << ":" << line << endl;
 
           unit_->new_edge<instantiates> (*i_node, *t_node);
           r = i_node;
@@ -1183,10 +1062,9 @@ private:
         t = TYPE_MAIN_VARIANT (t);
         tree d (TYPE_NAME (t));
 
-        warning (0, G_ ("start anon/stub %s declaration in %s:%d"),
-                 tree_code_name[tc],
-                 file.string ().c_str (),
-                 line);
+        if (trace)
+          ts << "start anon/stub " << tree_code_name[tc] << " at "
+             << file << ":" << line << endl;
 
         if (d == NULL_TREE || ANON_AGGRNAME_P (DECL_NAME (d)))
         {
@@ -1204,11 +1082,9 @@ private:
           r = &emit_enum (t, f, l, c, true);
         }
 
-        warning (0, G_ ("end anon/stub %s declaration (%p) in %s:%d"),
-                 tree_code_name[tc],
-                 r,
-                 file.string ().c_str (),
-                 line);
+        if (trace)
+            ts << "end anon/stub " << tree_code_name[tc] << " (" << r << ")"
+               << " at " << file << ":" << line << endl;
 
         break;
       }
@@ -1283,10 +1159,9 @@ private:
           r = &unit_->new_node<unsupported_type> (
             file, line, clmn, "pointer_to_member_type");
 
-          warning (0, G_ ("unsupported pointer_to_member_type (%p) in %s:%d"),
-                   r,
-                   file.string ().c_str (),
-                   line);
+          if (trace)
+            ts << "unsupported pointer_to_member_type (" << r << ")"
+               << " at " << file << ":" << line << endl;
         }
         break;
       }
@@ -1295,11 +1170,10 @@ private:
         r = &unit_->new_node<unsupported_type> (
           file, line, clmn, tree_code_name[tc]);
 
-        warning (0, G_ ("unsupported %s (%p) in %s:%d"),
-                 tree_code_name[tc],
-                 r,
-                 file.string ().c_str (),
-                 line);
+        if (trace)
+          ts << "unsupported " << tree_code_name[tc] << " (" << r << ")"
+             << " at " << file << ":" << line << endl;
+
         break;
       }
     }
@@ -1539,6 +1413,11 @@ private:
   }
 
 private:
+  options const& ops_;
+
+  bool trace;
+  ostream& ts;
+
   unit* unit_;
   scope* scope_;
 
@@ -1575,14 +1454,14 @@ private:
   fund_type_map fund_types_;
 };
 
-extern "C" void
-gate_callback (void* gcc_data, void* user_data)
-{
-  warning (0, G_ ("main file is %s"), main_input_filename);
+auto_ptr<options const> options_;
 
+extern "C" void
+gate_callback (void* gcc_data, void*)
+{
   if (!errorcount && !sorrycount)
   {
-    parser p;
+    parser p (*options_);
     auto_ptr<unit> u (p.parse (global_namespace, path (main_input_filename)));
   }
 
@@ -1593,16 +1472,63 @@ extern "C" int
 plugin_init (struct plugin_name_args *plugin_info,
              struct plugin_gcc_version *version)
 {
-  warning (0, G_ ("starting plugin %s"), plugin_info->base_name);
+  int r (0);
 
-  // Disable assembly output.
-  //
-  asm_file_name = HOST_BIT_BUCKET;
+  try
+  {
+    // Parse options.
+    //
+    {
+      vector<string> argv_str;
+      vector<char*> argv;
 
-  register_callback (plugin_info->base_name,
-                     PLUGIN_OVERRIDE_GATE,
-                     &gate_callback,
-                     NULL);
+      argv_str.push_back (plugin_info->base_name);
+      argv.push_back (const_cast<char*> (argv_str.back ().c_str ()));
 
-  return 0;
+      for (int i (0); i < plugin_info->argc; ++i)
+      {
+        plugin_argument& a (plugin_info->argv[i]);
+
+        string opt (strlen (a.key) > 1 ? "--" : "-");
+        opt += a.key;
+
+        argv_str.push_back (opt);
+        argv.push_back (const_cast<char*> (argv_str.back ().c_str ()));
+
+        if (a.value != 0)
+        {
+          argv_str.push_back (a.value);
+          argv.push_back (const_cast<char*> (argv_str.back ().c_str ()));
+        }
+      }
+
+      int argc (static_cast<int> (argv.size ()));
+      cli::argv_file_scanner scan (argc, &argv[0], "--options-file");
+
+      options_.reset (
+        new options (scan, cli::unknown_mode::fail, cli::unknown_mode::fail));
+    }
+
+    if (options_->trace ())
+      cerr << "starting plugin " << plugin_info->base_name << endl;
+
+    // Disable assembly output.
+    //
+    asm_file_name = HOST_BIT_BUCKET;
+
+    register_callback (plugin_info->base_name,
+                       PLUGIN_OVERRIDE_GATE,
+                       &gate_callback,
+                       0);
+  }
+  catch (cli::exception const& ex)
+  {
+    cerr << ex << endl;
+    r = 1;
+  }
+
+  if (r != 0)
+    exit (r);
+
+  return r;
 }

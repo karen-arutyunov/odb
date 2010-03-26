@@ -15,6 +15,10 @@ class options
   bool --help {"Print usage information and exit."};
   bool --version {"Print version and exit."};
 
+  //
+  // Plugin options.
+  //
+  bool --trace {"Trace the compilation process."};
 
   // This is a "fake" option in that it is actually handled by
   // argv_file_scanner. We have it here to get the documentation.

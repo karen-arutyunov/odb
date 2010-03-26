@@ -159,6 +159,12 @@ version () const
   return this->version_;
 }
 
+inline const bool& options::
+trace () const
+{
+  return this->trace_;
+}
+
 inline const std::string& options::
 options_file () const
 {
