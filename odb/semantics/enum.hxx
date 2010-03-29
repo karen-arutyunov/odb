@@ -114,8 +114,8 @@ namespace semantics
     }
 
   public:
-    enum_ (path const& file, size_t line, size_t column)
-        : node (file, line, column)
+    enum_ (path const& file, size_t line, size_t column, tree tn)
+        : node (file, line, column), type (tn)
     {
     }
 

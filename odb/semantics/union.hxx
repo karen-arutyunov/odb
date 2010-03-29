@@ -13,8 +13,8 @@ namespace semantics
   class union_: public virtual type, public scope
   {
   public:
-    union_ (path const& file, size_t line, size_t column)
-        : node (file, line, column)
+    union_ (path const& file, size_t line, size_t column, tree tn)
+        : node (file, line, column), type (tn)
     {
     }
 

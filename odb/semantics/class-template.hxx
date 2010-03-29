@@ -63,8 +63,11 @@ namespace semantics
   class class_instantiation: public class_, public type_instantiation
   {
   public:
-    class_instantiation (path const& file, size_t line, size_t column)
-        : node (file, line, column)
+    class_instantiation (path const& file,
+                         size_t line,
+                         size_t column,
+                         tree tn)
+        : node (file, line, column), type (tn)
     {
     }
 

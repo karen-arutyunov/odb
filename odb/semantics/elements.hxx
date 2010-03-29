@@ -36,10 +36,6 @@ namespace semantics
 
   using compiler::context;
 
-  // GCC parse tree node.
-  //
-  typedef ::tree gcc_tree;
-
   //
   //
   using fs::path;
@@ -422,6 +418,13 @@ namespace semantics
     typedef std::vector<qualifies*> qualified;
 
   public:
+    tree
+    tree_node () const
+    {
+      return tree_node_;
+    }
+
+  public:
     typedef pointer_iterator<qualified::const_iterator> qualified_iterator;
 
     qualified_iterator
@@ -437,11 +440,6 @@ namespace semantics
     }
 
   public:
-    type (path const& file, size_t line, size_t column)
-        : node (file, line, column)
-    {
-    }
-
     void
     add_edge_right (belongs&)
     {
@@ -456,11 +454,22 @@ namespace semantics
     using nameable::add_edge_right;
 
   protected:
-    type ()
+    type (tree tn)
+        : tree_node_ (tn)
     {
     }
 
+    // For virtual inheritance. Should never be actually called.
+    //
+    type ()
+    {
+      // GCC plugin machinery #define's abort as a macro.
+      //
+      abort ();
+    }
+
   private:
+    tree tree_node_;
     qualified qualified_;
   };
 
@@ -570,8 +579,9 @@ namespace semantics
     unsupported_type (path const& file,
                       size_t line,
                       size_t column,
+                      tree tn,
                       string const& type_name)
-        : node (file, line, column), type_name_ (type_name)
+        : node (file, line, column), type (tn), type_name_ (type_name)
     {
     }
 

@@ -261,9 +261,10 @@ private:
       //
       if (TYPE_PTRMEMFUNC_P (t))
       {
+        t = TYPE_MAIN_VARIANT (t);
         node = &unit_->new_node<unsupported_type> (
-          file, line, clmn, "pointer_to_member_function_type");
-        unit_->insert (TYPE_MAIN_VARIANT (t), *node);
+          file, line, clmn, t, "pointer_to_member_function_type");
+        unit_->insert (t, *node);
       }
       else
       {
@@ -558,7 +559,7 @@ private:
     }
     else
     {
-      c_node = &unit_->new_node<T> (file, line, clmn);
+      c_node = &unit_->new_node<T> (file, line, clmn, c);
       unit_->insert (c, *c_node);
     }
 
@@ -747,7 +748,7 @@ private:
     }
     else
     {
-      u_node = &unit_->new_node<T> (file, line, clmn);
+      u_node = &unit_->new_node<T> (file, line, clmn, u);
       unit_->insert (u, *u_node);
     }
 
@@ -859,7 +860,7 @@ private:
     }
     else
     {
-      e_node = &unit_->new_node<enum_> (file, line, clmn);
+      e_node = &unit_->new_node<enum_> (file, line, clmn, e);
       unit_->insert (e, *e_node);
     }
 
@@ -936,9 +937,10 @@ private:
       }
     }
 
-    // No such variant yet. Create a new one.
+    // No such variant yet. Create a new one. Qualified types are not
+    // unique in the tree so don't add this node to the map.
     //
-    qualifier& q (unit_->new_node<qualifier> (file, line, clmn, qc, qv, qr));
+    qualifier& q (unit_->new_node<qualifier> (file, line, clmn, t, qc, qv, qr));
     unit_->new_edge<qualifies> (q, r);
     return q;
   }
@@ -983,7 +985,7 @@ private:
           if (TYPE_PTRMEMFUNC_P (t))
           {
             r = &unit_->new_node<unsupported_type> (
-              file, line, clmn, "pointer_to_member_function_type");
+              file, line, clmn, t, "pointer_to_member_function_type");
             unit_->insert (t, *r);
           }
           else
@@ -1154,18 +1156,20 @@ private:
         }
 
         type& bt (emit_type (TREE_TYPE (t), file, line, clmn));
-        array& a (unit_->new_node<array> (file, line, clmn, size));
+        t = TYPE_MAIN_VARIANT (t);
+        array& a (unit_->new_node<array> (file, line, clmn, t, size));
+        unit_->insert (t, a);
         unit_->new_edge<contains> (a, bt);
-        unit_->insert (TYPE_MAIN_VARIANT (t), a);
         r = &a;
         break;
       }
     case REFERENCE_TYPE:
       {
         type& bt (emit_type (TREE_TYPE (t), file, line, clmn));
-        reference& ref (unit_->new_node<reference> (file, line, clmn));
+        t = TYPE_MAIN_VARIANT (t);
+        reference& ref (unit_->new_node<reference> (file, line, clmn, t));
+        unit_->insert (t, ref);
         unit_->new_edge<references> (ref, bt);
-        unit_->insert (TYPE_MAIN_VARIANT (t), ref);
         r = &ref;
         break;
       }
@@ -1174,16 +1178,18 @@ private:
         if (!TYPE_PTRMEM_P (t))
         {
           type& bt (emit_type (TREE_TYPE (t), file, line, clmn));
-          pointer& p (unit_->new_node<pointer> (file, line, clmn));
+          t = TYPE_MAIN_VARIANT (t);
+          pointer& p (unit_->new_node<pointer> (file, line, clmn, t));
+          unit_->insert (t, p);
           unit_->new_edge<points> (p, bt);
-          unit_->insert (TYPE_MAIN_VARIANT (t), p);
           r = &p;
         }
         else
         {
+          t = TYPE_MAIN_VARIANT (t);
           r = &unit_->new_node<unsupported_type> (
-            file, line, clmn, "pointer_to_data_member_type");
-          unit_->insert (TYPE_MAIN_VARIANT (t), *r);
+            file, line, clmn, t, "pointer_to_data_member_type");
+          unit_->insert (t, *r);
 
           if (trace)
             ts << "unsupported pointer_to_data_member_type (" << r << ")"
@@ -1193,9 +1199,10 @@ private:
       }
     default:
       {
+        t = TYPE_MAIN_VARIANT (t);
         r = &unit_->new_node<unsupported_type> (
-          file, line, clmn, tree_code_name[tc]);
-        unit_->insert (TYPE_MAIN_VARIANT (t), *r);
+          file, line, clmn, t, tree_code_name[tc]);
+        unit_->insert (t, *r);
 
         if (trace)
           ts << "unsupported " << tree_code_name[tc] << " (" << r << ")"
@@ -1441,7 +1448,7 @@ private:
     t = TYPE_MAIN_VARIANT (t);
     char const* name (IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (t))));
 
-    T& node (unit_->new_fund_node<T> ());
+    T& node (unit_->new_fund_node<T> (t));
     unit_->new_edge<defines> (*scope_, node, name);
     unit_->insert (t, node);
   }

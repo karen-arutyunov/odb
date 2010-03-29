@@ -19,6 +19,12 @@ namespace semantics
   public:
     virtual type&
     base_type () const = 0;
+
+  protected:
+    derived_type (tree tn)
+        : type (tn)
+    {
+    }
   };
 
   //
@@ -104,17 +110,17 @@ namespace semantics
     qualifier (path const& file,
                size_t line,
                size_t column,
+               tree tn,
                bool c,
                bool v,
                bool r)
-        : node (file, line, column), c_ (c), v_ (v), r_ (r), qualifies_ (0)
+        : node (file, line, column), derived_type (tn), c_ (c), v_ (v), r_ (r)
     {
     }
 
     void
     add_edge_left (qualifies_type& e)
     {
-      assert (qualifies_ == 0);
       qualifies_ = &e;
     }
 
@@ -167,7 +173,7 @@ namespace semantics
     pointer_type* pointer_;
   };
 
-  class pointer: public type
+  class pointer: public derived_type
   {
   public:
     typedef semantics::points points_type;
@@ -185,15 +191,14 @@ namespace semantics
     }
 
   public:
-    pointer (path const& file, size_t line, size_t column)
-        : node (file, line, column), points_ (0)
+    pointer (path const& file, size_t line, size_t column, tree tn)
+        : node (file, line, column), derived_type (tn)
     {
     }
 
     void
     add_edge_left (points_type& e)
     {
-      assert (points_ == 0);
       points_ = &e;
     }
 
@@ -246,7 +251,7 @@ namespace semantics
     reference_type* reference_;
   };
 
-  class reference: public type
+  class reference: public derived_type
   {
   public:
     typedef semantics::references references_type;
@@ -264,15 +269,14 @@ namespace semantics
     }
 
   public:
-    reference (path const& file, size_t line, size_t column)
-        : node (file, line, column), references_ (0)
+    reference (path const& file, size_t line, size_t column, tree tn)
+        : node (file, line, column), derived_type (tn)
     {
     }
 
     void
     add_edge_left (references_type& e)
     {
-      assert (references_ == 0);
       references_ = &e;
     }
 
@@ -355,15 +359,15 @@ namespace semantics
     array (path const& file,
            size_t line,
            size_t column,
+           tree tn,
            unsigned long long size)
-        : node (file, line, column), contains_ (0), size_ (size)
+        : node (file, line, column), derived_type (tn), size_ (size)
     {
     }
 
     void
     add_edge_left (contains_type& e)
     {
-      assert (contains_ == 0);
       contains_ = &e;
     }
 

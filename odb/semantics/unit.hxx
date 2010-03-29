@@ -25,20 +25,20 @@ namespace semantics
       new_edge<global_names> (*this, *this);
     }
 
-    // Mapping from GCC tree node to semantic graph node.
+    // Mapping from tree nodes to semantic graph nodes.
     //
   public:
     node*
-    find (gcc_tree key) const
+    find (tree key) const
     {
-      gcc_tree_node_map::const_iterator i (gcc_tree_node_map_.find (key));
-      return i != gcc_tree_node_map_.end () ? i->second : 0;
+      tree_node_map::const_iterator i (tree_node_map_.find (key));
+      return i != tree_node_map_.end () ? i->second : 0;
     }
 
     void
-    insert (gcc_tree key, node& value)
+    insert (tree key, node& value)
     {
-      gcc_tree_node_map_[key] = &value;
+      tree_node_map_[key] = &value;
     }
 
   public:
@@ -84,9 +84,9 @@ namespace semantics
     //
     template <typename T>
     T&
-    new_fund_node ()
+    new_fund_node (tree tn)
     {
-      return graph_.new_node<T> ();
+      return graph_.new_node<T> (tn);
     }
 
   protected:
@@ -134,8 +134,8 @@ namespace semantics
   private:
     graph<node, edge>& graph_;
 
-    typedef std::map<gcc_tree, node*> gcc_tree_node_map;
-    gcc_tree_node_map gcc_tree_node_map_;
+    typedef std::map<tree, node*> tree_node_map;
+    tree_node_map tree_node_map_;
   };
 }
 

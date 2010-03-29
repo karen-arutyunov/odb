@@ -28,8 +28,11 @@ namespace semantics
   class union_instantiation: public union_, public type_instantiation
   {
   public:
-    union_instantiation (path const& file, size_t line, size_t column)
-        : node (file, line, column)
+    union_instantiation (path const& file,
+                         size_t line,
+                         size_t column,
+                         tree tn)
+        : node (file, line, column), type (tn)
     {
     }
 
