@@ -18,7 +18,7 @@ namespace semantics
     typedef std::vector<inherits*> inherits_list;
 
   public:
-    typedef inherits_list::const_iterator inherits_iterator;
+    typedef pointer_iterator<inherits_list::const_iterator> inherits_iterator;
 
     inherits_iterator
     inherits_begin () const

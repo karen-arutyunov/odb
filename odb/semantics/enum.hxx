@@ -99,7 +99,9 @@ namespace semantics
     typedef std::vector<enumerates*> enumerates_list;
 
   public:
-    typedef enumerates_list::const_iterator enumerates_iterator;
+    typedef
+    pointer_iterator<enumerates_list::const_iterator>
+    enumerates_iterator;
 
     enumerates_iterator
     enumerates_begin () const
