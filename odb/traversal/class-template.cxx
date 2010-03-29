@@ -1,0 +1,64 @@
+// file      : odb/traversal/class-template.cxx
+// author    : Boris Kolpackov <boris@codesynthesis.com>
+// copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
+// license   : GNU GPL v2; see accompanying LICENSE file
+
+#include <traversal/class-template.hxx>
+
+namespace traversal
+{
+  //
+  //
+  void class_template::
+  traverse (type& c)
+  {
+    inherits (c);
+    names (c);
+  }
+
+  void class_template::
+  inherits (type& c)
+  {
+    inherits (c, *this);
+  }
+
+  void class_template::
+  inherits (type& c, edge_dispatcher& d)
+  {
+    iterate_and_dispatch (c.inherits_begin (), c.inherits_end (), d);
+  }
+
+  //
+  //
+  void class_instantiation::
+  traverse (type& c)
+  {
+    instantiates (c);
+    inherits (c);
+    names (c);
+  }
+
+  void class_instantiation::
+  instantiates (type& c)
+  {
+    instantiates (c, *this);
+  }
+
+  void class_instantiation::
+  instantiates (type& c, edge_dispatcher& d)
+  {
+    d.dispatch (c.instantiates ());
+  }
+
+  void class_instantiation::
+  inherits (type& c)
+  {
+    inherits (c, *this);
+  }
+
+  void class_instantiation::
+  inherits (type& c, edge_dispatcher& d)
+  {
+    iterate_and_dispatch (c.inherits_begin (), c.inherits_end (), d);
+  }
+}

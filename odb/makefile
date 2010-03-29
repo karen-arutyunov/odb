@@ -22,6 +22,16 @@ semantics/union.cxx          \
 semantics/union-template.cxx \
 semantics/unit.cxx
 
+cxx_ptun +=                  \
+traversal/class.cxx          \
+traversal/class-template.cxx \
+traversal/derived.cxx        \
+traversal/elements.cxx       \
+traversal/enum.cxx           \
+traversal/template.cxx       \
+traversal/union-template.cxx
+
+
 # Driver units.
 #
 cxx_dtun := odb.cxx
