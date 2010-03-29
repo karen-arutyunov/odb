@@ -254,42 +254,55 @@ private:
       size_t line (DECL_SOURCE_LINE (decl));
       size_t clmn (DECL_SOURCE_COLUMN (decl));
 
-      if (trace)
-        ts << "start " <<  tree_code_name[tc] << " " << name << " at "
-           << DECL_SOURCE_FILE (decl) << ":"
-           << DECL_SOURCE_LINE (decl) << endl;
-
       type* node (0);
 
-      switch (tc)
+      // Pointers to member functions are represented as record
+      // types. Detect and handle this case.
+      //
+      if (TYPE_PTRMEMFUNC_P (t))
       {
-      case RECORD_TYPE:
+        node = &unit_->new_node<unsupported_type> (
+          file, line, clmn, "pointer_to_member_function_type");
+        unit_->insert (TYPE_MAIN_VARIANT (t), *node);
+      }
+      else
+      {
+
+        if (trace)
+          ts << "start " <<  tree_code_name[tc] << " " << name << " at "
+             << DECL_SOURCE_FILE (decl) << ":"
+             << DECL_SOURCE_LINE (decl) << endl;
+
+        switch (tc)
         {
-          node = &emit_class<class_> (t, file, line, clmn);
-          break;
+        case RECORD_TYPE:
+          {
+            node = &emit_class<class_> (t, file, line, clmn);
+            break;
+          }
+        case UNION_TYPE:
+          {
+            node = &emit_union<union_> (t, file, line, clmn);
+            break;
+          }
+        case ENUMERAL_TYPE:
+          {
+            node = &emit_enum (t, file, line, clmn);
+            break;
+          }
         }
-      case UNION_TYPE:
-        {
-          node = &emit_union<union_> (t, file, line, clmn);
-          break;
-        }
-      case ENUMERAL_TYPE:
-        {
-          node = &emit_enum (t, file, line, clmn);
-          break;
-        }
+
+        if (trace)
+          ts << "end " <<  tree_code_name[tc] << " " << name
+             << " (" << node << ") at "
+             << DECL_SOURCE_FILE (decl) << ":"
+             << DECL_SOURCE_LINE (decl) << endl;
       }
 
       if (COMPLETE_TYPE_P (t))
         unit_->new_edge<defines> (*scope_, *node, name);
       else
         unit_->new_edge<declares> (*scope_, *node, name);
-
-      if (trace)
-        ts << "end " <<  tree_code_name[tc] << " " << name
-           << " (" << node << ") at "
-           << DECL_SOURCE_FILE (decl) << ":"
-           << DECL_SOURCE_LINE (decl) << endl;
     }
     else
     {
@@ -962,39 +975,51 @@ private:
           // create a "stub" class node which will be processed and
           // filled in later.
           //
-
           t = TYPE_MAIN_VARIANT (t);
-          tree d (TYPE_NAME (t));
 
-          if (trace)
-            ts << "start anon/stub " << tree_code_name[tc] << " at "
-               << file << ":" << line << endl;
-
-          if (d == NULL_TREE || ANON_AGGRNAME_P (DECL_NAME (d)))
+          // Pointers to member functions are represented as record
+          // types. Detect and handle this case.
+          //
+          if (TYPE_PTRMEMFUNC_P (t))
           {
-            if (tc == RECORD_TYPE)
-              r = &emit_class<class_> (t, file, line, clmn);
-            else
-              r = &emit_union<union_> (t, file, line, clmn);
+            r = &unit_->new_node<unsupported_type> (
+              file, line, clmn, "pointer_to_member_function_type");
+            unit_->insert (t, *r);
           }
           else
           {
-            // Use the "defining" declaration's file, line, and column
-            // information to create the stub.
-            //
-            path f (DECL_SOURCE_FILE (d));
-            size_t l (DECL_SOURCE_LINE (d));
-            size_t c (DECL_SOURCE_COLUMN (d));
+            tree d (TYPE_NAME (t));
 
-            if (tc == RECORD_TYPE)
-              r = &emit_class<class_> (t, f, l, c, true);
+            if (trace)
+              ts << "start anon/stub " << tree_code_name[tc] << " at "
+                 << file << ":" << line << endl;
+
+            if (d == NULL_TREE || ANON_AGGRNAME_P (DECL_NAME (d)))
+            {
+              if (tc == RECORD_TYPE)
+                r = &emit_class<class_> (t, file, line, clmn);
+              else
+                r = &emit_union<union_> (t, file, line, clmn);
+            }
             else
-              r = &emit_union<union_> (t, f, l, c, true);
-          }
+            {
+              // Use the "defining" declaration's file, line, and column
+              // information to create the stub.
+              //
+              path f (DECL_SOURCE_FILE (d));
+              size_t l (DECL_SOURCE_LINE (d));
+              size_t c (DECL_SOURCE_COLUMN (d));
 
-          if (trace)
-            ts << "end anon/stub " << tree_code_name[tc] << " (" << r << ")"
-               << " at " << file << ":" << line << endl;
+              if (tc == RECORD_TYPE)
+                r = &emit_class<class_> (t, f, l, c, true);
+              else
+                r = &emit_union<union_> (t, f, l, c, true);
+            }
+
+            if (trace)
+              ts << "end anon/stub " << tree_code_name[tc] << " (" << r << ")"
+                 << " at " << file << ":" << line << endl;
+          }
         }
         else
         {
@@ -1157,10 +1182,11 @@ private:
         else
         {
           r = &unit_->new_node<unsupported_type> (
-            file, line, clmn, "pointer_to_member_type");
+            file, line, clmn, "pointer_to_data_member_type");
+          unit_->insert (TYPE_MAIN_VARIANT (t), *r);
 
           if (trace)
-            ts << "unsupported pointer_to_member_type (" << r << ")"
+            ts << "unsupported pointer_to_data_member_type (" << r << ")"
                << " at " << file << ":" << line << endl;
         }
         break;
@@ -1169,6 +1195,7 @@ private:
       {
         r = &unit_->new_node<unsupported_type> (
           file, line, clmn, tree_code_name[tc]);
+        unit_->insert (TYPE_MAIN_VARIANT (t), *r);
 
         if (trace)
           ts << "unsupported " << tree_code_name[tc] << " (" << r << ")"
@@ -1223,13 +1250,20 @@ private:
 
         if (ti == NULL_TREE)
         {
+          // Ordinary class.
+          //
           type = TYPE_MAIN_VARIANT (type);
 
-          // Ordinary class. Some synthesized stuff (e.g., member-function-
-          // pointer-struct) can be really anonymous so check that.
+          // Pointers to member functions are represented as record
+          // types and don't have names, not even the synthesized ones.
           //
-          tree name (TYPE_NAME (type));
-          r = (name ? IDENTIFIER_POINTER (DECL_NAME (name)) : "<anonymous>") + r;
+          if (TYPE_PTRMEMFUNC_P (type))
+            r = "<pointer-to-member-function>" + r;
+          else
+          {
+            tree name (TYPE_NAME (type));
+            r = IDENTIFIER_POINTER (DECL_NAME (name)) + r;
+          }
         }
         else
         {
