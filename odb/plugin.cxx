@@ -15,6 +15,7 @@
 
 #include <options.hxx>
 #include <semantics.hxx>
+#include <generator.hxx>
 
 #ifndef LOCATION_COLUMN
 #define LOCATION_COLUMN(LOC) (expand_location (LOC).column)
@@ -1500,13 +1501,31 @@ auto_ptr<options const> options_;
 extern "C" void
 gate_callback (void* gcc_data, void*)
 {
-  if (!errorcount && !sorrycount)
+  // If there were errors during compilation, let GCC handle the
+  // exit.
+  //
+  if (errorcount || sorrycount)
+    return;
+
+  int r (0);
+
+  try
   {
     parser p (*options_);
-    auto_ptr<unit> u (p.parse (global_namespace, path (main_input_filename)));
+    path file (main_input_filename);
+    auto_ptr<unit> u (p.parse (global_namespace, file));
+
+    generator g;
+    g.generate (*options_, *u, file);
+  }
+  catch (generator::failed const&)
+  {
+    // Diagnostics has aready been issued.
+    //
+    r = 1;
   }
 
-  exit (0);
+  exit (r);
 }
 
 extern "C" int

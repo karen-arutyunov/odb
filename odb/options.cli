@@ -18,6 +18,52 @@ class options
   //
   // Plugin options.
   //
+  std::string --output-dir | -o
+  {
+    "<dir>",
+    "Write the generated files to <dir> instead of the current directory."
+  };
+
+  std::string --odb-file-suffix = "-odb"
+  {
+    "<suffix>",
+    "Use <suffix> instead of the default \cb{-odb} to construct the names
+     of the generated ODB files."
+  };
+
+  std::string --hxx-suffix = ".hxx"
+  {
+    "<suffix>",
+    "Use <suffix> instead of the default \cb{.hxx} to construct the name of
+     the generated header file."
+  };
+
+  std::string --ixx-suffix = ".ixx"
+  {
+    "<suffix>",
+    "Use <suffix> instead of the default \cb{.ixx} to construct the name of
+     the generated inline file."
+  };
+
+  std::string --cxx-suffix = ".cxx"
+  {
+    "<suffix>",
+    "Use <suffix> instead of the default \cb{.cxx} to construct the name of
+     the generated source file."
+  };
+
+  bool --include-with-brackets
+  {
+    "Use angle brackets (<>) instead of quotes (\"\") in the generated
+     \cb{#include} directives."
+  };
+
+  std::string --include-prefix
+  {
+    "<prefix>",
+    "Add <prefix> to the generated \cb{#include} directive paths."
+  };
+
   bool --trace {"Trace the compilation process."};
 
   // This is a "fake" option in that it is actually handled by

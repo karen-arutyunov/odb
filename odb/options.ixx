@@ -159,6 +159,48 @@ version () const
   return this->version_;
 }
 
+inline const std::string& options::
+output_dir () const
+{
+  return this->output_dir_;
+}
+
+inline const std::string& options::
+odb_file_suffix () const
+{
+  return this->odb_file_suffix_;
+}
+
+inline const std::string& options::
+hxx_suffix () const
+{
+  return this->hxx_suffix_;
+}
+
+inline const std::string& options::
+ixx_suffix () const
+{
+  return this->ixx_suffix_;
+}
+
+inline const std::string& options::
+cxx_suffix () const
+{
+  return this->cxx_suffix_;
+}
+
+inline const bool& options::
+include_with_brackets () const
+{
+  return this->include_with_brackets_;
+}
+
+inline const std::string& options::
+include_prefix () const
+{
+  return this->include_prefix_;
+}
+
 inline const bool& options::
 trace () const
 {

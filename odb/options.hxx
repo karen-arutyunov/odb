@@ -301,6 +301,27 @@ class options
   const bool&
   version () const;
 
+  const std::string&
+  output_dir () const;
+
+  const std::string&
+  odb_file_suffix () const;
+
+  const std::string&
+  hxx_suffix () const;
+
+  const std::string&
+  ixx_suffix () const;
+
+  const std::string&
+  cxx_suffix () const;
+
+  const bool&
+  include_with_brackets () const;
+
+  const std::string&
+  include_prefix () const;
+
   const bool&
   trace () const;
 
@@ -321,6 +342,13 @@ class options
   public:
   bool help_;
   bool version_;
+  std::string output_dir_;
+  std::string odb_file_suffix_;
+  std::string hxx_suffix_;
+  std::string ixx_suffix_;
+  std::string cxx_suffix_;
+  bool include_with_brackets_;
+  std::string include_prefix_;
   bool trace_;
   std::string options_file_;
 };

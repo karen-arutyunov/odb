@@ -7,7 +7,10 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 
 # Plugin units.
 #
-cxx_ptun := plugin.cxx
+cxx_ptun :=                  \
+context.cxx                  \
+generator.cxx                \
+plugin.cxx
 
 cxx_ptun +=                  \
 semantics/class.cxx          \

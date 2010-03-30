@@ -490,6 +490,13 @@ options (int& argc,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  output_dir_ (),
+  odb_file_suffix_ ("-odb"),
+  hxx_suffix_ (".hxx"),
+  ixx_suffix_ (".ixx"),
+  cxx_suffix_ (".cxx"),
+  include_with_brackets_ (),
+  include_prefix_ (),
   trace_ (),
   options_file_ ()
 {
@@ -506,6 +513,13 @@ options (int start,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  output_dir_ (),
+  odb_file_suffix_ ("-odb"),
+  hxx_suffix_ (".hxx"),
+  ixx_suffix_ (".ixx"),
+  cxx_suffix_ (".cxx"),
+  include_with_brackets_ (),
+  include_prefix_ (),
   trace_ (),
   options_file_ ()
 {
@@ -522,6 +536,13 @@ options (int& argc,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  output_dir_ (),
+  odb_file_suffix_ ("-odb"),
+  hxx_suffix_ (".hxx"),
+  ixx_suffix_ (".ixx"),
+  cxx_suffix_ (".cxx"),
+  include_with_brackets_ (),
+  include_prefix_ (),
   trace_ (),
   options_file_ ()
 {
@@ -540,6 +561,13 @@ options (int start,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  output_dir_ (),
+  odb_file_suffix_ ("-odb"),
+  hxx_suffix_ (".hxx"),
+  ixx_suffix_ (".ixx"),
+  cxx_suffix_ (".cxx"),
+  include_with_brackets_ (),
+  include_prefix_ (),
   trace_ (),
   options_file_ ()
 {
@@ -554,6 +582,13 @@ options (::cli::scanner& s,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  output_dir_ (),
+  odb_file_suffix_ ("-odb"),
+  hxx_suffix_ (".hxx"),
+  ixx_suffix_ (".ixx"),
+  cxx_suffix_ (".cxx"),
+  include_with_brackets_ (),
+  include_prefix_ (),
   trace_ (),
   options_file_ ()
 {
@@ -563,15 +598,36 @@ options (::cli::scanner& s,
 void options::
 print_usage (::std::ostream& os)
 {
-  os << "--help                Print usage information and exit." << ::std::endl;
+  os << "--help                     Print usage information and exit." << ::std::endl;
 
-  os << "--version             Print version and exit." << ::std::endl;
+  os << "--version                  Print version and exit." << ::std::endl;
 
-  os << "--trace               Trace the compilation process." << ::std::endl;
+  os << "--output-dir|-o <dir>      Write the generated files to <dir> instead of the" << ::std::endl
+     << "                           current directory." << ::std::endl;
 
-  os << "--options-file <file> Read additional options from <file> with each option" << ::std::endl
-     << "                      appearing on a separate line optionally followed by space" << ::std::endl
-     << "                      and an option value." << ::std::endl;
+  os << "--odb-file-suffix <suffix> Use <suffix> instead of the default '-odb' to" << ::std::endl
+     << "                           construct the names of the generated ODB files." << ::std::endl;
+
+  os << "--hxx-suffix <suffix>      Use <suffix> instead of the default '.hxx' to" << ::std::endl
+     << "                           construct the name of the generated header file." << ::std::endl;
+
+  os << "--ixx-suffix <suffix>      Use <suffix> instead of the default '.ixx' to" << ::std::endl
+     << "                           construct the name of the generated inline file." << ::std::endl;
+
+  os << "--cxx-suffix <suffix>      Use <suffix> instead of the default '.cxx' to" << ::std::endl
+     << "                           construct the name of the generated source file." << ::std::endl;
+
+  os << "--include-with-brackets    Use angle brackets (<>) instead of quotes (\"\") in the" << ::std::endl
+     << "                           generated '#include' directives." << ::std::endl;
+
+  os << "--include-prefix <prefix>  Add <prefix> to the generated '#include' directive" << ::std::endl
+     << "                           paths." << ::std::endl;
+
+  os << "--trace                    Trace the compilation process." << ::std::endl;
+
+  os << "--options-file <file>      Read additional options from <file> with each option" << ::std::endl
+     << "                           appearing on a separate line optionally followed by" << ::std::endl
+     << "                           space and an option value." << ::std::endl;
 }
 
 typedef
@@ -588,6 +644,22 @@ struct _cli_options_map_init
     &::cli::thunk< options, bool, &options::help_ >;
     _cli_options_map_["--version"] = 
     &::cli::thunk< options, bool, &options::version_ >;
+    _cli_options_map_["--output-dir"] = 
+    &::cli::thunk< options, std::string, &options::output_dir_ >;
+    _cli_options_map_["-o"] = 
+    &::cli::thunk< options, std::string, &options::output_dir_ >;
+    _cli_options_map_["--odb-file-suffix"] = 
+    &::cli::thunk< options, std::string, &options::odb_file_suffix_ >;
+    _cli_options_map_["--hxx-suffix"] = 
+    &::cli::thunk< options, std::string, &options::hxx_suffix_ >;
+    _cli_options_map_["--ixx-suffix"] = 
+    &::cli::thunk< options, std::string, &options::ixx_suffix_ >;
+    _cli_options_map_["--cxx-suffix"] = 
+    &::cli::thunk< options, std::string, &options::cxx_suffix_ >;
+    _cli_options_map_["--include-with-brackets"] = 
+    &::cli::thunk< options, bool, &options::include_with_brackets_ >;
+    _cli_options_map_["--include-prefix"] = 
+    &::cli::thunk< options, std::string, &options::include_prefix_ >;
     _cli_options_map_["--trace"] = 
     &::cli::thunk< options, bool, &options::trace_ >;
     _cli_options_map_["--options-file"] = 
