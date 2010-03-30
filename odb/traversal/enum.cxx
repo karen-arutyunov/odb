@@ -3,7 +3,7 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#include <traversal/enum.hxx>
+#include <odb/traversal/enum.hxx>
 
 namespace traversal
 {

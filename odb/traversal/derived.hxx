@@ -6,8 +6,8 @@
 #ifndef ODB_TRAVERSAL_DERIVED_HXX
 #define ODB_TRAVERSAL_DERIVED_HXX
 
-#include <traversal/elements.hxx>
-#include <semantics/derived.hxx>
+#include <odb/semantics/derived.hxx>
+#include <odb/traversal/elements.hxx>
 
 namespace traversal
 {

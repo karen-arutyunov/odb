@@ -6,9 +6,9 @@
 #ifndef ODB_SEMANTICS_UNION_TEMPLATE_HXX
 #define ODB_SEMANTICS_UNION_TEMPLATE_HXX
 
-#include <semantics/elements.hxx>
-#include <semantics/union.hxx>
-#include <semantics/template.hxx>
+#include <odb/semantics/elements.hxx>
+#include <odb/semantics/union.hxx>
+#include <odb/semantics/template.hxx>
 
 namespace semantics
 {

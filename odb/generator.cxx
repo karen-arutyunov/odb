@@ -13,8 +13,8 @@
 #include <cutl/compiler/code-stream.hxx>
 #include <cutl/compiler/cxx-indenter.hxx>
 
-#include <context.hxx>
-#include <generator.hxx>
+#include <odb/context.hxx>
+#include <odb/generator.hxx>
 
 using namespace std;
 using namespace cutl;

@@ -6,9 +6,9 @@
 #ifndef ODB_SEMANTICS_CLASS_TEMPLATE_HXX
 #define ODB_SEMANTICS_CLASS_TEMPLATE_HXX
 
-#include <semantics/elements.hxx>
-#include <semantics/class.hxx>
-#include <semantics/template.hxx>
+#include <odb/semantics/elements.hxx>
+#include <odb/semantics/class.hxx>
+#include <odb/semantics/template.hxx>
 
 namespace semantics
 {

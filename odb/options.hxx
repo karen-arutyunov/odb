@@ -353,6 +353,6 @@ class options
   std::string options_file_;
 };
 
-#include "options.ixx"
+#include <odb/options.ixx>
 
 #endif // ODB_OPTIONS_HXX

@@ -6,16 +6,16 @@
 #ifndef ODB_SEMANTICS_HXX
 #define ODB_SEMANTICS_HXX
 
-#include <semantics/class.hxx>
-#include <semantics/class-template.hxx>
-#include <semantics/derived.hxx>
-#include <semantics/elements.hxx>
-#include <semantics/enum.hxx>
-#include <semantics/fundamental.hxx>
-#include <semantics/namespace.hxx>
-#include <semantics/template.hxx>
-#include <semantics/union.hxx>
-#include <semantics/union-template.hxx>
-#include <semantics/unit.hxx>
+#include <odb/semantics/class.hxx>
+#include <odb/semantics/class-template.hxx>
+#include <odb/semantics/derived.hxx>
+#include <odb/semantics/elements.hxx>
+#include <odb/semantics/enum.hxx>
+#include <odb/semantics/fundamental.hxx>
+#include <odb/semantics/namespace.hxx>
+#include <odb/semantics/template.hxx>
+#include <odb/semantics/union.hxx>
+#include <odb/semantics/union-template.hxx>
+#include <odb/semantics/unit.hxx>
 
 #endif // ODB_SEMANTICS_HXX

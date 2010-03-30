@@ -6,8 +6,8 @@
 #ifndef ODB_GENERATOR_HXX
 #define ODB_GENERATOR_HXX
 
-#include <options.hxx>
-#include <semantics/unit.hxx>
+#include <odb/options.hxx>
+#include <odb/semantics/unit.hxx>
 
 class generator
 {

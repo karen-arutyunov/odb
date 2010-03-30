@@ -6,16 +6,16 @@
 #ifndef ODB_TRAVERSAL_HXX
 #define ODB_TRAVERSAL_HXX
 
-#include <traversal/class.hxx>
-#include <traversal/class-template.hxx>
-#include <traversal/derived.hxx>
-#include <traversal/elements.hxx>
-#include <traversal/enum.hxx>
-#include <traversal/fundamental.hxx>
-#include <traversal/namespace.hxx>
-#include <traversal/template.hxx>
-#include <traversal/union.hxx>
-#include <traversal/union-template.hxx>
-#include <traversal/unit.hxx>
+#include <odb/traversal/class.hxx>
+#include <odb/traversal/class-template.hxx>
+#include <odb/traversal/derived.hxx>
+#include <odb/traversal/elements.hxx>
+#include <odb/traversal/enum.hxx>
+#include <odb/traversal/fundamental.hxx>
+#include <odb/traversal/namespace.hxx>
+#include <odb/traversal/template.hxx>
+#include <odb/traversal/union.hxx>
+#include <odb/traversal/union-template.hxx>
+#include <odb/traversal/unit.hxx>
 
 #endif // ODB_TRAVERSAL_HXX

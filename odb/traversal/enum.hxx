@@ -6,8 +6,8 @@
 #ifndef ODB_TRAVERSAL_ENUM_HXX
 #define ODB_TRAVERSAL_ENUM_HXX
 
-#include <traversal/elements.hxx>
-#include <semantics/enum.hxx>
+#include <odb/semantics/enum.hxx>
+#include <odb/traversal/elements.hxx>
 
 namespace traversal
 {

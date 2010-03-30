@@ -7,7 +7,7 @@
 #define ODB_SEMANTICS_TEMPLATE_HXX
 
 #include <vector>
-#include <semantics/elements.hxx>
+#include <odb/semantics/elements.hxx>
 
 namespace semantics
 {

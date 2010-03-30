@@ -3,7 +3,7 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#include <gcc.hxx> // Keep it first.
+#include <odb/gcc.hxx> // Keep it first.
 
 #include <set>
 #include <map>
@@ -13,9 +13,9 @@
 #include <sstream>
 #include <iostream>
 
-#include <options.hxx>
-#include <semantics.hxx>
-#include <generator.hxx>
+#include <odb/options.hxx>
+#include <odb/semantics.hxx>
+#include <odb/generator.hxx>
 
 #ifndef LOCATION_COLUMN
 #define LOCATION_COLUMN(LOC) (expand_location (LOC).column)

@@ -6,8 +6,8 @@
 #ifndef ODB_TRAVERSAL_UNION_HXX
 #define ODB_TRAVERSAL_UNION_HXX
 
-#include <traversal/elements.hxx>
-#include <semantics/union.hxx>
+#include <odb/semantics/union.hxx>
+#include <odb/traversal/elements.hxx>
 
 namespace traversal
 {

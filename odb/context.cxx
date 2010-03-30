@@ -4,7 +4,8 @@
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #include <stack>
-#include "context.hxx"
+
+#include <odb/context.hxx>
 
 using namespace std;
 

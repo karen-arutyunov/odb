@@ -6,7 +6,7 @@
 #ifndef ODB_SEMANTICS_DERIVED_HXX
 #define ODB_SEMANTICS_DERIVED_HXX
 
-#include <semantics/elements.hxx>
+#include <odb/semantics/elements.hxx>
 
 namespace semantics
 {

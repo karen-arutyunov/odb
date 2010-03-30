@@ -4,8 +4,7 @@
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
-
-#include <semantics/template.hxx>
+#include <odb/semantics/template.hxx>
 
 namespace semantics
 {

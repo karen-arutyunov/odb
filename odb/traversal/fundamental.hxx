@@ -6,8 +6,8 @@
 #ifndef ODB_TRAVERSAL_FUNDAMENTAL_HXX
 #define ODB_TRAVERSAL_FUNDAMENTAL_HXX
 
-#include <traversal/elements.hxx>
-#include <semantics/fundamental.hxx>
+#include <odb/semantics/fundamental.hxx>
+#include <odb/traversal/elements.hxx>
 
 namespace traversal
 {

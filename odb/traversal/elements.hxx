@@ -7,8 +7,7 @@
 #define ODB_TRAVERSAL_ELEMENTS_HXX
 
 #include <cutl/compiler/traversal.hxx>
-
-#include <semantics/elements.hxx>
+#include <odb/semantics/elements.hxx>
 
 namespace traversal
 {

@@ -6,8 +6,8 @@
 #ifndef ODB_TRAVERSAL_NAMESPACE_HXX
 #define ODB_TRAVERSAL_NAMESPACE_HXX
 
-#include <traversal/elements.hxx>
-#include <semantics/namespace.hxx>
+#include <odb/semantics/namespace.hxx>
+#include <odb/traversal/elements.hxx>
 
 namespace traversal
 {

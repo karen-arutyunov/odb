@@ -3,7 +3,7 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#include <traversal/class-template.hxx>
+#include <odb/traversal/class-template.hxx>
 
 namespace traversal
 {

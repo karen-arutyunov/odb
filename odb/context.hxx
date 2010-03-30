@@ -14,9 +14,9 @@
 
 #include <cutl/shared-ptr.hxx>
 
-#include <options.hxx>
-#include <semantics.hxx>
-#include <traversal.hxx>
+#include <odb/options.hxx>
+#include <odb/semantics.hxx>
+#include <odb/traversal.hxx>
 
 using std::endl;
 

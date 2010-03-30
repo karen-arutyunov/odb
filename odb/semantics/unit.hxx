@@ -8,8 +8,8 @@
 
 #include <map>
 
-#include <semantics/elements.hxx>
-#include <semantics/namespace.hxx>
+#include <odb/semantics/elements.hxx>
+#include <odb/semantics/namespace.hxx>
 
 namespace semantics
 {

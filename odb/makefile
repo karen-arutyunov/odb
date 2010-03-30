@@ -70,14 +70,18 @@ $(call import,\
 $(odb): $(cxx_dobj) $(cutl.l) | $(odb_so)
 $(odb_so): $(cxx_pobj) $(cutl.l)
 
-$(cxx_dobj) $(cxx_dod): cpp_options := -I$(src_base)
+$(cxx_dobj) $(cxx_dod): cpp_options := -I$(src_root)
 $(cxx_pobj) $(cxx_dobj) $(cxx_pod) $(cxx_dod): $(cutl.l.cpp-options)
 
 genf := $(cli_tun:.cli=.hxx) $(cli_tun:.cli=.ixx) $(cli_tun:.cli=.cxx)
 gen  := $(addprefix $(out_base)/,$(genf))
 
 $(gen): cli := $(cli)
-$(gen): cli_options := --generate-file-scanner --guard-prefix ODB
+$(gen): cli_options :=  \
+--generate-file-scanner \
+--include-with-brackets \
+--include-prefix odb    \
+--guard-prefix ODB
 
 $(call include-dep,$(cxx_pod))
 $(call include-dep,$(cxx_dod))
@@ -127,7 +131,7 @@ ifdef cxx_gnu
 
 $(cxx_pobj): cxx_pic_options := -fPIC
 
-$(cxx_pobj) $(cxx_pod): cpp_options := -I$(src_base) \
+$(cxx_pobj) $(cxx_pod): cpp_options := -I$(src_root) \
 -I$(shell $(cxx_gnu) -print-file-name=plugin)/include
 
 $(odb_so):

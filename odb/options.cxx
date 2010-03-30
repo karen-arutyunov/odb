@@ -2,7 +2,7 @@
 // compiler for C++.
 //
 
-#include "options.hxx"
+#include <odb/options.hxx>
 
 #include <map>
 #include <set>
