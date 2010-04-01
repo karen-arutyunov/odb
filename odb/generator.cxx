@@ -16,6 +16,8 @@
 #include <odb/context.hxx>
 #include <odb/generator.hxx>
 
+#include <odb/source.hxx>
+
 using namespace std;
 using namespace cutl;
 
@@ -130,7 +132,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         (br ? '>' : '"') << endl
           << endl;
 
-      // generate_source (ctx);
+      generate_source (ctx);
     }
 
     auto_rm.cancel ();

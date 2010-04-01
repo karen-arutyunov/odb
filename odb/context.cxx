@@ -35,16 +35,21 @@ context (context& c)
 void namespace_::
 traverse (type& ns)
 {
-  string name (ns.name ());
+  // Only traverse namespaces from the main file.
+  //
+  if (ns.file () == unit.file ())
+  {
+    string name (ns.name ());
 
-  if (name.empty ())
-    os << "namespace";
-  else
-    os << "namespace " << name;
+    if (name.empty ())
+      os << "namespace";
+    else
+      os << "namespace " << name;
 
-  os << "{";
+    os << "{";
 
-  traversal::namespace_::traverse (ns);
+    traversal::namespace_::traverse (ns);
 
-  os << "}";
+    os << "}";
+  }
 }
