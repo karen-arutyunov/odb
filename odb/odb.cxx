@@ -52,7 +52,7 @@ main (int argc, char* argv[])
   args.push_back ("-x");
   args.push_back ("c++");
   args.push_back ("-S");
-  args.push_back ("-DODB_PLUGIN");
+  args.push_back ("-DODB_COMPILER");
   args.push_back ("-fplugin=" + plugin);
 
   for (int i = 1; i < argc; ++i)

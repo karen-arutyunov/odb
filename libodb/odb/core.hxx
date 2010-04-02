@@ -6,6 +6,13 @@
 #ifndef ODB_CORE_HXX
 #define ODB_CORE_HXX
 
+#ifdef ODB_COMPILER
+#  define PRAGMA_ODB_IMPL(x) _Pragma (#x)
+#  define PRAGMA_ODB(x) PRAGMA_ODB_IMPL (odb x)
+#else
+#  define PRAGMA_ODB(x)
+#endif
+
 namespace odb
 {
   class image
