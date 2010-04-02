@@ -3,8 +3,6 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#include <stack>
-
 #include <odb/context.hxx>
 
 using namespace std;

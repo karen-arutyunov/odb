@@ -6,8 +6,6 @@
 #ifndef ODB_CONTEXT_HXX
 #define ODB_CONTEXT_HXX
 
-#include <set>
-#include <map>
 #include <string>
 #include <ostream>
 #include <cstddef> // std::size_t
