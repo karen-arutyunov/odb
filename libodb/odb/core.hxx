@@ -7,8 +7,8 @@
 #define ODB_CORE_HXX
 
 #ifdef ODB_COMPILER
-#  define PRAGMA_ODB_IMPL(x) _Pragma (#x)
-#  define PRAGMA_ODB(x) PRAGMA_ODB_IMPL (odb x)
+#  define ODB_PRAGMA_IMPL(x) _Pragma (#x)
+#  define ODB_PRAGMA(x) ODB_PRAGMA_IMPL (odb x)
 #else
 #  define PRAGMA_ODB(x)
 #endif
