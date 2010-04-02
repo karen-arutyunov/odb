@@ -10,6 +10,7 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 cxx_ptun :=                  \
 context.cxx                  \
 generator.cxx                \
+parser.cxx                   \
 plugin.cxx                   \
 pragma.cxx                   \
 source.cxx
