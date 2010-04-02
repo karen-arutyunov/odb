@@ -29,7 +29,16 @@ extern "C"
 
 #include "diagnostic.h"
 #include "c-common.h"
+#include "c-pragma.h"
 #include "cp/cp-tree.h"
 }
+
+#ifndef LOCATION_COLUMN
+#define LOCATION_COLUMN(LOC) (expand_location (LOC).column)
+#endif
+
+#ifndef DECL_SOURCE_COLUMN
+#define DECL_SOURCE_COLUMN(NODE) LOCATION_COLUMN (DECL_SOURCE_LOCATION (NODE))
+#endif
 
 #endif // ODB_GCC_TREE_HXX

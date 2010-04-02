@@ -13,17 +13,10 @@
 #include <sstream>
 #include <iostream>
 
+#include <odb/pragma.hxx>
 #include <odb/options.hxx>
 #include <odb/semantics.hxx>
 #include <odb/generator.hxx>
-
-#ifndef LOCATION_COLUMN
-#define LOCATION_COLUMN(LOC) (expand_location (LOC).column)
-#endif
-
-#ifndef DECL_SOURCE_COLUMN
-#define DECL_SOURCE_COLUMN(NODE) LOCATION_COLUMN (DECL_SOURCE_LOCATION (NODE))
-#endif
 
 using namespace std;
 using namespace semantics;
@@ -33,10 +26,16 @@ int plugin_is_GPL_compatible;
 class parser
 {
 public:
-  typedef semantics::access access;
+  class failed {};
 
-  parser (options const& ops)
-      : ops_ (ops), trace (ops.trace ()), ts (cerr)
+  parser (options const& ops,
+          loc_pragmas const& lp,
+          decl_pragmas const& dp)
+      : ops_ (ops),
+        loc_pragmas_ (lp),
+        decl_pragmas_ (dp),
+        trace (ops.trace ()),
+        ts (cerr)
   {
   }
 
@@ -46,6 +45,7 @@ public:
     auto_ptr<unit> u (new unit (main_file));
     unit_ = u.get ();
     scope_ = unit_;
+    error_ = 0;
 
     // Define fundamental types.
     //
@@ -72,10 +72,69 @@ public:
     // code order.
     //
     collect (global_scope);
+
+    // Add namespace-level location pragmas if any.
+    //
+    {
+      loc_pragmas::const_iterator i (loc_pragmas_.find (global_namespace));
+
+      if (i != loc_pragmas_.end ())
+        decls_.insert (i->second.begin (), i->second.end ());
+    }
+
+    // Construct the semantic graph.
+    //
     emit ();
+
+    if (error_ > 0)
+      throw failed ();
 
     return u;
   }
+
+private:
+  typedef semantics::access access;
+
+  // Extended GGC tree declaration that is either a tree node or a
+  // pragma. If this declaration is a pragma, then the assoc flag
+  // indicated whether this pragma has been associated with a
+  // declaration.
+  //
+  struct tree_decl
+  {
+    tree decl;
+    pragma const* prag;
+    mutable bool assoc; // Allow modification via std::set iterator.
+
+    tree_decl (tree d): decl (d), prag (0) {}
+    tree_decl (pragma const& p): decl (0), prag (&p), assoc (false) {}
+
+    bool
+    operator< (tree_decl const& y) const
+    {
+      location_t xloc (decl ? DECL_SOURCE_LOCATION (decl) : prag->loc);
+      location_t yloc (y.decl ? DECL_SOURCE_LOCATION (y.decl) : y.prag->loc);
+
+      if (xloc != yloc)
+        return xloc < yloc;
+
+      size_t xl (LOCATION_LINE (xloc));
+      size_t yl (LOCATION_LINE (yloc));
+
+      if (xl != yl)
+        return xl < yl;
+
+      size_t xc (LOCATION_COLUMN (xloc));
+      size_t yc (LOCATION_COLUMN (yloc));
+
+      if (xc != yc)
+        return xc < yc;
+
+      return false;
+    }
+  };
+
+  typedef std::multiset<tree_decl> decl_set;
 
 private:
   void
@@ -135,10 +194,15 @@ private:
   void
   emit ()
   {
-    for (decl_set::const_iterator i (decls_.begin ()), e (decls_.end ());
-         i != e; ++i)
+    for (decl_set::const_iterator b (decls_.begin ()), i (b),
+           e (decls_.end ()); i != e; ++i)
     {
-      tree decl (*i);
+      // Skip pragmas.
+      //
+      if (i->prag)
+        continue;
+
+      tree decl (i->decl);
 
       // Get this declaration's namespace and unwind our scope until
       // we find a common prefix of namespaces.
@@ -193,7 +257,14 @@ private:
       {
       case TYPE_DECL:
         {
-          emit_type_decl (decl);
+          type* n (emit_type_decl (decl));
+
+          // If this is a named class-type definition, then handle
+          // the pragmas.
+          //
+          if (n != 0)
+            process_pragmas (n->tree_node (), *n, n->name (), b, i, e);
+
           break;
         }
       case TEMPLATE_DECL:
@@ -203,12 +274,17 @@ private:
         }
       }
     }
+
+    // Diagnose any position pragmas that haven't been associated.
+    //
+    diagnose_unassoc_pragmas (decls_);
   }
 
-  // Emit a type declaration. This is either a class definition/declaration
-  // or a typedef.
+  // Emit a type declaration. This is either a named class-type definition/
+  // declaration or a typedef. In the former case the function returns the
+  // newly created type node. In the latter case it returns 0.
   //
-  void
+  type*
   emit_type_decl (tree decl)
   {
     tree t (TREE_TYPE (decl));
@@ -247,7 +323,7 @@ private:
           // covered by the typedef handling code below. The second
           // case will be covere by emit_type().
           //
-          return;
+          return 0;
         }
       }
 
@@ -305,6 +381,8 @@ private:
         unit_->new_edge<defines> (*scope_, *node, name);
       else
         unit_->new_edge<declares> (*scope_, *node, name);
+
+      return node;
     }
     else
     {
@@ -316,7 +394,7 @@ private:
 
       if ((tc == RECORD_TYPE || tc == UNION_TYPE || tc == ENUMERAL_TYPE) &&
           TYPE_NAME (TYPE_MAIN_VARIANT (t)) == decl)
-        return;
+        return 0;
 
       path f (DECL_SOURCE_FILE (decl));
       size_t l (DECL_SOURCE_LINE (decl));
@@ -333,6 +411,8 @@ private:
            << DECL_SOURCE_FILE (decl) << ":"
            << DECL_SOURCE_LINE (decl) << endl;
       }
+
+      return 0;
     }
   }
 
@@ -457,7 +537,12 @@ private:
     for (decl_set::const_iterator i (decls.begin ()), e (decls.end ());
          i != e; ++i)
     {
-      tree d (*i);
+      // Skip pragmas.
+      //
+      if (i->prag)
+        continue;
+
+      tree d (i->decl);
 
       switch (TREE_CODE (d))
       {
@@ -468,6 +553,10 @@ private:
         }
       }
     }
+
+    // Diagnose any position pragmas that haven't been associated.
+    //
+    diagnose_unassoc_pragmas (decls);
 
     scope_ = prev_scope;
     return *ct_node;
@@ -524,7 +613,12 @@ private:
     for (decl_set::const_iterator i (decls.begin ()), e (decls.end ());
          i != e; ++i)
     {
-      tree d (*i);
+      // Skip pragmas.
+      //
+      if (i->prag)
+        continue;
+
+      tree d (i->decl);
 
       switch (TREE_CODE (d))
       {
@@ -535,6 +629,10 @@ private:
         }
       }
     }
+
+    // Diagnose any position pragmas that haven't been associated.
+    //
+    diagnose_unassoc_pragmas (decls);
 
     scope_ = prev_scope;
     return *ut_node;
@@ -660,19 +758,40 @@ private:
       }
     }
 
+    // Add location pragmas if any.
+    //
+    {
+      loc_pragmas::const_iterator i (loc_pragmas_.find (c));
+
+      if (i != loc_pragmas_.end ())
+        decls.insert (i->second.begin (), i->second.end ());
+    }
+
     scope* prev_scope (scope_);
     scope_ = c_node;
 
-    for (decl_set::const_iterator i (decls.begin ()), e (decls.end ());
+    for (decl_set::const_iterator b (decls.begin ()), i (b), e (decls.end ());
          i != e; ++i)
     {
-      tree d (*i);
+      // Skip pragmas.
+      //
+      if (i->prag)
+        continue;
+
+      tree d (i->decl);
 
       switch (TREE_CODE (d))
       {
       case TYPE_DECL:
         {
-          emit_type_decl (d);
+          type* n (emit_type_decl (d));
+
+          // If this is a named class-type definition, then handle
+          // the pragmas.
+          //
+          if (n != 0)
+            process_pragmas (n->tree_node (), *n, n->name (), b, i, e);
+
           break;
         }
       case TEMPLATE_DECL:
@@ -720,10 +839,18 @@ private:
                << file << ":" << line << endl;
           }
 
+          // Process pragmas that may be associated with this field.
+          //
+          process_pragmas (d, member_node, name, b, i, e);
+
           break;
         }
       }
     }
+
+    // Diagnose any position pragmas that haven't been associated.
+    //
+    diagnose_unassoc_pragmas (decls);
 
     scope_ = prev_scope;
     return *c_node;
@@ -786,19 +913,40 @@ private:
       }
     }
 
+    // Add location pragmas if any.
+    //
+    {
+      loc_pragmas::const_iterator i (loc_pragmas_.find (u));
+
+      if (i != loc_pragmas_.end ())
+        decls.insert (i->second.begin (), i->second.end ());
+    }
+
     scope* prev_scope (scope_);
     scope_ = u_node;
 
-    for (decl_set::const_iterator i (decls.begin ()), e (decls.end ());
+    for (decl_set::const_iterator b (decls.begin ()), i (b), e (decls.end ());
          i != e; ++i)
     {
-      tree d (*i);
+      // Skip pragmas.
+      //
+      if (i->prag)
+        continue;
+
+      tree d (i->decl);
 
       switch (TREE_CODE (d))
       {
       case TYPE_DECL:
         {
-          emit_type_decl (d);
+          type* n (emit_type_decl (d));
+
+          // If this is a named class-type definition, then handle
+          // the pragmas.
+          //
+          if (n != 0)
+            process_pragmas (n->tree_node (), *n, n->name (), b, i, e);
+
           break;
         }
       case TEMPLATE_DECL:
@@ -833,10 +981,18 @@ private:
                << file << ":" << line << endl;
           }
 
+          // Process pragmas that may be associated with this field.
+          //
+          process_pragmas (d, member_node, name, b, i, e);
+
           break;
         }
       }
     }
+
+    // Diagnose any position pragmas that haven't been associated.
+    //
+    diagnose_unassoc_pragmas (decls);
 
     scope_ = prev_scope;
     return *u_node;
@@ -1149,10 +1305,11 @@ private:
           }
           else
           {
-            error (G_ ("%s:%d: non-integer array index %s"),
-                   file.string ().c_str (),
-                   line,
-                   tree_code_name[TREE_CODE (max)]);
+            cerr << file << ':' << line << ':' << clmn << ": error: "
+                 << " non-integer array index "
+                 << tree_code_name[TREE_CODE (max)];
+
+            throw failed ();
           }
         }
 
@@ -1342,8 +1499,9 @@ private:
           }
           else
           {
-            error (G_ ("non-integer array index %s"),
-                   tree_code_name[TREE_CODE (type)]);
+            // Non-integer array index which we do not support. The
+            // error has been/will be issued in emit_type.
+            //
           }
         }
 
@@ -1403,6 +1561,80 @@ private:
     return r;
   }
 
+  void
+  process_pragmas (tree t,
+                   node& node,
+                   string const& name,
+                   decl_set::const_iterator begin,
+                   decl_set::const_iterator cur,
+                   decl_set::const_iterator end)
+  {
+    // First process the position pragmas by iterating backwards
+    // until we get to the preceding non-pragma declaration.
+    //
+    pragma_set prags;
+
+    if (cur != begin)
+    {
+      decl_set::const_iterator i (cur);
+      for (--i; i != begin && i->prag != 0; --i) ;
+
+      // We may stop at pragma if j == b.
+      //
+      if (i->prag == 0)
+        ++i;
+
+      for (; i != cur; ++i)
+      {
+        assert (!i->assoc);
+
+        if (check_decl_type (t, name, i->prag->name, i->prag->loc))
+          prags.insert (*i->prag);
+        else
+          error_++;
+
+        i->assoc = true; // Mark this pragma as associated.
+      }
+    }
+
+    // Now see if there are any identifier pragmas for this decl.
+    // By doing this after handling the position pragmas we ensure
+    // correct overriding.
+    //
+    {
+      decl_pragmas::const_iterator i (decl_pragmas_.find (t));
+
+      if (i != decl_pragmas_.end ())
+        prags.insert (i->second.begin (), i->second.end ());
+    }
+
+    // Finally, copy the resulting pragma set to context.
+    //
+    for (pragma_set::iterator i (prags.begin ()); i != prags.end (); ++i)
+    {
+      if (trace)
+        ts << "\t\t pragma " << i->name << " (" << i->value << ")"
+           << endl;
+
+      node.set (i->name, i->value);
+    }
+  }
+
+  void
+  diagnose_unassoc_pragmas (decl_set const& decls)
+  {
+    for (decl_set::const_iterator i (decls.begin ()), e (decls.end ());
+         i != e; ++i)
+    {
+      if (i->prag && !i->assoc)
+      {
+        pragma const& p (*i->prag);
+        error_at (p.loc, "odb pragma %qs is not associated with a declaration",
+                  p.name.c_str ());
+        error_++;
+      }
+    }
+  }
 
   // Return declaration's fully-qualified scope name (e.g., ::foo::bar).
   //
@@ -1456,6 +1688,8 @@ private:
 
 private:
   options const& ops_;
+  loc_pragmas const& loc_pragmas_;
+  decl_pragmas const& decl_pragmas_;
 
   bool trace;
   ostream& ts;
@@ -1463,33 +1697,8 @@ private:
   unit* unit_;
   scope* scope_;
 
-  struct location_comparator
-  {
-    bool operator() (tree x, tree y) const
-    {
-      location_t xloc (DECL_SOURCE_LOCATION (x));
-      location_t yloc (DECL_SOURCE_LOCATION (y));
+  size_t error_;
 
-      if (xloc != yloc)
-        return xloc < yloc;
-
-      size_t xl (LOCATION_LINE (xloc));
-      size_t yl (LOCATION_LINE (yloc));
-
-      if (xl != yl)
-        return xl < yl;
-
-      size_t xc (LOCATION_COLUMN (xloc));
-      size_t yc (LOCATION_COLUMN (yloc));
-
-      if (xc != yc)
-        return xc < yc;
-
-      return false;
-    }
-  };
-
-  typedef std::multiset<tree, location_comparator> decl_set;
   decl_set decls_;
 
   typedef std::map<string, fund_type*> fund_type_map;
@@ -1511,12 +1720,18 @@ gate_callback (void* gcc_data, void*)
 
   try
   {
-    parser p (*options_);
+    parser p (*options_, loc_pragmas_, decl_pragmas_);
     path file (main_input_filename);
     auto_ptr<unit> u (p.parse (global_namespace, file));
 
     generator g;
     g.generate (*options_, *u, file);
+  }
+  catch (parser::failed const&)
+  {
+    // Diagnostics has aready been issued.
+    //
+    r = 1;
   }
   catch (generator::failed const&)
   {
@@ -1575,6 +1790,13 @@ plugin_init (struct plugin_name_args *plugin_info,
     // Disable assembly output.
     //
     asm_file_name = HOST_BIT_BUCKET;
+
+    // Register callbacks.
+    //
+    register_callback (plugin_info->base_name,
+                       PLUGIN_PRAGMAS,
+                       register_odb_pragmas,
+                       0);
 
     register_callback (plugin_info->base_name,
                        PLUGIN_OVERRIDE_GATE,

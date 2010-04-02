@@ -11,6 +11,7 @@ cxx_ptun :=                  \
 context.cxx                  \
 generator.cxx                \
 plugin.cxx                   \
+pragma.cxx                   \
 source.cxx
 
 cxx_ptun +=                  \
