@@ -5,6 +5,8 @@
 
 #include <odb/gcc.hxx> // Keep it first.
 
+#include <set>
+#include <string>
 #include <cassert>
 #include <sstream>
 #include <iostream>
@@ -15,7 +17,141 @@
 using namespace std;
 using namespace semantics;
 
-bool parser::tree_decl::
+class parser::impl
+{
+public:
+  typedef parser::failed failed;
+
+  impl (options const&, loc_pragmas const&, decl_pragmas const&);
+
+  auto_ptr<unit>
+  parse (tree global_scope, path const& main_file);
+
+private:
+  typedef semantics::access access;
+
+  // Extended GGC tree declaration that is either a tree node or a
+  // pragma. If this declaration is a pragma, then the assoc flag
+  // indicated whether this pragma has been associated with a
+  // declaration.
+  //
+  struct tree_decl
+  {
+    tree decl;
+    pragma const* prag;
+    mutable bool assoc; // Allow modification via std::set iterator.
+
+    tree_decl (tree d): decl (d), prag (0) {}
+    tree_decl (pragma const& p): decl (0), prag (&p), assoc (false) {}
+
+    bool
+    operator< (tree_decl const& y) const;
+  };
+
+  typedef multiset<tree_decl> decl_set;
+
+private:
+  void
+  collect (tree ns);
+
+  void
+  emit ();
+
+  // Emit a type declaration. This is either a named class-type definition/
+  // declaration or a typedef. In the former case the function returns the
+  // newly created type node. In the latter case it returns 0.
+  //
+  type*
+  emit_type_decl (tree);
+
+  // Emit a template declaration.
+  //
+  void
+  emit_template_decl (tree);
+
+  class_template&
+  emit_class_template (tree, bool stub = false);
+
+  union_template&
+  emit_union_template (tree, bool stub = false);
+
+  template <typename T>
+  T&
+  emit_class (tree, path const& f, size_t l, size_t c, bool stub = false);
+
+  template <typename T>
+  T&
+  emit_union (tree, path const& f, size_t l, size_t c, bool stub = false);
+
+  enum_&
+  emit_enum (tree, path const& f, size_t l, size_t c, bool stub = false);
+
+  // Create new or find existing semantic graph type.
+  //
+  type&
+  emit_type (tree, path const& f, size_t l, size_t c);
+
+  type&
+  create_type (tree, path const& f, size_t l, size_t c);
+
+  string
+  emit_type_name (tree, bool direct = true);
+
+
+  // Pragma handling.
+  //
+  void
+  process_pragmas (tree,
+                   node&,
+                   string const& name,
+                   decl_set::const_iterator begin,
+                   decl_set::const_iterator cur,
+                   decl_set::const_iterator end);
+
+  void
+  diagnose_unassoc_pragmas (decl_set const&);
+
+  // Return declaration's fully-qualified scope name (e.g., ::foo::bar).
+  //
+  string
+  fq_scope (tree);
+
+  // Return declaration's access.
+  //
+  access
+  decl_access (tree decl)
+  {
+    if (TREE_PRIVATE (decl))
+      return access::private_;
+
+    if (TREE_PROTECTED (decl))
+      return access::protected_;
+
+    return access::public_;
+  }
+
+  //
+  //
+  template <typename T>
+  void
+  define_fund (tree);
+
+private:
+  options const& ops_;
+  loc_pragmas const& loc_pragmas_;
+  decl_pragmas const& decl_pragmas_;
+
+  bool trace;
+  ostream& ts;
+
+  unit* unit_;
+  scope* scope_;
+  size_t error_;
+
+  decl_set decls_;
+};
+
+bool parser::impl::tree_decl::
 operator< (tree_decl const& y) const
 {
   location_t xloc (decl ? DECL_SOURCE_LOCATION (decl) : prag->loc);
@@ -44,7 +180,7 @@ operator< (tree_decl const& y) const
 //
 
 template <typename T>
-void parser::
+void parser::impl::
 define_fund (tree t)
 {
   t = TYPE_MAIN_VARIANT (t);
@@ -56,7 +192,7 @@ define_fund (tree t)
 }
 
 template <typename T>
-T& parser::
+T& parser::impl::
 emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
 {
   c = TYPE_MAIN_VARIANT (c);
@@ -270,7 +406,7 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
 }
 
 template <typename T>
-T& parser::
+T& parser::impl::
 emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
 {
   u = TYPE_MAIN_VARIANT (u);
@@ -411,10 +547,8 @@ emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
 // Functions.
 //
 
-parser::
-parser (options const& ops,
-        loc_pragmas const& lp,
-        decl_pragmas const& dp)
+parser::impl::
+impl (options const& ops, loc_pragmas const& lp, decl_pragmas const& dp)
     : ops_ (ops),
       loc_pragmas_ (lp),
       decl_pragmas_ (dp),
@@ -423,7 +557,7 @@ parser (options const& ops,
 {
 }
 
-auto_ptr<unit> parser::
+auto_ptr<unit> parser::impl::
 parse (tree global_scope, path const& main_file)
 {
   auto_ptr<unit> u (new unit (main_file));
@@ -476,7 +610,7 @@ parse (tree global_scope, path const& main_file)
   return u;
 }
 
-void parser::
+void parser::impl::
 collect (tree ns)
 {
   cp_binding_level* level = NAMESPACE_LEVEL (ns);
@@ -530,7 +664,7 @@ collect (tree ns)
   }
 }
 
-void parser::
+void parser::impl::
 emit ()
 {
   for (decl_set::const_iterator b (decls_.begin ()), i (b),
@@ -619,7 +753,7 @@ emit ()
   diagnose_unassoc_pragmas (decls_);
 }
 
-type* parser::
+type* parser::impl::
 emit_type_decl (tree decl)
 {
   tree t (TREE_TYPE (decl));
@@ -751,7 +885,7 @@ emit_type_decl (tree decl)
   }
 }
 
-void parser::
+void parser::impl::
 emit_template_decl (tree decl)
 {
   // Currently we only handle class/union templates.
@@ -819,7 +953,7 @@ emit_template_decl (tree decl)
        << DECL_SOURCE_LINE (decl) << endl;
 }
 
-class_template& parser::
+class_template& parser::impl::
 emit_class_template (tree t, bool stub)
 {
   // See if there is a stub already for this template.
@@ -895,7 +1029,7 @@ emit_class_template (tree t, bool stub)
   return *ct_node;
 }
 
-union_template& parser::
+union_template& parser::impl::
 emit_union_template (tree t, bool stub)
 {
   // See if there is a stub already for this template.
@@ -971,7 +1105,7 @@ emit_union_template (tree t, bool stub)
   return *ut_node;
 }
 
-enum_& parser::
+enum_& parser::impl::
 emit_enum (tree e, path const& file, size_t line, size_t clmn, bool stub)
 {
   e = TYPE_MAIN_VARIANT (e);
@@ -1012,7 +1146,7 @@ emit_enum (tree e, path const& file, size_t line, size_t clmn, bool stub)
   return *e_node;
 }
 
-type& parser::
+type& parser::impl::
 emit_type (tree t,
            path const& file,
            size_t line,
@@ -1069,7 +1203,7 @@ emit_type (tree t,
   return q;
 }
 
-type& parser::
+type& parser::impl::
 create_type (tree t,
              path const& file,
              size_t line,
@@ -1340,7 +1474,7 @@ create_type (tree t,
   return *r;
 }
 
-string parser::
+string parser::impl::
 emit_type_name (tree type, bool direct)
 {
   // First see if there is a "direct" name for this type.
@@ -1528,7 +1662,7 @@ emit_type_name (tree type, bool direct)
   return r;
 }
 
-void parser::
+void parser::impl::
 process_pragmas (tree t,
                  node& node,
                  string const& name,
@@ -1587,7 +1721,7 @@ process_pragmas (tree t,
   }
 }
 
-void parser::
+void parser::impl::
 diagnose_unassoc_pragmas (decl_set const& decls)
 {
   for (decl_set::const_iterator i (decls.begin ()), e (decls.end ());
@@ -1603,7 +1737,7 @@ diagnose_unassoc_pragmas (decl_set const& decls)
   }
 }
 
-string parser::
+string parser::impl::
 fq_scope (tree decl)
 {
   string s, tmp;
@@ -1623,14 +1757,18 @@ fq_scope (tree decl)
   return s;
 }
 
-parser::access parser::
-decl_access (tree decl)
+//
+// parser
+//
+
+parser::
+parser (options const& ops, loc_pragmas const& lp, decl_pragmas const& dp)
+    : impl_ (new impl (ops, lp, dp))
 {
-  if (TREE_PRIVATE (decl))
-    return access::private_;
+}
 
-  if (TREE_PROTECTED (decl))
-    return access::protected_;
-
-  return access::public_;
+auto_ptr<unit> parser::
+parse (tree global_scope, path const& main_file)
+{
+  return impl_->parse (global_scope, main_file);
 }
