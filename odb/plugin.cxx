@@ -23,7 +23,7 @@ int plugin_is_GPL_compatible;
 auto_ptr<options const> options_;
 
 extern "C" void
-gate_callback (void* gcc_data, void*)
+gate_callback (void*, void*)
 {
   // If there were errors during compilation, let GCC handle the
   // exit.
@@ -59,8 +59,7 @@ gate_callback (void* gcc_data, void*)
 }
 
 extern "C" int
-plugin_init (struct plugin_name_args* plugin_info,
-             struct plugin_gcc_version* version)
+plugin_init (plugin_name_args* plugin_info, plugin_gcc_version* version)
 {
   int r (0);
 
