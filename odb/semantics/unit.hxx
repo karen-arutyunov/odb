@@ -131,6 +131,8 @@ namespace semantics
     {
     }
 
+    using namespace_::add_edge_right;
+
   private:
     graph<node, edge>& graph_;
 
