@@ -3,7 +3,7 @@
 # copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 # license   : GNU GPL v2; see accompanying LICENSE file
 
-project_name := odb
+project_name := ODB
 
 # First try to include the bundled bootstrap.make if it exist. If that
 # fails, let make search for the external bootstrap.make.
