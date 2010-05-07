@@ -188,6 +188,13 @@ main (int argc, char* argv[])
       string k, v;
       string a (plugin_args[i]);
 
+      if (a == "--")
+      {
+        // Ignore the option seperator since GCC doesn't understand it.
+        //
+        continue;
+      }
+
       if (a.size () > 2)
         k = string (a, 2); // long format
       else
