@@ -322,9 +322,6 @@ class options
   const std::string&
   include_prefix () const;
 
-  const bool&
-  proprietary_license () const;
-
   const std::string&
   options_file () const;
 
@@ -352,7 +349,6 @@ class options
   std::string cxx_suffix_;
   bool include_with_brackets_;
   std::string include_prefix_;
-  bool proprietary_license_;
   std::string options_file_;
   bool trace_;
 };

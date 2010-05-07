@@ -183,18 +183,9 @@ main (int argc, char* argv[])
         ODB_COMPILER_VERSION_STR << endl
         << "Copyright (C) 2009-2010 Code Synthesis Tools CC" << endl;
 
-      if (ops.proprietary_license ())
-      {
-        e << "The compiler was invoked in the Proprietary License mode. You "
-          << "should have\nreceived a proprietary license from Code Synthesis "
-          << "Tools CC that entitles\nyou to use it in this mode." << endl;
-      }
-      else
-      {
-        e << "This is free software; see the source for copying conditions. "
-          << "There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS "
-          << "FOR A PARTICULAR PURPOSE." << endl;
-      }
+      e << "This is free software; see the source for copying conditions. "
+        << "There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS "
+        << "FOR A PARTICULAR PURPOSE." << endl;
 
       return 0;
     }

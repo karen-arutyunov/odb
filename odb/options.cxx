@@ -497,7 +497,6 @@ options (int& argc,
   cxx_suffix_ (".cxx"),
   include_with_brackets_ (),
   include_prefix_ (),
-  proprietary_license_ (),
   options_file_ (),
   trace_ ()
 {
@@ -521,7 +520,6 @@ options (int start,
   cxx_suffix_ (".cxx"),
   include_with_brackets_ (),
   include_prefix_ (),
-  proprietary_license_ (),
   options_file_ (),
   trace_ ()
 {
@@ -545,7 +543,6 @@ options (int& argc,
   cxx_suffix_ (".cxx"),
   include_with_brackets_ (),
   include_prefix_ (),
-  proprietary_license_ (),
   options_file_ (),
   trace_ ()
 {
@@ -571,7 +568,6 @@ options (int start,
   cxx_suffix_ (".cxx"),
   include_with_brackets_ (),
   include_prefix_ (),
-  proprietary_license_ (),
   options_file_ (),
   trace_ ()
 {
@@ -593,7 +589,6 @@ options (::cli::scanner& s,
   cxx_suffix_ (".cxx"),
   include_with_brackets_ (),
   include_prefix_ (),
-  proprietary_license_ (),
   options_file_ (),
   trace_ ()
 {
@@ -627,9 +622,6 @@ print_usage (::std::ostream& os)
 
   os << "--include-prefix <prefix>  Add <prefix> to the generated '#include' directive" << ::std::endl
      << "                           paths." << ::std::endl;
-
-  os << "--proprietary-license      Indicate that the generated code is licensed under a" << ::std::endl
-     << "                           proprietary license instead of the GPL." << ::std::endl;
 
   os << "--options-file <file>      Read additional options from <file> with each option" << ::std::endl
      << "                           appearing on a separate line optionally followed by" << ::std::endl
@@ -668,8 +660,6 @@ struct _cli_options_map_init
     &::cli::thunk< options, bool, &options::include_with_brackets_ >;
     _cli_options_map_["--include-prefix"] = 
     &::cli::thunk< options, std::string, &options::include_prefix_ >;
-    _cli_options_map_["--proprietary-license"] = 
-    &::cli::thunk< options, bool, &options::proprietary_license_ >;
     _cli_options_map_["--options-file"] = 
     &::cli::thunk< options, std::string, &options::options_file_ >;
     _cli_options_map_["--trace"] = 

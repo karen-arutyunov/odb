@@ -64,12 +64,6 @@ class options
     "Add <prefix> to the generated \cb{#include} directive paths."
   };
 
-  bool --proprietary-license
-  {
-    "Indicate that the generated code is licensed under a proprietary
-     license instead of the GPL."
-  };
-
   // This is a "fake" option in that it is actually handled by
   // argv_file_scanner. We have it here to get the documentation.
   //

@@ -201,12 +201,6 @@ include_prefix () const
   return this->include_prefix_;
 }
 
-inline const bool& options::
-proprietary_license () const
-{
-  return this->proprietary_license_;
-}
-
 inline const std::string& options::
 options_file () const
 {
