@@ -202,14 +202,20 @@ include_prefix () const
 }
 
 inline const bool& options::
-trace () const
+proprietary_license () const
 {
-  return this->trace_;
+  return this->proprietary_license_;
 }
 
 inline const std::string& options::
 options_file () const
 {
   return this->options_file_;
+}
+
+inline const bool& options::
+trace () const
+{
+  return this->trace_;
 }
 

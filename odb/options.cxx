@@ -497,8 +497,9 @@ options (int& argc,
   cxx_suffix_ (".cxx"),
   include_with_brackets_ (),
   include_prefix_ (),
-  trace_ (),
-  options_file_ ()
+  proprietary_license_ (),
+  options_file_ (),
+  trace_ ()
 {
   ::cli::argv_scanner s (argc, argv, erase);
   _parse (s, opt, arg);
@@ -520,8 +521,9 @@ options (int start,
   cxx_suffix_ (".cxx"),
   include_with_brackets_ (),
   include_prefix_ (),
-  trace_ (),
-  options_file_ ()
+  proprietary_license_ (),
+  options_file_ (),
+  trace_ ()
 {
   ::cli::argv_scanner s (start, argc, argv, erase);
   _parse (s, opt, arg);
@@ -543,8 +545,9 @@ options (int& argc,
   cxx_suffix_ (".cxx"),
   include_with_brackets_ (),
   include_prefix_ (),
-  trace_ (),
-  options_file_ ()
+  proprietary_license_ (),
+  options_file_ (),
+  trace_ ()
 {
   ::cli::argv_scanner s (argc, argv, erase);
   _parse (s, opt, arg);
@@ -568,8 +571,9 @@ options (int start,
   cxx_suffix_ (".cxx"),
   include_with_brackets_ (),
   include_prefix_ (),
-  trace_ (),
-  options_file_ ()
+  proprietary_license_ (),
+  options_file_ (),
+  trace_ ()
 {
   ::cli::argv_scanner s (start, argc, argv, erase);
   _parse (s, opt, arg);
@@ -589,8 +593,9 @@ options (::cli::scanner& s,
   cxx_suffix_ (".cxx"),
   include_with_brackets_ (),
   include_prefix_ (),
-  trace_ (),
-  options_file_ ()
+  proprietary_license_ (),
+  options_file_ (),
+  trace_ ()
 {
   _parse (s, opt, arg);
 }
@@ -623,11 +628,14 @@ print_usage (::std::ostream& os)
   os << "--include-prefix <prefix>  Add <prefix> to the generated '#include' directive" << ::std::endl
      << "                           paths." << ::std::endl;
 
-  os << "--trace                    Trace the compilation process." << ::std::endl;
+  os << "--proprietary-license      Indicate that the generated code is licensed under a" << ::std::endl
+     << "                           proprietary license instead of the GPL." << ::std::endl;
 
   os << "--options-file <file>      Read additional options from <file> with each option" << ::std::endl
      << "                           appearing on a separate line optionally followed by" << ::std::endl
      << "                           space and an option value." << ::std::endl;
+
+  os << "--trace                    Trace the compilation process." << ::std::endl;
 }
 
 typedef
@@ -660,10 +668,12 @@ struct _cli_options_map_init
     &::cli::thunk< options, bool, &options::include_with_brackets_ >;
     _cli_options_map_["--include-prefix"] = 
     &::cli::thunk< options, std::string, &options::include_prefix_ >;
-    _cli_options_map_["--trace"] = 
-    &::cli::thunk< options, bool, &options::trace_ >;
+    _cli_options_map_["--proprietary-license"] = 
+    &::cli::thunk< options, bool, &options::proprietary_license_ >;
     _cli_options_map_["--options-file"] = 
     &::cli::thunk< options, std::string, &options::options_file_ >;
+    _cli_options_map_["--trace"] = 
+    &::cli::thunk< options, bool, &options::trace_ >;
   }
 } _cli_options_map_init_;
 

@@ -323,10 +323,13 @@ class options
   include_prefix () const;
 
   const bool&
-  trace () const;
+  proprietary_license () const;
 
   const std::string&
   options_file () const;
+
+  const bool&
+  trace () const;
 
   // Print usage information.
   //
@@ -349,8 +352,9 @@ class options
   std::string cxx_suffix_;
   bool include_with_brackets_;
   std::string include_prefix_;
-  bool trace_;
+  bool proprietary_license_;
   std::string options_file_;
+  bool trace_;
 };
 
 #include <odb/options.ixx>

@@ -28,6 +28,8 @@ main (int argc, char* argv[])
 {
   typedef vector<string> strings;
 
+  ostream& e (cerr);
+
   // Find the plugin. It should be in the same directory as the
   // driver.
   //
@@ -35,9 +37,9 @@ main (int argc, char* argv[])
 
   if (plugin.empty ())
   {
-    cerr << argv[0] << ": error: unable to locate ODB GCC plugin" << endl;
-    cerr << argv[0] << ": info: make sure '" << argv[0] << ".so' is in "
-         << "the same directory as '" << argv[0] << "'" << endl;
+    e << argv[0] << ": error: unable to locate ODB GCC plugin" << endl;
+    e << argv[0] << ": info: make sure '" << argv[0] << ".so' is in "
+      << "the same directory as '" << argv[0] << "'" << endl;
     return 1;
   }
 
@@ -77,8 +79,7 @@ main (int argc, char* argv[])
     {
       if (++i == argc || argv[i][0] == '\0')
       {
-        cerr << argv[0] << ": error: expected argument for the -x option"
-             << endl;
+        e << argv[0] << ": error: expected argument for the -x option" << endl;
         return 1;
       }
 
@@ -104,8 +105,8 @@ main (int argc, char* argv[])
       {
         if (++i == argc || argv[i][0] == '\0')
         {
-          cerr << argv[0] << ": error: expected argument for the -I option"
-               << endl;
+          e << argv[0] << ": error: expected argument for the -I option"
+            << endl;
           return 1;
         }
 
@@ -122,8 +123,8 @@ main (int argc, char* argv[])
       {
         if (++i == argc || argv[i][0] == '\0')
         {
-          cerr << argv[0] << ": error: expected argument for the -D option"
-               << endl;
+          e << argv[0] << ": error: expected argument for the -D option"
+            << endl;
           return 1;
         }
 
@@ -140,8 +141,8 @@ main (int argc, char* argv[])
       {
         if (++i == argc || argv[i][0] == '\0')
         {
-          cerr << argv[0] << ": error: expected argument for the -U option"
-               << endl;
+          e << argv[0] << ": error: expected argument for the -U option"
+            << endl;
           return 1;
         }
 
@@ -163,8 +164,8 @@ main (int argc, char* argv[])
     vector<char*> av;
     av.push_back (argv[0]);
 
-    for (strings::iterator i (plugin_args.begin ()), e (plugin_args.end ());
-         i != e; ++i)
+    for (strings::iterator i (plugin_args.begin ()), end (plugin_args.end ());
+         i != end; ++i)
     {
       av.push_back (const_cast<char*> (i->c_str ()));
     }
@@ -173,11 +174,48 @@ main (int argc, char* argv[])
     cli::argv_file_scanner scan (ac, &av[0], "--options-file");
 
     options ops (scan);
+
+    // Handle --version.
+    //
+    if (ops.version ())
+    {
+      e << "CodeSynthesis ODB object persistence compiler for C++ " <<
+        ODB_COMPILER_VERSION_STR << endl
+        << "Copyright (C) 2009-2010 Code Synthesis Tools CC" << endl;
+
+      if (ops.proprietary_license ())
+      {
+        e << "The compiler was invoked in the Proprietary License mode. You "
+          << "should have\nreceived a proprietary license from Code Synthesis "
+          << "Tools CC that entitles\nyou to use it in this mode." << endl;
+      }
+      else
+      {
+        e << "This is free software; see the source for copying conditions. "
+          << "There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS "
+          << "FOR A PARTICULAR PURPOSE." << endl;
+      }
+
+      return 0;
+    }
+
+    // Handle --help.
+    //
+    if (ops.help ())
+    {
+      e << "Usage: " << argv[0] << " [options] file [file ...]"
+        << endl
+        << "Options:" << endl;
+
+      options::print_usage (e);
+      return 0;
+    }
+
     size_t end (scan.end () - 1); // We have one less in plugin_args.
 
     if (end == plugin_args.size ())
     {
-      cerr << argv[0] << ": error: input file expected" << endl;
+      e << argv[0] << ": error: input file expected" << endl;
       return 1;
     }
 
@@ -230,7 +268,7 @@ main (int argc, char* argv[])
   }
   catch (cli::exception const& ex)
   {
-    cerr << ex << endl;
+    e << ex << endl;
     return 1;
   }
 
@@ -238,23 +276,23 @@ main (int argc, char* argv[])
   //
   vector<char const*> exec_args;
 
-  for (strings::const_iterator i (args.begin ()), e (args.end ());
-       i != e; ++i)
+  for (strings::const_iterator i (args.begin ()), end (args.end ());
+       i != end; ++i)
   {
     exec_args.push_back (i->c_str ());
 
     if (v)
-      cerr << *i << ' ';
+      e << *i << ' ';
   }
 
   if (v)
-    cerr << endl;
+    e << endl;
 
   exec_args.push_back (0);
 
   if (execvp (exec_args[0], const_cast<char**> (&exec_args[0])) < 0)
   {
-    cerr << exec_args[0] << ": error: " << strerror (errno) << endl;
+    e << exec_args[0] << ": error: " << strerror (errno) << endl;
     return 1;
   }
 }

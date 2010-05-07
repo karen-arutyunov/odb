@@ -64,7 +64,11 @@ class options
     "Add <prefix> to the generated \cb{#include} directive paths."
   };
 
-  bool --trace {"Trace the compilation process."};
+  bool --proprietary-license
+  {
+    "Indicate that the generated code is licensed under a proprietary
+     license instead of the GPL."
+  };
 
   // This is a "fake" option in that it is actually handled by
   // argv_file_scanner. We have it here to get the documentation.
@@ -81,4 +85,6 @@ class options
      quoting is not required. Repeat this option to specify more than one
      options files."
   };
+
+  bool --trace {"Trace the compilation process."};
 };
