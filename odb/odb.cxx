@@ -15,6 +15,9 @@
 #include <cstddef>     // size_t
 #include <iostream>
 
+#include <odb/version.hxx>
+#include <odb/options.hxx>
+
 using namespace std;
 
 static string
@@ -25,10 +28,6 @@ main (int argc, char* argv[])
 {
   typedef vector<string> strings;
 
-  string file;
-  strings args;
-  bool v (false);
-
   // Find the plugin. It should be in the same directory as the
   // driver.
   //
@@ -36,11 +35,14 @@ main (int argc, char* argv[])
 
   if (plugin.empty ())
   {
-    cerr << argv[0] << ": error: unable to locate ODB plugin" << endl;
+    cerr << argv[0] << ": error: unable to locate ODB GCC plugin" << endl;
     cerr << argv[0] << ": info: make sure '" << argv[0] << ".so' is in "
          << "the same directory as '" << argv[0] << "'" << endl;
     return 1;
   }
+
+  strings args, plugin_args;
+  bool v (false);
 
   // The first argument points to the program name, which is
   // g++ by default.
@@ -55,6 +57,8 @@ main (int argc, char* argv[])
   args.push_back ("-DODB_COMPILER");
   args.push_back ("-fplugin=" + plugin);
 
+  // Parse driver options.
+  //
   for (int i = 1; i < argc; ++i)
   {
     string a (argv[i]);
@@ -144,67 +148,84 @@ main (int argc, char* argv[])
         args.push_back (argv[i]);
       }
     }
-    // Everything else except the last argument (file to compile) is passed
-    // to the plugin.
+    // Store everything else in a list so that we can parse it with the
+    // cli parser. This is the only reliable way to find out where the
+    // options end.
     //
     else
-    {
-      if (n > 1 && a[0] == '-')
-      {
-        string k, v;
-
-        if (n > 2 && a[1] == '-')
-          k = string (a, 2); // long format
-        else
-          k = string (a, 1); // short format
-
-        // If the next argument is not the last, then we may have a
-        // value.
-        //
-        if (i + 2 < argc)
-        {
-          a = argv[i + 1];
-          n = a.size ();
-
-          if (n > 1 && a[0] != '-')
-          {
-            v = a;
-            ++i;
-          }
-        }
-
-        string o ("-fplugin-arg-odb-");
-        o += k;
-
-        if (!v.empty ())
-        {
-          o += '=';
-          o += v;
-        }
-
-        args.push_back (o);
-      }
-      else
-      {
-        if (file.empty ())
-          file = a;
-        else
-        {
-          cerr << argv[0] << ": error: second input file specified: '"
-               << a << "'" << endl;
-          return 1;
-        }
-      }
-    }
+      plugin_args.push_back (a);
   }
 
-  if (file.empty ())
+  // Parse plugin options.
+  //
+  try
   {
-    cerr << argv[0] << ": error: input file expected" << endl;
+    vector<char*> av;
+    av.push_back (argv[0]);
+
+    for (strings::iterator i (plugin_args.begin ()), e (plugin_args.end ());
+         i != e; ++i)
+    {
+      av.push_back (const_cast<char*> (i->c_str ()));
+    }
+
+    int ac (static_cast<int> (av.size ()));
+    cli::argv_file_scanner scan (ac, &av[0], "--options-file");
+
+    options ops (scan);
+    size_t end (scan.end () - 1); // We have one less in plugin_args.
+
+    if (end == plugin_args.size ())
+    {
+      cerr << argv[0] << ": error: input file expected" << endl;
+      return 1;
+    }
+
+    // Encode plugin options.
+    //
+    for (size_t i (0); i < end; ++i)
+    {
+      string k, v;
+      string a (plugin_args[i]);
+
+      if (a.size () > 2)
+        k = string (a, 2); // long format
+      else
+        k = string (a, 1); // short format
+
+      // If there are more arguments then we may have a value.
+      //
+      if (i + 1 < end)
+      {
+        a = plugin_args[i + 1];
+        if (a.size () > 1 && a[0] != '-')
+        {
+          v = a;
+          ++i;
+        }
+      }
+
+      string o ("-fplugin-arg-odb-");
+      o += k;
+
+      if (!v.empty ())
+      {
+        o += '=';
+        o += v;
+      }
+
+      args.push_back (o);
+    }
+
+    // Copy over arguments.
+    //
+    args.insert (args.end (), plugin_args.begin () + end, plugin_args.end ());
+  }
+  catch (cli::exception const& ex)
+  {
+    cerr << ex << endl;
     return 1;
   }
-
-  args.push_back (file);
 
   // Create an execvp-compatible argument array.
   //
