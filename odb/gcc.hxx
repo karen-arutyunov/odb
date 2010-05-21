@@ -3,11 +3,13 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#ifndef ODB_GCC_TREE_HXX
-#define ODB_GCC_TREE_HXX
+#ifndef ODB_GCC_HXX
+#define ODB_GCC_HXX
 
-// GCC header includes to get the parse tree declarations. The order
-// is important and doesn't follow any kind of logic.
+#include <odb/gcc-fwd.hxx>
+
+// GCC header includes to get the plugin and parse tree declarations.
+// The order is important and doesn't follow any kind of logic.
 //
 
 #include <stdlib.h>
@@ -17,20 +19,20 @@
 
 extern "C"
 {
-#include "gcc-plugin.h"
+#include <gcc-plugin.h>
 
-#include "config.h"
-#include "system.h"
-#include "coretypes.h"
-#include "tree.h"
-#include "intl.h"
+#include <config.h>
+#include <system.h>
+#include <coretypes.h>
+#include <tree.h>
+#include <intl.h>
 
-#include "tm.h"
+#include <tm.h>
 
-#include "diagnostic.h"
-#include "c-common.h"
-#include "c-pragma.h"
-#include "cp/cp-tree.h"
+#include <diagnostic.h>
+#include <c-common.h>
+#include <c-pragma.h>
+#include <cp/cp-tree.h>
 }
 
 #ifndef LOCATION_COLUMN
@@ -41,4 +43,4 @@ extern "C"
 #define DECL_SOURCE_COLUMN(NODE) LOCATION_COLUMN (DECL_SOURCE_LOCATION (NODE))
 #endif
 
-#endif // ODB_GCC_TREE_HXX
+#endif // ODB_GCC_HXX

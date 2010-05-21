@@ -6,8 +6,6 @@
 #ifndef ODB_SEMANTICS_ELEMENTS_HXX
 #define ODB_SEMANTICS_ELEMENTS_HXX
 
-#include <odb/gcc.hxx> // Keep it first.
-
 #include <map>
 #include <list>
 #include <vector>
@@ -21,6 +19,8 @@
 #include <cutl/container/graph.hxx>
 #include <cutl/container/pointer-iterator.hxx>
 #include <cutl/compiler/context.hxx>
+
+#include <odb/gcc-fwd.hxx>
 
 namespace semantics
 {
