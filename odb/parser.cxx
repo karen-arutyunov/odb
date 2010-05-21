@@ -282,7 +282,7 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
   //
   decl_set decls;
 
-  for (tree d (TYPE_FIELDS (c)); d != NULL_TREE ; d = TREE_CHAIN (d))
+  for (tree d (TYPE_FIELDS (c)); d != NULL_TREE; d = TREE_CHAIN (d))
   {
     switch (TREE_CODE (d))
     {
@@ -645,9 +645,7 @@ collect (tree ns)
   //
   for(decl = level->namespaces; decl != NULL_TREE; decl = TREE_CHAIN (decl))
   {
-    // !DECL_NAMESPACE_STD_P (decl)
-
-    if (!DECL_IS_BUILTIN (decl))
+    if (!DECL_IS_BUILTIN (decl) || DECL_NAMESPACE_STD_P (decl))
     {
       if (trace)
       {
