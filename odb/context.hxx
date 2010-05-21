@@ -6,6 +6,7 @@
 #ifndef ODB_CONTEXT_HXX
 #define ODB_CONTEXT_HXX
 
+#include <set>
 #include <string>
 #include <ostream>
 #include <cstddef> // std::size_t
@@ -27,6 +28,12 @@ public:
   typedef std::string string;
   typedef ::options options_type;
 
+public:
+  // Escape C++ keywords, reserved names, and illegal characters.
+  //
+  string
+  escape (string const&) const;
+
 private:
   struct data;
   cutl::shared_ptr<data> data_;
@@ -36,9 +43,13 @@ public:
   semantics::unit& unit;
   options_type const& options;
 
+  typedef std::set<string> keyword_set_type;
+  keyword_set_type const& keyword_set;
+
 private:
   struct data
   {
+    keyword_set_type keyword_set_;
   };
 
 public:
