@@ -1,0 +1,13 @@
+# file      : build/export/odb/stub.make
+# author    : Boris Kolpackov <boris@codesynthesis.com>
+# copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
+# license   : GNU GPL v2; see accompanying LICENSE file
+
+$(call include-once,$(src_root)/odb/makefile,$(out_root))
+
+# Use the rules file from odb's import directory instead of the
+# importing project's one.
+#
+$(call export,\
+  odb: $(out_root)/odb/odb,\
+  odb-rules: $(scf_root)/import/odb/hxx-cxx.make)
