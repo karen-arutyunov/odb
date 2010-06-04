@@ -8,6 +8,12 @@
 
 namespace semantics
 {
+  string fund_type::
+  fq_name () const
+  {
+    return name ();
+  }
+
   // type info
   //
   namespace

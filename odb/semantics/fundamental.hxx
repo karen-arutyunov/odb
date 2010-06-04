@@ -14,8 +14,11 @@ namespace semantics
   // Fundamental C++ types.
   //
 
-  class fund_type: public type
+  struct fund_type: public type
   {
+    virtual string
+    fq_name () const;
+
   protected:
     fund_type (tree tn)
         : type (tn) {}

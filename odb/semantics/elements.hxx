@@ -282,7 +282,7 @@ namespace semantics
       return named ().name ();
     }
 
-    string
+    virtual string
     fq_name () const;
 
     scope_type&
