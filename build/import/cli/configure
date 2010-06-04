@@ -16,12 +16,12 @@ source $bld_root/dialog.bash
 
 
 $echo
-$echo "Configuring external dependency on 'CLI' for '$project_name'."
+$echo "Configuring external dependency on 'cli' for '$project_name'."
 $echo
 
 $echo
 $echo "Would you like to configure dependency on the installed "
-$echo "version of 'CLI' as opposed to the development build?"
+$echo "version of 'cli' as opposed to the development build?"
 $echo
 
 installed=`read_y_n y`
@@ -31,13 +31,13 @@ path=
 if [ "$installed" = "n" ]; then
 
 $echo
-$echo "Please enter the src_root for 'CLI'."
+$echo "Please enter the src_root for 'cli'."
 $echo
 
 src_root=`read_path --directory --exist`
 
 $echo
-$echo "Please enter the out_root for 'CLI'."
+$echo "Please enter the out_root for 'cli'."
 $eche
 
 out_root=`read_path --directory $src_root`

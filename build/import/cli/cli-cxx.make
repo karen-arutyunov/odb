@@ -11,11 +11,15 @@
 #
 $(call include,$(bld_root)/cxx/configuration-static.make)
 
-cli_pattern :=                    \
-$(out_base)/%.$(cxx_s_suffix)     \
-$(out_base)/%.$(cxx_h_suffix)     \
-$(out_base)/%.$(cxx_i_suffix)     \
-$(out_base)/%-fwd.$(cxx_h_suffix)
+cli_pattern :=                \
+$(out_base)/%.$(cxx_s_suffix) \
+$(out_base)/%.$(cxx_h_suffix) \
+$(out_base)/%.$(cxx_i_suffix)
+
+$(cli_pattern): cli_options := \
+--hxx-suffix .$(cxx_h_suffix)  \
+--ixx-suffix .$(cxx_i_suffix)  \
+--cxx-suffix .$(cxx_s_suffix)
 
 .PRECIOUS: $(cli_pattern)
 
@@ -39,4 +43,3 @@ $(out_base)/%.cxx.cli.clean:
 	$(call message,rm $$1,rm -f $$1,$(@:.cxx.cli.clean=.$(cxx_s_suffix)))
 	$(call message,rm $$1,rm -f $$1,$(@:.cxx.cli.clean=.$(cxx_h_suffix)))
 	$(call message,rm $$1,rm -f $$1,$(@:.cxx.cli.clean=.$(cxx_i_suffix)))
-	$(call message,rm $$1,rm -f $$1,$(@:.cxx.cli.clean=-fwd.$(cxx_h_suffix)))
