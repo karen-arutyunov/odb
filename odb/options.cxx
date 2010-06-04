@@ -125,6 +125,25 @@ namespace cli
     return "unable to open file or read failure";
   }
 
+  // unmatched_quote
+  //
+  unmatched_quote::
+  ~unmatched_quote () throw ()
+  {
+  }
+
+  void unmatched_quote::
+  print (std::ostream& os) const
+  {
+    os << "unmatched quote in argument '" << argument () << "'";
+  }
+
+  const char* unmatched_quote::
+  what () const throw ()
+  {
+    return "unmatched quote";
+  }
+
   // scanner
   //
   scanner::
@@ -329,6 +348,19 @@ namespace cli
 
         string s2 (line, p);
 
+        // If the string is wrapped in quotes, remove them.
+        //
+        n = s2.size ();
+        char cf (s2[0]), cl (s2[n - 1]);
+
+        if (cf == '"' || cf == '\'' || cl == '"' || cl == '\'')
+        {
+          if (n == 1 || cf != cl)
+            throw unmatched_quote (s2);
+
+          s2 = string (s2, 1, n - 2);
+        }
+
         if (!skip_ && s1 == option_)
           load (s2.c_str ());
         else
@@ -344,7 +376,7 @@ namespace cli
   struct parser
   {
     static void
-    parse (X& x, scanner& s)
+    parse (X& x, bool& xs, scanner& s)
     {
       const char* o (s.next ());
 
@@ -357,6 +389,8 @@ namespace cli
       }
       else
         throw missing_value (o);
+
+      xs = true;
     }
   };
 
@@ -375,7 +409,7 @@ namespace cli
   struct parser<std::string>
   {
     static void
-    parse (std::string& x, scanner& s)
+    parse (std::string& x, bool& xs, scanner& s)
     {
       const char* o (s.next ());
 
@@ -383,6 +417,8 @@ namespace cli
         x = s.next ();
       else
         throw missing_value (o);
+
+      xs = true;
     }
   };
 
@@ -390,11 +426,12 @@ namespace cli
   struct parser<std::vector<X> >
   {
     static void
-    parse (std::vector<X>& c, scanner& s)
+    parse (std::vector<X>& c, bool& xs, scanner& s)
     {
       X x;
       parser<X>::parse (x, s);
       c.push_back (x);
+      xs = true;
     }
   };
 
@@ -402,11 +439,12 @@ namespace cli
   struct parser<std::set<X> >
   {
     static void
-    parse (std::set<X>& c, scanner& s)
+    parse (std::set<X>& c, bool& xs, scanner& s)
     {
       X x;
       parser<X>::parse (x, s);
       c.insert (x);
+      xs = true;
     }
   };
 
@@ -414,7 +452,7 @@ namespace cli
   struct parser<std::map<K, V> >
   {
     static void
-    parse (std::map<K, V>& m, scanner& s)
+    parse (std::map<K, V>& m, bool& xs, scanner& s)
     {
       const char* o (s.next ());
 
@@ -465,14 +503,23 @@ namespace cli
       }
       else
         throw missing_value (o);
+
+      xs = true;
     }
   };
 
-  template <typename X, typename T, T X::*P>
+  template <typename X, typename T, T X::*M>
   void
   thunk (X& x, scanner& s)
   {
-    parser<T>::parse (x.*P, s);
+    parser<T>::parse (x.*M, s);
+  }
+
+  template <typename X, typename T, T X::*M, bool X::*S>
+  void
+  thunk (X& x, scanner& s)
+  {
+    parser<T>::parse (x.*M, x.*S, s);
   }
 }
 
@@ -490,15 +537,31 @@ options (int& argc,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  database_ (),
+  database_specified_ (false),
+  generate_schema_ (),
   output_dir_ (),
+  output_dir_specified_ (false),
   odb_file_suffix_ ("-odb"),
+  odb_file_suffix_specified_ (false),
   hxx_suffix_ (".hxx"),
+  hxx_suffix_specified_ (false),
   ixx_suffix_ (".ixx"),
+  ixx_suffix_specified_ (false),
   cxx_suffix_ (".cxx"),
+  cxx_suffix_specified_ (false),
+  sql_suffix_ (".sql"),
+  sql_suffix_specified_ (false),
   include_with_brackets_ (),
   include_prefix_ (),
+  include_prefix_specified_ (false),
+  guard_prefix_ (),
+  guard_prefix_specified_ (false),
   options_file_ (),
-  trace_ ()
+  options_file_specified_ (false),
+  trace_ (),
+  mysql_engine_ ("InnoDB"),
+  mysql_engine_specified_ (false)
 {
   ::cli::argv_scanner s (argc, argv, erase);
   _parse (s, opt, arg);
@@ -513,15 +576,31 @@ options (int start,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  database_ (),
+  database_specified_ (false),
+  generate_schema_ (),
   output_dir_ (),
+  output_dir_specified_ (false),
   odb_file_suffix_ ("-odb"),
+  odb_file_suffix_specified_ (false),
   hxx_suffix_ (".hxx"),
+  hxx_suffix_specified_ (false),
   ixx_suffix_ (".ixx"),
+  ixx_suffix_specified_ (false),
   cxx_suffix_ (".cxx"),
+  cxx_suffix_specified_ (false),
+  sql_suffix_ (".sql"),
+  sql_suffix_specified_ (false),
   include_with_brackets_ (),
   include_prefix_ (),
+  include_prefix_specified_ (false),
+  guard_prefix_ (),
+  guard_prefix_specified_ (false),
   options_file_ (),
-  trace_ ()
+  options_file_specified_ (false),
+  trace_ (),
+  mysql_engine_ ("InnoDB"),
+  mysql_engine_specified_ (false)
 {
   ::cli::argv_scanner s (start, argc, argv, erase);
   _parse (s, opt, arg);
@@ -536,15 +615,31 @@ options (int& argc,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  database_ (),
+  database_specified_ (false),
+  generate_schema_ (),
   output_dir_ (),
+  output_dir_specified_ (false),
   odb_file_suffix_ ("-odb"),
+  odb_file_suffix_specified_ (false),
   hxx_suffix_ (".hxx"),
+  hxx_suffix_specified_ (false),
   ixx_suffix_ (".ixx"),
+  ixx_suffix_specified_ (false),
   cxx_suffix_ (".cxx"),
+  cxx_suffix_specified_ (false),
+  sql_suffix_ (".sql"),
+  sql_suffix_specified_ (false),
   include_with_brackets_ (),
   include_prefix_ (),
+  include_prefix_specified_ (false),
+  guard_prefix_ (),
+  guard_prefix_specified_ (false),
   options_file_ (),
-  trace_ ()
+  options_file_specified_ (false),
+  trace_ (),
+  mysql_engine_ ("InnoDB"),
+  mysql_engine_specified_ (false)
 {
   ::cli::argv_scanner s (argc, argv, erase);
   _parse (s, opt, arg);
@@ -561,15 +656,31 @@ options (int start,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  database_ (),
+  database_specified_ (false),
+  generate_schema_ (),
   output_dir_ (),
+  output_dir_specified_ (false),
   odb_file_suffix_ ("-odb"),
+  odb_file_suffix_specified_ (false),
   hxx_suffix_ (".hxx"),
+  hxx_suffix_specified_ (false),
   ixx_suffix_ (".ixx"),
+  ixx_suffix_specified_ (false),
   cxx_suffix_ (".cxx"),
+  cxx_suffix_specified_ (false),
+  sql_suffix_ (".sql"),
+  sql_suffix_specified_ (false),
   include_with_brackets_ (),
   include_prefix_ (),
+  include_prefix_specified_ (false),
+  guard_prefix_ (),
+  guard_prefix_specified_ (false),
   options_file_ (),
-  trace_ ()
+  options_file_specified_ (false),
+  trace_ (),
+  mysql_engine_ ("InnoDB"),
+  mysql_engine_specified_ (false)
 {
   ::cli::argv_scanner s (start, argc, argv, erase);
   _parse (s, opt, arg);
@@ -582,15 +693,31 @@ options (::cli::scanner& s,
          ::cli::unknown_mode arg)
 : help_ (),
   version_ (),
+  database_ (),
+  database_specified_ (false),
+  generate_schema_ (),
   output_dir_ (),
+  output_dir_specified_ (false),
   odb_file_suffix_ ("-odb"),
+  odb_file_suffix_specified_ (false),
   hxx_suffix_ (".hxx"),
+  hxx_suffix_specified_ (false),
   ixx_suffix_ (".ixx"),
+  ixx_suffix_specified_ (false),
   cxx_suffix_ (".cxx"),
+  cxx_suffix_specified_ (false),
+  sql_suffix_ (".sql"),
+  sql_suffix_specified_ (false),
   include_with_brackets_ (),
   include_prefix_ (),
+  include_prefix_specified_ (false),
+  guard_prefix_ (),
+  guard_prefix_specified_ (false),
   options_file_ (),
-  trace_ ()
+  options_file_specified_ (false),
+  trace_ (),
+  mysql_engine_ ("InnoDB"),
+  mysql_engine_specified_ (false)
 {
   _parse (s, opt, arg);
 }
@@ -602,20 +729,28 @@ print_usage (::std::ostream& os)
 
   os << "--version                  Print version and exit." << ::std::endl;
 
+  os << "--database|-d <db>         Generate code for the <db> database." << ::std::endl;
+
+  os << "--generate-schema          Generate database schema." << ::std::endl;
+
   os << "--output-dir|-o <dir>      Write the generated files to <dir> instead of the" << ::std::endl
      << "                           current directory." << ::std::endl;
 
   os << "--odb-file-suffix <suffix> Use <suffix> instead of the default '-odb' to" << ::std::endl
-     << "                           construct the names of the generated ODB files." << ::std::endl;
+     << "                           construct the names of the generated C++ files." << ::std::endl;
 
   os << "--hxx-suffix <suffix>      Use <suffix> instead of the default '.hxx' to" << ::std::endl
-     << "                           construct the name of the generated header file." << ::std::endl;
+     << "                           construct the name of the generated C++ header file." << ::std::endl;
 
   os << "--ixx-suffix <suffix>      Use <suffix> instead of the default '.ixx' to" << ::std::endl
-     << "                           construct the name of the generated inline file." << ::std::endl;
+     << "                           construct the name of the generated C++ inline file." << ::std::endl;
 
   os << "--cxx-suffix <suffix>      Use <suffix> instead of the default '.cxx' to" << ::std::endl
-     << "                           construct the name of the generated source file." << ::std::endl;
+     << "                           construct the name of the generated C++ source file." << ::std::endl;
+
+  os << "--sql-suffix <suffix>      Use <suffix> instead of the default '.sql' to" << ::std::endl
+     << "                           construct the name of the generated database schema" << ::std::endl
+     << "                           file." << ::std::endl;
 
   os << "--include-with-brackets    Use angle brackets (<>) instead of quotes (\"\") in the" << ::std::endl
      << "                           generated '#include' directives." << ::std::endl;
@@ -623,11 +758,17 @@ print_usage (::std::ostream& os)
   os << "--include-prefix <prefix>  Add <prefix> to the generated '#include' directive" << ::std::endl
      << "                           paths." << ::std::endl;
 
+  os << "--guard-prefix <prefix>    Add <prefix> to the generated header inclusion" << ::std::endl
+     << "                           guards." << ::std::endl;
+
   os << "--options-file <file>      Read additional options from <file> with each option" << ::std::endl
      << "                           appearing on a separate line optionally followed by" << ::std::endl
      << "                           space and an option value." << ::std::endl;
 
   os << "--trace                    Trace the compilation process." << ::std::endl;
+
+  os << "--mysql-engine <engine>    Use <engine> instead of the default 'InnoDB' in the" << ::std::endl
+     << "                           generated database schema file." << ::std::endl;
 }
 
 typedef
@@ -644,26 +785,51 @@ struct _cli_options_map_init
     &::cli::thunk< options, bool, &options::help_ >;
     _cli_options_map_["--version"] = 
     &::cli::thunk< options, bool, &options::version_ >;
+    _cli_options_map_["--database"] = 
+    &::cli::thunk< options, ::database, &options::database_,
+      &options::database_specified_ >;
+    _cli_options_map_["-d"] = 
+    &::cli::thunk< options, ::database, &options::database_,
+      &options::database_specified_ >;
+    _cli_options_map_["--generate-schema"] = 
+    &::cli::thunk< options, bool, &options::generate_schema_ >;
     _cli_options_map_["--output-dir"] = 
-    &::cli::thunk< options, std::string, &options::output_dir_ >;
+    &::cli::thunk< options, std::string, &options::output_dir_,
+      &options::output_dir_specified_ >;
     _cli_options_map_["-o"] = 
-    &::cli::thunk< options, std::string, &options::output_dir_ >;
+    &::cli::thunk< options, std::string, &options::output_dir_,
+      &options::output_dir_specified_ >;
     _cli_options_map_["--odb-file-suffix"] = 
-    &::cli::thunk< options, std::string, &options::odb_file_suffix_ >;
+    &::cli::thunk< options, std::string, &options::odb_file_suffix_,
+      &options::odb_file_suffix_specified_ >;
     _cli_options_map_["--hxx-suffix"] = 
-    &::cli::thunk< options, std::string, &options::hxx_suffix_ >;
+    &::cli::thunk< options, std::string, &options::hxx_suffix_,
+      &options::hxx_suffix_specified_ >;
     _cli_options_map_["--ixx-suffix"] = 
-    &::cli::thunk< options, std::string, &options::ixx_suffix_ >;
+    &::cli::thunk< options, std::string, &options::ixx_suffix_,
+      &options::ixx_suffix_specified_ >;
     _cli_options_map_["--cxx-suffix"] = 
-    &::cli::thunk< options, std::string, &options::cxx_suffix_ >;
+    &::cli::thunk< options, std::string, &options::cxx_suffix_,
+      &options::cxx_suffix_specified_ >;
+    _cli_options_map_["--sql-suffix"] = 
+    &::cli::thunk< options, std::string, &options::sql_suffix_,
+      &options::sql_suffix_specified_ >;
     _cli_options_map_["--include-with-brackets"] = 
     &::cli::thunk< options, bool, &options::include_with_brackets_ >;
     _cli_options_map_["--include-prefix"] = 
-    &::cli::thunk< options, std::string, &options::include_prefix_ >;
+    &::cli::thunk< options, std::string, &options::include_prefix_,
+      &options::include_prefix_specified_ >;
+    _cli_options_map_["--guard-prefix"] = 
+    &::cli::thunk< options, std::string, &options::guard_prefix_,
+      &options::guard_prefix_specified_ >;
     _cli_options_map_["--options-file"] = 
-    &::cli::thunk< options, std::string, &options::options_file_ >;
+    &::cli::thunk< options, std::string, &options::options_file_,
+      &options::options_file_specified_ >;
     _cli_options_map_["--trace"] = 
     &::cli::thunk< options, bool, &options::trace_ >;
+    _cli_options_map_["--mysql-engine"] = 
+    &::cli::thunk< options, std::string, &options::mysql_engine_,
+      &options::mysql_engine_specified_ >;
   }
 } _cli_options_map_init_;
 

@@ -10,14 +10,17 @@
 #include <string>
 #include <ostream>
 #include <cstddef> // std::size_t
+#include <iostream>
 
 #include <cutl/shared-ptr.hxx>
 
+#include <odb/database.hxx>
 #include <odb/options.hxx>
 #include <odb/semantics.hxx>
 #include <odb/traversal.hxx>
 
 using std::endl;
+using std::cerr;
 
 class generation_failed {};
 
@@ -27,6 +30,18 @@ public:
   typedef std::size_t size_t;
   typedef std::string string;
   typedef ::options options_type;
+
+  // Database names and types.
+  //
+public:
+  string
+  table_name (semantics::type&) const;
+
+  string
+  column_name (semantics::data_member&) const;
+
+  string
+  db_type (semantics::data_member&) const;
 
 public:
   // Escape C++ keywords, reserved names, and illegal characters.

@@ -114,6 +114,53 @@ context (context& c)
 }
 
 string context::
+table_name (semantics::type& t) const
+{
+  if (t.count ("table"))
+    return t.get<string> ("table");
+  else
+    return t.name ();
+}
+
+string context::
+column_name (semantics::data_member& m) const
+{
+  if (m.count ("column"))
+    return m.get<string> ("column");
+  else
+  {
+    string s (m.name ());
+    size_t n (s.size ());
+
+    // Do basic processing: remove trailing and leading underscores
+    // as well as the 'm_' prefix.
+    //
+    // @@ What if the resulting names conflict?
+    //
+    size_t b (0), e (n - 1);
+
+    if (n > 2 && s[0] == 'm' && s[1] == '_')
+      b += 2;
+
+    for (; b <= e && s[b] == '_'; b++) ;
+    for (; e >= b && s[e] == '_'; e--) ;
+
+    return b > e ? s : string (s, b, e - b + 1);
+  }
+}
+
+string context::
+db_type (semantics::data_member& m) const
+{
+  if (m.count ("type"))
+    return m.get<string> ("type");
+  else
+  {
+    return "INT";
+  }
+}
+
+string context::
 escape (string const& name) const
 {
   typedef string::size_type size;

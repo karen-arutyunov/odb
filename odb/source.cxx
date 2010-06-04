@@ -3,6 +3,7 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
+#include <odb/common.hxx>
 #include <odb/source.hxx>
 
 namespace
@@ -17,77 +18,71 @@ namespace
     virtual void
     traverse (type& c)
     {
-      if (c.file () != unit.file () || !odb_class (c))
+      if (c.file () != unit.file ())
         return;
 
-      string const& name (c.name ());
+      if (!c.count ("object"))
+        return;
+
+      string const& type (c.fq_name ());
+      string traits ("access::object_traits< " + type + " >");
+
+      id_member t (*this);
+      t.traverse (c);
+      semantics::data_member& id (*t.member ());
 
       os << "// " << c.name () << endl
-         << "//" << endl;
+         << "//" << endl
+         << endl;
 
-      os << name << "::" << endl
-         << name << " (::odb::image& i)"
-         << "{"
-         << "}";
-    }
-
-  private:
-    bool
-    odb_class (type& c)
-    {
-      // See if this class defines the ODB-specific c-tor.
+      // type_name ()
       //
-      tree t (c.tree_node ());
+      os << "const char* " << traits << "::" << endl
+         << "type_name ()"
+         << "{"
+         << "return \"" << type << "\";"
+         << "}";
 
-      for (tree f (TYPE_METHODS (t)); f != 0; f = TREE_CHAIN (f))
-      {
-        if (DECL_CONSTRUCTOR_P (f))
-        {
-          // Get the argument list and skip the first (this) argument.
-          //
-          tree a (TREE_CHAIN (DECL_ARGUMENTS (f)));
+      // insert ()
+      //
+      os << "void " << traits << "::" << endl
+         << "insert (database&, const object_type& obj)"
+         << "{"
+         << "std::cout << \"insert \" << type_name () << \" id \" << " <<
+        "id (obj) << std::endl;"
+         << "}";
 
-          if (a == 0)
-            continue;
+      // update ()
+      //
+      os << "void " << traits << "::" << endl
+         << "update (database&, const object_type& obj)"
+         << "{"
+         << "std::cout << \"update \" << type_name () << \" id \" << " <<
+        "id (obj) << std::endl;"
+         << "}";
 
-          tree at (TREE_TYPE (a));
+      // erase ()
+      //
+      os << "void " << traits << "::" << endl
+         << "erase (database&, const id_type& id)"
+         << "{"
+         << "std::cout << \"delete \" << type_name () << \" id \" << " <<
+        "id << std::endl;"
+         << "}";
 
-          // Check that it is ::odb::image&.
-          //
-          if (TREE_CODE (at) != REFERENCE_TYPE)
-            continue;
-
-          tree rt (TREE_TYPE (at));
-          tree mt (TYPE_MAIN_VARIANT (rt));
-
-          semantics::node* node (unit.find (mt));
-
-          if (node == 0)
-            continue;
-
-          semantics::type* t_node (dynamic_cast<semantics::type*> (node));
-
-          if (t_node == 0)
-            continue;
-
-          if (t_node->anonymous () || t_node->fq_name () != "::odb::image")
-            continue;
-
-          // Make sure it is unqualified.
-          //
-          if (cp_type_quals (rt) != TYPE_UNQUALIFIED)
-            continue; // @@ Should probably be an error/warning.
-
-          // Check that it is the only argument.
-          //
-          if (TREE_CHAIN (a) != 0)
-            continue; // @@ Should probably be an error/warning.
-
-          return true;
-        }
-      }
-
-      return false;
+      // find ()
+      //
+      os << traits << "::shared_ptr " << endl
+         << traits << "::" << endl
+         << "find (database&, const id_type& id)"
+         << "{"
+         << "std::cout << \"select \" << type_name () << \" id \" << " <<
+        "id << std::endl;"
+         << "shared_ptr r (access::object_factory< " << type <<
+        " >::create ());"
+         << "r->" << id.name () << " = id;"
+         << "return r;"
+         << "}";
     }
   };
 }
@@ -97,7 +92,7 @@ generate_source (context& ctx)
 {
   traversal::unit unit;
   traversal::defines unit_defines;
-  namespace_ ns (ctx);
+  traversal::namespace_ ns;
   class_ c (ctx);
 
   unit >> unit_defines >> ns;
@@ -108,5 +103,16 @@ generate_source (context& ctx)
   ns >> ns_defines >> ns;
   ns_defines >> c;
 
+  ctx.os << "#include <iostream>" << endl
+         << endl;
+
+  //ctx.os << "#include <odb/database.hxx>" << endl
+  //       << endl;
+
+  ctx.os << "namespace odb"
+         << "{";
+
   unit.dispatch (ctx.unit);
+
+  ctx.os << "}";
 }

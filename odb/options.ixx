@@ -98,6 +98,20 @@ namespace cli
     return file_;
   }
 
+  // unmatched_quote
+  //
+  inline unmatched_quote::
+  unmatched_quote (const std::string& argument)
+  : argument_ (argument)
+  {
+  }
+
+  inline const std::string& unmatched_quote::
+  argument () const
+  {
+    return argument_;
+  }
+
   // argv_scanner
   //
   inline argv_scanner::
@@ -159,10 +173,34 @@ version () const
   return this->version_;
 }
 
+inline const ::database& options::
+database () const
+{
+  return this->database_;
+}
+
+inline bool options::
+database_specified () const
+{
+  return this->database_specified_;
+}
+
+inline const bool& options::
+generate_schema () const
+{
+  return this->generate_schema_;
+}
+
 inline const std::string& options::
 output_dir () const
 {
   return this->output_dir_;
+}
+
+inline bool options::
+output_dir_specified () const
+{
+  return this->output_dir_specified_;
 }
 
 inline const std::string& options::
@@ -171,10 +209,22 @@ odb_file_suffix () const
   return this->odb_file_suffix_;
 }
 
+inline bool options::
+odb_file_suffix_specified () const
+{
+  return this->odb_file_suffix_specified_;
+}
+
 inline const std::string& options::
 hxx_suffix () const
 {
   return this->hxx_suffix_;
+}
+
+inline bool options::
+hxx_suffix_specified () const
+{
+  return this->hxx_suffix_specified_;
 }
 
 inline const std::string& options::
@@ -183,10 +233,34 @@ ixx_suffix () const
   return this->ixx_suffix_;
 }
 
+inline bool options::
+ixx_suffix_specified () const
+{
+  return this->ixx_suffix_specified_;
+}
+
 inline const std::string& options::
 cxx_suffix () const
 {
   return this->cxx_suffix_;
+}
+
+inline bool options::
+cxx_suffix_specified () const
+{
+  return this->cxx_suffix_specified_;
+}
+
+inline const std::string& options::
+sql_suffix () const
+{
+  return this->sql_suffix_;
+}
+
+inline bool options::
+sql_suffix_specified () const
+{
+  return this->sql_suffix_specified_;
 }
 
 inline const bool& options::
@@ -201,15 +275,51 @@ include_prefix () const
   return this->include_prefix_;
 }
 
+inline bool options::
+include_prefix_specified () const
+{
+  return this->include_prefix_specified_;
+}
+
+inline const std::string& options::
+guard_prefix () const
+{
+  return this->guard_prefix_;
+}
+
+inline bool options::
+guard_prefix_specified () const
+{
+  return this->guard_prefix_specified_;
+}
+
 inline const std::string& options::
 options_file () const
 {
   return this->options_file_;
 }
 
+inline bool options::
+options_file_specified () const
+{
+  return this->options_file_specified_;
+}
+
 inline const bool& options::
 trace () const
 {
   return this->trace_;
+}
+
+inline const std::string& options::
+mysql_engine () const
+{
+  return this->mysql_engine_;
+}
+
+inline bool options::
+mysql_engine_specified () const
+{
+  return this->mysql_engine_specified_;
 }
 

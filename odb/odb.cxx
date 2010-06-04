@@ -49,7 +49,11 @@ main (int argc, char* argv[])
   // The first argument points to the program name, which is
   // g++ by default.
   //
+#ifdef GXX_NAME
+  args.push_back (GXX_NAME);
+#else
   args.push_back ("g++");
+#endif
 
   // Default options.
   //
@@ -200,6 +204,15 @@ main (int argc, char* argv[])
 
       options::print_usage (e);
       return 0;
+    }
+
+    // Check that required options were specifed.
+    //
+    if (!ops.database_specified ())
+    {
+      e << argv[0] << ": error: no database specified with the --database "
+        << "option" << endl;
+      return 1;
     }
 
     size_t end (scan.end () - 1); // We have one less in plugin_args.

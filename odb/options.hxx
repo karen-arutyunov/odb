@@ -166,6 +166,27 @@ namespace cli
     std::string file_;
   };
 
+  class unmatched_quote: public exception
+  {
+    public:
+    virtual
+    ~unmatched_quote () throw ();
+
+    unmatched_quote (const std::string& argument);
+
+    const std::string&
+    argument () const;
+
+    virtual void
+    print (std::ostream&) const;
+
+    virtual const char*
+    what () const throw ();
+
+    private:
+    std::string argument_;
+  };
+
   class scanner
   {
     public:
@@ -256,6 +277,8 @@ namespace cli
 
 #include <vector>
 
+#include <odb/database.hxx>
+
 class options
 {
   public:
@@ -301,20 +324,50 @@ class options
   const bool&
   version () const;
 
+  const ::database&
+  database () const;
+
+  bool
+  database_specified () const;
+
+  const bool&
+  generate_schema () const;
+
   const std::string&
   output_dir () const;
+
+  bool
+  output_dir_specified () const;
 
   const std::string&
   odb_file_suffix () const;
 
+  bool
+  odb_file_suffix_specified () const;
+
   const std::string&
   hxx_suffix () const;
+
+  bool
+  hxx_suffix_specified () const;
 
   const std::string&
   ixx_suffix () const;
 
+  bool
+  ixx_suffix_specified () const;
+
   const std::string&
   cxx_suffix () const;
+
+  bool
+  cxx_suffix_specified () const;
+
+  const std::string&
+  sql_suffix () const;
+
+  bool
+  sql_suffix_specified () const;
 
   const bool&
   include_with_brackets () const;
@@ -322,11 +375,29 @@ class options
   const std::string&
   include_prefix () const;
 
+  bool
+  include_prefix_specified () const;
+
+  const std::string&
+  guard_prefix () const;
+
+  bool
+  guard_prefix_specified () const;
+
   const std::string&
   options_file () const;
 
+  bool
+  options_file_specified () const;
+
   const bool&
   trace () const;
+
+  const std::string&
+  mysql_engine () const;
+
+  bool
+  mysql_engine_specified () const;
 
   // Print usage information.
   //
@@ -342,15 +413,31 @@ class options
   public:
   bool help_;
   bool version_;
+  ::database database_;
+  bool database_specified_;
+  bool generate_schema_;
   std::string output_dir_;
+  bool output_dir_specified_;
   std::string odb_file_suffix_;
+  bool odb_file_suffix_specified_;
   std::string hxx_suffix_;
+  bool hxx_suffix_specified_;
   std::string ixx_suffix_;
+  bool ixx_suffix_specified_;
   std::string cxx_suffix_;
+  bool cxx_suffix_specified_;
+  std::string sql_suffix_;
+  bool sql_suffix_specified_;
   bool include_with_brackets_;
   std::string include_prefix_;
+  bool include_prefix_specified_;
+  std::string guard_prefix_;
+  bool guard_prefix_specified_;
   std::string options_file_;
+  bool options_file_specified_;
   bool trace_;
+  std::string mysql_engine_;
+  bool mysql_engine_specified_;
 };
 
 #include <odb/options.ixx>

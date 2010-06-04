@@ -84,16 +84,19 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
   int tc (TREE_CODE (d));
   char const* pc (p.c_str ());
 
-  if (p == "column")
+  if (p == "id" ||
+      p == "column" ||
+      p == "type")
   {
     if (tc != FIELD_DECL)
     {
       error_at (l, "name %qs in odb pragma %qs does not refer to "
-                "a member variable", name.c_str (), pc);
+                "a data member", name.c_str (), pc);
       return false;
     }
   }
-  else if (p == "table")
+  else if (p == "object" ||
+           p == "table")
   {
     if (tc != RECORD_TYPE)
     {
@@ -122,53 +125,43 @@ handle_pragma (string const& p)
   tree decl (0);
   location_t loc (input_location);
 
-  if (p == "column")
+  if (p == "object")
   {
-    // column ([<identifier>,] "<name>")
+    // object [(<identifier>)]
     //
-
-    if (pragma_lex (&t) != CPP_OPEN_PAREN)
-    {
-      error ("%qs expected after odb pragma %qs", "(", pc);
-      return;
-    }
 
     tt = pragma_lex (&t);
 
-    if (tt == CPP_NAME || tt == CPP_SCOPE)
+    if (tt == CPP_OPEN_PAREN)
     {
-      string name;
-      decl = parse_scoped_name (t, tt, name, false, p);
+      tt = pragma_lex (&t);
 
-      if (decl == 0)
-        return;
-
-      // Make sure we've got the correct declaration type.
-      //
-      if (!check_decl_type (decl, name, p, loc))
-        return;
-
-      if (tt != CPP_COMMA)
+      if (tt == CPP_NAME || tt == CPP_SCOPE)
       {
-        error ("column name expected in odb pragma %qs", pc);
+        string name;
+        decl = parse_scoped_name (t, tt, name, true, p);
+
+        if (decl == 0)
+          return;
+
+        // Make sure we've got the correct declaration type.
+        //
+        if (!check_decl_type (decl, name, p, loc))
+          return;
+
+        if (tt != CPP_CLOSE_PAREN)
+        {
+          error ("%qs expected at the end of odb pragma %qs", ")", pc);
+          return;
+        }
+
+        tt = pragma_lex (&t);
+      }
+      else
+      {
+        error ("type name expected in odb pragma %qs", pc);
         return;
       }
-
-      tt = pragma_lex (&t);
-    }
-
-    if (tt != CPP_STRING)
-    {
-      error ("column name expected in odb pragma %qs", pc);
-      return;
-    }
-
-    val = TREE_STRING_POINTER (t);
-
-    if (pragma_lex (&t) != CPP_CLOSE_PAREN)
-    {
-      error ("%qs expected at the end of odb pragma %qs", ")", pc);
-      return;
     }
   }
   else if (p == "table")
@@ -219,6 +212,149 @@ handle_pragma (string const& p)
       error ("%qs expected at the end of odb pragma %qs", ")", pc);
       return;
     }
+
+    tt = pragma_lex (&t);
+  }
+  else if (p == "id")
+  {
+    // id [(<identifier>)]
+    //
+
+    tt = pragma_lex (&t);
+
+    if (tt == CPP_OPEN_PAREN)
+    {
+      tt = pragma_lex (&t);
+
+      if (tt == CPP_NAME || tt == CPP_SCOPE)
+      {
+        string name;
+        decl = parse_scoped_name (t, tt, name, false, p);
+
+        if (decl == 0)
+          return;
+
+        // Make sure we've got the correct declaration type.
+        //
+        if (!check_decl_type (decl, name, p, loc))
+          return;
+
+        if (tt != CPP_CLOSE_PAREN)
+        {
+          error ("%qs expected at the end of odb pragma %qs", ")", pc);
+          return;
+        }
+
+        tt = pragma_lex (&t);
+      }
+      else
+      {
+        error ("data member name expected in odb pragma %qs", pc);
+        return;
+      }
+    }
+  }
+  else if (p == "column")
+  {
+    // column ([<identifier>,] "<name>")
+    //
+
+    if (pragma_lex (&t) != CPP_OPEN_PAREN)
+    {
+      error ("%qs expected after odb pragma %qs", "(", pc);
+      return;
+    }
+
+    tt = pragma_lex (&t);
+
+    if (tt == CPP_NAME || tt == CPP_SCOPE)
+    {
+      string name;
+      decl = parse_scoped_name (t, tt, name, false, p);
+
+      if (decl == 0)
+        return;
+
+      // Make sure we've got the correct declaration type.
+      //
+      if (!check_decl_type (decl, name, p, loc))
+        return;
+
+      if (tt != CPP_COMMA)
+      {
+        error ("column name expected in odb pragma %qs", pc);
+        return;
+      }
+
+      tt = pragma_lex (&t);
+    }
+
+    if (tt != CPP_STRING)
+    {
+      error ("column name expected in odb pragma %qs", pc);
+      return;
+    }
+
+    val = TREE_STRING_POINTER (t);
+
+    if (pragma_lex (&t) != CPP_CLOSE_PAREN)
+    {
+      error ("%qs expected at the end of odb pragma %qs", ")", pc);
+      return;
+    }
+
+    tt = pragma_lex (&t);
+  }
+  else if (p == "type")
+  {
+    // type ([<identifier>,] "<type>")
+    //
+
+    if (pragma_lex (&t) != CPP_OPEN_PAREN)
+    {
+      error ("%qs expected after odb pragma %qs", "(", pc);
+      return;
+    }
+
+    tt = pragma_lex (&t);
+
+    if (tt == CPP_NAME || tt == CPP_SCOPE)
+    {
+      string name;
+      decl = parse_scoped_name (t, tt, name, false, p);
+
+      if (decl == 0)
+        return;
+
+      // Make sure we've got the correct declaration type.
+      //
+      if (!check_decl_type (decl, name, p, loc))
+        return;
+
+      if (tt != CPP_COMMA)
+      {
+        error ("type name expected in odb pragma %qs", pc);
+        return;
+      }
+
+      tt = pragma_lex (&t);
+    }
+
+    if (tt != CPP_STRING)
+    {
+      error ("type name expected in odb pragma %qs", pc);
+      return;
+    }
+
+    val = TREE_STRING_POINTER (t);
+
+    if (pragma_lex (&t) != CPP_CLOSE_PAREN)
+    {
+      error ("%qs expected at the end of odb pragma %qs", ")", pc);
+      return;
+    }
+
+    tt = pragma_lex (&t);
   }
   else
   {
@@ -244,8 +380,6 @@ handle_pragma (string const& p)
 
   // See if there are any more pragmas.
   //
-  tt = pragma_lex (&t);
-
   if (tt == CPP_NAME)
   {
     handle_pragma (IDENTIFIER_POINTER (t));
@@ -255,9 +389,9 @@ handle_pragma (string const& p)
 }
 
 extern "C" void
-handle_pragma_odb_column (cpp_reader*)
+handle_pragma_odb_object (cpp_reader*)
 {
-  handle_pragma ("column");
+  handle_pragma ("object");
 }
 
 extern "C" void
@@ -267,8 +401,29 @@ handle_pragma_odb_table (cpp_reader*)
 }
 
 extern "C" void
+handle_pragma_odb_id (cpp_reader*)
+{
+  handle_pragma ("id");
+}
+
+extern "C" void
+handle_pragma_odb_column (cpp_reader*)
+{
+  handle_pragma ("column");
+}
+
+extern "C" void
+handle_pragma_odb_type (cpp_reader*)
+{
+  handle_pragma ("type");
+}
+
+extern "C" void
 register_odb_pragmas (void*, void*)
 {
-  c_register_pragma_with_expansion ("odb", "column", handle_pragma_odb_column);
+  c_register_pragma_with_expansion ("odb", "object", handle_pragma_odb_object);
   c_register_pragma_with_expansion ("odb", "table", handle_pragma_odb_table);
+  c_register_pragma_with_expansion ("odb", "id", handle_pragma_odb_id);
+  c_register_pragma_with_expansion ("odb", "column", handle_pragma_odb_column);
+  c_register_pragma_with_expansion ("odb", "type", handle_pragma_odb_type);
 }

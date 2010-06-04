@@ -13,7 +13,10 @@ generator.cxx                \
 parser.cxx                   \
 plugin.cxx                   \
 pragma.cxx                   \
-source.cxx
+header.cxx                   \
+inline.cxx                   \
+source.cxx                   \
+mysql-schema.cxx
 
 cxx_ptun +=                  \
 semantics/class.cxx          \
@@ -42,19 +45,32 @@ traversal/union-template.cxx
 #
 cxx_dtun := odb.cxx
 
+# Common units.
+#
+cxx_ctun := database.cxx
+
 # Options file.
 #
 cli_tun := options.cli
 
 #
 #
-cxx_pobj  := $(addprefix $(out_base)/,$(cxx_ptun:.cxx=.o) $(cli_tun:.cli=.o))
-cxx_dobj  := $(addprefix $(out_base)/,$(cxx_dtun:.cxx=.o) $(cli_tun:.cli=.o))
+cxx_pobj  := $(addprefix $(out_base)/,$(cxx_ptun:.cxx=.o))
+cxx_dobj  := $(addprefix $(out_base)/,$(cxx_dtun:.cxx=.o))
+cxx_cobj  := $(addprefix $(out_base)/,$(cxx_ctun:.cxx=.o) $(cli_tun:.cli=.o))
 cxx_pod   := $(cxx_pobj:.o=.o.d)
 cxx_dod   := $(cxx_dobj:.o=.o.d)
+cxx_cod   := $(cxx_cobj:.o=.o.d)
+
 
 odb      := $(out_base)/odb
 odb_so   := $(out_base)/odb.so
+
+# Dummy library to force driver timestamp update when the plugin DSO
+# changes.
+#
+odb.l    := $(out_base)/odb.l
+
 clean    := $(out_base)/.clean
 install  := $(out_base)/.install
 
@@ -70,17 +86,19 @@ $(call import,\
 
 # Build.
 #
-$(odb): $(cxx_dobj) $(cutl.l) | $(odb_so)
-$(odb_so): $(cxx_pobj) $(cutl.l)
+$(odb): $(cxx_dobj) $(cxx_cobj) $(odb.l) $(cutl.l)
+$(odb_so): $(cxx_pobj) $(cxx_cobj) $(cutl.l)
 
-$(cxx_dobj) $(cxx_dod): cpp_options := -I$(src_root)
-$(cxx_pobj) $(cxx_dobj) $(cxx_pod) $(cxx_dod): $(cutl.l.cpp-options)
+$(cxx_pobj) $(cxx_dobj) $(cxx_cobj) $(cxx_pod) $(cxx_dod) $(cxx_cod): \
+$(cutl.l.cpp-options)
 
 genf := $(cli_tun:.cli=.hxx) $(cli_tun:.cli=.ixx) $(cli_tun:.cli=.cxx)
 gen  := $(addprefix $(out_base)/,$(genf))
 
+$(gen): $(cli)
 $(gen): cli := $(cli)
-$(gen): cli_options :=  \
+$(gen): cli_options +=  \
+--generate-specifier    \
 --generate-file-scanner \
 --include-with-brackets \
 --include-prefix odb    \
@@ -88,6 +106,7 @@ $(gen): cli_options :=  \
 
 $(call include-dep,$(cxx_pod))
 $(call include-dep,$(cxx_dod))
+$(call include-dep,$(cxx_cod))
 
 # Alias for default target.
 #
@@ -105,9 +124,12 @@ $(clean):                             \
   $(odb).o.clean                      \
   $(addsuffix .cxx.clean,$(cxx_pobj)) \
   $(addsuffix .cxx.clean,$(cxx_dobj)) \
+  $(addsuffix .cxx.clean,$(cxx_cobj)) \
   $(addsuffix .cxx.clean,$(cxx_pod))  \
-  $(addsuffix .cxx.clean,$(cxx_dod))
+  $(addsuffix .cxx.clean,$(cxx_dod))  \
+  $(addsuffix .cxx.clean,$(cxx_cod))
 	$(call message,rm $$1,rm -f $$1,$(out_base)/odb.so)
+	$(call message,,rm -f $(out_base)/odb.l)
 
 # Generated .gitignore.
 #
@@ -128,12 +150,14 @@ $(call include,$(bld_root)/cxx/cxx-d.make)
 $(call include,$(bld_root)/cxx/cxx-o.make)
 $(call include,$(bld_root)/cxx/o-e.make)
 
-# Custom rules for the plugin.
+# Custom rules for the plugin and the driver.
 #
 ifdef cxx_gnu
 
-$(cxx_pobj): cxx_pic_options := -fPIC
+$(cxx_pobj) $(cxx_cobj): cxx_pic_options := -fPIC
 
+$(cxx_cobj) $(cxx_cod): cpp_options := -I$(src_root)
+$(cxx_dobj) $(cxx_dod): cpp_options := -I$(src_root) '-DGXX_NAME="$(cxx_gnu)"'
 $(cxx_pobj) $(cxx_pod): cpp_options := -I$(src_root) \
 -I$(shell $(cxx_gnu) -print-file-name=plugin)/include
 
@@ -141,5 +165,8 @@ $(odb_so):
 	$(call message,ld $@,$(ld) \
 $(cxx_extra_options) $(ld_options) $(cxx_ld_extra_options) -shared -o $@ \
 $(foreach f,$^,$(if $(patsubst %.l,,$f),$f,$(call expand-l,$f))) $(cxx_extra_libs))
+
+$(odb.l): $(odb_so)
+	 $(call message,,touch $@)
 
 endif

@@ -6,6 +6,8 @@
 include <string>;
 include <vector>;
 
+include <odb/database.hxx>;
+
 class options
 {
   //
@@ -18,6 +20,21 @@ class options
   //
   // Plugin options.
   //
+  ::database --database | -d
+  {
+    "<db>",
+    "Generate code for the <db> database. Valid values are \cb{mysql} and
+     \cb{tracer}."
+  };
+
+  bool --generate-schema
+  {
+    "Generate database schema. The resulting SQL file creates database
+     tables required to store classes defined in the file being compiled.
+     Note that all the existing information stored in such tables will be
+     lost."
+  };
+
   std::string --output-dir | -o
   {
     "<dir>",
@@ -28,28 +45,35 @@ class options
   {
     "<suffix>",
     "Use <suffix> instead of the default \cb{-odb} to construct the names
-     of the generated ODB files."
+     of the generated C++ files."
   };
 
   std::string --hxx-suffix = ".hxx"
   {
     "<suffix>",
     "Use <suffix> instead of the default \cb{.hxx} to construct the name of
-     the generated header file."
+     the generated C++ header file."
   };
 
   std::string --ixx-suffix = ".ixx"
   {
     "<suffix>",
     "Use <suffix> instead of the default \cb{.ixx} to construct the name of
-     the generated inline file."
+     the generated C++ inline file."
   };
 
   std::string --cxx-suffix = ".cxx"
   {
     "<suffix>",
     "Use <suffix> instead of the default \cb{.cxx} to construct the name of
-     the generated source file."
+     the generated C++ source file."
+  };
+
+  std::string --sql-suffix = ".sql"
+  {
+    "<suffix>",
+    "Use <suffix> instead of the default \cb{.sql} to construct the name of
+     the generated database schema file."
   };
 
   bool --include-with-brackets
@@ -64,6 +88,14 @@ class options
     "Add <prefix> to the generated \cb{#include} directive paths."
   };
 
+  std::string --guard-prefix
+  {
+    "<prefix>",
+    "Add <prefix> to the generated header inclusion guards. The prefix is
+     transformed to upper case and characters that are illegal in a
+     preprocessor macro name are replaced with underscores."
+  };
+
   // This is a "fake" option in that it is actually handled by
   // argv_file_scanner. We have it here to get the documentation.
   //
@@ -72,13 +104,34 @@ class options
     "<file>",
     "Read additional options from <file> with each option appearing on a
      separate line optionally followed by space and an option value. Empty
-     lines and lines starting with \cb{#} are ignored. The semantics of
-     providing options in a file is equivalent to providing the same set
-     of options in the same order on the command line at the point where the
-     \cb{--options-file} option is specified except that shell escaping and
-     quoting is not required. Repeat this option to specify more than one
-     options files."
+     lines and lines starting with \cb{#} are ignored. Option values can
+     be enclosed in double (\cb{\"}) or single (\cb{'}) quotes  to preserve
+     leading and trailing whitespaces as well as to specify empty values.
+     If the value itself contains trailing or leading quotes, enclose it
+     with an extra pair of quotes, for example \cb{'\"x\"'}. Non-leading
+     and non-trailing quotes are interpreted as being part of the option
+     value.
+
+     The semantics of providing options in a file is equivalent to providing
+     the same set of options in the same order on the command line at the
+     point where the \cb{--options-file} option is specified except that
+     the shell escaping and quoting is not required. Repeat this option
+     to specify more than one options files."
   };
 
   bool --trace {"Trace the compilation process."};
+
+  //
+  // MySQL-specific options.
+  //
+
+  std::string --mysql-engine = "InnoDB"
+  {
+    "<engine>",
+    "Use <engine> instead of the default \cb{InnoDB} in the generated
+     database schema file. For more information on the storage engine
+     options see the MySQL documentation. If you would like to use the
+     database-default engine, pass \cb{default} as the value for this
+     option."
+  };
 };
