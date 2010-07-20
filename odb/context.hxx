@@ -6,6 +6,7 @@
 #ifndef ODB_CONTEXT_HXX
 #define ODB_CONTEXT_HXX
 
+#include <map>
 #include <set>
 #include <string>
 #include <ostream>
@@ -61,10 +62,13 @@ public:
   typedef std::set<string> keyword_set_type;
   keyword_set_type const& keyword_set;
 
+  typedef std::map<string, string> type_map_type;
+
 private:
   struct data
   {
     keyword_set_type keyword_set_;
+    type_map_type type_map_;
   };
 
 public:

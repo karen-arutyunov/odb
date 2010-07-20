@@ -87,6 +87,38 @@ namespace
     "xor",
     "xor_eq"
   };
+
+  struct type_map_entry
+  {
+    const char* const cxx_type;
+    const char* const db_type;
+  };
+
+  type_map_entry mysql_type_map[] =
+  {
+    {"bool", "TINYINT(1)"},
+
+    {"char", "TINYINT"},
+    {"signed char", "TINYINT"},
+    {"unsigned char", "TINYINT UNSIGNED"},
+
+    {"short int", "SMALLINT"},
+    {"short unsigned int", "SMALLINT UNSIGNED"},
+
+    {"int", "INT"},
+    {"unsigned int", "INT UNSIGNED"},
+
+    {"long int", "BIGINT"},
+    {"long unsigned int", "BIGINT UNSIGNED"},
+
+    {"long long int", "BIGINT"},
+    {"long long unsigned int", "BIGINT UNSIGNED"},
+
+    {"float", "FLOAT"},
+    {"double", "DOUBLE"},
+
+    {"::std::string", "TEXT"}
+  };
 }
 
 context::
@@ -101,6 +133,33 @@ context (ostream& os_,
 {
   for (size_t i (0); i < sizeof (keywords) / sizeof (char*); ++i)
     data_->keyword_set_.insert (keywords[i]);
+
+  // Populate the C++ type to DB type map.
+  //
+  {
+    size_t n;
+    type_map_entry* p;
+
+    switch (options.database ())
+    {
+    case database::mysql:
+      {
+        p = mysql_type_map;
+        n = sizeof (mysql_type_map) / sizeof (type_map_entry);
+        break;
+      }
+    default:
+      {
+        p = 0;
+        n = 0;
+        break;
+      }
+    }
+
+    for (size_t i (0); i < n; ++i)
+      data_->type_map_.insert (
+        type_map_type::value_type (p[i].cxx_type, p[i].db_type));
+  }
 }
 
 context::
@@ -154,10 +213,22 @@ db_type (semantics::data_member& m) const
 {
   if (m.count ("type"))
     return m.get<string> ("type");
-  else
-  {
-    return "INT";
-  }
+
+  string const& name (m.type ().fq_name ());
+  type_map_type::const_iterator i (data_->type_map_.find (name));
+
+  if (i != data_->type_map_.end ())
+    return i->second;
+
+  cerr << m.file () << ":" << m.line () << ":" << m.column ()
+       << " error: unable to map C++ type '" << name << "' used in "
+       << "data member '" << m.name () << "' to a database type" << endl;
+
+  cerr << m.file () << ":" << m.line () << ":" << m.column ()
+       << " info: use '#pragma odb type' to specify the database type"
+       << endl;
+
+  throw generation_failed ();
 }
 
 string context::
