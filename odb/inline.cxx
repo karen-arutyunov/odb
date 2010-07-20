@@ -38,7 +38,8 @@ namespace
       // id ()
       //
       os << "inline" << endl
-         << traits << "::id_type " << traits << "::" << endl
+         << traits << "::id_type" << endl
+         << traits << "::" << endl
          << "id (const object_type& obj)"
          << "{"
          << "return obj." << id.name () << ";" << endl

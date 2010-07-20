@@ -46,19 +46,25 @@ namespace
       // insert ()
       //
       os << "void " << traits << "::" << endl
-         << "insert (database&, const object_type& obj)"
+         << "insert (database&, object_type& obj)"
          << "{"
          << "std::cout << \"insert \" << type_name () << \" id \" << " <<
         "id (obj) << std::endl;"
+         << endl
+         << "if (id (obj) == id_type ())" << endl
+         << "throw object_already_persistent ();"
          << "}";
 
       // update ()
       //
       os << "void " << traits << "::" << endl
-         << "update (database&, const object_type& obj)"
+         << "update (database&, object_type& obj)"
          << "{"
          << "std::cout << \"update \" << type_name () << \" id \" << " <<
         "id (obj) << std::endl;"
+         << endl
+         << "if (id (obj) == id_type ())" << endl
+         << "throw object_not_persistent ();"
          << "}";
 
       // erase ()
@@ -68,20 +74,40 @@ namespace
          << "{"
          << "std::cout << \"delete \" << type_name () << \" id \" << " <<
         "id << std::endl;"
+         << endl
+         << "if (id == id_type ())" << endl
+         << "throw object_not_persistent ();"
          << "}";
 
       // find ()
       //
-      os << traits << "::shared_ptr " << endl
+      os << traits << "::pointer_type" << endl
          << traits << "::" << endl
          << "find (database&, const id_type& id)"
          << "{"
          << "std::cout << \"select \" << type_name () << \" id \" << " <<
         "id << std::endl;"
-         << "shared_ptr r (access::object_factory< " << type <<
+         << endl
+         << "if (id == id_type ())" << endl
+         << "return pointer_type (0);"
+         << endl
+         << "pointer_type r (access::object_factory< " << type <<
         " >::create ());"
          << "r->" << id.name () << " = id;"
          << "return r;"
+         << "}";
+
+      os << "bool " << traits << "::" << endl
+         << "find (database&, const id_type& id, object_type& obj)"
+         << "{"
+         << "std::cout << \"select \" << type_name () << \" id \" << " <<
+        "id << std::endl;"
+         << endl
+         << "if (id == id_type ())" << endl
+         << "return false;"
+         << endl
+         << "obj." << id.name () << " = id;"
+         << "return true;"
          << "}";
     }
   };
@@ -106,7 +132,11 @@ generate_source (context& ctx)
   ctx.os << "#include <iostream>" << endl
          << endl;
 
-  //ctx.os << "#include <odb/database.hxx>" << endl
+  ctx.os << "#include <odb/exceptions.hxx>" << endl
+         << endl;
+
+  //ctx.os << "#include <odb/tracer/database.hxx>" << endl
+  //       << "#include <odb/tracer/exceptions.hxx>" << endl
   //       << endl;
 
   ctx.os << "namespace odb"

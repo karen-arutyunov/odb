@@ -100,13 +100,13 @@ namespace
       // insert ()
       //
       os << "static void" << endl
-         << "insert (database&, const object_type&);"
+         << "insert (database&, object_type&);"
          << endl;
 
       // update ()
       //
       os << "static void" << endl
-         << "update (database&, const object_type&);"
+         << "update (database&, object_type&);"
          << endl;
 
       // erase ()
@@ -117,8 +117,12 @@ namespace
 
       // find ()
       //
-      os << "static shared_ptr" << endl
-         << "find (database&, const id_type&);";
+      os << "static pointer_type" << endl
+         << "find (database&, const id_type&);"
+         << endl;
+
+      os << "static bool" << endl
+         << "find (database&, const id_type&, object_type&);";
 
       os << "};";
     }
