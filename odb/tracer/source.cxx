@@ -1,10 +1,10 @@
-// file      : odb/source.cxx
+// file      : odb/tracer/source.cxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #include <odb/common.hxx>
-#include <odb/source.hxx>
+#include <odb/tracer/source.hxx>
 
 namespace
 {
@@ -43,10 +43,10 @@ namespace
          << "return \"" << type << "\";"
          << "}";
 
-      // insert ()
+      // persist ()
       //
       os << "void " << traits << "::" << endl
-         << "insert (database&, object_type& obj)"
+         << "persist (database&, object_type& obj)"
          << "{"
          << "std::cout << \"insert \" << type_name () << \" id \" << " <<
         "id (obj) << std::endl;"
@@ -55,10 +55,10 @@ namespace
          << "throw object_already_persistent ();"
          << "}";
 
-      // update ()
+      // store ()
       //
       os << "void " << traits << "::" << endl
-         << "update (database&, object_type& obj)"
+         << "store (database&, object_type& obj)"
          << "{"
          << "std::cout << \"update \" << type_name () << \" id \" << " <<
         "id (obj) << std::endl;"
@@ -113,36 +113,35 @@ namespace
   };
 }
 
-void
-generate_source (context& ctx)
+namespace tracer
 {
-  traversal::unit unit;
-  traversal::defines unit_defines;
-  traversal::namespace_ ns;
-  class_ c (ctx);
+  void
+  generate_source (context& ctx)
+  {
+    traversal::unit unit;
+    traversal::defines unit_defines;
+    traversal::namespace_ ns;
+    class_ c (ctx);
 
-  unit >> unit_defines >> ns;
-  unit_defines >> c;
+    unit >> unit_defines >> ns;
+    unit_defines >> c;
 
-  traversal::defines ns_defines;
+    traversal::defines ns_defines;
 
-  ns >> ns_defines >> ns;
-  ns_defines >> c;
+    ns >> ns_defines >> ns;
+    ns_defines >> c;
 
-  ctx.os << "#include <iostream>" << endl
-         << endl;
+    ctx.os << "#include <iostream>" << endl
+           << endl;
 
-  ctx.os << "#include <odb/exceptions.hxx>" << endl
-         << endl;
+    ctx.os << "#include <odb/exceptions.hxx>" << endl
+           << endl;
 
-  //ctx.os << "#include <odb/tracer/database.hxx>" << endl
-  //       << "#include <odb/tracer/exceptions.hxx>" << endl
-  //       << endl;
+    ctx.os << "namespace odb"
+           << "{";
 
-  ctx.os << "namespace odb"
-         << "{";
+    unit.dispatch (ctx.unit);
 
-  unit.dispatch (ctx.unit);
-
-  ctx.os << "}";
+    ctx.os << "}";
+  }
 }

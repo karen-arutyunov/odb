@@ -1,14 +1,17 @@
-// file      : odb/mysql-schema.hxx
+// file      : odb/tracer/source.hxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#ifndef ODB_MYSQL_SCHEMA_HXX
-#define ODB_MYSQL_SCHEMA_HXX
+#ifndef ODB_TRACER_SOURCE_HXX
+#define ODB_TRACER_SOURCE_HXX
 
 #include <odb/context.hxx>
 
-void
-generate_mysql_schema (context&);
+namespace tracer
+{
+  void
+  generate_source (context&);
+}
 
-#endif // ODB_MYSQL_SCHEMA_HXX
+#endif // ODB_TRACER_SOURCE_HXX

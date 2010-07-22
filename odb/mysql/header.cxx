@@ -1,10 +1,10 @@
-// file      : odb/header.cxx
+// file      : odb/mysql/header.cxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#include <odb/common.hxx>
-#include <odb/header.hxx>
+#include <odb/mysql/common.hxx>
+#include <odb/mysql/header.hxx>
 
 namespace
 {
@@ -85,28 +85,22 @@ namespace
       os << "static const odb::id_source id_source = odb::ids_assigned;"
          << endl;
 
-      // type_name ()
-      //
-      os << "static const char*" << endl
-         << "type_name ();"
-         << endl;
-
       // id ()
       //
       os << "static id_type" << endl
          << "id (const object_type&);"
          << endl;
 
-      // insert ()
+      // persist ()
       //
       os << "static void" << endl
-         << "insert (database&, object_type&);"
+         << "persist (database&, object_type&);"
          << endl;
 
-      // update ()
+      // store ()
       //
       os << "static void" << endl
-         << "update (database&, object_type&);"
+         << "store (database&, object_type&);"
          << endl;
 
       // erase ()
@@ -129,30 +123,33 @@ namespace
   };
 }
 
-void
-generate_header (context& ctx)
+namespace mysql
 {
-  traversal::unit unit;
-  traversal::defines unit_defines;
-  traversal::namespace_ ns;
-  class_ c (ctx);
+  void
+  generate_header (context& ctx)
+  {
+    traversal::unit unit;
+    traversal::defines unit_defines;
+    traversal::namespace_ ns;
+    class_ c (ctx);
 
-  unit >> unit_defines >> ns;
-  unit_defines >> c;
+    unit >> unit_defines >> ns;
+    unit_defines >> c;
 
-  traversal::defines ns_defines;
+    traversal::defines ns_defines;
 
-  ns >> ns_defines >> ns;
-  ns_defines >> c;
+    ns >> ns_defines >> ns;
+    ns_defines >> c;
 
-  ctx.os << "#include <odb/core.hxx>" << endl
-         << "#include <odb/traits.hxx>" << endl
-         << endl;
+    ctx.os << "#include <odb/core.hxx>" << endl
+           << "#include <odb/traits.hxx>" << endl
+           << endl;
 
-  ctx.os << "namespace odb"
-         << "{";
+    ctx.os << "namespace odb"
+           << "{";
 
-  unit.dispatch (ctx.unit);
+    unit.dispatch (ctx.unit);
 
-  ctx.os << "}";
+    ctx.os << "}";
+  }
 }

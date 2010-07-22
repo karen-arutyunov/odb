@@ -5,6 +5,7 @@
 
 #include <cctype>  // std::toupper, std::is{alpha,upper,lower}
 #include <string>
+#include <memory>  // std::auto_ptr
 #include <fstream>
 #include <iostream>
 
@@ -16,11 +17,15 @@
 #include <odb/context.hxx>
 #include <odb/generator.hxx>
 
-#include <odb/header.hxx>
-#include <odb/inline.hxx>
-#include <odb/source.hxx>
+#include <odb/tracer/header.hxx>
+#include <odb/tracer/inline.hxx>
+#include <odb/tracer/source.hxx>
 
-#include <odb/mysql-schema.hxx>
+#include <odb/mysql/context.hxx>
+#include <odb/mysql/schema.hxx>
+#include <odb/mysql/header.hxx>
+#include <odb/mysql/inline.hxx>
+#include <odb/mysql/source.hxx>
 
 using namespace std;
 using namespace cutl;
@@ -188,9 +193,23 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     {
       cxx_filter filt (hxx);
-      context ctx (hxx, unit, ops);
+      auto_ptr<context> ctx;
 
-      string guard (make_guard (gp + hxx_name, ctx));
+      switch (ops.database ())
+      {
+      case database::mysql:
+        {
+          ctx.reset (new mysql::context (hxx, unit, ops));
+          break;
+        }
+      case database::tracer:
+        {
+          ctx.reset (new context (hxx, unit, ops));
+          break;
+        }
+      }
+
+      string guard (make_guard (gp + hxx_name, *ctx));
 
       hxx << "#ifndef " << guard << endl
           << "#define " << guard << endl
@@ -200,7 +219,19 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         (br ? '>' : '"') << endl
           << endl;
 
-      generate_header (ctx);
+      switch (ops.database ())
+      {
+      case database::mysql:
+        {
+          mysql::generate_header (static_cast<mysql::context&> (*ctx.get ()));
+          break;
+        }
+      case database::tracer:
+        {
+          tracer::generate_header (*ctx);
+          break;
+        }
+      }
 
       hxx << "#include " << (br ? '<' : '"') << ip << ixx_name <<
         (br ? '>' : '"') << endl
@@ -213,34 +244,60 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     {
       cxx_filter filt (ixx);
-      context ctx (ixx, unit, ops);
-      generate_inline (ctx);
+
+      switch (ops.database ())
+      {
+      case database::mysql:
+        {
+          mysql::context ctx (ixx, unit, ops);
+          mysql::generate_inline (ctx);
+          break;
+        }
+      case database::tracer:
+        {
+          context ctx (ixx, unit, ops);
+          tracer::generate_inline (ctx);
+          break;
+        }
+      }
     }
 
     // CXX
     //
     {
       cxx_filter filt (cxx);
-      context ctx (cxx, unit, ops);
 
       cxx << "#include " << (br ? '<' : '"') << ip << hxx_name <<
         (br ? '>' : '"') << endl
           << endl;
 
-      generate_source (ctx);
+      switch (ops.database ())
+      {
+      case database::mysql:
+        {
+          mysql::context ctx (cxx, unit, ops);
+          mysql::generate_source (ctx);
+          break;
+        }
+      case database::tracer:
+        {
+          context ctx (cxx, unit, ops);
+          tracer::generate_source (ctx);
+          break;
+        }
+      }
     }
 
     // SQL
     //
     if (ops.generate_schema ())
     {
-      context ctx (sql, unit, ops);
-
       switch (ops.database ())
       {
       case database::mysql:
         {
-          generate_mysql_schema (ctx);
+          mysql::context ctx (sql, unit, ops);
+          mysql::generate_schema (ctx);
           break;
         }
       case database::tracer:

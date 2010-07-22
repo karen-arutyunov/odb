@@ -42,7 +42,7 @@ public:
   column_name (semantics::data_member&) const;
 
   string
-  db_type (semantics::data_member&) const;
+  column_type (semantics::data_member&) const;
 
 public:
   // Escape C++ keywords, reserved names, and illegal characters.
@@ -50,9 +50,10 @@ public:
   string
   escape (string const&) const;
 
-private:
+protected:
   struct data;
-  cutl::shared_ptr<data> data_;
+  typedef cutl::shared_ptr<data> data_ptr;
+  data_ptr data_;
 
 public:
   std::ostream& os;
@@ -62,18 +63,38 @@ public:
   typedef std::set<string> keyword_set_type;
   keyword_set_type const& keyword_set;
 
-  typedef std::map<string, string> type_map_type;
+  struct db_type_type
+  {
+    db_type_type () {}
+    db_type_type (string const& t, string const& it)
+        : type (t), id_type (it)
+    {
+    }
 
-private:
+    string type;
+    string id_type;
+  };
+
+  typedef std::map<string, db_type_type> type_map_type;
+
+protected:
   struct data
   {
+    virtual ~data () {}
+
     keyword_set_type keyword_set_;
     type_map_type type_map_;
   };
 
 public:
-  context (std::ostream&, semantics::unit&, options_type const&);
+  context (std::ostream&,
+           semantics::unit&,
+           options_type const&,
+           data_ptr = data_ptr ());
   context (context&);
+
+  virtual
+  ~context ();
 
 private:
   context&

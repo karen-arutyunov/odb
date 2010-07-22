@@ -8,15 +8,28 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 # Plugin units.
 #
 cxx_ptun :=                  \
+sql-lexer.cxx                \
 context.cxx                  \
 generator.cxx                \
 parser.cxx                   \
 plugin.cxx                   \
-pragma.cxx                   \
-header.cxx                   \
-inline.cxx                   \
-source.cxx                   \
-mysql-schema.cxx
+pragma.cxx
+
+# Tracer
+#
+cxx_ptun +=                  \
+tracer/header.cxx            \
+tracer/inline.cxx            \
+tracer/source.cxx
+
+# MySQL
+#
+cxx_ptun +=                  \
+mysql/context.cxx            \
+mysql/schema.cxx             \
+mysql/header.cxx             \
+mysql/inline.cxx             \
+mysql/source.cxx
 
 cxx_ptun +=                  \
 semantics/class.cxx          \

@@ -1,9 +1,9 @@
-// file      : odb/mysql-schema.cxx
+// file      : odb/mysql/schema.cxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#include <odb/mysql-schema.hxx>
+#include <odb/mysql/schema.hxx>
 
 namespace
 {
@@ -22,7 +22,7 @@ namespace
       else
         os << "," << endl;
 
-      os << "  `" << column_name (m) << "` " << db_type (m) <<
+      os << "  `" << column_name (m) << "` " << column_type (m) <<
         " NOT NULL";
 
       if (m.count ("id"))
@@ -96,46 +96,49 @@ static char const file_header[] =
  " * compiler for C++.\n"
  " */\n\n";
 
-void
-generate_mysql_schema (context& ctx)
+namespace mysql
 {
-  ctx.os << file_header;
-
-  // Drop.
-  //
+  void
+  generate_schema (context& ctx)
   {
-    traversal::unit unit;
-    traversal::defines unit_defines;
-    traversal::namespace_ ns;
-    class_drop c (ctx);
+    ctx.os << file_header;
 
-    unit >> unit_defines >> ns;
-    unit_defines >> c;
+    // Drop.
+    //
+    {
+      traversal::unit unit;
+      traversal::defines unit_defines;
+      traversal::namespace_ ns;
+      class_drop c (ctx);
 
-    traversal::defines ns_defines;
+      unit >> unit_defines >> ns;
+      unit_defines >> c;
 
-    ns >> ns_defines >> ns;
-    ns_defines >> c;
-    unit.dispatch (ctx.unit);
-  }
+      traversal::defines ns_defines;
 
-  ctx.os << endl;
+      ns >> ns_defines >> ns;
+      ns_defines >> c;
+      unit.dispatch (ctx.unit);
+    }
 
-  // Create.
-  //
-  {
-    traversal::unit unit;
-    traversal::defines unit_defines;
-    traversal::namespace_ ns;
-    class_create c (ctx);
+    ctx.os << endl;
 
-    unit >> unit_defines >> ns;
-    unit_defines >> c;
+    // Create.
+    //
+    {
+      traversal::unit unit;
+      traversal::defines unit_defines;
+      traversal::namespace_ ns;
+      class_create c (ctx);
 
-    traversal::defines ns_defines;
+      unit >> unit_defines >> ns;
+      unit_defines >> c;
 
-    ns >> ns_defines >> ns;
-    ns_defines >> c;
-    unit.dispatch (ctx.unit);
+      traversal::defines ns_defines;
+
+      ns >> ns_defines >> ns;
+      ns_defines >> c;
+      unit.dispatch (ctx.unit);
+    }
   }
 }
