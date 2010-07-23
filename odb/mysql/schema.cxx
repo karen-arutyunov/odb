@@ -22,8 +22,7 @@ namespace
       else
         os << "," << endl;
 
-      os << "  `" << column_name (m) << "` " << column_type (m) <<
-        " NOT NULL";
+      os << "  `" << column_name (m) << "` " << column_type (m);
 
       if (m.count ("id"))
         os << " PRIMARY KEY";

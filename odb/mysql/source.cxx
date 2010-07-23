@@ -6,76 +6,76 @@
 #include <odb/mysql/common.hxx>
 #include <odb/mysql/source.hxx>
 
-namespace
-{
-  struct class_: traversal::class_, context
-  {
-    class_ (context& c)
-        : context (c)
-    {
-    }
-
-    virtual void
-    traverse (type& c)
-    {
-      if (c.file () != unit.file ())
-        return;
-
-      if (!c.count ("object"))
-        return;
-
-      string const& type (c.fq_name ());
-      string traits ("access::object_traits< " + type + " >");
-
-      id_member t (*this);
-      t.traverse (c);
-      semantics::data_member& id (*t.member ());
-
-      os << "// " << c.name () << endl
-         << "//" << endl
-         << endl;
-
-      // persist ()
-      //
-      os << "void " << traits << "::" << endl
-         << "persist (database&, object_type& obj)"
-         << "{"
-         << "}";
-
-      // store ()
-      //
-      os << "void " << traits << "::" << endl
-         << "store (database&, object_type& obj)"
-         << "{"
-         << "}";
-
-      // erase ()
-      //
-      os << "void " << traits << "::" << endl
-         << "erase (database&, const id_type& id)"
-         << "{"
-         << "}";
-
-      // find ()
-      //
-      os << traits << "::pointer_type" << endl
-         << traits << "::" << endl
-         << "find (database&, const id_type& id)"
-         << "{"
-         << "return 0;"
-         << "}";
-
-      os << "bool " << traits << "::" << endl
-         << "find (database&, const id_type& id, object_type& obj)"
-         << "{"
-         << "return false;"
-         << "}";
-    }
-  };
-}
-
 namespace mysql
 {
+  namespace
+  {
+    struct class_: traversal::class_, context
+    {
+      class_ (context& c)
+          : context (c)
+      {
+      }
+
+      virtual void
+      traverse (type& c)
+      {
+        if (c.file () != unit.file ())
+          return;
+
+        if (!c.count ("object"))
+          return;
+
+        string const& type (c.fq_name ());
+        string traits ("access::object_traits< " + type + " >");
+
+        id_member t (*this);
+        t.traverse (c);
+        semantics::data_member& id (*t.member ());
+
+        os << "// " << c.name () << endl
+           << "//" << endl
+           << endl;
+
+        // persist ()
+        //
+        os << "void " << traits << "::" << endl
+           << "persist (database&, object_type& obj)"
+           << "{"
+           << "}";
+
+        // store ()
+        //
+        os << "void " << traits << "::" << endl
+           << "store (database&, object_type& obj)"
+           << "{"
+           << "}";
+
+        // erase ()
+        //
+        os << "void " << traits << "::" << endl
+           << "erase (database&, const id_type& id)"
+           << "{"
+           << "}";
+
+        // find ()
+        //
+        os << traits << "::pointer_type" << endl
+           << traits << "::" << endl
+           << "find (database&, const id_type& id)"
+           << "{"
+           << "return 0;"
+           << "}";
+
+        os << "bool " << traits << "::" << endl
+           << "find (database&, const id_type& id, object_type& obj)"
+           << "{"
+           << "return false;"
+           << "}";
+      }
+    };
+  }
+
   void
   generate_source (context& ctx)
   {

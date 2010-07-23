@@ -25,28 +25,28 @@ namespace mysql
 
     type_map_entry type_map[] =
     {
-      {"bool", "TINYINT(1)", 0},
+      {"bool", "TINYINT(1) NOT NULL", 0},
 
-      {"char", "TINYINT", 0},
-      {"signed char", "TINYINT", 0},
-      {"unsigned char", "TINYINT UNSIGNED", 0},
+      {"char", "TINYINT NOT NULL", 0},
+      {"signed char", "TINYINT NOT NULL", 0},
+      {"unsigned char", "TINYINT UNSIGNED NOT NULL", 0},
 
-      {"short int", "SMALLINT", 0},
-      {"short unsigned int", "SMALLINT UNSIGNED", 0},
+      {"short int", "SMALLINT NOT NULL", 0},
+      {"short unsigned int", "SMALLINT UNSIGNED NOT NULL", 0},
 
-      {"int", "INT", 0},
-      {"unsigned int", "INT UNSIGNED", 0},
+      {"int", "INT NOT NULL", 0},
+      {"unsigned int", "INT UNSIGNED NOT NULL", 0},
 
-      {"long int", "BIGINT", 0},
-      {"long unsigned int", "BIGINT UNSIGNED", 0},
+      {"long int", "BIGINT NOT NULL", 0},
+      {"long unsigned int", "BIGINT UNSIGNED NOT NULL", 0},
 
-      {"long long int", "BIGINT", 0},
-      {"long long unsigned int", "BIGINT UNSIGNED", 0},
+      {"long long int", "BIGINT NOT NULL", 0},
+      {"long long unsigned int", "BIGINT UNSIGNED NOT NULL", 0},
 
-      {"float", "FLOAT", 0},
-      {"double", "DOUBLE", 0},
+      {"float", "FLOAT NOT NULL", 0},
+      {"double", "DOUBLE NOT NULL", 0},
 
-      {"::std::string", "TEXT", "VARCHAR(255)"}
+      {"::std::string", "TEXT NOT NULL", "VARCHAR(255) NOT NULL"}
     };
   }
 
@@ -110,14 +110,17 @@ namespace mysql
       {
         parse_prefix,
         parse_name,
-        parse_bounds,
-        parse_sign
+        parse_range,
+        parse_sign,
+        parse_done
       };
 
       state s (parse_prefix);
+      string prefix;
 
       for (sql_token t (l.next ());
-           t.type () != sql_token::t_eos; t = l.next ())
+           s != parse_done && t.type () != sql_token::t_eos;
+           t = l.next ())
       {
         sql_token::token_type tt (t.type ());
 
@@ -134,14 +137,15 @@ namespace mysql
                   id == "CHARACTER" ||
                   id == "LONG")
               {
-                r.type = id;
+                prefix = id;
+                s = parse_name;
                 continue;
               }
             }
 
             // Fall through.
             //
-            s = parse_prefix;
+            s = parse_name;
           }
         case parse_name:
           {
@@ -154,180 +158,178 @@ namespace mysql
               //
               if (id == "BIT")
               {
-                r.type = "BIT";
+                r.type = sql_type::BIT;
               }
               else if (id == "TINYINT" || id == "INT1")
               {
-                r.type = "TINYINT";
+                r.type = sql_type::TINYINT;
               }
               else if (id == "BOOL" || id == "BOOLEAN")
               {
-                r.type = "TINYINT";
-                r.bounds = true;
-                r.bounds_value = 1;
+                r.type = sql_type::TINYINT;
+                r.range = true;
+                r.range_value = 1;
               }
               else if (id == "SMALLINT" || id == "INT2")
               {
-                r.type = "SMALLINT";
+                r.type = sql_type::SMALLINT;
               }
               else if (id == "MEDIUMINT" || id == "INT3" || id == "MIDDLEINT")
               {
-                r.type = "MEDIUMINT";
+                r.type = sql_type::MEDIUMINT;
               }
               else if (id == "INT" || id == "INTEGER" || id == "INT4")
               {
-                r.type = "INT";
+                r.type = sql_type::INT;
               }
               else if (id == "BIGINT" || id == "INT8")
               {
-                r.type = "BIGINT";
+                r.type = sql_type::BIGINT;
               }
               else if (id == "SERIAL")
               {
-                r.type = "BIGINT";
+                r.type = sql_type::BIGINT;
                 r.unsign = true;
               }
               else if (id == "FLOAT" || id == "FLOAT4")
               {
-                r.type = "FLOAT";
+                r.type = sql_type::FLOAT;
               }
               else if (id == "DOUBLE" || id == "FLOAT8")
               {
-                r.type = "DOUBLE";
+                r.type = sql_type::DOUBLE;
               }
               else if (id == "DECIMAL" ||
                        id == "DEC" ||
                        id == "NUMERIC" ||
                        id == "FIXED")
               {
-                r.type = "DECIMAL";
+                r.type = sql_type::DECIMAL;
               }
               //
               // Date-time types.
               //
               else if (id == "DATE")
               {
-                r.type = "DATE";
+                r.type = sql_type::DATE;
               }
               else if (id == "TIME")
               {
-                r.type = "TIME";
+                r.type = sql_type::TIME;
               }
               else if (id == "DATETIME")
               {
-                r.type = "DATETIME";
+                r.type = sql_type::DATETIME;
               }
               else if (id == "TIMESTAMP")
               {
-                r.type = "TIMESTAMP";
+                r.type = sql_type::TIMESTAMP;
               }
               else if (id == "YEAR")
               {
-                r.type = "YEAR";
+                r.type = sql_type::YEAR;
               }
               //
               // String and binary types.
               //
               else if (id == "NCHAR")
               {
-                r.type = "CHAR";
+                r.type = sql_type::CHAR;
               }
               else if (id == "VARCHAR")
               {
-                r.type = r.type == "LONG" ? "MEDIUMTEXT" : "VARCHAR";
+                r.type = prefix == "LONG"
+                  ? sql_type::MEDIUMTEXT
+                  : sql_type::VARCHAR;
               }
               else if (id == "NVARCHAR")
               {
-                r.type = "VARCHAR";
+                r.type = sql_type::VARCHAR;
               }
-              else if (id == "VARYING" && r.type == "CHARACTER")
+              else if (id == "VARYING" && prefix == "CHARACTER")
               {
-                r.type = "VARCHAR";
+                r.type = sql_type::VARCHAR;
               }
               else if (id == "BINARY")
               {
-                r.type = "BINARY";
+                r.type = sql_type::BINARY;
               }
-              else if (id == "BYTE" && r.type == "CHAR")
+              else if (id == "BYTE" && prefix == "CHAR")
               {
-                r.type = "BINARY";
+                r.type = sql_type::BINARY;
               }
               else if (id == "VARBINARY")
               {
-                r.type = r.type == "LONG" ? "MEDIUMBLOB" : "VARBINARY";
+                r.type = prefix == "LONG"
+                  ? sql_type::MEDIUMBLOB
+                  : sql_type::VARBINARY;
               }
               else if (id == "TINYBLOB")
               {
-                r.type = "TINYBLOB";
+                r.type = sql_type::TINYBLOB;
               }
               else if (id == "TINYTEXT")
               {
-                r.type = "TINYTEXT";
+                r.type = sql_type::TINYTEXT;
               }
               else if (id == "BLOB")
               {
-                r.type = "BLOB";
+                r.type = sql_type::BLOB;
               }
               else if (id == "TEXT")
               {
-                r.type = "TEXT";
+                r.type = sql_type::TEXT;
               }
               else if (id == "MEDIUMBLOB")
               {
-                r.type = "MEDIUMBLOB";
+                r.type = sql_type::MEDIUMBLOB;
               }
               else if (id == "MEDIUMTEXT")
               {
-                r.type = "MEDIUMTEXT";
+                r.type = sql_type::MEDIUMTEXT;
               }
               else if (id == "LONGBLOB")
               {
-                r.type = "LONGBLOB";
+                r.type = sql_type::LONGBLOB;
               }
               else if (id == "LONGTEXT")
               {
-                r.type = "LONGTEXT";
+                r.type = sql_type::LONGTEXT;
               }
               else if (id == "ENUM")
               {
-                r.type = "ENUM";
+                r.type = sql_type::ENUM;
               }
               else if (id == "SET")
               {
-                r.type = "SET";
+                r.type = sql_type::SET;
               }
               else
                 match = false;
 
               if (match)
               {
-                s = parse_bounds;
+                s = parse_range;
                 continue;
               }
             }
 
-            bool match (false);
-
             // Some prefixes can also be type names if not followed
             // by the actual type name.
             //
-            if (!r.type.empty ())
+            if (!prefix.empty ())
             {
-              if (r.type == "CHAR")
-                match = true;
-              else if (r.type == "CHARACTER")
+              if (prefix == "CHAR" || prefix == "CHARACTER")
               {
-                r.type = "CHAR";
-                match = true;
+                r.type = sql_type::CHAR;
               }
-              else if (r.type == "LONG")
+              else if (prefix == "LONG")
               {
-                r.type = "MEDIUMTEXT";
-                match = true;
+                r.type = sql_type::MEDIUMTEXT;
               }
             }
 
-            if (!match)
+            if (r.type == sql_type::invalid)
             {
               cerr << m.file () << ":" << m.line () << ":" << m.column ();
 
@@ -342,9 +344,9 @@ namespace mysql
 
             // Fall through.
             //
-            s = parse_bounds;
+            s = parse_range;
           }
-        case parse_bounds:
+        case parse_range:
           {
             if (t.punctuation () == sql_token::p_lparen)
             {
@@ -353,7 +355,7 @@ namespace mysql
               if (t.type () != sql_token::t_int_lit)
               {
                 cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                     << " error: integer bounds expected in MySQL type "
+                     << " error: integer range expected in MySQL type "
                      << "declaration" << endl;
 
                 throw generation_failed ();
@@ -365,20 +367,20 @@ namespace mysql
               if (!(is >> v && is.eof ()))
               {
                 cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                     << " error: invalid bounds value '" << t.literal ()
+                     << " error: invalid range value '" << t.literal ()
                      << "'in MySQL type declaration" << endl;
 
                 throw generation_failed ();
               }
 
-              r.bounds = true;
-              r.bounds_value = v;
+              r.range = true;
+              r.range_value = v;
 
               t = l.next ();
 
               if (t.punctuation () == sql_token::p_comma)
               {
-                // We have the second bounds value. Skip it.
+                // We have the second range value. Skip it.
                 //
                 l.next ();
                 t = l.next ();
@@ -408,15 +410,44 @@ namespace mysql
               r.unsign = true;
             }
 
-            return r;
+            s = parse_done;
+            break;
           }
         }
       }
 
-      cerr << m.file () << ":" << m.line () << ":" << m.column ()
-           << " error: empty MySQL type declaration" << endl;
+      if (s == parse_name && !prefix.empty ())
+      {
+        // Some prefixes can also be type names if not followed
+        // by the actual type name.
+        //
+        if (prefix == "CHAR" || prefix == "CHARACTER")
+        {
+          r.type = sql_type::CHAR;
+        }
+        else if (prefix == "LONG")
+        {
+          r.type = sql_type::MEDIUMTEXT;
+        }
+      }
 
-      throw generation_failed ();
+      if (r.type == sql_type::invalid)
+      {
+        cerr << m.file () << ":" << m.line () << ":" << m.column ()
+             << " error: incomplete MySQL type declaration" << endl;
+
+        throw generation_failed ();
+      }
+
+      // If range is omitted for CHAR or BIT types, it defaults to 1.
+      //
+      if ((r.type == sql_type::CHAR || r.type == sql_type::BIT) && !r.range)
+      {
+        r.range = true;
+        r.range_value = 1;
+      }
+
+      return r;
     }
     catch (sql_lexer::invalid_input const& e)
     {

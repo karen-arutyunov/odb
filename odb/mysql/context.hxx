@@ -14,12 +14,64 @@ namespace mysql
 {
   struct sql_type
   {
-    sql_type () : unsign (false), bounds (false) {}
+    // Keep the order in each block of types.
+    //
+    enum core_type
+    {
+      // Integral types.
+      //
+      TINYINT,
+      SMALLINT,
+      MEDIUMINT,
+      INT,
+      BIGINT,
 
-    std::string type;
+      // Float types.
+      //
+      FLOAT,
+      DOUBLE,
+      DECIMAL,
+
+      // Data-time types.
+      //
+      DATE,
+      TIME,
+      DATETIME,
+      TIMESTAMP,
+      YEAR,
+
+      // String and binary types.
+      //
+      CHAR,
+      BINARY,
+      VARCHAR,
+      VARBINARY,
+      TINYBLOB,
+      TINYTEXT,
+      BLOB,
+      TEXT,
+      MEDIUMBLOB,
+      MEDIUMTEXT,
+      LONGBLOB,
+      LONGTEXT,
+
+      // Other types.
+      //
+      BIT,
+      ENUM,
+      SET,
+
+      // Invalid type.
+      //
+      invalid
+    };
+
+    sql_type () : type (invalid), unsign (false), range (false) {}
+
+    core_type type;
     bool unsign;
-    bool bounds;
-    unsigned int bounds_value; // MySQL max value is 2^32 - 1 (LONGBLOG/TEXT).
+    bool range;
+    unsigned int range_value; // MySQL max value is 2^32 - 1 (LONGBLOG/TEXT).
   };
 
   class context: public ::context
