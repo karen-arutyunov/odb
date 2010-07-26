@@ -37,11 +37,45 @@ namespace mysql
            << "//" << endl
            << endl;
 
+        // insert_query
+        //
+        os << "const char* const " << traits << "::insert_query = " << endl
+           << "\"INSERT INTO\";"
+           << endl;
+
+        // bind ()
+        //
+        os << "void " << traits << "::" << endl
+           << "bind (MYSQL_BIND*, image_type&)"
+           << "{"
+           << "}";
+
+        // init (image, object)
+        //
+        os << "void " << traits << "::" << endl
+           << "init (image_type&, object_type&)"
+           << "{"
+           << "}";
+
+        // init (object, image)
+        //
+        os << "void " << traits << "::" << endl
+           << "init (object_type&, image_type&)"
+           << "{"
+           << "}";
+
         // persist ()
         //
         os << "void " << traits << "::" << endl
            << "persist (database&, object_type& obj)"
            << "{"
+           << "using namespace mysql;"
+           << endl
+           << "connection& conn (mysql::transaction::current ().connection ());"
+           << "insert_statement<object_type>& st (" << endl
+           << "conn.statement_cache ().find<object_type> ().insert ());"
+           << "init (st.image (), obj);"
+           << "st.execute ();"
            << "}";
 
         // store ()
@@ -93,6 +127,9 @@ namespace mysql
     ns_defines >> c;
 
     ctx.os << "#include <odb/mysql/database.hxx>" << endl
+           << "#include <odb/mysql/transaction.hxx>" << endl
+           << "#include <odb/mysql/connection.hxx>" << endl
+           << "#include <odb/mysql/statement.hxx>" << endl
            << "#include <odb/mysql/exceptions.hxx>" << endl
            << endl;
 

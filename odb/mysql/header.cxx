@@ -413,10 +413,38 @@ namespace mysql
         os << "static const odb::id_source id_source = odb::ids_assigned;"
            << endl;
 
+        // column_count @@
+        //
+        os << "static const std::size_t column_count = 10;"
+           << endl;
+
+        // insert_query
+        //
+        os << "static const char* const insert_query;"
+           << endl;
+
         // id ()
         //
         os << "static id_type" << endl
            << "id (const object_type&);"
+           << endl;
+
+        // bind ()
+        //
+        os << "static void" << endl
+           << "bind (MYSQL_BIND*, image_type&);"
+           << endl;
+
+        // init (image, object)
+        //
+        os << "static void" << endl
+           << "init (image_type&, object_type&);"
+           << endl;
+
+        // init (object, image)
+        //
+        os << "static void" << endl
+           << "init (object_type&, image_type&);"
            << endl;
 
         // persist ()
@@ -469,6 +497,9 @@ namespace mysql
 
     ns >> ns_defines >> ns;
     ns_defines >> c;
+
+    ctx.os << "#include <cstddef>" << endl // std::size_t
+           << endl;
 
     ctx.os << "#include <mysql/mysql.h>" << endl
            << endl;
