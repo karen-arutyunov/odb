@@ -86,7 +86,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
 
   if (p == "id" ||
       p == "column" ||
-      p == "type")
+      p == "type" ||
+      p == "transient")
   {
     if (tc != FIELD_DECL)
     {
@@ -356,6 +357,45 @@ handle_pragma (string const& p)
 
     tt = pragma_lex (&t);
   }
+  else if (p == "transient")
+  {
+    // transient [(<identifier>)]
+    //
+
+    tt = pragma_lex (&t);
+
+    if (tt == CPP_OPEN_PAREN)
+    {
+      tt = pragma_lex (&t);
+
+      if (tt == CPP_NAME || tt == CPP_SCOPE)
+      {
+        string name;
+        decl = parse_scoped_name (t, tt, name, false, p);
+
+        if (decl == 0)
+          return;
+
+        // Make sure we've got the correct declaration type.
+        //
+        if (!check_decl_type (decl, name, p, loc))
+          return;
+
+        if (tt != CPP_CLOSE_PAREN)
+        {
+          error ("%qs expected at the end of odb pragma %qs", ")", pc);
+          return;
+        }
+
+        tt = pragma_lex (&t);
+      }
+      else
+      {
+        error ("data member name expected in odb pragma %qs", pc);
+        return;
+      }
+    }
+  }
   else
   {
     error ("unknown odb pragma %qs", pc);
@@ -419,6 +459,12 @@ handle_pragma_odb_type (cpp_reader*)
 }
 
 extern "C" void
+handle_pragma_odb_transient (cpp_reader*)
+{
+  handle_pragma ("transient");
+}
+
+extern "C" void
 register_odb_pragmas (void*, void*)
 {
   c_register_pragma_with_expansion ("odb", "object", handle_pragma_odb_object);
@@ -426,4 +472,5 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("odb", "id", handle_pragma_odb_id);
   c_register_pragma_with_expansion ("odb", "column", handle_pragma_odb_column);
   c_register_pragma_with_expansion ("odb", "type", handle_pragma_odb_type);
+  c_register_pragma_with_expansion ("odb", "transient", handle_pragma_odb_transient);
 }
