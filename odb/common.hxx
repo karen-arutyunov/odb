@@ -6,6 +6,7 @@
 #ifndef ODB_COMMON_HXX
 #define ODB_COMMON_HXX
 
+#include <cstddef> // std::size_t
 #include <odb/context.hxx>
 
 // Find id member.
@@ -15,7 +16,7 @@ struct id_member: traversal::class_,
                   context
 {
   id_member (context& c)
-      : context (c), m_ (0)
+      : context (c)
   {
     *this >> names_ >> *this;
   }
@@ -33,11 +34,53 @@ struct id_member: traversal::class_,
       m_ = &m;
   }
 
-  using class_::traverse;
+  virtual void
+  traverse (semantics::class_& c)
+  {
+    m_ = 0;
+    names (c);
+  }
 
 private:
   traversal::names names_;
   semantics::data_member* m_;
+};
+
+// Find id member.
+//
+struct member_count: traversal::class_,
+                     traversal::data_member,
+                     context
+{
+  member_count (context& c)
+      : context (c)
+  {
+    *this >> names_ >> *this;
+  }
+
+  std::size_t
+  count () const
+  {
+    return count_;
+  }
+
+  virtual void
+  traverse (semantics::data_member& m)
+  {
+    if (!m.count ("transient"))
+      count_++;
+  }
+
+  virtual void
+  traverse (semantics::class_& c)
+  {
+    count_ = 0;
+    names (c);
+  }
+
+private:
+  traversal::names names_;
+  std::size_t count_;
 };
 
 #endif // ODB_COMMON_HXX

@@ -46,14 +46,14 @@ namespace mysql
       BINARY,
       VARCHAR,
       VARBINARY,
-      TINYBLOB,
       TINYTEXT,
-      BLOB,
+      TINYBLOB,
       TEXT,
-      MEDIUMBLOB,
+      BLOB,
       MEDIUMTEXT,
-      LONGBLOB,
+      MEDIUMBLOB,
       LONGTEXT,
+      LONGBLOB,
 
       // Other types.
       //

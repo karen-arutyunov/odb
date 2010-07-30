@@ -25,177 +25,19 @@ namespace mysql
       "double"
     };
 
-    struct image_member_base: traversal::data_member, context
+    struct image_member: member_base
     {
-      image_member_base (context& c)
-          : context (c)
+      image_member (context& c, bool id)
+          : member_base (c, id)
       {
       }
 
       virtual void
-      traverse (type& m)
+      pre (type& m)
       {
-        string const& name (m.name ());
-        var = name + (name[name.size () - 1] == '_' ? "" : "_");
-
-        os << "// " << name << endl
-           << "//" << endl;
-
-        sql_type const& t (db_type (m));
-
-        switch (t.type)
-        {
-          // Integral types.
-          //
-        case sql_type::TINYINT:
-        case sql_type::SMALLINT:
-        case sql_type::MEDIUMINT:
-        case sql_type::INT:
-        case sql_type::BIGINT:
-          {
-            traverse_integer (m, t);
-            break;
-          }
-
-          // Float types.
-          //
-        case sql_type::FLOAT:
-        case sql_type::DOUBLE:
-          {
-            traverse_float (m, t);
-            break;
-          }
-        case sql_type::DECIMAL:
-          {
-            traverse_decimal (m, t);
-            break;
-          }
-
-          // Data-time types.
-          //
-        case sql_type::DATE:
-        case sql_type::TIME:
-        case sql_type::DATETIME:
-        case sql_type::TIMESTAMP:
-        case sql_type::YEAR:
-          {
-            traverse_date_time (m, t);
-            break;
-          }
-
-          // String and binary types.
-          //
-        case sql_type::CHAR:
-        case sql_type::VARCHAR:
-        case sql_type::TINYTEXT:
-        case sql_type::TEXT:
-        case sql_type::MEDIUMTEXT:
-        case sql_type::LONGTEXT:
-          {
-            // For string types the limit is in characters rather
-            // than in bytes. The fixed-length pre-allocated buffer
-            // optimization can only be used for 1-byte encodings.
-            // To support this we will need the character encoding
-            // in sql_type.
-            //
-            traverse_long_string (m, t);
-            break;
-          }
-        case sql_type::BINARY:
-          {
-            // BINARY's range is always 255 or less from MySQL 5.0.3.
-            //
-            traverse_short_string (m, t);
-            break;
-          }
-        case sql_type::VARBINARY:
-        case sql_type::TINYBLOB:
-        case sql_type::BLOB:
-        case sql_type::MEDIUMBLOB:
-        case sql_type::LONGBLOB:
-          {
-            if (t.range && t.range_value <= 255)
-              traverse_short_string (m, t);
-            else
-              traverse_long_string (m, t);
-
-            break;
-          }
-
-          // Other types.
-          //
-        case sql_type::BIT:
-          {
-            traverse_bit (m, t);
-            break;
-          }
-        case sql_type::ENUM:
-          {
-            traverse_enum (m, t);
-            break;
-          }
-        case sql_type::SET:
-          {
-            traverse_set (m, t);
-            break;
-          }
-        }
-      }
-
-      virtual void
-      traverse_integer (type&, sql_type const&)
-      {
-      }
-
-      virtual void
-      traverse_float (type&, sql_type const&)
-      {
-      }
-
-      virtual void
-      traverse_decimal (type&, sql_type const&)
-      {
-      }
-
-      virtual void
-      traverse_date_time (type&, sql_type const&)
-      {
-      }
-
-      virtual void
-      traverse_short_string (type&, sql_type const&)
-      {
-      }
-
-      virtual void
-      traverse_long_string (type&, sql_type const&)
-      {
-      }
-
-      virtual void
-      traverse_bit (type&, sql_type const&)
-      {
-      }
-
-      virtual void
-      traverse_enum (type&, sql_type const&)
-      {
-      }
-
-      virtual void
-      traverse_set (type&, sql_type const&)
-      {
-      }
-
-    protected:
-      string var;
-    };
-
-    struct image_member: image_member_base
-    {
-      image_member (context& c)
-          : image_member_base (c)
-      {
+        if (!id_)
+          os << "// " << m.name () << endl
+             << "//" << endl;
       }
 
       virtual void
@@ -226,11 +68,10 @@ namespace mysql
         // Exchanged as strings. Can have up to 65 digits not counting
         // '-' and '.'. If range is not specified, the default is 10.
         //
-        os << "const char* " << var << "value;"
+        os << "char " << var << "value[" <<
+          (t.range ? t.range_value : 10) + 3 << "];"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
-           << "char " << var << "buffer[" <<
-          (t.range ? t.range_value : 10) + 3 << "];"
            << endl;
       }
 
@@ -253,21 +94,19 @@ namespace mysql
       {
         // If range is not specified, the default buffer size is 255.
         //
-        os << "const char* " << var << "value;"
+        os << "char " << var << "value[" <<
+          (t.range ? t.range_value : 255) + 1 << "];"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
-           << "char " << var << "buffer[" <<
-          (t.range ? t.range_value : 255) + 1 << "];"
            << endl;
       }
 
       virtual void
       traverse_long_string (type&, sql_type const& t)
       {
-        os << "const char* " << var << "value;"
+        os << "odb::buffer " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
-           << "odb::buffer " << var << "buffer;"
            << endl;
       }
 
@@ -279,6 +118,7 @@ namespace mysql
         unsigned int n (t.range / 8 + (t.range % 8 ? 1 : 0));
 
         os << "unsigned char " << var << "value[" << n << "];"
+           << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
            << endl;
       }
@@ -288,10 +128,9 @@ namespace mysql
       {
         // Represented as string.
         //
-        os << "const char* " << var << "value;"
+        os << "odb::buffer " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
-           << "odb::buffer " << var << "buffer;"
            << endl;
       }
 
@@ -300,10 +139,9 @@ namespace mysql
       {
         // Represented as string.
         //
-        os << "const char* " << var << "value;"
+        os << "odb::buffer " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
-           << "odb::buffer " << var << "buffer;"
            << endl;
       }
     };
@@ -311,7 +149,7 @@ namespace mysql
     struct image_type: traversal::class_, context
     {
       image_type (context& c)
-          : context (c), image_member_ (c)
+          : context (c), image_member_ (c, false)
       {
         *this >> names_image_member_ >> image_member_;
       }
@@ -332,10 +170,38 @@ namespace mysql
       traversal::names names_image_member_;
     };
 
+    struct id_image_type: traversal::class_, context
+    {
+      id_image_type (context& c)
+          : context (c), image_member_ (c, true)
+      {
+        *this >> names_image_member_ >> image_member_;
+      }
+
+      virtual void
+      traverse (type& c)
+      {
+        os << "struct id_image_type"
+           << "{";
+
+        names (c);
+
+        os << "};";
+      }
+
+    private:
+      image_member image_member_;
+      traversal::names names_image_member_;
+    };
+
     struct class_: traversal::class_, context
     {
       class_ (context& c)
-          : context (c), image_type_ (c)
+          : context (c),
+            id_member_ (c),
+            member_count_ (c),
+            image_type_ (c),
+            id_image_type_ (c)
       {
       }
 
@@ -352,10 +218,9 @@ namespace mysql
 
         // Find the id member and type.
         //
-        id_member t (*this);
-        t.traverse (c);
+        id_member_.traverse (c);
 
-        if (t.member () == 0)
+        if (id_member_.member () == 0)
         {
           cerr << c.file () << ":" << c.line () << ":" << c.column ()
                << " error: no data member designated as object id" << endl;
@@ -363,11 +228,9 @@ namespace mysql
           cerr << c.file () << ":" << c.line () << ":" << c.column ()
                << " info: use '#pragma odb id' to specify object id member"
                << endl;
-
-          throw generation_failed ();
         }
 
-        semantics::data_member& id (*t.member ());
+        semantics::data_member& id (*id_member_.member ());
         semantics::type& id_type (id.type ());
 
         if (id_type.anonymous ())
@@ -383,6 +246,25 @@ namespace mysql
                << endl;
 
           throw generation_failed ();
+        }
+
+        member_count_.traverse (c);
+        size_t column_count (member_count_.count ());
+
+        if (column_count == 0)
+        {
+          cerr << c.file () << ":" << c.line () << ":" << c.column ()
+               << " error: no persistent data members in the class" << endl;
+
+          throw generation_failed ();
+        }
+
+        bool has_grow;
+        {
+          has_grow_member m (*this);
+          traversal::names n (m);
+          names (c, n);
+          has_grow = m.result ();
         }
 
         os << "// " << c.name () << endl
@@ -408,19 +290,27 @@ namespace mysql
         //
         image_type_.traverse (c);
 
+        // id_image_type
+        //
+        id_image_type_.traverse (c);
+
         // id_source
         //
         os << "static const odb::id_source id_source = odb::ids_assigned;"
            << endl;
 
-        // column_count @@
+        // column_count
         //
-        os << "static const std::size_t column_count = 10;"
+        os << "static const std::size_t column_count = " << column_count <<
+          "UL;"
            << endl;
 
-        // insert_query
+        // Queries.
         //
         os << "static const char* const insert_query;"
+           << "static const char* const select_query;"
+           << "static const char* const update_query;"
+           << "static const char* const delete_query;"
            << endl;
 
         // id ()
@@ -429,15 +319,30 @@ namespace mysql
            << "id (const object_type&);"
            << endl;
 
-        // bind ()
+        // grow ()
+        //
+        if (has_grow)
+        {
+          os << "static bool" << endl
+             << "grow (image_type&, my_bool*);"
+             << endl;
+        }
+
+        // bind (image_type)
         //
         os << "static void" << endl
-           << "bind (MYSQL_BIND*, image_type&);"
+           << "bind (mysql::binding&, image_type&);"
+           << endl;
+
+        // bind (id_image_type)
+        //
+        os << "static void" << endl
+           << "bind (mysql::binding&, id_image_type&);"
            << endl;
 
         // init (image, object)
         //
-        os << "static void" << endl
+        os << "static bool" << endl
            << "init (image_type&, object_type&);"
            << endl;
 
@@ -472,13 +377,21 @@ namespace mysql
            << endl;
 
         os << "static bool" << endl
-           << "find (database&, const id_type&, object_type&);";
+           << "find (database&, const id_type&, object_type&);"
+           << endl;
+
+        os << "private:" << endl
+           << "static bool" << endl
+           << "find (mysql::object_statements<object_type>&, const id_type&);";
 
         os << "};";
       }
 
     private:
+      id_member id_member_;
+      member_count member_count_;
       image_type image_type_;
+      id_image_type id_image_type_;
     };
   }
 
@@ -507,6 +420,8 @@ namespace mysql
     ctx.os << "#include <odb/core.hxx>" << endl
            << "#include <odb/traits.hxx>" << endl
            << "#include <odb/buffer.hxx>" << endl
+           << endl
+           << "#include <odb/mysql/forward.hxx>" << endl
            << endl;
 
     ctx.os << "namespace odb"

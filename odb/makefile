@@ -26,6 +26,7 @@ tracer/source.cxx
 #
 cxx_ptun +=                  \
 mysql/context.cxx            \
+mysql/common.cxx             \
 mysql/schema.cxx             \
 mysql/header.cxx             \
 mysql/inline.cxx             \
