@@ -3,6 +3,7 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
+#include <set>
 #include <odb/mysql/schema.hxx>
 
 namespace
@@ -17,6 +18,9 @@ namespace
     virtual void
     traverse (type& m)
     {
+      if (m.count ("transient"))
+        return;
+
       if (first_)
         first_ = false;
       else
@@ -48,7 +52,15 @@ namespace
       if (!c.count ("object"))
         return;
 
-      os << "CREATE TABLE `" << table_name (c) << "` (" << endl;
+      string const& name (table_name (c));
+
+      // If the table with this name was already created, assume the
+      // user knows what they are doing and skip it.
+      //
+      if (tables_.count (name))
+        return;
+
+      os << "CREATE TABLE `" << name << "` (" << endl;
 
       {
         data_member m (*this);
@@ -66,7 +78,12 @@ namespace
 
       os << ";" << endl
          << endl;
+
+      tables_.insert (name);
     }
+
+  private:
+    std::set<string> tables_;
   };
 
   struct class_drop: traversal::class_, context
@@ -85,8 +102,18 @@ namespace
       if (!c.count ("object"))
         return;
 
-      os << "DROP TABLE IF EXISTS `" << table_name (c) << "`;" << endl;
+      string const& name (table_name (c));
+
+      if (tables_.count (name))
+        return;
+
+      os << "DROP TABLE IF EXISTS `" << name << "`;" << endl;
+
+      tables_.insert (name);
     }
+
+  private:
+    std::set<string> tables_;
   };
 }
 
