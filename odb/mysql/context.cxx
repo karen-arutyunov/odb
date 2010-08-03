@@ -352,38 +352,51 @@ namespace mysql
             {
               t = l.next ();
 
-              if (t.type () != sql_token::t_int_lit)
+              // ENUM and SET have a list of members instead of the range.
+              //
+              if (r.type == sql_type::ENUM || r.type == sql_type::SET)
               {
-                cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                     << " error: integer range expected in MySQL type "
-                     << "declaration" << endl;
-
-                throw generation_failed ();
-              }
-
-              unsigned int v;
-              istringstream is (t.literal ());
-
-              if (!(is >> v && is.eof ()))
-              {
-                cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                     << " error: invalid range value '" << t.literal ()
-                     << "'in MySQL type declaration" << endl;
-
-                throw generation_failed ();
-              }
-
-              r.range = true;
-              r.range_value = v;
-
-              t = l.next ();
-
-              if (t.punctuation () == sql_token::p_comma)
-              {
-                // We have the second range value. Skip it.
+                // Skip tokens until we get the closing paren.
                 //
-                l.next ();
+                while (t.type () != sql_token::t_eos &&
+                       t.punctuation () != sql_token::p_rparen)
+                  t = l.next ();
+              }
+              else
+              {
+                if (t.type () != sql_token::t_int_lit)
+                {
+                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
+                       << " error: integer range expected in MySQL type "
+                       << "declaration" << endl;
+
+                  throw generation_failed ();
+                }
+
+                unsigned int v;
+                istringstream is (t.literal ());
+
+                if (!(is >> v && is.eof ()))
+                {
+                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
+                       << " error: invalid range value '" << t.literal ()
+                       << "'in MySQL type declaration" << endl;
+
+                  throw generation_failed ();
+                }
+
+                r.range = true;
+                r.range_value = v;
+
                 t = l.next ();
+
+                if (t.punctuation () == sql_token::p_comma)
+                {
+                  // We have the second range value. Skip it.
+                  //
+                  l.next ();
+                  t = l.next ();
+                }
               }
 
               if (t.punctuation () != sql_token::p_rparen)
