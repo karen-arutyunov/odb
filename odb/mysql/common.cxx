@@ -86,14 +86,15 @@ namespace mysql
         break;
       }
     case sql_type::BINARY:
+    case sql_type::TINYBLOB:
       {
         // BINARY's range is always 255 or less from MySQL 5.0.3.
+        // TINYBLOB can only store up to 255 bytes.
         //
         traverse_short_string (m, t);
         break;
       }
     case sql_type::VARBINARY:
-    case sql_type::TINYBLOB:
     case sql_type::BLOB:
     case sql_type::MEDIUMBLOB:
     case sql_type::LONGBLOB:
