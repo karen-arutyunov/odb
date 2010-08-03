@@ -421,6 +421,7 @@ namespace mysql
            << "#include <odb/traits.hxx>" << endl
            << "#include <odb/buffer.hxx>" << endl
            << endl
+           << "#include <odb/mysql/version.hxx>" << endl
            << "#include <odb/mysql/forward.hxx>" << endl
            << endl;
 
