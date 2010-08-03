@@ -45,7 +45,7 @@ namespace mysql
     {
       "MYSQL_TYPE_TINY",
       "MYSQL_TYPE_SHORT",
-      "MYSQL_TYPE_INT24",
+      "MYSQL_TYPE_LONG",     // *_bind_param() doesn't support INT24.
       "MYSQL_TYPE_LONG",
       "MYSQL_TYPE_LONGLONG"
     };
