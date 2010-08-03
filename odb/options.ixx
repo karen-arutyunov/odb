@@ -263,6 +263,198 @@ sql_suffix_specified () const
   return this->sql_suffix_specified_;
 }
 
+inline const std::vector<std::string>& options::
+hxx_prologue () const
+{
+  return this->hxx_prologue_;
+}
+
+inline bool options::
+hxx_prologue_specified () const
+{
+  return this->hxx_prologue_specified_;
+}
+
+inline const std::vector<std::string>& options::
+ixx_prologue () const
+{
+  return this->ixx_prologue_;
+}
+
+inline bool options::
+ixx_prologue_specified () const
+{
+  return this->ixx_prologue_specified_;
+}
+
+inline const std::vector<std::string>& options::
+cxx_prologue () const
+{
+  return this->cxx_prologue_;
+}
+
+inline bool options::
+cxx_prologue_specified () const
+{
+  return this->cxx_prologue_specified_;
+}
+
+inline const std::vector<std::string>& options::
+sql_prologue () const
+{
+  return this->sql_prologue_;
+}
+
+inline bool options::
+sql_prologue_specified () const
+{
+  return this->sql_prologue_specified_;
+}
+
+inline const std::vector<std::string>& options::
+hxx_epilogue () const
+{
+  return this->hxx_epilogue_;
+}
+
+inline bool options::
+hxx_epilogue_specified () const
+{
+  return this->hxx_epilogue_specified_;
+}
+
+inline const std::vector<std::string>& options::
+ixx_epilogue () const
+{
+  return this->ixx_epilogue_;
+}
+
+inline bool options::
+ixx_epilogue_specified () const
+{
+  return this->ixx_epilogue_specified_;
+}
+
+inline const std::vector<std::string>& options::
+cxx_epilogue () const
+{
+  return this->cxx_epilogue_;
+}
+
+inline bool options::
+cxx_epilogue_specified () const
+{
+  return this->cxx_epilogue_specified_;
+}
+
+inline const std::vector<std::string>& options::
+sql_epilogue () const
+{
+  return this->sql_epilogue_;
+}
+
+inline bool options::
+sql_epilogue_specified () const
+{
+  return this->sql_epilogue_specified_;
+}
+
+inline const std::string& options::
+hxx_prologue_file () const
+{
+  return this->hxx_prologue_file_;
+}
+
+inline bool options::
+hxx_prologue_file_specified () const
+{
+  return this->hxx_prologue_file_specified_;
+}
+
+inline const std::string& options::
+ixx_prologue_file () const
+{
+  return this->ixx_prologue_file_;
+}
+
+inline bool options::
+ixx_prologue_file_specified () const
+{
+  return this->ixx_prologue_file_specified_;
+}
+
+inline const std::string& options::
+cxx_prologue_file () const
+{
+  return this->cxx_prologue_file_;
+}
+
+inline bool options::
+cxx_prologue_file_specified () const
+{
+  return this->cxx_prologue_file_specified_;
+}
+
+inline const std::string& options::
+sql_prologue_file () const
+{
+  return this->sql_prologue_file_;
+}
+
+inline bool options::
+sql_prologue_file_specified () const
+{
+  return this->sql_prologue_file_specified_;
+}
+
+inline const std::string& options::
+hxx_epilogue_file () const
+{
+  return this->hxx_epilogue_file_;
+}
+
+inline bool options::
+hxx_epilogue_file_specified () const
+{
+  return this->hxx_epilogue_file_specified_;
+}
+
+inline const std::string& options::
+ixx_epilogue_file () const
+{
+  return this->ixx_epilogue_file_;
+}
+
+inline bool options::
+ixx_epilogue_file_specified () const
+{
+  return this->ixx_epilogue_file_specified_;
+}
+
+inline const std::string& options::
+cxx_epilogue_file () const
+{
+  return this->cxx_epilogue_file_;
+}
+
+inline bool options::
+cxx_epilogue_file_specified () const
+{
+  return this->cxx_epilogue_file_specified_;
+}
+
+inline const std::string& options::
+sql_epilogue_file () const
+{
+  return this->sql_epilogue_file_;
+}
+
+inline bool options::
+sql_epilogue_file_specified () const
+{
+  return this->sql_epilogue_file_specified_;
+}
+
 inline const bool& options::
 include_with_brackets () const
 {

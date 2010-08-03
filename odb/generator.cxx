@@ -14,6 +14,7 @@
 #include <cutl/compiler/code-stream.hxx>
 #include <cutl/compiler/cxx-indenter.hxx>
 
+#include <odb/version.hxx>
 #include <odb/context.hxx>
 #include <odb/generator.hxx>
 
@@ -72,6 +73,23 @@ namespace
     {
       cerr << path << ": error: unable to open in read mode" << endl;
       throw generator::failed ();
+    }
+  }
+
+  void
+  append (ostream& os, vector<string> const& text, string const& file)
+  {
+    for (vector<string>::const_iterator i (text.begin ());
+         i != text.end (); ++i)
+    {
+      os << *i << endl;
+    }
+
+    if (!file.empty ())
+    {
+      ifstream ifs;
+      open (ifs, file);
+      os << ifs.rdbuf ();
     }
   }
 }
@@ -215,6 +233,27 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << "#define " << guard << endl
           << endl;
 
+      // Copy prologue.
+      //
+      hxx << "// Begin prologue." << endl
+          << "//" << endl;
+      append (hxx, ops.hxx_prologue (), ops.hxx_prologue_file ());
+      hxx << "//" << endl
+          << "// End prologue." << endl
+          << endl;
+
+      // Version check.
+      //
+      hxx << "#include <odb/version.hxx>" << endl
+          << endl
+          << "#if (ODB_VERSION != " << ODB_VERSION << "UL)" << endl
+          << "#error ODB runtime version mismatch" << endl
+          << "#endif" << endl
+          << endl;
+
+      hxx << "#include <odb/pre.hxx>" << endl
+          << endl;
+
       hxx << "#include " << (br ? '<' : '"') << ip << file <<
         (br ? '>' : '"') << endl
           << endl;
@@ -237,6 +276,18 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         (br ? '>' : '"') << endl
           << endl;
 
+      hxx << "#include <odb/post.hxx>" << endl
+          << endl;
+
+      // Copy epilogue.
+      //
+      hxx << "// Begin epilogue." << endl
+          << "//" << endl;
+      append (hxx, ops.hxx_epilogue (), ops.hxx_epilogue_file ());
+      hxx << "//" << endl
+          << "// End epilogue." << endl
+          << endl;
+
       hxx << "#endif // " << guard << endl;
     }
 
@@ -244,6 +295,15 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     {
       cxx_filter filt (ixx);
+
+      // Copy prologue.
+      //
+      ixx << "// Begin prologue." << endl
+          << "//" << endl;
+      append (ixx, ops.ixx_prologue (), ops.ixx_prologue_file ());
+      ixx << "//" << endl
+          << "// End prologue." << endl
+          << endl;
 
       switch (ops.database ())
       {
@@ -260,12 +320,32 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           break;
         }
       }
+
+      // Copy epilogue.
+      //
+      ixx << "// Begin epilogue." << endl
+          << "//" << endl;
+      append (ixx, ops.ixx_epilogue (), ops.ixx_epilogue_file ());
+      ixx << "//" << endl
+          << "// End epilogue." << endl;
     }
 
     // CXX
     //
     {
       cxx_filter filt (cxx);
+
+      // Copy prologue.
+      //
+      cxx << "// Begin prologue." << endl
+          << "//" << endl;
+      append (cxx, ops.cxx_prologue (), ops.cxx_prologue_file ());
+      cxx << "//" << endl
+          << "// End prologue." << endl
+          << endl;
+
+      cxx << "#include <odb/pre.hxx>" << endl
+          << endl;
 
       cxx << "#include " << (br ? '<' : '"') << ip << hxx_name <<
         (br ? '>' : '"') << endl
@@ -286,12 +366,27 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           break;
         }
       }
+
+      cxx << "#include <odb/post.hxx>" << endl
+          << endl;
+
+      // Copy epilogue.
+      //
+      cxx << "// Begin epilogue." << endl
+          << "//" << endl;
+      append (cxx, ops.cxx_epilogue (), ops.cxx_epilogue_file ());
+      cxx << "//" << endl
+          << "// End epilogue." << endl;
     }
 
     // SQL
     //
     if (ops.generate_schema ())
     {
+      // Copy prologue.
+      //
+      append (sql, ops.sql_prologue (), ops.sql_prologue_file ());
+
       switch (ops.database ())
       {
       case database::mysql:
@@ -306,6 +401,10 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           throw failed ();
         }
       }
+
+      // Copy epilogue.
+      //
+      append (sql, ops.sql_epilogue (), ops.sql_epilogue_file ());
     }
 
     auto_rm.cancel ();

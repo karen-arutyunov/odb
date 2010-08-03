@@ -369,6 +369,102 @@ class options
   bool
   sql_suffix_specified () const;
 
+  const std::vector<std::string>&
+  hxx_prologue () const;
+
+  bool
+  hxx_prologue_specified () const;
+
+  const std::vector<std::string>&
+  ixx_prologue () const;
+
+  bool
+  ixx_prologue_specified () const;
+
+  const std::vector<std::string>&
+  cxx_prologue () const;
+
+  bool
+  cxx_prologue_specified () const;
+
+  const std::vector<std::string>&
+  sql_prologue () const;
+
+  bool
+  sql_prologue_specified () const;
+
+  const std::vector<std::string>&
+  hxx_epilogue () const;
+
+  bool
+  hxx_epilogue_specified () const;
+
+  const std::vector<std::string>&
+  ixx_epilogue () const;
+
+  bool
+  ixx_epilogue_specified () const;
+
+  const std::vector<std::string>&
+  cxx_epilogue () const;
+
+  bool
+  cxx_epilogue_specified () const;
+
+  const std::vector<std::string>&
+  sql_epilogue () const;
+
+  bool
+  sql_epilogue_specified () const;
+
+  const std::string&
+  hxx_prologue_file () const;
+
+  bool
+  hxx_prologue_file_specified () const;
+
+  const std::string&
+  ixx_prologue_file () const;
+
+  bool
+  ixx_prologue_file_specified () const;
+
+  const std::string&
+  cxx_prologue_file () const;
+
+  bool
+  cxx_prologue_file_specified () const;
+
+  const std::string&
+  sql_prologue_file () const;
+
+  bool
+  sql_prologue_file_specified () const;
+
+  const std::string&
+  hxx_epilogue_file () const;
+
+  bool
+  hxx_epilogue_file_specified () const;
+
+  const std::string&
+  ixx_epilogue_file () const;
+
+  bool
+  ixx_epilogue_file_specified () const;
+
+  const std::string&
+  cxx_epilogue_file () const;
+
+  bool
+  cxx_epilogue_file_specified () const;
+
+  const std::string&
+  sql_epilogue_file () const;
+
+  bool
+  sql_epilogue_file_specified () const;
+
   const bool&
   include_with_brackets () const;
 
@@ -428,6 +524,38 @@ class options
   bool cxx_suffix_specified_;
   std::string sql_suffix_;
   bool sql_suffix_specified_;
+  std::vector<std::string> hxx_prologue_;
+  bool hxx_prologue_specified_;
+  std::vector<std::string> ixx_prologue_;
+  bool ixx_prologue_specified_;
+  std::vector<std::string> cxx_prologue_;
+  bool cxx_prologue_specified_;
+  std::vector<std::string> sql_prologue_;
+  bool sql_prologue_specified_;
+  std::vector<std::string> hxx_epilogue_;
+  bool hxx_epilogue_specified_;
+  std::vector<std::string> ixx_epilogue_;
+  bool ixx_epilogue_specified_;
+  std::vector<std::string> cxx_epilogue_;
+  bool cxx_epilogue_specified_;
+  std::vector<std::string> sql_epilogue_;
+  bool sql_epilogue_specified_;
+  std::string hxx_prologue_file_;
+  bool hxx_prologue_file_specified_;
+  std::string ixx_prologue_file_;
+  bool ixx_prologue_file_specified_;
+  std::string cxx_prologue_file_;
+  bool cxx_prologue_file_specified_;
+  std::string sql_prologue_file_;
+  bool sql_prologue_file_specified_;
+  std::string hxx_epilogue_file_;
+  bool hxx_epilogue_file_specified_;
+  std::string ixx_epilogue_file_;
+  bool ixx_epilogue_file_specified_;
+  std::string cxx_epilogue_file_;
+  bool cxx_epilogue_file_specified_;
+  std::string sql_epilogue_file_;
+  bool sql_epilogue_file_specified_;
   bool include_with_brackets_;
   std::string include_prefix_;
   bool include_prefix_specified_;

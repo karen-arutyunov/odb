@@ -429,7 +429,8 @@ namespace cli
     parse (std::vector<X>& c, bool& xs, scanner& s)
     {
       X x;
-      parser<X>::parse (x, s);
+      bool dummy;
+      parser<X>::parse (x, dummy, s);
       c.push_back (x);
       xs = true;
     }
@@ -442,7 +443,8 @@ namespace cli
     parse (std::set<X>& c, bool& xs, scanner& s)
     {
       X x;
-      parser<X>::parse (x, s);
+      bool dummy;
+      parser<X>::parse (x, dummy, s);
       c.insert (x);
       xs = true;
     }
@@ -552,6 +554,38 @@ options (int& argc,
   cxx_suffix_specified_ (false),
   sql_suffix_ (".sql"),
   sql_suffix_specified_ (false),
+  hxx_prologue_ (),
+  hxx_prologue_specified_ (false),
+  ixx_prologue_ (),
+  ixx_prologue_specified_ (false),
+  cxx_prologue_ (),
+  cxx_prologue_specified_ (false),
+  sql_prologue_ (),
+  sql_prologue_specified_ (false),
+  hxx_epilogue_ (),
+  hxx_epilogue_specified_ (false),
+  ixx_epilogue_ (),
+  ixx_epilogue_specified_ (false),
+  cxx_epilogue_ (),
+  cxx_epilogue_specified_ (false),
+  sql_epilogue_ (),
+  sql_epilogue_specified_ (false),
+  hxx_prologue_file_ (),
+  hxx_prologue_file_specified_ (false),
+  ixx_prologue_file_ (),
+  ixx_prologue_file_specified_ (false),
+  cxx_prologue_file_ (),
+  cxx_prologue_file_specified_ (false),
+  sql_prologue_file_ (),
+  sql_prologue_file_specified_ (false),
+  hxx_epilogue_file_ (),
+  hxx_epilogue_file_specified_ (false),
+  ixx_epilogue_file_ (),
+  ixx_epilogue_file_specified_ (false),
+  cxx_epilogue_file_ (),
+  cxx_epilogue_file_specified_ (false),
+  sql_epilogue_file_ (),
+  sql_epilogue_file_specified_ (false),
   include_with_brackets_ (),
   include_prefix_ (),
   include_prefix_specified_ (false),
@@ -591,6 +625,38 @@ options (int start,
   cxx_suffix_specified_ (false),
   sql_suffix_ (".sql"),
   sql_suffix_specified_ (false),
+  hxx_prologue_ (),
+  hxx_prologue_specified_ (false),
+  ixx_prologue_ (),
+  ixx_prologue_specified_ (false),
+  cxx_prologue_ (),
+  cxx_prologue_specified_ (false),
+  sql_prologue_ (),
+  sql_prologue_specified_ (false),
+  hxx_epilogue_ (),
+  hxx_epilogue_specified_ (false),
+  ixx_epilogue_ (),
+  ixx_epilogue_specified_ (false),
+  cxx_epilogue_ (),
+  cxx_epilogue_specified_ (false),
+  sql_epilogue_ (),
+  sql_epilogue_specified_ (false),
+  hxx_prologue_file_ (),
+  hxx_prologue_file_specified_ (false),
+  ixx_prologue_file_ (),
+  ixx_prologue_file_specified_ (false),
+  cxx_prologue_file_ (),
+  cxx_prologue_file_specified_ (false),
+  sql_prologue_file_ (),
+  sql_prologue_file_specified_ (false),
+  hxx_epilogue_file_ (),
+  hxx_epilogue_file_specified_ (false),
+  ixx_epilogue_file_ (),
+  ixx_epilogue_file_specified_ (false),
+  cxx_epilogue_file_ (),
+  cxx_epilogue_file_specified_ (false),
+  sql_epilogue_file_ (),
+  sql_epilogue_file_specified_ (false),
   include_with_brackets_ (),
   include_prefix_ (),
   include_prefix_specified_ (false),
@@ -630,6 +696,38 @@ options (int& argc,
   cxx_suffix_specified_ (false),
   sql_suffix_ (".sql"),
   sql_suffix_specified_ (false),
+  hxx_prologue_ (),
+  hxx_prologue_specified_ (false),
+  ixx_prologue_ (),
+  ixx_prologue_specified_ (false),
+  cxx_prologue_ (),
+  cxx_prologue_specified_ (false),
+  sql_prologue_ (),
+  sql_prologue_specified_ (false),
+  hxx_epilogue_ (),
+  hxx_epilogue_specified_ (false),
+  ixx_epilogue_ (),
+  ixx_epilogue_specified_ (false),
+  cxx_epilogue_ (),
+  cxx_epilogue_specified_ (false),
+  sql_epilogue_ (),
+  sql_epilogue_specified_ (false),
+  hxx_prologue_file_ (),
+  hxx_prologue_file_specified_ (false),
+  ixx_prologue_file_ (),
+  ixx_prologue_file_specified_ (false),
+  cxx_prologue_file_ (),
+  cxx_prologue_file_specified_ (false),
+  sql_prologue_file_ (),
+  sql_prologue_file_specified_ (false),
+  hxx_epilogue_file_ (),
+  hxx_epilogue_file_specified_ (false),
+  ixx_epilogue_file_ (),
+  ixx_epilogue_file_specified_ (false),
+  cxx_epilogue_file_ (),
+  cxx_epilogue_file_specified_ (false),
+  sql_epilogue_file_ (),
+  sql_epilogue_file_specified_ (false),
   include_with_brackets_ (),
   include_prefix_ (),
   include_prefix_specified_ (false),
@@ -671,6 +769,38 @@ options (int start,
   cxx_suffix_specified_ (false),
   sql_suffix_ (".sql"),
   sql_suffix_specified_ (false),
+  hxx_prologue_ (),
+  hxx_prologue_specified_ (false),
+  ixx_prologue_ (),
+  ixx_prologue_specified_ (false),
+  cxx_prologue_ (),
+  cxx_prologue_specified_ (false),
+  sql_prologue_ (),
+  sql_prologue_specified_ (false),
+  hxx_epilogue_ (),
+  hxx_epilogue_specified_ (false),
+  ixx_epilogue_ (),
+  ixx_epilogue_specified_ (false),
+  cxx_epilogue_ (),
+  cxx_epilogue_specified_ (false),
+  sql_epilogue_ (),
+  sql_epilogue_specified_ (false),
+  hxx_prologue_file_ (),
+  hxx_prologue_file_specified_ (false),
+  ixx_prologue_file_ (),
+  ixx_prologue_file_specified_ (false),
+  cxx_prologue_file_ (),
+  cxx_prologue_file_specified_ (false),
+  sql_prologue_file_ (),
+  sql_prologue_file_specified_ (false),
+  hxx_epilogue_file_ (),
+  hxx_epilogue_file_specified_ (false),
+  ixx_epilogue_file_ (),
+  ixx_epilogue_file_specified_ (false),
+  cxx_epilogue_file_ (),
+  cxx_epilogue_file_specified_ (false),
+  sql_epilogue_file_ (),
+  sql_epilogue_file_specified_ (false),
   include_with_brackets_ (),
   include_prefix_ (),
   include_prefix_specified_ (false),
@@ -708,6 +838,38 @@ options (::cli::scanner& s,
   cxx_suffix_specified_ (false),
   sql_suffix_ (".sql"),
   sql_suffix_specified_ (false),
+  hxx_prologue_ (),
+  hxx_prologue_specified_ (false),
+  ixx_prologue_ (),
+  ixx_prologue_specified_ (false),
+  cxx_prologue_ (),
+  cxx_prologue_specified_ (false),
+  sql_prologue_ (),
+  sql_prologue_specified_ (false),
+  hxx_epilogue_ (),
+  hxx_epilogue_specified_ (false),
+  ixx_epilogue_ (),
+  ixx_epilogue_specified_ (false),
+  cxx_epilogue_ (),
+  cxx_epilogue_specified_ (false),
+  sql_epilogue_ (),
+  sql_epilogue_specified_ (false),
+  hxx_prologue_file_ (),
+  hxx_prologue_file_specified_ (false),
+  ixx_prologue_file_ (),
+  ixx_prologue_file_specified_ (false),
+  cxx_prologue_file_ (),
+  cxx_prologue_file_specified_ (false),
+  sql_prologue_file_ (),
+  sql_prologue_file_specified_ (false),
+  hxx_epilogue_file_ (),
+  hxx_epilogue_file_specified_ (false),
+  ixx_epilogue_file_ (),
+  ixx_epilogue_file_specified_ (false),
+  cxx_epilogue_file_ (),
+  cxx_epilogue_file_specified_ (false),
+  sql_epilogue_file_ (),
+  sql_epilogue_file_specified_ (false),
   include_with_brackets_ (),
   include_prefix_ (),
   include_prefix_specified_ (false),
@@ -751,6 +913,54 @@ print_usage (::std::ostream& os)
   os << "--sql-suffix <suffix>      Use <suffix> instead of the default '.sql' to" << ::std::endl
      << "                           construct the name of the generated database schema" << ::std::endl
      << "                           file." << ::std::endl;
+
+  os << "--hxx-prologue <text>      Insert <text> at the beginning of the generated C++" << ::std::endl
+     << "                           header file." << ::std::endl;
+
+  os << "--ixx-prologue <text>      Insert <text> at the beginning of the generated C++" << ::std::endl
+     << "                           inline file." << ::std::endl;
+
+  os << "--cxx-prologue <text>      Insert <text> at the beginning of the generated C++" << ::std::endl
+     << "                           source file." << ::std::endl;
+
+  os << "--sql-prologue <text>      Insert <text> at the beginning of the generated" << ::std::endl
+     << "                           database schema file." << ::std::endl;
+
+  os << "--hxx-epilogue <text>      Insert <text> at the end of the generated C++ header" << ::std::endl
+     << "                           file." << ::std::endl;
+
+  os << "--ixx-epilogue <text>      Insert <text> at the end of the generated C++ inline" << ::std::endl
+     << "                           file." << ::std::endl;
+
+  os << "--cxx-epilogue <text>      Insert <text> at the end of the generated C++ source" << ::std::endl
+     << "                           file." << ::std::endl;
+
+  os << "--sql-epilogue <text>      Insert <text> at the end of the generated database" << ::std::endl
+     << "                           schema file." << ::std::endl;
+
+  os << "--hxx-prologue-file <file> Insert the content of <file> at the beginning of the" << ::std::endl
+     << "                           generated C++ header file." << ::std::endl;
+
+  os << "--ixx-prologue-file <file> Insert the content of <file> at the beginning of the" << ::std::endl
+     << "                           generated C++ inline file." << ::std::endl;
+
+  os << "--cxx-prologue-file <file> Insert the content of <file> at the beginning of the" << ::std::endl
+     << "                           generated C++ source file." << ::std::endl;
+
+  os << "--sql-prologue-file <file> Insert the content of <file> at the beginning of the" << ::std::endl
+     << "                           generated database schema file." << ::std::endl;
+
+  os << "--hxx-epilogue-file <file> Insert the content of <file> at the end of the" << ::std::endl
+     << "                           generated C++ header file." << ::std::endl;
+
+  os << "--ixx-epilogue-file <file> Insert the content of <file> at the end of the" << ::std::endl
+     << "                           generated C++ inline file." << ::std::endl;
+
+  os << "--cxx-epilogue-file <file> Insert the content of <file> at the end of the" << ::std::endl
+     << "                           generated C++ source file." << ::std::endl;
+
+  os << "--sql-epilogue-file <file> Insert the content of <file> at the end of the" << ::std::endl
+     << "                           generated database schema file." << ::std::endl;
 
   os << "--include-with-brackets    Use angle brackets (<>) instead of quotes (\"\") in the" << ::std::endl
      << "                           generated '#include' directives." << ::std::endl;
@@ -814,6 +1024,54 @@ struct _cli_options_map_init
     _cli_options_map_["--sql-suffix"] = 
     &::cli::thunk< options, std::string, &options::sql_suffix_,
       &options::sql_suffix_specified_ >;
+    _cli_options_map_["--hxx-prologue"] = 
+    &::cli::thunk< options, std::vector<std::string>, &options::hxx_prologue_,
+      &options::hxx_prologue_specified_ >;
+    _cli_options_map_["--ixx-prologue"] = 
+    &::cli::thunk< options, std::vector<std::string>, &options::ixx_prologue_,
+      &options::ixx_prologue_specified_ >;
+    _cli_options_map_["--cxx-prologue"] = 
+    &::cli::thunk< options, std::vector<std::string>, &options::cxx_prologue_,
+      &options::cxx_prologue_specified_ >;
+    _cli_options_map_["--sql-prologue"] = 
+    &::cli::thunk< options, std::vector<std::string>, &options::sql_prologue_,
+      &options::sql_prologue_specified_ >;
+    _cli_options_map_["--hxx-epilogue"] = 
+    &::cli::thunk< options, std::vector<std::string>, &options::hxx_epilogue_,
+      &options::hxx_epilogue_specified_ >;
+    _cli_options_map_["--ixx-epilogue"] = 
+    &::cli::thunk< options, std::vector<std::string>, &options::ixx_epilogue_,
+      &options::ixx_epilogue_specified_ >;
+    _cli_options_map_["--cxx-epilogue"] = 
+    &::cli::thunk< options, std::vector<std::string>, &options::cxx_epilogue_,
+      &options::cxx_epilogue_specified_ >;
+    _cli_options_map_["--sql-epilogue"] = 
+    &::cli::thunk< options, std::vector<std::string>, &options::sql_epilogue_,
+      &options::sql_epilogue_specified_ >;
+    _cli_options_map_["--hxx-prologue-file"] = 
+    &::cli::thunk< options, std::string, &options::hxx_prologue_file_,
+      &options::hxx_prologue_file_specified_ >;
+    _cli_options_map_["--ixx-prologue-file"] = 
+    &::cli::thunk< options, std::string, &options::ixx_prologue_file_,
+      &options::ixx_prologue_file_specified_ >;
+    _cli_options_map_["--cxx-prologue-file"] = 
+    &::cli::thunk< options, std::string, &options::cxx_prologue_file_,
+      &options::cxx_prologue_file_specified_ >;
+    _cli_options_map_["--sql-prologue-file"] = 
+    &::cli::thunk< options, std::string, &options::sql_prologue_file_,
+      &options::sql_prologue_file_specified_ >;
+    _cli_options_map_["--hxx-epilogue-file"] = 
+    &::cli::thunk< options, std::string, &options::hxx_epilogue_file_,
+      &options::hxx_epilogue_file_specified_ >;
+    _cli_options_map_["--ixx-epilogue-file"] = 
+    &::cli::thunk< options, std::string, &options::ixx_epilogue_file_,
+      &options::ixx_epilogue_file_specified_ >;
+    _cli_options_map_["--cxx-epilogue-file"] = 
+    &::cli::thunk< options, std::string, &options::cxx_epilogue_file_,
+      &options::cxx_epilogue_file_specified_ >;
+    _cli_options_map_["--sql-epilogue-file"] = 
+    &::cli::thunk< options, std::string, &options::sql_epilogue_file_,
+      &options::sql_epilogue_file_specified_ >;
     _cli_options_map_["--include-with-brackets"] = 
     &::cli::thunk< options, bool, &options::include_with_brackets_ >;
     _cli_options_map_["--include-prefix"] = 

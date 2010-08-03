@@ -76,6 +76,120 @@ class options
      the generated database schema file."
   };
 
+  // Prologues.
+  //
+  std::vector<std::string> --hxx-prologue
+  {
+    "<text>",
+    "Insert <text> at the beginning of the generated C++ header file."
+  };
+
+  std::vector<std::string> --ixx-prologue
+  {
+    "<text>",
+    "Insert <text> at the beginning of the generated C++ inline file."
+  };
+
+  std::vector<std::string> --cxx-prologue
+  {
+    "<text>",
+    "Insert <text> at the beginning of the generated C++ source file."
+  };
+
+  std::vector<std::string> --sql-prologue
+  {
+    "<text>",
+    "Insert <text> at the beginning of the generated database schema file."
+  };
+
+  // Epilogues.
+  //
+  std::vector<std::string> --hxx-epilogue
+  {
+    "<text>",
+    "Insert <text> at the end of the generated C++ header file."
+  };
+
+  std::vector<std::string> --ixx-epilogue
+  {
+    "<text>",
+    "Insert <text> at the end of the generated C++ inline file."
+  };
+
+  std::vector<std::string> --cxx-epilogue
+  {
+    "<text>",
+    "Insert <text> at the end of the generated C++ source file."
+  };
+
+  std::vector<std::string> --sql-epilogue
+  {
+    "<text>",
+    "Insert <text> at the end of the generated database schema file."
+  };
+
+  // Prologue files.
+  //
+  std::string --hxx-prologue-file
+  {
+    "<file>",
+    "Insert the content of <file> at the beginning of the generated C++
+     header file."
+  };
+
+  std::string --ixx-prologue-file
+  {
+    "<file>",
+    "Insert the content of <file> at the beginning of the generated C++
+     inline file."
+  };
+
+  std::string --cxx-prologue-file
+  {
+    "<file>",
+    "Insert the content of <file> at the beginning of the generated C++
+     source file."
+  };
+
+  std::string --sql-prologue-file
+  {
+    "<file>",
+    "Insert the content of <file> at the beginning of the generated
+     database schema file."
+  };
+
+  // Epilogue files.
+  //
+  std::string --hxx-epilogue-file
+  {
+    "<file>",
+    "Insert the content of <file> at the end of the generated C++ header
+     file."
+  };
+
+  std::string --ixx-epilogue-file
+  {
+    "<file>",
+    "Insert the content of <file> at the end of the generated C++ inline
+     file."
+  };
+
+  std::string --cxx-epilogue-file
+  {
+    "<file>",
+    "Insert the content of <file> at the end of the generated C++ source
+     file."
+  };
+
+  std::string --sql-epilogue-file
+  {
+    "<file>",
+    "Insert the content of <file> at the end of the generated database
+     schema file."
+  };
+
+  // Include options.
+  //
   bool --include-with-brackets
   {
     "Use angle brackets (<>) instead of quotes (\"\") in the generated
