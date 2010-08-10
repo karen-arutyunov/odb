@@ -259,14 +259,6 @@ namespace mysql
           throw generation_failed ();
         }
 
-        bool has_grow;
-        {
-          has_grow_member m (*this);
-          traversal::names n (m);
-          names (c, n);
-          has_grow = m.result ();
-        }
-
         os << "// " << c.name () << endl
            << "//" << endl;
 
@@ -277,13 +269,18 @@ namespace mysql
            << "{"
            << "public:" << endl;
 
-        // object_type & shared_ptr
+        // object_type
         //
         os << "typedef " << type << " object_type;";
 
         // id_type
         //
         os << "typedef " << id_type.fq_name () << " id_type;"
+           << endl;
+
+        // query_type
+        //
+        os << "typedef mysql::query query_type;"
            << endl;
 
         // image_type
@@ -311,6 +308,7 @@ namespace mysql
            << "static const char* const select_query;"
            << "static const char* const update_query;"
            << "static const char* const delete_query;"
+           << "static const char* const select_prefix;"
            << endl;
 
         // id ()
@@ -321,12 +319,9 @@ namespace mysql
 
         // grow ()
         //
-        if (has_grow)
-        {
-          os << "static bool" << endl
-             << "grow (image_type&, my_bool*);"
-             << endl;
-        }
+        os << "static bool" << endl
+           << "grow (image_type&, my_bool*);"
+           << endl;
 
         // bind (image_type)
         //
@@ -380,6 +375,14 @@ namespace mysql
            << "find (database&, const id_type&, object_type&);"
            << endl;
 
+        // query ()
+        //
+        os << "static shared_ptr<result_impl<object_type> >" << endl
+           << "query (database&, const query_type&);"
+           << endl;
+
+        // Helpers.
+        //
         os << "private:" << endl
            << "static bool" << endl
            << "find (mysql::object_statements<object_type>&, const id_type&);";
@@ -420,9 +423,12 @@ namespace mysql
     ctx.os << "#include <odb/core.hxx>" << endl
            << "#include <odb/traits.hxx>" << endl
            << "#include <odb/buffer.hxx>" << endl
+           << "#include <odb/shared-ptr.hxx>" << endl
+           << "#include <odb/result.hxx>" << endl
            << endl
            << "#include <odb/mysql/version.hxx>" << endl
            << "#include <odb/mysql/forward.hxx>" << endl
+           << "#include <odb/mysql/query.hxx>" << endl
            << endl;
 
     ctx.os << "namespace odb"

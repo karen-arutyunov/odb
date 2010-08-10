@@ -149,8 +149,12 @@ namespace mysql
       {
         os << b << ".buffer_type = " <<
           date_time_buffer_types[t.type - sql_type::DATE] << ";"
-           << b << ".buffer = &i." << var << "value;"
-           << b << ".is_null = &i." << var << "null;"
+           << b << ".buffer = &i." << var << "value;";
+
+        if (t.type == sql_type::YEAR)
+          os << b << ".is_unsigned = 0;";
+
+        os << b << ".is_null = &i." << var << "null;"
            << endl;
       }
 
@@ -685,7 +689,8 @@ namespace mysql
         for (size_t i (0); i < column_count; ++i)
           os << (i != 0 ? "," : "") << '?';
 
-        os << ")\";" << endl;
+        os << ")\";"
+           << endl;
 
         // select_query
         //
@@ -700,7 +705,8 @@ namespace mysql
 
         os << "\"" << endl
            << "\" FROM `" << table_name (c) << "` WHERE `" <<
-          column_name (id) << "` = ?\";" << endl;
+          column_name (id) << "` = ?\";"
+           << endl;
 
         // update_query
         //
@@ -714,13 +720,30 @@ namespace mysql
         }
 
         os << "\"" << endl
-           << "\" WHERE `" << column_name (id) << "` = ?\";" << endl;
+           << "\" WHERE `" << column_name (id) << "` = ?\";"
+           << endl;
 
         // delete_query
         //
         os << "const char* const " << traits << "::delete_query =" << endl
            << "\"DELETE FROM `" << table_name (c) << "`\"" << endl
-           << "\" WHERE `" << column_name (id) << "` = ?\";" << endl;
+           << "\" WHERE `" << column_name (id) << "` = ?\";"
+           << endl;
+
+        // select_prefix
+        //
+        os << "const char* const " << traits << "::select_prefix =" << endl
+           << "\"SELECT \"" << endl;
+
+        {
+          member_column m (*this);
+          traversal::names n (m);
+          names (c, n);
+        }
+
+        os << "\"" << endl
+           << "\" FROM `" << table_name (c) << "` \";"
+           << endl;
 
         // grow ()
         //
@@ -937,6 +960,34 @@ namespace mysql
         os << "st.free_result ();"
            << "return true;"
            << "}";
+
+        // query ()
+        //
+        os << "shared_ptr<result_impl< " << traits << "::object_type> >" << endl
+           << traits << "::" << endl
+           << "query (database&, const query_type& q)"
+           << "{"
+           << "using namespace mysql;"
+           << endl
+           << "connection& conn (mysql::transaction::current ().connection ());"
+           << "object_statements<object_type>& sts (" << endl
+           << "conn.statement_cache ().find<object_type> ());"
+           << endl
+           << "binding& imb (sts.image_binding ());"
+           << "if (imb.version == 0)" << endl
+           << "bind (imb, sts.image ());"
+           << endl
+           << "shared_ptr<query_statement> st (" << endl
+           << "new (shared) query_statement (conn," << endl
+           << "select_prefix + q.clause ()," << endl
+           << "imb," << endl
+           << "q.parameters ()));"
+           << "st->execute ();"
+           << endl
+           << "shared_ptr<odb::result_impl<object_type> > r (" << endl
+           << "new (shared) mysql::result_impl<object_type> (st, sts));"
+           << "return r;"
+           << "}";
       }
 
     private:
@@ -975,6 +1026,7 @@ namespace mysql
            << "#include <odb/mysql/transaction.hxx>" << endl
            << "#include <odb/mysql/connection.hxx>" << endl
            << "#include <odb/mysql/statement.hxx>" << endl
+           << "#include <odb/mysql/result.hxx>" << endl
            << "#include <odb/mysql/exceptions.hxx>" << endl
            << endl;
 
