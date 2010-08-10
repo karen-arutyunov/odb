@@ -963,7 +963,7 @@ namespace mysql
 
         // query ()
         //
-        os << "shared_ptr<result_impl< " << traits << "::object_type> >" << endl
+        os << "result< " << traits << "::object_type >" << endl
            << traits << "::" << endl
            << "query (database&, const query_type& q)"
            << "{"
@@ -986,7 +986,7 @@ namespace mysql
            << endl
            << "shared_ptr<odb::result_impl<object_type> > r (" << endl
            << "new (shared) mysql::result_impl<object_type> (st, sts));"
-           << "return r;"
+           << "return result<object_type> (r);"
            << "}";
       }
 

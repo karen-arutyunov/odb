@@ -377,7 +377,7 @@ namespace mysql
 
         // query ()
         //
-        os << "static shared_ptr<result_impl<object_type> >" << endl
+        os << "static result<object_type>" << endl
            << "query (database&, const query_type&);"
            << endl;
 
