@@ -288,22 +288,27 @@ namespace mysql
         //
         id_image_type_.traverse (c);
 
-        // query_base_type
+        // query_type & query_base_type
         //
-        os << "typedef mysql::query query_base_type;"
-           << endl;
+        if (options.generate_query ())
+        {
+          // query_base_type
+          //
+          os << "typedef mysql::query query_base_type;"
+             << endl;
 
-        // query_type
-        //
-        os << "struct query_type: query_base_type"
-           << "{";
+          // query_type
+          //
+          os << "struct query_type: query_base_type"
+             << "{";
 
-        names (c, query_column_names_);
+          names (c, query_column_names_);
 
-        os << "query_type ();"
-           << "query_type (const std::string&);"
-           << "query_type (const query_base_type&);"
-           << "};";
+          os << "query_type ();"
+             << "query_type (const std::string&);"
+             << "query_type (const query_base_type&);"
+             << "};";
+        }
 
         // id_source
         //
@@ -321,9 +326,12 @@ namespace mysql
         os << "static const char* const insert_query;"
            << "static const char* const select_query;"
            << "static const char* const update_query;"
-           << "static const char* const delete_query;"
-           << "static const char* const select_prefix;"
-           << endl;
+           << "static const char* const delete_query;";
+
+        if (options.generate_query ())
+          os << "static const char* const select_prefix;";
+
+        os << endl;
 
         // id ()
         //
@@ -391,9 +399,10 @@ namespace mysql
 
         // query ()
         //
-        os << "static result<object_type>" << endl
-           << "query (database&, const query_type&);"
-           << endl;
+        if (options.generate_query ())
+          os << "static result<object_type>" << endl
+             << "query (database&, const query_type&);"
+             << endl;
 
         // Helpers.
         //
@@ -439,14 +448,19 @@ namespace mysql
 
     ctx.os << "#include <odb/core.hxx>" << endl
            << "#include <odb/traits.hxx>" << endl
-           << "#include <odb/buffer.hxx>" << endl
-           << "#include <odb/shared-ptr.hxx>" << endl
-           << "#include <odb/result.hxx>" << endl
-           << endl
+           << "#include <odb/buffer.hxx>" << endl;
+
+    if (ctx.options.generate_query ())
+      ctx.os << "#include <odb/result.hxx>" << endl;
+
+    ctx.os << endl
            << "#include <odb/mysql/version.hxx>" << endl
-           << "#include <odb/mysql/forward.hxx>" << endl
-           << "#include <odb/mysql/query.hxx>" << endl
-           << endl;
+           << "#include <odb/mysql/forward.hxx>" << endl;
+
+    if (ctx.options.generate_query ())
+      ctx.os << "#include <odb/mysql/query.hxx>" << endl;
+
+    ctx.os << endl;
 
     ctx.os << "namespace odb"
            << "{";

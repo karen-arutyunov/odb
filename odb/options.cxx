@@ -541,6 +541,7 @@ options (int& argc,
   version_ (),
   database_ (),
   database_specified_ (false),
+  generate_query_ (),
   generate_schema_ (),
   output_dir_ (),
   output_dir_specified_ (false),
@@ -612,6 +613,7 @@ options (int start,
   version_ (),
   database_ (),
   database_specified_ (false),
+  generate_query_ (),
   generate_schema_ (),
   output_dir_ (),
   output_dir_specified_ (false),
@@ -683,6 +685,7 @@ options (int& argc,
   version_ (),
   database_ (),
   database_specified_ (false),
+  generate_query_ (),
   generate_schema_ (),
   output_dir_ (),
   output_dir_specified_ (false),
@@ -756,6 +759,7 @@ options (int start,
   version_ (),
   database_ (),
   database_specified_ (false),
+  generate_query_ (),
   generate_schema_ (),
   output_dir_ (),
   output_dir_specified_ (false),
@@ -825,6 +829,7 @@ options (::cli::scanner& s,
   version_ (),
   database_ (),
   database_specified_ (false),
+  generate_query_ (),
   generate_schema_ (),
   output_dir_ (),
   output_dir_specified_ (false),
@@ -892,6 +897,8 @@ print_usage (::std::ostream& os)
   os << "--version                  Print version and exit." << ::std::endl;
 
   os << "--database|-d <db>         Generate code for the <db> database." << ::std::endl;
+
+  os << "--generate-query           Generate query support code." << ::std::endl;
 
   os << "--generate-schema          Generate database schema." << ::std::endl;
 
@@ -1001,6 +1008,8 @@ struct _cli_options_map_init
     _cli_options_map_["-d"] = 
     &::cli::thunk< options, ::database, &options::database_,
       &options::database_specified_ >;
+    _cli_options_map_["--generate-query"] = 
+    &::cli::thunk< options, bool, &options::generate_query_ >;
     _cli_options_map_["--generate-schema"] = 
     &::cli::thunk< options, bool, &options::generate_schema_ >;
     _cli_options_map_["--output-dir"] = 

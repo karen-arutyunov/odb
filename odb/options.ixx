@@ -186,6 +186,12 @@ database_specified () const
 }
 
 inline const bool& options::
+generate_query () const
+{
+  return this->generate_query_;
+}
+
+inline const bool& options::
 generate_schema () const
 {
   return this->generate_schema_;

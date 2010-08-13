@@ -674,6 +674,7 @@ namespace mysql
 
         // query columns
         //
+        if (options.generate_query ())
         {
           query_column t (*this, c);
           traversal::names n (t);
@@ -740,18 +741,21 @@ namespace mysql
 
         // select_prefix
         //
-        os << "const char* const " << traits << "::select_prefix =" << endl
-           << "\"SELECT \"" << endl;
-
+        if (options.generate_query ())
         {
-          member_column m (*this);
-          traversal::names n (m);
-          names (c, n);
-        }
+          os << "const char* const " << traits << "::select_prefix =" << endl
+             << "\"SELECT \"" << endl;
 
-        os << "\"" << endl
-           << "\" FROM `" << table_name (c) << "` \";"
-           << endl;
+          {
+            member_column m (*this);
+            traversal::names n (m);
+            names (c, n);
+          }
+
+          os << "\"" << endl
+             << "\" FROM `" << table_name (c) << "` \";"
+             << endl;
+        }
 
         // grow ()
         //
@@ -971,31 +975,34 @@ namespace mysql
 
         // query ()
         //
-        os << "result< " << traits << "::object_type >" << endl
-           << traits << "::" << endl
-           << "query (database&, const query_type& q)"
-           << "{"
-           << "using namespace mysql;"
-           << endl
-           << "connection& conn (mysql::transaction::current ().connection ());"
-           << "object_statements<object_type>& sts (" << endl
-           << "conn.statement_cache ().find<object_type> ());"
-           << endl
-           << "binding& imb (sts.image_binding ());"
-           << "if (imb.version == 0)" << endl
-           << "bind (imb, sts.image ());"
-           << endl
-           << "shared_ptr<query_statement> st (" << endl
-           << "new (shared) query_statement (conn," << endl
-           << "select_prefix + q.clause ()," << endl
-           << "imb," << endl
-           << "q.parameters ()));"
-           << "st->execute ();"
-           << endl
-           << "shared_ptr<odb::result_impl<object_type> > r (" << endl
-           << "new (shared) mysql::result_impl<object_type> (st, sts));"
-           << "return result<object_type> (r);"
-           << "}";
+        if (options.generate_query ())
+        {
+          os << "result< " << traits << "::object_type >" << endl
+             << traits << "::" << endl
+             << "query (database&, const query_type& q)"
+             << "{"
+             << "using namespace mysql;"
+             << endl
+             << "connection& conn (mysql::transaction::current ().connection ());"
+             << "object_statements<object_type>& sts (" << endl
+             << "conn.statement_cache ().find<object_type> ());"
+             << endl
+             << "binding& imb (sts.image_binding ());"
+             << "if (imb.version == 0)" << endl
+             << "bind (imb, sts.image ());"
+             << endl
+             << "shared_ptr<query_statement> st (" << endl
+             << "new (shared) query_statement (conn," << endl
+             << "select_prefix + q.clause ()," << endl
+             << "imb," << endl
+             << "q.parameters ()));"
+             << "st->execute ();"
+             << endl
+             << "shared_ptr<odb::result_impl<object_type> > r (" << endl
+             << "new (shared) mysql::result_impl<object_type> (st, sts));"
+             << "return result<object_type> (r);"
+             << "}";
+        }
       }
 
     private:
@@ -1034,9 +1041,12 @@ namespace mysql
            << "#include <odb/mysql/transaction.hxx>" << endl
            << "#include <odb/mysql/connection.hxx>" << endl
            << "#include <odb/mysql/statement.hxx>" << endl
-           << "#include <odb/mysql/result.hxx>" << endl
-           << "#include <odb/mysql/exceptions.hxx>" << endl
-           << endl;
+           << "#include <odb/mysql/exceptions.hxx>" << endl;
+
+    if (ctx.options.generate_query ())
+      ctx.os << "#include <odb/mysql/result.hxx>" << endl;
+
+    ctx.os << endl;
 
     ctx.os << "namespace odb"
            << "{";

@@ -331,6 +331,9 @@ class options
   database_specified () const;
 
   const bool&
+  generate_query () const;
+
+  const bool&
   generate_schema () const;
 
   const std::string&
@@ -511,6 +514,7 @@ class options
   bool version_;
   ::database database_;
   bool database_specified_;
+  bool generate_query_;
   bool generate_schema_;
   std::string output_dir_;
   bool output_dir_specified_;
