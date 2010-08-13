@@ -672,6 +672,14 @@ namespace mysql
            << "//" << endl
            << endl;
 
+        // query columns
+        //
+        {
+          query_column t (*this, c);
+          traversal::names n (t);
+          names (c, n);
+        }
+
         // insert_query
         //
         os << "const char* const " << traits << "::insert_query =" << endl

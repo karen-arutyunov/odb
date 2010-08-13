@@ -201,8 +201,10 @@ namespace mysql
             id_member_ (c),
             member_count_ (c),
             image_type_ (c),
-            id_image_type_ (c)
+            id_image_type_ (c),
+            query_column_ (c)
       {
+        *this >> query_column_names_ >> query_column_;
       }
 
       virtual void
@@ -222,10 +224,10 @@ namespace mysql
 
         if (id_member_.member () == 0)
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column ()
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " error: no data member designated as object id" << endl;
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column ()
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " info: use '#pragma odb id' to specify object id member"
                << endl;
         }
@@ -238,10 +240,10 @@ namespace mysql
           // Can be a template-id (which we should handle eventually) or an
           // anonymous type in member declaration (e.g., struct {...} m_;).
           //
-          cerr << id.file () << ":" << id.line () << ":" << id.column ()
+          cerr << id.file () << ":" << id.line () << ":" << id.column () << ":"
                << " error: unnamed type in data member declaration" << endl;
 
-          cerr << id.file () << ":" << id.line () << ":" << id.column ()
+          cerr << id.file () << ":" << id.line () << ":" << id.column () << ":"
                << " info: use 'typedef' to name this type"
                << endl;
 
@@ -253,7 +255,7 @@ namespace mysql
 
         if (column_count == 0)
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column ()
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " error: no persistent data members in the class" << endl;
 
           throw generation_failed ();
@@ -278,11 +280,6 @@ namespace mysql
         os << "typedef " << id_type.fq_name () << " id_type;"
            << endl;
 
-        // query_type
-        //
-        os << "typedef mysql::query query_type;"
-           << endl;
-
         // image_type
         //
         image_type_.traverse (c);
@@ -290,6 +287,23 @@ namespace mysql
         // id_image_type
         //
         id_image_type_.traverse (c);
+
+        // query_base_type
+        //
+        os << "typedef mysql::query query_base_type;"
+           << endl;
+
+        // query_type
+        //
+        os << "struct query_type: query_base_type"
+           << "{";
+
+        names (c, query_column_names_);
+
+        os << "query_type ();"
+           << "query_type (const std::string&);"
+           << "query_type (const query_base_type&);"
+           << "};";
 
         // id_source
         //
@@ -395,6 +409,9 @@ namespace mysql
       member_count member_count_;
       image_type image_type_;
       id_image_type id_image_type_;
+
+      query_column query_column_;
+      traversal::names query_column_names_;
     };
   }
 

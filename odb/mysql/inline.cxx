@@ -45,6 +45,28 @@ namespace mysql
            << "//" << endl
            << endl;
 
+        // query_type
+        //
+        os << "inline" << endl
+           << traits << "::query_type::" << endl
+           << "query_type ()"
+           << "{"
+           << "}";
+
+        os << "inline" << endl
+           << traits << "::query_type::" << endl
+           << "query_type (const std::string& q)" << endl
+           << "  : query_base_type (q)"
+           << "{"
+           << "}";
+
+        os << "inline" << endl
+           << traits << "::query_type::" << endl
+           << "query_type (const query_base_type& q)" << endl
+           << "  : query_base_type (q)"
+           << "{"
+           << "}";
+
         // id ()
         //
         os << "inline" << endl
