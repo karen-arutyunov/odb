@@ -35,10 +35,10 @@ namespace tracer
 
         if (t.member () == 0)
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column ()
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " error: no data member designated as object id" << endl;
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column ()
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " info: use '#pragma odb id' to specify object id member"
                << endl;
 
@@ -53,10 +53,10 @@ namespace tracer
           // Can be a template-id (which we should handle eventually) or an
           // anonymous type in member declaration (e.g., struct {...} m_;).
           //
-          cerr << id.file () << ":" << id.line () << ":" << id.column ()
+          cerr << id.file () << ":" << id.line () << ":" << id.column () << ":"
                << " error: unnamed type in data member declaration" << endl;
 
-          cerr << id.file () << ":" << id.line () << ":" << id.column ()
+          cerr << id.file () << ":" << id.line () << ":" << id.column () << ":"
                << " info: use 'typedef' to name this type"
                << endl;
 
