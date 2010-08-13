@@ -35,6 +35,12 @@ public:
   // Database names and types.
   //
 public:
+  // Cleaned-up member name that can be used in public interfaces
+  // such as queries, column names, etc.
+  //
+  string
+  public_name (semantics::data_member&) const;
+
   string
   table_name (semantics::type&) const;
 
