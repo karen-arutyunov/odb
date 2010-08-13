@@ -331,7 +331,8 @@ namespace mysql
 
             if (r.type == sql_type::invalid)
             {
-              cerr << m.file () << ":" << m.line () << ":" << m.column ();
+              cerr << m.file () << ":" << m.line () << ":" <<
+                m.column () << ":";
 
               if (tt == sql_token::t_identifier)
                 cerr << " error: unknown MySQL type '" <<
@@ -367,7 +368,7 @@ namespace mysql
                 if (t.type () != sql_token::t_int_lit)
                 {
                   cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                       << " error: integer range expected in MySQL type "
+                       << ": error: integer range expected in MySQL type "
                        << "declaration" << endl;
 
                   throw generation_failed ();
@@ -379,7 +380,7 @@ namespace mysql
                 if (!(is >> v && is.eof ()))
                 {
                   cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                       << " error: invalid range value '" << t.literal ()
+                       << ": error: invalid range value '" << t.literal ()
                        << "'in MySQL type declaration" << endl;
 
                   throw generation_failed ();
@@ -402,7 +403,7 @@ namespace mysql
               if (t.punctuation () != sql_token::p_rparen)
               {
                 cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                     << " error: expected ')' in MySQL type declaration"
+                     << ": error: expected ')' in MySQL type declaration"
                      << endl;
 
                 throw generation_failed ();
@@ -447,7 +448,7 @@ namespace mysql
       if (r.type == sql_type::invalid)
       {
         cerr << m.file () << ":" << m.line () << ":" << m.column ()
-             << " error: incomplete MySQL type declaration" << endl;
+             << ": error: incomplete MySQL type declaration" << endl;
 
         throw generation_failed ();
       }
@@ -465,7 +466,7 @@ namespace mysql
     catch (sql_lexer::invalid_input const& e)
     {
       cerr << m.file () << ":" << m.line () << ":" << m.column ()
-           << " error: invalid MySQL type declaration: " << e.message << endl;
+           << ": error: invalid MySQL type declaration: " << e.message << endl;
 
       throw generation_failed ();
     }
