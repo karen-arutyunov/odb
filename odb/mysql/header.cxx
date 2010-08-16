@@ -323,13 +323,13 @@ namespace mysql
 
         // Queries.
         //
-        os << "static const char* const insert_query;"
-           << "static const char* const select_query;"
-           << "static const char* const update_query;"
-           << "static const char* const delete_query;";
+        os << "static const char* const persist_statement;"
+           << "static const char* const find_statement;"
+           << "static const char* const store_statement;"
+           << "static const char* const erase_statement;";
 
         if (options.generate_query ())
-          os << "static const char* const select_prefix;";
+          os << "static const char* const query_clause;";
 
         os << endl;
 

@@ -681,9 +681,9 @@ namespace mysql
           names (c, n);
         }
 
-        // insert_query
+        // persist_statement
         //
-        os << "const char* const " << traits << "::insert_query =" << endl
+        os << "const char* const " << traits << "::persist_statement =" << endl
            << "\"INSERT INTO `" << table_name (c) << "` (\"" << endl;
 
         {
@@ -701,9 +701,9 @@ namespace mysql
         os << ")\";"
            << endl;
 
-        // select_query
+        // find_statement
         //
-        os << "const char* const " << traits << "::select_query =" << endl
+        os << "const char* const " << traits << "::find_statement =" << endl
            << "\"SELECT \"" << endl;
 
         {
@@ -717,9 +717,9 @@ namespace mysql
           column_name (id) << "` = ?\";"
            << endl;
 
-        // update_query
+        // store_statement
         //
-        os << "const char* const " << traits << "::update_query =" << endl
+        os << "const char* const " << traits << "::store_statement =" << endl
            << "\"UPDATE `" << table_name (c) << "` SET \"" << endl;
 
         {
@@ -732,18 +732,18 @@ namespace mysql
            << "\" WHERE `" << column_name (id) << "` = ?\";"
            << endl;
 
-        // delete_query
+        // erase_statement
         //
-        os << "const char* const " << traits << "::delete_query =" << endl
+        os << "const char* const " << traits << "::erase_statement =" << endl
            << "\"DELETE FROM `" << table_name (c) << "`\"" << endl
            << "\" WHERE `" << column_name (id) << "` = ?\";"
            << endl;
 
-        // select_prefix
+        // query_clause
         //
         if (options.generate_query ())
         {
-          os << "const char* const " << traits << "::select_prefix =" << endl
+          os << "const char* const " << traits << "::query_clause =" << endl
              << "\"SELECT \"" << endl;
 
           {
@@ -842,8 +842,7 @@ namespace mysql
            << "if (init (sts.image (), obj) || b.version == 0)" << endl
            << "bind (b, sts.image ());"
            << endl
-           << "insert_statement& st (sts.insert ());"
-           << "st.execute ();"
+           << "sts.persist_statement ().execute ();"
            << "}";
 
         // store ()
@@ -869,8 +868,7 @@ namespace mysql
            << "if (init (sts.image (), obj) || imb.version == 0)" << endl
            << "bind (imb, sts.image ());"
            << endl
-           << "update_statement& st (sts.update ());"
-           << "st.execute ();"
+           << "sts.store_statement ().execute ();"
            << "}";
 
         // erase ()
@@ -891,8 +889,7 @@ namespace mysql
            << "if (grew || idb.version == 0)" << endl
            << "bind (idb, i);"
            << endl
-           << "delete_statement& st (sts.delete_ ());"
-           << "st.execute ();"
+           << "sts.erase_statement ().execute ();"
            << "}";
 
         // find ()
@@ -954,15 +951,15 @@ namespace mysql
            << "if (imb.version == 0)" << endl
            << "bind (imb, sts.image ());"
            << endl
-           << "select_statement& st (sts.select ());"
-           << "select_statement::result r (st.execute ());"
+           << "mysql::find_statement& st (sts.find_statement ());"
+           << "mysql::find_statement::result r (st.execute ());"
            << endl
-           << "if (r == select_statement::no_data)" << endl
+           << "if (r == mysql::find_statement::no_data)" << endl
            << "return false;"
            << endl;
 
         if (has_grow)
-          os << "if (r == select_statement::truncated)"
+          os << "if (r == mysql::find_statement::truncated)"
              << "{"
              << "if (grow (sts.image (), sts.image_error ()))"
              << "{"
@@ -995,7 +992,7 @@ namespace mysql
              << endl
              << "shared_ptr<query_statement> st (" << endl
              << "new (shared) query_statement (conn," << endl
-             << "select_prefix + q.clause ()," << endl
+             << "query_clause + q.clause ()," << endl
              << "imb," << endl
              << "q.parameters ()));"
              << "st->execute ();"
