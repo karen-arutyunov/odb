@@ -95,7 +95,9 @@ namespace tracer
            << endl
            << "pointer_type r (access::object_factory< " << type <<
           " >::create ());"
+           << "pointer_traits< pointer_type >::guard g (r);"
            << "r->" << id.name () << " = id;"
+           << "g.release ();"
            << "return r;"
            << "}";
 

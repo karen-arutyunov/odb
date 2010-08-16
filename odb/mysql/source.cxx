@@ -911,8 +911,10 @@ namespace mysql
            << "{"
            << "pointer_type p (access::object_factory< " << type <<
           " >::create ());"
+           << "pointer_traits< pointer_type >::guard g (p);"
            << "init (pointer_traits< pointer_type >::get_ref (p), " <<
           "sts.image ());"
+           << "g.release ();"
            << "return p;"
            << "}"
            << "return pointer_type ();"
