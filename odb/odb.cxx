@@ -23,6 +23,12 @@ using namespace std;
 static string
 plugin_path (string const& driver);
 
+static char const* const db_macro[] =
+{
+  "-DODB_MYSQL",
+  "-DODB_TRACER"
+};
+
 int
 main (int argc, char* argv[])
 {
@@ -60,7 +66,6 @@ main (int argc, char* argv[])
   args.push_back ("-x");
   args.push_back ("c++");
   args.push_back ("-S");
-  args.push_back ("-DODB_COMPILER");
   args.push_back ("-fplugin=" + plugin);
 
   // Parse driver options.
@@ -222,6 +227,11 @@ main (int argc, char* argv[])
       e << argv[0] << ": error: input file expected" << endl;
       return 1;
     }
+
+    // Add ODB macros.
+    //
+    args.push_back ("-DODB_COMPILER");
+    args.push_back (db_macro[ops.database ()]);
 
     // Encode plugin options.
     //
