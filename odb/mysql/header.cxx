@@ -104,7 +104,7 @@ namespace mysql
       virtual void
       traverse_long_string (type&, sql_type const& t)
       {
-        os << "odb::buffer " << var << "value;"
+        os << "details::buffer " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
            << endl;
@@ -128,7 +128,7 @@ namespace mysql
       {
         // Represented as string.
         //
-        os << "odb::buffer " << var << "value;"
+        os << "details::buffer " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
            << endl;
@@ -139,7 +139,7 @@ namespace mysql
       {
         // Represented as string.
         //
-        os << "odb::buffer " << var << "value;"
+        os << "details::buffer " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
            << endl;
@@ -447,8 +447,7 @@ namespace mysql
            << endl;
 
     ctx.os << "#include <odb/core.hxx>" << endl
-           << "#include <odb/traits.hxx>" << endl
-           << "#include <odb/buffer.hxx>" << endl;
+           << "#include <odb/traits.hxx>" << endl;
 
     if (ctx.options.generate_query ())
       ctx.os << "#include <odb/result.hxx>" << endl;
@@ -460,7 +459,9 @@ namespace mysql
     if (ctx.options.generate_query ())
       ctx.os << "#include <odb/mysql/query.hxx>" << endl;
 
-    ctx.os << endl;
+    ctx.os << endl
+           << "#include <odb/details/buffer.hxx>" << endl
+           << endl;
 
     ctx.os << "namespace odb"
            << "{";

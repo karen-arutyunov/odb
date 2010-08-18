@@ -990,15 +990,15 @@ namespace mysql
              << "if (imb.version == 0)" << endl
              << "bind (imb, sts.image ());"
              << endl
-             << "shared_ptr<query_statement> st (" << endl
-             << "new (shared) query_statement (conn," << endl
+             << "details::shared_ptr<query_statement> st (" << endl
+             << "new (details::shared) query_statement (conn," << endl
              << "query_clause + q.clause ()," << endl
              << "imb," << endl
              << "q.parameters ()));"
              << "st->execute ();"
              << endl
-             << "shared_ptr<odb::result_impl<object_type> > r (" << endl
-             << "new (shared) mysql::result_impl<object_type> (st, sts));"
+             << "details::shared_ptr<odb::result_impl<object_type> > r (" << endl
+             << "new (details::shared) mysql::result_impl<object_type> (st, sts));"
              << "return result<object_type> (r);"
              << "}";
         }
@@ -1043,7 +1043,9 @@ namespace mysql
            << "#include <odb/mysql/exceptions.hxx>" << endl;
 
     if (ctx.options.generate_query ())
-      ctx.os << "#include <odb/mysql/result.hxx>" << endl;
+      ctx.os << "#include <odb/mysql/result.hxx>" << endl
+             << endl
+             << "#include <odb/details/shared-ptr.hxx>" << endl;
 
     ctx.os << endl;
 
