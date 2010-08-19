@@ -84,9 +84,6 @@ namespace mysql
     if (m.count ("auto"))
       r += " AUTO_INCREMENT";
 
-    std::cerr << r << std::endl;
-
-
     return r;
   }
 
