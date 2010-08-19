@@ -310,11 +310,6 @@ namespace mysql
              << "};";
         }
 
-        // id_source
-        //
-        os << "static const odb::id_source id_source = odb::ids_assigned;"
-           << endl;
-
         // column_count
         //
         os << "static const std::size_t column_count = " << column_count <<

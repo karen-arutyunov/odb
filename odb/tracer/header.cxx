@@ -82,11 +82,6 @@ namespace tracer
         os << "typedef " << id_type.fq_name () << " id_type;"
            << endl;
 
-        // id_source
-        //
-        os << "static const odb::id_source id_source = odb::ids_assigned;"
-           << endl;
-
         // type_name ()
         //
         os << "static const char*" << endl
