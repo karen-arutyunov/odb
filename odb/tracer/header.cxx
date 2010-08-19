@@ -30,7 +30,7 @@ namespace tracer
 
         // Find the id member and type.
         //
-        id_member t (*this);
+        id_member t;
         t.traverse (c);
 
         if (t.member () == 0)

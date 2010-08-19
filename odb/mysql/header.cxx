@@ -198,8 +198,6 @@ namespace mysql
     {
       class_ (context& c)
           : context (c),
-            id_member_ (c),
-            member_count_ (c),
             image_type_ (c),
             id_image_type_ (c),
             query_column_ (c)

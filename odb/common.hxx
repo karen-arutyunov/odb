@@ -11,76 +11,80 @@
 
 // Find id member.
 //
-struct id_member: traversal::class_,
-                  traversal::data_member,
-                  context
+struct id_member: traversal::class_
 {
-  id_member (context& c)
-      : context (c)
+  id_member ()
   {
-    *this >> names_ >> *this;
+    *this >> names_ >> member_;
   }
 
   semantics::data_member*
   member () const
   {
-    return m_;
-  }
-
-  virtual void
-  traverse (semantics::data_member& m)
-  {
-    if (m.count ("id"))
-      m_ = &m;
+    return member_.m_;
   }
 
   virtual void
   traverse (semantics::class_& c)
   {
-    m_ = 0;
+    member_.m_ = 0;
     names (c);
   }
 
 private:
+  struct data_member: traversal::data_member
+  {
+    virtual void
+    traverse (semantics::data_member& m)
+    {
+      if (m.count ("id"))
+        m_ = &m;
+    }
+
+    semantics::data_member* m_;
+  };
+
+  data_member member_;
   traversal::names names_;
-  semantics::data_member* m_;
 };
 
-// Find id member.
+// Count persistent members.
 //
-struct member_count: traversal::class_,
-                     traversal::data_member,
-                     context
+struct member_count: traversal::class_
 {
-  member_count (context& c)
-      : context (c)
+  member_count ()
   {
-    *this >> names_ >> *this;
+    *this >> names_ >> member_;
   }
 
   std::size_t
   count () const
   {
-    return count_;
-  }
-
-  virtual void
-  traverse (semantics::data_member& m)
-  {
-    if (!m.count ("transient"))
-      count_++;
+    return member_.count_;
   }
 
   virtual void
   traverse (semantics::class_& c)
   {
-    count_ = 0;
+    member_.count_ = 0;
     names (c);
   }
 
 private:
+  struct data_member: traversal::data_member
+  {
+    virtual void
+    traverse (semantics::data_member& m)
+    {
+      if (!m.count ("transient"))
+        count_++;
+    }
+
+    std::size_t count_;
+  };
+
+  data_member member_;
   traversal::names names_;
-  std::size_t count_;
 };
 
 #endif // ODB_COMMON_HXX

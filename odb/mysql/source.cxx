@@ -631,8 +631,6 @@ namespace mysql
     {
       class_ (context& c)
           : context (c),
-            id_member_ (c),
-            member_count_ (c),
             init_image_member_ (c, false),
             init_id_image_member_ (c, true),
             init_value_member_ (c)
