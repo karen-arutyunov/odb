@@ -32,36 +32,8 @@ namespace tracer
         //
         id_member t;
         t.traverse (c);
-
-        if (t.member () == 0)
-        {
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: no data member designated as object id" << endl;
-
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: use '#pragma odb id' to specify object id member"
-               << endl;
-
-          throw generation_failed ();
-        }
-
         semantics::data_member& id (*t.member ());
         semantics::type& id_type (id.type ());
-
-        if (id_type.anonymous ())
-        {
-          // Can be a template-id (which we should handle eventually) or an
-          // anonymous type in member declaration (e.g., struct {...} m_;).
-          //
-          cerr << id.file () << ":" << id.line () << ":" << id.column () << ":"
-               << " error: unnamed type in data member declaration" << endl;
-
-          cerr << id.file () << ":" << id.line () << ":" << id.column () << ":"
-               << " info: use 'typedef' to name this type"
-               << endl;
-
-          throw generation_failed ();
-        }
 
         os << "// " << c.name () << endl
            << "//" << endl;

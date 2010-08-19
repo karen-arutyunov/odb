@@ -219,45 +219,11 @@ namespace mysql
         // Find the id member and type.
         //
         id_member_.traverse (c);
-
-        if (id_member_.member () == 0)
-        {
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: no data member designated as object id" << endl;
-
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: use '#pragma odb id' to specify object id member"
-               << endl;
-        }
-
         semantics::data_member& id (*id_member_.member ());
         semantics::type& id_type (id.type ());
 
-        if (id_type.anonymous ())
-        {
-          // Can be a template-id (which we should handle eventually) or an
-          // anonymous type in member declaration (e.g., struct {...} m_;).
-          //
-          cerr << id.file () << ":" << id.line () << ":" << id.column () << ":"
-               << " error: unnamed type in data member declaration" << endl;
-
-          cerr << id.file () << ":" << id.line () << ":" << id.column () << ":"
-               << " info: use 'typedef' to name this type"
-               << endl;
-
-          throw generation_failed ();
-        }
-
         member_count_.traverse (c);
         size_t column_count (member_count_.count ());
-
-        if (column_count == 0)
-        {
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: no persistent data members in the class" << endl;
-
-          throw generation_failed ();
-        }
 
         os << "// " << c.name () << endl
            << "//" << endl;

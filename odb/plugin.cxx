@@ -13,6 +13,7 @@
 #include <odb/pragma.hxx>
 #include <odb/parser.hxx>
 #include <odb/options.hxx>
+#include <odb/validator.hxx>
 #include <odb/generator.hxx>
 #include <odb/semantics/unit.hxx>
 
@@ -39,8 +40,19 @@ gate_callback (void*, void*)
     path file (main_input_filename);
     auto_ptr<unit> u (p.parse (global_namespace, file));
 
-    generator g;
-    g.generate (*options_, *u, file);
+    //
+    //
+    validator v;
+    if (!v.validate (*options_, *u, file))
+      r = 1;
+
+    //
+    //
+    if (r == 0)
+    {
+      generator g;
+      g.generate (*options_, *u, file);
+    }
   }
   catch (parser::failed const&)
   {
