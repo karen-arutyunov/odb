@@ -216,12 +216,6 @@ namespace mysql
 
         string const& type (c.fq_name ());
 
-        // Find the id member and type.
-        //
-        id_member_.traverse (c);
-        semantics::data_member& id (*id_member_.member ());
-        semantics::type& id_type (id.type ());
-
         member_count_.traverse (c);
         size_t column_count (member_count_.count ());
 
@@ -241,8 +235,14 @@ namespace mysql
 
         // id_type
         //
-        os << "typedef " << id_type.fq_name () << " id_type;"
-           << endl;
+        {
+          id_member_.traverse (c);
+          semantics::data_member& id (*id_member_.member ());
+
+          os << "typedef " << id.type ().fq_name (id.belongs ().hint ()) <<
+            " id_type;"
+             << endl;
+        }
 
         // image_type
         //

@@ -19,6 +19,9 @@ namespace semantics
     virtual string
     fq_name () const;
 
+    virtual string
+    fq_name (names*) const;
+
   protected:
     fund_type (tree tn)
         : type (tn) {}

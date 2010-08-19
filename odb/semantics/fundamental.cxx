@@ -14,6 +14,15 @@ namespace semantics
     return name ();
   }
 
+  string fund_type::
+  fq_name (names* hint) const
+  {
+    if (hint == 0)
+      return name ();
+
+    return type::fq_name (hint);
+  }
+
   // type info
   //
   namespace

@@ -162,7 +162,7 @@ column_type (semantics::data_member& m) const
   if (m.count ("type"))
     return m.get<string> ("type");
 
-  string const& name (m.type ().fq_name ());
+  string const& name (m.type ().fq_name (m.belongs ().hint ()));
   type_map_type::const_iterator i (data_->type_map_.find (name));
 
   if (i != data_->type_map_.end ())

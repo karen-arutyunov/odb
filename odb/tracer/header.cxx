@@ -28,13 +28,6 @@ namespace tracer
 
         string const& type (c.fq_name ());
 
-        // Find the id member and type.
-        //
-        id_member t;
-        t.traverse (c);
-        semantics::data_member& id (*t.member ());
-        semantics::type& id_type (id.type ());
-
         os << "// " << c.name () << endl
            << "//" << endl;
 
@@ -51,8 +44,14 @@ namespace tracer
 
         // id_type
         //
-        os << "typedef " << id_type.fq_name () << " id_type;"
-           << endl;
+        {
+          id_member_.traverse (c);
+          semantics::data_member& id (*id_member_.member ());
+
+          os << "typedef " << id.type ().fq_name (id.belongs ().hint ()) <<
+            " id_type;"
+             << endl;
+        }
 
         // type_name ()
         //
@@ -95,6 +94,9 @@ namespace tracer
 
         os << "};";
       }
+
+    private:
+      id_member id_member_;
     };
   }
 

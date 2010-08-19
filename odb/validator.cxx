@@ -27,8 +27,9 @@ namespace
 
       count_++;
       semantics::type& type (m.type ());
+      semantics::belongs& b (m.belongs ());
 
-      if (type.anonymous ())
+      if (type.fq_anonymous (m.belongs ().hint ()))
       {
         // Can be a template-id (which we should handle eventually) or an
         // anonymous type in member declaration (e.g., struct {...} m_;).

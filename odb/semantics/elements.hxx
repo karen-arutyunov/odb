@@ -276,6 +276,14 @@ namespace semantics
       return defined_ == 0 && named_.empty ();
     }
 
+    bool
+    fq_anonymous () const;
+
+    // If hint it 0, use the defines edge.
+    //
+    bool
+    fq_anonymous (names* hint) const;
+
     string
     name () const
     {
@@ -284,6 +292,11 @@ namespace semantics
 
     virtual string
     fq_name () const;
+
+    // If hint it 0, use the defines edge.
+    //
+    virtual string
+    fq_name (names* hint) const;
 
     scope_type&
     scope () const
@@ -494,7 +507,21 @@ namespace semantics
     }
 
   public:
+    void
+    hint (names& hint)
+    {
+      hint_ = &hint;
+    }
+
+    names*
+    hint () const
+    {
+      return hint_;
+    }
+
+  public:
     belongs ()
+        : hint_ (0)
     {
     }
 
@@ -513,6 +540,7 @@ namespace semantics
   private:
     type_type* type_;
     instance_type* instance_;
+    names* hint_;
   };
 
   //

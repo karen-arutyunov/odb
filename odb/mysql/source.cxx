@@ -353,7 +353,7 @@ namespace mysql
       virtual void
       pre (type& m)
       {
-        type = m.type ().fq_name ();
+        type = m.type ().fq_name (m.belongs ().hint ());
 
         if (id_)
           member = "id";
@@ -516,7 +516,7 @@ namespace mysql
       virtual void
       pre (type& m)
       {
-        type = m.type ().fq_name ();
+        type = m.type ().fq_name (m.belongs ().hint ());
 
         os << "// " << m.name () << endl
            << "//" << endl;

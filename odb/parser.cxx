@@ -6,6 +6,7 @@
 #include <odb/gcc.hxx> // Keep it first.
 
 #include <set>
+#include <map>
 #include <string>
 #include <cassert>
 #include <sstream>
@@ -49,6 +50,7 @@ private:
   };
 
   typedef multiset<tree_decl> decl_set;
+  typedef map<tree, names*> name_hint_map;
 
 private:
   void
@@ -149,6 +151,7 @@ private:
   size_t error_;
 
   decl_set decls_;
+  name_hint_map name_hints_;
 };
 
 bool parser::impl::tree_decl::
@@ -376,8 +379,15 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
         data_member& member_node (
           unit_->new_node<data_member> (file, line, clmn));
 
-        unit_->new_edge<belongs> (member_node, type_node);
         unit_->new_edge<names> (*c_node, member_node, name, a);
+        belongs& edge (unit_->new_edge<belongs> (member_node, type_node));
+
+        // See if there is a name hint for this type.
+        //
+        name_hint_map::const_iterator it (name_hints_.find (t));
+
+        if (it != name_hints_.end ())
+          edge.hint (*it->second);
 
         if (trace)
         {
@@ -514,8 +524,15 @@ emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
         data_member& member_node (
           unit_->new_node<data_member> (file, line, clmn));
 
-        unit_->new_edge<belongs> (member_node, type_node);
         unit_->new_edge<names> (*u_node, member_node, name, a);
+        belongs& edge (unit_->new_edge<belongs> (member_node, type_node));
+
+        // See if there is a name hint for this type.
+        //
+        name_hint_map::const_iterator it (name_hints_.find (t));
+
+        if (it != name_hints_.end ())
+          edge.hint (*it->second);
 
         if (trace)
         {
@@ -868,15 +885,24 @@ emit_type_decl (tree decl)
     size_t c (DECL_SOURCE_COLUMN (decl));
 
     type& node (emit_type (t, f, l, c));
-    unit_->new_edge<typedefs> (*scope_, node, name);
+    typedefs& edge (unit_->new_edge<typedefs> (*scope_, node, name));
+
+    if (name_hints_.find (t) != name_hints_.end ())
+    {
+      cerr << f << ':' << l << ':' << c << ": ice: "
+           << " name hint already exist for tree node";
+
+      throw failed ();
+    }
+
+    name_hints_[t] = &edge;
 
     if (trace)
     {
       string s (emit_type_name (t, false));
 
       ts << "typedef " << s << " (" << &node << ") -> " << name << " at "
-         << DECL_SOURCE_FILE (decl) << ":"
-         << DECL_SOURCE_LINE (decl) << endl;
+         << f << ":" << l << endl;
     }
 
     return 0;

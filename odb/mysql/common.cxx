@@ -198,7 +198,10 @@ namespace mysql
   void query_column::
   pre (type& m)
   {
-    type_ = "mysql::value_traits< " + m.type ().fq_name () + " >::value_type";
+    type_ = "mysql::value_traits< "
+      + m.type ().fq_name (m.belongs ().hint ())
+      + " >::value_type";
+
     name_ = escape (public_name (m));
 
     if (decl_)

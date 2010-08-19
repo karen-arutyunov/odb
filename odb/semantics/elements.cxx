@@ -21,13 +21,73 @@ namespace semantics
   // nameable
   //
 
+  bool nameable::
+  fq_anonymous () const
+  {
+    // Nameable is fq-anonymous if all the paths to the global scope
+    // have at least one anonymous link.
+    //
+    if (anonymous ())
+      return true;
+
+    if (named ().global_scope ())
+      return false;
+
+    if (defined_ != 0 && !defined_->scope ().fq_anonymous ())
+      return false;
+
+    for (names_list::const_iterator i (named_.begin ()), e (named_.end ());
+         i != e; ++i)
+    {
+      if (!(*i)->scope ().fq_anonymous ())
+        return false;
+    }
+
+    return true;
+  }
+
+  bool nameable::
+  fq_anonymous (names* hint) const
+  {
+    if (hint == 0 && defined_ == 0)
+      return true;
+
+    names& n (hint ? *hint : *defined_);
+
+    if (n.global_scope ())
+      return false;
+
+    return n.scope ().fq_anonymous ();
+  }
+
   string nameable::
   fq_name () const
   {
     if (named ().global_scope ())
       return "";
-    else
-      return scope ().fq_name () + "::" + name ();
+
+    if (defined_ != 0 && !defined_->scope ().fq_anonymous ())
+      return defined_->scope ().fq_name () + "::" + name ();
+
+    for (names_list::const_iterator i (named_.begin ()), e (named_.end ());
+         i != e; ++i)
+    {
+      if (!(*i)->scope ().fq_anonymous ())
+        return (*i)->scope ().fq_name () + "::" + name ();
+    }
+
+    return "<anonymous>";
+  }
+
+  string nameable::
+  fq_name (names* hint) const
+  {
+    names& n (hint ? *hint : *defined_);
+
+    if (n.global_scope ())
+      return "";
+
+    return n.scope ().fq_name () + "::" + n.name ();
   }
 
   // scope
