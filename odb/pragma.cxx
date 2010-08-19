@@ -85,6 +85,7 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
   char const* pc (p.c_str ());
 
   if (p == "id" ||
+      p == "auto" ||
       p == "column" ||
       p == "type" ||
       p == "transient")
@@ -219,6 +220,45 @@ handle_pragma (string const& p)
   else if (p == "id")
   {
     // id [(<identifier>)]
+    //
+
+    tt = pragma_lex (&t);
+
+    if (tt == CPP_OPEN_PAREN)
+    {
+      tt = pragma_lex (&t);
+
+      if (tt == CPP_NAME || tt == CPP_SCOPE)
+      {
+        string name;
+        decl = parse_scoped_name (t, tt, name, false, p);
+
+        if (decl == 0)
+          return;
+
+        // Make sure we've got the correct declaration type.
+        //
+        if (!check_decl_type (decl, name, p, loc))
+          return;
+
+        if (tt != CPP_CLOSE_PAREN)
+        {
+          error ("%qs expected at the end of odb pragma %qs", ")", pc);
+          return;
+        }
+
+        tt = pragma_lex (&t);
+      }
+      else
+      {
+        error ("data member name expected in odb pragma %qs", pc);
+        return;
+      }
+    }
+  }
+  else if (p == "auto")
+  {
+    // auto [(<identifier>)]
     //
 
     tt = pragma_lex (&t);
@@ -447,6 +487,12 @@ handle_pragma_odb_id (cpp_reader*)
 }
 
 extern "C" void
+handle_pragma_odb_auto (cpp_reader*)
+{
+  handle_pragma ("auto");
+}
+
+extern "C" void
 handle_pragma_odb_column (cpp_reader*)
 {
   handle_pragma ("column");
@@ -470,6 +516,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("odb", "object", handle_pragma_odb_object);
   c_register_pragma_with_expansion ("odb", "table", handle_pragma_odb_table);
   c_register_pragma_with_expansion ("odb", "id", handle_pragma_odb_id);
+  c_register_pragma_with_expansion ("odb", "auto", handle_pragma_odb_auto);
   c_register_pragma_with_expansion ("odb", "column", handle_pragma_odb_column);
   c_register_pragma_with_expansion ("odb", "type", handle_pragma_odb_type);
   c_register_pragma_with_expansion ("odb", "transient", handle_pragma_odb_transient);

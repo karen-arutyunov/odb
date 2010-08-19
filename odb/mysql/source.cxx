@@ -838,12 +838,22 @@ namespace mysql
            << "object_statements<object_type>& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << "binding& b (sts.image_binding ());"
-           << endl
+           << endl;
+
+        if (id.count ("auto"))
+          os << "obj." << id.name () << " = 0;";
+
+        os << endl
            << "if (init (sts.image (), obj) || b.version == 0)" << endl
            << "bind (b, sts.image ());"
            << endl
-           << "sts.persist_statement ().execute ();"
-           << "}";
+           << "mysql::persist_statement& st (sts.persist_statement ());"
+           << "st.execute ();";
+
+        if (id.count ("auto"))
+          os << "obj." << id.name () << " = static_cast<id_type> (st.id ());";
+
+        os << "}";
 
         // store ()
         //

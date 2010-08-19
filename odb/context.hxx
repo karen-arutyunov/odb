@@ -47,7 +47,7 @@ public:
   string
   column_name (semantics::data_member&) const;
 
-  string
+  virtual string
   column_type (semantics::data_member&) const;
 
 public:

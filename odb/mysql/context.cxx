@@ -76,6 +76,20 @@ namespace mysql
   {
   }
 
+  string context::
+  column_type (semantics::data_member& m) const
+  {
+    string r (::context::column_type (m));
+
+    if (m.count ("auto"))
+      r += " AUTO_INCREMENT";
+
+    std::cerr << r << std::endl;
+
+
+    return r;
+  }
+
   static sql_type
   parse_sql_type (semantics::data_member& m, std::string const& sql);
 

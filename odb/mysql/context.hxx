@@ -87,6 +87,9 @@ namespace mysql
     data* data_;
 
   public:
+    virtual string
+    column_type (semantics::data_member&) const;
+
     sql_type const&
     db_type (semantics::data_member&);
 
