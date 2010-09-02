@@ -84,10 +84,9 @@ odb_so   := $(out_base)/odb.so
 # Dummy library to force driver timestamp update when the plugin DSO
 # changes.
 #
-odb.l    := $(out_base)/odb.l
-
-clean    := $(out_base)/.clean
-install  := $(out_base)/.install
+odb.l := $(out_base)/odb.l
+clean := $(out_base)/.clean
+dist  := $(out_base)/.dist
 
 # Import.
 #
@@ -133,6 +132,21 @@ $(install): $(odb)
 	$(call install-exec,$<,$(install_bin_dir)/odb)
 	$(call install-exec,$<.so,$(install_bin_dir)/odb.so)
 
+# Dist.
+#
+$(dist): export plugin_sources := $(cxx_ptun)
+$(dist): export driver_sources := $(cxx_dtun)
+$(dist): export common_sources := $(cxx_ctun) $(cli_tun:.cli=.cxx)
+$(dist): export headers = $(subst $(src_base)/,,$(shell find $(src_base) \
+-name '*.hxx' -o -name '*.ixx' -o -name '*.txx'))
+$(dist): data_dist := $(cli_tun)
+$(dist): export extra_dist := $(data_dist)
+
+$(dist): $(gen)
+	$(call dist-data,$(plugin_sources) $(driver_sources) \
+$(common_sources) $(headers) $(data_dist))
+	$(call meta-automake)
+
 # Clean.
 #
 $(clean):                             \
@@ -159,7 +173,10 @@ endif
 
 # Rules.
 #
+$(call include,$(bld_root)/dist.make)
+$(call include,$(bld_root)/meta/automake.make)
 $(call include,$(bld_root)/install.make)
+
 $(call include,$(cli_rules))
 $(call include,$(bld_root)/cxx/cxx-d.make)
 $(call include,$(bld_root)/cxx/cxx-o.make)

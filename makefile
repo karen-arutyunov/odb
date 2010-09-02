@@ -5,31 +5,34 @@
 
 include $(dir $(lastword $(MAKEFILE_LIST)))build/bootstrap.make
 
+dirs := odb
+
 default  := $(out_base)/
-test     := $(out_base)/.test
-install  := $(out_base)/.install
+dist     := $(out_base)/.dist
 clean    := $(out_base)/.clean
 cleandoc := $(out_base)/.cleandoc
 
-$(default): $(out_base)/odb/
+$(default): $(addprefix $(out_base)/,$(addsuffix /,$(dirs)))
 
+$(dist): export dirs := $(dirs)
+$(dist): export docs := GPLv2 LICENSE README version
+$(dist): data_dist := 
+$(dist): exec_dist := bootstrap
+$(dist): export extra_dist := $(data_dist) $(exec_dist)
+$(dist): export version = $(shell cat $(src_root)/version)
 
-# Test.
-#
-$(test): $(out_base)/tests/.test
+$(dist): $(addprefix $(out_base)/,$(addsuffix /.dist,$(dirs)))
+	$(call dist-data,$(docs) $(data_dist))
+	$(call dist-exec,$(exec_dist))
+	$(call dist-dir,m4)
+	$(call meta-automake)
+	$(call meta-autoconf)
 
-
-# Install.
-#
-$(install): $(out_base)/odb/.install
-
-
-# Clean.
-#
-$(clean): $(out_base)/odb/.clean
-
+$(clean): $(addprefix $(out_base)/,$(addsuffix /.clean,$(dirs)))
 $(cleandoc): $(out_base)/doc/.cleandoc
 
-$(call include,$(bld_root)/install.make)
+$(call include,$(bld_root)/dist.make)
+$(call include,$(bld_root)/meta/automake.make)
+$(call include,$(bld_root)/meta/autoconf.make)
 
-$(call import,$(src_base)/odb/makefile)
+$(foreach d,$(dirs),$(call import,$(src_base)/$d/makefile))
