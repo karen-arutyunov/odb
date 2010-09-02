@@ -43,10 +43,7 @@ namespace semantics
     }
 
   public:
-    inherits (access_type access, bool virt)
-        : virt_ (virt), access_ (access)
-    {
-    }
+    inherits (access_type, bool virt);
 
     void
     set_left_node (class_& n)
@@ -91,10 +88,7 @@ namespace semantics
     }
 
   public:
-    class_ (path const& file, size_t line, size_t column, tree tn)
-        : node (file, line, column), type (tn)
-    {
-    }
+    class_ (path const&, size_t line, size_t column, tree);
 
     void
     add_edge_left (inherits& e)

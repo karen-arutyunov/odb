@@ -8,6 +8,21 @@
 
 namespace semantics
 {
+  union_template::
+  union_template (path const& file, size_t line, size_t column)
+      : node (file, line, column)
+  {
+  }
+
+  union_instantiation::
+  union_instantiation (path const& file,
+                       size_t line,
+                       size_t column,
+                       tree tn)
+      : node (file, line, column), type (tn)
+  {
+  }
+
   // type info
   //
   namespace

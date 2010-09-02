@@ -8,6 +8,66 @@
 
 namespace semantics
 {
+  derived_type::
+  derived_type (tree tn)
+      : type (tn)
+  {
+  }
+
+  qualifies::
+  qualifies ()
+  {
+  }
+
+  qualifier::
+  qualifier (path const& file,
+             size_t line,
+             size_t column,
+             tree tn,
+             bool c,
+             bool v,
+             bool r)
+      : node (file, line, column), derived_type (tn), c_ (c), v_ (v), r_ (r)
+  {
+  }
+
+  points::
+  points ()
+  {
+  }
+
+  pointer::
+  pointer (path const& file, size_t line, size_t column, tree tn)
+      : node (file, line, column), derived_type (tn)
+  {
+  }
+
+  references::
+  references ()
+  {
+  }
+
+  reference::
+  reference (path const& file, size_t line, size_t column, tree tn)
+      : node (file, line, column), derived_type (tn)
+  {
+  }
+
+  contains::
+  contains ()
+  {
+  }
+
+  array::
+  array (path const& file,
+         size_t line,
+         size_t column,
+         tree tn,
+         unsigned long long size)
+      : node (file, line, column), derived_type (tn), size_ (size)
+  {
+  }
+
   // type info
   //
   namespace

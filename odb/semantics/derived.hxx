@@ -21,10 +21,7 @@ namespace semantics
     base_type () const = 0;
 
   protected:
-    derived_type (tree tn)
-        : type (tn)
-    {
-    }
+    derived_type (tree);
   };
 
   //
@@ -50,9 +47,7 @@ namespace semantics
     }
 
   public:
-    qualifies ()
-    {
-    }
+    qualifies ();
 
     void
     set_left_node (qualifier_type& n)
@@ -107,16 +102,13 @@ namespace semantics
     }
 
   public:
-    qualifier (path const& file,
+    qualifier (path const&,
                size_t line,
                size_t column,
-               tree tn,
+               tree,
                bool c,
                bool v,
-               bool r)
-        : node (file, line, column), derived_type (tn), c_ (c), v_ (v), r_ (r)
-    {
-    }
+               bool r);
 
     void
     add_edge_left (qualifies_type& e)
@@ -152,9 +144,7 @@ namespace semantics
     }
 
   public:
-    points ()
-    {
-    }
+    points ();
 
     void
     set_left_node (pointer_type& n)
@@ -191,10 +181,7 @@ namespace semantics
     }
 
   public:
-    pointer (path const& file, size_t line, size_t column, tree tn)
-        : node (file, line, column), derived_type (tn)
-    {
-    }
+    pointer (path const&, size_t line, size_t column, tree);
 
     void
     add_edge_left (points_type& e)
@@ -230,9 +217,7 @@ namespace semantics
     }
 
   public:
-    references ()
-    {
-    }
+    references ();
 
     void
     set_left_node (reference_type& n)
@@ -269,10 +254,7 @@ namespace semantics
     }
 
   public:
-    reference (path const& file, size_t line, size_t column, tree tn)
-        : node (file, line, column), derived_type (tn)
-    {
-    }
+    reference (path const&, size_t line, size_t column, tree);
 
     void
     add_edge_left (references_type& e)
@@ -308,9 +290,7 @@ namespace semantics
     }
 
   public:
-    contains ()
-    {
-    }
+    contains ();
 
     void
     set_left_node (array_type& n)
@@ -356,14 +336,11 @@ namespace semantics
     }
 
   public:
-    array (path const& file,
+    array (path const&,
            size_t line,
            size_t column,
-           tree tn,
-           unsigned long long size)
-        : node (file, line, column), derived_type (tn), size_ (size)
-    {
-    }
+           tree,
+           unsigned long long size);
 
     void
     add_edge_left (contains_type& e)

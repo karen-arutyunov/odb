@@ -8,6 +8,17 @@
 
 namespace semantics
 {
+  namespace_::
+  namespace_ (path const& file, size_t line, size_t column)
+      : node (file, line, column)
+  {
+  }
+
+  namespace_::
+  namespace_ ()
+  {
+  }
+
   // type info
   //
   namespace

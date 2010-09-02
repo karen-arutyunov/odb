@@ -33,9 +33,7 @@ namespace semantics
     }
 
   public:
-    enumerates ()
-    {
-    }
+    enumerates ();
 
     void
     set_left_node (enum_type& n)
@@ -74,10 +72,7 @@ namespace semantics
     }
 
   public:
-    enumerator (path const& file, size_t line, size_t column)
-        : node (file, line, column)
-    {
-    }
+    enumerator (path const&, size_t line, size_t column);
 
     void
     add_edge_right (enumerates& e)
@@ -116,10 +111,7 @@ namespace semantics
     }
 
   public:
-    enum_ (path const& file, size_t line, size_t column, tree tn)
-        : node (file, line, column), type (tn)
-    {
-    }
+    enum_ (path const&, size_t line, size_t column, tree);
 
     void
     add_edge_left (enumerates& e)

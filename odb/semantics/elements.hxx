@@ -120,10 +120,7 @@ namespace semantics
     }
 
   public:
-    node (path const& file, size_t line, size_t column)
-        : file_ (file), line_ (line), column_ (column)
-    {
-    }
+    node (path const& file, size_t line, size_t column);
 
     // Sink functions that allow extensions in the form of one-way
     // edges.
@@ -136,14 +133,7 @@ namespace semantics
   protected:
     // For virtual inheritance. Should never be actually called.
     //
-    node ()
-        : file_ ("")
-    {
-      // GCC plugin machinery #define's abort as a macro.
-      //
-      //std::abort ();
-      abort ();
-    }
+    node ();
 
   private:
     path file_;

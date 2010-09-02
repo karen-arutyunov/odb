@@ -16,14 +16,7 @@ namespace semantics
   class unit: public graph<node, edge>, public namespace_
   {
   public:
-    unit (path const& file)
-        : node (file, 1, 1), graph_ (*this)
-    {
-      // Use a special edge to get this->name() return the global
-      // namespace name ("").
-      //
-      new_edge<global_names> (*this, *this);
-    }
+    unit (path const&);
 
     // Mapping from tree nodes to semantic graph nodes.
     //

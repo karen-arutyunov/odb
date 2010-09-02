@@ -8,6 +8,31 @@
 
 namespace semantics
 {
+  template_::
+  template_ ()
+  {
+  }
+
+  instantiates::
+  instantiates ()
+  {
+  }
+
+  instantiation::
+  instantiation ()
+  {
+  }
+
+  type_template::
+  type_template ()
+  {
+  }
+
+  type_instantiation::
+  type_instantiation ()
+  {
+  }
+
   // type info
   //
   namespace

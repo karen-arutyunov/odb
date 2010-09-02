@@ -33,10 +33,7 @@ namespace semantics
     }
 
   public:
-    class_template (path const& file, size_t line, size_t column)
-        : node (file, line, column)
-    {
-    }
+    class_template (path const&, size_t line, size_t column);
 
     void
     add_edge_left (inherits& e)
@@ -63,13 +60,7 @@ namespace semantics
   class class_instantiation: public class_, public type_instantiation
   {
   public:
-    class_instantiation (path const& file,
-                         size_t line,
-                         size_t column,
-                         tree tn)
-        : node (file, line, column), type (tn)
-    {
-    }
+    class_instantiation (path const&, size_t line, size_t column, tree);
 
     using class_::add_edge_left;
     using type_instantiation::add_edge_left;

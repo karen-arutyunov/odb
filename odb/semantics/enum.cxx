@@ -8,6 +8,23 @@
 
 namespace semantics
 {
+  enumerates::
+  enumerates ()
+  {
+  }
+
+  enumerator::
+  enumerator (path const& file, size_t line, size_t column)
+      : node (file, line, column)
+  {
+  }
+
+  enum_::
+  enum_ (path const& file, size_t line, size_t column, tree tn)
+      : node (file, line, column), type (tn)
+  {
+  }
+
   // type info
   //
   namespace

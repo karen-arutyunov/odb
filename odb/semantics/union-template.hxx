@@ -15,10 +15,7 @@ namespace semantics
   class union_template: public type_template, public scope
   {
   public:
-    union_template (path const& file, size_t line, size_t column)
-        : node (file, line, column)
-    {
-    }
+    union_template (path const&, size_t line, size_t column);
 
     // Resolve conflict between scope::scope and nameable::scope.
     //
@@ -28,13 +25,7 @@ namespace semantics
   class union_instantiation: public union_, public type_instantiation
   {
   public:
-    union_instantiation (path const& file,
-                         size_t line,
-                         size_t column,
-                         tree tn)
-        : node (file, line, column), type (tn)
-    {
-    }
+    union_instantiation (path const&, size_t line, size_t column, tree);
 
     using union_::add_edge_left;
     using type_instantiation::add_edge_left;

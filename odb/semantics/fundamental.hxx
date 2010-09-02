@@ -23,8 +23,7 @@ namespace semantics
     fq_name (names*) const;
 
   protected:
-    fund_type (tree tn)
-        : type (tn) {}
+    fund_type (tree tn);
   };
 
   struct fund_void: fund_type

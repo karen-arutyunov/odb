@@ -18,6 +18,24 @@ namespace semantics
     return access_str[value_];
   }
 
+  //
+  //
+  node::
+  node (path const& file, size_t line, size_t column)
+      : file_ (file), line_ (line), column_ (column)
+  {
+  }
+
+  node::
+  node ()
+      : file_ ("")
+  {
+    // GCC plugin machinery #define's abort as a macro.
+    //
+    // std::abort ();
+    abort ();
+  }
+
   // nameable
   //
 

@@ -13,14 +13,8 @@ namespace semantics
   class namespace_: public scope
   {
   public:
-    namespace_ (path const& file, size_t line, size_t column)
-        : node (file, line, column)
-    {
-    }
-
-    namespace_ ()
-    {
-    }
+    namespace_ (path const&, size_t line, size_t column);
+    namespace_ ();
 
     // Resolve conflict between scope::scope and nameable::scope.
     //

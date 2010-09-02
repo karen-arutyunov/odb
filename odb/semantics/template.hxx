@@ -46,9 +46,7 @@ namespace semantics
     using nameable::add_edge_right;
 
   protected:
-    template_ ()
-    {
-    }
+    template_ ();
 
   private:
     instantiated instantiated_;
@@ -77,9 +75,7 @@ namespace semantics
     }
 
   public:
-    instantiates ()
-    {
-    }
+    instantiates ();
 
     void
     set_left_node (instantiation_type& n)
@@ -126,9 +122,7 @@ namespace semantics
     }
 
   protected:
-    instantiation ()
-    {
-    }
+    instantiation ();
 
   private:
     instantiates_type* instantiates_;
@@ -141,17 +135,13 @@ namespace semantics
   class type_template: public template_
   {
   protected:
-    type_template ()
-    {
-    }
+    type_template ();
   };
 
   class type_instantiation: public virtual type, public instantiation
   {
   protected:
-    type_instantiation ()
-    {
-    }
+    type_instantiation ();
   };
 }
 

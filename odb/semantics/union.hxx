@@ -13,10 +13,7 @@ namespace semantics
   class union_: public virtual type, public scope
   {
   public:
-    union_ (path const& file, size_t line, size_t column, tree tn)
-        : node (file, line, column), type (tn)
-    {
-    }
+    union_ (path const&, size_t line, size_t column, tree);
 
     // Resolve conflict between scope::scope and nameable::scope.
     //

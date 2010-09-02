@@ -8,6 +8,18 @@
 
 namespace semantics
 {
+  inherits::
+  inherits (access_type access, bool virt)
+      : virt_ (virt), access_ (access)
+  {
+  }
+
+  class_::
+  class_ (path const& file, size_t line, size_t column, tree tn)
+      : node (file, line, column), type (tn)
+  {
+  }
+
   // type info
   //
   namespace
