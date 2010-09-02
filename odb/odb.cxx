@@ -10,6 +10,10 @@
 #include <sys/types.h> // stat
 #include <sys/stat.h>  // stat
 
+#ifdef _WIN32
+#  include <process.h> // _spawnvp
+#endif
+
 #include <string>
 #include <vector>
 #include <cstddef>     // size_t
@@ -18,10 +22,20 @@
 #include <odb/version.hxx>
 #include <odb/options.hxx>
 
+#ifdef HAVE_CONFIG_H
+#  include <odb/config.h>
+#endif
+
 using namespace std;
 
 static string
+driver_path (string const& driver);
+
+static string
 plugin_path (string const& driver);
+
+inline size_t
+rfind_slash (string const&);
 
 static char const* const db_macro[] =
 {
@@ -39,7 +53,13 @@ main (int argc, char* argv[])
   // Find the plugin. It should be in the same directory as the
   // driver.
   //
+#ifndef STATIC_PLUGIN
   string plugin (plugin_path (argv[0]));
+#else
+  // Use a dummy name if the plugin is linked into the compiler.
+  //
+  string plugin ("odb");
+#endif
 
   if (plugin.empty ())
   {
@@ -56,7 +76,21 @@ main (int argc, char* argv[])
   // g++ by default.
   //
 #ifdef GXX_NAME
-  args.push_back (GXX_NAME);
+  string gxx (GXX_NAME);
+
+  // If the g++ name is a relative path (starts with '.'), then use
+  // our own path as base.
+  //
+  if (!gxx.empty () && gxx[0] == '.')
+  {
+    string path (driver_path (argv[0]));
+    size_t p (rfind_slash (path));
+
+    if (p != string::npos)
+      gxx = string (path, 0, p + 1) + gxx;
+  }
+
+  args.push_back (gxx);
 #else
   args.push_back ("g++");
 #endif
@@ -304,20 +338,55 @@ main (int argc, char* argv[])
 
   exec_args.push_back (0);
 
+#ifdef _WIN32
+  intptr_t r (_spawnvp (_P_WAIT, exec_args[0], &exec_args[0]));
+
+  if (r == (intptr_t)(-1))
+  {
+    e << exec_args[0] << ": error: " << strerror (errno) << endl;
+    return 1;
+  }
+
+  return r == 0 ? 0 : 1;
+#else
   if (execvp (exec_args[0], const_cast<char**> (&exec_args[0])) < 0)
   {
     e << exec_args[0] << ": error: " << strerror (errno) << endl;
     return 1;
   }
+#endif
+}
+
+//
+// Path manipulation.
+//
+
+#ifdef _WIN32
+const char dir_sep = '\\';
+const char path_sep = ';';
+#else
+const char dir_sep = '/';
+const char path_sep = ':';
+#endif
+
+inline size_t
+rfind_slash (string const& s)
+{
+  size_t r (s.rfind ('/'));
+
+  if (r == string::npos)
+    r = s.rfind ('\\');
+
+  return r;
 }
 
 static string
-plugin_path (string const& drv)
+driver_path (string const& drv)
 {
-  size_t p (drv.rfind ('/'));
+  size_t p (rfind_slash (drv));
 
   if (p != string::npos)
-    return drv + ".so";
+    return drv;
 
   // Search the PATH environment variable.
   //
@@ -329,9 +398,17 @@ plugin_path (string const& drv)
   if (char const* s = getenv ("PATH"))
     paths = s;
   else
-    paths = ":";
+    paths = path_sep;
 
-  for (size_t b (0), e (paths.find (':')); b != string::npos;)
+  // On Windows also check the current directory.
+  //
+#ifdef _WIN32
+  paths += path_sep;
+#endif
+
+  struct stat info;
+
+  for (size_t b (0), e (paths.find (path_sep)); b != string::npos;)
   {
     string p (paths, b, e != string::npos ? e - b : e);
 
@@ -341,21 +418,84 @@ plugin_path (string const& drv)
     if (p.empty ())
       p = ".";
 
-    string dp (p + (p[p.size () - 1] == '/' ? "" : "/") + drv);
+    string dp (p);
+
+    char l (p[p.size () - 1]);
+    if (l != '/' && l != '\\')
+      dp += dir_sep;
+
+    dp += drv;
 
     // Just check that the file exist without checking for
     // permissions, etc.
     //
-    struct stat info;
     if (stat (dp.c_str (), &info) == 0 && S_ISREG (info.st_mode))
-      return dp + ".so";
+      return dp;
+
+    // On Windows also try the path with the .exe extension.
+    //
+#ifdef _WIN32
+    dp += ".exe";
+
+    if (stat (dp.c_str (), &info) == 0 && S_ISREG (info.st_mode))
+      return dp;
+#endif
 
     if (e == string::npos)
       b = e;
     else
     {
       b = e + 1;
-      e = paths.find (':', b);
+      e = paths.find (path_sep, b);
+    }
+  }
+
+  return "";
+}
+
+static string
+plugin_path (string const& drv)
+{
+  string path (driver_path (drv));
+
+  if (!path.empty ())
+  {
+    // If the driver name starts with 'lt-', then we are running thought
+    // the libtool script. Strip this prefix -- the shared object should
+    // be in the same directory.
+    //
+    {
+      size_t p (rfind_slash (path));
+      p = p != string::npos ? p + 1 : 0;
+
+      if (p + 2 < path.size () &&
+          path[p] == 'l' && path[p + 1] == 't' && path[p + 2] == '-')
+      {
+        path = (p != 0 ? string (path, 0, p) : string ()) +
+          string (path, p + 3, string::npos);
+      }
+
+    }
+
+    struct stat info;
+
+    string so (path + ".so");
+    if (stat (so.c_str (), &info) == 0)
+      return so;
+
+    string la (path + ".la");
+    if (stat (la.c_str (), &info) == 0)
+    {
+      size_t p (rfind_slash (path));
+
+      if (p != string::npos)
+      {
+        string so (path, 0, p + 1);
+        so += string (".libs") + dir_sep + string (path, p + 1) + ".so";
+
+        if (stat (so.c_str (), &info) == 0)
+          return so;
+      }
     }
   }
 
