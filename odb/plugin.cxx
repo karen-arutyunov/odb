@@ -13,6 +13,7 @@
 #include <odb/pragma.hxx>
 #include <odb/parser.hxx>
 #include <odb/options.hxx>
+#include <odb/version.hxx>
 #include <odb/validator.hxx>
 #include <odb/generator.hxx>
 #include <odb/semantics/unit.hxx>
@@ -70,10 +71,13 @@ gate_callback (void*, void*)
   exit (r);
 }
 
+static char const* const odb_version = ODB_COMPILER_VERSION_STR;
+
 extern "C" int
-plugin_init (plugin_name_args* plugin_info, plugin_gcc_version* version)
+plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
 {
   int r (0);
+  plugin_info->version = odb_version;
 
   try
   {
