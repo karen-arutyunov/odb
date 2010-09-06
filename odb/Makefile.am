@@ -8,7 +8,7 @@ plugindir = $(bindir)
 bin_PROGRAMS = odb
 plugin_LTLIBRARIES = odb.la
 
-AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)
+AM_CPPFLAGS = -I'$(top_builddir)' -I'$(top_srcdir)'
 
 EXTRA_DIST = __path__(headers) __path__(extra_dist)
 
@@ -20,7 +20,7 @@ odb_la_LDFLAGS = -module -shrext .so -avoid-version
 # Remove the .la file from the final install.
 #
 install-data-hook:
-	rm -f $(bindir)/odb.la
+	rm -f '$(bindir)/odb.la'
 
 # Driver.
 #
