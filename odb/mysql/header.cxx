@@ -402,9 +402,6 @@ namespace mysql
     ctx.os << "#include <cstddef>" << endl // std::size_t
            << endl;
 
-    ctx.os << "#include <mysql/mysql.h>" << endl
-           << endl;
-
     ctx.os << "#include <odb/core.hxx>" << endl
            << "#include <odb/traits.hxx>" << endl;
 
@@ -413,7 +410,9 @@ namespace mysql
 
     ctx.os << endl
            << "#include <odb/mysql/version.hxx>" << endl
-           << "#include <odb/mysql/forward.hxx>" << endl;
+           << "#include <odb/mysql/forward.hxx>" << endl
+           << "#include <odb/mysql/mysql.hxx>" << endl
+           << endl;
 
     if (ctx.options.generate_query ())
       ctx.os << "#include <odb/mysql/query.hxx>" << endl;
