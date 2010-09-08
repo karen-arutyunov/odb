@@ -77,7 +77,7 @@ endif
 
 # Don't include dependency info for certain targets.
 #
-ifneq ($(filter $(MAKECMDGOALS),clean cleandoc disfigure),)
+ifneq ($(filter $(MAKECMDGOALS),clean cleandoc disfigure dist),)
 include-dep =
 endif
 
