@@ -304,6 +304,25 @@ main (int argc, char* argv[])
       if (!v.empty ())
       {
         o += '=';
+
+        // On Windows we need to protect values with spaces using quotes.
+        // Since there could be actual quotes in the value, we need to
+        // escape them.
+        //
+#ifdef _WIN32
+        {
+          string t ("\"");
+          for (size_t i (0); i < v.size (); ++i)
+          {
+            if (v[i] == '"')
+              t += "\\\"";
+            else
+              t += v[i];
+          }
+          t += '"';
+          v = t;
+        }
+#endif
         o += v;
       }
 
