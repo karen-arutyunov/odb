@@ -411,7 +411,7 @@ namespace mysql
     ctx.os << endl
            << "#include <odb/mysql/version.hxx>" << endl
            << "#include <odb/mysql/forward.hxx>" << endl
-           << "#include <odb/mysql/mysql.hxx>" << endl
+           << "#include <odb/mysql/mysql-types.hxx>" << endl
            << endl;
 
     if (ctx.options.generate_query ())

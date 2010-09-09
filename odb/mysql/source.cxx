@@ -1043,7 +1043,8 @@ namespace mysql
     ns >> ns_defines >> ns;
     ns_defines >> c;
 
-    ctx.os << "#include <odb/mysql/traits.hxx>" << endl
+    ctx.os << "#include <odb/mysql/mysql.hxx>" << endl
+           << "#include <odb/mysql/traits.hxx>" << endl
            << "#include <odb/mysql/database.hxx>" << endl
            << "#include <odb/mysql/transaction.hxx>" << endl
            << "#include <odb/mysql/connection.hxx>" << endl
