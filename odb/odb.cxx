@@ -222,7 +222,7 @@ main (int argc, char* argv[])
     //
     if (ops.version ())
     {
-      e << "CodeSynthesis ODB object persistence compiler for C++ " <<
+      e << "ODB object-relational mapping (ORM) compiler for C++ "
         ODB_COMPILER_VERSION_STR << endl
         << "Copyright (C) 2009-2010 Code Synthesis Tools CC" << endl;
 
