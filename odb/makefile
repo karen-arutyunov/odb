@@ -156,7 +156,8 @@ $(clean):                             \
   $(addsuffix .cxx.clean,$(cxx_cobj)) \
   $(addsuffix .cxx.clean,$(cxx_pod))  \
   $(addsuffix .cxx.clean,$(cxx_dod))  \
-  $(addsuffix .cxx.clean,$(cxx_cod))
+  $(addsuffix .cxx.clean,$(cxx_cod))  \
+  $(addprefix $(out_base)/,$(cli_tun:.cli=.cxx.cli.clean))
 	$(call message,rm $$1,rm -f $$1,$(out_base)/odb.so)
 	$(call message,,rm -f $(out_base)/odb.l)
 
@@ -165,7 +166,7 @@ $(clean):                             \
 ifeq ($(out_base),$(src_base))
 $(odb): | $(out_base)/.gitignore
 
-$(out_base)/.gitignore: files := odb odb.so
+$(out_base)/.gitignore: files := odb odb.so $(genf)
 $(clean): $(out_base)/.gitignore.clean
 
 $(call include,$(bld_root)/git/gitignore.make)
