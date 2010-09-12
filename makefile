@@ -15,7 +15,7 @@ cleandoc := $(out_base)/.cleandoc
 $(default): $(addprefix $(out_base)/,$(addsuffix /,$(dirs)))
 
 $(dist): export dirs := $(dirs)
-$(dist): export docs := GPLv2 LICENSE README version
+$(dist): export docs := GPLv2 LICENSE README NEWS version
 $(dist): data_dist := 
 $(dist): exec_dist := bootstrap
 $(dist): export extra_dist := $(data_dist) $(exec_dist)
