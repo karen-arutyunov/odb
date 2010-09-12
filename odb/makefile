@@ -136,15 +136,19 @@ $(install): $(odb)
 #
 $(dist): export plugin_sources := $(cxx_ptun)
 $(dist): export driver_sources := $(cxx_dtun)
-$(dist): export common_sources := $(cxx_ctun) $(cli_tun:.cli=.cxx)
-$(dist): export headers = $(subst $(src_base)/,,$(shell find $(src_base) \
+$(dist): common_sources_dist := $(cxx_ctun)
+$(dist): export common_sources := $(common_sources_dist) $(cli_tun:.cli=.cxx)
+$(dist): headers_dist = $(subst $(src_base)/,,$(shell find $(src_base) \
 -name '*.hxx' -o -name '*.ixx' -o -name '*.txx'))
+$(dist): gen_headers := $(cli_tun:.cli=.hxx) $(cli_tun:.cli=.ixx)
+$(dist): export headers = $(headers_dist) $(gen_headers)
+$(dist): gen_dist := $(gen)
 $(dist): data_dist := $(cli_tun)
 $(dist): export extra_dist := $(data_dist)
 
 $(dist): $(gen)
 	$(call dist-data,$(plugin_sources) $(driver_sources) \
-$(common_sources) $(headers) $(data_dist))
+$(common_sources_dist) $(headers_dist) $(gen_dist) $(data_dist))
 	$(call meta-automake)
 
 # Clean.
