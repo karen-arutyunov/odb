@@ -1,0 +1,60 @@
+.\" Process this file with
+.\" groff -man -Tascii odb.1
+.\"
+.TH ODB 1 "September 2010" "ODB 1.0.0"
+.SH NAME
+odb \- object-relational mapping (ORM) compiler for C++
+.\"
+.\"
+.\"
+.\"--------------------------------------------------------------------
+.SH SYNOPSIS
+.\"--------------------------------------------------------------------
+.B odb
+.B [
+.I options
+.B ]
+.I file
+.B [
+.IR file...
+.B ]
+.\"
+.\"
+.\"
+.\"--------------------------------------------------------------------
+.SH DESCRIPTION
+.\"--------------------------------------------------------------------
+Given a set of C++ classes in a header file,
+.B odb
+generates C++ code that allows you to persist, query, and update objects
+of these classes in a relational database (RDBMS). The relational
+database that the generated code should target is specified with the
+required
+.B --database
+option (see below).
+
+
+For an input file in the form
+.B name.hxx
+(other file extensions can be used instead of
+.BR .hxx ),
+the following C++ files are generated:
+.B name-odb.hxx
+(header file),
+.B name-odb.ixx
+(inline file, generated unless
+the
+.B --suppress-inline
+option is specified), and
+.B name-odb.cxx
+(source file). Additionally, if the
+.B --generate-schema
+option is specified and the target database supports it, the
+.B name.sql
+database schema file is generated.
+.\"
+.\"
+.\"
+.\"--------------------------------------------------------------------
+.SH OPTIONS
+.\"--------------------------------------------------------------------

@@ -1,0 +1,80 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+  <title>ODB 1.0.0 Compiler Command Line Manual</title>
+
+  <meta name="copyright" content="&copy; 2009-2010 Code Synthesis Tools CC"/>
+  <meta name="keywords" content="odb,object,relational,mapping,compiler,c++"/>
+  <meta name="description" content="ODB Compiler Command Line Manual"/>
+
+  <link rel="stylesheet" type="text/css" href="default.css" />
+
+<style type="text/css">
+
+  #synopsis {
+    list-style-type:  none;
+  }
+
+  #synopsis li {
+    padding-top      : 0.0em;
+    padding-bottom   : 0.0em;
+  }
+
+  #commands dt {
+    padding-top      : 0.4em;
+  }
+
+  #commands dd {
+    padding-bottom   : 0.4em;
+    padding-left     : 2em;
+  }
+
+  .options dt {
+    padding-top      : 0.4em;
+  }
+
+  .options dd {
+    padding-top      : 0.1em;
+    padding-bottom   : 0.4em;
+    padding-left     : 1.4em;
+  }
+
+</style>
+</head>
+
+<body>
+<div id="container">
+  <div id="content">
+
+  <h1>NAME</h1>
+
+  <p>odb - object-relational mapping (ORM) compiler for C++</p>
+
+  <h1>SYNOPSIS</h1>
+
+  <dl id="synopsis">
+    <dt><code><b>odb</b> [<i>options</i>] <i>file</i> [<i>file</i>...]</code></dt>
+  </dl>
+
+  <h1>DESCRIPTION</h1>
+
+  <p>Given a set of C++ classes in a header file, <code><b>odb</b></code>
+  generates C++ code that allows you to persist, query, and update objects
+  of these classes in a relational database (RDBMS). The relational
+  database that the generated code should target is specified with the
+  required <code><b>--database</b></code> option (see below).</p>
+
+  <p>For an input file in the form <code><b>name.hxx</b></code> (other
+  file extensions can be used instead of <code><b>.hxx</b></code>),
+  the following C++ files are generated:
+  <code><b>name-odb.hxx</b></code> (header file),
+  <code><b>name-odb.ixx</b></code> (inline file, generated unless
+  the <code><b>--suppress-inline</b></code> option is specified), and
+  <code><b>name-odb.cxx</b></code> (source file).
+
+  Additionally, if the <code><b>--generate-schema</b></code> option is
+  specified and the target database supports it, the <code><b>name.sql</b></code> database
+  schema file is generated.</p>
+
+  <h1>OPTIONS</h1>

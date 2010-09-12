@@ -5,12 +5,11 @@
 
 include $(dir $(lastword $(MAKEFILE_LIST)))build/bootstrap.make
 
-dirs := odb
+dirs := odb doc
 
 default  := $(out_base)/
 dist     := $(out_base)/.dist
 clean    := $(out_base)/.clean
-cleandoc := $(out_base)/.cleandoc
 
 $(default): $(addprefix $(out_base)/,$(addsuffix /,$(dirs)))
 
@@ -29,7 +28,6 @@ $(dist): $(addprefix $(out_base)/,$(addsuffix /.dist,$(dirs)))
 	$(call meta-autoconf)
 
 $(clean): $(addprefix $(out_base)/,$(addsuffix /.clean,$(dirs)))
-$(cleandoc): $(out_base)/doc/.cleandoc
 
 $(call include,$(bld_root)/dist.make)
 $(call include,$(bld_root)/meta/automake.make)
