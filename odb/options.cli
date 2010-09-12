@@ -236,7 +236,7 @@ class options
      the same set of options in the same order on the command line at the
      point where the \cb{--options-file} option is specified except that
      the shell escaping and quoting is not required. Repeat this option
-     to specify more than one options files."
+     to specify more than one options file."
   };
 
   bool --trace {"Trace the compilation process."};
