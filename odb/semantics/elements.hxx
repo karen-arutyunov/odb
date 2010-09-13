@@ -269,7 +269,7 @@ namespace semantics
     bool
     fq_anonymous () const;
 
-    // If hint it 0, use the defines edge.
+    // If hint is 0, use the defines edge.
     //
     bool
     fq_anonymous (names* hint) const;
@@ -283,7 +283,7 @@ namespace semantics
     virtual string
     fq_name () const;
 
-    // If hint it 0, use the defines edge.
+    // If hint is 0, use the defines edge.
     //
     virtual string
     fq_name (names* hint) const;
