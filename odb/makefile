@@ -141,7 +141,7 @@ $(dist): export common_sources := $(common_sources_dist) $(cli_tun:.cli=.cxx)
 $(dist): headers_dist = $(subst $(src_base)/,,$(shell find $(src_base) \
 -name '*.hxx' -o -name '*.ixx' -o -name '*.txx'))
 $(dist): gen_headers := $(cli_tun:.cli=.hxx) $(cli_tun:.cli=.ixx)
-$(dist): export headers = $(headers_dist) $(gen_headers)
+$(dist): export headers = $(sort $(headers_dist) $(gen_headers))
 $(dist): gen_dist := $(gen)
 $(dist): data_dist := $(cli_tun)
 $(dist): export extra_dist := $(data_dist)
