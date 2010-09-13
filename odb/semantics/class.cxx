@@ -1,7 +1,7 @@
 // file      : odb/semantics/class.cxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
-// license   : GNU GPL v2; see accompanying LICENSE file
+// license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
 #include <odb/semantics/class.hxx>

@@ -1,7 +1,7 @@
 # file      : makefile
 # author    : Boris Kolpackov <boris@codesynthesis.com>
 # copyright : Copyright (c) 2005-2010 Code Synthesis Tools CC
-# license   : GNU GPL v2; see accompanying LICENSE file
+# license   : GNU GPL v3; see accompanying LICENSE file
 
 include $(dir $(lastword $(MAKEFILE_LIST)))build/bootstrap.make
 
@@ -14,7 +14,7 @@ clean    := $(out_base)/.clean
 $(default): $(addprefix $(out_base)/,$(addsuffix /,$(dirs)))
 
 $(dist): export dirs := $(dirs)
-$(dist): export docs := GPLv2 LICENSE README NEWS version
+$(dist): export docs := GPLv3 LICENSE README NEWS version
 $(dist): data_dist := 
 $(dist): exec_dist := bootstrap
 $(dist): export extra_dist := $(data_dist) $(exec_dist)

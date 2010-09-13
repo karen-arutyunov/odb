@@ -1,7 +1,7 @@
 dnl file      : m4/gcc-plugin.m4
 dnl author    : Boris Kolpackov <boris@codesynthesis.com>
 dnl copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
-dnl license   : GNU GPL v2; see accompanying LICENSE file
+dnl license   : GNU GPL v3; see accompanying LICENSE file
 dnl
 dnl GCC_PLUGIN
 dnl
