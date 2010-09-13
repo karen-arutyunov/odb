@@ -167,7 +167,10 @@ column_type (semantics::data_member& m) const
   if (t.count ("type"))
     return t.get<string> ("type");
 
-  string const& name (t.fq_name (m.belongs ().hint ()));
+  // Don't use the name hint here so that we get the primary name (e.g.,
+  // ::std::string) instead of a user typedef (e.g., my_string).
+  //
+  string const& name (t.fq_name ());
   type_map_type::const_iterator i (data_->type_map_.find (name));
 
   if (i != data_->type_map_.end ())
