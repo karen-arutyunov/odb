@@ -162,7 +162,12 @@ column_type (semantics::data_member& m) const
   if (m.count ("type"))
     return m.get<string> ("type");
 
-  string const& name (m.type ().fq_name (m.belongs ().hint ()));
+  semantics::type& t (m.type ());
+
+  if (t.count ("type"))
+    return t.get<string> ("type");
+
+  string const& name (t.fq_name (m.belongs ().hint ()));
   type_map_type::const_iterator i (data_->type_map_.find (name));
 
   if (i != data_->type_map_.end ())
@@ -173,7 +178,7 @@ column_type (semantics::data_member& m) const
        << "data member '" << m.name () << "' to a database type" << endl;
 
   cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-       << " info: use '#pragma odb type' to specify the database type"
+       << " info: use '#pragma db type' to specify the database type"
        << endl;
 
   throw generation_failed ();

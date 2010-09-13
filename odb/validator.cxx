@@ -91,7 +91,7 @@ namespace
              << " error: no data member designated as object id" << endl;
 
         cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-             << " info: use '#pragma odb id' to specify object id member"
+             << " info: use '#pragma db id' to specify object id member"
              << endl;
 
         valid_ = false;
