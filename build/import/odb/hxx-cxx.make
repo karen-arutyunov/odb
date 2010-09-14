@@ -51,6 +51,10 @@ endif
 
 .PHONY: $(out_base)/%-odb.cxx.hxx.clean
 
+$(out_base)/%-odb.cxx.hxx.clean: cxx_s_suffix := $(cxx_s_suffix)
+$(out_base)/%-odb.cxx.hxx.clean: cxx_h_suffix := $(cxx_h_suffix)
+$(out_base)/%-odb.cxx.hxx.clean: cxx_i_suffix := $(cxx_i_suffix)
+
 $(out_base)/%-odb.cxx.hxx.clean:
 	$(call message,rm $$1,rm -f $$1,$(@:.cxx.hxx.clean=.$(cxx_s_suffix)))
 	$(call message,rm $$1,rm -f $$1,$(@:.cxx.hxx.clean=.$(cxx_h_suffix)))

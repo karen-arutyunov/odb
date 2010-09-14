@@ -39,6 +39,10 @@ endif
 
 .PHONY: $(out_base)/%.cxx.cli.clean
 
+$(out_base)/%.cxx.cli.clean: cxx_s_suffix := $(cxx_s_suffix)
+$(out_base)/%.cxx.cli.clean: cxx_h_suffix := $(cxx_h_suffix)
+$(out_base)/%.cxx.cli.clean: cxx_i_suffix := $(cxx_i_suffix)
+
 $(out_base)/%.cxx.cli.clean:
 	$(call message,rm $$1,rm -f $$1,$(@:.cxx.cli.clean=.$(cxx_s_suffix)))
 	$(call message,rm $$1,rm -f $$1,$(@:.cxx.cli.clean=.$(cxx_h_suffix)))
