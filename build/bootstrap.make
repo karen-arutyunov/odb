@@ -26,18 +26,16 @@ $(call include,$(bld_root)/cxx/configuration.make)
 
 # Aliases
 #
-.PHONY: $(out_base)/          \
-        $(out_base)/.dist     \
-        $(out_base)/.clean    \
-	$(out_base)/.cleandoc
+.PHONY: $(out_base)/       \
+        $(out_base)/.dist  \
+        $(out_base)/.clean
 
 ifdef %interactive%
 
-.PHONY: dist clean cleandoc
+.PHONY: dist clean
 
 dist:     $(out_base)/.dist
 clean:    $(out_base)/.clean
-cleandoc: $(out_base)/.cleandoc
 
 endif
 
@@ -75,10 +73,30 @@ endef
 
 endif
 
+# If we don't have dependency auto-generation then we need to manually
+# make sure that generated files are generated before C++ file are
+# compiler. To do this we make the object files ($2) depend in order-
+# only on generated files ($3).
+#
+ifeq ($(cxx_id),generic)
+
+define include-dep
+$(if $2,$(eval $2: | $3))
+endef
+
+else
+
+define include-dep
+$(call -include,$1)
+endef
+
+endif
+
 # Don't include dependency info for certain targets.
 #
-ifneq ($(filter $(MAKECMDGOALS),clean cleandoc disfigure dist),)
+ifneq ($(filter $(MAKECMDGOALS),clean disfigure dist),)
 include-dep =
 endif
+
 
 .DEFAULT_GOAL := $(def_goal)

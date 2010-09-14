@@ -118,9 +118,8 @@ $(gen): cli_options +=  \
 --include-prefix odb    \
 --guard-prefix ODB
 
-$(call include-dep,$(cxx_pod))
-$(call include-dep,$(cxx_dod))
-$(call include-dep,$(cxx_cod))
+$(call include-dep,$(cxx_pod) $(cxx_dod) $(cxx_cod),\
+$(cxx_pobj) $(cxx_dobj) $(cxx_cobj),$(gen))
 
 # Alias for default target.
 #
