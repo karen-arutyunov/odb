@@ -18,6 +18,30 @@ class options
   bool --version {"Print version and exit."};
 
   //
+  // C++ preprocessor options. Also not passed to the plugin.
+  //
+  std::vector<std::string> -I
+  {
+    "<dir>",
+    "Add <dir> to the beginning of the list of directories to be searched
+     for included header files."
+  };
+
+  std::vector<std::string> -D
+  {
+    "<name>[=<def>]",
+    "Define macro <name> with definition <def>. If definition is omitted,
+     define <name> to be 1."
+  };
+
+  std::vector<std::string> -U
+  {
+    "<name>",
+    "Cancel any previous definitions of macro <name>, either built-in or
+     provided with the \cb{-D} option."
+  };
+
+  //
   // Plugin options.
   //
   ::database --database | -d
@@ -238,6 +262,16 @@ class options
      the shell escaping and quoting is not required. Repeat this option
      to specify more than one options file."
   };
+
+  std::vector<std::string> -x
+  {
+    "<option>",
+    "Pass <option> to the underlying C++ compiler (\cb{g++}). The <option>
+     value that doesn't start with \cb{-} is considered the \cb{g++}
+     executable name."
+  };
+
+  bool -v {"Print the commands executed to run the stages of compilation."};
 
   bool --trace {"Trace the compilation process."};
 
