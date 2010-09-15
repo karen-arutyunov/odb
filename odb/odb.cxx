@@ -100,6 +100,7 @@ main (int argc, char* argv[])
   args.push_back ("-x");
   args.push_back ("c++");
   args.push_back ("-S");
+  args.push_back ("-Wunknown-pragmas");
   args.push_back ("-fplugin=" + plugin.string ());
 
   // Parse driver options.
