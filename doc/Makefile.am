@@ -5,4 +5,4 @@
 
 dist_doc_DATA = __file__(docs)
 dist_man_MANS = __file__(mans)
-EXTRA_DIST = __file__(extra_dist)
+

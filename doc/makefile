@@ -17,48 +17,67 @@ $(call import,\
 
 # Build.
 #
-$(default): $(out_base)/odb.xhtml $(out_base)/odb.1
+$(default):                \
+$(out_base)/odb.1          \
+$(out_base)/odb.xhtml      \
+$(out_base)/odb-manual.ps  \
+$(out_base)/odb-manual.pdf
 
+# Man/html pages.
+#
 $(out_base)/odb.xhtml $(out_base)/odb.1: cli := $(cli)
 
 $(out_base)/odb.xhtml: $(src_root)/odb/options.cli    \
                        $(src_base)/odb-prologue.xhtml \
-                       $(src_base)/odb-epilogue.xhtml
+                       $(src_base)/odb-epilogue.xhtml | $(out_base)/.
 	$(call message,cli-html $<,$(cli) --generate-html --stdout \
 --html-prologue $(src_base)/odb-prologue.xhtml \
 --html-epilogue $(src_base)/odb-epilogue.xhtml $< >$@)
 
-$(out_base)/odb.1: $(src_root)/odb/options.cli    \
-                       $(src_base)/odb-prologue.1 \
-                       $(src_base)/odb-epilogue.1
+$(out_base)/odb.1: $(src_root)/odb/options.cli \
+                   $(src_base)/odb-prologue.1  \
+                   $(src_base)/odb-epilogue.1 | $(out_base)/.
 	$(call message,cli-man $<,$(cli) --generate-man --stdout \
 --man-prologue $(src_base)/odb-prologue.1 \
 --man-epilogue $(src_base)/odb-epilogue.1 $< >$@)
 
+# Manual.
+#
+$(out_base)/odb-manual.ps: $(src_base)/manual.xhtml   \
+                           $(src_base)/manual.html2ps | $(out_base)/.
+	$(call message,html2ps $<,html2ps -f $(src_base)/manual.html2ps -o $@ $<)
+
+$(out_base)/odb-manual.pdf: $(out_base)/odb-manual.ps
+	$(call message,ps2pdf $<,ps2pdf14 $< $@)
+
 # Dist.
 #
-$(dist): data_dist := default.css
-$(dist): export docs := odb.xhtml
+$(dist): export docs := default.css odb.xhtml odb-manual.ps odb-manual.pdf
 $(dist): export mans := odb.1
-$(dist): export extra_dist := $(data_dist)
-$(dist): $(out_base)/odb.xhtml $(out_base)/odb.1
+$(dist): data_dist := default.css
+$(dist):                   \
+$(out_base)/odb.1          \
+$(out_base)/odb.xhtml      \
+$(out_base)/odb-manual.ps  \
+$(out_base)/odb-manual.pdf
+	$(call dist-data,$^)
 	$(call dist-data,$(data_dist))
-	$(call dist-data,$(out_base)/odb.1)
-	$(call dist-data,$(out_base)/odb.xhtml)
 	$(call meta-automake)
 
 # Clean.
 #
 $(clean):
-	$(call message,rm $$1,rm -f $$1,$(out_base)/odb.xhtml)
 	$(call message,rm $$1,rm -f $$1,$(out_base)/odb.1)
+	$(call message,rm $$1,rm -f $$1,$(out_base)/odb.xhtml)
+	$(call message,rm $$1,rm -f $$1,$(out_base)/odb-manual.ps)
+	$(call message,rm $$1,rm -f $$1,$(out_base)/odb-manual.pdf)
 
 # Generated .gitignore.
 #
 ifeq ($(out_base),$(src_base))
 $(out_base)/odb.xhtml $(out_base)/odb.1: | $(out_base)/.gitignore
 
-$(out_base)/.gitignore: files := odb.xhtml odb.1
+$(out_base)/.gitignore: files := odb.1 odb.xhtml odb-manual.ps odb-manual.pdf
 $(clean): $(out_base)/.gitignore.clean
 
 $(call include,$(bld_root)/git/gitignore.make)
