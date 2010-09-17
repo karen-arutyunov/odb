@@ -39,8 +39,8 @@ plugin_path (path const& driver);
 
 static char const* const db_macro[] =
 {
-  "-DODB_MYSQL",
-  "-DODB_TRACER"
+  "-DODB_DATABASE_MYSQL",
+  "-DODB_DATABASE_TRACER"
 };
 
 int
