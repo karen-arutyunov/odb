@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <cstddef>     // size_t
+#include <sstream>
 #include <iostream>
 
 #include <cutl/fs/path.hxx>
@@ -266,6 +267,13 @@ main (int argc, char* argv[])
     // Add ODB macros.
     //
     args.push_back ("-DODB_COMPILER");
+
+    {
+      ostringstream ostr;
+      ostr << ODB_COMPILER_VERSION;
+      args.push_back ("-DODB_COMPILER_VERSION=" + ostr.str ());
+    }
+
     args.push_back (db_macro[ops.database ()]);
 
     // Encode plugin options.
