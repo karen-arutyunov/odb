@@ -135,6 +135,32 @@
     padding           : 0em 0 0em 0.7em;
     text-align        : left;
   }
+
+  /* operators table */
+  #operators {
+    margin: 2em 0 2em 0;
+
+    border-collapse   : collapse;
+    border            : 1px solid;
+    border-color      : #000000;
+
+    font-size        : 11px;
+    line-height      : 14px;
+  }
+
+  #operators th, #operators td {
+    border: 1px solid;
+    padding           : 0.9em 0.9em 0.7em 0.9em;
+  }
+
+  #operators th {
+    background : #cde8f6;
+  }
+
+  #operators td {
+    text-align: left;
+  }
+
 </style>
 
 
@@ -183,8 +209,9 @@
      the traditional "Hello World" example. In particular, we will
      discuss how to declare persistent classes, generate database
      support code, as well as compile and run our application. We
-     will also learn how to make objects persistent as well as
-     query, update and delete persistent objects.</p>
+     will also learn how to make objects persistent, load, update
+     and delete persistent objects, as well as query the database
+     for persistent objects that match a certain criteria.</p>
 
   <p>The code presented in this chapter is based on the
      <code>hello</code> example which can be found in the
@@ -553,8 +580,8 @@ main (int argc, char* argv[])
      <code>mysql::database</code> constructor which automatically
      extract the database parameters, such as login name, passowrd,
      database name, etc., from the command line. In your own applications
-     you may prefer to use other versions of the <code>mysql::database</code>
-     constructors which allow you to pass this information directly
+     you may prefer to use other variants of the <code>mysql::database</code>
+     constructor which allow you to pass this information directly
      (@@ ref MySQL database).</p>
 
   <p>Next we create three <code>person</code> objects. Right now they are
@@ -649,10 +676,10 @@ mysql> select * from person;
 mysql> quit
   </pre>
 
-  <p>In the next section we will examine how to query persistent objects
-     from our application.</p>
+  <p>In the next section we will examine how to query the database
+     for persistent objects matching a certain criteria.</p>
 
-  <h2><a name="2.4">2.4 Querying Persistent Objects</a></h2>
+  <h2><a name="2.4">2.4 Querying Database for Objects</a></h2>
 
   <p>So far our application doesn't resemble a typical "Hello World"
      example. It doesn't print anything except for error messages.
@@ -783,10 +810,10 @@ Hello, Jane (8)!
 
   <h2><a name="2.5">2.5 Updating Persistent Objects</a></h2>
 
-  <p>While making objects persistent and then querying them are
-     useful oprations, most applications will also need to change
-     the object's state and then make these changes persistent. Let's
-     illustrate this by updating Joe's age who just had a birthday:</p>
+  <p>While making objects persistent and then selecting some of them using
+     queries ara two useful operations, most applications will also need
+     to change the object's state and then make these changes persistent.
+     Let's illustrate this by updating Joe's age who just had a birthday:</p>
 
   <pre class="c++">
 // driver.cxx
@@ -868,8 +895,8 @@ Hello, Joe!
   <p>What if we didn't have an identifier for Joe? Maybe this object
      was made persisted in another run of our application or by another
      application altogether. Provided that we have only one Joe Dirt
-     in the database, we can use query to come up with an alternative
-     implementation of the above transaction:</p>
+     in the database, we can use the query facility to come up with
+     an alternative implementation of the above transaction:</p>
 
   <pre class="c++">
     // Joe Dirt just had a birthday, so update his age. An
@@ -915,8 +942,8 @@ Hello, Joe!
      id, and commit the transaction. After the transaction is commited
      the erased object is no longer persistent.</p>
 
-  <p>If we don't have an object id handy, we can use query to find and
-     delete the object:</p>
+  <p>If we don't have an object id handy, we can use queries to find
+     and delete the object:</p>
 
   <pre class="c++">
     // John Doe is no longer in our database. An alternative
@@ -964,6 +991,11 @@ Hello, Joe!
 
   <h1><a name="3">3 Working Title</a></h1>
 
+  <p>@@</p>
+
+  <p>In this chapter we will continue to use and exapand the
+     <code>person</code> persistent class that we have developed in the
+     previous chapter.</p>
 
   <h2><a name="3.1">3.1 Base Concepts</a></h2>
 
@@ -1092,7 +1124,8 @@ Hello, Joe!
      mapping to the database system type and, possibly, the code to
      convert between the two. For more information on this see @@ Ref
      Custom value types/pragma value type. Composite value types are
-     not yet supported by ODB.</p>
+     not yet supported by ODB and will not discuss them further in
+     this revision of the manual.</p>
 
   <p>Normally, you would use object types to model real-world entities,
      things that have their own identity. For example, in the
@@ -1137,7 +1170,50 @@ Hello, Joe!
     of a persistent class behaves just like an instance of any
     ordinary C++ class.</p>
 
-  <h2><a name="3.2">3.2 Transactions and Concurrency</a></h2>
+
+  <h2><a name="3.2">3.2 Database</a></h2>
+
+  <p>Before an application can make use of a persistence services
+     offered by ODB, it has to create a database instance. A
+     database instance is the representation of the place where
+     the application stores its persistent objects. You create
+     a database instance by instantiating one of the database
+     system-specific classes. For example <code>odb::mysql::database</code>
+     would be such a class for the MySQL database system. You will
+     also normally pass a database name as an argument to the
+     <code>database</code> class' constructor. The following
+     code fragment shows how we can create a database instance
+     for the MySQL database system:</p>
+
+  <pre class="c++">
+  #include &lt;odb/database.hxx>
+  #include &lt;odb/mysql/database.hxx>
+
+  auto_ptr&lt;odb::database> db (
+    new odb::mysql::database (
+      "test_user"     // database login name
+      "test_password" // database password
+      "test_database" // database name
+      ));
+  </pre>
+
+  <p>The <code>odb::database</code> class is an abstract base class
+     that defines a common interface for all database system-specific
+     classes provided by ODB. You would normally work with the database
+     instance via this interface unless there is a specific
+     functionality that your application depends on and which is
+     only exposed by a particular system's <code>database</code>
+     class.</p>
+
+  <p>The <code>odb::database</code> interface defines functions for
+     starting transactions and manipulating persistent objects.
+     These are discussed in detail in the reminder of this chapter
+     as well as the next chapter which is dedicated to the topic of
+     querying the database for persistent objects. For details on the
+     system-specific <code>database</code> classes, refer for
+     (@@ ref Database Systems).</p>
+
+  <h2><a name="3.3">3.3 Transactions</a></h2>
 
   <p>A transaction is an atomic, consistent, isolated and durable
      (ACID) unit of work. All database operations can only be
@@ -1176,85 +1252,13 @@ Hello, Joe!
      now the only way to alter this state is to execute and commit
      another transaction.</p>
 
-  <p>Note that all of the above guarantees only apply to the
-     object's state in the database as opposed to the object's
-     state in the application's memory. It is possible to roll
-     a transaction back but still have changes from this
-     transaction in the application's memory. An easy way to
-     avoid this potentiall inconsistency is to instantiate
-     persistent objects withing the transaction's scope. Consider,
-     for example, this two implementations of the same transaction:</p>
-
-  <pre class="c++">
-void
-update_age (database&amp; db, person&amp; p)
-{
-  transaction t (db.begin_transaction ());
-
-  p.age (p.age () + 1);
-  db.store (p);
-
-  t.commit ()
-}
-  </pre>
-
-  <p>In the above implementation, if the <code>store()</code> call fails
-     and the transaction is rolled back, the state of the person
-     object in the database and the state of the same object in the
-     application's memory will differ. Now consider an
-     alternative implementation which only instantiates the
-     person object for the duration of the transaction:</p>
-
-  <pre class="c++">
-void
-update_age (database&amp; db, unsigned long id)
-{
-  transaction t (db.begin_transaction ());
-
-  auto_ptr&lt;person> p (db.load&lt;person> (id));
-  p.age (p.age () + 1);
-  db.store (p);
-
-  t.commit ()
-}
-  </pre>
-
-  <p>Of course, it may be not always be possible to write the
-     application in this style. Oftentimes we need to access and
-     modify application's state of persistent objects out of
-     transactions. In this case it may make sense to try to
-     roll back the changes made to the application state if
-     the transaction was rolled back and the database state
-     remains unchanged. One way to do this is to re-load
-     the object's state from the database:</p>
-
-  <pre class="c++">
-void
-update_age (database&amp; db, person&amp; p)
-{
-  try
-  {
-    transaction t (db.begin_transaction ());
-
-    p.age (p.age () + 1);
-    db.store (p);
-
-    t.commit ()
-  }
-  catch (...)
-  {
-    transaction t (db.begin_transaction ());
-    db.load (p.id (), p);
-    t.commit ();
-
-    throw;
-  }
-}
-  </pre>
-
-  <p>A transaction is started by calling the <code>begin_transaction()</code>
-     database function. The returned transaction handle is stored in
-     an instance of the <code>odb::transaction</code> class which has
+  <p>A transaction is started by calling the
+     <code>database::begin_transaction()</code>
+     function. The returned transaction handle is stored in
+     an instance of the <code>odb::transaction</code> class which is
+     defined in the <code>odb/transaction.hxx</code> header file.
+     A source code fragment that uses ODB transactions should include
+     this header file. The <code>odb::transaction</code> class has
      the following interface:</p>
 
   <pre class="c++">
@@ -1326,7 +1330,7 @@ for (;;)
 
     ...
 
-    t.commit ()
+    t.commit ();
     break;
   }
   catch (const odb::deadlock&amp;)
@@ -1334,6 +1338,794 @@ for (;;)
     continue;
   }
 }
+  </pre>
+
+  <p>Note that in the above discussion of atomicity, consistency,
+     isolation, and durability, all of these guarantees only apply
+     to the object's state in the database as opposed to the object's
+     state in the application's memory. It is possible to roll
+     a transaction back but still have changes from this
+     transaction in the application's memory. An easy way to
+     avoid this potentiall inconsistency is to instantiate
+     persistent objects withing the transaction's scope. Consider,
+     for example, this two implementations of the same transaction:</p>
+
+  <pre class="c++">
+void
+update_age (database&amp; db, person&amp; p)
+{
+  transaction t (db.begin_transaction ());
+
+  p.age (p.age () + 1);
+  db.store (p);
+
+  t.commit ();
+}
+  </pre>
+
+  <p>In the above implementation, if the <code>store()</code> call fails
+     and the transaction is rolled back, the state of the person
+     object in the database and the state of the same object in the
+     application's memory will differ. Now consider an
+     alternative implementation which only instantiates the
+     person object for the duration of the transaction:</p>
+
+  <pre class="c++">
+void
+update_age (database&amp; db, unsigned long id)
+{
+  transaction t (db.begin_transaction ());
+
+  auto_ptr&lt;person> p (db.load&lt;person> (id));
+  p.age (p.age () + 1);
+  db.store (p);
+
+  t.commit ();
+}
+  </pre>
+
+  <p>Of course, it may be not always be possible to write the
+     application in this style. Oftentimes we need to access and
+     modify application's state of persistent objects out of
+     transactions. In this case it may make sense to try to
+     roll back the changes made to the application state if
+     the transaction was rolled back and the database state
+     remains unchanged. One way to do this is to re-load
+     the object's state from the database:</p>
+
+  <pre class="c++">
+void
+update_age (database&amp; db, person&amp; p)
+{
+  try
+  {
+    transaction t (db.begin_transaction ());
+
+    p.age (p.age () + 1);
+    db.store (p);
+
+    t.commit ();
+  }
+  catch (...)
+  {
+    transaction t (db.begin_transaction ());
+    db.load (p.id (), p);
+    t.commit ();
+
+    throw;
+  }
+}
+  </pre>
+
+
+  <h2><a name="3.4">3.4 Making Objects Persistent</a></h2>
+
+  <p>A newly created instance of a persistent class is transient.
+     We use the <code>database::persist()</code> function template
+     to make a transient instance persistent. This function has two
+     overloaded variants with the following signatures:</p>
+
+  <pre class="c++">
+  template &lt;typename T>
+  typename object_traits&lt;T>::id_type
+  persist (const T&amp; object);
+
+  template &lt;typename T>
+  typename object_traits&lt;T>::id_type
+  persist (T&amp; object);
+  </pre>
+
+  <p>The first <code>persist()</code> variant expects a constant reference
+     to an instance being persisted and is used on objects with
+     application-assigned object ids (@@ref pragma id/auto). The second
+     variant expects an unrestricted reference and, if the object id is
+     assigned by the database, it updates the passed instance's id member
+     with the assigned value. Both variants return the object id of the
+     newly persistent object.</p>
+
+  <p>If the database already contains an object of this type with this
+     id, the <code>persist()</code> functions throw the
+     <code>odb::object_already_persistent</code> exception. This should
+     never happen for database-assigned object ids as long as the
+     number of objects persisted does not exceed the value space of
+     the id type.</p>
+
+  <p>When calling the <code>persist()</code> function we don't need to
+     explicitly specify the template type since it will be automatically
+     deduced from the argument being passed. The <code>odb::object_traits</code>
+     template used in the signature above is part of the database support
+     code generated by the ODB compiler.</p>
+
+  <p>The following example shows how we can call this function:</p>
+
+<pre class="c++">
+person john ("John", "Doe", 33);
+person jane ("Jane", "Doe", 32);
+
+transaction t (db->begin_transaction ());
+
+db->persis (john);
+unsigned long jane_id (db->persist (jane));
+
+t.commit ();
+
+cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
+</pre>
+
+  <p>Notice that in the above code fragment we have created instances
+     that we were planning to make persistent before starting the
+     transaction. Likewise, we printed Jane's id after we have commited
+     the transaction. As a general rule, you should avoid performing
+     operations within a transaction's scope that can be performed
+     before the transaction starts or after it terminates. An active
+     transaction consumes both your application's resources, such as
+     a database connection, as well as the database server's
+     resources, such as object locks. By following the above rule you
+     make sure these resources are made available to other threads
+     in your application and to other applications for as long as
+     possible.</p>
+
+  <h2><a name="3.5">3.5 Loading Persistent Objects</a></h2>
+
+  <p>Once an object is made persistent, and you know its object id, it
+     can loaded by the application using the <code>database::load()</code>
+     function template. This function has two overloaded variants with
+     the following signatures:</p>
+
+  <pre class="c++">
+  template &lt;typename T>
+  typename object_traits&lt;T>::pointer_type
+  load (const typename object_traits&lt;T>::id_type&amp; id);
+
+  template &lt;typename T>
+  void
+  load (const typename object_traits&lt;T>::id_type&amp; id, T&amp; object);
+  </pre>
+
+  <p>Given an object id, the first variant allocates a new instance
+     of the object class in the dynamic memory, loads its state from
+     the database, and returns the pointer to the new instance. The
+     second variant loads the object's state into an existing instance.
+     Both functions throw <code>odb::object_not_persistent</code> if
+     there is no object of this type with this id in the database.</p>
+
+  <p>When we call the first variant of <code>load()</code> we need to
+     explicitly specify the object type. We don't need to do this for
+     the second variant because the object type will be automatically
+     deduced from the second argument, for example:</p>
+
+  <pre class="c++">
+transaction t (db->begin_transaction ());
+
+person* jane (db->load&lt;person> (jane_id));
+
+db->load (jane_id, *jane);
+
+t.commit ();
+  </pre>
+
+  <p>If we don't know for sure whether an object with a gived id
+     is persistent, we can use the <code>find()</code> function
+     instead of <code>load()</code>:</p>
+
+  <pre class="c++">
+  template &lt;typename T>
+  typename object_traits&lt;T>::pointer_type
+  find (const typename object_traits&lt;T>::id_type&amp; id);
+
+  template &lt;typename T>
+  bool
+  find (const typename object_traits&lt;T>::id_type&amp; id, T&amp; object);
+  </pre>
+
+  <p>If an object with this id is not found in the database, the first
+     variant of <code>find()</code> returns a <code>NULL</code> pointer
+     while the second variant leaves the passed instance unmodified and
+     returns <code>false</code>.</p>
+
+  <p>If we don't know an object's identifier, then we can use queries to
+     find the object (or objects) matching some other criteria (@@ ref
+     query). Note, however, that loading an object's state using its
+     identifier can be significantly faster that doing a query.</p>
+
+
+  <h2><a name="3.5">3.5 Updating Persistent Objects</a></h2>
+
+  <p>If a persistent object has been modified, we can store the updated
+     state in the database using the <code>database::update()</code>
+     function template:</p>
+
+  <pre class="c++">
+  template &lt;typename T>
+  void
+  update (T&amp; object);
+  </pre>
+
+  <p>If the object passed to this function does not exist in the
+     database, <code>update()</code> throws the
+     <code>odb::object_not_persistent</code> exception.</p>
+
+  <p>Below is an example of the funds transfer that we talked about
+     in the earlier section on transactions. It uses the hypothetical
+     <code>bank_account</code> persistent class:</p>
+
+  <pre class="c++">
+void
+transfer (database&amp; db,
+          unsigned long from_acc,
+          unsigned long to_acc,
+          unsigned int amount)
+{
+  bank_account from, to;
+
+  transaction t (db.begin_transaction ());
+
+  db.load (from_acc, from);
+
+  if (from.balance () &lt; amount)
+    throw insufficient_funds ();
+
+  db.load (to_acc, to);
+
+  to.balance (to.balance () + amount);
+  from.balance (from.balance () - amount);
+
+  db.update (to);
+  db.update (from);
+
+  t.commit ();
+}
+  </pre>
+
+  <h2><a name="3.6">3.6 Deleting Persistent Objects</a></h2>
+
+  <p>To delete a persistent object's state from the database we use the
+     <code>database::erase()</code> function template. If the application
+     still has an instance of the erased object, this instance becomes
+     transient. The <code>erase()</code> function has the following
+     overloaded variants:</p>
+
+  <pre class="c++">
+  template &lt;typename T>
+  void
+  erase (const T&amp; object);
+
+  template &lt;typename T>
+  void
+  erase (const typename object_traits&lt;T>::id_type&amp; id);
+  </pre>
+
+  <p>The first variant uses an object itself to delete its state from
+     the database. The second variant uses the object id to identify
+     the object to be deleted. If the object to be deleted does not
+     exist in the database, both variants throw the
+     <code>odb::object_not_persistent</code> exception.</p>
+
+
+  <p>We have to specify the object type when calling the second variant
+     of <code>erase()</code>. The same is unnecessary for the first
+     variant because the object type will be automomatically deduced
+     from its argument. The following example shows how can call
+     this function:</p>
+
+  <pre class="c++">
+const person&amp; john = ...
+
+transaction t (db->begin_transaction ());
+
+db->erase (john);
+db->erase&lt;person> (jane_id);
+
+t.commit ();
+  </pre>
+
+  <h1><a name="4">4 Querying the Database</a></h1>
+
+  <p>If you don't know the identifiers of the objects that you are looking
+     for, you can use queries to search the database for objects matching
+     a certain criteria. ODB provides flexible and powerful query support
+     that offers two distinct levels of abstraction from the database
+     system query language such as SQL.</p>
+
+  <p>At the high level you are presented with an easy to use yet powerful
+     object oriented query language, called ODB query language. This
+     query language is modeled after and is integrated into C++ allowing
+     you to write expressive and safe queries that look and feel like
+     plain C++. We have already seen examples of these queries in the
+     introductory chapters. Below is another, more interesting, example:</p>
+
+  <pre class="c++">
+  typedef odb::query&lt;person> query;
+  typedef odb::result&lt;person> result;
+
+  unsigned short age;
+  query q (query::first == "John" &amp;&amp; query::age &lt; query::_ref (age));
+
+  for (age = 10; age &lt; 100; age += 10)
+  {
+    result r (db->query&lt;person> (q));
+    ...
+  }
+  </pre>
+
+  <p>At the low level, queries can be written as predicates using
+     the database system-native query language such as the
+     <code>WHERE</code> predicate from the SQL <code>SELECT</code>
+     statement. This language will be refered to as native query
+     language. At this level ODB still takes care of converting
+     query parameters from C++ to the database system format. Below
+     is the re-implementation of the above example using SQL as
+     the native query language:</p>
+
+  <pre class="c++">
+  query q ("first = 'John' AND age = " + query::_ref (age));
+  </pre>
+
+  <p>Note that at this level you also loose the static typing of
+     query expressions. For example, if we wrote something like this:</p>
+
+  <pre class="c++">
+  query q (query::first == 123 &amp;&amp; query::agee &lt; query::_ref (age));
+  </pre>
+
+  <p>We would get two errors during the C++ compilation. The first would
+     indicate that we cannot compare <code>query::first</code> to an
+     integer and the second would pick the misspelling in
+     <code>query::agee</code>. On the other hand, if we wrote something
+     like this:</p>
+
+  <pre class="c++">
+  query q ("first = 123 AND agee = " + query::_ref (age));
+  </pre>
+
+  <p>It would compile without any errors and would trigger an error
+     only when executed by the the database system.</p>
+
+  <p>You are also allowed to combine the two query languages in a single
+     query, for example:</p>
+
+  <pre class="c++">
+  query q ("first = 'John'" + (query::age &lt; query::_ref (age)));
+  </pre>
+
+
+  <h2><a name="4.1">4.1 ODB Query Language</a></h2>
+
+  <p>An ODB query is an expression that tell the database system whether
+     any given object matches our criteria. As such a query expression
+     always evaluates to <code>true</code> or <code>false</code>. At
+     the higher lever, an expression consist of other expressions
+     combined with logical operators such as <code>&amp;&amp;</code> (AND),
+     <code>||</code> (OR), and <code>!</code> (NOT). For example:</p>
+
+  <pre class="c++">
+  typedef odb::query&lt;person> query;
+
+  query q (query::first == "John" || query::age == 31);
+  </pre>
+
+  <p>At the core of every query expression lie simple expressions which
+     involve one or more object data members, values, or parameters. To
+     refer to an object member you use an expression such as
+     <code>query::first</code> above. The names of members in the
+     <code>query</code> class are derived from the names of data members
+     in the object class by removing the common member name decorations,
+     such as leading and trailing underscores, the <code>m_</code> prefix,
+     etc.</p>
+
+  <p>In a simple expressions an object member can be compared to a value,
+     parameter, or another member using a number of predefined operators
+     and functions. The following table gives an overview of the available
+     expressions:</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="operators" border="1">
+    <tr>
+      <th>Operator</th>
+      <th>Description</th>
+      <th>Example</th>
+    </tr>
+
+    <tr>
+      <td><code>==</code></td>
+      <td>equal</td>
+      <td><code>query::age == 31</code></td>
+    </tr>
+
+    <tr>
+      <td><code>!=</code></td>
+      <td>unequal</td>
+      <td><code>query::age != 31</code></td>
+    </tr>
+
+    <tr>
+      <td><code>&lt;</code></td>
+      <td>less than</td>
+      <td><code>query::age &lt; 31</code></td>
+    </tr>
+
+    <tr>
+      <td><code>></code></td>
+      <td>greater than</td>
+      <td><code>query::age > 31</code></td>
+    </tr>
+
+    <tr>
+      <td><code>&lt;=</code></td>
+      <td>less than or equal</td>
+      <td><code>query::age &lt;= 31</code></td>
+    </tr>
+
+    <tr>
+      <td><code>>=</code></td>
+      <td>greater than or equal</td>
+      <td><code>query::age >= 31</code></td>
+    </tr>
+
+    <tr>
+      <td><code>in()</code></td>
+      <td>one of the values</td>
+      <td><code>query::age.in (30, 32, 34)</code></td>
+    </tr>
+
+    <tr>
+      <td><code>in_range()</code></td>
+      <td>one of the values in range</td>
+      <td><code>query::age.in_range (begin, end)</code></td>
+    </tr>
+
+    <tr>
+      <td><code>is_null()</code></td>
+      <td>value is NULL</td>
+      <td><code>query::age.is_null ()</code></td>
+    </tr>
+
+    <tr>
+      <td><code>is_not_null()</code></td>
+      <td>value is not NULL</td>
+      <td><code>query::age.is_not_null ()</code></td>
+    </tr>
+  </table>
+
+  <p>The operator precedence in the query expressions are the same
+     as for equivalent C++ operators. You can use parentheses to
+     make sure the expression is evaluated in the desired order.
+     For example:</p>
+
+  <pre class="c++">
+  query q ((query::first == "John" || query::first == "Jane") &amp;&amp;
+           query::age &lt; 31);
+  </pre>
+
+
+
+  <h2><a name="4.2">4.2 Parameter Binding</a></h2>
+
+  <p>An instance of the <code>odb::query</code> class encapsulates two
+     parts of information about the query: the query expression and
+     the query parameters. Parameters can be bound to C++ variables
+     either by value or by reference.</p>
+
+  <p>If a parameter is bound by value, then the value for this parameter
+     is copied from the C++ variable to the query instance at the query
+     construction time. On the other hand, if a parameter is bound by
+     reference, then the query instance only stores a reference to the
+     bound variable. The actual value for the parameter is only extracted
+     at the query execution time. Consider, for example the following
+     two queries:</p>
+
+  <pre class="c++">
+  string name ("John");
+
+  query q1 (query::first == query::_val (name));
+  query q2 (query::first == query::_ref (name));
+
+  name = "Jane";
+
+  db->query&lt;person> (q1); // Find John.
+  db->query&lt;person> (q2); // Find Jane.
+  </pre>
+
+  <p>The <code>odb::query</code> class provides two special functions,
+     <code>_val()</code> and <code>_ref()</code>, that allow you to
+     bind the parameter either by value or by reference, respectively.
+     In the embedded query language, if the binding is not specified
+     explicitly, the value semantics is used by default. In the
+     native query language, binding must always be specified
+     explicitly. For example:</p>
+
+  <pre class="c++">
+  query q1 (query::age &lt; age);                // By value.
+  query q2 (query::age &lt; query::_val (age));  // By value.
+  query q3 (query::age &lt; query::_ref (age));  // By reference.
+
+  query q4 ("age &lt; " + age);                  // Error.
+  query q5 ("age &lt; " + query::_val (age));    // By value.
+  query q6 ("age &lt; " + query::_ref (age));    // By reference.
+  </pre>
+
+  <p>A query that only has by-value parameters does not depend on any
+     other variables and is self-sufficient once constructed. A query
+     that has one or more by-reference parameter depends on the
+     bound variables until the query is executed. If one such variable
+     goes out of scope and you execute the query, the behavior is
+     undefined.</p>
+
+  <h2><a name="4.3">4.3 Executing a Query</a></h2>
+
+  <p>Once we have the query instance ready and by-reference parameters
+     initialized, we can execute the query using the
+     <code>database::query()</code> function template. It has two
+     overloaded variants:</p>
+
+  <pre class="c++">
+  template &lt;typename T>
+  result&lt;T>
+  query (bool cache = true);
+
+  template &lt;typename T>
+  result&lt;T>
+  query (const odb::query&lt;T>&amp;, bool cache = true);
+  </pre>
+
+  <p>The first variant is used to return all persistent objects of a
+     given type stored in the database. The second variant uses the
+     passed query instance to only return objects matching the
+     query criteria. The <code>cache</code> argument determines
+     whether the object states should be cached in the application's
+     memory or if it should be returned by the database system
+     one by one as the iteration over the result progresses. The
+     result caching is discussed in detail in the next section.</p>
+
+  <p>When calling the <code>query()</code> function we have to
+     explicitly specify the object type we are querying. For example:</p>
+
+  <pre class="c++">
+  typedef odb::query&lt;person> query;
+  typedef odb::result&lt;person> result;
+
+  result all (db->query&lt;person> ());
+  result johnes (db->query&lt;person> (query::first == "John"));
+  </pre>
+
+  <p>Note that it is not required to explicitly create a named
+     query variable before executing it. For example, the following
+     two queries are equivalent:</p>
+
+  <pre class="c++">
+  query q (query::first == "John");
+
+  result r1 (db->query&lt;person> (q));
+  result r1 (db->query&lt;person> (query::first == "John"));
+  </pre>
+
+  <p>Normally you would create a named query instance if you are
+     planning to run the same query multiple times and would use the
+     in-line version for those that are executed only once.</p>
+
+  <p>It is also possible to create queries from other queries by
+     combinding them using logical operators. For example:</p>
+
+  <pre class="c++">
+result
+find_minors (database&amp; db, const query&amp; name_query)
+{
+  return db.query&lt;person> (name_query &amp;&amp; query::age &lt; 18);
+}
+
+result r (find_underage (db, query::first == "John"));
+  </pre>
+
+  <h2><a name="4.3">4.3 Query Result</a></h2>
+
+  <p>The result of executing a query is zero, one, or more objects
+     matching the query criteria. The result is represented as the
+     <code>odb::result</code> class template:</p>
+
+  <pre class="c++">
+  typedef odb::query&lt;person> query;
+  typedef odb::result&lt;person> result;
+
+  result johnes (db->query&lt;person> (query::first == "John"));
+  </pre>
+
+  <p>It is best to view an instance of <code>odb::result</code>
+     as a handle to a stream, such as a file stream. While you can
+     make a copy of a result or assign one result to another, the
+     two instances will refer to the same result stream. Advancing
+     the current position in one instance will also advance it in
+     another. The result instance is only usable within a transaction
+     it was created in. Trying to manipulate the result after the
+     transaction has terminates leads to undefined behavior.</p>
+
+  <p>The <code>odb::result</code> class template conforms to the
+     standard C++ sequence requirements and has the following
+     interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  template &lt;typename T>
+  class result
+  {
+  public:
+    typedef odb::result_iterator&lt;T> iterator;
+
+  public:
+    result ();
+
+    result (const result&amp;);
+
+    result&amp;
+    operator= (const result&amp;);
+
+    void
+    cache ();
+
+    iterator
+    begin ();
+
+    iterator
+    end ();
+  };
+}
+  </pre>
+
+  <p>The default constructor creates an empty result set. The
+    <code>cache()</code> function caches the returned objects'
+    state in the application's memory. We have already mentioned
+    result caching when we talked about query execution. As you
+    may remember the <code>database::query()</code> function
+    cahces the result unless instructed not to by the caller.
+    The <code>result::cache()</code> function allows you to
+    cache the result at a later stage if it wasn't already
+    cached during query execution.</p>
+
+  <p>If result is cached, the entire state of the returned
+     objects is stored in the application's memory. Note that
+     the actual objects are still only instantiated on demand
+     during result iteration. It is the raw database state that
+     is cached in memory. In contrast, for uncached results
+     the object state is sent by the database system one object
+     at a time as the iteration progresses.</p>
+
+  <p>Uncached results can improve performance of both the application
+     and the database system in situations where you have a large
+     number of objects in the result or if you will only examine
+     a small portion of the returned objects. However, uncached
+     results have a number of limitations. There can only be one
+     uncached result in a transaction. Creating another result
+     (cached or uncached) by calling <code>database::query()</code>
+     will invalidate the first uncached result. Furthermore,
+     executing any other database function, such as <code>update()</code>
+     or <code>erase()</code> will also invalidate the uncached result.</p>
+
+  <p>To iterate over the objects in a result we use the
+     <code>begin()</code> and <code>end()</code> functions
+     together with the <code>odb::result&lt;T>::iterator</code>
+     type, for example:</p>
+
+  <pre class="c++">
+  result r (db->query&lt;person> (query::first == "John"));
+
+  for (result::iterator i (r.begin ()); i != r.end (); ++i)
+  {
+    ...
+  }
+  </pre>
+
+  <p>The result iterator is an input iterator which means that the
+     only two position operations that are support are to move to the
+     next object and determine whether we have reached the end of the
+     result stream. In fact, the result iteraror can only be in two
+     states: the current position and the end position. If you have
+     two iterators pointing to the current position and then you
+     advance one of them, the other will advance as well. This,
+     for example, means that it doesn't make sense to store an
+     iterator that points to some object of interest in the result
+     stream with the intent of dereferncing it after the iteration
+     is over. Instead, you would need to store the object itself.</p>
+
+  <p>The result iterator has the following dereference functions
+     that can be used to access the pointed-to object:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  template &lt;typename T>
+  class result_iterator
+  {
+  public:
+    typename object_traits&lt;T>::pointer_type
+    operator-> () const;
+
+    typename object_traits&lt;T>::pointer_type
+    operator* () const;
+
+    void
+    load (T&amp; x);
+  };
+}
+  </pre>
+
+  <p>When you call the <code>-></code> operator, the iterator
+     will allocate a new instance of the object class in the
+     dynamic memory, load its state from the returned database
+     state, and return the pointer to the new instance. In
+     case of this operator, the iterator still maintains the
+     ownership of the returned object and will return the
+     same pointer for subsequent calls until advanced to
+     the next object. For example:</p>
+
+  <pre class="c++">
+  result r (db->query&lt;person> (query::first == "John"));
+
+  for (result::iterator i (r.begin ()); i != r.end ();)
+  {
+    cout &lt;&lt; i->last () &lt;&lt; endl; // Create an object.
+    cout &lt;&lt; i->age () &lt;&lt; endl;  // Use the same object.
+    ++i;                        // Free the object.
+  }
+  </pre>
+
+
+  <p>The <code>*</code> operator is similar to <code>-></code>
+     (notice that it also returns a pointer) except that it
+     relinquishes the ownership of the allocated object. In
+     fact, it is very similar to the <code>database::load()</code>
+     variant which returns a dynamically allocated instance.
+     Note also that subsequent calls to this operator or to
+     <code>-></code> return the same object. The following
+     example shows how we can use this operator:</p>
+
+  <pre class="c++">
+  result r (db->query&lt;person> (query::first == "John"));
+
+  for (result::iterator i (r.begin ()); i != r.end (); ++i)
+  {
+    auto_ptr p (*i);             // Create an object.
+    cout &lt;&lt; p->last () &lt;&lt; endl;  // Use the same object.
+    cout &lt;&lt; i->age () &lt;&lt; endl;   // Use the same object.
+    p.reset ();                  // Free the object.
+    cout &lt;&lt; i->first () &lt;&lt; endl; // Error, object was deleted.
+  }
+  </pre>
+
+  <p>The <code>result_iterator::load()</code> function allows
+     you to load the current object's state into an existing
+     instance. It is similar to the second overloaded variant
+     of the <code>database::load()</code> function. For example:</p>
+
+  <pre class="c++">
+  result r (db->query&lt;person> (query::first == "John"));
+
+  person p;
+  for (result::iterator i (r.begin ()); i != r.end (); ++i)
+  {
+    i.load (p);
+    cout &lt;&lt; p.last () &lt;&lt; endl;
+    cout &lt;&lt; i.age () &lt;&lt; endl;
+  }
   </pre>
 
   </div>
