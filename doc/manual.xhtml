@@ -2056,11 +2056,14 @@ namespace odb
   class result_iterator
   {
   public:
-    typename object_traits&lt;T>::pointer_type
+    T*
     operator-> () const;
 
-    typename object_traits&lt;T>::pointer_type
+    T&amp;
     operator* () const;
+
+    typename object_traits&lt;T>::pointer_type
+    load ();
 
     void
     load (T&amp; x);
@@ -2068,14 +2071,15 @@ namespace odb
 }
   </pre>
 
-  <p>When you call the <code>-></code> operator, the iterator
-     will allocate a new instance of the object class in the
-     dynamic memory, load its state from the returned database
-     state, and return the pointer to the new instance. In
-     case of this operator, the iterator still maintains the
-     ownership of the returned object and will return the
-     same pointer for subsequent calls until advanced to
-     the next object. For example:</p>
+  <p>When you call the <code>*</code> or <code>-></code> operator,
+     the iterator will allocate a new instance of the object class
+     in the dynamic memory, load its state from the returned database
+     state, and return a reference or pointer to the new instance. The
+     iterator maintains the ownership of the returned object and will
+     return the same pointer for subsequent calls to either of these
+     operators until it is advanced to the next object or you call
+     the first overloaded variant of the <code>load()</code>
+     function (see below). For example:</p>
 
   <pre class="c++">
   result r (db->query&lt;person> (query::first == "John"));
@@ -2083,38 +2087,42 @@ namespace odb
   for (result::iterator i (r.begin ()); i != r.end ();)
   {
     cout &lt;&lt; i->last () &lt;&lt; endl; // Create an object.
-    cout &lt;&lt; i->age () &lt;&lt; endl;  // Use the same object.
+    person&amp; p (*i);             // Reference to the same object.
+    cout &lt;&lt; p.age () &lt;&lt; endl;
     ++i;                        // Free the object.
   }
   </pre>
 
-
-  <p>The <code>*</code> operator is similar to <code>-></code>
-     (notice that it also returns a pointer) except that it
-     relinquishes the ownership of the allocated object. In
-     fact, it is very similar to the <code>database::load()</code>
-     variant which returns a dynamically allocated instance.
-     Note also that subsequent calls to this operator or to
-     <code>-></code> return the same object. The following
-     example shows how we can use this operator:</p>
+  <p>The <code>result_iterator::load()</code> function is similar to
+     <code>database::load()</code>. The first overloaded variant
+     returns a dynamically allocated instance of the current
+     object which you are responsible for deleting. As an optimization,
+     if the iterator already owns an object as result of the earlier
+     call to the <code>*</code> or <code>-></code> operator, then it
+     relinquishes the ownership of this object and returns it instead.
+     This allows you to write code like this without worrying about
+     a double allocation:</p>
 
   <pre class="c++">
   result r (db->query&lt;person> (query::first == "John"));
 
   for (result::iterator i (r.begin ()); i != r.end (); ++i)
   {
-    auto_ptr p (*i);             // Create an object.
-    cout &lt;&lt; p->last () &lt;&lt; endl;  // Use the same object.
-    cout &lt;&lt; i->age () &lt;&lt; endl;   // Use the same object.
-    p.reset ();                  // Free the object.
-    cout &lt;&lt; i->first () &lt;&lt; endl; // Error, object was deleted.
+    if (i->last == "Doe")
+    {
+      auto_ptr p (i.load ());
+      ...
+    }
   }
   </pre>
 
-  <p>The <code>result_iterator::load()</code> function allows
-     you to load the current object's state into an existing
-     instance. It is similar to the second overloaded variant
-     of the <code>database::load()</code> function. For example:</p>
+  <p>Note, however, that because of this optimization, a subsequent to
+     <code>load()</code> call to the <code>*</code> or <code>-></code>
+     operator results in the allocation of a new object.</p>
+
+  <p>The second variant of the <code>result_iterator::load()</code>
+     function allows you to load the current object's state into an
+     existing instance. For example:</p>
 
   <pre class="c++">
   result r (db->query&lt;person> (query::first == "John"));
