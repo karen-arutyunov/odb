@@ -654,6 +654,7 @@ namespace mysql
 
         id_member_.traverse (c);
         semantics::data_member& id (*id_member_.member ());
+        bool auto_id (id.count ("auto"));
 
         member_count_.traverse (c);
         size_t column_count (member_count_.count ());
@@ -808,7 +809,7 @@ namespace mysql
         // init (image, object)
         //
         os << "bool " << traits << "::" << endl
-           << "init (image_type& i, object_type& o)"
+           << "init (image_type& i, const object_type& o)"
            << "{"
            << "bool grew (false);"
            << "bool is_null;"
@@ -820,7 +821,7 @@ namespace mysql
         // init (object, image)
         //
         os << "void " << traits << "::" << endl
-           << "init (object_type& o, image_type& i)"
+           << "init (object_type& o, const image_type& i)"
            << "{";
         names (c, init_value_member_names_);
         os << "}";
@@ -828,7 +829,8 @@ namespace mysql
         // persist ()
         //
         os << "void " << traits << "::" << endl
-           << "persist (database&, object_type& obj)"
+           << "persist (database&, " << (auto_id ? "" : "const ") <<
+          "object_type& obj)"
            << "{"
            << "using namespace mysql;"
            << endl
@@ -838,17 +840,17 @@ namespace mysql
            << "binding& b (sts.image_binding ());"
            << endl;
 
-        if (id.count ("auto"))
-          os << "obj." << id.name () << " = 0;";
+        if (auto_id)
+          os << "obj." << id.name () << " = 0;"
+             << endl;
 
-        os << endl
-           << "if (init (sts.image (), obj) || b.version == 0)" << endl
+        os << "if (init (sts.image (), obj) || b.version == 0)" << endl
            << "bind (b, sts.image ());"
            << endl
            << "mysql::persist_statement& st (sts.persist_statement ());"
            << "st.execute ();";
 
-        if (id.count ("auto"))
+        if (auto_id)
           os << "obj." << id.name () << " = static_cast<id_type> (st.id ());";
 
         os << "}";
@@ -856,7 +858,7 @@ namespace mysql
         // update ()
         //
         os << "void " << traits << "::" << endl
-           << "update (database&, object_type& obj)"
+           << "update (database&, const object_type& obj)"
            << "{"
            << "using namespace mysql;"
            << endl

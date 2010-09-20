@@ -29,9 +29,9 @@ namespace tracer
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
 
-        id_member t;
-        t.traverse (c);
-        semantics::data_member& id (*t.member ());
+        id_member_.traverse (c);
+        semantics::data_member& id (*id_member_.member ());
+        bool auto_id (id.count ("auto"));
 
         os << "// " << c.name () << endl
            << "//" << endl
@@ -48,7 +48,8 @@ namespace tracer
         // persist ()
         //
         os << "void " << traits << "::" << endl
-           << "persist (database&, object_type& obj)"
+           << "persist (database&, " << (auto_id ? "" : "const ") <<
+          "object_type& obj)"
            << "{"
            << "std::cout << \"insert \" << type_name () << \" id \" << " <<
           "id (obj) << std::endl;"
@@ -60,7 +61,7 @@ namespace tracer
         // update ()
         //
         os << "void " << traits << "::" << endl
-           << "update (database&, object_type& obj)"
+           << "update (database&, const object_type& obj)"
            << "{"
            << "std::cout << \"update \" << type_name () << \" id \" << " <<
           "id (obj) << std::endl;"
@@ -114,6 +115,9 @@ namespace tracer
            << "return true;"
            << "}";
       }
+
+    private:
+      id_member id_member_;
     };
   }
 

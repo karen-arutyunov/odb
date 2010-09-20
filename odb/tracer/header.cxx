@@ -28,6 +28,10 @@ namespace tracer
 
         string const& type (c.fq_name ());
 
+        id_member_.traverse (c);
+        semantics::data_member& id (*id_member_.member ());
+        bool auto_id (id.count ("auto"));
+
         os << "// " << c.name () << endl
            << "//" << endl;
 
@@ -44,14 +48,9 @@ namespace tracer
 
         // id_type
         //
-        {
-          id_member_.traverse (c);
-          semantics::data_member& id (*id_member_.member ());
-
-          os << "typedef " << id.type ().fq_name (id.belongs ().hint ()) <<
-            " id_type;"
-             << endl;
-        }
+        os << "typedef " << id.type ().fq_name (id.belongs ().hint ()) <<
+          " id_type;"
+           << endl;
 
         // type_name ()
         //
@@ -68,13 +67,14 @@ namespace tracer
         // persist ()
         //
         os << "static void" << endl
-           << "persist (database&, object_type&);"
+           << "persist (database&, " << (auto_id ? "" : "const ") <<
+          "object_type&);"
            << endl;
 
         // update ()
         //
         os << "static void" << endl
-           << "update (database&, object_type&);"
+           << "update (database&, const object_type&);"
            << endl;
 
         // erase ()

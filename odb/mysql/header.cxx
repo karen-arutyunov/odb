@@ -216,6 +216,10 @@ namespace mysql
 
         string const& type (c.fq_name ());
 
+        id_member_.traverse (c);
+        semantics::data_member& id (*id_member_.member ());
+        bool auto_id (id.count ("auto"));
+
         member_count_.traverse (c);
         size_t column_count (member_count_.count ());
 
@@ -235,14 +239,9 @@ namespace mysql
 
         // id_type
         //
-        {
-          id_member_.traverse (c);
-          semantics::data_member& id (*id_member_.member ());
-
-          os << "typedef " << id.type ().fq_name (id.belongs ().hint ()) <<
-            " id_type;"
-             << endl;
-        }
+        os << "typedef " << id.type ().fq_name (id.belongs ().hint ()) <<
+          " id_type;"
+           << endl;
 
         // image_type
         //
@@ -319,25 +318,26 @@ namespace mysql
         // init (image, object)
         //
         os << "static bool" << endl
-           << "init (image_type&, object_type&);"
+           << "init (image_type&, const object_type&);"
            << endl;
 
         // init (object, image)
         //
         os << "static void" << endl
-           << "init (object_type&, image_type&);"
+           << "init (object_type&, const image_type&);"
            << endl;
 
         // persist ()
         //
         os << "static void" << endl
-           << "persist (database&, object_type&);"
+           << "persist (database&, " << (auto_id ? "" : "const ") <<
+          "object_type&);"
            << endl;
 
         // update ()
         //
         os << "static void" << endl
-           << "update (database&, object_type&);"
+           << "update (database&, const object_type&);"
            << endl;
 
         // erase ()
