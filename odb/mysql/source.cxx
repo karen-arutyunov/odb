@@ -715,9 +715,9 @@ namespace mysql
           column_name (id) << "` = ?\";"
            << endl;
 
-        // store_statement
+        // update_statement
         //
-        os << "const char* const " << traits << "::store_statement =" << endl
+        os << "const char* const " << traits << "::update_statement =" << endl
            << "\"UPDATE `" << table_name (c) << "` SET \"" << endl;
 
         {
@@ -853,10 +853,10 @@ namespace mysql
 
         os << "}";
 
-        // store ()
+        // update ()
         //
         os << "void " << traits << "::" << endl
-           << "store (database&, object_type& obj)"
+           << "update (database&, object_type& obj)"
            << "{"
            << "using namespace mysql;"
            << endl
@@ -876,7 +876,7 @@ namespace mysql
            << "if (init (sts.image (), obj) || imb.version == 0)" << endl
            << "bind (imb, sts.image ());"
            << endl
-           << "sts.store_statement ().execute ();"
+           << "sts.update_statement ().execute ();"
            << "}";
 
         // erase ()

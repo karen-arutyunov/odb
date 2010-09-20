@@ -57,10 +57,10 @@ namespace tracer
            << "throw object_already_persistent ();"
            << "}";
 
-        // store ()
+        // update ()
         //
         os << "void " << traits << "::" << endl
-           << "store (database&, object_type& obj)"
+           << "update (database&, object_type& obj)"
            << "{"
            << "std::cout << \"update \" << type_name () << \" id \" << " <<
           "id (obj) << std::endl;"

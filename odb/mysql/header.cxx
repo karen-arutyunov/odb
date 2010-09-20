@@ -284,7 +284,7 @@ namespace mysql
         //
         os << "static const char* const persist_statement;"
            << "static const char* const find_statement;"
-           << "static const char* const store_statement;"
+           << "static const char* const update_statement;"
            << "static const char* const erase_statement;";
 
         if (options.generate_query ())
@@ -334,10 +334,10 @@ namespace mysql
            << "persist (database&, object_type&);"
            << endl;
 
-        // store ()
+        // update ()
         //
         os << "static void" << endl
-           << "store (database&, object_type&);"
+           << "update (database&, object_type&);"
            << endl;
 
         // erase ()

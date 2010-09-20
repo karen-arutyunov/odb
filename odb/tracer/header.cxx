@@ -71,10 +71,10 @@ namespace tracer
            << "persist (database&, object_type&);"
            << endl;
 
-        // store ()
+        // update ()
         //
         os << "static void" << endl
-           << "store (database&, object_type&);"
+           << "update (database&, object_type&);"
            << endl;
 
         // erase ()
