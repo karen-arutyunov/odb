@@ -136,9 +136,9 @@ namespace mysql
       traverse_decimal (type&, sql_type const& t)
       {
         os << b << ".buffer_type = MYSQL_TYPE_NEWDECIMAL;"
-           << b << ".buffer = i." << var << "value;"
+           << b << ".buffer = i." << var << "value.data ();"
            << b << ".buffer_length = static_cast<unsigned long> (" << endl
-           << "sizeof (i." << var << "value));"
+           << "i." << var << "value.capacity ());"
            << b << ".length = &i." << var << "size;"
            << b << ".is_null = &i." << var << "null;"
            << endl;
@@ -168,9 +168,9 @@ namespace mysql
         //
         os << b << ".buffer_type = " <<
           char_bin_buffer_types[t.type - sql_type::CHAR] << ";"
-           << b << ".buffer = i." << var << "value;"
+           << b << ".buffer = i." << var << "value.data ();"
            << b << ".buffer_length = static_cast<unsigned long> (" << endl
-           << "sizeof (i." << var << "value));"
+           << "i." << var << "value.capacity ());"
            << b << ".length = &i." << var << "size;"
            << b << ".is_null = &i." << var << "null;"
            << endl;
@@ -277,8 +277,13 @@ namespace mysql
       virtual void
       traverse_decimal (type&, sql_type const& t)
       {
-        os << e << " = 0;"
-           << endl;
+        // @@ Optimization disabled.
+        //
+        os << "if (" << e << ")" << endl
+           << "{"
+           << "i." << var << "value.capacity (i." << var << "size);"
+           << "r = true;"
+           << "}";
       }
 
       virtual void
@@ -291,8 +296,13 @@ namespace mysql
       virtual void
       traverse_short_string (type&, sql_type const& t)
       {
-        os << e << " = 0;"
-           << endl;
+        // @@ Optimization disabled.
+        //
+        os << "if (" << e << ")" << endl
+           << "{"
+           << "i." << var << "value.capacity (i." << var << "size);"
+           << "r = true;"
+           << "}";
       }
 
       virtual void
@@ -346,7 +356,7 @@ namespace mysql
     struct init_image_member: member_base
     {
       init_image_member (context& c, bool id)
-          : member_base (c, id)
+          : member_base (c, id), member_image_type_ (c, id)
       {
       }
 
@@ -354,6 +364,8 @@ namespace mysql
       pre (type& m)
       {
         type = m.type ().fq_name (m.belongs ().hint ());
+        image_type = member_image_type_.image_type (m);
+        traits = "mysql::value_traits< " + type + ", " + image_type + " >";
 
         if (id_)
           member = "id";
@@ -370,7 +382,7 @@ namespace mysql
       virtual void
       traverse_integer (type& m, sql_type const&)
       {
-        os << "mysql::value_traits< " << type << " >::set_image (" << endl
+        os << traits << "::set_image (" << endl
            << "i." << var << "value, is_null, " << member << ");"
            << "i." << var << "null = is_null;"
            << endl;
@@ -379,7 +391,7 @@ namespace mysql
       virtual void
       traverse_float (type& m, sql_type const&)
       {
-        os << "mysql::value_traits< " << type << " >::set_image (" << endl
+        os << traits << "::set_image (" << endl
            << "i." << var << "value, is_null, " << member << ");"
            << "i." << var << "null = is_null;"
            << endl;
@@ -388,23 +400,26 @@ namespace mysql
       virtual void
       traverse_decimal (type& m, sql_type const&)
       {
+        // @@ Optimization: can remove growth check if buffer is fixed.
+        //
         os << "{"
            << "std::size_t size;"
-           << "mysql::value_traits< " << type << " >::set_image (" << endl
+           << "std::size_t cap (i." << var << "value.capacity ());"
+           << traits << "::set_image (" << endl
            << "i." << var << "value," << endl
-           << "sizeof (i." << var << "value)," << endl
            << "size," << endl
            << "is_null," << endl
            << member << ");"
            << "i." << var << "size = static_cast<unsigned long> (size);"
            << "i." << var << "null = is_null;"
+           << "grew = grew || (cap != i." << var << "value.capacity ());"
            << "}";
       }
 
       virtual void
       traverse_date_time (type& m, sql_type const&)
       {
-        os << "mysql::value_traits< " << type << " >::set_image (" << endl
+        os << traits << "::set_image (" << endl
            << "i." << var << "value, is_null, " << member << ");"
            << "i." << var << "null = is_null;"
            << endl;
@@ -413,16 +428,19 @@ namespace mysql
       virtual void
       traverse_short_string (type& m, sql_type const&)
       {
+        // @@ Optimization: can remove growth check if buffer is fixed.
+        //
         os << "{"
            << "std::size_t size;"
-           << "mysql::value_traits< " << type << " >::set_image (" << endl
+           << "std::size_t cap (i." << var << "value.capacity ());"
+           << traits << "::set_image (" << endl
            << "i." << var << "value," << endl
-           << "sizeof (i." << var << "value)," << endl
            << "size," << endl
            << "is_null," << endl
            << member << ");"
            << "i." << var << "size = static_cast<unsigned long> (size);"
            << "i." << var << "null = is_null;"
+           << "grew = grew || (cap != i." << var << "value.capacity ());"
            << "}";
       }
 
@@ -432,7 +450,7 @@ namespace mysql
         os << "{"
            << "std::size_t size;"
            << "std::size_t cap (i." << var << "value.capacity ());"
-           << "mysql::value_traits< " << type << " >::set_image (" << endl
+           << traits << "::set_image (" << endl
            << "i." << var << "value," << endl
            << "size," << endl
            << "is_null," << endl
@@ -450,7 +468,7 @@ namespace mysql
         //
         os << "{"
            << "std::size_t size;"
-           << "mysql::value_traits< " << type << " >::set_image (" << endl
+           << traits << "::set_image (" << endl
            << "i." << var << "value," << endl
            << "sizeof (i." << var << "value)," << endl
            << "size," << endl
@@ -469,7 +487,7 @@ namespace mysql
         os << "{"
            << "std::size_t size;"
            << "std::size_t cap (i." << var << "value.capacity ());"
-           << "mysql::value_traits< " << type << " >::set_image (" << endl
+           << traits << "::set_image (" << endl
            << "i." << var << "value," << endl
            << "size," << endl
            << "is_null," << endl
@@ -488,7 +506,7 @@ namespace mysql
         os << "{"
            << "std::size_t size;"
            << "std::size_t cap (i." << var << "value.capacity ());"
-           << "mysql::value_traits< " << type << " >::set_image (" << endl
+           << traits << "::set_image (" << endl
            << "i." << var << "value," << endl
            << "size," << endl
            << "is_null," << endl
@@ -502,6 +520,10 @@ namespace mysql
     private:
       string type;
       string member;
+      string image_type;
+      string traits;
+
+      member_image_type member_image_type_;
     };
 
     //
@@ -509,7 +531,7 @@ namespace mysql
     struct init_value_member: member_base
     {
       init_value_member (context& c)
-          : member_base (c, false)
+          : member_base (c, false), member_image_type_ (c, false)
       {
       }
 
@@ -517,6 +539,8 @@ namespace mysql
       pre (type& m)
       {
         type = m.type ().fq_name (m.belongs ().hint ());
+        image_type = member_image_type_.image_type (m);
+        traits = "mysql::value_traits< " + type + ", " + image_type + " >";
 
         os << "// " << m.name () << endl
            << "//" << endl;
@@ -525,7 +549,7 @@ namespace mysql
       virtual void
       traverse_integer (type& m, sql_type const&)
       {
-        os << "mysql::value_traits< " << type << " >::set_value (" << endl
+        os << traits << "::set_value (" << endl
            << "o." << m.name () << ", i." << var << "value, " <<
           "i." << var << "null);"
            << endl;
@@ -534,7 +558,7 @@ namespace mysql
       virtual void
       traverse_float (type& m, sql_type const&)
       {
-        os << "mysql::value_traits< " << type << " >::set_value (" << endl
+        os << traits << "::set_value (" << endl
            << "o." << m.name () << ", i." << var << "value, " <<
           "i." << var << "null);"
            << endl;
@@ -543,7 +567,7 @@ namespace mysql
       virtual void
       traverse_decimal (type& m, sql_type const&)
       {
-        os << "mysql::value_traits< " << type << " >::set_value (" << endl
+        os << traits << "::set_value (" << endl
            << "o." << m.name () << "," << endl
            << "i." << var << "value," << endl
            << "i." << var << "size," << endl
@@ -554,7 +578,7 @@ namespace mysql
       virtual void
       traverse_date_time (type& m, sql_type const&)
       {
-        os << "mysql::value_traits< " << type << " >::set_value (" << endl
+        os << traits << "::set_value (" << endl
            << "o." << m.name () << ", i." << var << "value, " <<
           "i." << var << "null);"
            << endl;
@@ -563,7 +587,7 @@ namespace mysql
       virtual void
       traverse_short_string (type& m, sql_type const&)
       {
-        os << "mysql::value_traits< " << type << " >::set_value (" << endl
+        os << traits << "::set_value (" << endl
            << "o." << m.name () << "," << endl
            << "i." << var << "value," << endl
            << "i." << var << "size," << endl
@@ -574,9 +598,9 @@ namespace mysql
       virtual void
       traverse_long_string (type& m, sql_type const&)
       {
-        os << "mysql::value_traits< " << type << " >::set_value (" << endl
+        os << traits << "::set_value (" << endl
            << "o." << m.name () << "," << endl
-           << "i." << var << "value.data ()," << endl
+           << "i." << var << "value," << endl
            << "i." << var << "size," << endl
            << "i." << var << "null);"
            << endl;
@@ -587,7 +611,7 @@ namespace mysql
       {
         // Represented as a BLOB.
         //
-        os << "mysql::value_traits< " << type << " >::set_value (" << endl
+        os << traits << "::set_value (" << endl
            << "o." << m.name () << "," << endl
            << "i." << var << "value," << endl
            << "i." << var << "size," << endl
@@ -600,9 +624,9 @@ namespace mysql
       {
         // Represented as a string.
         //
-        os << "mysql::value_traits< " << type << " >::set_value (" << endl
+        os << traits << "::set_value (" << endl
            << "o." << m.name () << "," << endl
-           << "i." << var << "value.data ()," << endl
+           << "i." << var << "value," << endl
            << "i." << var << "size," << endl
            << "i." << var << "null);"
            << endl;
@@ -613,9 +637,9 @@ namespace mysql
       {
         // Represented as a string.
         //
-        os << "mysql::value_traits< " << type << " >::set_value (" << endl
+        os << traits << "::set_value (" << endl
            << "o." << m.name () << "," << endl
-           << "i." << var << "value.data ()," << endl
+           << "i." << var << "value," << endl
            << "i." << var << "size," << endl
            << "i." << var << "null);"
            << endl;
@@ -623,6 +647,10 @@ namespace mysql
 
     private:
       string type;
+      string image_type;
+      string traits;
+
+      member_image_type member_image_type_;
     };
 
     //

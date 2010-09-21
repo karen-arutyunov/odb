@@ -10,31 +10,18 @@ namespace mysql
 {
   namespace
   {
-    const char* integer_types[] =
-    {
-      "char",
-      "short",
-      "int",
-      "int",
-      "long long"
-    };
-
-    const char* float_types[] =
-    {
-      "float",
-      "double"
-    };
-
     struct image_member: member_base
     {
       image_member (context& c, bool id)
-          : member_base (c, id)
+          : member_base (c, id), member_image_type_ (c, id)
       {
       }
 
       virtual void
       pre (type& m)
       {
+        image_type = member_image_type_.image_type (m);
+
         if (!id_)
           os << "// " << m.name () << endl
              << "//" << endl;
@@ -43,13 +30,7 @@ namespace mysql
       virtual void
       traverse_integer (type&, sql_type const& t)
       {
-        if (t.unsign)
-          os << "unsigned ";
-        else if (t.type == sql_type::TINYINT)
-          os << "signed ";
-
-        os << integer_types[t.type - sql_type::TINYINT] << " " <<
-          var << "value;"
+        os << image_type << " " << var << "value;"
            << "my_bool " << var << "null;"
            << endl;
       }
@@ -57,7 +38,7 @@ namespace mysql
       virtual void
       traverse_float (type&, sql_type const& t)
       {
-        os << float_types[t.type - sql_type::FLOAT] << " " << var << "value;"
+        os << image_type << " " << var << "value;"
            << "my_bool " << var << "null;"
            << endl;
       }
@@ -68,8 +49,14 @@ namespace mysql
         // Exchanged as strings. Can have up to 65 digits not counting
         // '-' and '.'. If range is not specified, the default is 10.
         //
+
+        /*
+          @@ Disabled.
         os << "char " << var << "value[" <<
           (t.range ? t.range_value : 10) + 3 << "];"
+        */
+
+        os << image_type << " " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
            << endl;
@@ -78,12 +65,7 @@ namespace mysql
       virtual void
       traverse_date_time (type&, sql_type const& t)
       {
-        if (t.type == sql_type::YEAR)
-          os << "short ";
-        else
-          os << "MYSQL_TIME ";
-
-        os << var << "value;"
+        os << image_type << " " << var << "value;"
            << "my_bool " << var << "null;"
            << endl;
 
@@ -94,8 +76,13 @@ namespace mysql
       {
         // If range is not specified, the default buffer size is 255.
         //
+        /*
+          @@ Disabled.
         os << "char " << var << "value[" <<
           (t.range ? t.range_value : 255) + 1 << "];"
+        */
+
+        os << image_type << " " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
            << endl;
@@ -104,7 +91,7 @@ namespace mysql
       virtual void
       traverse_long_string (type&, sql_type const& t)
       {
-        os << "details::buffer " << var << "value;"
+        os << image_type << " " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
            << endl;
@@ -128,7 +115,7 @@ namespace mysql
       {
         // Represented as string.
         //
-        os << "details::buffer " << var << "value;"
+        os << image_type << " " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
            << endl;
@@ -139,11 +126,16 @@ namespace mysql
       {
         // Represented as string.
         //
-        os << "details::buffer " << var << "value;"
+        os << image_type << " " << var << "value;"
            << "unsigned long " << var << "size;"
            << "my_bool " << var << "null;"
            << endl;
       }
+
+    private:
+      string image_type;
+
+      member_image_type member_image_type_;
     };
 
     struct image_type: traversal::class_, context

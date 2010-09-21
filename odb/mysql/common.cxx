@@ -130,6 +130,102 @@ namespace mysql
   }
 
   //
+  // member_image_type
+  //
+
+  namespace
+  {
+    const char* integer_types[] =
+    {
+      "char",
+      "short",
+      "int",
+      "int",
+      "long long"
+    };
+
+    const char* float_types[] =
+    {
+      "float",
+      "double"
+    };
+  }
+
+  member_image_type::
+  member_image_type (context& c, bool id)
+      : member_base (c, id)
+  {
+  }
+
+  string member_image_type::
+  image_type (type& m)
+  {
+    type_.clear ();
+    member_base::traverse (m);
+    return type_;
+  }
+
+  void member_image_type::
+  traverse_integer (type&, sql_type const& t)
+  {
+    if (t.unsign)
+      type_ = "unsigned ";
+    else if (t.type == sql_type::TINYINT)
+      type_ = "signed ";
+
+    type_ += integer_types[t.type - sql_type::TINYINT];
+  }
+
+  void member_image_type::
+  traverse_float (type&, sql_type const& t)
+  {
+    type_ = float_types[t.type - sql_type::FLOAT];
+  }
+
+  void member_image_type::
+  traverse_decimal (type&, sql_type const&)
+  {
+    type_ = "details::buffer";
+  }
+
+  void member_image_type::
+  traverse_date_time (type&, sql_type const& t)
+  {
+    if (t.type == sql_type::YEAR)
+      type_ = "short";
+    else
+      type_ = "MYSQL_TIME";
+  }
+
+  void member_image_type::
+  traverse_string (type&, sql_type const&)
+  {
+    type_ = "details::buffer";
+  }
+
+  void member_image_type::
+  traverse_bit (type&, sql_type const&)
+  {
+    type_ = "unsigned char*";
+  }
+
+  void member_image_type::
+  traverse_enum (type&, sql_type const&)
+  {
+    // Represented as string.
+    //
+    type_ = "details::buffer";
+  }
+
+  void member_image_type::
+  traverse_set (type&, sql_type const&)
+  {
+    // Represented as string.
+    //
+    type_ = "details::buffer";
+  }
+
+  //
   // query_column
   //
 
@@ -183,13 +279,17 @@ namespace mysql
 
   query_column::
   query_column (context& c)
-      : member_base (c, false), decl_ (true)
+      : member_base (c, false),
+        decl_ (true),
+        member_image_type_ (c, false)
   {
   }
 
   query_column::
   query_column (context& c, semantics::class_& cl)
-      : member_base (c, false), decl_ (false)
+      : member_base (c, false),
+        decl_ (false),
+        member_image_type_ (c, false)
   {
     scope_ = "access::object_traits< " + cl.fq_name () + " >::query_type";
     table_ = table_name (cl);
@@ -199,8 +299,9 @@ namespace mysql
   pre (type& m)
   {
     type_ = "mysql::value_traits< "
-      + m.type ().fq_name (m.belongs ().hint ())
-      + " >::value_type";
+      + m.type ().fq_name (m.belongs ().hint ()) + ", "
+      + member_image_type_.image_type (m)
+      + " >::query_type";
 
     name_ = escape (public_name (m));
 
@@ -302,29 +403,7 @@ namespace mysql
   }
 
   void query_column::
-  traverse_short_string (type& m, sql_type const& t)
-  {
-    if (decl_)
-    {
-      os << "static const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::" << char_bin_image_id[t.type - sql_type::CHAR] << ">" << endl
-         << name_ << ";"
-         << endl;
-    }
-    else
-    {
-      os << "const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::" << char_bin_image_id[t.type - sql_type::CHAR] << ">" << endl
-         << scope_ << "::" << name_ << " (" << endl
-         << column_ << ");"
-         << endl;
-    }
-  }
-
-  void query_column::
-  traverse_long_string (type& m, sql_type const& t)
+  traverse_string (type& m, sql_type const& t)
   {
     if (decl_)
     {

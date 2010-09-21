@@ -52,13 +52,20 @@ namespace mysql
     }
 
     virtual void
-    traverse_short_string (type&, sql_type const&)
+    traverse_string (type&, sql_type const&)
     {
     }
 
     virtual void
-    traverse_long_string (type&, sql_type const&)
+    traverse_short_string (type& t, sql_type const& st)
     {
+      traverse_string (t, st);
+    }
+
+    virtual void
+    traverse_long_string (type& t, sql_type const& st)
+    {
+      traverse_string (t, st);
     }
 
     virtual void
@@ -81,6 +88,41 @@ namespace mysql
     string var;
   };
 
+  struct member_image_type: member_base
+  {
+    member_image_type (context&, bool id);
+
+    string
+    image_type (type&);
+
+    virtual void
+    traverse_integer (type&, sql_type const&);
+
+    virtual void
+    traverse_float (type&, sql_type const&);
+
+    virtual void
+    traverse_decimal (type&, sql_type const&);
+
+    virtual void
+    traverse_date_time (type&, sql_type const&);
+
+    virtual void
+    traverse_string (type&, sql_type const&);
+
+    virtual void
+    traverse_bit (type&, sql_type const&);
+
+    virtual void
+    traverse_enum (type&, sql_type const&);
+
+    virtual void
+    traverse_set (type&, sql_type const&);
+
+  private:
+    string type_;
+  };
+
   struct has_grow_member: member_base
   {
     has_grow_member (context& c)
@@ -95,9 +137,21 @@ namespace mysql
     }
 
     virtual void
+    traverse_decimal (type&, sql_type const& t)
+    {
+      r_ = true;
+    }
+
+    virtual void
     traverse_long_string (type&, sql_type const& t)
     {
       r_ = true;
+    }
+
+    virtual void
+    traverse_short_string (type&, sql_type const& t)
+    {
+      r_ = true; // @@ Short string optimization disabled.
     }
 
     virtual void
@@ -137,10 +191,7 @@ namespace mysql
     traverse_date_time (type&, sql_type const&);
 
     virtual void
-    traverse_short_string (type&, sql_type const&);
-
-    virtual void
-    traverse_long_string (type&, sql_type const&);
+    traverse_string (type&, sql_type const&);
 
     virtual void
     traverse_bit (type&, sql_type const&);
@@ -158,6 +209,8 @@ namespace mysql
     string table_;
     string column_;
     bool decl_;
+
+    member_image_type member_image_type_;
   };
 }
 
