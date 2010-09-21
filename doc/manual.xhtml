@@ -161,6 +161,56 @@
     text-align: left;
   }
 
+  /* specifiers table */
+  #specifiers {
+    margin: 2em 0 2em 0;
+
+    border-collapse   : collapse;
+    border            : 1px solid;
+    border-color      : #000000;
+
+    font-size        : 11px;
+    line-height      : 14px;
+  }
+
+  #specifiers th, #specifiers td {
+    border: 1px solid;
+    padding           : 0.9em 0.9em 0.7em 0.9em;
+  }
+
+  #specifiers th {
+    background : #cde8f6;
+  }
+
+  #specifiers td {
+    text-align: left;
+  }
+
+  /* mapping table */
+  #mapping {
+    margin: 2em 0 2em 0;
+
+    border-collapse   : collapse;
+    border            : 1px solid;
+    border-color      : #000000;
+
+    font-size        : 11px;
+    line-height      : 14px;
+  }
+
+  #mapping th, #mapping td {
+    border: 1px solid;
+    padding           : 0.9em 0.9em 0.7em 0.9em;
+  }
+
+  #mapping th {
+    background : #cde8f6;
+  }
+
+  #mapping td {
+    text-align: left;
+  }
+
 </style>
 
 
@@ -199,7 +249,8 @@
   </table>
   </div>
 
-  <!-- Hello World Example -->
+
+  <!-- CHAPTER -->
 
 
   <h1><a name="2">2 Hello World Example</a></h1>
@@ -290,7 +341,7 @@ private:
   <p>To be able to save person objects in the database we had to make
      five changes, marked with (1) to (5), to the orignal class
      definition. The first change is the inclusion of the ODB
-     headers <code>core.hxx</code>. This headers provides a number
+     headers <code>&lt;odb/core.hxx></code>. This headers provides a number
      of core ODB declarations, such as <code>odb::access</code>, that
      are used to define peristent classes.</p>
 
@@ -563,11 +614,11 @@ main (int argc, char* argv[])
   </pre>
 
   <p>Let's examine this code piece by piece. At the beginnig we include
-     a bunch of headers. Those include <code>odb/database.hxx</code> and
-     <code>odb/transaction.hxx</code> which define database
+     a bunch of headers. Those include <code>&lt;odb/database.hxx></code>
+     and <code>&lt;odb/transaction.hxx></code> which define database
      system-independant <code>odb::database</code> and
      <code>odb::transaction</code> interfaces. Then we include
-     <code>odb/mysql/database.hxx</code> which defines the
+     <code>&lt;odb/mysql/database.hxx></code> which defines the
      MySQL implementation of the <code>database</code> interface. Finaly,
      we include <code>person.hxx</code> and <code>person-odb.hxx</code>
      which define our persistent <code>person</code> class.</p>
@@ -989,6 +1040,9 @@ Hello, Joe!
      of this manual.</p>
 
 
+  <!-- CHAPTER -->
+
+
   <h1><a name="3">3 Working Title</a></h1>
 
   <p>@@</p>
@@ -1256,7 +1310,7 @@ Hello, Joe!
      <code>database::begin_transaction()</code>
      function. The returned transaction handle is stored in
      an instance of the <code>odb::transaction</code> class which is
-     defined in the <code>odb/transaction.hxx</code> header file.
+     defined in the <code>&lt;odb/transaction.hxx></code> header file.
      A source code fragment that uses ODB transactions should include
      this header file. The <code>odb::transaction</code> class has
      the following interface:</p>
@@ -1638,6 +1692,10 @@ db->erase&lt;person> (jane_id);
 
 t.commit ();
   </pre>
+
+
+  <!-- CHAPTER -->
+
 
   <h1><a name="4">4 Querying the Database</a></h1>
 
@@ -2135,6 +2193,950 @@ namespace odb
     cout &lt;&lt; i.age () &lt;&lt; endl;
   }
   </pre>
+
+
+  <!-- CHAPTER -->
+
+
+  <h1><a name="5">5 ODB Pragma Language</a></h1>
+
+  <p>As we have already seen in previous chapters, ODB uses a pragma-based
+     language to capture database-specific information about C++ types.
+     This chapter describes the ODB pragma language in more detail. It
+     can be read together with other chapters in the manual to get a
+     sense of what kind configurations and mapping fine-tuning are
+     possible. You can also use this chapter as a reference at a later
+     stage.</p>
+
+  <p>An ODB pragma has the following syntax:</p>
+
+  <p><code>#pragma db <i>qualifier</i> [<i>specifier</i> <i>specifier</i> ...]</code></p>
+
+  <p>The qualifier tell the ODB compiler what kind of C++ construct
+     this pragma describes. Valid qualifiers are <code>object</code>,
+     <code>value</code>, and <code>member</code>. Pragmas with the
+     <code>object</code> qualifier describes persistent object types.
+     It tells the ODB compiler that a C++ class it describes is a
+     persistent class. Similarly, pragmas with the <code>value</code>
+     qualifier describes value types and the <code>member</code>
+     qualfier is used to describe data members of persistent object
+     and value types.</p>
+
+  <p>The specifier informs the ODB compiler about a particular property
+     of the C++ declaration. For example, the <code>id</code> member
+     specifier tell the ODB compiler that this member contains this
+     object's identifier. Below is the declaration of the <code>person</code>
+     class that shows how we can use these qualifiers and specifiers:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db member id
+  unsigned long id_;
+  ...
+};
+  </pre>
+
+  <p>In the above example we don't explicitly specify which C++ class or
+     data member the pragma belongs to. Rather, the pragma applies to
+     a C++ declaration that immediately follows the pragma. Such pragmas
+     are called <em>positioned pragmas</em>. In positioned pragmas that
+     apply to data members the <code>member</code> qualifier can be
+     omitted for brievety, for example:</p>
+
+  <pre class="c++">
+  #pragma db id
+  unsigned long id_;
+  </pre>
+
+  <p>Note also that if the C++ declaration immediately following a
+     position pragma is incompatible with the pragma qualifier, an
+     error will be issued. For example:</p>
+
+  <pre class="c++">
+  #pragma db object  // Error: expected class instead of data member.
+  unsigned long id_;
+  </pre>
+
+
+  <p>While keeping the C++ declarations and database declarations close
+     together eases maintenance and increases readability, you can also
+     separate them in different parts of the same header file or even
+     factor them to a seperate file. To achive this we use the so called
+     <em>named pragmas</em>. Unlike positioned pragmas, named pragmas
+     explicitly specify the C++ declaration to which they apply by
+     adding the declaration name after the pragma qualifier. For example:</p>
+
+  <pre class="c++">
+class person
+{
+  ...
+private:
+  unsigned long id_;
+  ...
+};
+
+#pragma db object(person)
+#pragma db member(person::id_) id
+  </pre>
+
+  <p>Note that in the named pragmas for data members the <code>member</code>
+     qualifier is no longer optional. The C++ declaration name in the
+     named pragmas is resolved using the standard C++ name resolution
+     rules, for example:</p>
+
+  <pre class="c++">
+namespace db
+{
+  class person
+  {
+    ...
+  private:
+    unsigned long id_;
+    ...
+  };
+}
+
+namespace db
+{
+  #pragma db object(person)  // Resolves db::person.
+}
+
+#pragma db member(db::person::id_) id
+  </pre>
+
+  <p>The following code fragment shows how to use the named value
+     type pragma to map a C++ type to a native database type:</p>
+
+  <pre class="c++">
+#pragma db value(bool) type("INT NOT NULL")
+
+#pragma db object
+class person
+{
+  ...
+private:
+  bool married_; // Mapped to INT NOT NULL database type.
+  ...
+};
+  </pre>
+
+  <h2><a name="5.1">5.1 C++ Compiler Warnings</a></h2>
+
+  <p>The C++ header file that defines your persistent classes and
+     normally contains one or more ODB pragmas is compiled by both
+     the ODB compiler to generate the database support code and
+     the C++ compiler to build your application. Some C++ compilers
+     issue warnings about pragmas that they do not recognize. There
+     are several ways to deal with this problem. The easiest is to
+     disable such warnings using one of the compiler-specific command
+     line options or warning control pragmas. This method is described
+     in the following sub-section for most popular C++ compiler.</p>
+
+  <p>There are also several C++ compiler-independant methods that you
+     can employ. The first is to use the <code>PRAGMA_DB</code> macro,
+     defined in <code>&lt;odb/core.hxx></code>, instead of the
+     <code>#pragma&nbsp;db</code> directly. This macro expands to the
+     ODB pragma when compiled with the ODB compiler and to an empty
+     string when compiler with other compilers. The following example
+     shows how we can use this macro:</p>
+
+  <pre class="c++">
+#include &lt;odb/core.hxx>
+
+PRAGMA_DB(object)
+class person
+{
+  ...
+private:
+  PRAGMA_DB(id)
+  unsigned long id_;
+  ...
+};
+  </pre>
+
+  <p>The alternative to using the <code>PRAGMA_DB</code> macro is to
+     group the <code>#pragma&nbsp;db</code> directives in blocks that are
+     conditionally included into compilation only when compiled with the
+     ODB compiler. For example:</p>
+
+  <pre class="c++">
+class person
+{
+  ...
+private:
+  unsigned long id_;
+  ...
+};
+
+#ifdef ODB_COMPILER
+#  pragma db object(person)
+#  pragma db member(person::id_) id
+#endif
+  </pre>
+
+  <p>The disadvantage of this approach is that it becomes overly verbose
+     when positioned pragmas are used.</p>
+
+  <h3><a name="5.1.1">5.1.1 GNU C++</a></h3>
+
+  <p>GNU g++ does not issue warnings about unknown pragmas
+     unless requested with the <code>-Wall</code> command line option.
+     To disable only the unknown pragma warning you can add the
+     <code>-Wno-unknown-pragmas</code> option after <code>-Wall</code>,
+     for example:</p>
+
+  <pre class="terminal">
+g++ -Wall -Wno-unknown-pragmas ...
+  </pre>
+
+  <h3><a name="5.1.2">5.1.2 Visual C++</a></h3>
+
+  <p>Microsoft Visual C++ issues an unknown pragma warning (C4068) at
+     warning level 1 or higher. This means that unless you have disabled
+     warnings altogether (level 0), you will see this warning.</p>
+
+  <p>To disable this warning via the compiler command line, you can add
+     the <code>/wd4068</code> C++ compiler option in Visual Studio 2008
+     and earlier. In Visual Studio 2010 there is now a special GUI field
+     where you can enter warning numbers that should be disabled. Simply
+     enter 4068 into this field.</p>
+
+  <p>You can also disable this warning only for a specific header or
+     a fragment of a header using the warning control pragma. For
+     example:</p>
+
+  <pre class="c++">
+#include &lt;odb/core.hxx>
+
+#pragma warning (push)
+#pragma warning (disable:4068)
+
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id
+  unsigned long id_;
+  ...
+};
+
+#pragma warning (pop)
+  </pre>
+
+  <h3><a name="5.1.3">5.1.3 Sun C++</a></h3>
+
+  <p>The Sun C++ compiler does not issue warnings about unknown pragmas.
+     As a result, no additional actions are required for this compiler.</p>
+
+  <h3><a name="5.1.4">5.1.4 IBM XL C++</a></h3>
+
+  <p>IBM XL C++ issues an unknown pragma warning (1540-1401) by default.
+     To disable this warning you can add the <code>-qsuppress=1540-1401</code>
+     command line option, for example:</p>
+
+  <pre class="terminal">
+xlC -qsuppress=1540-1401 ...
+  </pre>
+
+
+  <h2><a name="5.2">5.2 Object Type Pragmas</a></h2>
+
+  <p>A pragma with the <code>object</code> qualifier declares a C++ class
+     as a persistent object type. The qualifier can be optionally followed
+     by the <code>table</code> specifier.</p>
+
+  <h3><a name="5.2.1">5.2.1 <code>table</code></a></h3>
+
+  <p>The <code>table</code> specifier specifies the table name that should
+     be used to store objects of this class in a relational database. For
+     example:</p>
+
+  <pre class="c++">
+#pragma db object table("people")
+class person
+{
+  ...
+};
+  </pre>
+
+  <p>If the table name is not specified, the class name is used as the
+     default.</p>
+
+  <h2><a name="5.3">5.3 Value Type Pragmas</a></h2>
+
+  <p>A pragma with the <code>value</code> qualifier describes a value
+     type and can be optionally followed by the <code>type</code>
+     specifier.</p>
+
+  <h3><a name="5.3.1">5.3.1 <code>type</code></a></h3>
+
+  <p>The <code>type</code> specifier specifies the native database type
+     that should be used for data members of this type. For example:</p>
+
+  <pre class="c++">
+#pragma db value(bool) type("INT NOT NULL")
+
+#pragma db object
+class person
+{
+  ...
+private:
+  bool married_; // Mapped to INT NOT NULL database type.
+  ...
+};
+  </pre>
+
+  <p>The ODB compiler includes the default mapping between common C++
+     types, such as <code>bool</code>, <code>int</code>, and
+     <code>std::string</code> and the database types for each supported
+     database system. For more information on the default mapping,
+     refer to (@@ ref Database Systems).</p>
+
+  <p>In the above example we changed the mapping for the <code>bool</code>
+     type which is now mapped to the <code>INT</code> database type. In
+     this case the <code>value</code> pragma is all that is necessary
+     since the ODB compiler will be able to figure out how to store
+     a boolean value as an integer in the database. However, there
+     could be situations where the ODB compiler will not know how to
+     handle the conversion between the C++ and database representations
+     of a value. Consider, as an example, a situation where the
+     boolean value is stored in the database as a string:</p>
+
+  <pre class="c++">
+#pragma db value(bool) type("CHAR(5) NOT NULL")
+  </pre>
+
+  <p>The possible database value for the C++ <code>true</code> value could
+     be <code>"true"</code>, or <code>"TRUE"</code>, or <code>"True"</code>.
+     Or, maybe, all of the above are valid. The ODB compiler has no way
+     of knowing how your application wants to convert <code>bool</code>
+     to a string and back.</p>
+
+  <p>@@ value_type straits specialization example.</p>
+
+  <p>It is also possible to change the database type mapping for individual
+     members, as discussed in (@@ ref member type specifier).</p>
+
+  <h2><a name="5.4">5.4 Data Member Pragmas</a></h2>
+
+  <p>A pragma with the <code>member</code> qualifier or a positioned
+     pragma without a qualifier describes a data member. It can
+     be optionally followed, in any order, by the specifiers summarized
+     in the table below:</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="specifiers" border="1">
+    <tr>
+      <th>Specifier</th>
+      <th>Summary</th>
+      <th>Section</th>
+    </tr>
+
+    <tr>
+      <td><code>id</code></td>
+      <td>the member is an object id</td>
+      <td><a href="#5.4.1">5.4.1</a></td>
+    </tr>
+
+    <tr>
+      <td><code>auto</code></td>
+      <td>id is assigned by the database</td>
+      <td><a href="#5.4.2">5.4.2</a></td>
+    </tr>
+
+    <tr>
+      <td><code>type</code></td>
+      <td>the database type for the member</td>
+      <td><a href="#5.4.3">5.4.3</a></td>
+    </tr>
+
+    <tr>
+      <td><code>column</code></td>
+      <td>the column name for the member</td>
+      <td><a href="#5.4.4">5.4.4</a></td>
+    </tr>
+
+    <tr>
+      <td><code>transient</code></td>
+      <td>the member is not stored in the database</td>
+      <td><a href="#5.4.5">5.4.5</a></td>
+    </tr>
+
+  </table>
+
+  <h3><a name="5.4.1">5.4.1 <code>id</code></a></h3>
+
+  <p>The <code>id</code> specifier specifies that the data member contains
+     the object id. Every persistent class must have a member designated
+     as an object identifier. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id
+  std::string email_;
+  ...
+};
+  </pre>
+
+  <p>In a relational database, an identifier member is mapped to a
+     primary key.</p>
+
+  <h3><a name="5.4.2">5.4.2 <code>auto</code></a></h3>
+
+  <p>The <code>auto</code> specifier specifies that the object identifier
+     is automatically assigned by the database. Only a member that was
+     designated as an object identifier can have this specifier. For
+     example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+  ...
+};
+  </pre>
+
+  <p>Note that automatically-assigned object identifiers are not reused.
+     If you have a high object turnover (that is, objects are routinely
+     made persistent and then erased), then care must be taken not to
+     run out of object identifiers. In such situations using
+     <code>unsigned long long</code> as the identifier type is a safe
+     choice.</p>
+
+  <p>For additional information on the automatic identifier assignment,
+     refer to (@@ ref persist() function).</p>
+
+  <h3><a name="5.4.3">5.4.3 <code>type</code></a></h3>
+
+  <p>The <code>type</code> specifier specifies the native database type
+     that should be used for this data member. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db type("INT NOT NULL")
+  bool married_;
+  ...
+};
+  </pre>
+
+  <p>The behavior of this specifier for members is similar to that
+     for value types. The only difference is the scope. The value
+     type pragma applies to all members with this value type that
+     don't have their own <code>type</code> specifiers. While the
+     member pragma applies only to a single member. For more
+     information on the semantics of this specifier refer to
+     the (@@ ref value type "value" specifier).</p>
+
+  <h3><a name="5.4.4">5.4.4 <code>column</code></a></h3>
+
+  <p>The <code>column</code> specifier specifies the column name
+     that should be used to store this member in a relational database.
+     For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id column("person_id")
+  unsigned long id_;
+  ...
+};
+  </pre>
+
+  <p>If the column name is not specified, it is derived from the member
+     name by removing the common member name decorations, such as leading
+     and trailing underscores, the <code>m_</code> prefix, etc.</p>
+
+  <h3><a name="5.4.5">5.4.5 <code>transient</code></a></h3>
+
+  <p>The <code>transient</code> specifier instructs the ODB compiler
+     not to store the data member in the database. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  date born_;
+
+  #pragma db transient
+  unsigned short age_; // Computed from born_.
+  ...
+};
+  </pre>
+
+  <p>This pragma is usualy used on computed members, pointers and
+     references that are only meaningful in the application's
+     memory, as well as utility members such as mutexes, etc.</p>
+
+
+  <!-- CHAPTER -->
+
+
+  <h1><a name="6">6 Database Systems</a></h1>
+
+  <p>This chapter covers topics specific to the database system
+     implementations and their support in ODB. In particular, it
+     describes the system-specific <code>database</code> classes
+     as well as the default mapping between basic C++ value types
+     and native database types.</p>
+
+
+  <h2><a name="6.1">6.1 MySQL Database</a></h2>
+
+  <p>To generate support code for the MySQL database you will need
+     to pass the "<code>--database&nbsp;mysql</code>"
+     (or "<code>-d&nbsp;mysql</code>") option to the ODB compiler.
+     Your application will also need to link to the ODB MySQL runtime
+     library (<code>libodb-mysql</code>). All MySQL-specific ODB
+     classes are defined in the <code>odb::mysql</code> namespace.</p>
+
+  <h3><a name="6.1.1">6.1.1 MySQL Type Mapping</a></h3>
+
+  <p>The following table summarizes the default mapping between basic
+     C++ value types and MySQL database types. This mapping can be
+     customized on the per-type and per-member basis using ODB pragmas
+     (@@ ref ODB Pragma language).</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>C++ Type</th>
+      <th>MySQL type</th>
+    </tr>
+
+    <tr>
+      <td><code>bool</code></td>
+      <td><code>TINYINT(1) NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>char</code></td>
+      <td><code>TINYINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>signed char</code></td>
+      <td><code>TINYINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>unsigned char</code></td>
+      <td><code>TINYINT UNSIGNED NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>short</code></td>
+      <td><code>SMALLINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>unsigned short</code></td>
+      <td><code>SMALLINT UNSIGNED NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>int</code></td>
+      <td><code>INT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>unsigned int</code></td>
+      <td><code>INT UNSIGNED NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>long</code></td>
+      <td><code>BIGINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>unsigned long</code></td>
+      <td><code>BIGINT UNSIGNED NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>long long</code></td>
+      <td><code>BIGINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>unsigned long long</code></td>
+      <td><code>BIGINT UNSIGNED NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>float</code></td>
+      <td><code>FLOAT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>double</code></td>
+      <td><code>DOUBLE NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>std::string</code></td>
+      <td><code>TEXT NOT NULL/VARCHAR(255) NOT NULL</code></td>
+    </tr>
+  </table>
+
+  <p>Note that the <code>std::string</code> type is mapped
+     differently depending on whether the member of this type
+     is an object id or not. If the member is an object id,
+     then for this member <code>std::string</code> is mapped
+     to <code>VARCHAR(255) NOT NULL</code> MySQL type. Otherwise
+     it is mapped to <code>TEXT NOT NULL</code>.</p>
+
+  <h3><a name="6.1.2">6.1.2 MySQL Database Class</a></h3>
+
+  <p>The MySQL <code>database</code> class has the following
+     interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace mysql
+  {
+    class database: public odb::database
+    {
+    public:
+      database (const char* user,
+                const char* passwd,
+                const char* db,
+                const char* host = 0,
+                unsigned int port = 0,
+                const char* socket = 0,
+                unsigned long client_flags = 0,
+                std::auto_ptr&lt;connection_factory> = 0);
+
+      database (const std::string&amp; user,
+                const std::string&amp; passwd,
+                const std::string&amp; db,
+                const std::string&amp; host = "",
+                unsigned int port = 0,
+                const std::string* socket = 0,
+                unsigned long client_flags = 0,
+                std::auto_ptr&lt;connection_factory> = 0);
+
+      database (const std::string&amp; user,
+                const std::string* passwd,
+                const std::string&amp; db,
+                const std::string&amp; host = "",
+                unsigned int port = 0,
+                const std::string* socket = 0,
+                unsigned long client_flags = 0,
+                std::auto_ptr&lt;connection_factory> = 0);
+
+      database (const std::string&amp; user,
+                const std::string&amp; passwd,
+                const std::string&amp; db,
+                const std::string&amp; host,
+                unsigned int port,
+                const std::string&amp; socket,
+                unsigned long client_flags = 0,
+                std::auto_ptr&lt;connection_factory> = 0);
+
+      database (const std::string&amp; user,
+                const std::string* passwd,
+                const std::string&amp; db,
+                const std::string&amp; host,
+                unsigned int port,
+                const std::string&amp; socket,
+                unsigned long client_flags = 0,
+                std::auto_ptr&lt;connection_factory> = 0);
+
+      database (int&amp; argc,
+                char* argv[],
+                bool erase = false,
+                unsigned long client_flags = 0,
+                std::auto_ptr&lt;connection_factory> = 0);
+
+      static void
+      print_usage (std::ostream&amp;);
+
+
+    public:
+      const char*
+      user () const;
+
+      const char*
+      password () const;
+
+      const char*
+      db () const;
+
+      const char*
+      host () const;
+
+      unsigned int
+      port () const;
+
+      const char*
+      socket () const;
+
+      unsigned long
+      client_flags () const;
+
+    public:
+      details::shared_ptr&lt;mysql::connection>
+      connection ();
+    };
+  }
+}
+  </pre>
+
+  <p>You will need to include the <code>&lt;odb/mysql/database.hxx></code>
+     header file to make this class available in your application.</p>
+
+  <p>The overloaded <code>database</code> constructros allow you
+     to specify MySQL database parameters that should be used when
+     connecting to the database. In MySQL <code>NULL</code> and
+     empty string are treated as the same values for all the
+     string parameters except password and socket. The
+     <code>client_flags</code> argument allows you to specify
+     various MySQL client library flags. For more information
+     on the possible values, refer to the MySQL C API dicumentation.
+     The <code>CLIENT_FOUND_ROWS</code> flag is always set by the
+     ODB MySQL runtime regardless of whether it was passed in the
+     <code>client_flags</code> argument.</p>
+
+  <p>The last constructor variant extracts the database parameters
+     from the command line. The following options are recognized:</p>
+
+  <pre class="terminal">
+  --user &lt;login>
+  --password &lt;password>
+  --database &lt;name>
+  --host &lt;host>
+  --port &lt;integer>
+  --socket &lt;socket>
+  --options-file &lt;file>
+  </pre>
+
+  <p>The <code>--options-file</code> option allows you to specify some
+  or all of the database options in a file with each option appearing
+  on a separate line followed by space and an option value.</p>
+
+  <p>If the <code>erase</code> argument to this constructor is true,
+     then the above options are removed from the <code>argv</code>
+     array and the <code>argc</code> count is updated accordingly.
+     This is primarily useful if your application accepts other
+     options or arguments and you would like to get the MySQL
+     options out of the <code>argv</code> array.</p>
+
+  <p>This constructor throws the <code>odb::mysql::cli_exception</code>
+     exception if the MySQL option values are missing or invalid.
+     See section (@@ ref MySQL Exceptions) for more information
+     on this exception.</p>
+
+  <p>The static <code>print_usage()</code> function allows you
+     to print the list of options with short descriptions that
+     are recognized by this constructor.</p>
+
+  <p>The last argument to all of the constructor variants is the
+     pointer to the connection factory. If you pass a
+     non-<code>NULL</code> value, the database instance assumes
+     ownership of the connection factory. The connection factory
+     interface as well as the available implementations are discussed
+     in the next section.</p>
+
+  <p>The set of accessor function following the constructors allows you
+     to query the parameters of the <code>database</code> instance.</p>
+
+  <p>The <code>connection()</code> function returns the MySQL database
+     connection encapsulated by the <code>odb::mysql::connection</code>
+     class. Normally, you wouldn't call this function directly and
+     instead let the ODB runtime manage database connections. However,
+     if for some reason you need to access the underlying MySQL connection
+     handle, refer to the ODB MySQL runtime source code for the interface
+     of the <code>connection</code> class.</p>
+
+  <h3><a name="6.1.3">6.1.3 Connection Factory</a></h3>
+
+  <p>The <code>connection_factory</code> abstract class has the
+     following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace mysql
+  {
+    class connection_factory
+    {
+    public:
+      virtual void
+      database (mysql::database&amp;) = 0;
+
+      virtual details::shared_ptr&lt;connection>
+      connect () = 0;
+    };
+  }
+}
+  </pre>
+
+  <p>The <code>database()</code> function is called when a connection
+     factory is associated with a database instance. This happens in
+     the <code>odb::mysql::database</code> class constructors. The
+     <code>connect()</code> function is called whenever a database
+     connection is requested.</p>
+
+  <p>The two implementations of the <code>connection_factory</code>
+     interface provided by the ODB MySQL runtime are
+     the <code>new_connection_factory</code> and
+     <code>connection_pool_factory</code>. You will need to include
+     the <code>&lt;odb/mysql/connection-factory.hxx></code>
+     header file to make the <code>connection_factory</code> interface
+     and these implementation classes available in your application.</p>
+
+
+  <p>The <code>new_connection_factory</code> class creates a new
+     connection whenever one is requested. When a connection is no
+     longer needed it is released and closed. The
+     <code>connection_pool_factory</code> class implements a
+     connection pool. It has the following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace mysql
+  {
+    class connection_pool_factory: public connection_factory
+    {
+      connection_pool_factory (std::size_t max_connections = 0,
+                               std::size_t min_connections = 0)
+    };
+};
+  </pre>
+
+  <p>The <code>max_connections</code> argument specifies the maximum
+     number and the of concurrent connections this pool factory will
+     maintain. Similarly, the <code>min_connections</code> argument
+     specifies the minimum number of available connections that
+     should be kept open.</p>
+
+  <p>Whenever a connection is requested, the pool factory first
+     checks if there is an unused connection that can be returned.
+     If there is none, the pool factory checks the
+     <code>max_connections</code> value to see if a new connection
+     can be created. If the total number of connections maintained
+     by the pool is less than this value, then a new connection is
+     created and returned. Otherwise the calling thread is blocked
+     until a connection becomes available.</p>
+
+  <p>When a connection is released, the pool factory first checks
+     if there are blocked threds waiting for a connection. If so,
+     one of them is unblocked and is given the connection. Otherwise,
+     the pool factory checks whether the total number of connections
+     maintained by the pool is greate than the <code>min_connections</code>
+     value. If that's the case, the connection is closed. Otherwise the
+     connection is added to the pool of available connections to be
+     returned on the next request. In other words, if the number of
+     connections maintained by the pool exceeds the <code>min_connections</code>
+     number and there are no threads waiting for a new connection,
+     then the pool will release the excess connections.</p>
+
+  <p>If <code>max_connections</code> value is 0 then the pool will
+     create a new connection whenever all of the existing connections
+     are in use.  If the <code>min_connections</code> value is 0 then
+     the pool will never close a connection and instead maintain all
+     the connections that were ever created.</p>
+
+  <p>If you pass <code>NULL</code> as the connection factory to
+     one of the <code>database</code> constructors, then the
+     <code>connection_pool_factory</code> instance will be
+     created by default with the min and max connections values
+     set to 0. The following code fragment shows how we can
+     pass our own connection factory instance:</p>
+
+  <pre class="c++">
+#include &lt;odb/database.hxx>
+
+#include &lt;odb/mysql/database.hxx>
+#include &lt;odb/mysql/connection-factory.hxx>
+
+int
+main (int argc, char* argv[])
+{
+  auto_ptr&lt;odb::mysql::connection_factory> f (
+    new odb::mysql::connection_pool_factory (20));
+
+  auto_ptr&lt;odb::database> db (
+    new mysql::database (argc, argv, false, 0, f));
+}
+  </pre>
+
+  <h3><a name="6.1.4">6.1.4 MySQL Exceptions</a></h3>
+
+  <p>The ODB MySQL runtime library defines the following MySQL-specific
+     exceptions:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace mysql
+  {
+    class database_exception: odb::database_exception
+    {
+    public:
+      unsigned int
+      error () const;
+
+      const std::string&amp;
+      sqlstate () const;
+
+      const std::string&amp;
+      message () const;
+
+      virtual const char*
+      what () const throw ();
+    };
+
+    class cli_exception: odb::exception
+    {
+    public:
+      virtual const char*
+      what () const throw ();
+    };
+  }
+}
+  </pre>
+
+  <p>You will need to include the <code>&lt;odb/mysql/exceptions.hxx></code>
+     header file to make these exceptions available in your application.</p>
+
+  <p>The <code>odb::mysql::database_exception</code> is thrown if
+     a MySQL database operation fails. The MySQL-specific error
+     information is accessible via the <code>error()</code>,
+     <code>sqlstate()</code>, and <code>message()</code> functions.
+     All this information is also cobined and returned in
+     human-readable form by the <code>what()</code> function.</p>
+
+  <p>The <code>odb::mysql::cli_exception</code> is thrown by the
+     command line parsing constructor of the <code>odb::mysql::database</code>
+     class if the MySQL option values are missing or invalid. The
+     <code>what()</code> function provides human-readable descriprion
+     of an error.</p>
 
   </div>
 </div>
