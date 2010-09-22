@@ -100,7 +100,11 @@ private:
   emit_type_name (tree, bool direct = true);
 
 
+  //
   // Pragma handling.
+  //
+
+  // Process positioned and named pragmas.
   //
   void
   process_pragmas (tree,
@@ -109,6 +113,11 @@ private:
                    decl_set::const_iterator begin,
                    decl_set::const_iterator cur,
                    decl_set::const_iterator end);
+
+  // Process named pragmas only.
+  //
+  void
+  process_named_pragmas (tree, node&);
 
   void
   diagnose_unassoc_pragmas (decl_set const&);
@@ -192,6 +201,8 @@ define_fund (tree t)
   T& node (unit_->new_fund_node<T> (t));
   unit_->new_edge<defines> (*scope_, node, name);
   unit_->insert (t, node);
+
+  process_named_pragmas (t, node);
 }
 
 template <typename T>
@@ -1224,6 +1235,8 @@ emit_type (tree t,
   //
   qualifier& q (unit_->new_node<qualifier> (file, line, clmn, t, qc, qv, qr));
   unit_->new_edge<qualifies> (q, r);
+  process_named_pragmas (t, q);
+
   return q;
 }
 
@@ -1357,6 +1370,7 @@ create_type (tree t,
              << " at " << file << ":" << line << endl;
 
         unit_->new_edge<instantiates> (*i_node, *t_node);
+        process_named_pragmas (t, *i_node);
         r = i_node;
       }
 
@@ -1443,6 +1457,7 @@ create_type (tree t,
       array& a (unit_->new_node<array> (file, line, clmn, t, size));
       unit_->insert (t, a);
       unit_->new_edge<contains> (a, bt);
+      process_named_pragmas (t, a);
       r = &a;
       break;
     }
@@ -1453,6 +1468,7 @@ create_type (tree t,
       reference& ref (unit_->new_node<reference> (file, line, clmn, t));
       unit_->insert (t, ref);
       unit_->new_edge<references> (ref, bt);
+      process_named_pragmas (t, ref);
       r = &ref;
       break;
     }
@@ -1465,6 +1481,7 @@ create_type (tree t,
         pointer& p (unit_->new_node<pointer> (file, line, clmn, t));
         unit_->insert (t, p);
         unit_->new_edge<points> (p, bt);
+        process_named_pragmas (t, p);
         r = &p;
       }
       else
@@ -1734,6 +1751,28 @@ process_pragmas (tree t,
   }
 
   // Finally, copy the resulting pragma set to context.
+  //
+  for (pragma_set::iterator i (prags.begin ()); i != prags.end (); ++i)
+  {
+    if (trace)
+      ts << "\t\t pragma " << i->name << " (" << i->value << ")"
+         << endl;
+
+    node.set (i->name, i->value);
+  }
+}
+
+void parser::impl::
+process_named_pragmas (tree t, node& node)
+{
+  pragma_set prags;
+
+  decl_pragmas::const_iterator i (decl_pragmas_.find (t));
+
+  if (i != decl_pragmas_.end ())
+    prags.insert (i->second.begin (), i->second.end ());
+
+  // Copy the resulting pragma set to context.
   //
   for (pragma_set::iterator i (prags.begin ()); i != prags.end (); ++i)
   {

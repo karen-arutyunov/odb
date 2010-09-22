@@ -76,8 +76,13 @@ parse_scoped_name (tree& t,
 
   // Get the actual type if this is a TYPE_DECL.
   //
-  if (is_type && TREE_CODE (decl) == TYPE_DECL)
-    decl = TREE_TYPE (decl);
+  if (is_type)
+  {
+    if (TREE_CODE (decl) == TYPE_DECL)
+      decl = TREE_TYPE (decl);
+
+    decl = TYPE_MAIN_VARIANT (decl);
+  }
 
   return decl;
 }
