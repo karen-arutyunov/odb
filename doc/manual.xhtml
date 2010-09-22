@@ -249,6 +249,272 @@
   </table>
   </div>
 
+  <h1><a name="0">Preface</a></h1>
+
+  <p>As more and more aspects of our lives become increasinly dependant
+     on software systems, more and more applications are required to
+     save the data they work on in persistent storage. Database
+     management systems and, in particular, relational database
+     management systems (RDBMS) are a common answer to this requirement.
+     However, while the application development techniques have evolved
+     significantly over the past decades, the relational databases stayed
+     relatively unchanged. In particular, this led to the now famous
+     mismatch between the object-oriented models used by many modern
+     applications and the relational models still used by RDBMS.</p>
+
+  <p>While relational databases may be inconvenient to use from modern
+     programming languages, they are still the only rational choice for
+     many applications due to their maturity, reliability, as well as
+     the avaliability of tools and alternative implementations.</p>
+
+  <p>To allow application developers to utilize relational databases
+     from their object-oriented applications, a technique called
+     object-relational mapping (ORM) is often used. It involves
+     conversion between objects in the application's memory and
+     their relational representation in the database. While
+     object-relational mapping can be done manually, automated ORM
+     systems are available for most programming languages. ODB is
+     an ORM system for C++.</p>
+
+  <h2><a name="0.1">About This Document</a></h2>
+
+  <p>The goal of this manual is to provide you with an understanding
+     of the object persistence model as implemented by ODB and to
+     allow you to efficiently evaluate it against your project's
+     technical requirements. As such, this document is intended for
+     C++ application developers and software architects who are looking
+     for a C++ object persistence solution. Prior experience with C++
+     is required to understand this document. Basic understanding of
+     relational database systems is advantageous but not expected
+     or required.</p>
+
+
+  <h2><a name="0.2">More Information</a></h2>
+
+  <p>Beyond this manual, you may also find the following sources of
+     information useful:</p>
+
+  <ul class="list">
+    <li><a href="http://www.codesynthesis.com/products/odb/doc/odb.xhtml">ODB
+        Compiler Command Line Manual</a></li>
+
+    <li>The <code>INSTALL</code> files in the ODB source packages provide
+        build instructions for various platforms.</li>
+
+    <li>The <code>odb-examples</code> package contains a collection of
+        examples and a README file with an overview of each example.</li>
+
+    <li>The <a href="http://www.codesynthesis.com/mailman/listinfo/odb-users">odb-users</a>
+        mailing list is the place to ask technical questions about ODB.
+        Furthermore, the
+        <a href="http://www.codesynthesis.com/pipermail/odb-users/">archives</a>
+        may already have answers to some of your questions.</li>
+
+  </ul>
+
+
+  <!-- CHAPTER -->
+
+
+  <h1><a name="1">1 Introduction</a></h1>
+
+  <p>ODB is an object-relational mapping (ORM) system for C++. It provides
+     tools, APIs, and library support that allow you to persist C++ objects
+     to a relational database (RDBMS) without having to deal with tables,
+     columns, or SQL and without manually writing any of the mapping code.</p>
+
+  <p>ODB is highly flexible and customizable. It can either completely
+     hide the relational nature of the underlying database or expose
+     some of the details as required. For example, you can automatically
+     map basic C++ types to suitable SQL types, generate the relational
+     database schema for your persistent clases, and use simple, safe,
+     and yet powerful object query language instead of SQL. Or you can
+     assign SQL types to individual data members, use the existing
+     database schema, and run native SQL <code>SELECT</code> queries.</p>
+
+  <p>ODB is not a framework. It does not dictate how you should write
+     your application. Rather it is designed to fit into your
+     style and architecture by only handling object persistence
+     and not interfering with any other functionality. There is
+     no common base type that all persistent classes should derive
+     from nor there are any restrictions on the data member types
+     in persistent classes. Existing classes can be made persistent
+     with little or nor modifications.</p>
+
+  <p>ODB has been designed for high performance and low memory
+     overhead. Prepared statements are used to send and receive
+     object state in binary format instead of text which reduces
+     the load on the application and the database server. Extensive
+     caching of connections, prepared statements, and buffers saves
+     time and resources on connection establishment, statement parsing
+     and memory allocations. For each supported database system the
+     native C API is used instead of ODBC or higher-level wrapper
+     APIs to reduce overhead and provide the most efficient implementation
+     for each database operation. Finally, persistent classes have
+     zero memory overhead. There are no hidden "database" members
+     that each class must have nor there are per-object data structures
+     allocated by ODB.</p>
+
+  <p>In this chapter we present a high-level overview of ODB. We will
+     start with the ODB architecture in <a href="#1.1">Section 1.1</a>.
+     <a href="#1.2">Section 1.2</a> will then outline the workflow of
+     building an application that uses ODB. We will conclude this
+     chapter with <a href="#1.3">Section 1.3</a> that discusses the
+     drawbacks of the traditional way of saving C++ objects to
+     relational databases and benefits of using ODB for object
+     persistence. The next chapter takes the more hands-on approach
+     and shows the concrete steps necessary to implement object
+     persistence in a "Hello World" application.</p>
+
+  <h2><a name="1.1">1.1 Architecture and Workflow</a></h2>
+
+  <p>From the application developer's perspective ODB
+     consist of three main components: the ODB compiler, the common
+     runtime library, called <code>libodb</code>, and the
+     database-specific runtime libraries, called
+     <code>libodb-&lt;databse></code> where &lt;databse> is
+     the name of the database system  this runtime
+     is for, for example, <code>libodb-mysql</code>. For instance,
+     if the application is going to use the MySQL database for
+     object persistence, then the three ODB components that this
+     application will use are the ODB compiler, <code>libodb</code>
+     and <code>libodb-mysql</code>.</p>
+
+  <p>The ODB compiler generates the database support code for
+     persistent classes in your application. The input to the ODB
+     compiler is one or more C++ header files defining C++ classes
+     that you want to make persistent. For each input header file
+     the ODB compiler generates a set of C++ source files implementing
+     conversion between persistent C++ classes defined in this
+     header and their database representation. The ODB compiler
+     can also generate a database schema file that creates tables
+     necessary to store the persistent classes.</p>
+
+  <p>The ODB compiler is a real C++ compiler except that it produces
+     C++ instead of assembly or machine code. In particular, it is not
+     an ad-hoc header pre-processor that is only capable of recognizing
+     a subset of C++. ODB is capable of parsing any standard C++ code.</p>
+
+  <p>The common runtime library defines database system-independant
+     interfaces that your application can use to manipulate persistent
+     objects. The database-specific runtime library provides implementations
+     of these interfaces for a concrete database as well as other
+     database-specific utilities that are used by the generated code.
+     Normally, the application does not use the database-specific
+     runtime library directly but rather works with it via the common
+     interfaces from <code>libodb</code>. The following diagram shows
+     the object persistence architecture of an application that uses
+     MySQL as the underlying database system:</p>
+
+  <p>@@ arch diagram</p>
+
+  <p>The ODB system also defines two special-purpose languages:
+     the ODB Pragma Language and ODB Query Language. The ODB Pragma
+     Language is used to comminicate various properties of persistent
+     classes to the ODB compiler by means of special <code>#pragma</code>
+     directives embedded in the C++ header files. It controls such aspects
+     of the object-relational mapping as names of tables and columns that
+     are used for persistent classes and their members or mapping between
+     C++ types and database types.</p>
+
+  <p>The ODB Query Language is an object-oriented database query
+     language that can be used to search for objects matching
+     a certain criteria. It is modeled after and is integrated into
+     C++ allowing you to write expressive and safe queries that look
+     and feel like ordinary C++.</p>
+
+  <p>The use of the ODB compiler to generate database support code
+     adds an additional step to your application build sequence. The
+     following diagram shows the typical build workflow of an application
+     that uses ODB:</p>
+
+  <p>@@ flow diagram</p>
+
+  <h2><a name="1.2">1.2 Benefits</a></h2>
+
+  <p>The traditional way of saving C++ objects to relational databases
+     involves manually writen code that converts between the database
+     and C++ representations of each persistent class. The actions that
+     such code usually performs include conversion between C++ values and
+     strings or database types, preparation and execution of SQL queries,
+     and result set handling. Writing this code manually has the following
+     drawbacks:</p>
+
+  <ul class="list">
+    <li><b>Difficult and time consuming.</b> Writing database conversion
+        code for any non-trivial application requires extensive
+        knowledge of the specific database system and its APIs.
+        It can also take considereable amount of time to write
+        and maintain. Supporting multi-threaded applications can
+        complicate this task even further.</li>
+
+    <li><b>Suboptimal performance.</b> Optimal conversion often
+        requires writing large amouns of extra code, such as
+        parameter binding for prepared statements and caching
+        of connections, statements, and buffers. Writing such
+        code in an ad-hoc manner is often too difficult and time
+        consuming.</li>
+
+    <li><b>Database vendor lock-in.</b> The conversion code is written for
+        a specific database which makes it hard to switch to another
+        database vendor.</li>
+
+    <li><b>Lack of type safery.</b> It is easy to mispell column names or
+        pass incomaptible values in SQL queries. Such errors will
+        only be detected at query execution time.</li>
+
+    <li><b>Complicates the application.</b> The database conversion code
+        ends up interspersed throughout the application making it
+        hard to debug, change, and maintain.</li>
+  </ul>
+
+  <p>In contrast, using ODB to implement C++ object persistence has the
+     following benefits:</p>
+
+  <ul class="list">
+    <li><b>Ease of use.</b> ODB automatically generates database conversion
+        code from your C++ class declarations and allows you to manipulate
+        persistent objects using a simple, thread-safe, object-oriented
+        database API.</li>
+
+    <li><b>Concise code.</b> With ODB hiding the details of the underlying
+        database, the application logic is wirtten using the natual object
+        vocabulary instead of tables, columns and SQL. The resulting code
+        is simpler and thus easier to read and understand.</li>
+
+    <li><b>Optimal performance.</b> ODB has been designed for high performance
+        and low memory overhead. All the available optimization techniques,
+        such as prepared statements and extensive connection, statement,
+        and buffer caching are used to provide the most efficient
+        implementation for each database operation.</li>
+
+    <li><b>Database portability.</b> Because the database conversion code
+        is automatically generated, it is easy to switch from one database
+        vendor to another. In fact, it is possible to test your application
+        on several database systems before making a choice.</li>
+
+    <li><b>Safety.</b> The ODB object persistence and query APIs are
+        statically typed. You use C++ identifiers instead of strings
+        to refer to object members and the generated code makes sure
+        database and C++ types are compatible. All this helps catch
+        programming errors at compile-time rather than at runtime.</li>
+
+    <li><b>Maintainability.</b> Automatic code generation minimizes the
+        effort needed to adapt the application to changes in persistent
+        classes. The database support code is kept separately from the
+        class declarations and application logic. This makes the
+        application easier to debug and maintain.</li>
+  </ul>
+
+  <p>Overall, ODB provides an easy to use yet flexible and powerful
+     object-relational mapping (ORM) system for C++. Unlike other
+     ORM implementation for C++ that still require you to write
+     database conversion or member registration code for each
+     persistent class, ODB keeps persistent classes purely
+     declarational. The functional part, the database conversion
+     code, is automatically generated by the ODB compiler from
+     these declarations.</p>
+
 
   <!-- CHAPTER -->
 
@@ -1043,7 +1309,7 @@ Hello, Joe!
   <!-- CHAPTER -->
 
 
-  <h1><a name="3">3 Working Title</a></h1>
+  <h1><a name="3">3 Working with Persistent Objects</a></h1>
 
   <p>@@</p>
 
@@ -1257,7 +1523,8 @@ Hello, Joe!
      instance via this interface unless there is a specific
      functionality that your application depends on and which is
      only exposed by a particular system's <code>database</code>
-     class.</p>
+     class. You will need to include the <code>&lt;odb/database.hxx></code>
+     header file to make this class available in your application.</p>
 
   <p>The <code>odb::database</code> interface defines functions for
      starting transactions and manipulating persistent objects.
@@ -1309,11 +1576,11 @@ Hello, Joe!
   <p>A transaction is started by calling the
      <code>database::begin_transaction()</code>
      function. The returned transaction handle is stored in
-     an instance of the <code>odb::transaction</code> class which is
-     defined in the <code>&lt;odb/transaction.hxx></code> header file.
-     A source code fragment that uses ODB transactions should include
-     this header file. The <code>odb::transaction</code> class has
-     the following interface:</p>
+     an instance of the <code>odb::transaction</code> class.
+     You will need to include the <code>&lt;odb/transaction.hxx></code>
+     header file to make this class available in your application.
+     The <code>odb::transaction</code> class has the following
+     interface:</p>
 
   <pre class="c++">
 namespace odb
@@ -1346,7 +1613,9 @@ namespace odb
      has been <em>finalized</em>, (explicitly commited or rolled back),
      the destructor of the <code>odb::transaction</code> class will
      automatically roll it back when the transaction instance goes
-     out of scope.</p>
+     out of scope. If you try to commit or roll back a finalized
+     transactions, the <code>odb::transaction_already_finilized</code>
+     is thrown.</p>
 
   <p>The <code>database()</code> function returns the database this
      transaction is working on. The <code>current()</code> static
@@ -1693,6 +1962,117 @@ db->erase&lt;person> (jane_id);
 t.commit ();
   </pre>
 
+  <h2><a name="3.7">3.7 ODB Exceptions</a></h2>
+
+  <p>In the previous sections we have already mentioned some of the
+     exceptions that can be thrown by the database functions. In this
+     section we will discuss the ODB exception hierarchy and list
+     all the exceptions that can be thrown by the common ODB
+     runtime.</p>
+
+  <p>The root of the ODB exception hierarchy is the abstract
+     <code>odb::exception</code> class. This class inherits
+     from <code>std::exception</code> and has the following
+     interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  struct exception: std::exception
+  {
+    virtual const char*
+    what () const throw () = 0;
+  };
+}
+  </pre>
+
+  <p>Catching this exception guarantees that you will catch all
+     exceptions thrown by ODB. The <code>what()</code> function
+     returns a human-readable description of an exception.</p>
+
+  <p>The concrete exceptions that can be thrown by ODB are presented
+     in the following listing:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  struct already_in_transaction: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct not_in_transaction: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct transaction_already_finilized: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct deadlock: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct object_not_persistent: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct object_already_persistent: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct database_exception: odb::exception
+  {
+  };
+}
+  </pre>
+
+  <p>The first four exception (<code>already_in_transaction</code>,
+     <code>not_in_transaction</code>,
+     <code>transaction_already_finilized</code>, and
+     <code>deadlock</code>) are thrown by the
+     <code>odb::transaction</code> class and are discussed
+     in <a href="#3.3">Section 3.3, "Transactions"</a>.</p>
+
+  <p>The <code>object_already_persistent</code> exception is thrown
+     by the <code>persist()</code> database function. See
+     <a href="#3.4">Section 3.4, "Making Objects Persistent"</a>
+     for details.</p>
+
+  <p>The <code>object_not_persistent</code> exception is thrown
+     by the <code>load()</code>  and <code>update()</code>
+     database functions. Refer to
+     <a href="#3.5">Section 3.5, "Loading Persistent Objects"</a> and
+     <a href="#3.6">Section 3.6, "Updating Persistent Objects"</a> for
+     more information.</p>
+
+  <p>The <code>database_exception</code> is a base class for all
+     database system-specific exceptions that are thrown by the
+     database system-specific runtime library. See (@@ ref Chapter
+     Database Systems) for more information.</p>
+
+  <p>The <code>odb::exception</code> abstract base is defined in the
+     <code>&lt;odb/exception.hxx></code> header file. All the
+     concrete ODB exceptions are defined in
+     <code>&lt;odb/exceptions.hxx></code> which also includes
+     <code>&lt;odb/exception.hxx></code>. Normally you don't
+     need to include either of these two headers because they are
+     automatically included by <code>&lt;odb/database.hxx></code>.
+     However, if the source file that handles ODB exceptions
+     does not include <code>&lt;odb/database.hxx></code>, then
+     you will need to explicitly include one of these headers.</p>
+
 
   <!-- CHAPTER -->
 
@@ -1709,7 +2089,7 @@ t.commit ();
      object oriented query language, called ODB query language. This
      query language is modeled after and is integrated into C++ allowing
      you to write expressive and safe queries that look and feel like
-     plain C++. We have already seen examples of these queries in the
+     ordinary C++. We have already seen examples of these queries in the
      introductory chapters. Below is another, more interesting, example:</p>
 
   <pre class="c++">
