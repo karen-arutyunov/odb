@@ -226,12 +226,12 @@ namespace mysql
   }
 
   //
-  // query_column
+  // member_database_type
   //
 
   namespace
   {
-    const char* integer_image_id[] =
+    const char* integer_database_id[] =
     {
       "id_tiny",
       "id_utiny",
@@ -245,13 +245,13 @@ namespace mysql
       "id_ulonglong"
     };
 
-    const char* float_image_id[] =
+    const char* float_database_id[] =
     {
       "id_float",
       "id_double"
     };
 
-    const char* date_time_image_id[] =
+    const char* date_time_database_id[] =
     {
       "id_date",
       "id_time",
@@ -260,7 +260,7 @@ namespace mysql
       "id_year"
     };
 
-    const char* char_bin_image_id[] =
+    const char* char_bin_database_id[] =
     {
       "id_string", // CHAR
       "id_blob",   // BINARY,
@@ -277,215 +277,125 @@ namespace mysql
     };
   }
 
+  member_database_type::
+  member_database_type (context& c)
+      : member_base (c, false)
+  {
+  }
+
+  string member_database_type::
+  database_type (type& m)
+  {
+    type_.clear ();
+    member_base::traverse (m);
+    return type_;
+  }
+
+  void member_database_type::
+  traverse_integer (type& m, sql_type const& t)
+  {
+    size_t i ((t.type - sql_type::TINYINT) * 2 + (t.unsign ? 1 : 0));
+    type_ = string ("mysql::") + integer_database_id[i];
+  }
+
+  void member_database_type::
+  traverse_float (type& m, sql_type const& t)
+  {
+    type_ = string ("mysql::") + float_database_id[t.type - sql_type::FLOAT];
+  }
+
+  void member_database_type::
+  traverse_decimal (type& m, sql_type const& t)
+  {
+    type_ = "mysql::id_decimal";
+  }
+
+  void member_database_type::
+  traverse_date_time (type& m, sql_type const& t)
+  {
+    type_ = string ("mysql::") + date_time_database_id[t.type - sql_type::DATE];
+  }
+
+  void member_database_type::
+  traverse_string (type& m, sql_type const& t)
+  {
+    type_ = string ("mysql::") + char_bin_database_id[t.type - sql_type::CHAR];
+  }
+
+  void member_database_type::
+  traverse_bit (type& m, sql_type const& t)
+  {
+    type_ = "mysql::id_bit";
+  }
+
+  void member_database_type::
+  traverse_enum (type& m, sql_type const&)
+  {
+    type_ = "mysql::id_enum";
+  }
+
+  void member_database_type::
+  traverse_set (type& m, sql_type const&)
+  {
+    type_ = "mysql::id_set";
+  }
+
+  //
+  // query_column
+  //
+
   query_column::
   query_column (context& c)
-      : member_base (c, false),
+      : context (c),
         decl_ (true),
-        member_image_type_ (c, false)
+        member_image_type_ (c, false),
+        member_database_type_ (c)
   {
   }
 
   query_column::
   query_column (context& c, semantics::class_& cl)
-      : member_base (c, false),
+      : context (c),
         decl_ (false),
-        member_image_type_ (c, false)
+        member_image_type_ (c, false),
+        member_database_type_ (c)
   {
     scope_ = "access::object_traits< " + cl.fq_name () + " >::query_type";
     table_ = table_name (cl);
   }
 
   void query_column::
-  pre (type& m)
+  traverse (type& m)
   {
-    type_ = "mysql::value_traits< "
+    string name (escape (public_name (m)));
+    string db_type (member_database_type_.database_type (m));
+
+    string type (
+      "mysql::value_traits< "
       + m.type ().fq_name (m.belongs ().hint ()) + ", "
-      + member_image_type_.image_type (m)
-      + " >::query_type";
-
-    name_ = escape (public_name (m));
-
-    if (decl_)
-      os << "// " << name_ << endl
-         << "//" << endl;
-    else
-      column_ = "\"`" + table_ + "`.`" + column_name (m) + "`\"";
-  }
-
-  void query_column::
-  traverse_integer (type& m, sql_type const& t)
-  {
-    size_t i ((t.type - sql_type::TINYINT) * 2 + (t.unsign ? 1 : 0));
+      + member_image_type_.image_type (m) + ", "
+      + db_type
+      + " >::query_type");
 
     if (decl_)
     {
-      os << "static const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::" << integer_image_id[i] << ">" << endl
-         << name_ << ";"
+      os << "// " << name << endl
+         << "//" << endl
+         << "static const mysql::query_column<" << endl
+         << "  " << type << "," << endl
+         << "  " << db_type << ">" << endl
+         << name << ";"
          << endl;
     }
     else
     {
+      string column ("\"`" + table_ + "`.`" + column_name (m) + "`\"");
+
       os << "const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::" << integer_image_id[i] << ">" << endl
-         << scope_ << "::" << name_ << " (" << endl
-         << column_ << ");"
-         << endl;
-    }
-  }
-
-  void query_column::
-  traverse_float (type& m, sql_type const& t)
-  {
-    if (decl_)
-    {
-      os << "static const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::" << float_image_id[t.type - sql_type::FLOAT] << ">" << endl
-         << name_ << ";"
-         << endl;
-    }
-    else
-    {
-      os << "const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::" << float_image_id[t.type - sql_type::FLOAT] << ">" << endl
-         << scope_ << "::" << name_ << " (" << endl
-         << column_ << ");"
-         << endl;
-    }
-  }
-
-  void query_column::
-  traverse_decimal (type& m, sql_type const& t)
-  {
-    if (decl_)
-    {
-      os << "static const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::id_string>" << endl
-         << name_ << ";"
-         << endl;
-    }
-    else
-    {
-      os << "const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::id_string>" << endl
-         << scope_ << "::" << name_ << " (" << endl
-         << column_ << ");"
-         << endl;
-    }
-  }
-
-  void query_column::
-  traverse_date_time (type& m, sql_type const& t)
-  {
-    if (decl_)
-    {
-      os << "static const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::" << date_time_image_id[t.type - sql_type::DATE] << ">" << endl
-         << name_ << ";"
-         << endl;
-    }
-    else
-    {
-      os << "const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::" << date_time_image_id[t.type - sql_type::DATE] << ">" << endl
-         << scope_ << "::" << name_ << " (" << endl
-         << column_ << ");"
-         << endl;
-    }
-  }
-
-  void query_column::
-  traverse_string (type& m, sql_type const& t)
-  {
-    if (decl_)
-    {
-      os << "static const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::" << char_bin_image_id[t.type - sql_type::CHAR] << ">" << endl
-         << name_ << ";"
-         << endl;
-    }
-    else
-    {
-      os << "const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::" << char_bin_image_id[t.type - sql_type::CHAR] << ">" << endl
-         << scope_ << "::" << name_ << " (" << endl
-         << column_ << ");"
-         << endl;
-    }
-  }
-
-  void query_column::
-  traverse_bit (type& m, sql_type const& t)
-  {
-    if (decl_)
-    {
-      os << "static const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::id_blob>" << endl
-         << name_ << ";"
-         << endl;
-    }
-    else
-    {
-      os << "const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::id_blob>" << endl
-         << scope_ << "::" << name_ << " (" << endl
-         << column_ << ");"
-         << endl;
-    }
-  }
-
-  void query_column::
-  traverse_enum (type& m, sql_type const&)
-  {
-    if (decl_)
-    {
-      os << "static const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::id_string>" << endl
-         << name_ << ";"
-         << endl;
-    }
-    else
-    {
-      os << "const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::id_string>" << endl
-         << scope_ << "::" << name_ << " (" << endl
-         << column_ << ");"
-         << endl;
-    }
-  }
-
-  void query_column::
-  traverse_set (type& m, sql_type const&)
-  {
-    if (decl_)
-    {
-      os << "static const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::id_string>" << endl
-         << name_ << ";"
-         << endl;
-    }
-    else
-    {
-      os << "const mysql::query_column<" << endl
-         << "  " << type_ << "," << endl
-         << "  mysql::id_string>" << endl
-         << scope_ << "::" << name_ << " (" << endl
-         << column_ << ");"
+         << "  " << type << "," << endl
+         << "  " << db_type << ">" << endl
+         << scope_ << "::" << name << " (" << endl
+         << column << ");"
          << endl;
     }
   }

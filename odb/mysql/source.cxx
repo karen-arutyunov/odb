@@ -356,7 +356,9 @@ namespace mysql
     struct init_image_member: member_base
     {
       init_image_member (context& c, bool id)
-          : member_base (c, id), member_image_type_ (c, id)
+          : member_base (c, id),
+            member_image_type_ (c, id),
+            member_database_type_ (c)
       {
       }
 
@@ -365,7 +367,12 @@ namespace mysql
       {
         type = m.type ().fq_name (m.belongs ().hint ());
         image_type = member_image_type_.image_type (m);
-        traits = "mysql::value_traits< " + type + ", " + image_type + " >";
+        db_type = member_database_type_.database_type (m);
+
+        traits = "mysql::value_traits< "
+          + type + ", "
+          + image_type + ", "
+          + db_type + " >";
 
         if (id_)
           member = "id";
@@ -519,11 +526,13 @@ namespace mysql
 
     private:
       string type;
+      string db_type;
       string member;
       string image_type;
       string traits;
 
       member_image_type member_image_type_;
+      member_database_type member_database_type_;
     };
 
     //
@@ -531,7 +540,9 @@ namespace mysql
     struct init_value_member: member_base
     {
       init_value_member (context& c)
-          : member_base (c, false), member_image_type_ (c, false)
+          : member_base (c, false),
+            member_image_type_ (c, false),
+            member_database_type_ (c)
       {
       }
 
@@ -540,7 +551,12 @@ namespace mysql
       {
         type = m.type ().fq_name (m.belongs ().hint ());
         image_type = member_image_type_.image_type (m);
-        traits = "mysql::value_traits< " + type + ", " + image_type + " >";
+        db_type = member_database_type_.database_type (m);
+
+        traits = "mysql::value_traits< "
+          + type + ", "
+          + image_type + ", "
+          + db_type + " >";
 
         os << "// " << m.name () << endl
            << "//" << endl;
@@ -647,10 +663,12 @@ namespace mysql
 
     private:
       string type;
+      string db_type;
       string image_type;
       string traits;
 
       member_image_type member_image_type_;
+      member_database_type member_database_type_;
     };
 
     //

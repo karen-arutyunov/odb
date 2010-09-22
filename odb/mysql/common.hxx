@@ -123,6 +123,41 @@ namespace mysql
     string type_;
   };
 
+  struct member_database_type: member_base
+  {
+    member_database_type (context&);
+
+    string
+    database_type (type&);
+
+    virtual void
+    traverse_integer (type&, sql_type const&);
+
+    virtual void
+    traverse_float (type&, sql_type const&);
+
+    virtual void
+    traverse_decimal (type&, sql_type const&);
+
+    virtual void
+    traverse_date_time (type&, sql_type const&);
+
+    virtual void
+    traverse_string (type&, sql_type const&);
+
+    virtual void
+    traverse_bit (type&, sql_type const&);
+
+    virtual void
+    traverse_enum (type&, sql_type const&);
+
+    virtual void
+    traverse_set (type&, sql_type const&);
+
+  private:
+    string type_;
+  };
+
   struct has_grow_member: member_base
   {
     has_grow_member (context& c)
@@ -170,47 +205,21 @@ namespace mysql
     bool r_;
   };
 
-  struct query_column: member_base
+  struct query_column: traversal::data_member, context
   {
     query_column (context&);
     query_column (context&, semantics::class_&);
 
     virtual void
-    pre (type&);
-
-    virtual void
-    traverse_integer (type&, sql_type const&);
-
-    virtual void
-    traverse_float (type&, sql_type const&);
-
-    virtual void
-    traverse_decimal (type&, sql_type const&);
-
-    virtual void
-    traverse_date_time (type&, sql_type const&);
-
-    virtual void
-    traverse_string (type&, sql_type const&);
-
-    virtual void
-    traverse_bit (type&, sql_type const&);
-
-    virtual void
-    traverse_enum (type&, sql_type const&);
-
-    virtual void
-    traverse_set (type&, sql_type const&);
+    traverse (type&);
 
   private:
-    string type_;
-    string name_;
     string scope_;
     string table_;
-    string column_;
     bool decl_;
 
     member_image_type member_image_type_;
+    member_database_type member_database_type_;
   };
 }
 
