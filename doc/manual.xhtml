@@ -2032,6 +2032,12 @@ namespace odb
     what () const throw ();
   };
 
+  struct result_not_cached: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
   struct database_exception: odb::exception
   {
   };
@@ -2056,6 +2062,10 @@ namespace odb
      <a href="#3.5">Section 3.5, "Loading Persistent Objects"</a> and
      <a href="#3.6">Section 3.6, "Updating Persistent Objects"</a> for
      more information.</p>
+
+  <p>The <code>result_not_cached</code> exception is thrown by
+     the query result class. Refer to <a href="#4.3">Section 4.3,
+     "Query Result"</a> for details.</p>
 
   <p>The <code>database_exception</code> is a base class for all
      database system-specific exceptions that are thrown by the
@@ -2245,6 +2255,27 @@ namespace odb
     </tr>
   </table>
 
+  <p>The <code>in()</code> function accepts maximum of five argumets.
+     Use the <code>in_range()</code> function if you need to compare
+     to more than five values. This function accepts a pair of
+     standard C++ iterators and compares to all the value from
+     the <code>begin</code> position inclusive and until and
+     excluding the <code>end</code> position. The following
+     code fragment shows how we can use these functions:</p>
+
+  <pre class="c++">
+  std::vector&lt;string> names;
+
+  names.push_back ("John");
+  names.push_back ("Jack");
+  names.push_back ("Jane");
+
+  query q1 (query::first.in ("John", "Jack", "Jane"));
+  query q2 (query::first.in_range (names.begin (), names.end ()));
+  </pre>
+
+
+
   <p>The operator precedence in the query expressions are the same
      as for equivalent C++ operators. You can use parentheses to
      make sure the expression is evaluated in the desired order.
@@ -2418,13 +2449,24 @@ namespace odb
     operator= (const result&amp;);
 
     void
-    cache ();
+    swap (result&amp;)
 
+  public:
     iterator
     begin ();
 
     iterator
     end ();
+
+  public:
+    void
+    cache ();
+
+    bool
+    empty () const;
+
+    std::size_t
+    size () const;
   };
 }
   </pre>
@@ -2457,6 +2499,13 @@ namespace odb
      will invalidate the first uncached result. Furthermore,
      executing any other database function, such as <code>update()</code>
      or <code>erase()</code> will also invalidate the uncached result.</p>
+
+  <p>The <code>empty()</code> function returns <code>true</code> if
+     there are no objects in the result and <code>false</code> otherwise.
+     The <code>size()</code> function can only be called for cached results.
+     It returns the number of objects in the result. If you call this
+     function on an uncached result, the <code>odb::result_not_cached</code>
+     exception is thrown.</p>
 
   <p>To iterate over the objects in a result we use the
      <code>begin()</code> and <code>end()</code> functions
