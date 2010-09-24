@@ -50,7 +50,7 @@ AC_ARG_WITH(
   [gxx_name=$CXX])
 
 AS_IF(
-  [test x$gxx_name != x],
+  [test "x$gxx_name" != x],
   [AC_DEFINE_UNQUOTED([GXX_NAME], ["$gxx_name"], [g++ binary.])])
 
 
