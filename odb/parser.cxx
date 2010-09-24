@@ -376,6 +376,24 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
         if (bf && DECL_NAME (d) == 0)
           break;
 
+        // Another case where we can have NULL name is anonymous struct
+        // or union extension, for example:
+        //
+        // struct s
+        // {
+        //   union
+        //   {
+        //     int a;
+        //     int b;
+        //   };
+        // };
+        //
+        // GCC appears to create a fake member for such a struct/union
+        // without any name. Ignore such members for now.
+        //
+        if (DECL_NAME (d) == 0)
+          break;
+
         tree t (bf ? DECL_BIT_FIELD_TYPE (d) : TREE_TYPE (d));
 
         char const* name (IDENTIFIER_POINTER (DECL_NAME (d)));
@@ -1433,7 +1451,7 @@ create_type (tree t,
           // array doesn't specify bounds. In reality, both
           // low and high parts are set to HOST_WIDE_INT_MAX.
           //
-          if (hwl != ~HOST_WIDE_INT (0) && hwh != ~HOST_WIDE_INT (0))
+          if (hwl != ~(HOST_WIDE_INT) (0) && hwh != ~(HOST_WIDE_INT) (0))
           {
             unsigned long long l (hwl);
             unsigned long long h (hwh);
@@ -1630,7 +1648,7 @@ emit_type_name (tree type, bool direct)
           HOST_WIDE_INT hwl (TREE_INT_CST_LOW (max));
           HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (max));
 
-          if (hwl != ~HOST_WIDE_INT (0) && hwh != ~HOST_WIDE_INT (0))
+          if (hwl != ~(HOST_WIDE_INT) (0) && hwh != ~(HOST_WIDE_INT) (0))
           {
             unsigned long long l (hwl);
             unsigned long long h (hwh);
