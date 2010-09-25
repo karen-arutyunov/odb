@@ -44,7 +44,9 @@ $(out_base)/odb.1: $(src_root)/odb/options.cli \
 # Manual.
 #
 $(out_base)/odb-manual.ps: $(src_base)/manual.xhtml   \
-                           $(src_base)/manual.html2ps | $(out_base)/.
+                           $(src_base)/manual.html2ps \
+                           $(src_base)/odb-arch.png   \
+                           $(src_base)/odb-flow.png | $(out_base)/.
 	$(call message,html2ps $<,html2ps -f $(src_base)/manual.html2ps -o $@ $<)
 
 $(out_base)/odb-manual.pdf: $(out_base)/odb-manual.ps
@@ -52,9 +54,9 @@ $(out_base)/odb-manual.pdf: $(out_base)/odb-manual.ps
 
 # Dist.
 #
-$(dist): export docs := default.css odb.xhtml odb-manual.ps odb-manual.pdf
+$(dist): data_dist := default.css odb-arch.png odb-flow.png
+$(dist): export docs = $(data_dist) odb.xhtml odb-manual.ps odb-manual.pdf
 $(dist): export mans := odb.1
-$(dist): data_dist := default.css
 $(dist):                   \
 $(out_base)/odb.1          \
 $(out_base)/odb.xhtml      \
