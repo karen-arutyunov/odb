@@ -11,6 +11,25 @@
   <meta name="revision" content="1.0"/>
   <meta name="version" content="1.0.0"/>
 
+<!--
+
+If you make changes to this document, follow these stylistic rules
+for consistency.
+
+ - Don't use 'object' for instances of non-persistent classes. Use
+   'instance' instead.
+
+ - Each overloaded function should still be referred to as function.
+   When saying that a function is overloaded, use term 'version',
+   for example The persist() function has two overloaded versions.
+   Don't use version to refer to individual functions, use function
+   instead. The same holds for constructors.
+
+ - Use 'object id' and 'object's identifier'. But not other combinations
+   of the two.
+
+-->
+
   <link rel="stylesheet" type="text/css" href="default.css" />
 
 <style type="text/css">
@@ -245,6 +264,124 @@
   <h1>Table of Contents</h1>
 
   <table class="toc">
+    <tr>
+      <th></th><td><a href="#0">Preface</a>
+        <table class="toc">
+          <tr><th></th><td><a href="#0.1">About This Document</a></td></tr>
+	  <tr><th></th><td><a href="#0.2">More Information</a></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>1</th><td><a href="#1">Introduction</a>
+        <table class="toc">
+          <tr><th>1.1</th><td><a href="#1.1">Architecture and Workflow</a></td></tr>
+	  <tr><th>1.2</th><td><a href="#1.2">Benefits</a></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>2</th><td><a href="#2">Hello World Example</a>
+        <table class="toc">
+          <tr><th>2.1</th><td><a href="#2.1">Declaring a Persistent Class</a></td></tr>
+          <tr><th>2.2</th><td><a href="#2.2">Generating Database Support Code</a></td></tr>
+          <tr><th>2.3</th><td><a href="#2.3">Compiling and Running</a></td></tr>
+          <tr><th>2.4</th><td><a href="#2.4">Making Objects Persistent</a></td></tr>
+          <tr><th>2.5</th><td><a href="#2.5">Querying the Database for Objects</a></td></tr>
+          <tr><th>2.6</th><td><a href="#2.6">Updating Persistent Objects</a></td></tr>
+          <tr><th>2.7</th><td><a href="#2.7">Deleting Persistent Objects</a></td></tr>
+          <tr><th>2.8</th><td><a href="#2.8">Summary</a></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>3</th><td><a href="#3">Working with Persistent Objects</a>
+        <table class="toc">
+          <tr><th>3.1</th><td><a href="#3.1">Concepts and Terminology</a></td></tr>
+          <tr><th>3.2</th><td><a href="#3.2">Database</a></td></tr>
+          <tr><th>3.3</th><td><a href="#3.3">Transactions</a></td></tr>
+          <tr><th>3.4</th><td><a href="#3.4">Making Objects Persistent</a></td></tr>
+          <tr><th>3.5</th><td><a href="#3.5">Loading Persistent Objects</a></td></tr>
+          <tr><th>3.6</th><td><a href="#3.6">Updating Persistent Objects</a></td></tr>
+          <tr><th>3.7</th><td><a href="#3.7">Deleting Persistent Objects</a></td></tr>
+          <tr><th>3.8</th><td><a href="#3.8">ODB Exceptions</a></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>4</th><td><a href="#4">Querying the Database</a>
+        <table class="toc">
+          <tr><th>4.1</th><td><a href="#4.1">ODB Query Language</a></td></tr>
+          <tr><th>4.2</th><td><a href="#4.2">Parameter Binding</a></td></tr>
+          <tr><th>4.3</th><td><a href="#4.3">Executing a Query</a></td></tr>
+          <tr><th>4.4</th><td><a href="#4.4">Query Result</a></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>5</th><td><a href="#5">ODB Pragma Language</a>
+        <table class="toc">
+          <tr>
+            <th>5.1</th><td><a href="#5.1">C++ Compiler Warnings</a>
+              <table class="toc">
+                <tr><th>5.1.1</th><td><a href="#5.1.1">GNU C++</a></td></tr>
+                <tr><th>5.1.2</th><td><a href="#5.1.2">Visual C++</a></td></tr>
+                <tr><th>5.1.3</th><td><a href="#5.1.3">Sun C++</a></td></tr>
+		<tr><th>5.1.4</th><td><a href="#5.1.4">IBM XL C++</a></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <th>5.2</th><td><a href="#5.2">Object Type Pragmas</a>
+              <table class="toc">
+                <tr><th>5.2.1</th><td><a href="#5.2.1"><code>table</code></a></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <th>5.3</th><td><a href="#5.3">Value Type Pragmas</a>
+              <table class="toc">
+                <tr><th>5.3.1</th><td><a href="#5.3.1"><code>type</code></a></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <th>5.4</th><td><a href="#5.4">Data Member Pragmas</a>
+              <table class="toc">
+                <tr><th>5.4.1</th><td><a href="#5.4.1"><code>id</code></a></td></tr>
+                <tr><th>5.4.2</th><td><a href="#5.4.2"><code>auto</code></a></td></tr>
+                <tr><th>5.4.3</th><td><a href="#5.4.3"><code>type</code></a></td></tr>
+		<tr><th>5.4.4</th><td><a href="#5.4.4"><code>column</code></a></td></tr>
+		<tr><th>5.4.5</th><td><a href="#5.4.5"><code>transient</code></a></td></tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>6</th><td><a href="#6">Database Systems</a>
+        <table class="toc">
+          <tr>
+            <th>6.1</th><td><a href="#6.1">MySQL Database</a>
+              <table class="toc">
+                <tr><th>6.1.1</th><td><a href="#6.1.1">MySQL Type Mapping</a></td></tr>
+                <tr><th>6.1.2</th><td><a href="#6.1.2">MySQL Database Class</a></td></tr>
+                <tr><th>6.1.3</th><td><a href="#6.1.3">Connection Factory</a></td></tr>
+		<tr><th>6.1.4</th><td><a href="#6.1.4">MySQL Exceptions</a></td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
 
   </table>
   </div>
@@ -255,12 +392,13 @@
      systems, more and more applications are required to save the data
      they work on in persistent and reliable storage. Database management
      systems and, in particular, relational database management systems
-     (RDBMS) are commonly used to such storage. However, while the
+     (RDBMS) are commonly used for such storage. However, while the
      application development techniques and programming languages have
-     evolved significantly over the past decades, the relational databases
-     stayed relatively unchanged. In particular, this led to the now
-     infamous mismatch between the object-oriented model used by many
-     modern applications and the relational model still used by RDBMS.</p>
+     evolved significantly over the past decades, the relational database
+     technology in this area stayed relatively unchanged. In particular,
+     this led to the now infamous mismatch between the object-oriented
+     model used by many modern applications and the relational model still
+     used by RDBMS.</p>
 
   <p>While relational databases may be inconvenient to use from modern
      programming languages, they are still the main choice for many
@@ -276,13 +414,13 @@
      automated ORM systems are available for most object-oriented
      programming languages in use today.</p>
 
-  <p>ODB is an ORM system for C++. It was designed and implemented with
-     the following main goals:</p>
+  <p>ODB is an ORM system for the C++ programming language. It was
+     designed and implemented with the following main goals:</p>
 
   <ul class="list">
     <li>Provide a fully-automatic ORM system. In particular, the
         application developer should not have to manually write any
-        mapping code neither for persistent classes nor for their
+        mapping code, neither for persistent classes nor for their
         data member. </li>
 
     <li>Provide clean and easy to use object-oriented persistence
@@ -320,7 +458,7 @@
 
   <ul class="list">
     <li><a href="http://www.codesynthesis.com/products/odb/doc/odb.xhtml">ODB
-        Compiler Command Line Manual</a></li>
+        Compiler Command Line Manual.</a></li>
 
     <li>The <code>INSTALL</code> files in the ODB source packages provide
         build instructions for various platforms.</li>
@@ -330,7 +468,7 @@
 
     <li>The <a href="http://www.codesynthesis.com/mailman/listinfo/odb-users">odb-users</a>
         mailing list is the place to ask technical questions about ODB.
-        Furthermore, the
+        Furthermore, the searchable
         <a href="http://www.codesynthesis.com/pipermail/odb-users/">archives</a>
         may already have answers to some of your questions.</li>
 
@@ -379,20 +517,19 @@
      that each class must have nor there are per-object data structures
      allocated by ODB.</p>
 
-  <p>In this chapter we present a high-level overview of ODB. We will
-     start with the ODB architecture in <a href="#1.1">Section 1.1</a>.
-     <a href="#1.2">Section 1.2</a> will then outline the workflow of
-     building an application that uses ODB. We will conclude this
-     chapter with <a href="#1.3">Section 1.3</a> that discusses the
-     drawbacks of the traditional way of saving C++ objects to
-     relational databases and benefits of using ODB for object
+  <p>In this chapter we present a high-level overview of ODB.
+     We will start with the ODB architecture and then outline the
+     workflow of building an application that uses ODB. We will
+     conclude this chapter by contrasting the drawbacks of
+     the traditional way of saving C++ objects to relational
+     databases with the benefits of using ODB for object
      persistence. The next chapter takes the more hands-on approach
      and shows the concrete steps necessary to implement object
-     persistence in a "Hello World" application.</p>
+     persistence in a simple "Hello World" application.</p>
 
   <h2><a name="1.1">1.1 Architecture and Workflow</a></h2>
 
-  <p>From the application developer's perspective ODB
+  <p>From the application developer's perspective, ODB
      consist of three main components: the ODB compiler, the common
      runtime library, called <code>libodb</code>, and the
      database-specific runtime libraries, called
@@ -450,8 +587,8 @@
 
   <p>The use of the ODB compiler to generate database support code
      adds an additional step to your application build sequence. The
-     following diagram shows the typical build workflow of an application
-     that uses ODB:</p>
+     following diagram outlines the typical build workflow of an
+     application that uses ODB:</p>
 
   <!-- align=center is needed for html2ps -->
   <div class="img" align="center"><img src="odb-flow.png"/></div>
@@ -459,12 +596,12 @@
   <h2><a name="1.2">1.2 Benefits</a></h2>
 
   <p>The traditional way of saving C++ objects to relational databases
-     involves manually written code that converts between the database
+     requires manually writing code that converts between the database
      and C++ representations of each persistent class. The actions that
      such code usually performs include conversion between C++ values and
      strings or database types, preparation and execution of SQL queries,
-     and result set handling. Writing this code manually has the following
-     drawbacks:</p>
+     as well as handling the result sets. Writing this code manually has
+     the following drawbacks:</p>
 
   <ul class="list">
     <li><b>Difficult and time consuming.</b> Writing database conversion
@@ -475,7 +612,7 @@
         complicate this task even further.</li>
 
     <li><b>Suboptimal performance.</b> Optimal conversion often
-        requires writing large amount of extra code, such as
+        requires writing large amounts of extra code, such as
         parameter binding for prepared statements and caching
         of connections, statements, and buffers. Writing such
         code in an ad-hoc manner is often too difficult and time
@@ -487,21 +624,21 @@
 
     <li><b>Lack of type safety.</b> It is easy to misspell column names or
         pass incompatible values in SQL queries. Such errors will
-        only be detected at query execution time.</li>
+        only be detected at runtime.</li>
 
     <li><b>Complicates the application.</b> The database conversion code
-        ends up interspersed throughout the application making it
+        often ends up interspersed throughout the application making it
         hard to debug, change, and maintain.</li>
   </ul>
 
-  <p>In contrast, using ODB to implement C++ object persistence has the
+  <p>In contrast, using ODB for C++ object persistence has the
      following benefits:</p>
 
   <ul class="list">
     <li><b>Ease of use.</b> ODB automatically generates database conversion
         code from your C++ class declarations and allows you to manipulate
-        persistent objects using a simple, thread-safe, object-oriented
-        database API.</li>
+        persistent objects using a simple and thread-safe object-oriented
+        database APIs.</li>
 
     <li><b>Concise code.</b> With ODB hiding the details of the underlying
         database, the application logic is written using the natural object
@@ -547,7 +684,7 @@
 
   <h1><a name="2">2 Hello World Example</a></h1>
 
-  <p>In this chapter we will examine how to create a simple C++
+  <p>In this chapter we will show how to create a simple C++
      application that relies on ODB for object persistence using
      the traditional "Hello World" example. In particular, we will
      discuss how to declare persistent classes, generate database
@@ -609,7 +746,7 @@ private:
 
 #include &lt;string>
 
-#include &lt;odb/code.hxx>     // (1)
+#include &lt;odb/core.hxx>     // (1)
 
 #pragma db object           // (2)
 class person
@@ -633,7 +770,7 @@ private:
   <p>To be able to save the <code>person</code> objects in the database
      we had to make five changes, marked with (1) to (5), to the original
      class definition. The first change is the inclusion of the ODB
-     headers <code>&lt;odb/core.hxx></code>. This headers provides a number
+     header <code>&lt;odb/core.hxx></code>. This header provides a number
      of core ODB declarations, such as <code>odb::access</code>, that
      are used to define persistent classes.</p>
 
@@ -649,12 +786,12 @@ private:
 
   <p>The third change is the addition of the default constructor.
      The ODB-generated database support code will use this constructor
-     when instantiating an object from the persistent state. As we have
+     when instantiating an object from the persistent state. Just as we have
      done for the <code>person</code> class, you can make the default
      constructor private or protected if you don't want to make it
-     available to the ordinary users of your class.</p>
+     available to the users of your class.</p>
 
-  <p>With the fourth change we make the <code>odb::access</code> class
+  <p>With the fourth change we make the <code>odb::access</code> class a
      friend of our <code>person</code> class. This is necessary to make
      the default constructor and the data members accessible to the
      ODB support code. If your class has public default constructor and
@@ -668,8 +805,8 @@ private:
      identifiers. For our class we use an integer id. The
      <code>db id auto</code> pragma that precedes the <code>id_</code>
      member tells the ODB compiler that the following member is the
-     object's id. The <code>auto</code> specifier indicates that it is
-     a database-assigned id. A unique id will be automatically generated
+     object's identifier. The <code>auto</code> specifier indicates that it
+     is a database-assigned id. A unique id will be automatically generated
      by the database and assigned to the object when it is made
      persistent.</p>
 
@@ -682,7 +819,7 @@ private:
      in other countries), then we could use that as an id. Or, if
      we stored an email associated with each person, then we could
      have used that since each person is presumed to have a unique
-     email address:</p>
+     email address, for example:</p>
 
   <pre class="c++">
 class person
@@ -699,13 +836,12 @@ class person
   </pre>
 
   <p>Now that we have the header file with the persistent class, let's
-     see how to generate that database support code that we talked
-     about.</p>
+     see how we can generate that database support code.</p>
 
   <h2><a name="2.2">2.2 Generating Database Support Code</a></h2>
 
   <p>The persistent class definition that we created in the previous
-     section was particularly light on code that could actually
+     section was particularly light on any code that could actually
      do the job and store the person's data to a database. There
      was no serialization or deserialization code, not even data member
      registration, that you would normally have to write by hand in
@@ -722,12 +858,13 @@ class person
 odb -d mysql --generate-query person.hxx
   </pre>
 
-  <p>We will use MySQL in the reminder of this chapter though other
-     supported database systems can be used instead.</p>
+  <p>We will use MySQL as the database of choice in the reminder of
+     this chapter though other supported database systems can be used
+     instead.</p>
 
   <p>If you haven't installed the common ODB runtime library
      (<code>libodb</code>) or installed it into a directory where
-     the C++ compiler doesn't search for headers by default,
+     C++ compilers don't search for headers by default,
      then you may get the following error:</p>
 
   <pre class="terminal">
@@ -760,37 +897,40 @@ odb -I.../libodb -d mysql --generate-query person.hxx
      "Hello World" example. Another option that we will find
      useful is <code>--generate-schema</code>. This option
      makes the ODB compiler generate a fourth file,
-     <code>person.sql</code>, which contains the database
-     schema for the classes defined in <code>person.hxx</code>:</p>
+     <code>person.sql</code>, which is the database schema
+     for the persistent classes defined in <code>person.hxx</code>:</p>
 
   <pre class="terminal">
 odb -d mysql --generate-query --generate-schema person.hxx
   </pre>
 
+  <p>The database schema file contains SQL statement that creates
+     tables necessary to store the persistent classes. We will learn
+     how to use it in the next section.</p>
 
-  <p>If you would like to see the list of all the available options,
-     refer to the <a href="http://www.codesynthesis.com/products/odb/doc/odb.xhtml">ODB
+  <p>If you would like to see the list of all the available ODB compiler
+     options, refer to the
+     <a href="http://www.codesynthesis.com/products/odb/doc/odb.xhtml">ODB
      Compiler Command Line Manual</a>.</p>
-
 
   <p>Now that we have the persistent class and the database support
      code, the only part that is left is the application code that
      does something useful with all this. But before we move on to
-     the fun part, let first learn how to build and run an application
+     the fun part, let's first learn how to build and run an application
      that uses ODB. This way when we have some application code
      to try, there are no more delays before we can run it.</p>
 
   <h2><a name="2.3">2.3 Compiling and Running</a></h2>
 
-  <p>Assuming that the <code>main()</code> function with some application
+  <p>Assuming that the <code>main()</code> function with the application
      code is saved in <code>driver.cxx</code> and the database support
      code and schema are generated as described in the previous section,
      to build our application we will first need to compile all the C++
      source files and then link them with two ODB runtime libraries.</p>
 
   <p>On UNIX, the compilation part can be done with the following commands
-     (for Microsoft Visual Studio setup, see the <code>odb-examples</code>
-     package):</p>
+     (substitute <code>c++</code> with your C++ compiler name; for Microsoft
+     Visual Studio setup, see the <code>odb-examples</code> package):</p>
 
   <pre class="terminal">
 c++ -c driver.cxx
@@ -799,7 +939,7 @@ c++ -c person-odb.cxx
 
   <p>Similar to the ODB compilation, if you get an error stating that
   a headers in <code>odb/</code> or <code>odb/mysql</code> directory
-  in not found. In this case you will need to use the <code>-I</code>
+  in not found, you will need to use the <code>-I</code>
   preprocessor option to specify the location of the common ODB runtime
   library (<code>libodb</code>) and MySQL ODB runtime library
   (<code>libodb-mysql</code>).</p>
@@ -906,7 +1046,8 @@ main (int argc, char* argv[])
   </pre>
 
   <p>Let's examine this code piece by piece. At the beginning we include
-     a bunch of headers. Those include <code>&lt;odb/database.hxx></code>
+     a bunch of headers. After the standard C++ headers we include
+     <code>&lt;odb/database.hxx></code>
      and <code>&lt;odb/transaction.hxx></code> which define database
      system-independent <code>odb::database</code> and
      <code>odb::transaction</code> interfaces. Then we include
@@ -925,12 +1066,12 @@ main (int argc, char* argv[])
      database name, etc., from the command line. In your own applications
      you may prefer to use other <code>mysql::database</code>
      constructors which allow you to pass this information directly
-     (@@ ref MySQL database).</p>
+     (see <a href="#6.1.2">Section 6.1.2, "MySQL Database Class"</a>).</p>
 
   <p>Next we create three <code>person</code> objects. Right now they are
      transient objects, which means that if we terminate the application
      at this point, they will be gone without any evidence of them ever
-     existed. The next line starts a database transaction. We discuss
+     existing. The next line starts a database transaction. We discuss
      transactions in detail later in this manual. For now all we need
      to know is that all ODB database operations must be performed within
      a transaction and that a transaction is an atomic unit of work; all
@@ -943,20 +1084,19 @@ main (int argc, char* argv[])
      However, note that this state is not permanent until and unless
      the transaction is committed. If, for example, our application
      crashes at this point, there will still be no evidence of our
-     objects ever existed.</p>
+     objects ever existing.</p>
 
-  <p>In our case one more thing happens when we call <code>persist()</code>
-     on a <code>person</code> object. Remember that we decided to use
-     database-assigned identifiers for our objects. The call to
-     <code>persist()</code> is where this assignment happens. Once
-     this function returns, the <code>id_</code> member contains this
-     object's unique identifier.</p>
+  <p>In our case one more thing happens when we call <code>persist()</code>.
+     Remember that we decided to use database-assigned identifiers for our
+     <code>person</code> objects. The call to <code>persist()</code> is
+     where this assignment happens. Once this function returns, the
+     <code>id_</code> member contains this object's unique identifier.</p>
 
   <p>After we have persisted our objects, it is time to commit the
      transaction and make the changes permanent. Only after the
      <code>commit()</code> function returns successfully are we
-     guaranteed that the objects are made persistent. Following
-     the crashing example, if our application terminates after
+     guaranteed that the objects are made persistent. Continuing with
+     with the crash example, if our application terminates after
      the commit for whatever reason, the objects' state in the
      database will remain intact. In fact, as we will discover
      shortly, our application can be restarted and load the
@@ -967,26 +1107,26 @@ main (int argc, char* argv[])
      explicitly committed or rolled back, it will be automatically
      rolled back. This behavior allows you not to worry about
      exceptions being thrown within a transaction; if they
-     cross the transaction boundaries, the transaction will
+     cross the transaction boundary, the transaction will
      be automatically rolled back and all the changes made
      to the database undone.</p>
 
-  <p>After the transaction has been committed, we save the persistent
-     objects' ids in local variables. We will use them later in this
+  <p>After the transaction has been committed, we save the
+     objects ids in local variables. We will use them later in this
      chapter to perform other database operations on our persistent
      objects. You might have noticed that our <code>person</code>
      class doesn't have the <code>id()</code> function that we use
-     here. To make our code work we need to add a simple accessor
+     here. To make our code compile we need to add a simple accessor
      with this name that returns the value of the <code>id_</code>
      data member.</p>
 
   <p>The final bit of code in our example is the <code>catch</code>
-     block that handles the ODB exceptions. We do this by catching
-     the base ODB exception and printing the diagnostics. (@@ Ref
-     exceptions)</p>
+     block that handles the database exceptions. We do this by catching
+     the base ODB exception (see <a href="#3.8">Section 3.8, "ODB
+     Exceptions"</a>) and printing the diagnostics.</p>
 
-  <p>Let's now compile (see @@ Ref "Compiling and Running") and then
-     run our first ODB application:</p>
+  <p>Let's now compile (see <a href="#2.3">Section 2.3, "Compiling and
+     Running"</a>) and then run our first ODB application:</p>
 
   <pre class="terminal">
 mysql --user=odb_test --database=odb_test &lt; person.sql
@@ -995,8 +1135,8 @@ mysql --user=odb_test --database=odb_test &lt; person.sql
 
   <p>Our first application doesn't print anything except for error
      messages so we can't really tell whether it actually stored the
-     objects' state in the database. While we will extend our application
-     to be more entertaining, for now we can use the <code>mysql</code>
+     objects' state in the database. While we will make our application
+     more entertaining shortly, for now we can use the <code>mysql</code>
      client to examine the database content. It will also give us a feel
      for how the object are stored:</p>
 
@@ -1019,8 +1159,8 @@ mysql> select * from person;
 mysql> quit
   </pre>
 
-  <p>In the next section we will examine how to query the database
-     for persistent objects matching certain criteria.</p>
+  <p>In the next section we will see how to access persistent objects
+     from our application.</p>
 
   <h2><a name="2.5">2.5 Querying the Database for Objects</a></h2>
 
@@ -1082,7 +1222,7 @@ main (int argc, char* argv[])
   <p>The two <code>typedef</code>s create convenient aliases for two
      template instantiations that will be used a lot in our application.
      The first is the query type for the <code>person</code> objects
-     and the second is the result type of that query.</p>
+     and the second is the result type for that query.</p>
 
   <p>Then we begin a new transaction and call the <code>query()</code>
      database function. We pass a query expression
@@ -1090,9 +1230,9 @@ main (int argc, char* argv[])
      only to those with age greater than 30. We also save the result
      of the query in a local variable.</p>
 
-  <p>The next few lines perform a pretty standard for-loop iteration
+  <p>The next few lines perform a standard for-loop iteration
      over the result sequence printing hello for every returned person.
-     Then we commit the transaction and we are node. Let's see what
+     Then we commit the transaction and that's it. Let's see what
      this application will print:</p>
 
   <pre class="terminal">
@@ -1106,12 +1246,12 @@ Hello, Jane!
 
   <p>That looks about right but how do we know that the query actually
      used the database instead of just using some in-memory artifacts of
-     the earlier <code>persist()</code> calls. One way to test this
+     the earlier <code>persist()</code> calls? One way to test this
      would be to comment out the first transaction in our application
-     and re-run it without re-creating the database schema so that the
+     and re-run it without re-creating the database schema. This way the
      objects that were persisted during the previous run will be returned.
      Alternatively, we can just re-run the same application without
-     re-creating the schema and notice that we now how duplicate
+     re-creating the schema and notice that we now show duplicate
      objects:</p>
 
   <pre class="terminal">
@@ -1126,7 +1266,7 @@ Hello, Jane!
   <p>What happens here is that the previous run of our application
      persisted a set of <code>person</code> objects and when we re-run
      the application, we persist another set with the same names but
-     with different id. When we later run the query, matches from
+     with different ids. When we later run the query, matches from
      both sets are returned. We can change the line where we print
      the "Hello" string as follows to illustrate this point:</p>
 
@@ -1134,8 +1274,8 @@ Hello, Jane!
 cout &lt;&lt; "Hello, " &lt;&lt; i->first () &lt;&lt; " (" &lt;&lt; i->id () &lt;&lt; ")!" &lt;&lt; endl;
   </pre>
 
-  <p>If we now re-run this modified program, we will get the following
-     output:</p>
+  <p>If we now re-run this modified program, again without re-creating
+     the database schema, we will get the following output:</p>
 
   <pre class="terminal">
 ./driver --user odb_test --database odb_test
@@ -1211,7 +1351,7 @@ main (int argc, char* argv[])
 }
   </pre>
 
-  <p>The beginning and the end of this transaction are the same as
+  <p>The beginning and the end of the new transaction are the same as
      the previous two. Once within a transaction, we call the
      <code>load()</code> database function to instantiate a
      <code>person</code> object with Joe's persistent state. We
@@ -1219,9 +1359,9 @@ main (int argc, char* argv[])
      made this object persistent.</p>
 
   <p>With the instantiated object in hand we increment the age
-     and call the <code>update()</code> database function to update
+     and call the <code>update()</code> function to update
      the object's state in the database. Once the transaction is
-     committed, the changes are made permanent in the database.</p>
+     committed, the changes are made permanent.</p>
 
   <p>If we now run this application, we will see Joe in the output
      since he is now over 30:</p>
@@ -1255,7 +1395,7 @@ Hello, Joe!
 
       if (i != r.end ())
       {
-        auto_ptr&lt;person> joe (*i);
+        auto_ptr&lt;person> joe (i.load ());
         joe->age (joe->age () + 1);
         db->update (*joe);
       }
@@ -1302,7 +1442,7 @@ Hello, Joe!
 
       if (i != r.end ())
       {
-        auto_ptr&lt;person> john (*i);
+        auto_ptr&lt;person> john (i.load ());
         db->erase (*john);
       }
 
@@ -1313,7 +1453,7 @@ Hello, Joe!
   <h2><a name="2.8">2.8 Summary</a></h2>
 
   <p>This chapter presented a very simple application which, nevertheless,
-     exercised all core database functions: <code>persist()</code>,
+     exercised all of the core database functions: <code>persist()</code>,
      <code>query()</code>, <code>load()</code>, <code>update()</code>,
      and <code>erase()</code>. We also saw that writing an application
      that uses ODB involves the following steps:</p>
@@ -1321,7 +1461,8 @@ Hello, Joe!
   <ol>
     <li>Declare persistent classes in header files.</li>
     <li>Compile these headers to generate database support code.</li>
-    <li>Link the application with the support code and two ODB runtime libraries.</li>
+    <li>Link the application with the generated code and two ODB runtime
+        libraries.</li>
   </ol>
 
 
@@ -1341,10 +1482,10 @@ Hello, Joe!
      showed how to use it to store C++ objects in a database. In this
      chapter we will examine the ODB object persistence model as
      well as the core database APIs in greater detail. We will
-     start with basic concepts and terminology in <a href="3.1">Section 3.1</a>
+     start with basic concepts and terminology in <a href="#3.1">Section 3.1</a>
      and continue with the discussion of the <code>odb::database</code>
-     class in <a href="3.2">Section 3.2</a> and transactions in
-     <a href="3.3">Section 3.3</a>. The reminder of the chapter
+     class in <a href="#3.2">Section 3.2</a> and transactions in
+     <a href="#3.3">Section 3.3</a>. The reminder of this chapter
      deals with the core database operations and concludes with
      the discussion of ODB exceptions.</p>
 
@@ -1365,11 +1506,11 @@ Hello, Joe!
      refer to the first meaning above, for example,
      "The <code>update()</code> function saves the object's state to
      the database." The term Database Management System (DBMS) is
-     often used to refer to the second meaning of the words database.
+     often used to refer to the second meaning of the word database.
      In this manual we will use the term <em>database system</em>
      for short, for example, "Database system-independent
      application code." Finally, to distinguish the third meaning
-     from the other two we will use the term <em>database name</em>,
+     from the other two, we will use the term <em>database name</em>,
      for example, "The second option specifies the database name
      that the application should use to store its data."</p>
 
@@ -1380,7 +1521,7 @@ Hello, Joe!
      certain restrictions and requirements on certain C++ types that
      can be stored in the database. As a result, we divide persistent
      C++ types into two groups: <em>object types</em> and <em>value
-     types</em>. An stances of an object type is called an <em>object</em>
+     types</em>. An instance of an object type is called an <em>object</em>
      and an instance of a value type &mdash; a <em>value</em>.</p>
 
   <p>An object is an independent entity. It can be stored, updated,
@@ -1392,7 +1533,7 @@ Hello, Joe!
      stored in the database as part of an object and doesn't have
      its own unique identifier.</p>
 
-  <p>An object type is a C++ class. Because of this one to one
+  <p>An object type is a C++ class. Because of this one-to-one
      relationship, we will use terms <em>object type</em>
      and <em>object class</em> interchangeably. In contrast,
      a value type can be a fundamental C++ type, such as
@@ -1406,7 +1547,7 @@ Hello, Joe!
      representational. For example, <code>std::string</code>
      is a simple value type because conceptually string is a
      single value even though the representation of the string
-     class may contain several data member each of which would be
+     class may contain several data member each of which could be
      considered a value. In fact, the same value type can be
      viewed (and mapped) as both simple and composite by different
      applications.</p>
@@ -1422,11 +1563,11 @@ Hello, Joe!
      value occupies several cells.</p>
 
   <p>Going back to the distinction between simple and composite
-     values, consider a date type which has three integer data
+     values, consider a date type which has three integer
      members: year, month, and day. In one application it can be
      considered a composite value and each member will get its
-     own column in the relational database. In another application
-     it can considered as a simple value and stored a single
+     own column in a relational database. In another application
+     it can considered a simple value and stored in a single
      column as a number of day from some predefined date.</p>
 
   <p>Until now, we have been using the term <em>persistent class</em>
@@ -1440,8 +1581,9 @@ Hello, Joe!
      we invariably refer to an object class rather than a value
      class.</p>
 
-  <p>To make a C++ class a persistent object class we need to declare
-     it as such using the <code>db object</code> pragma:</p>
+  <p>To make a C++ class a persistent object class we declare
+     it as such using the <code>db&nbsp;object</code> pragma, for
+     example:</p>
 
   <pre class="c++">
     #pragma db object
@@ -1451,8 +1593,9 @@ Hello, Joe!
     };
   </pre>
 
-  <p>The other pragma that we need to use is the <code>db id</code>
-     which designates one of the data members as an object id:</p>
+  <p>The other pragma that we often use is <code>db&nbsp;id</code>
+     which designates one of the data members as an object id, for
+     example:</p>
 
   <pre class="c++">
     #pragma db object
@@ -1467,25 +1610,25 @@ Hello, Joe!
 
   <p>These two pragmas are the minimum required to declare a
      persistent class. Other pragmas can be used to fine-tune
-     the persistence-related properties of a class and its
-     members.</p>
+     the database-related properties of a class and its
+     members (see <a href="#5">Chapter 5, "ODB Pragma Language"</a>).</p>
 
   <p>You may be wondering whether we also have to do declare value types
      as persistent. We don't need to do anything special for simple value
      types such as <code>int</code> or <code>std::string</code> since the
-     ODB compiler knows how to map them to the database system types and
+     ODB compiler knows how to map them to suitable database system types and
      how to convert between the two. On the other hand, if a simple value
      is unknown to the ODB compiler then you will need to provide the
      mapping to the database system type and, possibly, the code to
-     convert between the two. For more information on this see @@ Ref
-     Custom value types/pragma value type. Composite value types are
-     not yet supported by ODB and will not discuss them further in
-     this revision of the manual.</p>
+     convert between the two. For more information on this refer to
+     <a href="#5.3">Section 5.3, "Value Type Pragmas"</a>. Composite
+     value types are not yet supported by ODB and we will not discuss
+     them further in this revision of the manual.</p>
 
   <p>Normally, you would use object types to model real-world entities,
      things that have their own identity. For example, in the
      previous chapter we created a <code>person</code> class to model
-     a person which is a real-world entity. Name and age, which we
+     a person, which is a real-world entity. Name and age, which we
      used as data members in our <code>person</code> class are clearly
      values. It is hard to think of age 31 or name "Joe" as having their
      own identity.</p>
@@ -1493,12 +1636,12 @@ Hello, Joe!
   <p>A good test to determine whether something is an object or
      a value is to consider if other objects might reference
      it. A person is clearly an object because it can be referred
-     to by other object's such as a spouse, an employer, or a
+     to by other objects such as a spouse, an employer, or a
      bank. On the other hand, a person's age or name is not
      something that other objects would normally refer to.</p>
 
   <p>Also, when an object represents a real entity, it is easy to
-     choose a suitable object identifier. For example, for a
+     choose a suitable object id. For example, for a
      person there is an established notion of an identifier
      (SSN, student id, passport number, etc). Another alternative
      is to use person's email address as an identifier.</p>
@@ -1506,9 +1649,9 @@ Hello, Joe!
   <p>Note, however, that these are only guidelines. There could
      be good reasons to make something that would normally be
      a value an object. Consider, for example, a database that
-     stores a vast number of people. Many of the person objects
-     in this database have the same names and surnames and the
-     overhead of repeating them in every object may negatively
+     stores a vast number of people. Many of the <code>person</code>
+     objects in this database have the same names and surnames and
+     the overhead of storing them in every object may negatively
      affect the performance. In this case we could make first name
      and last name each an object and only store references to
      these objects in the <code>person</code> class.</p>
@@ -1517,26 +1660,26 @@ Hello, Joe!
     <em>transient</em> and <em>persistent</em>. A transient
     instance only has a representation in the application's
     memory and will cease to exist when the application terminates
-    unless it is explicitly made persistent. A persistent instance
+    unless it is explicitly made persistent. In other words, a
+    transient instance of a persistent class behaves just like an
+    instance of any ordinary C++ class. A persistent instance
     has a representation in both the application's memory and the
     database. A persistent instance will remain even after the
     application terminates unless and until it is explicitly
-    deleted from the database. In other words, a transient instance
-    of a persistent class behaves just like an instance of any
-    ordinary C++ class.</p>
+    deleted from the database.</p>
 
 
   <h2><a name="3.2">3.2 Database</a></h2>
 
-  <p>Before an application can make use of a persistence services
-     offered by ODB, it has to create a database instance. A
+  <p>Before an application can make use of persistence services
+     offered by ODB, it has to create a database class instance. A
      database instance is the representation of the place where
      the application stores its persistent objects. You create
      a database instance by instantiating one of the database
-     system-specific classes. For example <code>odb::mysql::database</code>
+     system-specific classes. For example, <code>odb::mysql::database</code>
      would be such a class for the MySQL database system. You will
      also normally pass a database name as an argument to the
-     <code>database</code> constructor. The following code fragment
+     class' constructor. The following code fragment
      shows how we can create a database instance for the MySQL
      database system:</p>
 
@@ -1552,9 +1695,9 @@ Hello, Joe!
       ));
   </pre>
 
-  <p>The <code>odb::database</code> class is an abstract base class
-     that defines a common interface for all database system-specific
-     classes provided by ODB. You would normally work with the database
+  <p>The <code>odb::database</code> class is a common interface for
+     all database system-specific classes provided by ODB. You
+     would normally work with the database
      instance via this interface unless there is a specific
      functionality that your application depends on and which is
      only exposed by a particular system's <code>database</code>
@@ -1566,20 +1709,20 @@ Hello, Joe!
      These are discussed in detail in the reminder of this chapter
      as well as the next chapter which is dedicated to the topic of
      querying the database for persistent objects. For details on the
-     system-specific <code>database</code> classes, refer for
-     (@@ ref Database Systems).</p>
+     system-specific <code>database</code> classes, refer to
+     <a href="#6">Chapter 6, "Database Systems"</a>.</p>
 
   <h2><a name="3.3">3.3 Transactions</a></h2>
 
   <p>A transaction is an atomic, consistent, isolated and durable
-     (ACID) unit of work. All database operations can only be
+     (ACID) unit of work. Database operations can only be
      performed within a transaction and each thread of execution
      in an application can have only one active transaction at a
      time.</p>
 
   <p>By atomicity we mean that when it comes to making changes to
      the database state within a transaction,
-     either all the changes succeed or none at all. Consider,
+     either all the changes are applied or none at all. Consider,
      for example, a transaction that transfers funds between two
      objects representing bank accounts. If the debit function
      on the first object succeeds but the credit function on
@@ -1605,7 +1748,7 @@ Hello, Joe!
   <p>By durability we mean that once the transaction is committed,
      the changes that it made to the database state are permanent
      and will survive failures such as an application crash. From
-     now the only way to alter this state is to execute and commit
+     now on the only way to alter this state is to execute and commit
      another transaction.</p>
 
   <p>A transaction is started by calling the
@@ -1645,20 +1788,20 @@ namespace odb
 
   <p>The <code>commit()</code> function commits a transaction and
      <code>rollback()</code> rolls it back. Unless the transaction
-     has been <em>finalized</em>, (explicitly committed or rolled back),
-     the destructor of the <code>odb::transaction</code> class will
+     has been <em>finalized</em>, that is, explicitly committed or rolled
+     back, the destructor of the <code>odb::transaction</code> class will
      automatically roll it back when the transaction instance goes
      out of scope. If you try to commit or roll back a finalized
      transactions, the <code>odb::transaction_already_finalized</code>
-     is thrown.</p>
+     exception is thrown.</p>
 
   <p>The <code>database()</code> function returns the database this
      transaction is working on. The <code>current()</code> static
      function returns the currently active transaction for this
      thread. If there is no active transaction, this function
      throws the <code>odb::not_in_transaction</code> exception.
-     You can check whether there is a transaction in effect using
-     the <code>has_current()</code> static function.</p>
+     You can check whether there is a transaction in effect in
+     this thread using the <code>has_current()</code> static function.</p>
 
   <p>If two or more transaction access or modify more than one object
      and are executed concurrently by different applications or by
@@ -1667,8 +1810,8 @@ namespace odb
      order and deadlock. The canonical example of a deadlock are
      two transactions in which the first has modified <code>object1</code>
      and is waiting for the second transaction to commit its changes to
-     <code>object2</code> so that it can update <code>object2</code>. At
-     the same time the second transaction has modified <code>object2</code>
+     <code>object2</code> so that it can also update <code>object2</code>.
+     At the same time the second transaction has modified <code>object2</code>
      and is waiting for the first transaction to commit its changes to
      <code>object1</code> because it also needs to modify <code>object1</code>.
      As a result none of the two transactions can complete.</p>
@@ -1705,7 +1848,7 @@ for (;;)
      a transaction back but still have changes from this
      transaction in the application's memory. An easy way to
      avoid this potential inconsistency is to instantiate
-     persistent objects withing the transaction's scope. Consider,
+     persistent objects only within the transaction scope. Consider,
      for example, this two implementations of the same transaction:</p>
 
   <pre class="c++">
@@ -1722,7 +1865,7 @@ update_age (database&amp; db, person&amp; p)
   </pre>
 
   <p>In the above implementation, if the <code>update()</code> call fails
-     and the transaction is rolled back, the state of the person
+     and the transaction is rolled back, the state of the <code>person</code>
      object in the database and the state of the same object in the
      application's memory will differ. Now consider an
      alternative implementation which only instantiates the
@@ -1742,14 +1885,14 @@ update_age (database&amp; db, unsigned long id)
 }
   </pre>
 
-  <p>Of course, it may be not always be possible to write the
+  <p>Of course, it may not always be possible to write the
      application in this style. Oftentimes we need to access and
      modify application's state of persistent objects out of
      transactions. In this case it may make sense to try to
      roll back the changes made to the application state if
      the transaction was rolled back and the database state
      remains unchanged. One way to do this is to re-load
-     the object's state from the database:</p>
+     the object's state from the database, for example:</p>
 
   <pre class="c++">
 void
@@ -1795,20 +1938,21 @@ update_age (database&amp; db, person&amp; p)
 
   <p>The first <code>persist()</code> function expects a constant reference
      to an instance being persisted and is used on objects with
-     application-assigned object ids (@@ref pragma id/auto). The second
+     application-assigned object ids (see <a href="#5.4">Section 5.4,
+     "Data Member Pragmas"</a>). The second
      function expects an unrestricted reference and, if the object id is
-     assigned by the database, it updates the passed instance's id member
+     assigned by the database, it updates the id member of the passed instance
      with the assigned value. Both functions return the object id of the
      newly persistent object.</p>
 
   <p>If the database already contains an object of this type with this
-     id, the <code>persist()</code> functions throw the
+     identifier, the <code>persist()</code> functions throw the
      <code>odb::object_already_persistent</code> exception. This should
      never happen for database-assigned object ids as long as the
      number of objects persisted does not exceed the value space of
      the id type.</p>
 
-  <p>When calling the <code>persist()</code> function we don't need to
+  <p>When calling the <code>persist()</code> functions we don't need to
      explicitly specify the template type since it will be automatically
      deduced from the argument being passed. The <code>odb::object_traits</code>
      template used in the signature above is part of the database support
@@ -1834,19 +1978,19 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
      that we were planning to make persistent before starting the
      transaction. Likewise, we printed Jane's id after we have committed
      the transaction. As a general rule, you should avoid performing
-     operations within a transaction's scope that can be performed
+     operations within the transaction scope that can be performed
      before the transaction starts or after it terminates. An active
      transaction consumes both your application's resources, such as
      a database connection, as well as the database server's
      resources, such as object locks. By following the above rule you
      make sure these resources are made available to other threads
-     in your application and to other applications for as long as
+     in your application and to other applications as soon as
      possible.</p>
 
   <h2><a name="3.5">3.5 Loading Persistent Objects</a></h2>
 
   <p>Once an object is made persistent, and you know its object id, it
-     can loaded by the application using the <code>database::load()</code>
+     can be loaded by the application using the <code>database::load()</code>
      function template. This function has two overloaded versions with
      the following signatures:</p>
 
@@ -1875,7 +2019,7 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
   <pre class="c++">
 transaction t (db->begin_transaction ());
 
-person* jane (db->load&lt;person> (jane_id));
+auto_ptr&lt;person> jane (db->load&lt;person> (jane_id));
 
 db->load (jane_id, *jane);
 
@@ -1884,7 +2028,7 @@ t.commit ();
 
   <p>If we don't know for sure whether an object with a given id
      is persistent, we can use the <code>find()</code> function
-     instead of <code>load()</code>:</p>
+     instead of <code>load()</code>, for example:</p>
 
   <pre class="c++">
   template &lt;typename T>
@@ -1901,10 +2045,11 @@ t.commit ();
      while the second function leaves the passed instance unmodified and
      returns <code>false</code>.</p>
 
-  <p>If we don't know an object's identifier, then we can use queries to
-     find the object (or objects) matching some criteria (@@ ref
-     query). Note, however, that loading an object's state using its
-     identifier can be significantly faster that doing a query.</p>
+  <p>If we don't know the object id, then we can use queries to
+     find the object (or objects) matching some criteria (see
+     <a href="#4">Chapter 4, "Querying the Database"</a>). Note,
+     however, that loading an object's state using its
+     identifier can be significantly faster that executing a query.</p>
 
 
   <h2><a name="3.6">3.6 Updating Persistent Objects</a></h2>
@@ -1976,16 +2121,16 @@ transfer (database&amp; db,
   <p>The first <code>erase()</code> function uses an object itself to
      delete its state from the database. Note that the passed object
      is unchanged. It simply becomes transient. The second function uses
-     the object id to identify the object to be deleted. If the object to
-     be deleted does not exist in the database, both functions throw the
+     the object id to identify the object to be deleted. If the object
+     does not exist in the database, both functions throw the
      <code>odb::object_not_persistent</code> exception.</p>
 
 
   <p>We have to specify the object type when calling the second
      <code>erase()</code> function. The same is unnecessary for the
      first function because the object type will be automatically
-     deduced from its argument. The following example shows how can call
-     these functions:</p>
+     deduced from its argument. The following example shows how we
+     can call these functions:</p>
 
   <pre class="c++">
 const person&amp; john = ...
@@ -2002,7 +2147,7 @@ t.commit ();
 
   <p>In the previous sections we have already mentioned some of the
      exceptions that can be thrown by the database functions. In this
-     section we will discuss the ODB exception hierarchy and list
+     section we will discuss the ODB exception hierarchy and document
      all the exceptions that can be thrown by the common ODB
      runtime.</p>
 
@@ -2024,7 +2169,8 @@ namespace odb
 
   <p>Catching this exception guarantees that you will catch all
      exceptions thrown by ODB. The <code>what()</code> function
-     returns a human-readable description of an exception.</p>
+     returns a human-readable description of the condition that
+     triggered the exception.</p>
 
   <p>The concrete exceptions that can be thrown by ODB are presented
      in the following listing:</p>
@@ -2105,10 +2251,10 @@ namespace odb
 
   <p>The <code>database_exception</code> is a base class for all
      database system-specific exceptions that are thrown by the
-     database system-specific runtime library. See (@@ ref Chapter
-     Database Systems) for more information.</p>
+     database system-specific runtime library. See <a href="#6">Chapter
+     6, "Database Systems"</a> for more information.</p>
 
-  <p>The <code>odb::exception</code> abstract base is defined in the
+  <p>The <code>odb::exception</code> class is defined in the
      <code>&lt;odb/exception.hxx></code> header file. All the
      concrete ODB exceptions are defined in
      <code>&lt;odb/exceptions.hxx></code> which also includes
@@ -2127,12 +2273,14 @@ namespace odb
 
   <p>If you don't know the identifiers of the objects that you are looking
      for, you can use queries to search the database for objects matching
-     certain criteria. ODB provides flexible and powerful query support
-     that offers two distinct levels of abstraction from the database
-     system query language such as SQL.</p>
+     certain criteria. The ODB query facility is optional and you need to
+     explicitly request the generation of the necessary database support
+     code with the <code>--generate-query</code> ODB compiler option.</p>
 
-  <p>At the high level you are presented with an easy to use yet powerful
-     object-oriented query language, called ODB query language. This
+  <p>ODB provides flexible query API that offers two distinct levels of
+     abstraction from the database system query language such as SQL.
+     At the high level you are presented with an easy to use yet powerful
+     object-oriented query language, called ODB Query Language. This
      query language is modeled after and is integrated into C++ allowing
      you to write expressive and safe queries that look and feel like
      ordinary C++. We have already seen examples of these queries in the
@@ -2165,7 +2313,7 @@ namespace odb
   query q ("first = 'John' AND age = " + query::_ref (age));
   </pre>
 
-  <p>Note that at this level you also loose the static typing of
+  <p>Note that at this level you loose the static typing of
      query expressions. For example, if we wrote something like this:</p>
 
   <pre class="c++">
@@ -2182,11 +2330,11 @@ namespace odb
   query q ("first = 123 AND agee = " + query::_ref (age));
   </pre>
 
-  <p>It would compile without any errors and would trigger an error
-     only when executed by the the database system.</p>
+  <p>It would compile fine and would trigger an error only when executed
+     by the the database system.</p>
 
-  <p>You are also allowed to combine the two query languages in a single
-     query, for example:</p>
+  <p>You can also combine the two query languages in a single query, for
+     example:</p>
 
   <pre class="c++">
   query q ("first = 'John'" + (query::age &lt; query::_ref (age)));
@@ -2196,7 +2344,7 @@ namespace odb
   <h2><a name="4.1">4.1 ODB Query Language</a></h2>
 
   <p>An ODB query is an expression that tell the database system whether
-     any given object matches our criteria. As such a query expression
+     any given object matches the desired criteria. As such a query expression
      always evaluates to <code>true</code> or <code>false</code>. At
      the higher lever, an expression consist of other expressions
      combined with logical operators such as <code>&amp;&amp;</code> (AND),
@@ -2209,7 +2357,7 @@ namespace odb
   </pre>
 
   <p>At the core of every query expression lie simple expressions which
-     involve one or more object data members, values, or parameters. To
+     involve one or more object members, values, or parameters. To
      refer to an object member you use an expression such as
      <code>query::first</code> above. The names of members in the
      <code>query</code> class are derived from the names of data members
@@ -2217,7 +2365,7 @@ namespace odb
      such as leading and trailing underscores, the <code>m_</code> prefix,
      etc.</p>
 
-  <p>In a simple expressions an object member can be compared to a value,
+  <p>In a simple expression an object member can be compared to a value,
      parameter, or another member using a number of predefined operators
      and functions. The following table gives an overview of the available
      expressions:</p>
@@ -2334,9 +2482,9 @@ namespace odb
   <p>If a parameter is bound by value, then the value for this parameter
      is copied from the C++ variable to the query instance at the query
      construction time. On the other hand, if a parameter is bound by
-     reference, then the query instance only stores a reference to the
+     reference, then the query instance stores a reference to the
      bound variable. The actual value for the parameter is only extracted
-     at the query execution time. Consider, for example the following
+     at the query execution time. Consider, for example, the following
      two queries:</p>
 
   <pre class="c++">
@@ -2354,7 +2502,7 @@ namespace odb
   <p>The <code>odb::query</code> class provides two special functions,
      <code>_val()</code> and <code>_ref()</code>, that allow you to
      bind the parameter either by value or by reference, respectively.
-     In the embedded query language, if the binding is not specified
+     In the ODB query language, if the binding is not specified
      explicitly, the value semantics is used by default. In the
      native query language, binding must always be specified
      explicitly. For example:</p>
@@ -2398,7 +2546,7 @@ namespace odb
      The second functions uses the passed query instance to only return
      objects matching the query criteria. The <code>cache</code> argument
      determines whether the object states should be cached in the
-     application's memory or if it should be returned by the database
+     application's memory or if they should be returned by the database
      system one by one as the iteration over the result progresses. The
      result caching is discussed in detail in the next section.</p>
 
@@ -2444,8 +2592,8 @@ result r (find_underage (db, query::first == "John"));
   <h2><a name="4.4">4.4 Query Result</a></h2>
 
   <p>The result of executing a query is zero, one, or more objects
-     matching the query criteria. The result is represented as the
-     <code>odb::result</code> class template:</p>
+     matching the query criteria. The result is returned as an instance
+     of the <code>odb::result</code> class template, for example:</p>
 
   <pre class="c++">
   typedef odb::query&lt;person> query;
@@ -2513,7 +2661,7 @@ namespace odb
     result caching when we talked about query execution. As you
     may remember the <code>database::query()</code> function
     caches the result unless instructed not to by the caller.
-    The <code>result::cache()</code> function allows you to
+    The <code>cache()</code> function allows you to
     cache the result at a later stage if it wasn't already
     cached during query execution.</p>
 
@@ -2522,7 +2670,7 @@ namespace odb
      the actual objects are still only instantiated on demand
      during result iteration. It is the raw database state that
      is cached in memory. In contrast, for uncached results
-     the object state is sent by the database system one object
+     the object's state is sent by the database system one object
      at a time as the iteration progresses.</p>
 
   <p>Uncached results can improve performance of both the application
@@ -2532,7 +2680,7 @@ namespace odb
      results have a number of limitations. There can only be one
      uncached result in a transaction. Creating another result
      (cached or uncached) by calling <code>database::query()</code>
-     will invalidate the first uncached result. Furthermore,
+     will invalidate the existing uncached result. Furthermore,
      executing any other database function, such as <code>update()</code>
      or <code>erase()</code> will also invalidate the uncached result.</p>
 
@@ -2558,9 +2706,9 @@ namespace odb
   </pre>
 
   <p>The result iterator is an input iterator which means that the
-     only two position operations that are support are to move to the
-     next object and determine whether we have reached the end of the
-     result stream. In fact, the result iterator can only be in two
+     only two position operations that it supports are to move to the
+     next object and to determine whether the end of the result stream
+     has been reached. In fact, the result iterator can only be in two
      states: the current position and the end position. If you have
      two iterators pointing to the current position and then you
      advance one of them, the other will advance as well. This,
@@ -2596,7 +2744,7 @@ namespace odb
 
   <p>When you call the <code>*</code> or <code>-></code> operator,
      the iterator will allocate a new instance of the object class
-     in the dynamic memory, load its state from the returned database
+     in the dynamic memory, load its state from the database
      state, and return a reference or pointer to the new instance. The
      iterator maintains the ownership of the returned object and will
      return the same pointer for subsequent calls to either of these
@@ -2619,7 +2767,7 @@ namespace odb
      similar to <code>database::load()</code>. The first function
      returns a dynamically allocated instance of the current
      object which you are responsible for deleting. As an optimization,
-     if the iterator already owns an object as result of an earlier
+     if the iterator already owns an object as a result of an earlier
      call to the <code>*</code> or <code>-></code> operator, then it
      relinquishes the ownership of this object and returns it instead.
      This allows you to write code like this without worrying about
@@ -2676,21 +2824,22 @@ namespace odb
 
   <p><code>#pragma db <i>qualifier</i> [<i>specifier</i> <i>specifier</i> ...]</code></p>
 
-  <p>The qualifier tell the ODB compiler what kind of C++ construct
+  <p>The <em>qualifier</em> tell the ODB compiler what kind of C++ construct
      this pragma describes. Valid qualifiers are <code>object</code>,
      <code>value</code>, and <code>member</code>. Pragmas with the
-     <code>object</code> qualifier describes persistent object types.
-     It tells the ODB compiler that a C++ class it describes is a
+     <code>object</code> qualifier describe persistent object types.
+     It tells the ODB compiler that a C++ class it describe is a
      persistent class. Similarly, pragmas with the <code>value</code>
      qualifier describes value types and the <code>member</code>
      qualifier is used to describe data members of persistent object
      and value types.</p>
 
-  <p>The specifier informs the ODB compiler about a particular property
-     of the C++ declaration. For example, the <code>id</code> member
-     specifier tell the ODB compiler that this member contains this
-     object's identifier. Below is the declaration of the <code>person</code>
-     class that shows how we can use these qualifiers and specifiers:</p>
+  <p>The <em>specifier</em> informs the ODB compiler about a particular
+     database-related property of the C++ declaration. For example, the
+     <code>id</code> member specifier tell the ODB compiler that this
+     member contains this object's identifier. Below is the declaration
+     of the <code>person</code> class that shows how we can use ODB
+     pragmas:</p>
 
   <pre class="c++">
 #pragma db object
@@ -2728,7 +2877,7 @@ private:
 
   <p>While keeping the C++ declarations and database declarations close
      together eases maintenance and increases readability, you can also
-     separate them in different parts of the same header file or even
+     place them in different parts of the same header file or even
      factor them to a separate file. To achieve this we use the so called
      <em>named pragmas</em>. Unlike positioned pragmas, named pragmas
      explicitly specify the C++ declaration to which they apply by
@@ -2772,8 +2921,8 @@ namespace db
 #pragma db member(db::person::id_) id
   </pre>
 
-  <p>The following code fragment shows how to use the named value
-     type pragma to map a C++ type to a native database type:</p>
+  <p>As another example, the following code fragment shows how to use the
+     named value type pragma to map a C++ type to a native database type:</p>
 
   <pre class="c++">
 #pragma db value(bool) type("INT NOT NULL")
@@ -2802,10 +2951,10 @@ private:
 
   <p>There are also several C++ compiler-independent methods that you
      can employ. The first is to use the <code>PRAGMA_DB</code> macro,
-     defined in <code>&lt;odb/core.hxx></code>, instead of the
+     defined in <code>&lt;odb/core.hxx></code>, instead of using
      <code>#pragma&nbsp;db</code> directly. This macro expands to the
      ODB pragma when compiled with the ODB compiler and to an empty
-     string when compiler with other compilers. The following example
+     declaration when compiled with other compilers. The following example
      shows how we can use this macro:</p>
 
   <pre class="c++">
@@ -2842,8 +2991,8 @@ private:
 #endif
   </pre>
 
-  <p>The disadvantage of this approach is that it becomes overly verbose
-     when positioned pragmas are used.</p>
+  <p>The disadvantage of this approach is that it can quickly become
+     overly verbose when positioned pragmas are used.</p>
 
   <h3><a name="5.1.1">5.1.1 GNU C++</a></h3>
 
@@ -2929,7 +3078,7 @@ class person
   </pre>
 
   <p>If the table name is not specified, the class name is used as the
-     default.</p>
+     table name.</p>
 
   <h2><a name="5.3">5.3 Value Type Pragmas</a></h2>
 
@@ -2955,11 +3104,11 @@ private:
 };
   </pre>
 
-  <p>The ODB compiler includes the default mapping between common C++
+  <p>The ODB compiler provides the default mapping between common C++
      types, such as <code>bool</code>, <code>int</code>, and
      <code>std::string</code> and the database types for each supported
      database system. For more information on the default mapping,
-     refer to (@@ ref Database Systems).</p>
+     refer to <a href="#6">Chapter 6, "Database Systems"</a>.</p>
 
   <p>In the above example we changed the mapping for the <code>bool</code>
      type which is now mapped to the <code>INT</code> database type. In
@@ -2986,14 +3135,15 @@ private:
      package shows how to do this for all supported database systems.</p>
 
   <p>It is also possible to change the database type mapping for individual
-     members, as discussed in (@@ ref member type specifier).</p>
+     members, as described in <a href="#5.4">Section 5.4, "Data Member
+     Pragmas"</a>.</p>
 
   <h2><a name="5.4">5.4 Data Member Pragmas</a></h2>
 
   <p>A pragma with the <code>member</code> qualifier or a positioned
      pragma without a qualifier describes a data member. It can
-     be optionally followed, in any order, by the specifiers summarized
-     in the table below:</p>
+     be optionally followed, in any order, by one or more specifiers
+     summarized in the table below:</p>
 
   <!-- border="1" is necessary for html2ps -->
   <table id="specifiers" border="1">
@@ -3039,7 +3189,7 @@ private:
 
   <p>The <code>id</code> specifier specifies that the data member contains
      the object id. Every persistent class must have a member designated
-     as an object identifier. For example:</p>
+     as an object's identifier. For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -3058,10 +3208,9 @@ private:
 
   <h3><a name="5.4.2">5.4.2 <code>auto</code></a></h3>
 
-  <p>The <code>auto</code> specifier specifies that the object identifier
+  <p>The <code>auto</code> specifier specifies that the object's identifier
      is automatically assigned by the database. Only a member that was
-     designated as an object identifier can have this specifier. For
-     example:</p>
+     designated as an object id can have this specifier. For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -3075,15 +3224,15 @@ private:
 };
   </pre>
 
-  <p>Note that automatically-assigned object identifiers are not reused.
+  <p>Note that automatically-assigned object ids are not reused.
      If you have a high object turnover (that is, objects are routinely
      made persistent and then erased), then care must be taken not to
-     run out of object identifiers. In such situations using
+     run out of object ids. In such situations using
      <code>unsigned long long</code> as the identifier type is a safe
      choice.</p>
 
   <p>For additional information on the automatic identifier assignment,
-     refer to (@@ ref persist() function).</p>
+     refer to <a href="#3.4">Section 3.4, "Making Objects Persistent"</a>.</p>
 
   <h3><a name="5.4.3">5.4.3 <code>type</code></a></h3>
 
@@ -3108,7 +3257,7 @@ private:
      don't have their own <code>type</code> specifiers. While the
      member pragma applies only to a single member. For more
      information on the semantics of this specifier refer to
-     the (@@ ref value type "value" specifier).</p>
+     <a href="#5.3">Section 5.3, "Value Type Pragmas"</a>.</p>
 
   <h3><a name="5.4.4">5.4.4 <code>column</code></a></h3>
 
@@ -3173,7 +3322,7 @@ private:
   <p>To generate support code for the MySQL database you will need
      to pass the "<code>--database&nbsp;mysql</code>"
      (or "<code>-d&nbsp;mysql</code>") option to the ODB compiler.
-     Your application will also need to link to the ODB MySQL runtime
+     Your application will also need to link to the MySQL ODB runtime
      library (<code>libodb-mysql</code>). All MySQL-specific ODB
      classes are defined in the <code>odb::mysql</code> namespace.</p>
 
@@ -3181,8 +3330,9 @@ private:
 
   <p>The following table summarizes the default mapping between basic
      C++ value types and MySQL database types. This mapping can be
-     customized on the per-type and per-member basis using ODB pragmas
-     (@@ ref ODB Pragma language).</p>
+     customized on the per-type and per-member basis using the ODB
+     Pragmas Language (see <a href="#5">Chapter 5, "ODB Pragma
+     Language"</a>).</p>
 
   <!-- border="1" is necessary for html2ps -->
   <table id="mapping" border="1">
@@ -3379,12 +3529,12 @@ namespace odb
      to specify MySQL database parameters that should be used when
      connecting to the database. In MySQL <code>NULL</code> and
      empty string are treated as the same values for all the
-     string parameters except password and socket. The
-     <code>client_flags</code> argument allows you to specify
-     various MySQL client library flags. For more information
-     on the possible values, refer to the MySQL C API documentation.
-     The <code>CLIENT_FOUND_ROWS</code> flag is always set by the
-     ODB MySQL runtime regardless of whether it was passed in the
+     string parameters except <code>password</code> and
+     <code>socket</code>. The <code>client_flags</code> argument
+     allows you to specify various MySQL client library flags. For more
+     information on the possible values, refer to the MySQL C API
+     documentation. The <code>CLIENT_FOUND_ROWS</code> flag is always set
+     by the MySQL ODB runtime regardless of whether it was passed in the
      <code>client_flags</code> argument.</p>
 
   <p>The last constructor extracts the database parameters
@@ -3413,18 +3563,17 @@ namespace odb
 
   <p>This constructor throws the <code>odb::mysql::cli_exception</code>
      exception if the MySQL option values are missing or invalid.
-     See section (@@ ref MySQL Exceptions) for more information
-     on this exception.</p>
+     See section <a href="#6.1.4">Section 6.1.4, "MySQL Exceptions"</a>
+     for more information on this exception.</p>
 
-  <p>The static <code>print_usage()</code> function allows you
-     to print the list of options with short descriptions that
-     are recognized by this constructor.</p>
+  <p>The static <code>print_usage()</code> function prints the list of options
+     with short descriptions that are recognized by this constructor.</p>
 
   <p>The last argument to all of the constructors is the
      pointer to the connection factory. If you pass a
      non-<code>NULL</code> value, the database instance assumes
-     ownership of the connection factory. The connection factory
-     interface as well as the available implementations are discussed
+     ownership of the factory instance. The connection factory
+     interface as well as the available implementations are described
      in the next section.</p>
 
   <p>The set of accessor function following the constructors allows you
@@ -3435,7 +3584,7 @@ namespace odb
      class. Normally, you wouldn't call this function directly and
      instead let the ODB runtime manage database connections. However,
      if for some reason you need to access the underlying MySQL connection
-     handle, refer to the ODB MySQL runtime source code for the interface
+     handle, refer to the MySQL ODB runtime source code for the interface
      of the <code>connection</code> class.</p>
 
   <h3><a name="6.1.3">6.1.3 Connection Factory</a></h3>
@@ -3454,7 +3603,7 @@ namespace odb
       virtual void
       database (mysql::database&amp;) = 0;
 
-      virtual details::shared_ptr&lt;connection>
+      virtual details::shared_ptr&lt;mysql::connection>
       connect () = 0;
     };
   }
@@ -3468,7 +3617,7 @@ namespace odb
      connection is requested.</p>
 
   <p>The two implementations of the <code>connection_factory</code>
-     interface provided by the ODB MySQL runtime are
+     interface provided by the MySQL ODB runtime are
      the <code>new_connection_factory</code> and
      <code>connection_pool_factory</code>. You will need to include
      the <code>&lt;odb/mysql/connection-factory.hxx></code>
@@ -3496,7 +3645,7 @@ namespace odb
   </pre>
 
   <p>The <code>max_connections</code> argument specifies the maximum
-     number and the of concurrent connections this pool factory will
+     number of concurrent connections this pool factory will
      maintain. Similarly, the <code>min_connections</code> argument
      specifies the minimum number of available connections that
      should be kept open.</p>
@@ -3520,7 +3669,7 @@ namespace odb
      returned on the next request. In other words, if the number of
      connections maintained by the pool exceeds the <code>min_connections</code>
      number and there are no threads waiting for a new connection,
-     then the pool will release the excess connections.</p>
+     then the pool will close the excess connections.</p>
 
   <p>If <code>max_connections</code> value is 0 then the pool will
      create a new connection whenever all of the existing connections
@@ -3554,7 +3703,7 @@ main (int argc, char* argv[])
 
   <h3><a name="6.1.4">6.1.4 MySQL Exceptions</a></h3>
 
-  <p>The ODB MySQL runtime library defines the following MySQL-specific
+  <p>The MySQL ODB runtime library defines the following MySQL-specific
      exceptions:</p>
 
   <pre class="c++">
