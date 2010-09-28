@@ -36,7 +36,7 @@ to specify its location, for example:
 ./configure --with-libcutl=/tmp/libcutl
 
 As another example, the following configure command uses the specified
-GNU g++ compiler and compiles with optimization and without the debug
+GNU g++ compiler and compiles with optimization and without debug
 information:
 
 ./configure CXX=g++-4.5 CXXFLAGS=-O3
@@ -45,9 +45,9 @@ Once configuration is complete, run make to build odb:
 
 make
 
-Once the build completes successfully, you can install odb using the install
-target (you may need to do this step as root depending on the installation
-directory):
+Once the build is completed successfully, you can install odb using the
+install target (you may need to do this step as root depending on the
+installation directory):
 
 make install
 
