@@ -3043,8 +3043,15 @@ private:
 
   <h3><a name="5.1.3">5.1.3 Sun C++</a></h3>
 
-  <p>The Sun C++ compiler does not issue warnings about unknown pragmas.
-     As a result, no additional actions are required for this compiler.</p>
+  <p>The Sun C++ compiler does not issue warnings about unknown pragmas
+     unless the <code>+w</code> or <code>+w2</code> option is specified.
+     To disable only the unknown pragma warning you can add the
+     <code>-erroff=unknownpragma</code> option anywhere on the
+     command line, for example:</p>
+
+  <pre class="terminal">
+CC +w -erroff=unknownpragma ...
+  </pre>
 
   <h3><a name="5.1.4">5.1.4 IBM XL C++</a></h3>
 
