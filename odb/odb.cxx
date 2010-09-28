@@ -4,7 +4,8 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <errno.h>
-#include <stdlib.h>    // getenv
+#include <limits.h>    // PATH_MAX
+#include <stdlib.h>    // getenv, setenv
 #include <string.h>    // strerror
 #include <unistd.h>    // stat, execvp
 #include <sys/types.h> // stat
@@ -79,10 +80,16 @@ main (int argc, char* argv[])
 #ifdef GXX_NAME
   path gxx (GXX_NAME);
 
+  if (gxx.empty ())
+  {
+    e << argv[0] << ": error: embedded g++ compile name is empty" << endl;
+    return 1;
+  }
+
   // If the g++ name is a relative path (starts with '.'), then use
   // our own path as base.
   //
-  if (!gxx.empty () && gxx.string ()[0] == '.')
+  if (gxx.string ()[0] == '.')
   {
     path dp (driver_path (path (argv[0])));
     path d (dp.directory ());
@@ -92,9 +99,54 @@ main (int argc, char* argv[])
   }
 
   args.push_back (gxx.string ());
+
+  // Also modify LD_LIBRARY_PATH to include the lib path.
+  //
+#ifndef _WIN32
+  {
+    string ld_paths;
+
+    if (char const* s = getenv ("LD_LIBRARY_PATH"))
+      ld_paths = s;
+
+    path d (gxx.directory ());
+
+    if (!d.empty ())
+    {
+      // Make it absolute.
+      //
+      if (d.string ()[0] != path::traits::directory_separator)
+      {
+        char cwd[PATH_MAX];
+        if (getcwd (cwd, PATH_MAX) == 0)
+        {
+          e << argv[0] << ": error: working directory is too deep" << endl;
+          return 1;
+        }
+
+        d = path (cwd) / d;
+      }
+
+      d /= path ("..") / path ("lib");
+
+      if (ld_paths.empty ())
+        ld_paths = d.string ();
+      else
+        ld_paths = d.string () + path::traits::path_separator + ld_paths;
+
+      if (setenv ("LD_LIBRARY_PATH", ld_paths.c_str (), 1) != 0)
+      {
+        e << argv[0] << ": error: unable to update environment" << endl;
+        return 1;
+      }
+    }
+  }
+
+#endif // _WIN32
+
 #else
   args.push_back ("g++");
-#endif
+#endif // GXX_NAME
 
   // Default options.
   //
