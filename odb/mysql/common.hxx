@@ -172,19 +172,19 @@ namespace mysql
     }
 
     virtual void
-    traverse_decimal (type&, sql_type const& t)
+    traverse_decimal (type&, sql_type const&)
     {
       r_ = true;
     }
 
     virtual void
-    traverse_long_string (type&, sql_type const& t)
+    traverse_long_string (type&, sql_type const&)
     {
       r_ = true;
     }
 
     virtual void
-    traverse_short_string (type&, sql_type const& t)
+    traverse_short_string (type&, sql_type const&)
     {
       r_ = true; // @@ Short string optimization disabled.
     }

@@ -171,7 +171,6 @@ skip_spaces ()
 sql_token sql_lexer::
 identifier (xchar c)
 {
-  size_t ln (c.line ()), cl (c.column ());
   string lexeme;
   lexeme += c;
 
@@ -187,7 +186,7 @@ identifier (xchar c)
 }
 
 sql_token sql_lexer::
-int_literal (xchar c, bool neg, size_t ml, size_t mc)
+int_literal (xchar c, bool neg, size_t /*ml*/, size_t /*mc*/)
 {
   //size_t ln (neg ? ml : c.line ()), cl (neg ? mc : c.column ());
   string lexeme;

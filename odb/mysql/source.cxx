@@ -133,7 +133,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_decimal (type&, sql_type const& t)
+      traverse_decimal (type&, sql_type const&)
       {
         os << b << ".buffer_type = MYSQL_TYPE_NEWDECIMAL;"
            << b << ".buffer = i." << var << "value.data ();"
@@ -190,7 +190,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_bit (type&, sql_type const& t)
+      traverse_bit (type&, sql_type const&)
       {
         // Treated as a BLOB.
         //
@@ -261,21 +261,21 @@ namespace mysql
       }
 
       virtual void
-      traverse_integer (type&, sql_type const& t)
+      traverse_integer (type&, sql_type const&)
       {
         os << e << " = 0;"
            << endl;
       }
 
       virtual void
-      traverse_float (type&, sql_type const& t)
+      traverse_float (type&, sql_type const&)
       {
         os << e << " = 0;"
            << endl;
       }
 
       virtual void
-      traverse_decimal (type&, sql_type const& t)
+      traverse_decimal (type&, sql_type const&)
       {
         // @@ Optimization disabled.
         //
@@ -287,14 +287,14 @@ namespace mysql
       }
 
       virtual void
-      traverse_date_time (type&, sql_type const& t)
+      traverse_date_time (type&, sql_type const&)
       {
         os << e << " = 0;"
            << endl;
       }
 
       virtual void
-      traverse_short_string (type&, sql_type const& t)
+      traverse_short_string (type&, sql_type const&)
       {
         // @@ Optimization disabled.
         //
@@ -306,7 +306,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_long_string (type&, sql_type const& t)
+      traverse_long_string (type&, sql_type const&)
       {
         os << "if (" << e << ")" << endl
            << "{"
@@ -316,7 +316,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_bit (type&, sql_type const& t)
+      traverse_bit (type&, sql_type const&)
       {
         os << e << " = 0;"
            << endl;
@@ -387,7 +387,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_integer (type& m, sql_type const&)
+      traverse_integer (type&, sql_type const&)
       {
         os << traits << "::set_image (" << endl
            << "i." << var << "value, is_null, " << member << ");"
@@ -396,7 +396,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_float (type& m, sql_type const&)
+      traverse_float (type&, sql_type const&)
       {
         os << traits << "::set_image (" << endl
            << "i." << var << "value, is_null, " << member << ");"
@@ -405,7 +405,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_decimal (type& m, sql_type const&)
+      traverse_decimal (type&, sql_type const&)
       {
         // @@ Optimization: can remove growth check if buffer is fixed.
         //
@@ -424,7 +424,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_date_time (type& m, sql_type const&)
+      traverse_date_time (type&, sql_type const&)
       {
         os << traits << "::set_image (" << endl
            << "i." << var << "value, is_null, " << member << ");"
@@ -433,7 +433,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_short_string (type& m, sql_type const&)
+      traverse_short_string (type&, sql_type const&)
       {
         // @@ Optimization: can remove growth check if buffer is fixed.
         //
@@ -452,7 +452,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_long_string (type& m, sql_type const&)
+      traverse_long_string (type&, sql_type const&)
       {
         os << "{"
            << "std::size_t size;"
@@ -469,7 +469,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_bit (type& m, sql_type const&)
+      traverse_bit (type&, sql_type const&)
       {
         // Represented as a BLOB.
         //
@@ -487,7 +487,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_enum (type& m, sql_type const&)
+      traverse_enum (type&, sql_type const&)
       {
         // Represented as a string.
         //
@@ -506,7 +506,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_set (type& m, sql_type const&)
+      traverse_set (type&, sql_type const&)
       {
         // Represented as a string.
         //

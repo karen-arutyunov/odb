@@ -12,7 +12,7 @@ namespace mysql
   void member_base::
   traverse (type& m)
   {
-    if (m.count ("transient") || id_ && !m.count ("id"))
+    if (m.count ("transient") || (id_ && !m.count ("id")))
       return;
 
     if (id_)
@@ -122,6 +122,11 @@ namespace mysql
     case sql_type::SET:
       {
         traverse_set (m, t);
+        break;
+      }
+    case sql_type::invalid:
+      {
+        assert (false);
         break;
       }
     }
@@ -292,50 +297,50 @@ namespace mysql
   }
 
   void member_database_type::
-  traverse_integer (type& m, sql_type const& t)
+  traverse_integer (type&, sql_type const& t)
   {
     size_t i ((t.type - sql_type::TINYINT) * 2 + (t.unsign ? 1 : 0));
     type_ = string ("mysql::") + integer_database_id[i];
   }
 
   void member_database_type::
-  traverse_float (type& m, sql_type const& t)
+  traverse_float (type&, sql_type const& t)
   {
     type_ = string ("mysql::") + float_database_id[t.type - sql_type::FLOAT];
   }
 
   void member_database_type::
-  traverse_decimal (type& m, sql_type const& t)
+  traverse_decimal (type&, sql_type const&)
   {
     type_ = "mysql::id_decimal";
   }
 
   void member_database_type::
-  traverse_date_time (type& m, sql_type const& t)
+  traverse_date_time (type&, sql_type const& t)
   {
     type_ = string ("mysql::") + date_time_database_id[t.type - sql_type::DATE];
   }
 
   void member_database_type::
-  traverse_string (type& m, sql_type const& t)
+  traverse_string (type&, sql_type const& t)
   {
     type_ = string ("mysql::") + char_bin_database_id[t.type - sql_type::CHAR];
   }
 
   void member_database_type::
-  traverse_bit (type& m, sql_type const& t)
+  traverse_bit (type&, sql_type const&)
   {
     type_ = "mysql::id_bit";
   }
 
   void member_database_type::
-  traverse_enum (type& m, sql_type const&)
+  traverse_enum (type&, sql_type const&)
   {
     type_ = "mysql::id_enum";
   }
 
   void member_database_type::
-  traverse_set (type& m, sql_type const&)
+  traverse_set (type&, sql_type const&)
   {
     type_ = "mysql::id_set";
   }

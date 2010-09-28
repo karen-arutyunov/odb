@@ -438,6 +438,11 @@ namespace mysql
             s = parse_done;
             break;
           }
+        case parse_done:
+          {
+            assert (false);
+            break;
+          }
         }
       }
 

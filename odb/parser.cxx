@@ -260,8 +260,6 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
     bool virt (BINFO_VIRTUAL_P (bi));
     tree base (TYPE_MAIN_VARIANT (BINFO_TYPE (bi)));
 
-    tree base_decl (TYPE_NAME (base)); // Typedef decl for this base.
-
     // Find the corresponding graph node. If we cannot find one then
     // the base is a template instantiation since an ordinary class
     // has to be defined (complete) in order to be a base.
@@ -316,6 +314,10 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
       {
         if (!DECL_ARTIFICIAL (d))
           decls.insert (d);
+        break;
+      }
+    default:
+      {
         break;
       }
     }
@@ -433,6 +435,10 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
 
         break;
       }
+    default:
+      {
+        break;
+      }
     }
   }
 
@@ -492,6 +498,10 @@ emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
       {
         if (!DECL_ARTIFICIAL (d))
           decls.insert (d);
+        break;
+      }
+    default:
+      {
         break;
       }
     }
@@ -576,6 +586,10 @@ emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
         //
         process_pragmas (d, member_node, name, b, i, e);
 
+        break;
+      }
+    default:
+      {
         break;
       }
     }
@@ -684,6 +698,10 @@ collect (tree ns)
           decls_.insert (decl);
         break;
       }
+    default:
+      {
+        break;
+      }
     }
   }
 
@@ -787,6 +805,10 @@ emit ()
     case TEMPLATE_DECL:
       {
         emit_template_decl (decl);
+        break;
+      }
+    default:
+      {
         break;
       }
     }
@@ -1048,6 +1070,10 @@ emit_class_template (tree t, bool stub)
           decls.insert (d);
         break;
       }
+    default:
+      {
+        break;
+      }
     }
   }
 
@@ -1069,6 +1095,10 @@ emit_class_template (tree t, bool stub)
     case TEMPLATE_DECL:
       {
         emit_template_decl (d);
+        break;
+      }
+    default:
+      {
         break;
       }
     }
@@ -1124,6 +1154,10 @@ emit_union_template (tree t, bool stub)
           decls.insert (d);
         break;
       }
+    default:
+      {
+        break;
+      }
     }
   }
 
@@ -1145,6 +1179,10 @@ emit_union_template (tree t, bool stub)
     case TEMPLATE_DECL:
       {
         emit_template_decl (d);
+        break;
+      }
+    default:
+      {
         break;
       }
     }
@@ -1601,8 +1639,6 @@ emit_type_name (tree type, bool direct)
 
         tree args (INNERMOST_TEMPLATE_ARGS (TI_ARGS (ti)));
 
-        int n (TREE_VEC_LENGTH (args));
-
         for (size_t i (0), n (TREE_VEC_LENGTH (args)); i < n ; ++i)
         {
           tree a (TREE_VEC_ELT (args, i));
@@ -1727,7 +1763,7 @@ process_pragmas (tree t,
                  string const& name,
                  decl_set::const_iterator begin,
                  decl_set::const_iterator cur,
-                 decl_set::const_iterator end)
+                 decl_set::const_iterator /*end*/)
 {
   // First process the position pragmas by iterating backwards
   // until we get to the preceding non-pragma declaration.

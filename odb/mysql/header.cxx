@@ -28,7 +28,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_integer (type&, sql_type const& t)
+      traverse_integer (type&, sql_type const&)
       {
         os << image_type << " " << var << "value;"
            << "my_bool " << var << "null;"
@@ -36,7 +36,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_float (type&, sql_type const& t)
+      traverse_float (type&, sql_type const&)
       {
         os << image_type << " " << var << "value;"
            << "my_bool " << var << "null;"
@@ -44,7 +44,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_decimal (type&, sql_type const& t)
+      traverse_decimal (type&, sql_type const&)
       {
         // Exchanged as strings. Can have up to 65 digits not counting
         // '-' and '.'. If range is not specified, the default is 10.
@@ -63,7 +63,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_date_time (type&, sql_type const& t)
+      traverse_date_time (type&, sql_type const&)
       {
         os << image_type << " " << var << "value;"
            << "my_bool " << var << "null;"
@@ -72,7 +72,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_short_string (type&, sql_type const& t)
+      traverse_short_string (type&, sql_type const&)
       {
         // If range is not specified, the default buffer size is 255.
         //
@@ -89,7 +89,7 @@ namespace mysql
       }
 
       virtual void
-      traverse_long_string (type&, sql_type const& t)
+      traverse_long_string (type&, sql_type const&)
       {
         os << image_type << " " << var << "value;"
            << "unsigned long " << var << "size;"
