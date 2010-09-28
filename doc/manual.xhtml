@@ -1022,7 +1022,7 @@ main (int argc, char* argv[])
       person jane ("Jane", "Doe", 32);
       person joe ("Joe", "Dirt", 30);
 
-      transaction t (db->begin_transaction ());
+      transaction t (db->begin ());
 
       db->persist (john);
       db->persist (jane);
@@ -1195,7 +1195,7 @@ main (int argc, char* argv[])
     // Say hello to those over 30.
     //
     {
-      transaction t (db->begin_transaction ());
+      transaction t (db->begin ());
 
       result r (db->query&lt;person> (query::age > 30));
 
@@ -1328,7 +1328,7 @@ main (int argc, char* argv[])
     // Joe Dirt just had a birthday, so update his age.
     //
     {
-      transaction t (db->begin_transaction ());
+      transaction t (db->begin ());
 
       auto_ptr&lt;person> joe (db->load&lt;person> (joe_id));
       joe->age (joe->age () + 1);
@@ -1386,7 +1386,7 @@ Hello, Joe!
     // alternative implementation without using the object id.
     //
     {
-      transaction t (db->begin_transaction ());
+      transaction t (db->begin ());
 
       result r (db->query&lt;person> (query::first == "Joe" &amp;&amp;
                                    query::last == "Dirt"));
@@ -1414,7 +1414,7 @@ Hello, Joe!
     // John Doe is no longer in our database.
     //
     {
-      transaction t (db->begin_transaction ());
+      transaction t (db->begin ());
       db->erase&lt;person> (john_id);
       t.commit ();
     }
@@ -1433,7 +1433,7 @@ Hello, Joe!
     // implementation without using the object id.
     //
     {
-      transaction t (db->begin_transaction ());
+      transaction t (db->begin ());
 
       result r (db->query&lt;person> (query::first == "John" &amp;&amp;
                                    query::last == "Doe"));
@@ -1752,7 +1752,7 @@ Hello, Joe!
      another transaction.</p>
 
   <p>A transaction is started by calling the
-     <code>database::begin_transaction()</code>
+     <code>database::begin()</code>
      function. The returned transaction handle is stored in
      an instance of the <code>odb::transaction</code> class.
      You will need to include the <code>&lt;odb/transaction.hxx></code>
@@ -1827,7 +1827,7 @@ for (;;)
 {
   try
   {
-    transaction t (db.begin_transaction ());
+    transaction t (db.begin ());
 
     ...
 
@@ -1855,7 +1855,7 @@ for (;;)
 void
 update_age (database&amp; db, person&amp; p)
 {
-  transaction t (db.begin_transaction ());
+  transaction t (db.begin ());
 
   p.age (p.age () + 1);
   db.update (p);
@@ -1875,7 +1875,7 @@ update_age (database&amp; db, person&amp; p)
 void
 update_age (database&amp; db, unsigned long id)
 {
-  transaction t (db.begin_transaction ());
+  transaction t (db.begin ());
 
   auto_ptr&lt;person> p (db.load&lt;person> (id));
   p.age (p.age () + 1);
@@ -1900,7 +1900,7 @@ update_age (database&amp; db, person&amp; p)
 {
   try
   {
-    transaction t (db.begin_transaction ());
+    transaction t (db.begin ());
 
     p.age (p.age () + 1);
     db.update (p);
@@ -1909,7 +1909,7 @@ update_age (database&amp; db, person&amp; p)
   }
   catch (...)
   {
-    transaction t (db.begin_transaction ());
+    transaction t (db.begin ());
     db.load (p.id (), p);
     t.commit ();
 
@@ -1964,7 +1964,7 @@ update_age (database&amp; db, person&amp; p)
 person john ("John", "Doe", 33);
 person jane ("Jane", "Doe", 32);
 
-transaction t (db->begin_transaction ());
+transaction t (db->begin ());
 
 db->persist (john);
 unsigned long jane_id (db->persist (jane));
@@ -2017,7 +2017,7 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
      deduced from the second argument, for example:</p>
 
   <pre class="c++">
-transaction t (db->begin_transaction ());
+transaction t (db->begin ());
 
 auto_ptr&lt;person> jane (db->load&lt;person> (jane_id));
 
@@ -2081,7 +2081,7 @@ transfer (database&amp; db,
 {
   bank_account from, to;
 
-  transaction t (db.begin_transaction ());
+  transaction t (db.begin ());
 
   db.load (from_acc, from);
 
@@ -2135,7 +2135,7 @@ transfer (database&amp; db,
   <pre class="c++">
 const person&amp; john = ...
 
-transaction t (db->begin_transaction ());
+transaction t (db->begin ());
 
 db->erase (john);
 db->erase&lt;person> (jane_id);
