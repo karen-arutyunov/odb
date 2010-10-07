@@ -3,7 +3,8 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <cstddef> // std::size_t
+#include <odb/gcc.hxx>
+
 #include <sstream>
 
 #include <odb/mysql/common.hxx>
@@ -697,6 +698,7 @@ namespace mysql
 
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
+        bool def_ctor (TYPE_HAS_DEFAULT_CONSTRUCTOR (c.tree_node ()));
 
         id_member_.traverse (c);
         semantics::data_member& id (*id_member_.member ());
@@ -950,28 +952,29 @@ namespace mysql
 
         // find ()
         //
-        os << traits << "::pointer_type" << endl
-           << traits << "::" << endl
-           << "find (database&, const id_type& id)"
-           << "{"
-           << "using namespace mysql;"
-           << endl
-           << "connection& conn (mysql::transaction::current ().connection ());"
-           << "object_statements<object_type>& sts (" << endl
-           << "conn.statement_cache ().find<object_type> ());"
-           << endl
-           << "if (find (sts, id))"
-           << "{"
-           << "pointer_type p (access::object_factory< " << type <<
-          " >::create ());"
-           << "pointer_traits< pointer_type >::guard g (p);"
-           << "init (pointer_traits< pointer_type >::get_ref (p), " <<
-          "sts.image ());"
-           << "g.release ();"
-           << "return p;"
-           << "}"
-           << "return pointer_type ();"
-           << "}";
+        if (def_ctor)
+          os << traits << "::pointer_type" << endl
+             << traits << "::" << endl
+             << "find (database&, const id_type& id)"
+             << "{"
+             << "using namespace mysql;"
+             << endl
+             << "connection& conn (mysql::transaction::current ().connection ());"
+             << "object_statements<object_type>& sts (" << endl
+             << "conn.statement_cache ().find<object_type> ());"
+             << endl
+             << "if (find (sts, id))"
+             << "{"
+             << "pointer_type p (access::object_factory< " << type <<
+            " >::create ());"
+             << "pointer_traits< pointer_type >::guard g (p);"
+             << "init (pointer_traits< pointer_type >::get_ref (p), " <<
+            "sts.image ());"
+             << "g.release ();"
+             << "return p;"
+             << "}"
+             << "return pointer_type ();"
+             << "}";
 
         os << "bool " << traits << "::" << endl
            << "find (database&, const id_type& id, object_type& obj)"

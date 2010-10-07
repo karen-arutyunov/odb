@@ -3,6 +3,8 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <odb/gcc.hxx>
+
 #include <odb/mysql/common.hxx>
 #include <odb/mysql/header.hxx>
 
@@ -207,6 +209,7 @@ namespace mysql
           return;
 
         string const& type (c.fq_name ());
+        bool def_ctor (TYPE_HAS_DEFAULT_CONSTRUCTOR (c.tree_node ()));
 
         id_member_.traverse (c);
         semantics::data_member& id (*id_member_.member ());
@@ -340,9 +343,10 @@ namespace mysql
 
         // find ()
         //
-        os << "static pointer_type" << endl
-           << "find (database&, const id_type&);"
-           << endl;
+        if (def_ctor)
+          os << "static pointer_type" << endl
+             << "find (database&, const id_type&);"
+             << endl;
 
         os << "static bool" << endl
            << "find (database&, const id_type&, object_type&);"

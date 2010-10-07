@@ -1,3 +1,11 @@
+Version 1.1.0
+
+  * Add support for persistent classes without default constructors. For
+    objects of such classes only the load() and find() database functions
+    that populate an existing instance can be used. Similarly, only the 
+    load() query result iterator function which populates an existing 
+    instance can be used.
+
 Version 1.0.0
 
   * Initial release.
