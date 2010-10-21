@@ -233,15 +233,6 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << "#define " << guard << endl
           << endl;
 
-      // Copy prologue.
-      //
-      hxx << "// Begin prologue." << endl
-          << "//" << endl;
-      append (hxx, ops.hxx_prologue (), ops.hxx_prologue_file ());
-      hxx << "//" << endl
-          << "// End prologue." << endl
-          << endl;
-
       // Version check.
       //
       hxx << "#include <odb/version.hxx>" << endl
@@ -252,6 +243,15 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << endl;
 
       hxx << "#include <odb/pre.hxx>" << endl
+          << endl;
+
+      // Copy prologue.
+      //
+      hxx << "// Begin prologue." << endl
+          << "//" << endl;
+      append (hxx, ops.hxx_prologue (), ops.hxx_prologue_file ());
+      hxx << "//" << endl
+          << "// End prologue." << endl
           << endl;
 
       hxx << "#include " << (br ? '<' : '"') << ip << file <<
@@ -276,9 +276,6 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         (br ? '>' : '"') << endl
           << endl;
 
-      hxx << "#include <odb/post.hxx>" << endl
-          << endl;
-
       // Copy epilogue.
       //
       hxx << "// Begin epilogue." << endl
@@ -286,6 +283,9 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       append (hxx, ops.hxx_epilogue (), ops.hxx_epilogue_file ());
       hxx << "//" << endl
           << "// End epilogue." << endl
+          << endl;
+
+      hxx << "#include <odb/post.hxx>" << endl
           << endl;
 
       hxx << "#endif // " << guard << endl;
@@ -335,6 +335,9 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     {
       cxx_filter filt (cxx);
 
+      cxx << "#include <odb/pre.hxx>" << endl
+          << endl;
+
       // Copy prologue.
       //
       cxx << "// Begin prologue." << endl
@@ -342,9 +345,6 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       append (cxx, ops.cxx_prologue (), ops.cxx_prologue_file ());
       cxx << "//" << endl
           << "// End prologue." << endl
-          << endl;
-
-      cxx << "#include <odb/pre.hxx>" << endl
           << endl;
 
       cxx << "#include " << (br ? '<' : '"') << ip << hxx_name <<
@@ -367,9 +367,6 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         }
       }
 
-      cxx << "#include <odb/post.hxx>" << endl
-          << endl;
-
       // Copy epilogue.
       //
       cxx << "// Begin epilogue." << endl
@@ -377,6 +374,9 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       append (cxx, ops.cxx_epilogue (), ops.cxx_epilogue_file ());
       cxx << "//" << endl
           << "// End epilogue." << endl;
+
+      cxx << "#include <odb/post.hxx>" << endl
+          << endl;
     }
 
     // SQL
