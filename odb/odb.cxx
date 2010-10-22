@@ -4,7 +4,6 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <errno.h>
-#include <limits.h>    // PATH_MAX
 #include <stdlib.h>    // getenv, setenv
 #include <string.h>    // strerror
 #include <unistd.h>    // stat, execvp
@@ -32,6 +31,7 @@
 
 using namespace std;
 using cutl::fs::path;
+using cutl::fs::invalid_path;
 
 static path
 driver_path (path const& driver);
@@ -48,216 +48,202 @@ static char const* const db_macro[] =
 int
 main (int argc, char* argv[])
 {
-  typedef vector<string> strings;
-
   ostream& e (cerr);
 
-  // Find the plugin. It should be in the same directory as the
-  // driver.
-  //
+  try
+  {
+    typedef vector<string> strings;
+
+    // Find the plugin. It should be in the same directory as the
+    // driver.
+    //
 #ifndef STATIC_PLUGIN
-  path plugin (plugin_path (path (argv[0])));
+    path plugin (plugin_path (path (argv[0])));
 #else
-  // Use a dummy name if the plugin is linked into the compiler.
-  //
-  path plugin ("odb");
+    // Use a dummy name if the plugin is linked into the compiler.
+    //
+    path plugin ("odb");
 #endif
 
-  if (plugin.empty ())
-  {
-    e << argv[0] << ": error: unable to locate ODB GCC plugin" << endl;
-    e << argv[0] << ": info: make sure '" << argv[0] << ".so' is in "
-      << "the same directory as '" << argv[0] << "'" << endl;
-    return 1;
-  }
-
-  strings args, plugin_args;
-  bool v (false);
-
-  // The first argument points to the program name, which is
-  // g++ by default.
-  //
-#ifdef GXX_NAME
-  path gxx (GXX_NAME);
-
-  if (gxx.empty ())
-  {
-    e << argv[0] << ": error: embedded g++ compile name is empty" << endl;
-    return 1;
-  }
-
-  // If the g++ name is a relative path (starts with '.'), then use
-  // our own path as base.
-  //
-  if (gxx.string ()[0] == '.')
-  {
-    path dp (driver_path (path (argv[0])));
-    path d (dp.directory ());
-
-    if (!d.empty ())
-      gxx = d / gxx;
-  }
-
-  args.push_back (gxx.string ());
-
-  // Also modify LD_LIBRARY_PATH to include the lib path.
-  //
-#ifndef _WIN32
-  {
-    string ld_paths;
-
-    if (char const* s = getenv ("LD_LIBRARY_PATH"))
-      ld_paths = s;
-
-    path d (gxx.directory ());
-
-    if (!d.empty ())
+    if (plugin.empty ())
     {
-      // Make it absolute.
-      //
-      if (d.string ()[0] != path::traits::directory_separator)
+      e << argv[0] << ": error: unable to locate ODB GCC plugin" << endl;
+      e << argv[0] << ": info: make sure '" << argv[0] << ".so' is in "
+        << "the same directory as '" << argv[0] << "'" << endl;
+      return 1;
+    }
+
+    strings args, plugin_args;
+    bool v (false);
+
+    // The first argument points to the program name, which is
+    // g++ by default.
+    //
+#ifdef GXX_NAME
+    path gxx (GXX_NAME);
+
+    if (gxx.empty ())
+    {
+      e << argv[0] << ": error: embedded g++ compile name is empty" << endl;
+      return 1;
+    }
+
+    // If the g++ name is a relative path (starts with '.'), then use
+    // our own path as base.
+    //
+    if (gxx.string ()[0] == '.')
+    {
+      path dp (driver_path (path (argv[0])));
+      path d (dp.directory ());
+
+      if (!d.empty ())
+        gxx = d / gxx;
+    }
+
+    args.push_back (gxx.string ());
+
+    // Also modify LD_LIBRARY_PATH to include the lib path.
+    //
+#ifndef _WIN32
+    {
+      string ld_paths;
+
+      if (char const* s = getenv ("LD_LIBRARY_PATH"))
+        ld_paths = s;
+
+      path d (gxx.directory ());
+
+      if (!d.empty ())
       {
-        char cwd[PATH_MAX];
-        if (getcwd (cwd, PATH_MAX) == 0)
+        d.complete ();
+        d /= path ("..") / path ("lib");
+
+        if (ld_paths.empty ())
+          ld_paths = d.string ();
+        else
+          ld_paths = d.string () + path::traits::path_separator + ld_paths;
+
+        if (setenv ("LD_LIBRARY_PATH", ld_paths.c_str (), 1) != 0)
         {
-          e << argv[0] << ": error: working directory is too deep" << endl;
+          e << argv[0] << ": error: unable to update environment" << endl;
           return 1;
         }
-
-        d = path (cwd) / d;
-      }
-
-      d /= path ("..") / path ("lib");
-
-      if (ld_paths.empty ())
-        ld_paths = d.string ();
-      else
-        ld_paths = d.string () + path::traits::path_separator + ld_paths;
-
-      if (setenv ("LD_LIBRARY_PATH", ld_paths.c_str (), 1) != 0)
-      {
-        e << argv[0] << ": error: unable to update environment" << endl;
-        return 1;
       }
     }
-  }
-
 #endif // _WIN32
 
 #else
-  args.push_back ("g++");
+    args.push_back ("g++");
 #endif // GXX_NAME
 
-  // Default options.
-  //
-  args.push_back ("-x");
-  args.push_back ("c++");
-  args.push_back ("-S");
-  args.push_back ("-Wunknown-pragmas");
-  args.push_back ("-fplugin=" + plugin.string ());
-
-  // Parse driver options.
-  //
-  for (int i = 1; i < argc; ++i)
-  {
-    string a (argv[i]);
-    size_t n (a.size ());
-
-    // -v
+    // Default options.
     //
-    if (a == "-v")
-    {
-      v = true;
-      args.push_back (a);
-    }
-    // -x
+    args.push_back ("-x");
+    args.push_back ("c++");
+    args.push_back ("-S");
+    args.push_back ("-Wunknown-pragmas");
+    args.push_back ("-fplugin=" + plugin.string ());
+
+    // Parse driver options.
     //
-    else if (a == "-x")
+    for (int i = 1; i < argc; ++i)
     {
-      if (++i == argc || argv[i][0] == '\0')
+      string a (argv[i]);
+      size_t n (a.size ());
+
+      // -v
+      //
+      if (a == "-v")
       {
-        e << argv[0] << ": error: expected argument for the -x option" << endl;
-        return 1;
-      }
-
-      a = argv[i];
-
-      if (a[0] == '-')
+        v = true;
         args.push_back (a);
+      }
+      // -x
+      //
+      else if (a == "-x")
+      {
+        if (++i == argc || argv[i][0] == '\0')
+        {
+          e << argv[0] << ": error: expected argument for the -x option" << endl;
+          return 1;
+        }
+
+        a = argv[i];
+
+        if (a[0] == '-')
+          args.push_back (a);
+        else
+        {
+          // This must be the g++ executable name. Update the first
+          // argument with it.
+          //
+          args[0] = a;
+        }
+      }
+      // -I
+      //
+      else if (n > 1 && a[0] == '-' && a[1] == 'I')
+      {
+        args.push_back (a);
+
+        if (n == 2) // -I /path
+        {
+          if (++i == argc || argv[i][0] == '\0')
+          {
+            e << argv[0] << ": error: expected argument for the -I option"
+              << endl;
+            return 1;
+          }
+
+          args.push_back (argv[i]);
+        }
+      }
+      // -D
+      //
+      else if (n > 1 && a[0] == '-' && a[1] == 'D')
+      {
+        args.push_back (a);
+
+        if (n == 2) // -D macro
+        {
+          if (++i == argc || argv[i][0] == '\0')
+          {
+            e << argv[0] << ": error: expected argument for the -D option"
+              << endl;
+            return 1;
+          }
+
+          args.push_back (argv[i]);
+        }
+      }
+      // -U
+      //
+      else if (n > 1 && a[0] == '-' && a[1] == 'U')
+      {
+        args.push_back (a);
+
+        if (n == 2) // -U macro
+        {
+          if (++i == argc || argv[i][0] == '\0')
+          {
+            e << argv[0] << ": error: expected argument for the -U option"
+              << endl;
+            return 1;
+          }
+
+          args.push_back (argv[i]);
+        }
+      }
+      // Store everything else in a list so that we can parse it with the
+      // cli parser. This is the only reliable way to find out where the
+      // options end.
+      //
       else
-      {
-        // This must be the g++ executable name. Update the first
-        // argument with it.
-        //
-        args[0] = a;
-      }
+        plugin_args.push_back (a);
     }
-    // -I
+
+    // Parse plugin options.
     //
-    else if (n > 1 && a[0] == '-' && a[1] == 'I')
-    {
-      args.push_back (a);
-
-      if (n == 2) // -I /path
-      {
-        if (++i == argc || argv[i][0] == '\0')
-        {
-          e << argv[0] << ": error: expected argument for the -I option"
-            << endl;
-          return 1;
-        }
-
-        args.push_back (argv[i]);
-      }
-    }
-    // -D
-    //
-    else if (n > 1 && a[0] == '-' && a[1] == 'D')
-    {
-      args.push_back (a);
-
-      if (n == 2) // -D macro
-      {
-        if (++i == argc || argv[i][0] == '\0')
-        {
-          e << argv[0] << ": error: expected argument for the -D option"
-            << endl;
-          return 1;
-        }
-
-        args.push_back (argv[i]);
-      }
-    }
-    // -U
-    //
-    else if (n > 1 && a[0] == '-' && a[1] == 'U')
-    {
-      args.push_back (a);
-
-      if (n == 2) // -U macro
-      {
-        if (++i == argc || argv[i][0] == '\0')
-        {
-          e << argv[0] << ": error: expected argument for the -U option"
-            << endl;
-          return 1;
-        }
-
-        args.push_back (argv[i]);
-      }
-    }
-    // Store everything else in a list so that we can parse it with the
-    // cli parser. This is the only reliable way to find out where the
-    // options end.
-    //
-    else
-      plugin_args.push_back (a);
-  }
-
-  // Parse plugin options.
-  //
-  try
-  {
     vector<char*> av;
     av.push_back (argv[0]);
 
@@ -393,6 +379,49 @@ main (int argc, char* argv[])
     // Copy over arguments.
     //
     args.insert (args.end (), plugin_args.begin () + end, plugin_args.end ());
+
+
+    // Create an execvp-compatible argument array.
+    //
+    vector<char const*> exec_args;
+
+    for (strings::const_iterator i (args.begin ()), end (args.end ());
+         i != end; ++i)
+    {
+      exec_args.push_back (i->c_str ());
+
+      if (v)
+        e << *i << ' ';
+    }
+
+    if (v)
+      e << endl;
+
+    exec_args.push_back (0);
+
+#ifdef _WIN32
+    intptr_t r (_spawnvp (_P_WAIT, exec_args[0], &exec_args[0]));
+
+    if (r == (intptr_t)(-1))
+    {
+      e << exec_args[0] << ": error: " << strerror (errno) << endl;
+      return 1;
+    }
+
+    return r == 0 ? 0 : 1;
+#else
+    if (execvp (exec_args[0], const_cast<char**> (&exec_args[0])) < 0)
+    {
+      e << exec_args[0] << ": error: " << strerror (errno) << endl;
+      return 1;
+    }
+#endif
+
+  }
+  catch (invalid_path const& ex)
+  {
+    e << argv[0] << ": error: invalid path '" << ex.path () << "'" << endl;
+    return 1;
   }
   catch (cli::exception const& ex)
   {
@@ -400,41 +429,6 @@ main (int argc, char* argv[])
     return 1;
   }
 
-  // Create an execvp-compatible argument array.
-  //
-  vector<char const*> exec_args;
-
-  for (strings::const_iterator i (args.begin ()), end (args.end ());
-       i != end; ++i)
-  {
-    exec_args.push_back (i->c_str ());
-
-    if (v)
-      e << *i << ' ';
-  }
-
-  if (v)
-    e << endl;
-
-  exec_args.push_back (0);
-
-#ifdef _WIN32
-  intptr_t r (_spawnvp (_P_WAIT, exec_args[0], &exec_args[0]));
-
-  if (r == (intptr_t)(-1))
-  {
-    e << exec_args[0] << ": error: " << strerror (errno) << endl;
-    return 1;
-  }
-
-  return r == 0 ? 0 : 1;
-#else
-  if (execvp (exec_args[0], const_cast<char**> (&exec_args[0])) < 0)
-  {
-    e << exec_args[0] << ": error: " << strerror (errno) << endl;
-    return 1;
-  }
-#endif
 }
 
 //
