@@ -18,6 +18,8 @@
 #include <odb/context.hxx>
 #include <odb/generator.hxx>
 
+#include <odb/include.hxx>
+
 #include <odb/tracer/header.hxx>
 #include <odb/tracer/inline.hxx>
 #include <odb/tracer/source.hxx>
@@ -258,11 +260,13 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         (br ? '>' : '"') << endl
           << endl;
 
+      generate_include (*ctx);
+
       switch (ops.database ())
       {
       case database::mysql:
         {
-          mysql::generate_header (static_cast<mysql::context&> (*ctx.get ()));
+          mysql::generate_header (static_cast<mysql::context&> (*ctx));
           break;
         }
       case database::tracer:
