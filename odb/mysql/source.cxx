@@ -16,30 +16,24 @@ namespace mysql
 {
   namespace
   {
-    struct member_column: traversal::data_member, context
+    struct object_columns: object_columns_base, context
     {
-      member_column (context& c, string const& suffix = "")
-          : context (c), suffix_ (suffix), first_ (true)
+      object_columns (context& c, string const& suffix = "")
+          : object_columns_base (c), context (c), suffix_ (suffix)
       {
       }
 
       virtual void
-      traverse (type& m)
+      column (semantics::data_member&, string const& name, bool first)
       {
-        if (m.count ("transient"))
-          return;
-
-        if (first_)
-          first_ = false;
-        else
+        if (!first)
           os << ",\"" << endl;
 
-        os << "\"`" << column_name (m) << "`" << suffix_;
+        os << "\"`" << name << "`" << suffix_;
       }
 
     private:
       string suffix_;
-      bool first_;
     };
 
     const char* integer_buffer_types[] =
@@ -82,10 +76,14 @@ namespace mysql
       "MYSQL_TYPE_BLOB"    // LONGBLOB
     };
 
+    //
+    // bind
+    //
+
     struct bind_member: member_base
     {
-      bind_member (context& c, bool id)
-          : member_base (c, id), index_ (0)
+      bind_member (context& c, size_t& index, bool id)
+          : member_base (c, id), index_ (index)
       {
       }
 
@@ -93,7 +91,7 @@ namespace mysql
       pre (type& m)
       {
         ostringstream ostr;
-        ostr << "b.bind[" << index_ << "UL]";
+        ostr << "b[" << index_ << "UL]";
         b = ostr.str ();
 
         if (!id_)
@@ -102,9 +100,21 @@ namespace mysql
       }
 
       virtual void
-      post (type&)
+      post (type& m)
       {
-        index_++;
+        if (semantics::class_* c = comp_value (m.type ()))
+          index_ += column_count (*c);
+        else
+          index_++;
+      }
+
+      virtual void
+      traverse_composite (type& m)
+      {
+        os << "composite_value_traits< " << m.type ().fq_name () <<
+          " >::bind (" << endl
+           << "b + " << index_ << "UL, i." << var << "value);"
+           << endl;
       }
 
       virtual void
@@ -234,13 +244,40 @@ namespace mysql
 
     private:
       string b;
-      size_t index_;
+      size_t& index_;
     };
+
+    struct bind_base: traversal::class_, context
+    {
+      bind_base (context& c, size_t& index)
+          : context (c), index_ (index)
+      {
+      }
+
+      virtual void
+      traverse (type& c)
+      {
+        os << "// " << c.name () << " base" << endl
+           << "//" << endl
+           << "composite_value_traits< " << c.fq_name () <<
+          " >::bind (b + " << index_ << "UL, i);"
+           << endl;
+
+        index_ += column_count (c);
+      }
+
+    private:
+      size_t& index_;
+    };
+
+    //
+    // grow
+    //
 
     struct grow_member: member_base
     {
-      grow_member (context& c)
-          : member_base (c, false), index_ (0)
+      grow_member (context& c, size_t& index)
+          : member_base (c, false), index_ (index)
       {
       }
 
@@ -256,9 +293,23 @@ namespace mysql
       }
 
       virtual void
-      post (type&)
+      post (type& m)
       {
-        index_++;
+        if (semantics::class_* c = comp_value (m.type ()))
+          index_ += column_count (*c);
+        else
+          index_++;
+      }
+
+      virtual void
+      traverse_composite (type& m)
+      {
+        os << "if (composite_value_traits< " << m.type ().fq_name () <<
+          " >::grow (" << endl
+           << "i." << var << "value, e + " << index_ << "UL))"
+           << "{"
+           << "r = true;"
+           << "}";
       }
 
       virtual void
@@ -349,11 +400,38 @@ namespace mysql
 
     private:
       string e;
-      size_t index_;
+      size_t& index_;
+    };
+
+    struct grow_base: traversal::class_, context
+    {
+      grow_base (context& c, size_t& index)
+          : context (c), index_ (index)
+      {
+      }
+
+      virtual void
+      traverse (type& c)
+      {
+        os << "// " << c.name () << " base" << endl
+           << "//" << endl
+           << "if (composite_value_traits< " << c.fq_name () <<
+          " >::grow (i, e + " << index_ << "UL))"
+           << "{"
+           << "r = true;"
+           << "}";
+
+        index_ += column_count (c);
+      }
+
+    private:
+      size_t& index_;
     };
 
     //
+    // init image
     //
+
     struct init_image_member: member_base
     {
       init_image_member (context& c, bool id)
@@ -366,14 +444,21 @@ namespace mysql
       virtual void
       pre (type& m)
       {
-        type = m.type ().fq_name (m.belongs ().hint ());
-        image_type = member_image_type_.image_type (m);
-        db_type = member_database_type_.database_type (m);
+        semantics::type& t (m.type ());
 
-        traits = "mysql::value_traits< "
-          + type + ", "
-          + image_type + ", "
-          + db_type + " >";
+        if (comp_value (t))
+          traits = "composite_value_traits< " + t.fq_name () + " >";
+        else
+        {
+          type = t.fq_name (m.belongs ().hint ());
+          image_type = member_image_type_.image_type (m);
+          db_type = member_database_type_.database_type (m);
+
+          traits = "mysql::value_traits< "
+            + type + ", "
+            + image_type + ", "
+            + db_type + " >";
+        }
 
         if (id_)
           member = "id";
@@ -388,21 +473,35 @@ namespace mysql
       }
 
       virtual void
+      traverse_composite (type&)
+      {
+        os << "if (" << traits << "::init (i." << var << "value, " <<
+          member << "))"
+           << "{"
+           << "grew = true;"
+           << "}";
+      }
+
+      virtual void
       traverse_integer (type&, sql_type const&)
       {
-        os << traits << "::set_image (" << endl
+        os << "{"
+           << "bool is_null;"
+           << traits << "::set_image (" << endl
            << "i." << var << "value, is_null, " << member << ");"
            << "i." << var << "null = is_null;"
-           << endl;
+           << "}";
       }
 
       virtual void
       traverse_float (type&, sql_type const&)
       {
-        os << traits << "::set_image (" << endl
+        os << "{"
+           << "bool is_null;"
+           << traits << "::set_image (" << endl
            << "i." << var << "value, is_null, " << member << ");"
            << "i." << var << "null = is_null;"
-           << endl;
+           << "}";
       }
 
       virtual void
@@ -411,6 +510,7 @@ namespace mysql
         // @@ Optimization: can remove growth check if buffer is fixed.
         //
         os << "{"
+           << "bool is_null;"
            << "std::size_t size;"
            << "std::size_t cap (i." << var << "value.capacity ());"
            << traits << "::set_image (" << endl
@@ -427,10 +527,12 @@ namespace mysql
       virtual void
       traverse_date_time (type&, sql_type const&)
       {
-        os << traits << "::set_image (" << endl
+        os << "{"
+           << "bool is_null;"
+           << traits << "::set_image (" << endl
            << "i." << var << "value, is_null, " << member << ");"
            << "i." << var << "null = is_null;"
-           << endl;
+           << "}";
       }
 
       virtual void
@@ -439,6 +541,7 @@ namespace mysql
         // @@ Optimization: can remove growth check if buffer is fixed.
         //
         os << "{"
+           << "bool is_null;"
            << "std::size_t size;"
            << "std::size_t cap (i." << var << "value.capacity ());"
            << traits << "::set_image (" << endl
@@ -456,6 +559,7 @@ namespace mysql
       traverse_long_string (type&, sql_type const&)
       {
         os << "{"
+           << "bool is_null;"
            << "std::size_t size;"
            << "std::size_t cap (i." << var << "value.capacity ());"
            << traits << "::set_image (" << endl
@@ -475,6 +579,7 @@ namespace mysql
         // Represented as a BLOB.
         //
         os << "{"
+           << "bool is_null;"
            << "std::size_t size;"
            << traits << "::set_image (" << endl
            << "i." << var << "value," << endl
@@ -493,6 +598,7 @@ namespace mysql
         // Represented as a string.
         //
         os << "{"
+           << "bool is_null;"
            << "std::size_t size;"
            << "std::size_t cap (i." << var << "value.capacity ());"
            << traits << "::set_image (" << endl
@@ -512,6 +618,7 @@ namespace mysql
         // Represented as a string.
         //
         os << "{"
+           << "bool is_null;"
            << "std::size_t size;"
            << "std::size_t cap (i." << var << "value.capacity ());"
            << traits << "::set_image (" << endl
@@ -536,8 +643,30 @@ namespace mysql
       member_database_type member_database_type_;
     };
 
+    struct init_image_base: traversal::class_, context
+    {
+      init_image_base (context& c)
+          : context (c)
+      {
+      }
+
+      virtual void
+      traverse (type& c)
+      {
+        os << "// " << c.name () << " base" << endl
+           << "//" << endl
+           << "if (composite_value_traits< " << c.fq_name () <<
+          " >::init (i, o))"
+           << "{"
+           << "grew = true;"
+           << "}";
+      }
+    };
+
     //
+    // init value
     //
+
     struct init_value_member: member_base
     {
       init_value_member (context& c)
@@ -550,17 +679,31 @@ namespace mysql
       virtual void
       pre (type& m)
       {
-        type = m.type ().fq_name (m.belongs ().hint ());
-        image_type = member_image_type_.image_type (m);
-        db_type = member_database_type_.database_type (m);
+        semantics::type& t (m.type ());
 
-        traits = "mysql::value_traits< "
-          + type + ", "
-          + image_type + ", "
-          + db_type + " >";
+        if (comp_value (t))
+          traits = "composite_value_traits< " + t.fq_name () + " >";
+        else
+        {
+          type = m.type ().fq_name (m.belongs ().hint ());
+          image_type = member_image_type_.image_type (m);
+          db_type = member_database_type_.database_type (m);
+
+          traits = "mysql::value_traits< "
+            + type + ", "
+            + image_type + ", "
+            + db_type + " >";
+        }
 
         os << "// " << m.name () << endl
            << "//" << endl;
+      }
+
+      virtual void
+      traverse_composite (type& m)
+      {
+        os << traits << "::init (o." << m.name () << ", i." << var << "value);"
+           << endl;
       }
 
       virtual void
@@ -672,19 +815,54 @@ namespace mysql
       member_database_type member_database_type_;
     };
 
+    struct init_value_base: traversal::class_, context
+    {
+      init_value_base (context& c)
+          : context (c)
+      {
+      }
+
+      virtual void
+      traverse (type& c)
+      {
+        os << "// " << c.name () << " base" << endl
+           << "//" << endl
+           << "composite_value_traits< " << c.fq_name () << " >::init (o, i);"
+           << endl;
+      }
+    };
+
     //
     //
     struct class_: traversal::class_, context
     {
       class_ (context& c)
           : context (c),
+            grow_base_ (c, index_),
+            grow_member_ (c, index_),
+            bind_base_ (c, index_),
+            bind_member_ (c, index_, false),
+            bind_id_member_ (c, index_, true),
+            init_image_base_ (c),
             init_image_member_ (c, false),
             init_id_image_member_ (c, true),
+            init_value_base_ (c),
             init_value_member_ (c)
       {
-        *this >> init_image_member_names_ >> init_image_member_;
-        *this >> init_id_image_member_names_ >> init_id_image_member_;
-        *this >> init_value_member_names_ >> init_value_member_;
+        grow_base_inherits_ >> grow_base_;
+        grow_member_names_ >> grow_member_;
+
+        bind_base_inherits_ >> bind_base_;
+        bind_member_names_ >> bind_member_;
+        bind_id_member_names_ >> bind_id_member_;
+
+        init_image_base_inherits_ >> init_image_base_;
+        init_image_member_names_ >> init_image_member_;
+
+        init_id_image_member_names_ >> init_id_image_member_;
+
+        init_value_base_inherits_ >> init_value_base_;
+        init_value_member_names_ >> init_value_member_;
       }
 
       virtual void
@@ -693,27 +871,24 @@ namespace mysql
         if (c.file () != unit.file ())
           return;
 
-        if (!c.count ("object"))
-          return;
+        if (c.count ("object"))
+          traverse_object (c);
+        else if (comp_value (c))
+          traverse_value (c);
+      }
 
+      virtual void
+      traverse_object (type& c)
+      {
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
+
+        bool grow (context::grow (c));
         bool def_ctor (TYPE_HAS_DEFAULT_CONSTRUCTOR (c.tree_node ()));
 
         id_member_.traverse (c);
         semantics::data_member& id (*id_member_.member ());
         bool auto_id (id.count ("auto"));
-
-        member_count_.traverse (c);
-        size_t column_count (member_count_.count ());
-
-        bool has_grow;
-        {
-          has_grow_member m (*this);
-          traversal::names n (m);
-          names (c, n);
-          has_grow = m.result ();
-        }
 
         os << "// " << c.name () << endl
            << "//" << endl
@@ -723,9 +898,8 @@ namespace mysql
         //
         if (options.generate_query ())
         {
-          query_column t (*this, c);
-          traversal::names n (t);
-          names (c, n);
+          query_columns t (*this, c);
+          t.traverse (c);
         }
 
         // persist_statement
@@ -734,15 +908,14 @@ namespace mysql
            << "\"INSERT INTO `" << table_name (c) << "` (\"" << endl;
 
         {
-          member_column m (*this);
-          traversal::names n (m);
-          names (c, n);
+          object_columns t (*this);
+          t.traverse (c);
         }
 
         os << "\"" << endl
            << "\") VALUES (";
 
-        for (size_t i (0); i < column_count; ++i)
+        for (size_t i (0), n (column_count (c)); i < n; ++i)
           os << (i != 0 ? "," : "") << '?';
 
         os << ")\";"
@@ -754,9 +927,8 @@ namespace mysql
            << "\"SELECT \"" << endl;
 
         {
-          member_column m (*this);
-          traversal::names n (m);
-          names (c, n);
+          object_columns t (*this);
+          t.traverse (c);
         }
 
         os << "\"" << endl
@@ -770,9 +942,8 @@ namespace mysql
            << "\"UPDATE `" << table_name (c) << "` SET \"" << endl;
 
         {
-          member_column m (*this, " = ?");
-          traversal::names n (m);
-          names (c, n);
+          object_columns t (*this, " = ?");
+          t.traverse (c);
         }
 
         os << "\"" << endl
@@ -794,9 +965,8 @@ namespace mysql
              << "\"SELECT \"" << endl;
 
           {
-            member_column m (*this);
-            traversal::names n (m);
-            names (c, n);
+            object_columns t (*this);
+            t.traverse (c);
           }
 
           os << "\"" << endl
@@ -806,53 +976,41 @@ namespace mysql
 
         // grow ()
         //
-        if (has_grow)
-        {
-          os << "bool " << traits << "::" << endl
-             << "grow (image_type& i, my_bool* e)"
-             << "{"
-             << "bool r (false);"
-             << endl;
+        os << "bool " << traits << "::" << endl
+           << "grow (image_type&" << (grow ? " i" : "") << ", my_bool* e)"
+           << "{"
+           << "bool r (false);"
+           << endl;
 
-          {
-            grow_member m (*this);
-            traversal::names n (m);
-            names (c, n);
-          }
+        index_ = 0;
+        inherits (c, grow_base_inherits_);
+        names (c, grow_member_names_);
 
-          os << "return r;"
-             << "}";
-        }
+        os << "return r;"
+           << "}";
 
         // bind (image_type)
         //
         os << "void " << traits << "::" << endl
-           << "bind (mysql::binding& b, image_type& i)"
+           << "bind (MYSQL_BIND* b, image_type& i)"
            << "{";
 
-        {
-          bind_member m (*this, false);
-          traversal::names n (m);
-          names (c, n);
-        }
+        index_ = 0;
+        inherits (c, bind_base_inherits_);
+        names (c, bind_member_names_);
 
-        os << "b.version++;"
-           << "}";
+        os << "}";
 
         // bind (id_image_type)
         //
         os << "void " << traits << "::" << endl
-           << "bind (mysql::binding& b, id_image_type& i)"
+           << "bind (MYSQL_BIND* b, id_image_type& i)"
            << "{";
 
-        {
-          bind_member m (*this, true);
-          traversal::names n (m);
-          names (c, n);
-        }
+        index_ = 0;
+        names (c, bind_id_member_names_);
 
-        os << "b.version++;"
-           << "}";
+        os << "}";
 
         // init (image, object)
         //
@@ -860,9 +1018,11 @@ namespace mysql
            << "init (image_type& i, const object_type& o)"
            << "{"
            << "bool grew (false);"
-           << "bool is_null;"
            << endl;
+
+        inherits (c, init_image_base_inherits_);
         names (c, init_image_member_names_);
+
         os << "return grew;"
            << "}";
 
@@ -871,7 +1031,10 @@ namespace mysql
         os << "void " << traits << "::" << endl
            << "init (object_type& o, const image_type& i)"
            << "{";
+
+        inherits (c, init_value_base_inherits_);
         names (c, init_value_member_names_);
+
         os << "}";
 
         // persist ()
@@ -892,9 +1055,11 @@ namespace mysql
           os << "obj." << id.name () << " = 0;"
              << endl;
 
-        os << "if (init (sts.image (), obj) || b.version == 0)" << endl
-           << "bind (b, sts.image ());"
-           << endl
+        os << "if (init (sts.image (), obj) || b.version == 0)"
+           << "{"
+           << "bind (b.bind, sts.image ());"
+           << "b.version++;"
+           << "}"
            << "mysql::persist_statement& st (sts.persist_statement ());"
            << "st.execute ();";
 
@@ -914,18 +1079,22 @@ namespace mysql
            << "object_statements<object_type>& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << endl
-           << "bool is_null, grew (false);"
+           << "bool grew (false);"
            << "const id_type& id (object_traits::id (obj));"
            << "id_image_type& i (sts.id_image ());";
         names (c, init_id_image_member_names_);
         os << "binding& idb (sts.id_image_binding ());"
-           << "if (grew || idb.version == 0)" << endl
-           << "bind (idb, i);"
-           << endl
+           << "if (grew || idb.version == 0)"
+           << "{"
+           << "bind (idb.bind, i);"
+           << "idb.version++;"
+           << "}"
            << "binding& imb (sts.image_binding ());"
-           << "if (init (sts.image (), obj) || imb.version == 0)" << endl
-           << "bind (imb, sts.image ());"
-           << endl
+           << "if (init (sts.image (), obj) || imb.version == 0)"
+           << "{"
+           << "bind (imb.bind, sts.image ());"
+           << "imb.version++;"
+           << "}"
            << "sts.update_statement ().execute ();"
            << "}";
 
@@ -940,13 +1109,15 @@ namespace mysql
            << "object_statements<object_type>& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << endl
-           << "bool is_null, grew (false);"
+           << "bool grew (false);"
            << "id_image_type& i (sts.id_image ());";
         names (c, init_id_image_member_names_);
         os << "binding& idb (sts.id_image_binding ());"
-           << "if (grew || idb.version == 0)" << endl
-           << "bind (idb, i);"
-           << endl
+           << "if (grew || idb.version == 0)"
+           << "{"
+           << "bind (idb.bind, i);"
+           << "idb.version++;"
+           << "}"
            << "sts.erase_statement ().execute ();"
            << "}";
 
@@ -999,17 +1170,21 @@ namespace mysql
            << "{"
            << "using namespace mysql;"
            << endl
-           << "bool is_null, grew (false);"
+           << "bool grew (false);"
            << "id_image_type& i (sts.id_image ());";
         names (c, init_id_image_member_names_);
         os << "binding& idb (sts.id_image_binding ());"
-           << "if (grew || idb.version == 0)" << endl
-           << "bind (idb, i);"
-           << endl
+           << "if (grew || idb.version == 0)"
+           << "{"
+           << "bind (idb.bind, i);"
+           << "idb.version++;"
+           << "}"
            << "binding& imb (sts.image_binding ());"
-           << "if (imb.version == 0)" << endl
-           << "bind (imb, sts.image ());"
-           << endl
+           << "if (imb.version == 0)"
+           << "{"
+           << "bind (imb.bind, sts.image ());"
+           << "imb.version++;"
+           << "}"
            << "mysql::find_statement& st (sts.find_statement ());"
            << "mysql::find_statement::result r (st.execute ());"
            << endl
@@ -1017,12 +1192,13 @@ namespace mysql
            << "return false;"
            << endl;
 
-        if (has_grow)
+        if (grow)
           os << "if (r == mysql::find_statement::truncated)"
              << "{"
              << "if (grow (sts.image (), sts.image_error ()))"
              << "{"
-             << "bind (imb, sts.image ());"
+             << "bind (imb.bind, sts.image ());"
+             << "imb.version++;"
              << "st.refetch ();"
              << "}"
              << "}";
@@ -1046,9 +1222,11 @@ namespace mysql
              << "conn.statement_cache ().find<object_type> ());"
              << endl
              << "binding& imb (sts.image_binding ());"
-             << "if (imb.version == 0)" << endl
-             << "bind (imb, sts.image ());"
-             << endl
+             << "if (imb.version == 0)"
+             << "{"
+             << "bind (imb.bind, sts.image ());"
+             << "imb.version++;"
+             << "}"
              << "details::shared_ptr<query_statement> st (" << endl
              << "new (details::shared) query_statement (conn," << endl
              << "query_clause + q.clause ()," << endl
@@ -1063,16 +1241,97 @@ namespace mysql
         }
       }
 
+      virtual void
+      traverse_value (type& c)
+      {
+        string const& type (c.fq_name ());
+        string traits ("access::composite_value_traits< " + type + " >");
+
+        os << "// " << c.name () << endl
+           << "//" << endl
+           << endl;
+
+        // grow ()
+        //
+        os << "bool " << traits << "::" << endl
+           << "grow (image_type&" << (grow (c) ? " i" : "") << ", my_bool* e)"
+           << "{"
+           << "bool r (false);"
+           << endl;
+
+        index_ = 0;
+        inherits (c, grow_base_inherits_);
+        names (c, grow_member_names_);
+
+        os << "return r;"
+           << "}";
+
+        // bind (image_type)
+        //
+        os << "void " << traits << "::" << endl
+           << "bind (MYSQL_BIND* b, image_type& i)"
+           << "{";
+
+        index_ = 0;
+        inherits (c, bind_base_inherits_);
+        names (c, bind_member_names_);
+
+        os << "}";
+
+        // init (image, object)
+        //
+        os << "bool " << traits << "::" << endl
+           << "init (image_type& i, const value_type& o)"
+           << "{"
+           << "bool grew (false);"
+           << endl;
+
+        inherits (c, init_image_base_inherits_);
+        names (c, init_image_member_names_);
+
+        os << "return grew;"
+           << "}";
+
+        // init (object, image)
+        //
+        os << "void " << traits << "::" << endl
+           << "init (value_type& o, const image_type& i)"
+           << "{";
+
+        inherits (c, init_value_base_inherits_);
+        names (c, init_value_member_names_);
+
+        os << "}";
+      }
+
     private:
       id_member id_member_;
-      member_count member_count_;
 
+      bool id_;
+      size_t index_;
+
+      grow_base grow_base_;
+      traversal::inherits grow_base_inherits_;
+      grow_member grow_member_;
+      traversal::names grow_member_names_;
+
+      bind_base bind_base_;
+      traversal::inherits bind_base_inherits_;
+      bind_member bind_member_;
+      traversal::names bind_member_names_;
+      bind_member bind_id_member_;
+      traversal::names bind_id_member_names_;
+
+      init_image_base init_image_base_;
+      traversal::inherits init_image_base_inherits_;
       init_image_member init_image_member_;
       traversal::names init_image_member_names_;
 
       init_image_member init_id_image_member_;
       traversal::names init_id_image_member_names_;
 
+      init_value_base init_value_base_;
+      traversal::inherits init_value_base_inherits_;
       init_value_member init_value_member_;
       traversal::names init_value_member_names_;
     };

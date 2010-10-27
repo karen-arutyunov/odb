@@ -23,23 +23,21 @@ namespace mysql
         if (c.file () != unit.file ())
           return;
 
-        if (!c.count ("object"))
-          return;
+        if (c.count ("object"))
+          traverse_object (c);
+        else if (comp_value (c))
+          traverse_value (c);
+      }
 
+      virtual void
+      traverse_object (type& c)
+      {
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
 
         id_member t;
         t.traverse (c);
         semantics::data_member& id (*t.member ());
-
-        bool has_grow;
-        {
-          has_grow_member m (*this);
-          traversal::names n (m);
-          names (c, n);
-          has_grow = m.result ();
-        }
 
         os << "// " << c.name () << endl
            << "//" << endl
@@ -79,20 +77,20 @@ namespace mysql
            << "{"
            << "return obj." << id.name () << ";" << endl
            << "}";
+      }
 
-        // grow ()
-        //
-        if (!has_grow)
-        {
-          // The dummy implementation is needed for result_impl.
-          //
-          os << "inline" << endl
-             << "bool " << traits << "::" << endl
-             << "grow (image_type&, my_bool*)"
-             << "{"
-             << "return false;"
-             << "}";
-        }
+      virtual void
+      traverse_value (type&)
+      {
+        /*
+        string const& type (c.fq_name ());
+        string traits ("access::composite_value_traits< " + type + " >");
+
+        os << "// " << c.name () << endl
+           << "//" << endl
+           << endl;
+
+        */
       }
     };
   }

@@ -3,6 +3,8 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <cassert>
+
 #include <odb/mysql/common.hxx>
 
 using namespace std;
@@ -25,109 +27,114 @@ namespace mysql
 
     pre (m);
 
-    sql_type const& t (db_type (m));
-
-    switch (t.type)
+    if (comp_value (m.type ()))
+      traverse_composite (m);
+    else
     {
-      // Integral types.
-      //
-    case sql_type::TINYINT:
-    case sql_type::SMALLINT:
-    case sql_type::MEDIUMINT:
-    case sql_type::INT:
-    case sql_type::BIGINT:
-      {
-        traverse_integer (m, t);
-        break;
-      }
+      sql_type const& t (db_type (m));
 
-      // Float types.
-      //
-    case sql_type::FLOAT:
-    case sql_type::DOUBLE:
+      switch (t.type)
       {
-        traverse_float (m, t);
-        break;
-      }
-    case sql_type::DECIMAL:
-      {
-        traverse_decimal (m, t);
-        break;
-      }
-
-      // Data-time types.
-      //
-    case sql_type::DATE:
-    case sql_type::TIME:
-    case sql_type::DATETIME:
-    case sql_type::TIMESTAMP:
-    case sql_type::YEAR:
-      {
-        traverse_date_time (m, t);
-        break;
-      }
-
-      // String and binary types.
-      //
-    case sql_type::CHAR:
-    case sql_type::VARCHAR:
-    case sql_type::TINYTEXT:
-    case sql_type::TEXT:
-    case sql_type::MEDIUMTEXT:
-    case sql_type::LONGTEXT:
-      {
-        // For string types the limit is in characters rather
-        // than in bytes. The fixed-length pre-allocated buffer
-        // optimization can only be used for 1-byte encodings.
-        // To support this we will need the character encoding
-        // in sql_type.
+        // Integral types.
         //
-        traverse_long_string (m, t);
-        break;
-      }
-    case sql_type::BINARY:
-    case sql_type::TINYBLOB:
-      {
-        // BINARY's range is always 255 or less from MySQL 5.0.3.
-        // TINYBLOB can only store up to 255 bytes.
+      case sql_type::TINYINT:
+      case sql_type::SMALLINT:
+      case sql_type::MEDIUMINT:
+      case sql_type::INT:
+      case sql_type::BIGINT:
+        {
+          traverse_integer (m, t);
+          break;
+        }
+
+        // Float types.
         //
-        traverse_short_string (m, t);
-        break;
-      }
-    case sql_type::VARBINARY:
-    case sql_type::BLOB:
-    case sql_type::MEDIUMBLOB:
-    case sql_type::LONGBLOB:
-      {
-        if (t.range && t.range_value <= 255)
-          traverse_short_string (m, t);
-        else
+      case sql_type::FLOAT:
+      case sql_type::DOUBLE:
+        {
+          traverse_float (m, t);
+          break;
+        }
+      case sql_type::DECIMAL:
+        {
+          traverse_decimal (m, t);
+          break;
+        }
+
+        // Data-time types.
+        //
+      case sql_type::DATE:
+      case sql_type::TIME:
+      case sql_type::DATETIME:
+      case sql_type::TIMESTAMP:
+      case sql_type::YEAR:
+        {
+          traverse_date_time (m, t);
+          break;
+        }
+
+        // String and binary types.
+        //
+      case sql_type::CHAR:
+      case sql_type::VARCHAR:
+      case sql_type::TINYTEXT:
+      case sql_type::TEXT:
+      case sql_type::MEDIUMTEXT:
+      case sql_type::LONGTEXT:
+        {
+          // For string types the limit is in characters rather
+          // than in bytes. The fixed-length pre-allocated buffer
+          // optimization can only be used for 1-byte encodings.
+          // To support this we will need the character encoding
+          // in sql_type.
+          //
           traverse_long_string (m, t);
+          break;
+        }
+      case sql_type::BINARY:
+      case sql_type::TINYBLOB:
+        {
+          // BINARY's range is always 255 or less from MySQL 5.0.3.
+          // TINYBLOB can only store up to 255 bytes.
+          //
+          traverse_short_string (m, t);
+          break;
+        }
+      case sql_type::VARBINARY:
+      case sql_type::BLOB:
+      case sql_type::MEDIUMBLOB:
+      case sql_type::LONGBLOB:
+        {
+          if (t.range && t.range_value <= 255)
+            traverse_short_string (m, t);
+          else
+            traverse_long_string (m, t);
 
-        break;
-      }
+          break;
+        }
 
-      // Other types.
-      //
-    case sql_type::BIT:
-      {
-        traverse_bit (m, t);
-        break;
-      }
-    case sql_type::ENUM:
-      {
-        traverse_enum (m, t);
-        break;
-      }
-    case sql_type::SET:
-      {
-        traverse_set (m, t);
-        break;
-      }
-    case sql_type::invalid:
-      {
-        assert (false);
-        break;
+        // Other types.
+        //
+      case sql_type::BIT:
+        {
+          traverse_bit (m, t);
+          break;
+        }
+      case sql_type::ENUM:
+        {
+          traverse_enum (m, t);
+          break;
+        }
+      case sql_type::SET:
+        {
+          traverse_set (m, t);
+          break;
+        }
+      case sql_type::invalid:
+        {
+          assert (false);
+          break;
+        }
       }
     }
 
@@ -168,6 +175,13 @@ namespace mysql
     type_.clear ();
     member_base::traverse (m);
     return type_;
+  }
+
+  void member_image_type::
+  traverse_composite (type& m)
+  {
+    type_ = "composite_value_traits< " + m.type ().fq_name () +
+      " >::image_type";
   }
 
   void member_image_type::
@@ -297,6 +311,12 @@ namespace mysql
   }
 
   void member_database_type::
+  traverse_composite (type&)
+  {
+    assert (false);
+  }
+
+  void member_database_type::
   traverse_integer (type&, sql_type const& t)
   {
     size_t i ((t.type - sql_type::TINYINT) * 2 + (t.unsign ? 1 : 0));
@@ -346,21 +366,23 @@ namespace mysql
   }
 
   //
-  // query_column
+  // query_columns
   //
 
-  query_column::
-  query_column (context& c)
-      : context (c),
+  query_columns::
+  query_columns (context& c)
+      : object_columns_base (c),
+        context (c),
         decl_ (true),
         member_image_type_ (c, false),
         member_database_type_ (c)
   {
   }
 
-  query_column::
-  query_column (context& c, semantics::class_& cl)
-      : context (c),
+  query_columns::
+  query_columns (context& c, semantics::class_& cl)
+      : object_columns_base (c),
+        context (c),
         decl_ (false),
         member_image_type_ (c, false),
         member_database_type_ (c)
@@ -369,10 +391,37 @@ namespace mysql
     table_ = table_name (cl);
   }
 
-  void query_column::
-  traverse (type& m)
+  void query_columns::
+  composite (semantics::data_member& m)
   {
-    string name (escape (public_name (m)));
+    string name (public_name (m));
+
+    if (decl_)
+    {
+      os << "// " << name << endl
+         << "//" << endl
+         << "struct " << name
+         << "{";
+
+      object_columns_base::composite (m);
+
+      os << "};";
+    }
+    else
+    {
+      string old_scope (scope_);
+      scope_ += "::" + name;
+
+      object_columns_base::composite (m);
+
+      scope_ = old_scope;
+    }
+  }
+
+  void query_columns::
+  column (semantics::data_member& m, string const& col_name, bool)
+  {
+    string name (public_name (m));
     string db_type (member_database_type_.database_type (m));
 
     string type (
@@ -394,7 +443,7 @@ namespace mysql
     }
     else
     {
-      string column ("\"`" + table_ + "`.`" + column_name (m) + "`\"");
+      string column ("\"`" + table_ + "`.`" + col_name + "`\"");
 
       os << "const mysql::query_column<" << endl
          << "  " << type << "," << endl

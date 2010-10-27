@@ -19,6 +19,8 @@
 #include <odb/generator.hxx>
 
 #include <odb/include.hxx>
+#include <odb/header.hxx>
+#include <odb/inline.hxx>
 
 #include <odb/tracer/header.hxx>
 #include <odb/tracer/inline.hxx>
@@ -261,6 +263,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << endl;
 
       generate_include (*ctx);
+      generate_header (*ctx);
 
       switch (ops.database ())
       {
@@ -299,6 +302,21 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     {
       cxx_filter filt (ixx);
+      auto_ptr<context> ctx;
+
+      switch (ops.database ())
+      {
+      case database::mysql:
+        {
+          ctx.reset (new mysql::context (ixx, unit, ops));
+          break;
+        }
+      case database::tracer:
+        {
+          ctx.reset (new context (ixx, unit, ops));
+          break;
+        }
+      }
 
       // Copy prologue.
       //
@@ -309,18 +327,18 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << "// End prologue." << endl
           << endl;
 
+      generate_inline (*ctx);
+
       switch (ops.database ())
       {
       case database::mysql:
         {
-          mysql::context ctx (ixx, unit, ops);
-          mysql::generate_inline (ctx);
+          mysql::generate_inline (static_cast<mysql::context&> (*ctx));
           break;
         }
       case database::tracer:
         {
-          context ctx (ixx, unit, ops);
-          tracer::generate_inline (ctx);
+          tracer::generate_inline (*ctx);
           break;
         }
       }

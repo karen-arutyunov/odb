@@ -74,11 +74,13 @@ namespace
       if (c.file () == unit.file ())
         return;
 
-      if (!(c.count ("object") || c.count ("value")))
+      // We only generate things for objects and composite value types.
+      //
+      if (!(c.count ("object") || comp_value (c)))
         return;
 
-      // This is a persistent object or value type declared in another
-      // header file. Include its -odb header.
+      // This is a persistent object or composite value type declared in
+      // another header file. Include its -odb header.
       //
       tree decl (TYPE_NAME (c.tree_node ()));
       location_t l (DECL_SOURCE_LOCATION (decl));

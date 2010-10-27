@@ -6,7 +6,9 @@
 #ifndef ODB_COMMON_HXX
 #define ODB_COMMON_HXX
 
+#include <string>
 #include <cstddef> // std::size_t
+
 #include <odb/context.hxx>
 
 // Find id member.
@@ -48,43 +50,49 @@ private:
   traversal::names names_;
 };
 
-// Count persistent members.
+// Traverse object columns.
 //
-struct member_count: traversal::class_
+struct object_columns_base: traversal::class_
 {
-  member_count ()
+  virtual void
+  column (semantics::data_member&, std::string const& name, bool first) = 0;
+
+  // If you override this callback, always call the base.
+  //
+  virtual void
+  composite (semantics::data_member&);
+
+  object_columns_base (context& c)
+      : member_ (c, *this)
   {
     *this >> names_ >> member_;
-  }
-
-  std::size_t
-  count () const
-  {
-    return member_.count_;
+    *this >> inherits_ >> *this;
   }
 
   virtual void
-  traverse (semantics::class_& c)
-  {
-    member_.count_ = 0;
-    names (c);
-  }
+  traverse (semantics::class_&);
 
 private:
-  struct data_member: traversal::data_member
+  struct member: traversal::data_member, context
   {
-    virtual void
-    traverse (semantics::data_member& m)
+    member (context& c, object_columns_base& oc)
+        : context (c), oc_ (oc), first_ (true)
     {
-      if (!m.count ("transient"))
-        count_++;
     }
 
-    std::size_t count_;
+    virtual void
+    traverse (semantics::data_member&);
+
+  private:
+    object_columns_base& oc_;
+
+    string prefix_;
+    bool first_;
   };
 
-  data_member member_;
+  member member_;
   traversal::names names_;
+  traversal::inherits inherits_;
 };
 
 #endif // ODB_COMMON_HXX

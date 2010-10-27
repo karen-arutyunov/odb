@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include <odb/traversal.hxx>
+#include <odb/context.hxx>
 #include <odb/validator.hxx>
 
 using namespace std;
@@ -77,8 +78,22 @@ namespace
     virtual void
     traverse (type& c)
     {
-      if (c.file () != unit_.file () || !c.count ("object"))
-        return;
+      if (c.count ("object"))
+        traverse_object (c);
+      else if (context::comp_value (c))
+        traverse_value (c);
+    }
+
+    virtual void
+    traverse_object (type& c)
+    {
+      if (c.inherits_begin () != c.inherits_end ())
+      {
+        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: object inheritance is not yet supported" << endl;
+
+        valid_ = false;
+      }
 
       member_.count_ = 0;
       member_.id_ = 0;
@@ -93,6 +108,59 @@ namespace
         cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
              << " info: use '#pragma db id' to specify object id member"
              << endl;
+
+        valid_ = false;
+      }
+
+      if (member_.count_ == 0)
+      {
+        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: no persistent data members in the class" << endl;
+
+        valid_ = false;
+      }
+    }
+
+    virtual void
+    traverse_value (type& c)
+    {
+      for (type::inherits_iterator i (c.inherits_begin ());
+           i != c.inherits_end ();
+           ++i)
+      {
+        type& b (i->base ());
+
+        if (!context::comp_value (b))
+        {
+          // @@ Should we use hint here? Need template printer.
+          //
+          string name (b.fq_anonymous () ? "<anonymous>" : b.fq_name ());
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " error: base class '" << name << "' is not a "
+               << "composite value type" << endl;
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " info: composite value types can only derive from other "
+               << "composite value types" << endl;
+
+          cerr << b.file () << ":" << b.line () << ":" << b.column () << ":"
+               << " info: class '" << name << "' is defined here" << endl;
+
+          valid_ = false;
+        }
+      }
+
+      member_.count_ = 0;
+      member_.id_ = 0;
+
+      names (c);
+
+      if (member_.id_ != 0)
+      {
+        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: value type data member cannot be designated as "
+             << "object id" << endl;
 
         valid_ = false;
       }

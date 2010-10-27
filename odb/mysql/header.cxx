@@ -30,6 +30,13 @@ namespace mysql
       }
 
       virtual void
+      traverse_composite (type&)
+      {
+        os << image_type << " " << var << "value;"
+           << endl;
+      }
+
+      virtual void
       traverse_integer (type&, sql_type const&)
       {
         os << image_type << " " << var << "value;"
@@ -140,19 +147,51 @@ namespace mysql
       member_image_type member_image_type_;
     };
 
+    struct image_base: traversal::class_, context
+    {
+      image_base (context& c): context (c), first_ (true) {}
+
+      virtual void
+      traverse (type& c)
+      {
+        if (first_)
+        {
+          os << ": ";
+          first_ = false;
+        }
+        else
+        {
+          os << "," << endl
+             << "  ";
+        }
+
+        os << "composite_value_traits< " << c.fq_name () << " >::image_type";
+      }
+
+    private:
+      bool first_;
+    };
+
     struct image_type: traversal::class_, context
     {
       image_type (context& c)
-          : context (c), image_member_ (c, false)
+          : context (c), member_ (c, false)
       {
-        *this >> names_image_member_ >> image_member_;
+        *this >> names_member_ >> member_;
       }
 
       virtual void
       traverse (type& c)
       {
-        os << "struct image_type"
-           << "{";
+        os << "struct image_type";
+
+        {
+          image_base b (*this);
+          traversal::inherits i (b);
+          inherits (c, i);
+        }
+
+        os << "{";
 
         names (c);
 
@@ -160,8 +199,8 @@ namespace mysql
       }
 
     private:
-      image_member image_member_;
-      traversal::names names_image_member_;
+      image_member member_;
+      traversal::names names_member_;
     };
 
     struct id_image_type: traversal::class_, context
@@ -193,10 +232,8 @@ namespace mysql
       class_ (context& c)
           : context (c),
             image_type_ (c),
-            id_image_type_ (c),
-            query_column_ (c)
+            id_image_type_ (c)
       {
-        *this >> query_column_names_ >> query_column_;
       }
 
       virtual void
@@ -205,18 +242,21 @@ namespace mysql
         if (c.file () != unit.file ())
           return;
 
-        if (!c.count ("object"))
-          return;
+        if (c.count ("object"))
+          traverse_object (c);
+        else if (comp_value (c))
+          traverse_value (c);
+      }
 
+      virtual void
+      traverse_object (type& c)
+      {
         string const& type (c.fq_name ());
         bool def_ctor (TYPE_HAS_DEFAULT_CONSTRUCTOR (c.tree_node ()));
 
         id_member_.traverse (c);
         semantics::data_member& id (*id_member_.member ());
         bool auto_id (id.count ("auto"));
-
-        member_count_.traverse (c);
-        size_t column_count (member_count_.count ());
 
         os << "// " << c.name () << endl
            << "//" << endl;
@@ -260,7 +300,10 @@ namespace mysql
           os << "struct query_type: query_base_type"
              << "{";
 
-          names (c, query_column_names_);
+          {
+            query_columns t (*this);
+            t.traverse (c);
+          }
 
           os << "query_type ();"
              << "query_type (const std::string&);"
@@ -270,8 +313,8 @@ namespace mysql
 
         // column_count
         //
-        os << "static const std::size_t column_count = " << column_count <<
-          "UL;"
+        os << "static const std::size_t column_count = " <<
+          column_count (c) << "UL;"
            << endl;
 
         // Queries.
@@ -301,13 +344,13 @@ namespace mysql
         // bind (image_type)
         //
         os << "static void" << endl
-           << "bind (mysql::binding&, image_type&);"
+           << "bind (MYSQL_BIND*, image_type&);"
            << endl;
 
         // bind (id_image_type)
         //
         os << "static void" << endl
-           << "bind (mysql::binding&, id_image_type&);"
+           << "bind (MYSQL_BIND*, id_image_type&);"
            << endl;
 
         // init (image, object)
@@ -368,14 +411,59 @@ namespace mysql
         os << "};";
       }
 
+      virtual void
+      traverse_value (type& c)
+      {
+        string const& type (c.fq_name ());
+
+        os << "// " << c.name () << endl
+           << "//" << endl;
+
+        os << "template <>" << endl
+           << "class access::composite_value_traits< " << type << " >"
+           << "{"
+           << "public:" << endl;
+
+        // object_type
+        //
+        os << "typedef " << type << " value_type;"
+           << endl;
+
+        // image_type
+        //
+        image_type_.traverse (c);
+
+        // grow ()
+        //
+        os << "static bool" << endl
+           << "grow (image_type&, my_bool*);"
+           << endl;
+
+        // bind (image_type)
+        //
+        os << "static void" << endl
+           << "bind (MYSQL_BIND*, image_type&);"
+           << endl;
+
+        // init (image, object)
+        //
+        os << "static bool" << endl
+           << "init (image_type&, const value_type&);"
+           << endl;
+
+        // init (object, image)
+        //
+        os << "static void" << endl
+           << "init (value_type&, const image_type&);"
+           << endl;
+
+        os << "};";
+      }
+
     private:
       id_member id_member_;
-      member_count member_count_;
       image_type image_type_;
       id_image_type id_image_type_;
-
-      query_column query_column_;
-      traversal::names query_column_names_;
     };
   }
 
@@ -398,17 +486,13 @@ namespace mysql
     ctx.os << "#include <cstddef>" << endl // std::size_t
            << endl;
 
-    ctx.os << "#include <odb/core.hxx>" << endl
-           << "#include <odb/traits.hxx>" << endl;
-
     if (ctx.options.generate_query ())
-      ctx.os << "#include <odb/result.hxx>" << endl;
+      ctx.os << "#include <odb/result.hxx>" << endl
+             << endl;
 
-    ctx.os << endl
-           << "#include <odb/mysql/version.hxx>" << endl
+    ctx.os << "#include <odb/mysql/version.hxx>" << endl
            << "#include <odb/mysql/forward.hxx>" << endl
-           << "#include <odb/mysql/mysql-types.hxx>" << endl
-           << endl;
+           << "#include <odb/mysql/mysql-types.hxx>" << endl;
 
     if (ctx.options.generate_query ())
       ctx.os << "#include <odb/mysql/query.hxx>" << endl;

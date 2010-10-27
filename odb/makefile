@@ -10,7 +10,10 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 cxx_ptun :=                  \
 sql-lexer.cxx                \
 context.cxx                  \
+common.cxx                   \
 include.cxx                  \
+header.cxx                   \
+inline.cxx                   \
 validator.cxx                \
 generator.cxx                \
 parser.cxx                   \

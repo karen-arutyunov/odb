@@ -76,6 +76,16 @@ namespace mysql
 
   class context: public ::context
   {
+    // Predicates.
+    //
+  public:
+
+    // Return true if an object or value type has members for which
+    // the image can grow.
+    //
+    bool
+    grow (semantics::class_&);
+
   private:
     typedef ::context base_context;
 

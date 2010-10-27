@@ -9,6 +9,7 @@
 #include <odb/sql-lexer.hxx>
 
 #include <odb/mysql/context.hxx>
+#include <odb/mysql/common.hxx>
 
 using namespace std;
 
@@ -75,6 +76,112 @@ namespace mysql
         data_ (c.data_)
   {
   }
+
+  namespace
+  {
+    struct has_grow: traversal::class_
+    {
+      has_grow (context& c)
+          : member_ (c, *this)
+      {
+        *this >> member_names_ >> member_;
+        *this >> inherits_ >> *this;
+      }
+
+      bool
+      dispatch (semantics::type& t)
+      {
+        r_ = false;
+        traversal::class_::dispatch (t);
+        return r_;
+      }
+
+      virtual void
+      traverse (type& c)
+      {
+        if (c.count ("mysql::grow"))
+          r_ = c.get<bool> ("mysql::grow");
+        else
+        {
+          // r_ should be false.
+          //
+          inherits (c);
+
+          if (!r_)
+            names (c);
+
+          c.set ("mysql::grow", r_);
+        }
+      }
+
+    private:
+      struct member: member_base
+      {
+        member (context& c, has_grow& hg) : member_base (c, false), hg_ (hg) {}
+
+        virtual void
+        traverse_composite (type& m)
+        {
+          if (!hg_.r_)
+            hg_.r_ = hg_.dispatch (m.type ());
+        }
+
+        virtual void
+        traverse_decimal (type&, sql_type const&)
+        {
+          hg_.r_ = true;
+        }
+
+        virtual void
+        traverse_long_string (type&, sql_type const&)
+        {
+          hg_.r_ = true;
+        }
+
+        virtual void
+        traverse_short_string (type&, sql_type const&)
+        {
+          hg_.r_ = true; // @@ Short string optimization disabled.
+        }
+
+        virtual void
+        traverse_enum (type&, sql_type const&)
+        {
+          hg_.r_ = true;
+        }
+
+        virtual void
+        traverse_set (type&, sql_type const&)
+        {
+          hg_.r_ = true;
+        }
+
+      private:
+        has_grow& hg_;
+      };
+
+      bool r_;
+
+      member member_;
+      traversal::names member_names_;
+
+      traversal::inherits inherits_;
+    };
+  }
+
+  bool context::
+  grow (semantics::class_& c)
+  {
+    if (c.count ("mysql::grow"))
+      return c.get<bool> ("mysql::grow");
+
+    has_grow t (*this);
+    return t.dispatch (c);
+  }
+
+  //
+  // SQL type parsing.
+  //
 
   string context::
   column_type (semantics::data_member& m) const

@@ -4,38 +4,32 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <set>
+
+#include <odb/mysql/common.hxx>
 #include <odb/mysql/schema.hxx>
 
 namespace mysql
 {
   namespace
   {
-    struct data_member: traversal::data_member, context
+    struct object_columns: object_columns_base, context
     {
-      data_member (context& c)
-          : context (c), first_ (true)
+      object_columns (context& c)
+          : object_columns_base (c), context (c)
       {
       }
 
       virtual void
-      traverse (type& m)
+      column (semantics::data_member& m, string const& name, bool first)
       {
-        if (m.count ("transient"))
-          return;
-
-        if (first_)
-          first_ = false;
-        else
+        if (!first)
           os << "," << endl;
 
-        os << "  `" << column_name (m) << "` " << column_type (m);
+        os << "  `" << name << "` " << column_type (m);
 
         if (m.count ("id"))
           os << " PRIMARY KEY";
       }
-
-    private:
-      bool first_;
     };
 
     struct class_create: traversal::class_, context
@@ -65,9 +59,8 @@ namespace mysql
         os << "CREATE TABLE `" << name << "` (" << endl;
 
         {
-          data_member m (*this);
-          traversal::names n (m);
-          names (c, n);
+          object_columns t (*this);
+          t.traverse (c);
         }
 
         os << ")";

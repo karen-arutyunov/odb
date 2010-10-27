@@ -119,8 +119,8 @@ context::
 {
 }
 
-string context::
-public_name (semantics::data_member& m) const
+static string
+public_name_impl (semantics::data_member& m)
 {
   string s (m.name ());
   size_t n (s.size ());
@@ -153,7 +153,7 @@ table_name (semantics::type& t) const
 string context::
 column_name (semantics::data_member& m) const
 {
-  return m.count ("column") ? m.get<string> ("column") : public_name (m);
+  return m.count ("column") ? m.get<string> ("column") : public_name_impl (m);
 }
 
 string context::
@@ -185,6 +185,12 @@ column_type (semantics::data_member& m) const
        << endl;
 
   throw generation_failed ();
+}
+
+string context::
+public_name (semantics::data_member& m) const
+{
+  return escape (public_name_impl (m));
 }
 
 string context::
@@ -259,6 +265,76 @@ escape (string const& name) const
   }
 
   return r;
+}
+
+namespace
+{
+  struct column_count_impl: traversal::class_
+  {
+    column_count_impl ()
+        : member_ (*this)
+    {
+      *this >> names_ >> member_;
+      *this >> inherits_ >> *this;
+    }
+
+    size_t
+    count () const
+    {
+      return member_.count_;
+    }
+
+    virtual void
+    traverse (semantics::class_& c)
+    {
+      if (c.count ("column-count"))
+        member_.count_ += c.get<size_t> ("column-count");
+      else
+      {
+        size_t n (member_.count_);
+        inherits (c);
+        names (c);
+        c.set ("column-count", member_.count_ - n);
+      }
+    }
+
+  private:
+    struct member: traversal::data_member
+    {
+      member (column_count_impl& cc): count_ (0), cc_ (cc) {}
+
+      virtual void
+      traverse (semantics::data_member& m)
+      {
+        if (m.count ("transient"))
+          return;
+
+        if (context::comp_value (m.type ()))
+          cc_.dispatch (m.type ());
+        else
+          count_++;
+      }
+
+      size_t count_;
+      column_count_impl& cc_;
+    };
+
+    member member_;
+    traversal::names names_;
+
+    traversal::inherits inherits_;
+  };
+}
+
+size_t context::
+column_count (semantics::class_& c)
+{
+  if (c.count ("column-count"))
+    return c.get<size_t> ("column-count");
+
+  column_count_impl t;
+  t.traverse (c);
+  return t.count ();
 }
 
 // namespace

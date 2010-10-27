@@ -116,10 +116,6 @@ namespace tracer
     ns >> ns_defines >> ns;
     ns_defines >> c;
 
-    ctx.os << "#include <odb/core.hxx>" << endl
-           << "#include <odb/traits.hxx>" << endl
-           << endl;
-
     ctx.os << "namespace odb"
            << "{";
 

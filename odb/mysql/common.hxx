@@ -32,6 +32,11 @@ namespace mysql
     }
 
     virtual void
+    traverse_composite (type&)
+    {
+    }
+
+    virtual void
     traverse_integer (type&, sql_type const&)
     {
     }
@@ -96,6 +101,9 @@ namespace mysql
     image_type (type&);
 
     virtual void
+    traverse_composite (type&);
+
+    virtual void
     traverse_integer (type&, sql_type const&);
 
     virtual void
@@ -131,6 +139,9 @@ namespace mysql
     database_type (type&);
 
     virtual void
+    traverse_composite (type&);
+
+    virtual void
     traverse_integer (type&, sql_type const&);
 
     virtual void
@@ -158,60 +169,16 @@ namespace mysql
     string type_;
   };
 
-  struct has_grow_member: member_base
+  struct query_columns: object_columns_base, context
   {
-    has_grow_member (context& c)
-        : member_base (c, false), r_ (false)
-    {
-    }
-
-    bool
-    result ()
-    {
-      return r_;
-    }
+    query_columns (context&);
+    query_columns (context&, semantics::class_&);
 
     virtual void
-    traverse_decimal (type&, sql_type const&)
-    {
-      r_ = true;
-    }
+    composite (semantics::data_member&);
 
     virtual void
-    traverse_long_string (type&, sql_type const&)
-    {
-      r_ = true;
-    }
-
-    virtual void
-    traverse_short_string (type&, sql_type const&)
-    {
-      r_ = true; // @@ Short string optimization disabled.
-    }
-
-    virtual void
-    traverse_enum (type&, sql_type const&)
-    {
-      r_ = true;
-    }
-
-    virtual void
-    traverse_set (type&, sql_type const&)
-    {
-      r_ = true;
-    }
-
-  private:
-    bool r_;
-  };
-
-  struct query_column: traversal::data_member, context
-  {
-    query_column (context&);
-    query_column (context&, semantics::class_&);
-
-    virtual void
-    traverse (type&);
+    column (semantics::data_member&, string const&, bool);
 
   private:
     string scope_;

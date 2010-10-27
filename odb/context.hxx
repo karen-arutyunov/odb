@@ -32,15 +32,33 @@ public:
   typedef std::string string;
   typedef ::options options_type;
 
+  // Predicates.
+  //
+public:
+
+  // Composite value type is a class type that was explicitly marked
+  // as value type and there was no SQL type mapping provided for it
+  // by the user (specifying the SQL type makes the value type simple).
+  //
+  static bool
+  comp_value (semantics::class_& c)
+  {
+    return c.count ("value") && !c.count ("type");
+  }
+
+  // Return the class object if this type is a composite value type
+  // and NULL otherwise.
+  //
+  static semantics::class_*
+  comp_value (semantics::type& t)
+  {
+    semantics::class_* c (dynamic_cast<semantics::class_*> (&t));
+    return c != 0 && t.count ("value") && !t.count ("type") ? c : 0;
+  }
+
   // Database names and types.
   //
 public:
-  // Cleaned-up member name that can be used in public interfaces
-  // such as queries, column names, etc.
-  //
-  string
-  public_name (semantics::data_member&) const;
-
   string
   table_name (semantics::type&) const;
 
@@ -50,11 +68,24 @@ public:
   virtual string
   column_type (semantics::data_member&) const;
 
+  // C++ names.
+  //
 public:
+  // Cleaned-up member name that can be used in public interfaces.
+  //
+  string
+  public_name (semantics::data_member&) const;
+
   // Escape C++ keywords, reserved names, and illegal characters.
   //
   string
   escape (string const&) const;
+
+  // Counts and other information.
+  //
+public:
+  static size_t
+  column_count (semantics::class_&);
 
 protected:
   struct data;
