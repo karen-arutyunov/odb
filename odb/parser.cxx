@@ -983,7 +983,7 @@ emit_template_decl (tree decl)
       tree t (TREE_TYPE (s));
       tree d (TYPE_NAME (t));
 
-      ts << "\tspecialization" << t << " at "
+      ts << "\tspecialization " << t << " at "
          << DECL_SOURCE_FILE (d) << ":"
          << DECL_SOURCE_LINE (d) << endl;
     }
@@ -996,7 +996,7 @@ emit_template_decl (tree decl)
       tree t (TREE_VALUE (i));
       tree d (TYPE_NAME (t));
 
-      ts << "\tinstantiation" << t << " at "
+      ts << "\tinstantiation " << t << " at "
          << DECL_SOURCE_FILE (d) << ":"
          << DECL_SOURCE_LINE (d) << endl;
     }
