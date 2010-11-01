@@ -18,6 +18,8 @@
 #include <odb/context.hxx>
 #include <odb/generator.hxx>
 
+#include <odb/type-processor.hxx>
+
 #include <odb/include.hxx>
 #include <odb/header.hxx>
 #include <odb/inline.hxx>
@@ -108,13 +110,37 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 {
   try
   {
+    // Process types.
+    //
+    {
+      auto_ptr<context> ctx;
+
+      switch (ops.database ())
+      {
+      case database::mysql:
+        {
+          ctx.reset (new mysql::context (cerr, unit, ops));
+          break;
+        }
+      case database::tracer:
+        {
+          // Do not assign database types for tracer.
+          //
+          break;
+        }
+      }
+
+      if (ctx.get () != 0)
+        process_types (*ctx);
+    }
+
+    // Output files.
+    //
     path file (p.leaf ());
     string base (file.base ().string ());
 
     fs::auto_removes auto_rm;
 
-    // C++ output.
-    //
     string hxx_name (base + ops.odb_file_suffix () + ops.hxx_suffix ());
     string ixx_name (base + ops.odb_file_suffix () + ops.ixx_suffix ());
     string cxx_name (base + ops.odb_file_suffix () + ops.cxx_suffix ());

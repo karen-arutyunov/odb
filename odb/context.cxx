@@ -159,6 +159,12 @@ column_name (semantics::data_member& m) const
 string context::
 column_type (semantics::data_member& m) const
 {
+  return m.get<string> ("column-type");
+}
+
+string context::
+column_type_impl (semantics::data_member& m) const
+{
   if (m.count ("type"))
     return m.get<string> ("type");
 
@@ -176,15 +182,7 @@ column_type (semantics::data_member& m) const
   if (i != data_->type_map_.end ())
     return m.count ("id") ? i->second.id_type : i->second.type;
 
-  cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-       << " error: unable to map C++ type '" << name << "' used in "
-       << "data member '" << m.name () << "' to a database type" << endl;
-
-  cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-       << " info: use '#pragma db type' to specify the database type"
-       << endl;
-
-  throw generation_failed ();
+  return string ();
 }
 
 string context::

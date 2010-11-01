@@ -86,6 +86,12 @@ namespace mysql
     bool
     grow (semantics::class_&);
 
+    //
+    //
+  public:
+    sql_type const&
+    db_type (semantics::data_member&);
+
   private:
     typedef ::context base_context;
 
@@ -98,10 +104,7 @@ namespace mysql
 
   public:
     virtual string
-    column_type (semantics::data_member&) const;
-
-    sql_type const&
-    db_type (semantics::data_member&);
+    column_type_impl (semantics::data_member&) const;
 
   public:
     context (std::ostream&, semantics::unit&, options_type const&);

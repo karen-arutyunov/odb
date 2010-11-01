@@ -87,6 +87,14 @@ public:
   static size_t
   column_count (semantics::class_&);
 
+  // Per-database customizable functionality.
+  //
+public:
+  // Return empty string if there is no mapping.
+  //
+  virtual string
+  column_type_impl (semantics::data_member&) const;
+
 protected:
   struct data;
   typedef cutl::shared_ptr<data> data_ptr;

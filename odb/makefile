@@ -11,6 +11,7 @@ cxx_ptun :=                  \
 sql-lexer.cxx                \
 context.cxx                  \
 common.cxx                   \
+type-processor.cxx           \
 include.cxx                  \
 header.cxx                   \
 inline.cxx                   \

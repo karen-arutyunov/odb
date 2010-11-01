@@ -184,9 +184,9 @@ namespace mysql
   //
 
   string context::
-  column_type (semantics::data_member& m) const
+  column_type_impl (semantics::data_member& m) const
   {
-    string r (::context::column_type (m));
+    string r (::context::column_type_impl (m));
 
     if (m.count ("auto"))
       r += " AUTO_INCREMENT";
