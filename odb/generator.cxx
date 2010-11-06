@@ -421,10 +421,10 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << "//" << endl;
       append (cxx, ops.cxx_epilogue (), ops.cxx_epilogue_file ());
       cxx << "//" << endl
-          << "// End epilogue." << endl;
-
-      cxx << "#include <odb/post.hxx>" << endl
+          << "// End epilogue." << endl
           << endl;
+
+      cxx << "#include <odb/post.hxx>" << endl;
     }
 
     // SQL

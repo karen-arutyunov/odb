@@ -1812,7 +1812,15 @@ process_pragmas (tree t,
       ts << "\t\t pragma " << i->name << " (" << i->value << ")"
          << endl;
 
-    node.set (i->name, i->value);
+    // Convert '_' to '-' in the pragma name so we get foo-bar instead
+    // of foo_bar (that's the convention used).
+    //
+    string tmp (i->name);
+    for (size_t j (0); j < tmp.size (); ++j)
+      if (tmp[j] == '_')
+        tmp[j] = '-';
+
+    node.set (tmp, i->value);
   }
 }
 
@@ -1834,7 +1842,15 @@ process_named_pragmas (tree t, node& node)
       ts << "\t\t pragma " << i->name << " (" << i->value << ")"
          << endl;
 
-    node.set (i->name, i->value);
+    // Convert '_' to '-' in the pragma name so we get foo-bar instead
+    // of foo_bar (that's the convention used).
+    //
+    string tmp (i->name);
+    for (size_t j (0); j < tmp.size (); ++j)
+      if (tmp[j] == '_')
+        tmp[j] = '-';
+
+    node.set (tmp, i->value);
   }
 }
 

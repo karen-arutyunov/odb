@@ -86,25 +86,32 @@ namespace mysql
     bool
     grow (semantics::class_&);
 
+    // The same for a member's value type.
+    //
+    bool
+    grow (semantics::data_member&, semantics::type&, string const& key_prefix);
+
     //
     //
   public:
     sql_type const&
-    db_type (semantics::data_member&);
+    db_type (semantics::data_member&, string const& key_prefix = string ());
 
   private:
     typedef ::context base_context;
 
     struct data: base_context::data
     {
+      virtual string
+      column_type_impl (semantics::type&,
+                        string const& type,
+                        semantics::context*) const;
     };
 
   private:
     data* data_;
 
   public:
-    virtual string
-    column_type_impl (semantics::data_member&) const;
 
   public:
     context (std::ostream&, semantics::unit&, options_type const&);

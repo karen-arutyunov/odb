@@ -29,9 +29,7 @@ namespace tracer
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
 
-        id_member t;
-        t.traverse (c);
-        semantics::data_member& id (*t.member ());
+        semantics::data_member& id (id_member (c));
 
         os << "// " << c.name () << endl
            << "//" << endl

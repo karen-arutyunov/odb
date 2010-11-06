@@ -97,6 +97,10 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       p == "id" ||
       p == "auto" ||
       p == "column" ||
+      p == "value_column" ||
+      p == "index_column" ||
+      p == "key_column" ||
+      p == "id_column" ||
       p == "transient")
   {
     if (tc != FIELD_DECL)
@@ -106,13 +110,23 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       return false;
     }
   }
-  else if (p == "object" ||
-           p == "table")
+  else if (p == "object")
   {
     if (tc != RECORD_TYPE)
     {
       error_at (l, "name %qs in db pragma %qs does not refer to a class",
                 name.c_str (), pc);
+      return false;
+    }
+  }
+  else if (p == "table")
+  {
+    // Table can be used for both members (container) and types.
+    //
+    if (tc != FIELD_DECL && tc != RECORD_TYPE)
+    {
+      error_at (l, "name %qs in db pragma %qs does not refer to a class "
+                "or data member", name.c_str (), pc);
       return false;
     }
   }
@@ -125,7 +139,10 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       return false;
     }
   }
-  else if (p == "type")
+  else if (p == "type" ||
+           p == "value_type" ||
+           p == "index_type" ||
+           p == "key_type")
   {
     // Type can be used for both members and types.
     //
@@ -213,9 +230,17 @@ handle_pragma (string const& p, tree decl, string const& decl_name)
 
     tt = pragma_lex (&t);
   }
-  else if (p == "column")
+  else if (p == "column" ||
+           p == "value_column" ||
+           p == "index_column" ||
+           p == "key_column" ||
+           p == "id_column")
   {
-    // column ([<identifier>,] "<name>")
+    // column ("<name>")
+    // value_column ("<name>")
+    // index_column ("<name>")
+    // key_column ("<name>")
+    // id_column ("<name>")
     //
 
     // Make sure we've got the correct declaration type.
@@ -247,9 +272,15 @@ handle_pragma (string const& p, tree decl, string const& decl_name)
 
     tt = pragma_lex (&t);
   }
-  else if (p == "type")
+  else if (p == "type" ||
+           p == "value_type" ||
+           p == "index_type" ||
+           p == "key_type")
   {
     // type ("<type>")
+    // value_type ("<type>")
+    // index_type ("<type>")
+    // key_type ("<type>")
     //
 
     // Make sure we've got the correct declaration type.
@@ -459,7 +490,15 @@ handle_pragma_qualifier (string const& p)
   else if (p == "id" ||
            p == "auto" ||
            p == "column" ||
+           p == "value_column" ||
+           p == "index_column" ||
+           p == "key_column" ||
+           p == "id_column" ||
            p == "type" ||
+           p == "value_type" ||
+           p == "index_type" ||
+           p == "key_type" ||
+           p == "table" ||
            p == "transient")
   {
     handle_pragma (p, 0, "");
@@ -534,9 +573,57 @@ handle_pragma_db_column (cpp_reader*)
 }
 
 extern "C" void
+handle_pragma_db_vcolumn (cpp_reader*)
+{
+  handle_pragma_qualifier ("value_column");
+}
+
+extern "C" void
+handle_pragma_db_icolumn (cpp_reader*)
+{
+  handle_pragma_qualifier ("index_column");
+}
+
+extern "C" void
+handle_pragma_db_kcolumn (cpp_reader*)
+{
+  handle_pragma_qualifier ("key_column");
+}
+
+extern "C" void
+handle_pragma_db_idcolumn (cpp_reader*)
+{
+  handle_pragma_qualifier ("id_column");
+}
+
+extern "C" void
 handle_pragma_db_type (cpp_reader*)
 {
   handle_pragma_qualifier ("type");
+}
+
+extern "C" void
+handle_pragma_db_vtype (cpp_reader*)
+{
+  handle_pragma_qualifier ("value_type");
+}
+
+extern "C" void
+handle_pragma_db_itype (cpp_reader*)
+{
+  handle_pragma_qualifier ("index_type");
+}
+
+extern "C" void
+handle_pragma_db_ktype (cpp_reader*)
+{
+  handle_pragma_qualifier ("key_type");
+}
+
+extern "C" void
+handle_pragma_db_table (cpp_reader*)
+{
+  handle_pragma_qualifier ("table");
 }
 
 extern "C" void
@@ -554,6 +641,14 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "id", handle_pragma_db_id);
   c_register_pragma_with_expansion ("db", "auto", handle_pragma_db_auto);
   c_register_pragma_with_expansion ("db", "column", handle_pragma_db_column);
+  c_register_pragma_with_expansion ("db", "value_column", handle_pragma_db_vcolumn);
+  c_register_pragma_with_expansion ("db", "index_column", handle_pragma_db_icolumn);
+  c_register_pragma_with_expansion ("db", "key_column", handle_pragma_db_kcolumn);
+  c_register_pragma_with_expansion ("db", "id_column", handle_pragma_db_idcolumn);
   c_register_pragma_with_expansion ("db", "type", handle_pragma_db_type);
+  c_register_pragma_with_expansion ("db", "value_type", handle_pragma_db_vtype);
+  c_register_pragma_with_expansion ("db", "index_type", handle_pragma_db_itype);
+  c_register_pragma_with_expansion ("db", "key_type", handle_pragma_db_ktype);
+  c_register_pragma_with_expansion ("db", "table", handle_pragma_db_table);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
 }

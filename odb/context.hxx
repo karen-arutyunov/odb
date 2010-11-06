@@ -25,6 +25,17 @@ using std::cerr;
 
 class generation_failed {};
 
+// Keep this enum synchronized with the one in libodb/odb/container-traits.hxx.
+//
+enum container_kind
+{
+  ck_ordered,
+  ck_set,
+  ck_multiset,
+  ck_map,
+  ck_multimap
+};
+
 class context
 {
 public:
@@ -37,8 +48,9 @@ public:
 public:
 
   // Composite value type is a class type that was explicitly marked
-  // as value type and there was no SQL type mapping provided for it
-  // by the user (specifying the SQL type makes the value type simple).
+  // as value type and there was no database type mapping provided for
+  // it by the user (specifying the database type makes the value type
+  // simple).
   //
   static bool
   comp_value (semantics::class_& c)
@@ -56,22 +68,62 @@ public:
     return c != 0 && t.count ("value") && !t.count ("type") ? c : 0;
   }
 
+  static bool
+  container (semantics::type& t)
+  {
+    return t.count ("container-kind");
+  }
+
   // Database names and types.
   //
 public:
   string
-  table_name (semantics::type&) const;
+  table_name (semantics::class_&) const;
+
+  // Table name for the container member.
+  //
+  struct table_prefix
+  {
+    string prefix;
+    size_t level;
+  };
+
+  string
+  table_name (semantics::data_member&, table_prefix const&) const;
 
   string
   column_name (semantics::data_member&) const;
 
+  string
+  column_name (semantics::data_member&,
+               string const& key_prefix,
+               string const& default_name) const;
+
   virtual string
-  column_type (semantics::data_member&) const;
+  column_type (semantics::data_member&,
+               string const& key_prefix = string ()) const;
+
+  // Return empty string if there is no mapping. The second argument
+  // is the custom type or empty string if it is not specified.
+  //
+  string
+  column_type_impl (semantics::type& t,
+                    string const& type,
+                    semantics::context* ctx) const
+  {
+    return data_->column_type_impl (t, type, ctx);
+  }
+
+  // Cleaned-up member name that can be used for database names.
+  //
+  string
+  public_name_db (semantics::data_member&) const;
 
   // C++ names.
   //
 public:
-  // Cleaned-up member name that can be used in public interfaces.
+  // Cleaned-up and escaped member name that can be used in public C++
+  // interfaces.
   //
   string
   public_name (semantics::data_member&) const;
@@ -87,13 +139,58 @@ public:
   static size_t
   column_count (semantics::class_&);
 
-  // Per-database customizable functionality.
+  semantics::data_member&
+  id_member (semantics::class_&);
+
+  // Container information.
   //
 public:
-  // Return empty string if there is no mapping.
-  //
-  virtual string
-  column_type_impl (semantics::data_member&) const;
+  typedef ::container_kind container_kind_type;
+
+  static container_kind_type
+  container_kind (semantics::type& c)
+  {
+    return c.get<container_kind_type> ("container-kind");
+  }
+
+  static semantics::type&
+  container_vt (semantics::type& c)
+  {
+    return *c.get<semantics::type*> ("tree-value-type");
+  }
+
+  static string
+  container_fq_vt (semantics::data_member& m)
+  {
+    return "container_traits< " + m.type ().fq_name (m.belongs ().hint ()) +
+      " >::value_type";
+  }
+
+  static semantics::type&
+  container_it (semantics::type& c)
+  {
+    return *c.get<semantics::type*> ("tree-index-type");
+  }
+
+  static string
+  container_fq_it (semantics::data_member& m)
+  {
+    return "container_traits< " + m.type ().fq_name (m.belongs ().hint ()) +
+      " >::index_type";
+  }
+
+  static semantics::type&
+  container_kt (semantics::type& c)
+  {
+    return *c.get<semantics::type*> ("tree-key-type");
+  }
+
+  static string
+  container_fq_kt (semantics::data_member& m)
+  {
+    return "container_traits< " + m.type ().fq_name (m.belongs ().hint ()) +
+      " >::key_type";
+  }
 
 protected:
   struct data;
@@ -126,6 +223,14 @@ protected:
   struct data
   {
     virtual ~data () {}
+
+    // Per-database customizable functionality.
+    //
+  public:
+    virtual string
+    column_type_impl (semantics::type&,
+                      string const& type,
+                      semantics::context*) const;
 
     keyword_set_type keyword_set_;
     type_map_type type_map_;

@@ -81,18 +81,16 @@ namespace mysql
   {
     struct has_grow: traversal::class_
     {
-      has_grow (context& c)
-          : member_ (c, *this)
+      has_grow ()
       {
-        *this >> member_names_ >> member_;
         *this >> inherits_ >> *this;
       }
 
       bool
-      dispatch (semantics::type& t)
+      dispatch (type& c)
       {
         r_ = false;
-        traversal::class_::dispatch (t);
+        traverse (c);
         return r_;
       }
 
@@ -115,57 +113,74 @@ namespace mysql
       }
 
     private:
-      struct member: member_base
-      {
-        member (context& c, has_grow& hg) : member_base (c, false), hg_ (hg) {}
-
-        virtual void
-        traverse_composite (type& m)
-        {
-          if (!hg_.r_)
-            hg_.r_ = hg_.dispatch (m.type ());
-        }
-
-        virtual void
-        traverse_decimal (type&, sql_type const&)
-        {
-          hg_.r_ = true;
-        }
-
-        virtual void
-        traverse_long_string (type&, sql_type const&)
-        {
-          hg_.r_ = true;
-        }
-
-        virtual void
-        traverse_short_string (type&, sql_type const&)
-        {
-          hg_.r_ = true; // @@ Short string optimization disabled.
-        }
-
-        virtual void
-        traverse_enum (type&, sql_type const&)
-        {
-          hg_.r_ = true;
-        }
-
-        virtual void
-        traverse_set (type&, sql_type const&)
-        {
-          hg_.r_ = true;
-        }
-
-      private:
-        has_grow& hg_;
-      };
+      friend class has_grow_member;
 
       bool r_;
-
-      member member_;
-      traversal::names member_names_;
-
       traversal::inherits inherits_;
+    };
+
+    struct has_grow_member: member_base
+    {
+      has_grow_member (context& c, has_grow& hg)
+          : member_base (c), hg_ (hg)
+      {
+      }
+
+      has_grow_member (context& c,
+                       has_grow& hg,
+                       semantics::type& type,
+                       string const& key_prefix)
+          : member_base (c, "", type, "", key_prefix), hg_ (hg)
+      {
+      }
+
+      bool
+      dispatch (semantics::data_member& m)
+      {
+        hg_.r_ = false;
+        member_base::traverse (m);
+        return hg_.r_;
+      }
+
+      virtual void
+      traverse_composite (member_info& mi)
+      {
+        if (!hg_.r_)
+          hg_.r_ = hg_.dispatch (dynamic_cast<semantics::class_&> (mi.t));
+      }
+
+      virtual void
+      traverse_decimal (member_info&)
+      {
+        hg_.r_ = true;
+      }
+
+      virtual void
+      traverse_long_string (member_info&)
+      {
+        hg_.r_ = true;
+      }
+
+      virtual void
+      traverse_short_string (member_info&)
+      {
+        hg_.r_ = true; // @@ Short string optimization disabled.
+      }
+
+      virtual void
+      traverse_enum (member_info&)
+      {
+        hg_.r_ = true;
+      }
+
+      virtual void
+      traverse_set (member_info&)
+      {
+        hg_.r_ = true;
+      }
+
+    private:
+      has_grow& hg_;
     };
   }
 
@@ -175,20 +190,37 @@ namespace mysql
     if (c.count ("mysql::grow"))
       return c.get<bool> ("mysql::grow");
 
-    has_grow t (*this);
-    return t.dispatch (c);
+    has_grow ct;
+    has_grow_member mt  (*this, ct);
+    traversal::names names;
+    ct >> names >> mt;
+
+    return ct.dispatch (c);
+  }
+
+  bool context::
+  grow (semantics::data_member& m, semantics::type& t, string const& kp)
+  {
+    has_grow ct;
+    has_grow_member mt  (*this, ct, t, kp);
+    traversal::names names;
+    ct >> names >> mt;
+
+    return mt.dispatch (m);
   }
 
   //
   // SQL type parsing.
   //
 
-  string context::
-  column_type_impl (semantics::data_member& m) const
+  string context::data::
+  column_type_impl (semantics::type& t,
+                    string const& type,
+                    semantics::context* ctx) const
   {
-    string r (::context::column_type_impl (m));
+    string r (::context::data::column_type_impl (t, type, ctx));
 
-    if (m.count ("auto"))
+    if (!r.empty () && ctx != 0 && ctx->count ("auto"))
       r += " AUTO_INCREMENT";
 
     return r;
@@ -198,12 +230,14 @@ namespace mysql
   parse_sql_type (semantics::data_member& m, std::string const& sql);
 
   sql_type const& context::
-  db_type (semantics::data_member& m)
+  db_type (semantics::data_member& m, string const& kp)
   {
-    if (!m.count ("db-type"))
-      m.set ("db-type", parse_sql_type (m, column_type (m)));
+    string key (kp.empty () ? string ("db-type") : kp + "-db-type");
 
-    return m.get<sql_type> ("db-type");
+    if (!m.count (key))
+      m.set (key, parse_sql_type (m, column_type (m, kp)));
+
+    return m.get<sql_type> (key);
   }
 
   static sql_type

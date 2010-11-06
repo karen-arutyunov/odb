@@ -4,6 +4,7 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <odb/context.hxx>
+#include <odb/common.hxx>
 
 using namespace std;
 
@@ -119,6 +120,71 @@ context::
 {
 }
 
+string context::
+table_name (semantics::class_& t) const
+{
+  if (t.count ("table"))
+    return t.get<string> ("table");
+  else
+    return t.name ();
+}
+
+string context::
+table_name (semantics::data_member& m, table_prefix const& p) const
+{
+  // If a custom table name was specified, then ignore the top-level
+  // table prefix.
+  //
+  if (m.count ("table"))
+  {
+    string const& name (m.get<string> ("table"));
+    return p.level == 1 ? name : p.prefix + name;
+  }
+
+  return p.prefix + public_name_db (m);
+}
+
+string context::
+column_name (semantics::data_member& m) const
+{
+  return m.count ("column") ? m.get<string> ("column") : public_name_db (m);
+}
+
+string context::
+column_name (semantics::data_member& m, string const& p, string const& d) const
+{
+  string key (p + "-column");
+  return m.count (key) ? m.get<string> (key) : d;
+}
+
+string context::
+column_type (semantics::data_member& m, string const& kp) const
+{
+  return kp.empty ()
+    ? m.get<string> ("column-type")
+    : m.get<string> (kp + "-column-type");
+}
+
+string context::data::
+column_type_impl (semantics::type& t,
+                  string const& type,
+                  semantics::context* ctx) const
+{
+  if (!type.empty ())
+    return type;
+
+  // Don't use the name hint here so that we get the primary name (e.g.,
+  // ::std::string) instead of a user typedef (e.g., my_string).
+  //
+  string const& name (t.fq_name ());
+  type_map_type::const_iterator i (type_map_.find (name));
+
+  if (i != type_map_.end ())
+    return ctx != 0 && ctx->count ("id") ? i->second.id_type : i->second.type;
+
+  return string ();
+}
+
 static string
 public_name_impl (semantics::data_member& m)
 {
@@ -142,47 +208,9 @@ public_name_impl (semantics::data_member& m)
 }
 
 string context::
-table_name (semantics::type& t) const
+public_name_db (semantics::data_member& m) const
 {
-  if (t.count ("table"))
-    return t.get<string> ("table");
-  else
-    return t.name ();
-}
-
-string context::
-column_name (semantics::data_member& m) const
-{
-  return m.count ("column") ? m.get<string> ("column") : public_name_impl (m);
-}
-
-string context::
-column_type (semantics::data_member& m) const
-{
-  return m.get<string> ("column-type");
-}
-
-string context::
-column_type_impl (semantics::data_member& m) const
-{
-  if (m.count ("type"))
-    return m.get<string> ("type");
-
-  semantics::type& t (m.type ());
-
-  if (t.count ("type"))
-    return t.get<string> ("type");
-
-  // Don't use the name hint here so that we get the primary name (e.g.,
-  // ::std::string) instead of a user typedef (e.g., my_string).
-  //
-  string const& name (t.fq_name ());
-  type_map_type::const_iterator i (data_->type_map_.find (name));
-
-  if (i != data_->type_map_.end ())
-    return m.count ("id") ? i->second.id_type : i->second.type;
-
-  return string ();
+  return public_name_impl (m);
 }
 
 string context::
@@ -267,72 +295,96 @@ escape (string const& name) const
 
 namespace
 {
-  struct column_count_impl: traversal::class_
+  struct column_count_impl: object_members_base
   {
     column_count_impl ()
-        : member_ (*this)
+        : count_ (0)
     {
-      *this >> names_ >> member_;
-      *this >> inherits_ >> *this;
-    }
-
-    size_t
-    count () const
-    {
-      return member_.count_;
     }
 
     virtual void
     traverse (semantics::class_& c)
     {
       if (c.count ("column-count"))
-        member_.count_ += c.get<size_t> ("column-count");
+        count_ += c.get<size_t> ("column-count");
       else
       {
-        size_t n (member_.count_);
-        inherits (c);
-        names (c);
-        c.set ("column-count", member_.count_ - n);
+        size_t n (count_);
+        object_members_base::traverse (c);
+        c.set ("column-count", count_ - n);
       }
     }
 
-  private:
-    struct member: traversal::data_member
+    virtual void
+    simple (semantics::data_member&)
     {
-      member (column_count_impl& cc): count_ (0), cc_ (cc) {}
+      count_++;
+    }
 
-      virtual void
-      traverse (semantics::data_member& m)
-      {
-        if (m.count ("transient"))
-          return;
-
-        if (context::comp_value (m.type ()))
-          cc_.dispatch (m.type ());
-        else
-          count_++;
-      }
-
-      size_t count_;
-      column_count_impl& cc_;
-    };
-
-    member member_;
-    traversal::names names_;
-
-    traversal::inherits inherits_;
+  private:
+    size_t count_;
   };
 }
 
 size_t context::
 column_count (semantics::class_& c)
 {
-  if (c.count ("column-count"))
-    return c.get<size_t> ("column-count");
+  if (!c.count ("column-count"))
+  {
+    column_count_impl t;
+    t.traverse (c);
+  }
 
-  column_count_impl t;
-  t.traverse (c);
-  return t.count ();
+  return c.get<size_t> ("column-count");
+}
+
+namespace
+{
+  // Find id member.
+  //
+  struct id_member_impl: traversal::class_
+  {
+    id_member_impl ()
+    {
+      *this >> names_ >> member_;
+    }
+
+    virtual void
+    traverse (semantics::class_& c)
+    {
+      member_.m_ = 0;
+      names (c);
+      c.set ("id-member", member_.m_);
+    }
+
+  private:
+    struct member: traversal::data_member
+    {
+      virtual void
+      traverse (semantics::data_member& m)
+      {
+        if (m.count ("id"))
+          m_ = &m;
+      }
+
+      semantics::data_member* m_;
+    };
+
+    member member_;
+    traversal::names names_;
+  };
+}
+
+semantics::data_member& context::
+id_member (semantics::class_& c)
+{
+  if (!c.count ("id-member"))
+  {
+    id_member_impl t;
+    t.traverse (c);
+  }
+
+  return *c.get<semantics::data_member*> ("id-member");
 }
 
 // namespace

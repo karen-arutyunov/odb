@@ -8,10 +8,14 @@
 #include <odb/mysql/common.hxx>
 #include <odb/mysql/schema.hxx>
 
+using namespace std;
+
 namespace mysql
 {
   namespace
   {
+    typedef set<string> tables;
+
     struct object_columns: object_columns_base, context
     {
       object_columns (context& c)
@@ -30,6 +34,118 @@ namespace mysql
         if (m.count ("id"))
           os << " PRIMARY KEY";
       }
+    };
+
+    struct member_create: object_members_base, context
+    {
+      member_create (context& c, semantics::class_& object, tables& t)
+          : object_members_base (c, false, true),
+            context (c),
+            object_ (object),
+            id_member_ (id_member (object)),
+            tables_ (t)
+      {
+      }
+
+      virtual void
+      container (semantics::data_member& m)
+      {
+        using semantics::type;
+        using semantics::data_member;
+
+        type& t (m.type ());
+        container_kind_type ck (container_kind (t));
+        type& vt (container_vt (t));
+
+        string const& name (table_name (m, table_prefix_));
+
+        if (tables_.count (name))
+          return;
+
+        os << "CREATE TABLE `" << name << "` (" << endl;
+
+        // object_id (simple value)
+        //
+        string id_name (column_name (m, "id", "object_id"));
+        os << "  `" << id_name << "` " << column_type (id_member_);
+
+        // index (simple value)
+        //
+        string index_name;
+        if (ck == ck_ordered)
+        {
+          index_name = column_name (m, "index", "index");
+
+          os << "," << endl
+             << "  `" << index_name << "` " << column_type (m, "index");
+        }
+
+        // key (simple or composite value)
+        //
+        if (ck == ck_map || ck == ck_multimap)
+        {
+          type& kt (container_kt (t));
+
+          os << "," << endl;
+
+          if (comp_value (kt))
+          {
+            object_columns oc (*this);
+            oc.traverse_composite (m, kt, "key", "key");
+          }
+          else
+          {
+            string const& name (column_name (m, "key", "key"));
+            os << "  `" << name << "` " << column_type (m, "key");
+          }
+        }
+
+        // value (simple or composite value)
+        //
+        {
+          os << "," << endl;
+
+          if (comp_value (vt))
+          {
+            object_columns oc (*this);
+            oc.traverse_composite (m, vt, "value", "value");
+          }
+          else
+          {
+            string const& name (column_name (m, "value", "value"));
+            os << "  `" << name << "` " << column_type (m, "value");
+          }
+        }
+
+        // object_id index
+        //
+        os << "," << endl
+           << "  INDEX (`" << id_name << "`)";
+
+        // index index
+        //
+        if (ck == ck_ordered)
+          os << "," << endl
+             << "  INDEX (`" << index_name << "`)";
+
+        os << ")";
+
+        string const& engine (options.mysql_engine ());
+
+        if (engine != "default")
+          os << endl
+             << "  ENGINE=" << engine;
+
+        os << ";" << endl
+           << endl;
+
+        tables_.insert (name);
+      }
+
+    private:
+      semantics::class_& object_;
+      semantics::data_member& id_member_;
+      tables& tables_;
     };
 
     struct class_create: traversal::class_, context
@@ -59,8 +175,8 @@ namespace mysql
         os << "CREATE TABLE `" << name << "` (" << endl;
 
         {
-          object_columns t (*this);
-          t.traverse (c);
+          object_columns oc (*this);
+          oc.traverse (c);
         }
 
         os << ")";
@@ -74,11 +190,45 @@ namespace mysql
         os << ";" << endl
            << endl;
 
+        // Create tables for members.
+        //
+        {
+          member_create mc (*this, c, tables_);
+          mc.traverse (c);
+        }
+
         tables_.insert (name);
       }
 
     private:
-      std::set<string> tables_;
+      tables tables_;
+    };
+
+    struct member_drop: object_members_base, context
+    {
+      member_drop (context& c, semantics::class_& object, tables& t)
+          : object_members_base (c, false, true),
+            context (c),
+            object_ (object),
+            tables_ (t)
+      {
+      }
+
+      virtual void
+      container (semantics::data_member& m)
+      {
+        string const& name (table_name (m, table_prefix_));
+
+        if (tables_.count (name))
+          return;
+
+        os << "DROP TABLE IF EXISTS `" << name << "`;" << endl;
+        tables_.insert (name);
+      }
+
+    private:
+      semantics::class_& object_;
+      tables& tables_;
     };
 
     struct class_drop: traversal::class_, context
@@ -104,11 +254,18 @@ namespace mysql
 
         os << "DROP TABLE IF EXISTS `" << name << "`;" << endl;
 
+        // Drop tables for members.
+        //
+        {
+          member_drop mc (*this, c, tables_);
+          mc.traverse (c);
+        }
+
         tables_.insert (name);
       }
 
     private:
-      std::set<string> tables_;
+      tables tables_;
     };
 
     static char const file_header[] =

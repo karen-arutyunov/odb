@@ -8,13 +8,157 @@
 using namespace std;
 
 //
+// object_members_base
+//
+
+void object_members_base::
+simple (semantics::data_member&)
+{
+}
+
+void object_members_base::
+composite (semantics::data_member&, semantics::type& t)
+{
+  dispatch (t);
+}
+
+void object_members_base::
+container (semantics::data_member&)
+{
+}
+
+void object_members_base::
+traverse_composite (semantics::data_member& m, semantics::type& t)
+{
+  composite (m, t);
+}
+
+void object_members_base::
+traverse (semantics::class_& c)
+{
+  if (build_table_prefix_ && c.count ("object"))
+  {
+    table_prefix_.prefix = ctx_->table_name (c);
+    table_prefix_.prefix += '_';
+    table_prefix_.level = 1;
+
+    inherits (c);
+    names (c);
+
+    table_prefix_.level = 0;
+    table_prefix_.prefix.clear ();
+  }
+  else
+  {
+    inherits (c);
+    names (c);
+  }
+}
+
+void object_members_base::member::
+traverse (semantics::data_member& m)
+{
+  if (m.count ("transient"))
+    return;
+
+  semantics::type& t (m.type ());
+
+  if (context::comp_value (t))
+  {
+    string old_prefix, old_table_prefix;
+
+    if (om_.build_prefix_)
+    {
+      old_prefix = om_.prefix_;
+      om_.prefix_ += om_.ctx_->public_name (m);
+      om_.prefix_ += '_';
+    }
+
+    if (om_.build_table_prefix_)
+    {
+      old_table_prefix = om_.table_prefix_.prefix;
+
+      // If the user provided a table prefix, then use it verbatim. Also
+      // drop the top-level table prefix in this case.
+      //
+      if (m.count ("table"))
+      {
+        if (om_.table_prefix_.level == 1)
+          om_.table_prefix_.prefix.clear ();
+
+        om_.table_prefix_.prefix += m.get<string> ("table");
+      }
+      // Otherwise use the member name and add an underscore unless it is
+      // already there.
+      //
+      else
+      {
+        string name (om_.ctx_->public_name_db (m));
+        size_t n (name.size ());
+
+        om_.table_prefix_.prefix += name;
+
+        if (n != 0 && name[n - 1] != '_')
+          om_.table_prefix_.prefix += '_';
+      }
+
+      om_.table_prefix_.level++;
+    }
+
+    om_.composite (m, t);
+
+    if (om_.build_table_prefix_)
+    {
+      om_.table_prefix_.level--;
+      om_.table_prefix_.prefix = old_table_prefix;
+    }
+
+    if (om_.build_prefix_)
+      om_.prefix_ = old_prefix;
+  }
+  else if (context::container (t))
+  {
+    om_.container (m);
+  }
+  else
+  {
+    om_.simple (m);
+  }
+}
+
+//
 // object_columns_base
 //
 
 void object_columns_base::
-composite (semantics::data_member& m)
+composite (semantics::data_member&, semantics::type& t)
 {
-  dispatch (m.type ());
+  dispatch (t);
+}
+
+void object_columns_base::
+traverse_composite (semantics::data_member& m,
+                    semantics::type& t,
+                    string const& key_prefix,
+                    string const& default_name)
+{
+  bool custom (m.count (key_prefix + "-column"));
+  string name (member_.column_name (m, key_prefix, default_name));
+
+  // If the user provided the column prefix, then use it verbatime.
+  // Otherwise, append the underscore, unless it is already there.
+  //
+  member_.prefix_ = name;
+
+  if (!custom)
+  {
+    size_t n (name.size ());
+
+    if (n != 0 && name[n - 1] != '_')
+      member_.prefix_ += '_';
+  }
+
+  composite (m, t);
 }
 
 void object_columns_base::
@@ -30,7 +174,9 @@ traverse (semantics::data_member& m)
   if (m.count ("transient"))
     return;
 
-  if (comp_value (m.type ()))
+  semantics::type& t (m.type ());
+
+  if (comp_value (t))
   {
     string old_prefix (prefix_);
 
@@ -50,9 +196,14 @@ traverse (semantics::data_member& m)
         prefix_ += '_';
     }
 
-    oc_.composite (m);
+    oc_.composite (m, t);
 
     prefix_ = old_prefix;
+  }
+  else if (container (t))
+  {
+    // Container gets its own table, so nothing to do here.
+    //
   }
   else
   {

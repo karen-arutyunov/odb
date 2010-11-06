@@ -13,119 +13,170 @@ namespace mysql
 {
   struct member_base: traversal::data_member, context
   {
-    member_base (context& c, bool id)
-        : context (c), id_ (id)
+    member_base (context& c, string const& var = string ())
+        : context (c), var_override_ (var), type_override_ (0)
+    {
+    }
+
+    member_base (context& c,
+                 string const& var,
+                 semantics::type& type,
+                 string const& fq_type,
+                 string const& key_prefix)
+        : context (c),
+          var_override_ (var),
+          type_override_ (&type),
+          fq_type_override_ (fq_type),
+          key_prefix_ (key_prefix)
     {
     }
 
     virtual void
-    traverse (type& m);
+    traverse (semantics::data_member& m);
+
+    struct member_info
+    {
+      semantics::data_member& m; // Member.
+      semantics::type& t;        // Member C++ type (m.type () may != t).
+      sql_type const* st;        // Member SQL type (only simple value types).
+      string& var;               // Member variable name with trailing '_'.
+
+      // C++ type fq-name.
+      //
+      string
+      fq_type () const
+      {
+        return fq_type_.empty () ? t.fq_name (m.belongs ().hint ()) : fq_type_;
+      }
+
+      string const& fq_type_;
+
+      member_info (semantics::data_member& m_,
+                   semantics::type& t_,
+                   string& var_,
+                   string const& fq_type)
+          : m (m_), t (t_), st (0), var (var_), fq_type_ (fq_type)
+      {
+      }
+    };
 
     virtual void
-    pre (type&)
+    pre (member_info&)
     {
     }
 
     virtual void
-    post (type&)
+    post (member_info&)
     {
     }
 
     virtual void
-    traverse_composite (type&)
+    traverse_composite (member_info&)
     {
     }
 
     virtual void
-    traverse_integer (type&, sql_type const&)
+    traverse_container (member_info&)
     {
     }
 
     virtual void
-    traverse_float (type&, sql_type const&)
+    traverse_integer (member_info&)
     {
     }
 
     virtual void
-    traverse_decimal (type&, sql_type const&)
+    traverse_float (member_info&)
     {
     }
 
     virtual void
-    traverse_date_time (type&, sql_type const&)
+    traverse_decimal (member_info&)
     {
     }
 
     virtual void
-    traverse_string (type&, sql_type const&)
+    traverse_date_time (member_info&)
     {
     }
 
     virtual void
-    traverse_short_string (type& t, sql_type const& st)
-    {
-      traverse_string (t, st);
-    }
-
-    virtual void
-    traverse_long_string (type& t, sql_type const& st)
-    {
-      traverse_string (t, st);
-    }
-
-    virtual void
-    traverse_bit (type&, sql_type const&)
+    traverse_string (member_info&)
     {
     }
 
     virtual void
-    traverse_enum (type&, sql_type const&)
+    traverse_short_string (member_info& mi)
+    {
+      traverse_string (mi);
+    }
+
+    virtual void
+    traverse_long_string (member_info& mi)
+    {
+      traverse_string (mi);
+    }
+
+    virtual void
+    traverse_bit (member_info&)
     {
     }
 
     virtual void
-    traverse_set (type&, sql_type const&)
+    traverse_enum (member_info&)
+    {
+    }
+
+    virtual void
+    traverse_set (member_info&)
     {
     }
 
   protected:
-    bool id_;
-    string var;
+    string var_override_;
+    semantics::type* type_override_;
+    string fq_type_override_;
+    string key_prefix_;
   };
 
   struct member_image_type: member_base
   {
-    member_image_type (context&, bool id);
+    member_image_type (context&);
+
+    member_image_type (context& c,
+                       semantics::type& type,
+                       string const& fq_type,
+                       string const& key_prefix);
 
     string
-    image_type (type&);
+    image_type (semantics::data_member&);
 
     virtual void
-    traverse_composite (type&);
+    traverse_composite (member_info&);
 
     virtual void
-    traverse_integer (type&, sql_type const&);
+    traverse_integer (member_info&);
 
     virtual void
-    traverse_float (type&, sql_type const&);
+    traverse_float (member_info&);
 
     virtual void
-    traverse_decimal (type&, sql_type const&);
+    traverse_decimal (member_info&);
 
     virtual void
-    traverse_date_time (type&, sql_type const&);
+    traverse_date_time (member_info&);
 
     virtual void
-    traverse_string (type&, sql_type const&);
+    traverse_string (member_info&);
 
     virtual void
-    traverse_bit (type&, sql_type const&);
+    traverse_bit (member_info&);
 
     virtual void
-    traverse_enum (type&, sql_type const&);
+    traverse_enum (member_info&);
 
     virtual void
-    traverse_set (type&, sql_type const&);
+    traverse_set (member_info&);
 
   private:
     string type_;
@@ -135,35 +186,40 @@ namespace mysql
   {
     member_database_type (context&);
 
+    member_database_type (context& c,
+                          semantics::type& type,
+                          string const& fq_type,
+                          string const& key_prefix);
+
     string
     database_type (type&);
 
     virtual void
-    traverse_composite (type&);
+    traverse_composite (member_info&);
 
     virtual void
-    traverse_integer (type&, sql_type const&);
+    traverse_integer (member_info&);
 
     virtual void
-    traverse_float (type&, sql_type const&);
+    traverse_float (member_info&);
 
     virtual void
-    traverse_decimal (type&, sql_type const&);
+    traverse_decimal (member_info&);
 
     virtual void
-    traverse_date_time (type&, sql_type const&);
+    traverse_date_time (member_info&);
 
     virtual void
-    traverse_string (type&, sql_type const&);
+    traverse_string (member_info&);
 
     virtual void
-    traverse_bit (type&, sql_type const&);
+    traverse_bit (member_info&);
 
     virtual void
-    traverse_enum (type&, sql_type const&);
+    traverse_enum (member_info&);
 
     virtual void
-    traverse_set (type&, sql_type const&);
+    traverse_set (member_info&);
 
   private:
     string type_;
@@ -175,7 +231,7 @@ namespace mysql
     query_columns (context&, semantics::class_&);
 
     virtual void
-    composite (semantics::data_member&);
+    composite (semantics::data_member&, semantics::type&);
 
     virtual void
     column (semantics::data_member&, string const&, bool);

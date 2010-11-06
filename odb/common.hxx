@@ -11,57 +11,96 @@
 
 #include <odb/context.hxx>
 
-// Find id member.
+// Traverse object members recursively by going into composite members.
 //
-struct id_member: traversal::class_
+struct object_members_base: traversal::class_
 {
-  id_member ()
+  virtual void
+  simple (semantics::data_member&);
+
+  // If you override this function, call the base if you want the composite
+  // to be recursively traversed. The second argument is the actual composite
+  // type, which is not necessarily the same as m.type() in case of
+  // traverse_composite().
+  //
+  virtual void
+  composite (semantics::data_member& m, semantics::type& t);
+
+  virtual void
+  container (semantics::data_member&);
+
+public:
+  object_members_base ()
+      : ctx_ (0),
+        build_prefix_ (false),
+        build_table_prefix_ (false),
+        member_ (*this)
   {
     *this >> names_ >> member_;
+    *this >> inherits_ >> *this;
   }
 
-  semantics::data_member*
-  member () const
+  object_members_base (context& c,
+                       bool build_prefix,
+                       bool build_table_prefix)
+      : ctx_ (&c),
+        build_prefix_ (build_prefix),
+        build_table_prefix_ (build_table_prefix),
+        member_ (*this)
   {
-    return member_.m_;
+    *this >> names_ >> member_;
+    *this >> inherits_ >> *this;
   }
 
   virtual void
-  traverse (semantics::class_& c)
-  {
-    member_.m_ = 0;
-    names (c);
-  }
+  traverse (semantics::class_&);
+
+  virtual void
+  traverse_composite (semantics::data_member&, semantics::type&);
+
+protected:
+  std::string prefix_;
+  context::table_prefix table_prefix_;
 
 private:
-  struct data_member: traversal::data_member
+  struct member: traversal::data_member
   {
-    virtual void
-    traverse (semantics::data_member& m)
+    member (object_members_base& om)
+        : om_ (om)
     {
-      if (m.count ("id"))
-        m_ = &m;
     }
 
-    semantics::data_member* m_;
+    virtual void
+    traverse (semantics::data_member&);
+
+  public:
+    object_members_base& om_;
   };
 
-  data_member member_;
+  context* ctx_;
+  bool build_prefix_;
+  bool build_table_prefix_;
+
+  member member_;
   traversal::names names_;
+  traversal::inherits inherits_;
 };
 
-// Traverse object columns.
+// Traverse object columns recursively by going into composite members.
 //
 struct object_columns_base: traversal::class_
 {
   virtual void
   column (semantics::data_member&, std::string const& name, bool first) = 0;
 
-  // If you override this callback, always call the base.
+  // If you override this function, always call the base. The second argument
+  // is the actual composite type, which is not necessarily the same as
+  // m.type ().
   //
   virtual void
-  composite (semantics::data_member&);
+  composite (semantics::data_member& m, semantics::type& t);
 
+public:
   object_columns_base (context& c)
       : member_ (c, *this)
   {
@@ -71,6 +110,12 @@ struct object_columns_base: traversal::class_
 
   virtual void
   traverse (semantics::class_&);
+
+  virtual void
+  traverse_composite (semantics::data_member&,
+                      semantics::type&,
+                      std::string const& key_prefix,
+                      std::string const& default_name);
 
 private:
   struct member: traversal::data_member, context
@@ -83,7 +128,7 @@ private:
     virtual void
     traverse (semantics::data_member&);
 
-  private:
+  public:
     object_columns_base& oc_;
 
     string prefix_;
