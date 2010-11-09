@@ -320,6 +320,7 @@ namespace mysql
            << "{";
 
         // container_type
+        // container_traits
         // index_type
         // key_type
         // value_type
@@ -327,18 +328,20 @@ namespace mysql
 
         os << "typedef " << t.fq_name (m.belongs ().hint ()) <<
           " container_type;";
+        os << "typedef odb::access::container_traits< container_type > " <<
+          "container_traits;";
 
         switch (ck)
         {
         case ck_ordered:
           {
-            os << "typedef " << container_fq_it (m) << " index_type;";
+            os << "typedef container_traits::index_type index_type;";
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "typedef " << container_fq_kt (m) << " key_type;";
+            os << "typedef container_traits::key_type key_type;";
           }
         case ck_set:
         case ck_multiset:
@@ -347,11 +350,8 @@ namespace mysql
           }
         }
 
-        os << "typedef " << container_fq_vt (m) << " value_type;"
+        os << "typedef container_traits::value_type value_type;"
            << endl;
-
-        os << "typedef odb::access::container_traits< container_type > " <<
-          "container_traits;";
 
         // functions_type
         //
@@ -928,8 +928,10 @@ namespace mysql
            << endl;
 
     if (ctx.options.generate_query ())
-      ctx.os << "#include <odb/result.hxx>" << endl
-             << endl;
+      ctx.os << "#include <odb/result.hxx>" << endl;
+
+    ctx.os << "#include <odb/container-traits.hxx>" << endl
+           << endl;
 
     ctx.os << "#include <odb/mysql/version.hxx>" << endl
            << "#include <odb/mysql/forward.hxx>" << endl

@@ -480,6 +480,16 @@ main (int argc, char* argv[])
           pi.fd, ios_base::out | ios_base::binary);
         ostream os (&fb);
 
+        // Add custom prologue if any.
+        //
+        strings const& pro (ops.odb_prologue ());
+        for (size_t i (0); i < pro.size (); ++i)
+        {
+          os << "#line 1 \"<odb-prologue-" << i + 1 << ">\"" << endl
+             << pro[i]
+             << endl;
+        }
+
         // Write the synthesized translation unit to stdout.
         //
         os << "#line 1 \"" << escape_path (input) << "\"" << endl;
@@ -489,6 +499,21 @@ main (int argc, char* argv[])
           e << input << ": error: io failure" << endl;
           wait_process (pi, argv[0]);
           return 1;
+        }
+
+        // Add the standard epilogue.
+        //
+        os << "#line 1 \"<standard-odb-epilogue>\"" << endl
+           << "#include <odb/container-traits.hxx>" << endl;
+
+        // Add custom epilogue if any.
+        //
+        strings const& epi (ops.odb_epilogue ());
+        for (size_t i (0); i < epi.size (); ++i)
+        {
+          os << "#line 1 \"<odb-epilogue-" << i + 1 << ">\"" << endl
+             << epi[i]
+             << endl;
         }
       }
 

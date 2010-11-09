@@ -159,37 +159,16 @@ public:
     return *c.get<semantics::type*> ("tree-value-type");
   }
 
-  static string
-  container_fq_vt (semantics::data_member& m)
-  {
-    return "container_traits< " + m.type ().fq_name (m.belongs ().hint ()) +
-      " >::value_type";
-  }
-
   static semantics::type&
   container_it (semantics::type& c)
   {
     return *c.get<semantics::type*> ("tree-index-type");
   }
 
-  static string
-  container_fq_it (semantics::data_member& m)
-  {
-    return "container_traits< " + m.type ().fq_name (m.belongs ().hint ()) +
-      " >::index_type";
-  }
-
   static semantics::type&
   container_kt (semantics::type& c)
   {
     return *c.get<semantics::type*> ("tree-key-type");
-  }
-
-  static string
-  container_fq_kt (semantics::data_member& m)
-  {
-    return "container_traits< " + m.type ().fq_name (m.belongs ().hint ()) +
-      " >::key_type";
   }
 
 protected:

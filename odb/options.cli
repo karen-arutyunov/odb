@@ -218,6 +218,24 @@ class options
      schema file."
   };
 
+  // ODB compilation prologue/epilogue.
+  //
+  std::vector<std::string> --odb-prologue
+  {
+    "<text>",
+    "Compile <text> before the input header file. This option allows you
+     to add additional declarations, such as custom traits specializations,
+     to the ODB compilation process."
+  };
+
+  std::vector<std::string> --odb-epilogue
+  {
+    "<text>",
+    "Compile <text> after the input header file. This option allows you
+     to add additional declarations, such as custom traits specializations,
+     to the ODB compilation process."
+  };
+
   // Include options.
   //
   bool --include-with-brackets
