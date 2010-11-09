@@ -118,6 +118,7 @@ $(gen): $(cli)
 $(gen): cli := $(cli)
 $(gen): cli_options +=  \
 --generate-specifier    \
+--suppress-undocumented \
 --generate-file-scanner \
 --include-with-brackets \
 --include-prefix odb    \

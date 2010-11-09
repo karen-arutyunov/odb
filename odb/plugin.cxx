@@ -8,6 +8,7 @@
 #include <memory>  // std::auto_ptr
 #include <string>
 #include <vector>
+#include <cstring> // std::strcpy
 #include <iostream>
 
 #include <odb/pragma.hxx>
@@ -24,6 +25,63 @@ using namespace semantics;
 int plugin_is_GPL_compatible;
 auto_ptr<options const> options_;
 
+// A prefix of the _cpp_file struct. This struct is not part of the
+// public interface so we have to resort to this technique (based on
+// libcpp/files.c).
+//
+struct cpp_file_prefix
+{
+  char const* name;
+  char const* path;
+  char const* pchname;
+  char const* dir_name;
+};
+
+extern "C" void
+start_unit_callback (void*, void*)
+{
+  // Set the directory of the main file (stdin) to that of the orginal
+  // file.
+  //
+  cpp_buffer* b (cpp_get_buffer (parse_in));
+  _cpp_file* f (cpp_get_file (b));
+  char const* p (cpp_get_path (f));
+  cpp_file_prefix* fp (reinterpret_cast<cpp_file_prefix*> (f));
+
+  // Perform sanity checks.
+  //
+  if (p != 0 && *p == '\0'     // The path should be empty (stdin).
+      && cpp_get_prev (b) == 0 // This is the only buffer (main file).
+      && fp->path == p         // Our prefix corresponds to the actual type.
+      && fp->dir_name == 0)    // The directory part hasn't been initialized.
+  {
+    path p (options_->svc_file ());
+    path d (p.directory ());
+    char* s;
+
+    if (d.empty ())
+    {
+      s = XNEWVEC (char, 1);
+      *s = '\0';
+    }
+    else
+    {
+      size_t n (d.string ().size ());
+      s = XNEWVEC (char, n + 2);
+      strcpy (s, d.string ().c_str ());
+      s[n] = path::traits::directory_separator;
+      s[n + 1] = '\0';
+    }
+
+    fp->dir_name = s;
+  }
+  else
+  {
+    cerr << "ice: unable to initialize main file directory" << endl;
+    exit (1);
+  }
+}
+
 extern "C" void
 gate_callback (void*, void*)
 {
@@ -37,8 +95,31 @@ gate_callback (void*, void*)
 
   try
   {
+    // Find the actual main file name that was specified with the
+    // #line directive.
+    //
+    path file;
+    for (size_t i (0); i < line_table->used; ++i)
+    {
+      line_map const* m (line_table->maps + i);
+
+      if (MAIN_FILE_P (m) && m->reason == LC_RENAME)
+      {
+        string f (m->to_file);
+
+        if (f != "<built-in>" &&
+            f != "<command-line>" &&
+            f != "<stdin>")
+        {
+          file = path (f);
+          break;
+        }
+      }
+    }
+
+    //
+    //
     parser p (*options_, loc_pragmas_, decl_pragmas_);
-    path file (main_input_filename);
     auto_ptr<unit> u (p.parse (global_namespace, file));
 
     //
@@ -73,6 +154,8 @@ gate_callback (void*, void*)
 
 static char const* const odb_version = ODB_COMPILER_VERSION_STR;
 
+typedef vector<string> strings;
+
 extern "C" int
 plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
 {
@@ -84,7 +167,7 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
     // Parse options.
     //
     {
-      vector<string> argv_str;
+      strings argv_str;
       vector<char*> argv;
 
       argv_str.push_back (plugin_info->base_name);
@@ -126,6 +209,11 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
     register_callback (plugin_info->base_name,
                        PLUGIN_PRAGMAS,
                        register_odb_pragmas,
+                       0);
+
+    register_callback (plugin_info->base_name,
+                       PLUGIN_START_UNIT,
+                       start_unit_callback,
                        0);
 
     register_callback (plugin_info->base_name,

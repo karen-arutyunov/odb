@@ -5,20 +5,32 @@
 
 #include <errno.h>
 #include <stdlib.h>    // getenv, setenv
-#include <string.h>    // strerror
-#include <unistd.h>    // stat, execvp
+#include <string.h>    // strerror, memset
+#include <unistd.h>    // stat
 #include <sys/types.h> // stat
 #include <sys/stat.h>  // stat
 
-#ifdef _WIN32
-#  include <process.h> // _spawnvp
+// Process.
+//
+#ifndef _WIN32
+#  include <unistd.h>    // execvp, fork, dup2, pipe, {STDIN,STDERR}_FILENO
+#  include <sys/types.h> // waitpid
+#  include <sys/wait.h>  // waitpid
+#else
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  include <windows.h>   // CreatePipe, CreateProcess
+#  include <io.h>        // _open_osfhandle
 #endif
 
 #include <string>
 #include <vector>
 #include <cstddef>     // size_t
 #include <sstream>
+#include <fstream>
 #include <iostream>
+#include <ext/stdio_filebuf.h>
 
 #include <cutl/fs/path.hxx>
 
@@ -33,11 +45,65 @@ using namespace std;
 using cutl::fs::path;
 using cutl::fs::invalid_path;
 
+//
+// Path manipulation.
+//
+
+// Escape backslashes in the path.
+//
+static string
+escape_path (path const& p);
+
+// Search the PATH environment variable for the file.
+//
+static path
+path_search (path const&);
+
+// Driver path with the directory part (search PATH).
+//
 static path
 driver_path (path const& driver);
 
 static path
 plugin_path (path const& driver);
+
+//
+// Process manipulation.
+//
+struct process_info
+{
+#ifndef _WIN32
+  pid_t id;
+#else
+  HANDLE id;
+#endif
+
+  int fd;
+};
+
+struct process_failure {};
+
+// Start another process using the specified command line. Connect the
+// newly created process stdin to our stdout. Issue diagnostics and
+// throw process_failure if anything goes wrong. The name argument
+// is the name of the current process for diagnostics.
+//
+static process_info
+start_process (char const* args[], char const* name);
+
+// Close stdout and wait for the process to terminate. Return true if
+// the process terminated normally and with the zero exit status. Issue
+// diagnostics and throw process_failure if anything goes wrong. The name
+// argument is the name of the current process for diagnostics.
+//
+static bool
+wait_process (process_info, char const* name);
+
+//
+//
+static string
+encode_plugin_option (string const& k, string const& v);
+
 
 static char const* const db_macro[] =
 {
@@ -146,6 +212,8 @@ main (int argc, char* argv[])
 
     // Parse driver options.
     //
+    bool first_x (true);
+
     for (int i = 1; i < argc; ++i)
     {
       string a (argv[i]);
@@ -170,15 +238,20 @@ main (int argc, char* argv[])
 
         a = argv[i];
 
-        if (a[0] == '-')
-          args.push_back (a);
-        else
+        if (first_x)
         {
-          // This must be the g++ executable name. Update the first
-          // argument with it.
+          first_x = false;
+
+          // If it doesn't start with '-', then it must be the g++
+          // executable name. Update the first argument with it.
           //
-          args[0] = a;
+          if (a[0] != '-')
+            args[0] = a;
+          else
+            args.push_back (a);
         }
+        else
+          args.push_back (a);
       }
       // -I
       //
@@ -345,78 +418,89 @@ main (int argc, char* argv[])
         }
       }
 
-      string o ("-fplugin-arg-odb-");
-      o += k;
-
-      if (!v.empty ())
-      {
-        o += '=';
-
-        // On Windows we need to protect values with spaces using quotes.
-        // Since there could be actual quotes in the value, we need to
-        // escape them.
-        //
-#ifdef _WIN32
-        {
-          string t ("\"");
-          for (size_t i (0); i < v.size (); ++i)
-          {
-            if (v[i] == '"')
-              t += "\\\"";
-            else
-              t += v[i];
-          }
-          t += '"';
-          v = t;
-        }
-#endif
-        o += v;
-      }
-
-      args.push_back (o);
+      args.push_back (encode_plugin_option (k, v));
     }
 
-    // Copy over arguments.
+    // Reserve space for and remember the position of the --svc-file
+    // option.
     //
-    args.insert (args.end (), plugin_args.begin () + end, plugin_args.end ());
-
+    size_t svc_file_pos (args.size ());
+    args.push_back ("");
 
     // Create an execvp-compatible argument array.
     //
-    vector<char const*> exec_args;
+    typedef vector<char const*> cstrings;
+    cstrings exec_args;
 
     for (strings::const_iterator i (args.begin ()), end (args.end ());
          i != end; ++i)
     {
       exec_args.push_back (i->c_str ());
-
-      if (v)
-        e << *i << ' ';
     }
 
-    if (v)
-      e << endl;
-
+    exec_args.push_back ("-"); // Compile stdin.
     exec_args.push_back (0);
 
-#ifdef _WIN32
-    intptr_t r (_spawnvp (_P_WAIT, exec_args[0], &exec_args[0]));
-
-    if (r == (intptr_t)(-1))
+    // Iterate over the input files and compile each of them.
+    //
+    for (; end < plugin_args.size (); ++end)
     {
-      e << exec_args[0] << ": error: " << strerror (errno) << endl;
-      return 1;
-    }
+      path input (plugin_args[end]);
 
-    return r == 0 ? 0 : 1;
-#else
-    if (execvp (exec_args[0], const_cast<char**> (&exec_args[0])) < 0)
-    {
-      e << exec_args[0] << ": error: " << strerror (errno) << endl;
-      return 1;
-    }
-#endif
+      // Set the --svc-file option.
+      //
+      args[svc_file_pos] = encode_plugin_option ("svc-file", input.string ());
+      exec_args[svc_file_pos] = args[svc_file_pos].c_str ();
 
+      //
+      //
+      ifstream ifs (input.string ().c_str (), ios_base::in | ios_base::binary);
+
+      if (!ifs.is_open ())
+      {
+        cerr << input << ": error: unable to open in read mode" << endl;
+        return 1;
+      }
+
+      if (v)
+      {
+        e << "Compiling " << input << endl;
+        for (cstrings::const_iterator i (exec_args.begin ());
+             i != exec_args.end (); ++i)
+        {
+          if (*i != 0)
+            e << *i << (*(i + 1) != 0 ? ' ' : '\n');
+        }
+      }
+
+      process_info pi (start_process (&exec_args[0], argv[0]));
+
+      {
+        __gnu_cxx::stdio_filebuf<char> fb (
+          pi.fd, ios_base::out | ios_base::binary);
+        ostream os (&fb);
+
+        // Write the synthesized translation unit to stdout.
+        //
+        os << "#line 1 \"" << escape_path (input) << "\"" << endl;
+
+        if (!(os << ifs.rdbuf ()))
+        {
+          e << input << ": error: io failure" << endl;
+          wait_process (pi, argv[0]);
+          return 1;
+        }
+      }
+
+      if (!wait_process (pi, argv[0]))
+        return 1;
+    }
+  }
+  catch (process_failure const&)
+  {
+    // Diagnostics has already been issued.
+    //
+    return 1;
   }
   catch (invalid_path const& ex)
   {
@@ -431,20 +515,72 @@ main (int argc, char* argv[])
 
 }
 
+static string
+encode_plugin_option (string const& k, string const& cv)
+{
+  string o ("-fplugin-arg-odb-"), v (cv);
+  o += k;
+
+  if (!v.empty ())
+  {
+    o += '=';
+
+    // On Windows we need to protect values with spaces using quotes.
+    // Since there could be actual quotes in the value, we need to
+    // escape them.
+    //
+#ifdef _WIN32
+    {
+      string t ("\"");
+      for (size_t i (0); i < v.size (); ++i)
+      {
+        if (v[i] == '"')
+          t += "\\\"";
+        else
+          t += v[i];
+      }
+      t += '"';
+      v = t;
+    }
+#endif
+    o += v;
+  }
+
+  return o;
+}
+
 //
 // Path manipulation.
 //
 
+static string
+escape_path (path const& p)
+{
+  string r;
+  string const& s (p.string ());
+
+  for (size_t i (0); i < s.size (); ++i)
+  {
+    if (s[i] == '\\')
+      r += "\\\\";
+    else
+      r += s[i];
+  }
+
+  return r;
+}
+
 static path
-driver_path (path const& drv)
+path_search (path const& f)
 {
   typedef path::traits traits;
 
-  if (!drv.directory ().empty ())
-    return drv;
-
-  // Search the PATH environment variable.
+  // If there is a directory component in the file, then the PATH
+  // search does not apply.
   //
+  if (!f.directory ().empty ())
+    return f;
+
   string paths;
 
   // If there is no PATH in environment then the default search
@@ -474,10 +610,9 @@ driver_path (path const& drv)
     if (p.empty ())
       p = path (".");
 
-    path dp (p / drv);
+    path dp (p / f);
 
-    // Just check that the file exist without checking for
-    // permissions, etc.
+    // Just check that the file exist without checking for permissions, etc.
     //
     if (stat (dp.string ().c_str (), &info) == 0 && S_ISREG (info.st_mode))
       return dp;
@@ -501,6 +636,12 @@ driver_path (path const& drv)
   }
 
   return path ();
+}
+
+static path
+driver_path (path const& drv)
+{
+  return drv.directory ().empty () ? path_search (drv) : drv;
 }
 
 static path
@@ -539,3 +680,218 @@ plugin_path (path const& drv)
 
   return path ();
 }
+
+//
+// Process manipulation.
+//
+
+#ifndef _WIN32
+
+static process_info
+start_process (char const* args[], char const* name)
+{
+  int fd[2];
+
+  if (pipe (fd) == -1)
+  {
+    char const* err (strerror (errno));
+    cerr << name << ": error: " <<  err << endl;
+    throw process_failure ();
+  }
+
+  pid_t pid (fork ());
+
+  if (pid == -1)
+  {
+    char const* err (strerror (errno));
+    cerr << name << ": error: " <<  err << endl;
+    throw process_failure ();
+  }
+
+  if (pid == 0)
+  {
+    // Child. Close the write end of the pipe and duplicate the read end
+    // to stdin. Then close the original read end descriptors.
+    //
+    if (close (fd[1]) == -1 ||
+        dup2 (fd[0], STDIN_FILENO) == -1 ||
+        close (fd[0]) == -1)
+    {
+      char const* err (strerror (errno));
+      cerr << name << ": error: " <<  err << endl;
+      throw process_failure ();
+    }
+
+    if (execvp (args[0], const_cast<char**> (&args[0])) == -1)
+    {
+      char const* err (strerror (errno));
+      cerr << args[0] << ": error: " << err << endl;
+      throw process_failure ();
+    }
+  }
+  else
+  {
+    // Parent. Close the read end of the pipe and.
+    //
+    if (close (fd[0]) == -1)
+    {
+      char const* err (strerror (errno));
+      cerr << name << ": error: " <<  err << endl;
+      throw process_failure ();
+    }
+  }
+
+  process_info r;
+  r.id = pid;
+  r.fd = fd[1];
+  return r;
+}
+
+static bool
+wait_process (process_info pi, char const* name)
+{
+  int status;
+
+  if (waitpid (pi.id, &status, 0) == -1)
+  {
+    char const* err (strerror (errno));
+    cerr << name << ": error: " <<  err << endl;
+    throw process_failure ();
+  }
+
+  return WIFEXITED (status) && WEXITSTATUS (status) == 0;
+}
+
+#else // _WIN32
+
+static void
+print_error (char const* name)
+{
+  LPTSTR msg;
+  DWORD e (GetLastError());
+
+  if (!FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        0,
+        e,
+        MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &msg,
+        0,
+        0))
+  {
+    cerr << name << ": error: unknown error code " << e << endl;
+    return;
+  }
+
+  cerr << name << ": error: " << msg << endl;
+  LocalFree (msg);
+}
+
+static process_info
+start_process (char const* args[], char const* name)
+{
+  HANDLE in, out;
+  SECURITY_ATTRIBUTES sa;
+
+  sa.nLength = sizeof (SECURITY_ATTRIBUTES);
+  sa.bInheritHandle = true;
+  sa.lpSecurityDescriptor = 0;
+
+  if (!CreatePipe (&in, &out, &sa, 0) ||
+      !SetHandleInformation (out, HANDLE_FLAG_INHERIT, 0))
+  {
+    print_error (name);
+    throw process_failure ();
+  }
+
+  // Create the process.
+  //
+  path file (args[0]);
+
+  // Do PATH search.
+  //
+  if (file.directory ().empty ())
+    file = path_search (file);
+
+  if (file.empty ())
+  {
+    cerr << args[0] << ": error: file not found" << endl;
+    throw process_failure ();
+  }
+
+  // Serialize the arguments to string.
+  //
+  string cmd_line;
+  for (char const** p (args); *p != 0; ++p)
+  {
+    if (p != args)
+      cmd_line += ' ';
+
+    cmd_line += *p;
+  }
+
+  // Prepare other info.
+  //
+  STARTUPINFO si;
+  PROCESS_INFORMATION pi;
+
+  memset (&si, 0, sizeof (STARTUPINFO));
+  memset (&pi, 0, sizeof (PROCESS_INFORMATION));
+
+  si.cb = sizeof(STARTUPINFO);
+  si.hStdError = GetStdHandle (STD_ERROR_HANDLE);
+  si.hStdOutput = GetStdHandle (STD_OUTPUT_HANDLE);
+  si.hStdInput = in;
+  si.dwFlags |= STARTF_USESTDHANDLES;
+
+  if (!CreateProcess (
+        file.string ().c_str (),
+        const_cast<char*> (cmd_line.c_str ()),
+        0,    // Process security attributes.
+        0,    // Primary thread security attributes.
+        true, // Inherit handles.
+        0,    // Creation flags.
+        0,    // Use our environment.
+        0,    // Use our current directory.
+        &si,
+        &pi))
+  {
+    print_error (name);
+    throw process_failure ();
+  }
+
+  CloseHandle (pi.hThread);
+
+  int fd (_open_osfhandle ((intptr_t) (out), 0));
+
+  if (fd == -1)
+  {
+    cerr << name << ": error: unable to obtain C file handle" << endl;
+    throw process_failure ();
+  }
+
+  process_info r;
+  r.id = pi.hProcess;
+  r.fd = fd;
+  return r;
+}
+
+static bool
+wait_process (process_info pi, char const* name)
+{
+  DWORD status;
+
+  if (WaitForSingleObject (pi.id, INFINITE) != WAIT_OBJECT_0 ||
+      !GetExitCodeProcess (pi.id, &status))
+  {
+    print_error (name);
+    throw process_failure ();
+  }
+
+  CloseHandle (pi.id);
+  return status == 0;
+}
+
+#endif // _WIN32
