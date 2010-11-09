@@ -21,10 +21,6 @@ namespace
 
       if (odb == error_mark_node)
       {
-        //@@ tmp
-        container_traits_ = 0;
-        return;
-
         os << unit.file () << ": error: unable to resolve odb namespace"
            << endl;
 
@@ -38,10 +34,6 @@ namespace
 
       if (access == error_mark_node)
       {
-        //@@ tmp
-        container_traits_ = 0;
-        return;
-
         os << unit.file () << ": error: unable to resolve access class"
            << "in the odb namespace" << endl;
 
@@ -58,10 +50,6 @@ namespace
       if (container_traits_ == error_mark_node ||
           !DECL_CLASS_TEMPLATE_P (container_traits_))
       {
-        //@@ tmp
-        container_traits_ = 0;
-        return;
-
         os << unit.file () << ": error: unable to resolve container_traits "
            << "in the odb namespace" << endl;
 
@@ -171,11 +159,6 @@ namespace
     bool
     process_container (semantics::data_member& m)
     {
-      // @@ tmp
-      //
-      if (container_traits_ == 0)
-        return false;
-
       // The overall idea is as follows: try to instantiate the container
       // traits class template. If we are successeful, then this is a
       // container type and we can extract the various information from
