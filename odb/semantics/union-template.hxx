@@ -15,7 +15,7 @@ namespace semantics
   class union_template: public type_template, public scope
   {
   public:
-    union_template (path const&, size_t line, size_t column);
+    union_template (path const&, size_t line, size_t column, tree);
 
     // Resolve conflict between scope::scope and nameable::scope.
     //

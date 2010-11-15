@@ -13,12 +13,14 @@ namespace semantics
   class namespace_: public scope
   {
   public:
-    namespace_ (path const&, size_t line, size_t column);
-    namespace_ ();
+    namespace_ (path const&, size_t line, size_t column, tree);
 
     // Resolve conflict between scope::scope and nameable::scope.
     //
     using nameable::scope;
+
+  protected:
+    namespace_ ();
   };
 }
 

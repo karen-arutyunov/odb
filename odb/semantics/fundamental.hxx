@@ -21,21 +21,16 @@ namespace semantics
 
     virtual string
     fq_name (names*) const;
-
-  protected:
-    fund_type (tree tn);
   };
 
   struct fund_void: fund_type
   {
-    fund_void (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_void (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_bool: fund_type
   {
-    fund_bool (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_bool (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   //
@@ -44,74 +39,63 @@ namespace semantics
 
   struct fund_char: fund_type
   {
-    fund_char (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_char (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_wchar: fund_type
   {
-    fund_wchar (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_wchar (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_signed_char: fund_type
   {
-    fund_signed_char (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_signed_char (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_unsigned_char: fund_type
   {
-    fund_unsigned_char (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_unsigned_char (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_short: fund_type
   {
-    fund_short (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_short (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_unsigned_short: fund_type
   {
-    fund_unsigned_short (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_unsigned_short (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_int: fund_type
   {
-    fund_int (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_int (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_unsigned_int: fund_type
   {
-    fund_unsigned_int (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_unsigned_int (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_long: fund_type
   {
-    fund_long (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_long (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_unsigned_long: fund_type
   {
-    fund_unsigned_long (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_unsigned_long (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_long_long: fund_type
   {
-    fund_long_long (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_long_long (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_unsigned_long_long: fund_type
   {
     fund_unsigned_long_long (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+        : node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   //
@@ -120,20 +104,17 @@ namespace semantics
 
   struct fund_float: fund_type
   {
-    fund_float (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_float (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_double: fund_type
   {
-    fund_double (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_double (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
   struct fund_long_double: fund_type
   {
-    fund_long_double (tree tn)
-        : node (path ("<fundamental>"), 0, 0), fund_type (tn) {}
+    fund_long_double (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 }
 

@@ -21,8 +21,8 @@ namespace semantics
   //
   //
   node::
-  node (path const& file, size_t line, size_t column)
-      : file_ (file), line_ (line), column_ (column)
+  node (path const& file, size_t line, size_t column, tree tn)
+      : tree_node_ (tn), file_ (file), line_ (line), column_ (column)
   {
   }
 

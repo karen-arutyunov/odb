@@ -8,12 +8,6 @@
 
 namespace semantics
 {
-  fund_type::
-  fund_type (tree tn)
-      : type (tn)
-  {
-  }
-
   string fund_type::
   fq_name () const
   {

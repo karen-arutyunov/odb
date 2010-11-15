@@ -3,6 +3,8 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <odb/gcc.hxx>
+
 #include <cutl/compiler/type-info.hxx>
 #include <odb/semantics/unit.hxx>
 
@@ -10,7 +12,7 @@ namespace semantics
 {
   unit::
   unit (path const& file)
-      : node (file, 1, 1), graph_ (*this)
+      : node (file, 1, 1, global_namespace), graph_ (*this)
   {
     // Use a special edge to get this->name() return the global
     // namespace name ("").

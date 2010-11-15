@@ -408,7 +408,7 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
 
         type& type_node (emit_type (t, file, line, clmn));
         data_member& member_node (
-          unit_->new_node<data_member> (file, line, clmn));
+          unit_->new_node<data_member> (file, line, clmn, d));
 
         unit_->new_edge<names> (*c_node, member_node, name, a);
         belongs& edge (unit_->new_edge<belongs> (member_node, type_node));
@@ -561,7 +561,7 @@ emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
 
         type& type_node (emit_type (t, file, line, clmn));
         data_member& member_node (
-          unit_->new_node<data_member> (file, line, clmn));
+          unit_->new_node<data_member> (file, line, clmn, d));
 
         unit_->new_edge<names> (*u_node, member_node, name, a);
         belongs& edge (unit_->new_edge<belongs> (member_node, type_node));
@@ -772,9 +772,14 @@ emit ()
              << DECL_SOURCE_LINE (decl) << endl;
 
         // Use the declarations's file, line, and column as an
-        // approximation for this namespace origin.
+        // approximation for this namespace origin. Also resolve
+        // the tree node for this namespace.
         //
-        namespace_& node (unit_->new_node<namespace_> (f, l, c));
+        namespace_& node (
+          unit_->new_node<namespace_> (
+            f, l, c,
+            namespace_binding (
+              get_identifier (n.c_str ()), scope_->tree_node ())));
         unit_->new_edge<defines> (*scope_, node, n);
         scope_ = &node;
 
@@ -1034,6 +1039,7 @@ emit_class_template (tree t, bool stub)
   // See if there is a stub already for this template.
   //
   class_template* ct_node (0);
+  tree c (TREE_TYPE (DECL_TEMPLATE_RESULT (t)));
 
   if (node* n = unit_->find (t))
   {
@@ -1042,14 +1048,12 @@ emit_class_template (tree t, bool stub)
   else
   {
     path f (DECL_SOURCE_FILE (t));
-    size_t l (DECL_SOURCE_LINE (t));
-    size_t c (DECL_SOURCE_COLUMN (t));
+    size_t ln (DECL_SOURCE_LINE (t));
+    size_t cl (DECL_SOURCE_COLUMN (t));
 
-    ct_node = &unit_->new_node<class_template> (f, l, c);
+    ct_node = &unit_->new_node<class_template> (f, ln, cl, c);
     unit_->insert (t, *ct_node);
   }
-
-  tree c (TREE_TYPE (DECL_TEMPLATE_RESULT (t)));
 
   if (stub || !COMPLETE_TYPE_P (c))
     return *ct_node;
@@ -1118,6 +1122,7 @@ emit_union_template (tree t, bool stub)
   // See if there is a stub already for this template.
   //
   union_template* ut_node (0);
+  tree u (TREE_TYPE (DECL_TEMPLATE_RESULT (t)));
 
   if (node* n = unit_->find (t))
   {
@@ -1129,11 +1134,9 @@ emit_union_template (tree t, bool stub)
     size_t l (DECL_SOURCE_LINE (t));
     size_t c (DECL_SOURCE_COLUMN (t));
 
-    ut_node = &unit_->new_node<union_template> (f, l, c);
+    ut_node = &unit_->new_node<union_template> (f, l, c, u);
     unit_->insert (t, *ut_node);
   }
-
-  tree u (TREE_TYPE (DECL_TEMPLATE_RESULT (t)));
 
   if (stub || !COMPLETE_TYPE_P (u))
     return *ut_node;
@@ -1227,7 +1230,7 @@ emit_enum (tree e, path const& file, size_t line, size_t clmn, bool stub)
     // There doesn't seem to be a way to get the proper position for
     // each enumerator.
     //
-    enumerator& er_node = unit_->new_node<enumerator> (file, line, clmn);
+    enumerator& er_node = unit_->new_node<enumerator> (file, line, clmn, er);
     unit_->new_edge<enumerates> (*e_node, er_node);
 
     if (trace)

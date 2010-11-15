@@ -33,7 +33,7 @@ namespace semantics
     }
 
   public:
-    class_template (path const&, size_t line, size_t column);
+    class_template (path const&, size_t line, size_t column, tree);
 
     void
     add_edge_left (inherits& e)

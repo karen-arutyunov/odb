@@ -72,7 +72,7 @@ namespace semantics
     }
 
   public:
-    enumerator (path const&, size_t line, size_t column);
+    enumerator (path const&, size_t line, size_t column, tree);
 
     void
     add_edge_right (enumerates& e)

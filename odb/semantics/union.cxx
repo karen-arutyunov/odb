@@ -10,7 +10,7 @@ namespace semantics
 {
   union_::
   union_ (path const& file, size_t line, size_t column, tree tn)
-      : node (file, line, column), type (tn)
+      : node (file, line, column, tn)
   {
   }
 

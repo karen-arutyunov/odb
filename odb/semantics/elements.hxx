@@ -93,6 +93,13 @@ namespace semantics
     ~node () {}
 
   public:
+    tree
+    tree_node () const
+    {
+      return tree_node_;
+    }
+
+  public:
     path const&
     file () const
     {
@@ -120,7 +127,7 @@ namespace semantics
     }
 
   public:
-    node (path const& file, size_t line, size_t column);
+    node (path const& file, size_t line, size_t column, tree);
 
     // Sink functions that allow extensions in the form of one-way
     // edges.
@@ -136,6 +143,8 @@ namespace semantics
     node ();
 
   private:
+    tree tree_node_;
+
     path file_;
     size_t line_;
     size_t column_;
@@ -388,8 +397,8 @@ namespace semantics
     find (names&);
 
   public:
-    scope (path const& file, size_t line, size_t column)
-        : node (file, line, column)
+    scope (path const& file, size_t line, size_t column, tree tn)
+        : node (file, line, column, tn)
     {
     }
 
@@ -417,13 +426,6 @@ namespace semantics
   class type: public virtual nameable
   {
     typedef std::vector<qualifies*> qualified;
-
-  public:
-    tree
-    tree_node () const
-    {
-      return tree_node_;
-    }
 
   public:
     typedef pointer_iterator<qualified::const_iterator> qualified_iterator;
@@ -454,23 +456,7 @@ namespace semantics
 
     using nameable::add_edge_right;
 
-  protected:
-    type (tree tn)
-        : tree_node_ (tn)
-    {
-    }
-
-    // For virtual inheritance. Should never be actually called.
-    //
-    type ()
-    {
-      // GCC plugin machinery #define's abort as a macro.
-      //
-      abort ();
-    }
-
   private:
-    tree tree_node_;
     qualified qualified_;
   };
 
@@ -574,8 +560,8 @@ namespace semantics
   class data_member: public nameable, public instance
   {
   public:
-    data_member (path const& file, size_t line, size_t column)
-        : node (file, line, column)
+    data_member (path const& file, size_t line, size_t column, tree tn)
+        : node (file, line, column, tn)
     {
     }
   };
@@ -597,7 +583,7 @@ namespace semantics
                       size_t column,
                       tree tn,
                       string const& type_name)
-        : node (file, line, column), type (tn), type_name_ (type_name)
+        : node (file, line, column, tn), type_name_ (type_name)
     {
     }
 

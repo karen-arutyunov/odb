@@ -9,8 +9,8 @@
 namespace semantics
 {
   class_template::
-  class_template (path const& file, size_t line, size_t column)
-      : node (file, line, column)
+  class_template (path const& file, size_t line, size_t column, tree tn)
+      : node (file, line, column, tn)
   {
   }
 
@@ -19,7 +19,7 @@ namespace semantics
                        size_t line,
                        size_t column,
                        tree tn)
-      : node (file, line, column), type (tn)
+      : node (file, line, column, tn)
   {
   }
 

@@ -8,12 +8,6 @@
 
 namespace semantics
 {
-  derived_type::
-  derived_type (tree tn)
-      : type (tn)
-  {
-  }
-
   qualifies::
   qualifies ()
   {
@@ -27,7 +21,7 @@ namespace semantics
              bool c,
              bool v,
              bool r)
-      : node (file, line, column), derived_type (tn), c_ (c), v_ (v), r_ (r)
+      : node (file, line, column, tn), c_ (c), v_ (v), r_ (r)
   {
   }
 
@@ -38,7 +32,7 @@ namespace semantics
 
   pointer::
   pointer (path const& file, size_t line, size_t column, tree tn)
-      : node (file, line, column), derived_type (tn)
+      : node (file, line, column, tn)
   {
   }
 
@@ -49,7 +43,7 @@ namespace semantics
 
   reference::
   reference (path const& file, size_t line, size_t column, tree tn)
-      : node (file, line, column), derived_type (tn)
+      : node (file, line, column, tn)
   {
   }
 
@@ -64,7 +58,7 @@ namespace semantics
          size_t column,
          tree tn,
          unsigned long long size)
-      : node (file, line, column), derived_type (tn), size_ (size)
+      : node (file, line, column, tn), size_ (size)
   {
   }
 

@@ -19,9 +19,6 @@ namespace semantics
   public:
     virtual type&
     base_type () const = 0;
-
-  protected:
-    derived_type (tree);
   };
 
   //
