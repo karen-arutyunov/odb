@@ -93,8 +93,8 @@ namespace tracer
            << "if (id == id_type ())" << endl
            << "return pointer_type (0);"
            << endl
-           << "pointer_type r (access::object_factory< " << type <<
-          " >::create ());"
+           << "pointer_type r (access::object_factory< object_type, " <<
+          "pointer_type  >::create ());"
            << "pointer_traits< pointer_type >::guard g (r);"
            << "r->" << id.name () << " = id;"
            << "g.release ();"

@@ -80,6 +80,9 @@ namespace
 void
 generate_header (context& ctx)
 {
+  ctx.os << "#include <memory>" << endl
+         << endl;
+
   ctx.os << "#include <odb/core.hxx>" << endl
          << "#include <odb/traits.hxx>" << endl
          << endl;

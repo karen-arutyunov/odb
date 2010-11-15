@@ -2174,8 +2174,8 @@ namespace mysql
              << "bool grew (false);"
              << "if (find (sts, id, grew))"
              << "{"
-             << "pointer_type p (access::object_factory< " << type <<
-            " >::create ());"
+             << "pointer_type p (access::object_factory< object_type, " <<
+            "pointer_type  >::create ());"
              << "pointer_traits< pointer_type >::guard g (p);"
              << "object_type& obj (pointer_traits< pointer_type >::get_ref (p));"
              << "init (obj, sts.image ());";

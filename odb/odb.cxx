@@ -480,6 +480,10 @@ main (int argc, char* argv[])
           pi.fd, ios_base::out | ios_base::binary);
         ostream os (&fb);
 
+        // Add the standard prologue.
+        //
+        // os << "#line 1 \"<standard-odb-prologue>\"" << endl;
+
         // Add custom prologue if any.
         //
         strings const& pro (ops.odb_prologue ());
@@ -501,11 +505,6 @@ main (int argc, char* argv[])
           return 1;
         }
 
-        // Add the standard epilogue.
-        //
-        os << "#line 1 \"<standard-odb-epilogue>\"" << endl
-           << "#include <odb/container-traits.hxx>" << endl;
-
         // Add custom epilogue if any.
         //
         strings const& epi (ops.odb_epilogue ());
@@ -515,6 +514,25 @@ main (int argc, char* argv[])
              << epi[i]
              << endl;
         }
+
+        // Add the standard epilogue at the end so that we see all
+        // the declarations.
+        //
+        os << "#line 1 \"<standard-odb-epilogue>\"" << endl;
+
+        // Includes for standard smart pointers. The Boost TR1 header
+        // may or may not delegate to the GCC implementation. In either
+        // case, the necessary declarations will be provided so we don't
+        // need to do anything.
+        //
+        os << "#include <memory>" << endl
+           << "#ifndef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
+           << "#  include <tr1/memory>" << endl
+           << "#endif" << endl;
+
+        // Standard containers traits.
+        //
+        os << "#include <odb/container-traits.hxx>" << endl;
       }
 
       if (!wait_process (pi, argv[0]))

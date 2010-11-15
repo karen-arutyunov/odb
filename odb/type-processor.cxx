@@ -389,10 +389,151 @@ namespace
     virtual void
     traverse (type& c)
     {
-      if (!(c.count ("object") || comp_value (c)))
+      bool obj (c.count ("object"));
+
+      if (!(obj || comp_value (c)))
         return;
 
       names (c);
+
+      // Assign object pointer.
+      //
+      if (obj)
+      {
+        string ptr;
+        string const& name (c.fq_name ());
+
+        if (c.count ("pointer"))
+        {
+          string const& p (c.get<string> ("pointer"));
+
+          if (p == "*")
+            ptr = name + "*";
+          else if (p[p.size () - 1] == '*')
+            ptr = p;
+          else if (p.find ('<') != string::npos)
+            ptr = p;
+          else
+          {
+            // This is not a template-id. Resolve it and see if it is a
+            // template or a type.
+            //
+            try
+            {
+              tree t  (resolve_type (p, c.scope ()));
+              int tc (TREE_CODE (t));
+
+              if (tc == TYPE_DECL)
+                ptr = p;
+              else if (tc == TEMPLATE_DECL && DECL_CLASS_TEMPLATE_P (t))
+                ptr = p + "< " + name + " >";
+              else
+              {
+                cerr << c.file () << ":" << c.line () << ":" << c.column ()
+                     << ": error: name '" << p << "' specified with "
+                     << "'#pragma object pointer' does not name a type "
+                     << "or a template" << endl;
+
+                throw generation_failed ();
+              }
+            }
+            catch (invalid_name const&)
+            {
+              cerr << c.file () << ":" << c.line () << ":" << c.column ()
+                   << ": error: type name '" << p << "' specified with "
+                   << "'#pragma object pointer' is invalid" << endl;
+
+              throw generation_failed ();
+            }
+            catch (unable_to_resolve const&)
+            {
+              cerr << c.file () << ":" << c.line () << ":" << c.column ()
+                   << ": error: unable to resolve type name '" << p
+                   << "' specified with '#pragma object pointer'" << endl;
+
+              throw generation_failed ();
+            }
+          }
+        }
+        else
+        {
+          // Use the default pointer.
+          //
+          string const& p (options.default_pointer ());
+
+          if (p == "*")
+            ptr = name + "*";
+          else
+            ptr = p + "< " + name + " >";
+        }
+
+        c.set ("object-pointer", ptr);
+      }
+    }
+
+  private:
+    struct invalid_name {};
+    struct unable_to_resolve {};
+
+    tree
+    resolve_type (string const& qn, semantics::scope& ss)
+    {
+      tree scope (ss.tree_node ());
+
+      for (size_t b (0), e (qn.find (':')), size (qn.size ());;
+           e = qn.find (':', b))
+      {
+        bool last (e == string::npos);
+        string n (qn, b, last ? string::npos : e - b);
+
+        if (n.empty ())
+        {
+          if (b == 0)
+            scope = global_namespace;
+          else
+            throw invalid_name ();
+        }
+        else
+        {
+          tree nid (get_identifier (n.c_str ()));
+          scope = lookup_qualified_name (scope, nid, last, false);
+
+          // If this is the first component in the name, then also
+          // search the outer scopes.
+          //
+          if (scope == error_mark_node && b == 0 && !ss.global_scope ())
+          {
+            semantics::scope* s (&ss);
+            do
+            {
+              s = &s->scope_ ();
+              scope = lookup_qualified_name (
+                s->tree_node (), nid, last, false);
+            } while (scope == error_mark_node && !s->global_scope ());
+          }
+
+          if (scope == error_mark_node)
+            throw unable_to_resolve ();
+
+          if (!last && TREE_CODE (scope) == TYPE_DECL)
+            scope = TREE_TYPE (scope);
+        }
+
+        if (e == string::npos)
+          break;
+
+        if (qn[++e] != ':')
+          throw invalid_name ();
+
+        ++e; // Second ':'.
+
+        if (e == size)
+          break;
+
+        b = e;
+      }
+
+      return scope;
     }
 
   private:

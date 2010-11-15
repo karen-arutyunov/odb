@@ -7,6 +7,16 @@
 
 using namespace std;
 
+// Token spelling. See cpplib.h for details.
+//
+#define OP(e, s) s ,
+#define TK(e, s) #e ,
+static char const* token_spelling[N_TTYPES] = { TTYPE_TABLE };
+#undef OP
+#undef TK
+
+// Lists of pragmas.
+//
 loc_pragmas loc_pragmas_;
 decl_pragmas decl_pragmas_;
 
@@ -18,11 +28,13 @@ parse_scoped_name (tree& t,
                    string const& prag)
 {
   tree scope, id;
+  bool first (true);
 
   if (tt == CPP_SCOPE)
   {
     name += "::";
     scope = global_namespace;
+    first = false;
     tt = pragma_lex (&t);
   }
   else
@@ -40,51 +52,66 @@ parse_scoped_name (tree& t,
     name += IDENTIFIER_POINTER (t);
     tt = pragma_lex (&t);
 
-    if (tt == CPP_SCOPE)
-    {
-      scope = lookup_qualified_name (scope, id, false, false);
+    bool last (tt != CPP_SCOPE);
+    tree decl = lookup_qualified_name (scope, id, last && is_type, false);
 
-      if (scope == error_mark_node)
+    // If this is the first component in the name, then also search the
+    // outer scopes.
+    //
+    if (decl == error_mark_node && first && scope != global_namespace)
+    {
+      do
+      {
+        scope = TYPE_P (scope)
+          ? CP_TYPE_CONTEXT (scope)
+          : CP_DECL_CONTEXT (scope);
+        decl = lookup_qualified_name (scope, id, last && is_type, false);
+      } while (decl == error_mark_node && scope != global_namespace);
+    }
+
+    if (decl == error_mark_node)
+    {
+      if (last)
       {
         error ((is_type
                 ? "unable to resolve type name %qs in db pragma %qs"
                 : "unable to resolve name %qs in db pragma %qs"),
                name.c_str (), prag.c_str ());
-        return 0;
+      }
+      else
+      {
+        error ("unable to resolve name %qs in db pragma %qs",
+               name.c_str (), prag.c_str ());
       }
 
-      if (TREE_CODE (scope) == TYPE_DECL)
-        scope = TREE_TYPE (scope);
-
-      name += "::";
-      tt = pragma_lex (&t);
+      return 0;
     }
-    else
+
+    scope = decl;
+
+    if (last)
       break;
-  }
 
-  tree decl (lookup_qualified_name (scope, id, is_type, false));
+    first = false;
 
-  if (decl == error_mark_node)
-  {
-    error ((is_type
-            ? "unable to resolve type name %qs in db pragma %qs"
-            : "unable to resolve name %qs in db pragma %qs"),
-           name.c_str (), prag.c_str ());
-    return 0;
+    if (TREE_CODE (scope) == TYPE_DECL)
+      scope = TREE_TYPE (scope);
+
+    name += "::";
+    tt = pragma_lex (&t);
   }
 
   // Get the actual type if this is a TYPE_DECL.
   //
   if (is_type)
   {
-    if (TREE_CODE (decl) == TYPE_DECL)
-      decl = TREE_TYPE (decl);
+    if (TREE_CODE (scope) == TYPE_DECL)
+      scope = TREE_TYPE (scope);
 
-    decl = TYPE_MAIN_VARIANT (decl);
+    scope = TYPE_MAIN_VARIANT (scope);
   }
 
-  return decl;
+  return scope;
 }
 
 bool
@@ -110,7 +137,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       return false;
     }
   }
-  else if (p == "object")
+  else if (p == "object" ||
+           p == "pointer")
   {
     if (tc != RECORD_TYPE)
     {
@@ -163,7 +191,10 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
 }
 
 static void
-handle_pragma (string const& p, tree decl, string const& decl_name)
+handle_pragma (cpp_reader* reader,
+               string const& p,
+               tree decl,
+               string const& decl_name)
 {
   tree t;
   cpp_ttype tt;
@@ -201,6 +232,87 @@ handle_pragma (string const& p, tree decl, string const& decl_name)
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
       error ("%qs expected at the end of db pragma %qs", ")", pc);
+      return;
+    }
+
+    tt = pragma_lex (&t);
+  }
+  else if (p == "pointer")
+  {
+    // pointer (qname)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (pragma_lex (&t) != CPP_OPEN_PAREN)
+    {
+      error ("%qs expected after db pragma %qs", "(", pc);
+      return;
+    }
+
+    size_t pb (0);
+
+    for (tt = pragma_lex (&t);
+         tt != CPP_EOF && (tt != CPP_CLOSE_PAREN || pb != 0);
+         tt = pragma_lex (&t))
+    {
+      if (tt == CPP_OPEN_PAREN)
+        pb++;
+      else if (tt == CPP_CLOSE_PAREN)
+        pb--;
+
+      // @@ Need to handle literals, at least integer.
+      //
+      switch (tt)
+      {
+      case CPP_LESS:
+        {
+          val += "< ";
+          break;
+        }
+      case CPP_GREATER:
+        {
+          val += " >";
+          break;
+        }
+      case CPP_COMMA:
+        {
+          val += ", ";
+          break;
+        }
+      case CPP_NAME:
+        {
+          val += IDENTIFIER_POINTER (t);
+          break;
+        }
+      default:
+        {
+          if (tt <= CPP_LAST_PUNCTUATOR)
+            val += token_spelling[tt];
+          else
+          {
+            error ("unexpected token %qs in db pragma %qs",
+                   token_spelling[tt],
+                   pc);
+            return;
+          }
+          break;
+        }
+      }
+    }
+
+    if (tt != CPP_CLOSE_PAREN)
+    {
+      error ("%qs expected at the end of db pragma %qs", ")", pc);
+      return;
+    }
+
+    if (val.empty ())
+    {
+      error ("expected pointer name in db pragma %qs", pc);
       return;
     }
 
@@ -350,14 +462,14 @@ handle_pragma (string const& p, tree decl, string const& decl_name)
   //
   if (tt == CPP_NAME)
   {
-    handle_pragma (IDENTIFIER_POINTER (t), decl, decl_name);
+    handle_pragma (reader, IDENTIFIER_POINTER (t), decl, decl_name);
   }
   else if (tt != CPP_EOF)
     error ("unexpected text after %qs in db pragma", p.c_str ());
 }
 
 static void
-handle_pragma_qualifier (string const& p)
+handle_pragma_qualifier (cpp_reader* reader, string const& p)
 {
   tree t;
   cpp_ttype tt;
@@ -501,7 +613,7 @@ handle_pragma_qualifier (string const& p)
            p == "table" ||
            p == "transient")
   {
-    handle_pragma (p, 0, "");
+    handle_pragma (reader, p, 0, "");
     return;
   }
   else
@@ -530,106 +642,106 @@ handle_pragma_qualifier (string const& p)
   //
   if (tt == CPP_NAME)
   {
-    handle_pragma (IDENTIFIER_POINTER (t), decl, decl_name);
+    handle_pragma (reader, IDENTIFIER_POINTER (t), decl, decl_name);
   }
   else if (tt != CPP_EOF)
     error ("unexpected text after %qs in db pragma", p.c_str ());
 }
 
 extern "C" void
-handle_pragma_db_object (cpp_reader*)
+handle_pragma_db_object (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("object");
+  handle_pragma_qualifier (reader, "object");
 }
 
 extern "C" void
-handle_pragma_db_value (cpp_reader*)
+handle_pragma_db_value (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("value");
+  handle_pragma_qualifier (reader, "value");
 }
 
 extern "C" void
-handle_pragma_db_member (cpp_reader*)
+handle_pragma_db_member (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("member");
+  handle_pragma_qualifier (reader, "member");
 }
 
 extern "C" void
-handle_pragma_db_id (cpp_reader*)
+handle_pragma_db_id (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("id");
+  handle_pragma_qualifier (reader, "id");
 }
 
 extern "C" void
-handle_pragma_db_auto (cpp_reader*)
+handle_pragma_db_auto (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("auto");
+  handle_pragma_qualifier (reader, "auto");
 }
 
 extern "C" void
-handle_pragma_db_column (cpp_reader*)
+handle_pragma_db_column (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("column");
+  handle_pragma_qualifier (reader, "column");
 }
 
 extern "C" void
-handle_pragma_db_vcolumn (cpp_reader*)
+handle_pragma_db_vcolumn (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("value_column");
+  handle_pragma_qualifier (reader, "value_column");
 }
 
 extern "C" void
-handle_pragma_db_icolumn (cpp_reader*)
+handle_pragma_db_icolumn (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("index_column");
+  handle_pragma_qualifier (reader, "index_column");
 }
 
 extern "C" void
-handle_pragma_db_kcolumn (cpp_reader*)
+handle_pragma_db_kcolumn (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("key_column");
+  handle_pragma_qualifier (reader, "key_column");
 }
 
 extern "C" void
-handle_pragma_db_idcolumn (cpp_reader*)
+handle_pragma_db_idcolumn (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("id_column");
+  handle_pragma_qualifier (reader, "id_column");
 }
 
 extern "C" void
-handle_pragma_db_type (cpp_reader*)
+handle_pragma_db_type (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("type");
+  handle_pragma_qualifier (reader, "type");
 }
 
 extern "C" void
-handle_pragma_db_vtype (cpp_reader*)
+handle_pragma_db_vtype (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("value_type");
+  handle_pragma_qualifier (reader, "value_type");
 }
 
 extern "C" void
-handle_pragma_db_itype (cpp_reader*)
+handle_pragma_db_itype (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("index_type");
+  handle_pragma_qualifier (reader, "index_type");
 }
 
 extern "C" void
-handle_pragma_db_ktype (cpp_reader*)
+handle_pragma_db_ktype (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("key_type");
+  handle_pragma_qualifier (reader, "key_type");
 }
 
 extern "C" void
-handle_pragma_db_table (cpp_reader*)
+handle_pragma_db_table (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("table");
+  handle_pragma_qualifier (reader, "table");
 }
 
 extern "C" void
-handle_pragma_db_transient (cpp_reader*)
+handle_pragma_db_transient (cpp_reader* reader)
 {
-  handle_pragma_qualifier ("transient");
+  handle_pragma_qualifier (reader, "transient");
 }
 
 extern "C" void

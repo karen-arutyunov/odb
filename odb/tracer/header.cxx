@@ -35,15 +35,14 @@ namespace tracer
            << "//" << endl;
 
         os << "template <>" << endl
-           << "class access::object_traits< " << type << " >: " << endl
-           << "  public access::object_memory< " << type << " >," << endl
-           << "  public access::object_factory< " << type << " >"
+           << "class access::object_traits< " << type << " >"
            << "{"
            << "public:" << endl;
 
-        // object_type & shared_ptr
+        // object_type & pointer_type
         //
-        os << "typedef " << type << " object_type;";
+        os << "typedef " << type << " object_type;"
+           << "typedef object_type* pointer_type;";
 
         // id_type
         //
