@@ -95,30 +95,7 @@ gate_callback (void*, void*)
 
   try
   {
-    // Find the actual main file name that was specified with the
-    // #line directive.
-    //
-    path file;
-    for (size_t i (0); i < line_table->used; ++i)
-    {
-      line_map const* m (line_table->maps + i);
-
-      if (MAIN_FILE_P (m) && m->reason == LC_RENAME)
-      {
-        string f (m->to_file);
-
-        if (f != "<built-in>" &&
-            f != "<command-line>" &&
-            f != "<stdin>")
-        {
-          file = path (f);
-          break;
-        }
-      }
-    }
-
-    //
-    //
+    path file (options_->svc_file ());
     parser p (*options_, loc_pragmas_, decl_pragmas_);
     auto_ptr<unit> u (p.parse (global_namespace, file));
 
