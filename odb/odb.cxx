@@ -530,7 +530,12 @@ main (int argc, char* argv[])
            << "#  include <tr1/memory>" << endl
            << "#endif" << endl;
 
-        // Standard containers traits.
+        // Standard pointer traits.
+        //
+        os << "#include <odb/pointer-traits.hxx>" << endl
+           << "#include <odb/tr1-pointer-traits.hxx>" << endl;
+
+        // Standard container traits.
         //
         os << "#include <odb/container-traits.hxx>" << endl;
       }

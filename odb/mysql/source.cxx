@@ -2176,7 +2176,7 @@ namespace mysql
              << "{"
              << "pointer_type p (access::object_factory< object_type, " <<
             "pointer_type  >::create ());"
-             << "pointer_traits< pointer_type >::guard g (p);"
+             << "pointer_traits< pointer_type >::guard_type g (p);"
              << "object_type& obj (pointer_traits< pointer_type >::get_ref (p));"
              << "init (obj, sts.image ());";
 

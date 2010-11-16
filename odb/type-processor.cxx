@@ -399,9 +399,25 @@ namespace
       // Assign object pointer.
       //
       if (obj)
+        assign_pointer (c);
+    }
+
+    void
+    assign_pointer (type& c)
+    {
+      try
       {
         string ptr;
         string const& name (c.fq_name ());
+
+        if (!unit.count ("tr1-pointer-used"))
+        {
+          unit.set ("tr1-pointer-used", false);
+          unit.set ("boost-pointer-used", false);
+        }
+
+        bool& tr1 (unit.get<bool> ("tr1-pointer-used"));
+        bool& boost (unit.get<bool> ("boost-pointer-used"));
 
         if (c.count ("pointer"))
         {
@@ -412,44 +428,66 @@ namespace
           else if (p[p.size () - 1] == '*')
             ptr = p;
           else if (p.find ('<') != string::npos)
+          {
+            // Template-id. See if it is from TR1.
+            //
             ptr = p;
+            tr1 = tr1
+              || p.compare (0, 8, "std::tr1") == 0
+              || p.compare (0, 10, "::std::tr1") == 0;
+          }
           else
           {
             // This is not a template-id. Resolve it and see if it is a
             // template or a type.
             //
-            try
+            tree decl  (resolve_type (p, c.scope ()));
+            int tc (TREE_CODE (decl));
+
+            if (tc == TYPE_DECL)
             {
-              tree t  (resolve_type (p, c.scope ()));
-              int tc (TREE_CODE (t));
+              ptr = p;
 
-              if (tc == TYPE_DECL)
-                ptr = p;
-              else if (tc == TEMPLATE_DECL && DECL_CLASS_TEMPLATE_P (t))
-                ptr = p + "< " + name + " >";
-              else
+              // This can be a typedef'ed alias for a TR1 template-id.
+              //
+              if (tree ti = TYPE_TEMPLATE_INFO (TREE_TYPE (decl)))
               {
-                cerr << c.file () << ":" << c.line () << ":" << c.column ()
-                     << ": error: name '" << p << "' specified with "
-                     << "'#pragma object pointer' does not name a type "
-                     << "or a template" << endl;
+                tree t (TI_TEMPLATE (ti)); // DECL_TEMPLATE
 
-                throw generation_failed ();
+                // Get to the most general template declaration.
+                //
+                while (DECL_TEMPLATE_INFO (t))
+                  t = DECL_TI_TEMPLATE (t);
+
+                string n (decl_as_string (t, TFF_PLAIN_IDENTIFIER));
+
+                // In case of a boost TR1 implementation, we cannot
+                // distinguish between the boost:: and std::tr1::
+                // usage since the latter is just a using-declaration
+                // for the former.
+                //
+                tr1 = tr1
+                  || n.compare (0, 8, "std::tr1") == 0
+                  || n.compare (0, 10, "::std::tr1") == 0;
+
+                boost = boost
+                  || n.compare (0, 17, "boost::shared_ptr") == 0
+                  || n.compare (0, 19, "::boost::shared_ptr") == 0;
               }
             }
-            catch (invalid_name const&)
+            else if (tc == TEMPLATE_DECL && DECL_CLASS_TEMPLATE_P (decl))
             {
-              cerr << c.file () << ":" << c.line () << ":" << c.column ()
-                   << ": error: type name '" << p << "' specified with "
-                   << "'#pragma object pointer' is invalid" << endl;
-
-              throw generation_failed ();
+              ptr = p + "< " + name + " >";
+              tr1 = tr1
+                || p.compare (0, 8, "std::tr1") == 0
+                || p.compare (0, 10, "::std::tr1") == 0;
             }
-            catch (unable_to_resolve const&)
+            else
             {
               cerr << c.file () << ":" << c.line () << ":" << c.column ()
-                   << ": error: unable to resolve type name '" << p
-                   << "' specified with '#pragma object pointer'" << endl;
+                   << ": error: name '" << p << "' specified with "
+                   << "'#pragma object pointer' does not name a type "
+                   << "or a template" << endl;
 
               throw generation_failed ();
             }
@@ -464,16 +502,56 @@ namespace
           if (p == "*")
             ptr = name + "*";
           else
+          {
             ptr = p + "< " + name + " >";
+            tr1 = tr1
+              || p.compare (0, 8, "std::tr1") == 0
+              || p.compare (0, 10, "::std::tr1") == 0;
+          }
         }
 
         c.set ("object-pointer", ptr);
       }
+      catch (invalid_name const& ex)
+      {
+        cerr << c.file () << ":" << c.line () << ":" << c.column ()
+             << ": error: type name '" << ex.name () << "' specified with "
+             << "'#pragma object pointer' is invalid" << endl;
+
+        throw generation_failed ();
+      }
+      catch (unable_to_resolve const& ex)
+      {
+        cerr << c.file () << ":" << c.line () << ":" << c.column ()
+             << ": error: unable to resolve type name '" << ex.name ()
+             << "' specified with '#pragma object pointer'" << endl;
+
+        throw generation_failed ();
+      }
     }
 
   private:
-    struct invalid_name {};
-    struct unable_to_resolve {};
+    struct invalid_name
+    {
+      invalid_name (string const& n): name_ (n) {}
+
+      string const&
+      name () const {return name_;}
+
+    private:
+      string name_;
+    };
+
+    struct unable_to_resolve
+    {
+      unable_to_resolve (string const& n): name_ (n) {}
+
+      string const&
+      name () const {return name_;}
+
+    private:
+      string name_;
+    };
 
     tree
     resolve_type (string const& qn, semantics::scope& ss)
@@ -491,7 +569,7 @@ namespace
           if (b == 0)
             scope = global_namespace;
           else
-            throw invalid_name ();
+            throw invalid_name (qn);
         }
         else
         {
@@ -513,7 +591,7 @@ namespace
           }
 
           if (scope == error_mark_node)
-            throw unable_to_resolve ();
+            throw unable_to_resolve (qn);
 
           if (!last && TREE_CODE (scope) == TYPE_DECL)
             scope = TREE_TYPE (scope);
@@ -523,7 +601,7 @@ namespace
           break;
 
         if (qn[++e] != ':')
-          throw invalid_name ();
+          throw invalid_name (qn);
 
         ++e; // Second ':'.
 

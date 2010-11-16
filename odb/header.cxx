@@ -87,6 +87,26 @@ generate_header (context& ctx)
          << "#include <odb/traits.hxx>" << endl
          << endl;
 
+  // In case of a boost TR1 implementation, we cannot distinguish
+  // between the boost::shared_ptr and std::tr1::shared_ptr usage since
+  // the latter is just a using-declaration for the former. To resolve
+  // this we will include TR1 traits if the Boost TR1 header is included.
+  //
+  if (ctx.unit.count ("tr1-pointer-used") &&
+      ctx.unit.get<bool> ("tr1-pointer-used"))
+  {
+    ctx.os << "#include <odb/tr1-pointer-traits.hxx>" << endl
+           << endl;
+  }
+  else if (ctx.unit.count ("boost-pointer-used") &&
+           ctx.unit.get<bool> ("boost-pointer-used"))
+  {
+    ctx.os << "#ifdef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
+           << "#  include <odb/tr1-pointer-traits.hxx>" << endl
+           << "#endif" << endl
+           << endl;
+  }
+
   /*
   traversal::unit unit;
   traversal::defines unit_defines;
