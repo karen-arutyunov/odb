@@ -81,17 +81,10 @@ namespace mysql
   {
     struct has_grow: traversal::class_
     {
-      has_grow ()
+      has_grow (bool& r)
+          : r_ (r)
       {
         *this >> inherits_ >> *this;
-      }
-
-      bool
-      dispatch (type& c)
-      {
-        r_ = false;
-        traverse (c);
-        return r_;
       }
 
       virtual void
@@ -113,76 +106,65 @@ namespace mysql
       }
 
     private:
-      friend class has_grow_member;
-
-      bool r_;
+      bool& r_;
       traversal::inherits inherits_;
     };
 
     struct has_grow_member: member_base
     {
-      has_grow_member (context& c, has_grow& hg)
-          : member_base (c), hg_ (hg)
+      has_grow_member (context& c, bool& r)
+          : member_base (c), r_ (r)
       {
       }
 
       has_grow_member (context& c,
-                       has_grow& hg,
+                       bool& r,
                        semantics::type& type,
                        string const& key_prefix)
-          : member_base (c, "", type, "", key_prefix), hg_ (hg)
+          : member_base (c, "", type, "", key_prefix), r_ (r)
       {
-      }
-
-      bool
-      dispatch (semantics::data_member& m)
-      {
-        hg_.r_ = false;
-        member_base::traverse (m);
-        return hg_.r_;
       }
 
       virtual void
       traverse_composite (member_info& mi)
       {
-        // Reset any overrides.
+        // By calling grow() instead of recursing, we reset any overrides.
         //
-        if (!hg_.r_)
-          hg_.r_ = context::grow (dynamic_cast<semantics::class_&> (mi.t));
+        r_ = r_ || context::grow (dynamic_cast<semantics::class_&> (mi.t));
       }
 
       virtual void
       traverse_decimal (member_info&)
       {
-        hg_.r_ = true;
+        r_ = true;
       }
 
       virtual void
       traverse_long_string (member_info&)
       {
-        hg_.r_ = true;
+        r_ = true;
       }
 
       virtual void
       traverse_short_string (member_info&)
       {
-        hg_.r_ = true; // @@ Short string optimization disabled.
+        r_ = true; // @@ Short string optimization disabled.
       }
 
       virtual void
       traverse_enum (member_info&)
       {
-        hg_.r_ = true;
+        r_ = true;
       }
 
       virtual void
       traverse_set (member_info&)
       {
-        hg_.r_ = true;
+        r_ = true;
       }
 
     private:
-      has_grow& hg_;
+      bool& r_;
     };
   }
 
@@ -192,23 +174,22 @@ namespace mysql
     if (c.count ("mysql::grow"))
       return c.get<bool> ("mysql::grow");
 
-    has_grow ct;
-    has_grow_member mt  (*this, ct);
+    bool r (false);
+    has_grow ct (r);
+    has_grow_member mt  (*this, r);
     traversal::names names;
     ct >> names >> mt;
-
-    return ct.dispatch (c);
+    ct.traverse (c);
+    return r;
   }
 
   bool context::
   grow (semantics::data_member& m, semantics::type& t, string const& kp)
   {
-    has_grow ct;
-    has_grow_member mt  (*this, ct, t, kp);
-    traversal::names names;
-    ct >> names >> mt;
-
-    return mt.dispatch (m);
+    bool r (false);
+    has_grow_member mt  (*this, r, t, kp);
+    mt.traverse (m);
+    return r;
   }
 
   //
