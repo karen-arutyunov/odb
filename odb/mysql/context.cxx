@@ -26,28 +26,28 @@ namespace mysql
 
     type_map_entry type_map[] =
     {
-      {"bool", "TINYINT(1) NOT NULL", 0},
+      {"bool", "TINYINT(1)", 0},
 
-      {"char", "TINYINT NOT NULL", 0},
-      {"signed char", "TINYINT NOT NULL", 0},
-      {"unsigned char", "TINYINT UNSIGNED NOT NULL", 0},
+      {"char", "TINYINT", 0},
+      {"signed char", "TINYINT", 0},
+      {"unsigned char", "TINYINT UNSIGNED", 0},
 
-      {"short int", "SMALLINT NOT NULL", 0},
-      {"short unsigned int", "SMALLINT UNSIGNED NOT NULL", 0},
+      {"short int", "SMALLINT", 0},
+      {"short unsigned int", "SMALLINT UNSIGNED", 0},
 
-      {"int", "INT NOT NULL", 0},
-      {"unsigned int", "INT UNSIGNED NOT NULL", 0},
+      {"int", "INT", 0},
+      {"unsigned int", "INT UNSIGNED", 0},
 
-      {"long int", "BIGINT NOT NULL", 0},
-      {"long unsigned int", "BIGINT UNSIGNED NOT NULL", 0},
+      {"long int", "BIGINT", 0},
+      {"long unsigned int", "BIGINT UNSIGNED", 0},
 
-      {"long long int", "BIGINT NOT NULL", 0},
-      {"long long unsigned int", "BIGINT UNSIGNED NOT NULL", 0},
+      {"long long int", "BIGINT", 0},
+      {"long long unsigned int", "BIGINT UNSIGNED", 0},
 
-      {"float", "FLOAT NOT NULL", 0},
-      {"double", "DOUBLE NOT NULL", 0},
+      {"float", "FLOAT", 0},
+      {"double", "DOUBLE", 0},
 
-      {"::std::string", "TEXT NOT NULL", "VARCHAR(255) NOT NULL"}
+      {"::std::string", "TEXT", "VARCHAR (255)"}
     };
   }
 
@@ -145,8 +145,10 @@ namespace mysql
       virtual void
       traverse_composite (member_info& mi)
       {
+        // Reset any overrides.
+        //
         if (!hg_.r_)
-          hg_.r_ = hg_.dispatch (dynamic_cast<semantics::class_&> (mi.t));
+          hg_.r_ = context::grow (dynamic_cast<semantics::class_&> (mi.t));
       }
 
       virtual void
@@ -216,11 +218,12 @@ namespace mysql
   string context::data::
   column_type_impl (semantics::type& t,
                     string const& type,
-                    semantics::context* ctx) const
+                    semantics::context& ctx,
+                    column_type_flags f) const
   {
-    string r (::context::data::column_type_impl (t, type, ctx));
+    string r (::context::data::column_type_impl (t, type, ctx, f));
 
-    if (!r.empty () && ctx != 0 && ctx->count ("auto"))
+    if (!r.empty () && ctx.count ("auto") && (f & ctf_object_id_ref) == 0)
       r += " AUTO_INCREMENT";
 
     return r;

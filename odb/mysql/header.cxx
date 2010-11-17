@@ -525,24 +525,25 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "init (index_type&, value_type&, const data_image_type&);";
+            os << "init (index_type&, value_type&, ";
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "init (key_type&, value_type&, const data_image_type&);";
+            os << "init (key_type&, value_type&, ";
             break;
           }
         case ck_set:
         case ck_multiset:
           {
-            os << "init (value_type&, const data_image_type&);";
+            os << "init (value_type&, ";
             break;
           }
         }
 
-        os << endl;
+        os << "const data_image_type&, database&);"
+           << endl;
 
         // insert_one
         //
@@ -801,7 +802,7 @@ namespace mysql
         // init (object, image)
         //
         os << "static void" << endl
-           << "init (object_type&, const image_type&);"
+           << "init (object_type&, const image_type&, database&);"
            << endl;
 
         // persist ()
@@ -895,7 +896,7 @@ namespace mysql
         // init (object, image)
         //
         os << "static void" << endl
-           << "init (value_type&, const image_type&);"
+           << "init (value_type&, const image_type&, database&);"
            << endl;
 
         os << "};";

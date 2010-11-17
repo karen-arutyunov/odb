@@ -168,7 +168,8 @@ column_type (semantics::data_member& m, string const& kp) const
 string context::data::
 column_type_impl (semantics::type& t,
                   string const& type,
-                  semantics::context* ctx) const
+                  semantics::context& ctx,
+                  column_type_flags f) const
 {
   if (!type.empty ())
     return type;
@@ -180,7 +181,14 @@ column_type_impl (semantics::type& t,
   type_map_type::const_iterator i (type_map_.find (name));
 
   if (i != type_map_.end ())
-    return ctx != 0 && ctx->count ("id") ? i->second.id_type : i->second.type;
+  {
+    string r (ctx.count ("id") ? i->second.id_type : i->second.type);
+
+    if ((f & ctf_default_null) == 0)
+      r += " NOT NULL";
+
+    return r;
+  }
 
   return string ();
 }
@@ -386,6 +394,58 @@ id_member (semantics::class_& c)
 
   return *c.get<semantics::data_member*> ("id-member");
 }
+
+namespace
+{
+  struct has_a_impl: object_members_base
+  {
+    has_a_impl (unsigned short flags)
+        : r_ (false), flags_ (flags)
+    {
+    }
+
+    bool
+    result () const
+    {
+      return r_;
+    }
+
+    virtual void
+    simple (semantics::data_member& m)
+    {
+      r_ = r_ || context::is_a (m, flags_);
+    }
+
+  private:
+    bool r_;
+    unsigned short flags_;
+  };
+}
+
+bool context::
+is_a (semantics::data_member& m,
+      unsigned short f,
+      semantics::type&,
+      string const& kp)
+{
+  bool r (false);
+
+  if (f & eager_pointer)
+  {
+    r = r || object_pointer (m, kp);
+  }
+
+  return r;
+}
+
+bool context::
+has_a (semantics::type& t, unsigned short flags)
+{
+  has_a_impl impl (flags);
+  impl.dispatch (t);
+  return impl.result ();
+}
+
 
 // namespace
 //

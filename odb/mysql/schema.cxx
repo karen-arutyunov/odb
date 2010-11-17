@@ -18,8 +18,8 @@ namespace mysql
 
     struct object_columns: object_columns_base, context
     {
-      object_columns (context& c)
-          : object_columns_base (c), context (c)
+      object_columns (context& c, string const& prefix = string ())
+          : object_columns_base (c), context (c), prefix_ (prefix)
       {
       }
 
@@ -29,11 +29,21 @@ namespace mysql
         if (!first)
           os << "," << endl;
 
-        os << "  `" << name << "` " << column_type (m);
+        os << "  `" << name << "` " << column_type (m, prefix_);
 
         if (m.count ("id"))
           os << " PRIMARY KEY";
+
+        using semantics::class_;
+        if (class_* c = object_pointer (m, prefix_))
+        {
+          os << " REFERENCES `" << table_name (*c) << "` (`" <<
+            column_name (id_member (*c)) << "`)";
+        }
       }
+
+    private:
+      string prefix_;
     };
 
     struct member_create: object_members_base, context
@@ -67,7 +77,7 @@ namespace mysql
         // object_id (simple value)
         //
         string id_name (column_name (m, "id", "object_id"));
-        os << "  `" << id_name << "` " << column_type (id_member_);
+        os << "  `" << id_name << "` " << column_type (id_member_, "ref");
 
         // index (simple value)
         //
@@ -95,8 +105,9 @@ namespace mysql
           }
           else
           {
+            object_columns oc (*this, "key");
             string const& name (column_name (m, "key", "key"));
-            os << "  `" << name << "` " << column_type (m, "key");
+            oc.column (m, name, true);
           }
         }
 
@@ -112,8 +123,9 @@ namespace mysql
           }
           else
           {
+            object_columns oc (*this, "value");
             string const& name (column_name (m, "value", "value"));
-            os << "  `" << name << "` " << column_type (m, "value");
+            oc.column (m, name, true);
           }
         }
 

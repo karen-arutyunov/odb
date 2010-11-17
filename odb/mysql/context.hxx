@@ -105,7 +105,8 @@ namespace mysql
       virtual string
       column_type_impl (semantics::type&,
                         string const& type,
-                        semantics::context*) const;
+                        semantics::context&,
+                        column_type_flags) const;
     };
 
   private:

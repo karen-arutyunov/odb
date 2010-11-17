@@ -33,130 +33,149 @@ namespace mysql
 
     semantics::type& t (type_override_ != 0 ? *type_override_ : m.type ());
 
-    member_info mi (m, t, var, fq_type_override_);
-
     if (comp_value (t))
     {
+      member_info mi (m, t, var, fq_type_override_);
       pre (mi);
       traverse_composite (mi);
+      post (mi);
     }
     else if (container (t))
     {
+      member_info mi (m, t, var, fq_type_override_);
       pre (mi);
       traverse_container (mi);
+      post (mi);
     }
     else
     {
       sql_type const& st (db_type (m, key_prefix_));
-      mi.st = &st;
-      pre (mi);
 
-      switch (st.type)
+      if (semantics::class_* c = object_pointer (m, key_prefix_))
       {
-        // Integral types.
-        //
-      case sql_type::TINYINT:
-      case sql_type::SMALLINT:
-      case sql_type::MEDIUMINT:
-      case sql_type::INT:
-      case sql_type::BIGINT:
-        {
-          traverse_integer (mi);
-          break;
-        }
-
-        // Float types.
-        //
-      case sql_type::FLOAT:
-      case sql_type::DOUBLE:
-        {
-          traverse_float (mi);
-          break;
-        }
-      case sql_type::DECIMAL:
-        {
-          traverse_decimal (mi);
-          break;
-        }
-
-        // Data-time types.
-        //
-      case sql_type::DATE:
-      case sql_type::TIME:
-      case sql_type::DATETIME:
-      case sql_type::TIMESTAMP:
-      case sql_type::YEAR:
-        {
-          traverse_date_time (mi);
-          break;
-        }
-
-        // String and binary types.
-        //
-      case sql_type::CHAR:
-      case sql_type::VARCHAR:
-      case sql_type::TINYTEXT:
-      case sql_type::TEXT:
-      case sql_type::MEDIUMTEXT:
-      case sql_type::LONGTEXT:
-        {
-          // For string types the limit is in characters rather
-          // than in bytes. The fixed-length pre-allocated buffer
-          // optimization can only be used for 1-byte encodings.
-          // To support this we will need the character encoding
-          // in sql_type.
-          //
-          traverse_long_string (mi);
-          break;
-        }
-      case sql_type::BINARY:
-      case sql_type::TINYBLOB:
-        {
-          // BINARY's range is always 255 or less from MySQL 5.0.3.
-          // TINYBLOB can only store up to 255 bytes.
-          //
-          traverse_short_string (mi);
-          break;
-        }
-      case sql_type::VARBINARY:
-      case sql_type::BLOB:
-      case sql_type::MEDIUMBLOB:
-      case sql_type::LONGBLOB:
-        {
-          if (st.range && st.range_value <= 255)
-            traverse_short_string (mi);
-          else
-            traverse_long_string (mi);
-
-          break;
-        }
-
-        // Other types.
-        //
-      case sql_type::BIT:
-        {
-          traverse_bit (mi);
-          break;
-        }
-      case sql_type::ENUM:
-        {
-          traverse_enum (mi);
-          break;
-        }
-      case sql_type::SET:
-        {
-          traverse_set (mi);
-          break;
-        }
-      case sql_type::invalid:
-        {
-          assert (false);
-          break;
-        }
+        member_info mi (m, id_member (*c).type (), var, fq_type_override_);
+        mi.st = &st;
+        pre (mi);
+        traverse_object_pointer (mi);
+        post (mi);
+      }
+      else
+      {
+        member_info mi (m, t, var, fq_type_override_);
+        mi.st = &st;
+        pre (mi);
+        traverse_simple (mi);
+        post (mi);
       }
     }
+  }
 
-    post (mi);
+  void member_base::
+  traverse_simple (member_info& mi)
+  {
+    switch (mi.st->type)
+    {
+      // Integral types.
+      //
+    case sql_type::TINYINT:
+    case sql_type::SMALLINT:
+    case sql_type::MEDIUMINT:
+    case sql_type::INT:
+    case sql_type::BIGINT:
+      {
+        traverse_integer (mi);
+        break;
+      }
+
+      // Float types.
+      //
+    case sql_type::FLOAT:
+    case sql_type::DOUBLE:
+      {
+        traverse_float (mi);
+        break;
+      }
+    case sql_type::DECIMAL:
+      {
+        traverse_decimal (mi);
+        break;
+      }
+
+      // Data-time types.
+      //
+    case sql_type::DATE:
+    case sql_type::TIME:
+    case sql_type::DATETIME:
+    case sql_type::TIMESTAMP:
+    case sql_type::YEAR:
+      {
+        traverse_date_time (mi);
+        break;
+      }
+
+      // String and binary types.
+      //
+    case sql_type::CHAR:
+    case sql_type::VARCHAR:
+    case sql_type::TINYTEXT:
+    case sql_type::TEXT:
+    case sql_type::MEDIUMTEXT:
+    case sql_type::LONGTEXT:
+      {
+        // For string types the limit is in characters rather
+        // than in bytes. The fixed-length pre-allocated buffer
+        // optimization can only be used for 1-byte encodings.
+        // To support this we will need the character encoding
+        // in sql_type.
+        //
+        traverse_long_string (mi);
+        break;
+      }
+    case sql_type::BINARY:
+    case sql_type::TINYBLOB:
+      {
+        // BINARY's range is always 255 or less from MySQL 5.0.3.
+        // TINYBLOB can only store up to 255 bytes.
+        //
+        traverse_short_string (mi);
+        break;
+      }
+    case sql_type::VARBINARY:
+    case sql_type::BLOB:
+    case sql_type::MEDIUMBLOB:
+    case sql_type::LONGBLOB:
+      {
+        if (mi.st->range && mi.st->range_value <= 255)
+          traverse_short_string (mi);
+        else
+          traverse_long_string (mi);
+
+        break;
+      }
+
+      // Other types.
+      //
+    case sql_type::BIT:
+      {
+        traverse_bit (mi);
+        break;
+      }
+    case sql_type::ENUM:
+      {
+        traverse_enum (mi);
+        break;
+      }
+    case sql_type::SET:
+      {
+        traverse_set (mi);
+        break;
+      }
+    case sql_type::invalid:
+      {
+        assert (false);
+        break;
+      }
+    }
   }
 
   //

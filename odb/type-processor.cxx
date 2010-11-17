@@ -27,6 +27,20 @@ namespace
         throw generation_failed ();
       }
 
+      // Find pointer traits.
+      //
+      pointer_traits_ = lookup_qualified_name (
+        odb, get_identifier ("pointer_traits"), true, false);
+
+      if (container_traits_ == error_mark_node ||
+          !DECL_CLASS_TEMPLATE_P (pointer_traits_))
+      {
+        os << unit.file () << ": error: unable to resolve pointer_traits "
+           << "in the odb namespace" << endl;
+
+        throw generation_failed ();
+      }
+
       // Find the access class.
       //
       tree access = lookup_qualified_name (
@@ -70,7 +84,7 @@ namespace
       if (comp_value (t))
         return;
 
-      string type;
+      string type, ref_type;
 
       if (m.count ("type"))
         type = m.get<string> ("type");
@@ -78,11 +92,39 @@ namespace
       if (type.empty () && t.count ("type"))
         type = t.get<string> ("type");
 
-      type = column_type_impl (t, type, &m);
+      if (semantics::class_* c = process_object_pointer (m, t))
+      {
+        // This is an object pointer. The column type is the pointed-to
+        // object id type. Except by default it can be NULL.
+        //
+        semantics::data_member& id (id_member (*c));
+        semantics::type& idt (id.type ());
+
+        if (type.empty () && id.count ("type"))
+          type = id.get<string> ("type");
+
+        if (type.empty () && idt.count ("type"))
+          type = idt.get<string> ("type");
+
+        type = data_->column_type_impl (
+          idt, type, id, ctf_default_null | ctf_object_id_ref);
+      }
+      else
+      {
+        string orig (type);
+        type = data_->column_type_impl (t, orig, m, ctf_none);
+
+        if (m.count ("id"))
+          ref_type = data_->column_type_impl (t, orig, m, ctf_object_id_ref);
+      }
 
       if (!type.empty ())
       {
         m.set ("column-type", type);
+
+        if (!ref_type.empty ())
+          m.set ("ref-column-type", ref_type);
+
         return;
       }
 
@@ -108,21 +150,23 @@ namespace
 
     void
     process_container_value (semantics::type& t,
+                             semantics::data_member& m,
                              string const& prefix,
-                             semantics::data_member& m)
+                             bool obj_ptr)
     {
       if (comp_value (t))
         return;
 
       string type;
+      semantics::type& ct (m.type ());
 
       // Custom mapping can come from these places (listed in the order
-      // of priority): member, container type, value type.
+      // of priority): member, container type, value type. To complicate
+      // things a bit, for object references, it can also come from the
+      // member and value type of the id member.
       //
       if (m.count (prefix + "-type"))
         type = m.get<string> (prefix + "-type");
-
-      semantics::type& ct (m.type ());
 
       if (type.empty () && ct.count (prefix + "-type"))
         type = ct.get<string> (prefix + "-type");
@@ -130,7 +174,26 @@ namespace
       if (type.empty () && t.count ("type"))
         type = t.get<string> ("type");
 
-      type = column_type_impl (t, type, 0);
+      semantics::class_* c;
+      if (obj_ptr && (c = process_object_pointer (m, t, prefix)))
+      {
+        // This is an object pointer. The column type is the pointed-to
+        // object id type. Except by default it can be NULL.
+        //
+        semantics::data_member& id (id_member (*c));
+        semantics::type& idt (id.type ());
+
+        if (type.empty () && id.count ("type"))
+          type = id.get<string> ("type");
+
+        if (type.empty () && idt.count ("type"))
+          type = idt.get<string> ("type");
+
+        type = data_->column_type_impl (
+          idt, type, id, ctf_default_null | ctf_object_id_ref);
+      }
+      else
+        type = data_->column_type_impl (t, type, m, ctf_none);
 
       if (!type.empty ())
       {
@@ -185,35 +248,9 @@ namespace
       }
       else
       {
-        tree args (make_tree_vec (1));
-        TREE_VEC_ELT (args, 0) = t.tree_node ();
+        tree inst (instantiate_template (container_traits_, t.tree_node ()));
 
-        // This step should succeed regardles of whether there is a
-        // container traits specialization for this type.
-        //
-        tree inst (
-          lookup_template_class (
-          container_traits_, args, 0, 0, 0, tf_warning_or_error));
-
-        if (inst == error_mark_node)
-        {
-          // Diagnostics has already been issued by lookup_template_class.
-          //
-          throw generation_failed ();
-        }
-
-        inst = TYPE_MAIN_VARIANT (inst);
-
-        // The instantiation may already be complete if it matches a
-        // (complete) specialization.
-        //
-        if (!COMPLETE_TYPE_P (inst))
-          inst = instantiate_class_template (inst);
-
-        // If we cannot instantiate this type, assume there is no suitable
-        // container traits specialization for it.
-        //
-        if (inst == error_mark_node || !COMPLETE_TYPE_P (inst))
+        if (inst == 0)
           return false;
 
         // @@ This points to the primary template, not the specialization.
@@ -363,18 +400,105 @@ namespace
 
       // Process member data.
       //
-      process_container_value (*vt, "value", m);
+      process_container_value (*vt, m, "value", true);
 
       if (it != 0)
-        process_container_value (*it, "index", m);
+        process_container_value (*it, m, "index", false);
 
       if (kt != 0)
-        process_container_value (*kt, "key", m);
+        process_container_value (*kt, m, "key", false);
 
       return true;
     }
 
+    semantics::class_*
+    process_object_pointer (semantics::data_member& m,
+                            semantics::type& t,
+                            string const& kp = string ())
+    {
+      // The overall idea is as follows: try to instantiate the pointer
+      // traits class template. If we are successeful, then get the
+      // element type and see if it is an object.
+      //
+      using semantics::class_;
+
+      tree inst (instantiate_template (pointer_traits_, t.tree_node ()));
+
+      if (inst == 0)
+        return 0;
+
+      // Get the element type.
+      //
+      tree tn (0);
+      try
+      {
+        tree decl (
+          lookup_qualified_name (
+            inst, get_identifier ("element_type"), true, false));
+
+        if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
+          throw generation_failed ();
+
+        tn = TYPE_MAIN_VARIANT (TREE_TYPE (decl));
+      }
+      catch (generation_failed const&)
+      {
+        os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+           << "error: odb::pointer_traits specialization does not define "
+           << "the element_type type" << endl;
+        throw;
+      }
+
+      if (class_* c = dynamic_cast<class_*> (unit.find (tn)))
+      {
+        if (c->count ("object"))
+        {
+          m.set (kp + (kp.empty () ? "": "-") + "object-pointer", c);
+          return c;
+        }
+      }
+
+      return 0;
+    }
+
+    tree
+    instantiate_template (tree t, tree arg)
+    {
+      tree args (make_tree_vec (1));
+      TREE_VEC_ELT (args, 0) = arg;
+
+      // This step should succeed regardles of whether there is a
+      // container traits specialization for this type.
+      //
+      tree inst (
+        lookup_template_class (t, args, 0, 0, 0, tf_warning_or_error));
+
+      if (inst == error_mark_node)
+      {
+        // Diagnostics has already been issued by lookup_template_class.
+        //
+        throw generation_failed ();
+      }
+
+      inst = TYPE_MAIN_VARIANT (inst);
+
+      // The instantiation may already be complete if it matches a
+      // (complete) specialization or was used before.
+      //
+      if (!COMPLETE_TYPE_P (inst))
+        inst = instantiate_class_template (inst);
+
+      // If we cannot instantiate this type, assume there is no suitable
+      // specialization for it.
+      //
+      if (inst == error_mark_node || !COMPLETE_TYPE_P (inst))
+        return 0;
+
+      return inst;
+    }
+
   private:
+    tree pointer_traits_;
     tree container_traits_;
   };
 

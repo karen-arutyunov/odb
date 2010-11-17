@@ -46,7 +46,13 @@ namespace mysql
       string
       fq_type () const
       {
-        return fq_type_.empty () ? t.fq_name (m.belongs ().hint ()) : fq_type_;
+        // Use the original type from 'm' instead of 't' since the hint
+        // may be invalid for a different type. Plus, if a type is
+        // overriden, then the fq_type must be as well.
+        //
+        return fq_type_.empty ()
+          ? m.type ().fq_name (m.belongs ().hint ())
+          : fq_type_;
       }
 
       string const& fq_type_;
@@ -79,6 +85,15 @@ namespace mysql
     traverse_container (member_info&)
     {
     }
+
+    virtual void
+    traverse_object_pointer (member_info& mi)
+    {
+      traverse_simple (mi);
+    }
+
+    virtual void
+    traverse_simple (member_info&);
 
     virtual void
     traverse_integer (member_info&)

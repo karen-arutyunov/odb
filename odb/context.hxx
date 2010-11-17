@@ -74,6 +74,16 @@ public:
     return t.count ("container-kind");
   }
 
+  static semantics::class_*
+  object_pointer (semantics::data_member& m, string const& key_prefix)
+  {
+    using semantics::class_;
+
+    return key_prefix.empty ()
+      ? m.get<class_*> ("object-pointer", 0)
+      : m.get<class_*> (key_prefix + "-object-pointer", 0);
+  }
+
   // Database names and types.
   //
 public:
@@ -102,17 +112,6 @@ public:
   virtual string
   column_type (semantics::data_member&,
                string const& key_prefix = string ()) const;
-
-  // Return empty string if there is no mapping. The second argument
-  // is the custom type or empty string if it is not specified.
-  //
-  string
-  column_type_impl (semantics::type& t,
-                    string const& type,
-                    semantics::context* ctx) const
-  {
-    return data_->column_type_impl (t, type, ctx);
-  }
 
   // Cleaned-up member name that can be used for database names.
   //
@@ -171,6 +170,26 @@ public:
     return *c.get<semantics::type*> ("tree-key-type");
   }
 
+  // The 'is a' and 'has a' tests. The has_a test currently does not
+  // cross the container boundaries.
+  //
+  static unsigned short const eager_pointer = 0x01;
+
+  static bool
+  is_a (semantics::data_member& m, unsigned short flags)
+  {
+    return is_a (m, flags, m.type (), "");
+  }
+
+  static bool
+  is_a (semantics::data_member&,
+        unsigned short flags,
+        semantics::type&,
+        string const& key_prefix);
+
+  static bool
+  has_a (semantics::type&, unsigned short flags);
+
 protected:
   struct data;
   typedef cutl::shared_ptr<data> data_ptr;
@@ -199,6 +218,18 @@ public:
   typedef std::map<string, db_type_type> type_map_type;
 
 protected:
+  typedef unsigned short column_type_flags;
+
+  static column_type_flags const ctf_none = 0;
+
+  // Default type should be NULL-able.
+  //
+  static column_type_flags const ctf_default_null = 0x01;
+
+  // Get object id reference instead of object id.
+  //
+  static column_type_flags const ctf_object_id_ref = 0x02;
+
   struct data
   {
     virtual ~data () {}
@@ -206,10 +237,14 @@ protected:
     // Per-database customizable functionality.
     //
   public:
+    // Return empty string if there is no mapping. The second argument
+    // is the custom type or empty string if it is not specified.
+    //
     virtual string
     column_type_impl (semantics::type&,
                       string const& type,
-                      semantics::context*) const;
+                      semantics::context&,
+                      column_type_flags) const;
 
     keyword_set_type keyword_set_;
     type_map_type type_map_;
