@@ -89,6 +89,9 @@ namespace mysql
     // The same for a member's value type.
     //
     bool
+    grow (semantics::data_member&);
+
+    bool
     grow (semantics::data_member&, semantics::type&, string const& key_prefix);
 
     //

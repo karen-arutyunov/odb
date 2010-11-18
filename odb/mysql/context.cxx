@@ -184,6 +184,15 @@ namespace mysql
   }
 
   bool context::
+  grow (semantics::data_member& m)
+  {
+    bool r (false);
+    has_grow_member mt  (*this, r);
+    mt.traverse (m);
+    return r;
+  }
+
+  bool context::
   grow (semantics::data_member& m, semantics::type& t, string const& kp)
   {
     bool r (false);

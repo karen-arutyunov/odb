@@ -208,6 +208,9 @@ namespace mysql
 
         names (c);
 
+        if (!comp_value (c))
+          os << "std::size_t version;";
+
         os << "};";
       }
 
@@ -220,9 +223,10 @@ namespace mysql
     //
     struct container_traits: object_members_base, context
     {
-      container_traits (context& c)
+      container_traits (context& c, semantics::class_& obj)
           : object_members_base (c, true, false), context (c)
       {
+        scope_ = "object_traits< " + obj.fq_name () + " >";
       }
 
       virtual void
@@ -390,6 +394,11 @@ namespace mysql
           data_columns << "UL;"
            << endl;
 
+        // id_image_type
+        //
+        os << "typedef " << scope_ << "::id_image_type id_image_type;"
+           << endl;
+
         // cond_image_type (object id is taken from the object image)
         //
         os << "struct cond_image_type"
@@ -425,7 +434,8 @@ namespace mysql
           }
         }
 
-        os << "};";
+        os << "std::size_t version;"
+           << "};";
 
         // data_image_type (object id is taken from the object image)
         //
@@ -463,7 +473,8 @@ namespace mysql
         image_member im (*this, "value_", vt, "value_type", "value");
         im.traverse (m);
 
-        os << "};";
+        os << "std::size_t version;"
+           << "};";
 
         // Statements.
         //
@@ -486,13 +497,13 @@ namespace mysql
 
         // grow()
         //
-        os << "static bool" << endl
+        os << "static void" << endl
            << "grow (data_image_type&, my_bool*);"
            << endl;
 
         // init (data_image)
         //
-        os << "static bool" << endl;
+        os << "static void" << endl;
 
         switch (ck)
         {
@@ -610,7 +621,6 @@ namespace mysql
         os << "static void" << endl
            << "persist (const container_type&," << endl
            << "id_image_type&," << endl
-           << "bool," << endl
            << "statements_type&);"
            << endl;
 
@@ -619,7 +629,6 @@ namespace mysql
         os << "static void" << endl
            << "load (container_type&," << endl
            << "id_image_type&," << endl
-           << "bool," << endl
            << "statements_type&);"
            << endl;
 
@@ -628,18 +637,20 @@ namespace mysql
         os << "static void" << endl
            << "update (const container_type&," << endl
            << "id_image_type&," << endl
-           << "bool," << endl
            << "statements_type&);"
            << endl;
 
         // erase
         //
         os << "static void" << endl
-           << "erase (id_image_type&, bool, statements_type&);"
+           << "erase (id_image_type&, statements_type&);"
            << endl;
 
         os << "};";
       }
+
+    private:
+      string scope_;
     };
 
     //
@@ -702,7 +713,8 @@ namespace mysql
 
         id_image_member_.traverse (id);
 
-        os << "};";
+        os << "std::size_t version;"
+           << "};";
 
         // query_type & query_base_type
         //
@@ -754,9 +766,7 @@ namespace mysql
         // Traits types.
         //
         {
-          // @@ Make it class members?
-          //
-          container_traits t (*this);
+          container_traits t (*this, c);
           t.traverse (c);
         }
 
@@ -777,7 +787,7 @@ namespace mysql
 
         // grow ()
         //
-        os << "static bool" << endl
+        os << "static void" << endl
            << "grow (image_type&, my_bool*);"
            << endl;
 
@@ -795,7 +805,7 @@ namespace mysql
 
         // init (image, object)
         //
-        os << "static bool" << endl
+        os << "static void" << endl
            << "init (image_type&, const object_type&);"
            << endl;
 
@@ -846,9 +856,7 @@ namespace mysql
         //
         os << "private:" << endl
            << "static bool" << endl
-           << "find (mysql::object_statements<object_type>&," << endl
-           << "const id_type&," << endl
-           << "bool&);";
+           << "find (mysql::object_statements<object_type>&, const id_type&);";
 
         os << "};";
       }

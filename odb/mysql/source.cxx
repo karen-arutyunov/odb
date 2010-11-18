@@ -362,7 +362,7 @@ namespace mysql
           " >::grow (" << endl
            << "i." << mi.var << "value, e + " << index_ << "UL))"
            << "{"
-           << "r = true;"
+           << "grew = true;"
            << "}";
       }
 
@@ -388,7 +388,7 @@ namespace mysql
         os << "if (" << e << ")" << endl
            << "{"
            << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
-           << "r = true;"
+           << "grew = true;"
            << "}";
       }
 
@@ -407,7 +407,7 @@ namespace mysql
         os << "if (" << e << ")" << endl
            << "{"
            << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
-           << "r = true;"
+           << "grew = true;"
            << "}";
       }
 
@@ -417,7 +417,7 @@ namespace mysql
         os << "if (" << e << ")" << endl
            << "{"
            << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
-           << "r = true;"
+           << "grew = true;"
            << "}";
       }
 
@@ -436,7 +436,7 @@ namespace mysql
         os << "if (" << e << ")" << endl
            << "{"
            << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
-           << "r = true;"
+           << "grew = true;"
            << "}";
       }
 
@@ -448,7 +448,7 @@ namespace mysql
         os << "if (" << e << ")" << endl
            << "{"
            << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
-           << "r = true;"
+           << "grew = true;"
            << "}";
       }
 
@@ -472,7 +472,7 @@ namespace mysql
            << "if (composite_value_traits< " << c.fq_name () <<
           " >::grow (i, e + " << index_ << "UL))"
            << "{"
-           << "r = true;"
+           << "grew = true;"
            << "}";
 
         index_ += column_count (c);
@@ -1040,6 +1040,9 @@ namespace mysql
 
         grow = grow || context::grow (m, vt, "value");
 
+        bool eager_ptr (is_a (m, eager_pointer, vt, "value") ||
+                        has_a (vt, eager_pointer));
+
         string name (prefix_ + public_name (m) + "_traits");
         string scope (obj_scope_ + "::" + name);
 
@@ -1291,12 +1294,10 @@ namespace mysql
         {
           size_t index (0);
 
-          os << "bool " << scope << "::" << endl
+          os << "void " << scope << "::" << endl
              << "grow (data_image_type& i, my_bool* e)"
              << "{"
-             << "ODB_POTENTIALLY_UNUSED (i);"
-             << endl
-             << "bool r (false);"
+             << "bool grew (false);"
              << endl;
 
           switch (ck)
@@ -1331,13 +1332,14 @@ namespace mysql
           grow_member gm (*this, index, "value_", vt, "value_type", "value");
           gm.traverse (m);
 
-          os << "return r;"
+          os << "if (grew)" << endl
+             << "i.version++;"
              << "}";
         }
 
         // init (data_image)
         //
-        os << "bool " << scope << "::" << endl;
+        os << "void " << scope << "::" << endl;
 
         switch (ck)
         {
@@ -1390,7 +1392,9 @@ namespace mysql
             *this, "value_", "v", vt, "value_type", "value");
           im.traverse (m);
         }
-        os << "return grew;"
+
+        os << "if (grew)" << endl
+           << "i.version++;"
            << "}";
 
         // init (data)
@@ -1487,33 +1491,34 @@ namespace mysql
            << "statements& sts (*static_cast< statements* > (d));"
            << "binding& b (sts.data_image_binding ());"
            << "data_image_type& di (sts.data_image ());"
-           << endl
-           << "if (";
+           << endl;
 
         switch (ck)
         {
         case ck_ordered:
           {
-            os << "init (di, i, v)";
+            os << "init (di, i, v);";
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "init (di, k, v)";
+            os << "init (di, k, v);";
             break;
           }
         case ck_set:
         case ck_multiset:
           {
-            os << "init (di, v)";
+            os << "init (di, v);";
             break;
           }
         }
 
-        os << " ||  b.version == 0)"
+        os << endl
+           << "if (di.version != sts.data_image_version () ||  b.version == 0)"
            << "{"
            << "bind (b.bind, 0, di);"
+           << "sts.data_image_version (di.version);"
            << "b.version++;"
            << "}"
            << "if (!sts.insert_one_statement ().execute ())" << endl
@@ -1559,37 +1564,61 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "init (i, v, di, sts.connection ().database ());";
+            os << "init (i, v, di, sts.connection ().database ());"
+               << endl;
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "init (k, v, di, sts.connection ().database ());";
+            os << "init (k, v, di, sts.connection ().database ());"
+               << endl;
             break;
           }
         case ck_set:
         case ck_multiset:
           {
-            os << "init (v, di, sts.connection ().database ());";
+            os << "init (v, di, sts.connection ().database ());"
+               << endl;
             break;
           }
         }
 
+        // If we are loading an eager pointer, then the call to init
+        // above executed other statements which potentially could
+        // change the image.
+        //
+        if (eager_ptr)
+        {
+          os << "id_image_type& ii (sts.id_image ());"
+             << endl
+             << "if (di.version != sts.data_image_version () ||" << endl
+             << "ii.version != sts.data_id_image_version ())"
+             << "{"
+             << "binding& b (sts.data_image_binding ());"
+             << "bind (b.bind, &ii, di);"
+             << "sts.data_image_version (di.version);"
+             << "sts.data_id_image_version (ii.version);"
+             << "b.version++;"
+             << "}";
+        }
+
         // Fetch next.
         //
-        os << endl
-           << "select_statement& st (sts.select_all_statement ());"
+        os << "select_statement& st (sts.select_all_statement ());"
            << "select_statement::result r (st.fetch ());";
 
         if (grow)
           os << endl
              << "if (r == select_statement::truncated)"
              << "{"
-             << "if (grow (di, sts.data_image_error ()))"
+             << "grow (di, sts.data_image_error ());"
+             << endl
+             << "if (di.version != sts.data_image_version ())"
              << "{"
              << "binding& b (sts.data_image_binding ());"
              << "bind (b.bind, 0, di);"
+             << "sts.data_image_version (di.version);"
              << "b.version++;"
              << "st.refetch ();"
              << "}"
@@ -1620,23 +1649,18 @@ namespace mysql
         os << "void " << scope << "::" << endl
            << "persist (const container_type& c," << endl
            << "id_image_type& id," << endl
-           << "bool rebind," << endl
            << "statements_type& sts)"
            << "{"
            << "using namespace mysql;"
            << endl
            << "binding& b (sts.data_image_binding ());"
-           << "if (rebind || b.version == 0)"
+           << "if (id.version != sts.data_id_image_version () || b.version == 0)"
            << "{"
            << "bind (b.bind, &id, sts.data_image ());"
+           << "sts.data_id_image_version (id.version);"
            << "b.version++;"
            << "}"
-           << "if (rebind)" // We don't need it, just don't miss the event.
-           << "{"
-           << "binding& cb (sts.cond_image_binding ());"
-           << "bind (cb.bind, &id, sts.cond_image ());"
-           << "cb.version++;"
-           << "}"
+           << "sts.id_image (id);"
            << "container_traits::persist (c, sts.functions ());"
            << "}";
 
@@ -1645,21 +1669,22 @@ namespace mysql
         os << "void " << scope << "::" << endl
            << "load (container_type& c," << endl
            << "id_image_type& id," << endl
-           << "bool rebind," << endl
            << "statements_type& sts)"
            << "{"
            << "using namespace mysql;"
            << endl
            << "binding& db (sts.data_image_binding ());"
-           << "if (rebind || db.version == 0)"
+           << "if (id.version != sts.data_id_image_version () || db.version == 0)"
            << "{"
            << "bind (db.bind, &id, sts.data_image ());"
+           << "sts.data_id_image_version (id.version);"
            << "db.version++;"
            << "}"
            << "binding& cb (sts.cond_image_binding ());"
-           << "if (rebind || cb.version == 0)"
+           << "if (id.version != sts.cond_id_image_version () || cb.version == 0)"
            << "{"
            << "bind (cb.bind, &id, sts.cond_image ());"
+           << "sts.cond_id_image_version (id.version);"
            << "cb.version++;"
            << "}"
            << "select_statement& st (sts.select_all_statement ());"
@@ -1668,7 +1693,7 @@ namespace mysql
         // If we are loading eager object pointers, cache the result
         // since we will be loading other objects.
         //
-        if (is_a (m, eager_pointer, vt, "value") || has_a (vt, eager_pointer))
+        if (eager_ptr)
           os << "st.cache ();";
 
         os << "select_statement::result r (st.fetch ());";
@@ -1677,9 +1702,13 @@ namespace mysql
           os << endl
              << "if (r == select_statement::truncated)"
              << "{"
-             << "if (grow (sts.data_image (), sts.data_image_error ()))"
+             << "data_image_type& di (sts.data_image ());"
+             << "grow (di, sts.data_image_error ());"
+             << endl
+             << "if (di.version != sts.data_image_version ())"
              << "{"
              << "bind (db.bind, 0, sts.data_image ());"
+             << "sts.data_image_version (di.version);"
              << "db.version++;"
              << "st.refetch ();"
              << "}"
@@ -1690,6 +1719,7 @@ namespace mysql
            << "if (!more)" << endl
            << "st.free_result ();"
            << endl
+           << "sts.id_image (id);"
            << "container_traits::load (c, more, sts.functions ());"
            << "}";
 
@@ -1698,45 +1728,46 @@ namespace mysql
         os << "void " << scope << "::" << endl
            << "update (const container_type& c," << endl
            << "id_image_type& id," << endl
-           << "bool rebind," << endl
            << "statements_type& sts)"
            << "{"
            << "using namespace mysql;"
            << endl
            << "binding& db (sts.data_image_binding ());"
-           << "if (rebind || db.version == 0)"
+           << "if (id.version != sts.data_id_image_version () || db.version == 0)"
            << "{"
            << "bind (db.bind, &id, sts.data_image ());"
+           << "sts.data_id_image_version (id.version);"
            << "db.version++;"
            << "}"
+          //
+          // We may need cond if the specialization calls delete_all.
+          //
            << "binding& cb (sts.cond_image_binding ());"
-           << "if (rebind || cb.version == 0)" // We may need it (delete_all).
+           << "if (id.version != sts.cond_id_image_version () || cb.version == 0)"
            << "{"
            << "bind (cb.bind, &id, sts.cond_image ());"
+           << "sts.cond_id_image_version (id.version);"
            << "cb.version++;"
            << "}"
+           << "sts.id_image (id);"
            << "container_traits::update (c, sts.functions ());"
            << "}";
 
         // erase
         //
         os << "void " << scope << "::" << endl
-           << "erase (id_image_type& id, bool rebind, statements_type& sts)"
+           << "erase (id_image_type& id, statements_type& sts)"
            << "{"
            << "using namespace mysql;"
            << endl
            << "binding& b (sts.cond_image_binding ());"
-           << "if (rebind || b.version == 0)"
+           << "if (id.version != sts.cond_id_image_version () || b.version == 0)"
            << "{"
            << "bind (b.bind, &id, sts.cond_image ());"
+           << "sts.cond_id_image_version (id.version);"
            << "b.version++;"
            << "}"
-           << "if (rebind)"
-           << "{"
-           << "binding& db (sts.data_image_binding ());"
-           << "bind (db.bind, &id, sts.data_image ());"
-           << "db.version++;"
-           << "}"
+           << "sts.id_image (id);"
            << "container_traits::erase (sts.functions ());"
            << "}";
       }
@@ -1846,26 +1877,26 @@ namespace mysql
         {
         case persist_call:
           {
-            os << traits << "::persist (obj." << obj_name << ", i, grew, " <<
+            os << traits << "::persist (obj." << obj_name << ", i, " <<
               "sts.container_statment_cache ()." << sts_name << ");";
             break;
           }
         case load_call:
           {
-            os << traits << "::load (obj." << obj_name << ", i, grew, " <<
+            os << traits << "::load (obj." << obj_name << ", i, " <<
               "sts.container_statment_cache ()." << sts_name << ");";
             break;
           }
         case update_call:
           {
-            os << traits << "::update (obj." << obj_name << ", i, grew, " <<
+            os << traits << "::update (obj." << obj_name << ", i, " <<
               "sts.container_statment_cache ()." << sts_name << ");";
             break;
           }
         case erase_call:
           {
-            os << traits << "::erase (i, grew, " <<
-              "sts.container_statment_cache ()." << sts_name << ");";
+            os << traits << "::erase (i, sts.container_statment_cache ()." <<
+              sts_name << ");";
             break;
           }
         }
@@ -1929,6 +1960,7 @@ namespace mysql
 
         semantics::data_member& id (id_member (c));
         bool auto_id (id.count ("auto"));
+        bool grow_id (context::grow (id));
 
         os << "// " << c.name () << endl
            << "//" << endl
@@ -2051,19 +2083,18 @@ namespace mysql
 
         // grow ()
         //
-        os << "bool " << traits << "::" << endl
+        os << "void " << traits << "::" << endl
            << "grow (image_type& i, my_bool* e)"
            << "{"
-           << "ODB_POTENTIALLY_UNUSED (i);"
-           << endl
-           << "bool r (false);"
+           << "bool grew (false);"
            << endl;
 
         index_ = 0;
         inherits (c, grow_base_inherits_);
         names (c, grow_member_names_);
 
-        os << "return r;"
+        os << "if (grew)" << endl
+           << "i.version++;" << endl
            << "}";
 
         // bind (image_type)
@@ -2091,7 +2122,7 @@ namespace mysql
 
         // init (image, object)
         //
-        os << "bool " << traits << "::" << endl
+        os << "void " << traits << "::" << endl
            << "init (image_type& i, const object_type& o)"
            << "{"
            << "bool grew (false);"
@@ -2100,7 +2131,8 @@ namespace mysql
         inherits (c, init_image_base_inherits_);
         names (c, init_image_member_names_);
 
-        os << "return grew;"
+        os << "if (grew)" << endl
+           << "i.version++;" << endl
            << "}";
 
         // init (object, image)
@@ -2127,17 +2159,20 @@ namespace mysql
            << "connection& conn (mysql::transaction::current ().connection ());"
            << "object_statements<object_type>& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
-           << "binding& b (sts.image_binding ());"
+           << "image_type& im (sts.image ());"
+           << "binding& imb (sts.image_binding ());"
            << endl;
 
         if (auto_id)
-          os << "obj." << id.name () << " = 0;"
-             << endl;
+          os << "obj." << id.name () << " = 0;";
 
-        os << "if (init (sts.image (), obj) || b.version == 0)"
+        os << "init (im, obj);"
+           << endl
+           << "if (im.version != sts.image_version () || imb.version == 0)"
            << "{"
-           << "bind (b.bind, sts.image ());"
-           << "b.version++;"
+           << "bind (imb.bind, im);"
+           << "sts.image_version (im.version);"
+           << "imb.version++;"
            << "}"
            << "insert_statement& st (sts.persist_statement ());"
            << "if (!st.execute ())" << endl
@@ -2150,19 +2185,21 @@ namespace mysql
 
         if (containers)
         {
+          os << "{";
+
           // Initialize id_image.
           //
-          os << "{"
-             << "bool grew (false);"
-             << "const id_type& id (obj." << id.name () << ");"
+          if (grow_id)
+            os << "bool grew (false);";
+
+          os << "const id_type& id (obj." << id.name () << ");"
              << "id_image_type& i (sts.id_image ());";
           init_id_image_member_.traverse (id);
-          os << "binding& idb (sts.id_image_binding ());"
-             << "if (grew && idb.version != 0)"
-             << "{"
-             << "bind (idb.bind, i);"
-             << "idb.version++;"
-             << "}";
+
+          if (grow_id)
+            os << "if (grew)" << endl
+               << "i.version++;"
+               << endl;
 
           container_calls t (*this, container_calls::persist_call);
           t.traverse (c);
@@ -2182,21 +2219,40 @@ namespace mysql
            << "connection& conn (mysql::transaction::current ().connection ());"
            << "object_statements<object_type>& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
-           << endl
-           << "bool grew (false);"
-           << "const id_type& id (object_traits::id (obj));"
+           << endl;
+
+        // Initialize id image.
+        //
+        if (grow_id)
+          os << "bool grew (false);";
+
+        os << "const id_type& id (obj." << id.name () << ");"
            << "id_image_type& i (sts.id_image ());";
         init_id_image_member_.traverse (id);
+
+        if (grow_id)
+          os << "if (grew)" << endl
+             << "i.version++;"
+             << endl;
+
         os << "binding& idb (sts.id_image_binding ());"
-           << "if (grew || idb.version == 0)"
+           << "if (i.version != sts.id_image_version () || idb.version == 0)"
            << "{"
            << "bind (idb.bind, i);"
+           << "sts.id_image_version (i.version);"
            << "idb.version++;"
-           << "}"
+           << "}";
+
+        // Initialize data image.
+        //
+        os << "image_type& im (sts.image ());"
            << "binding& imb (sts.image_binding ());"
-           << "if (init (sts.image (), obj) || imb.version == 0)"
+           << "init (im, obj);"
+           << endl
+           << "if (im.version != sts.image_version () || imb.version == 0)"
            << "{"
-           << "bind (imb.bind, sts.image ());"
+           << "bind (imb.bind, im);"
+           << "sts.image_version (im.version);"
            << "imb.version++;"
            << "}"
            << "sts.update_statement ().execute ();";
@@ -2220,14 +2276,26 @@ namespace mysql
            << "connection& conn (mysql::transaction::current ().connection ());"
            << "object_statements<object_type>& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
-           << endl
-           << "bool grew (false);"
-           << "id_image_type& i (sts.id_image ());";
+           << endl;
+
+        // Initialize id image.
+        //
+        if (grow_id)
+          os << "bool grew (false);";
+
+        os << "id_image_type& i (sts.id_image ());";
         init_id_image_member_.traverse (id);
+
+        if (grow_id)
+          os << "if (grew)" << endl
+             << "i.version++;"
+             << endl;
+
         os << "binding& idb (sts.id_image_binding ());"
-           << "if (grew || idb.version == 0)"
+           << "if (i.version != sts.id_image_version () || idb.version == 0)"
            << "{"
            << "bind (idb.bind, i);"
+           << "sts.id_image_version (i.version);"
            << "idb.version++;"
            << "}"
            << "if (sts.erase_statement ().execute () != 1)" << endl
@@ -2256,8 +2324,7 @@ namespace mysql
              << "object_statements<object_type>& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
              << endl
-             << "bool grew (false);"
-             << "if (find (sts, id, grew))"
+             << "if (find (sts, id))"
              << "{"
              << "pointer_type p (access::object_factory< object_type, " <<
             "pointer_type  >::create ());"
@@ -2290,8 +2357,7 @@ namespace mysql
            << "object_statements<object_type>& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << endl
-           << "bool grew (false);"
-           << "if (find (sts, id, grew))"
+           << "if (find (sts, id))"
            << "{"
            << "init (obj, sts.image (), db);";
 
@@ -2310,24 +2376,42 @@ namespace mysql
            << "}";
 
         os << "bool " << traits << "::" << endl
-           << "find (mysql::object_statements<object_type>& sts," << endl
-           << "const id_type& id," << endl
-           << "bool& grew)"
+           << "find (mysql::object_statements<object_type>& sts, " <<
+          "const id_type& id)"
            << "{"
            << "using namespace mysql;"
-           << endl
-           << "id_image_type& i (sts.id_image ());";
+           << endl;
+
+        // Initialize id image.
+        //
+        if (grow_id)
+          os << "bool grew (false);";
+
+        os << "id_image_type& i (sts.id_image ());";
         init_id_image_member_.traverse (id);
+
+        if (grow_id)
+          os << "if (grew)" << endl
+             << "i.version++;"
+             << endl;
+
         os << "binding& idb (sts.id_image_binding ());"
-           << "if (grew || idb.version == 0)"
+           << "if (i.version != sts.id_image_version () || idb.version == 0)"
            << "{"
            << "bind (idb.bind, i);"
+           << "sts.id_image_version (i.version);"
            << "idb.version++;"
-           << "}"
+           << "}";
+
+        // Rebind data image.
+        //
+        os << "image_type& im (sts.image ());"
            << "binding& imb (sts.image_binding ());"
-           << "if (imb.version == 0)"
+           << endl
+           << "if (im.version != sts.image_version () || imb.version == 0)"
            << "{"
-           << "bind (imb.bind, sts.image ());"
+           << "bind (imb.bind, im);"
+           << "sts.image_version (im.version);"
            << "imb.version++;"
            << "}"
            << "select_statement& st (sts.find_statement ());"
@@ -2338,9 +2422,12 @@ namespace mysql
           os << endl
              << "if (r == select_statement::truncated)"
              << "{"
-             << "if (grow (sts.image (), sts.image_error ()))"
+             << "grow (im, sts.image_error ());"
+             << endl
+             << "if (im.version != sts.image_version ())"
              << "{"
-             << "bind (imb.bind, sts.image ());"
+             << "bind (imb.bind, im);"
+             << "sts.image_version (im.version);"
              << "imb.version++;"
              << "st.refetch ();"
              << "}"
@@ -2364,10 +2451,13 @@ namespace mysql
              << "object_statements<object_type>& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
              << endl
+             << "image_type& im (sts.image ());"
              << "binding& imb (sts.image_binding ());"
-             << "if (imb.version == 0)"
+             << endl
+             << "if (im.version != sts.image_version () || imb.version == 0)"
              << "{"
-             << "bind (imb.bind, sts.image ());"
+             << "bind (imb.bind, im);"
+             << "sts.image_version (im.version);"
              << "imb.version++;"
              << "}"
              << "details::shared_ptr<select_statement> st (" << endl
@@ -2403,14 +2493,14 @@ namespace mysql
            << "{"
            << "ODB_POTENTIALLY_UNUSED (i);"
            << endl
-           << "bool r (false);"
+           << "bool grew (false);"
            << endl;
 
         index_ = 0;
         inherits (c, grow_base_inherits_);
         names (c, grow_member_names_);
 
-        os << "return r;"
+        os << "return grew;"
            << "}";
 
         // bind (image_type)
