@@ -136,7 +136,10 @@ public:
   //
 public:
   static size_t
-  column_count (semantics::class_&);
+  in_column_count (semantics::class_&);
+
+  static size_t
+  out_column_count (semantics::class_&);
 
   semantics::data_member&
   id_member (semantics::class_&);

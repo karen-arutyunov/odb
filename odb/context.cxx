@@ -305,21 +305,23 @@ namespace
 {
   struct column_count_impl: object_members_base
   {
-    column_count_impl ()
-        : count_ (0)
+    column_count_impl (bool out)
+        : out_ (out), count_ (0)
     {
     }
 
     virtual void
     traverse (semantics::class_& c)
     {
-      if (c.count ("column-count"))
-        count_ += c.get<size_t> ("column-count");
+      char const* key (out_ ? "out-column-count" : "in-column-count");
+
+      if (c.count (key))
+        count_ += c.get<size_t> (key);
       else
       {
         size_t n (count_);
         object_members_base::traverse (c);
-        c.set ("column-count", count_ - n);
+        c.set (key, count_ - n);
       }
     }
 
@@ -330,20 +332,33 @@ namespace
     }
 
   private:
+    bool out_;
     size_t count_;
   };
 }
 
 size_t context::
-column_count (semantics::class_& c)
+in_column_count (semantics::class_& c)
 {
-  if (!c.count ("column-count"))
+  if (!c.count ("in-column-count"))
   {
-    column_count_impl t;
+    column_count_impl t (false);
     t.traverse (c);
   }
 
-  return c.get<size_t> ("column-count");
+  return c.get<size_t> ("in-column-count");
+}
+
+size_t context::
+out_column_count (semantics::class_& c)
+{
+  if (!c.count ("out-column-count"))
+  {
+    column_count_impl t (true);
+    t.traverse (c);
+  }
+
+  return c.get<size_t> ("out-column-count");
 }
 
 namespace

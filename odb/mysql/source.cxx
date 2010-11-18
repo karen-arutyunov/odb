@@ -138,7 +138,7 @@ namespace mysql
         if (container (mi.t))
           return;
         else if (semantics::class_* c = comp_value (mi.t))
-          index_ += column_count (*c);
+          index_ += in_column_count (*c);
         else
           index_++;
       }
@@ -301,7 +301,7 @@ namespace mysql
           " >::bind (b + " << index_ << "UL, i);"
            << endl;
 
-        index_ += column_count (c);
+        index_ += in_column_count (c);
       }
 
     private:
@@ -350,7 +350,7 @@ namespace mysql
         if (container (mi.t))
           return;
         else if (semantics::class_* c = comp_value (mi.t))
-          index_ += column_count (*c);
+          index_ += in_column_count (*c);
         else
           index_++;
       }
@@ -475,7 +475,7 @@ namespace mysql
            << "grew = true;"
            << "}";
 
-        index_ += column_count (c);
+        index_ += in_column_count (c);
       }
 
     private:
@@ -2022,7 +2022,7 @@ namespace mysql
         os << "\"" << endl
            << "\") VALUES (";
 
-        for (size_t i (0), n (column_count (c)); i < n; ++i)
+        for (size_t i (0), n (in_column_count (c)); i < n; ++i)
           os << (i != 0 ? "," : "") << '?';
 
         os << ")\";"
@@ -2100,8 +2100,10 @@ namespace mysql
         // bind (image_type)
         //
         os << "void " << traits << "::" << endl
-           << "bind (MYSQL_BIND* b, image_type& i)"
-           << "{";
+           << "bind (MYSQL_BIND* b, image_type& i, bool out)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (out);"
+           << endl;
 
         index_ = 0;
         inherits (c, bind_base_inherits_);
@@ -2160,7 +2162,7 @@ namespace mysql
            << "object_statements<object_type>& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << "image_type& im (sts.image ());"
-           << "binding& imb (sts.image_binding ());"
+           << "binding& imb (sts.in_image_binding ());"
            << endl;
 
         if (auto_id)
@@ -2168,10 +2170,10 @@ namespace mysql
 
         os << "init (im, obj);"
            << endl
-           << "if (im.version != sts.image_version () || imb.version == 0)"
+           << "if (im.version != sts.in_image_version () || imb.version == 0)"
            << "{"
-           << "bind (imb.bind, im);"
-           << "sts.image_version (im.version);"
+           << "bind (imb.bind, im, false);"
+           << "sts.in_image_version (im.version);"
            << "imb.version++;"
            << "}"
            << "insert_statement& st (sts.persist_statement ());"
@@ -2246,13 +2248,13 @@ namespace mysql
         // Initialize data image.
         //
         os << "image_type& im (sts.image ());"
-           << "binding& imb (sts.image_binding ());"
+           << "binding& imb (sts.in_image_binding ());"
            << "init (im, obj);"
            << endl
-           << "if (im.version != sts.image_version () || imb.version == 0)"
+           << "if (im.version != sts.in_image_version () || imb.version == 0)"
            << "{"
-           << "bind (imb.bind, im);"
-           << "sts.image_version (im.version);"
+           << "bind (imb.bind, im, false);"
+           << "sts.in_image_version (im.version);"
            << "imb.version++;"
            << "}"
            << "sts.update_statement ().execute ();";
@@ -2406,12 +2408,12 @@ namespace mysql
         // Rebind data image.
         //
         os << "image_type& im (sts.image ());"
-           << "binding& imb (sts.image_binding ());"
+           << "binding& imb (sts.out_image_binding ());"
            << endl
-           << "if (im.version != sts.image_version () || imb.version == 0)"
+           << "if (im.version != sts.out_image_version () || imb.version == 0)"
            << "{"
-           << "bind (imb.bind, im);"
-           << "sts.image_version (im.version);"
+           << "bind (imb.bind, im, true);"
+           << "sts.out_image_version (im.version);"
            << "imb.version++;"
            << "}"
            << "select_statement& st (sts.find_statement ());"
@@ -2422,12 +2424,12 @@ namespace mysql
           os << endl
              << "if (r == select_statement::truncated)"
              << "{"
-             << "grow (im, sts.image_error ());"
+             << "grow (im, sts.out_image_error ());"
              << endl
-             << "if (im.version != sts.image_version ())"
+             << "if (im.version != sts.out_image_version ())"
              << "{"
-             << "bind (imb.bind, im);"
-             << "sts.image_version (im.version);"
+             << "bind (imb.bind, im, true);"
+             << "sts.out_image_version (im.version);"
              << "imb.version++;"
              << "st.refetch ();"
              << "}"
@@ -2452,12 +2454,12 @@ namespace mysql
              << "conn.statement_cache ().find<object_type> ());"
              << endl
              << "image_type& im (sts.image ());"
-             << "binding& imb (sts.image_binding ());"
+             << "binding& imb (sts.out_image_binding ());"
              << endl
-             << "if (im.version != sts.image_version () || imb.version == 0)"
+             << "if (im.version != sts.out_image_version () || imb.version == 0)"
              << "{"
-             << "bind (imb.bind, im);"
-             << "sts.image_version (im.version);"
+             << "bind (imb.bind, im, true);"
+             << "sts.out_image_version (im.version);"
              << "imb.version++;"
              << "}"
              << "details::shared_ptr<select_statement> st (" << endl
@@ -2477,7 +2479,7 @@ namespace mysql
       virtual void
       traverse_value (type& c)
       {
-        bool columns (column_count (c) != 0);
+        bool columns (in_column_count (c) != 0);
 
         string const& type (c.fq_name ());
         string traits ("access::composite_value_traits< " + type + " >");

@@ -286,7 +286,7 @@ namespace mysql
             size_t n;
 
             if (class_* kc = comp_value (*kt))
-              n = column_count (*kc);
+              n = in_column_count (*kc);
             else
               n = 1;
 
@@ -300,7 +300,7 @@ namespace mysql
             // Value is also a key.
             //
             if (class_* vc = comp_value (vt))
-              cond_columns += column_count (*vc);
+              cond_columns += in_column_count (*vc);
             else
               cond_columns++;
 
@@ -309,7 +309,7 @@ namespace mysql
         }
 
         if (class_* vc = comp_value (vt))
-          data_columns += column_count (*vc);
+          data_columns += in_column_count (*vc);
         else
           data_columns++;
 
@@ -743,8 +743,10 @@ namespace mysql
 
         // column_count
         //
-        os << "static const std::size_t column_count = " <<
-          column_count (c) << "UL;"
+        os << "static const std::size_t in_column_count = " <<
+          in_column_count (c) << "UL;"
+           << "static const std::size_t out_column_count = " <<
+          out_column_count (c) << "UL;"
            << endl;
 
         // Statements.
@@ -794,7 +796,7 @@ namespace mysql
         // bind (image_type)
         //
         os << "static void" << endl
-           << "bind (MYSQL_BIND*, image_type&);"
+           << "bind (MYSQL_BIND*, image_type&, bool);"
            << endl;
 
         // bind (id_image_type)
