@@ -95,23 +95,19 @@ namespace mysql
     struct bind_member: member_base
     {
       bind_member (context& c,
-                   size_t& index,
                    string const& var = string (),
                    string const& arg = string ())
-          : member_base (c, var), index_ (index), arg_override_ (arg)
+          : member_base (c, var), arg_override_ (arg)
       {
       }
 
       bind_member (context& c,
-                   size_t& index,
                    string const& var,
                    string const& arg,
                    semantics::type& t,
                    string const& fq_type,
                    string const& key_prefix)
-          : member_base (c, var, t, fq_type, key_prefix),
-            index_ (index),
-            arg_override_ (arg)
+          : member_base (c, var, t, fq_type, key_prefix), arg_override_ (arg)
       {
       }
 
@@ -122,7 +118,7 @@ namespace mysql
           return;
 
         ostringstream ostr;
-        ostr << "b[" << index_ << "UL]";
+        ostr << "b[n]";
         b = ostr.str ();
 
         arg = arg_override_.empty () ? string ("i") : arg_override_;
@@ -137,19 +133,23 @@ namespace mysql
       {
         if (container (mi.t))
           return;
-        else if (semantics::class_* c = comp_value (mi.t))
-          index_ += in_column_count (*c);
-        else
-          index_++;
+
+        if (var_override_.empty ())
+        {
+          if (semantics::class_* c = comp_value (mi.t))
+            os << "n += " << in_column_count (*c) << "UL;";
+          else
+            os << "n++;";
+
+          os << endl;
+        }
       }
 
       virtual void
       traverse_composite (member_info& mi)
       {
         os << "composite_value_traits< " << mi.fq_type () <<
-          " >::bind (" << endl
-           << "b + " << index_ << "UL, " << arg << "." << mi.var << "value);"
-           << endl;
+          " >::bind (b + n, " << arg << "." << mi.var << "value);";
       }
 
       virtual void
@@ -164,8 +164,7 @@ namespace mysql
           integer_buffer_types[mi.st->type - sql_type::TINYINT] << ";"
            << b << ".is_unsigned = " << (mi.st->unsign ? "1" : "0") << ";"
            << b << ".buffer = &" << arg << "." << mi.var << "value;"
-           << b << ".is_null = &" << arg << "." << mi.var << "null;"
-           << endl;
+           << b << ".is_null = &" << arg << "." << mi.var << "null;";
       }
 
       virtual void
@@ -174,8 +173,7 @@ namespace mysql
         os << b << ".buffer_type = " <<
           float_buffer_types[mi.st->type - sql_type::FLOAT] << ";"
            << b << ".buffer = &" << arg << "." << mi.var << "value;"
-           << b << ".is_null = &" << arg << "." << mi.var << "null;"
-           << endl;
+           << b << ".is_null = &" << arg << "." << mi.var << "null;";
       }
 
       virtual void
@@ -186,8 +184,7 @@ namespace mysql
            << b << ".buffer_length = static_cast<unsigned long> (" << endl
            << "" << arg << "." << mi.var << "value.capacity ());"
            << b << ".length = &" << arg << "." << mi.var << "size;"
-           << b << ".is_null = &" << arg << "." << mi.var << "null;"
-           << endl;
+           << b << ".is_null = &" << arg << "." << mi.var << "null;";
       }
 
       virtual void
@@ -200,8 +197,7 @@ namespace mysql
         if (mi.st->type == sql_type::YEAR)
           os << b << ".is_unsigned = 0;";
 
-        os << b << ".is_null = &" << arg << "." << mi.var << "null;"
-           << endl;
+        os << b << ".is_null = &" << arg << "." << mi.var << "null;";
       }
 
       virtual void
@@ -218,8 +214,7 @@ namespace mysql
            << b << ".buffer_length = static_cast<unsigned long> (" << endl
            << "" << arg << "." << mi.var << "value.capacity ());"
            << b << ".length = &" << arg << "." << mi.var << "size;"
-           << b << ".is_null = &" << arg << "." << mi.var << "null;"
-           << endl;
+           << b << ".is_null = &" << arg << "." << mi.var << "null;";
       }
 
       virtual void
@@ -231,8 +226,7 @@ namespace mysql
            << b << ".buffer_length = static_cast<unsigned long> (" << endl
            << "" << arg << "." << mi.var << "value.capacity ());"
            << b << ".length = &" << arg << "." << mi.var << "size;"
-           << b << ".is_null = &" << arg << "." << mi.var << "null;"
-           << endl;
+           << b << ".is_null = &" << arg << "." << mi.var << "null;";
       }
 
       virtual void
@@ -245,8 +239,7 @@ namespace mysql
            << b << ".buffer_length = static_cast<unsigned long> (" << endl
            << "sizeof (" << arg << "." << mi.var << "value));"
            << b << ".length = &" << arg << "." << mi.var << "size;"
-           << b << ".is_null = &" << arg << "." << mi.var << "null;"
-           << endl;
+           << b << ".is_null = &" << arg << "." << mi.var << "null;";
       }
 
       virtual void
@@ -259,8 +252,7 @@ namespace mysql
            << b << ".buffer_length = static_cast<unsigned long> (" << endl
            << "" << arg << "." << mi.var << "value.capacity ());"
            << b << ".length = &" << arg << "." << mi.var << "size;"
-           << b << ".is_null = &" << arg << "." << mi.var << "null;"
-           << endl;
+           << b << ".is_null = &" << arg << "." << mi.var << "null;";
       }
 
       virtual void
@@ -273,13 +265,10 @@ namespace mysql
            << b << ".buffer_length = static_cast<unsigned long> (" << endl
            << "" << arg << "." << mi.var << "value.capacity ());"
            << b << ".length = &" << arg << "." << mi.var << "size;"
-           << b << ".is_null = &" << arg << "." << mi.var << "null;"
-           << endl;
+           << b << ".is_null = &" << arg << "." << mi.var << "null;";
       }
 
     private:
-      size_t& index_;
-
       string b;
       string arg;
       string arg_override_;
@@ -287,8 +276,8 @@ namespace mysql
 
     struct bind_base: traversal::class_, context
     {
-      bind_base (context& c, size_t& index)
-          : context (c), index_ (index)
+      bind_base (context& c)
+          : context (c)
       {
       }
 
@@ -298,14 +287,10 @@ namespace mysql
         os << "// " << c.name () << " base" << endl
            << "//" << endl
            << "composite_value_traits< " << c.fq_name () <<
-          " >::bind (b + " << index_ << "UL, i);"
+          " >::bind (b + n, i);"
+           << "n += " << in_column_count (c) << "UL;"
            << endl;
-
-        index_ += in_column_count (c);
       }
-
-    private:
-      size_t& index_;
     };
 
     //
@@ -1182,16 +1167,15 @@ namespace mysql
         // bind()
         //
         {
-          size_t index;
-          bind_member bind_id (*this, index, "id_", "id");
+          bind_member bind_id (*this, "id_", "id");
 
           // bind (cond_image_type)
           //
           os << "void " << scope << "::" << endl
              << "bind (MYSQL_BIND* b, id_image_type* p, cond_image_type& c)"
-             << "{";
-
-          index = 0;
+             << "{"
+             << "std::size_t n (0);"
+             << endl;
 
           os << "// object_id" << endl
              << "//" << endl
@@ -1199,16 +1183,20 @@ namespace mysql
              << "{"
              << "id_image_type& id (*p);";
           bind_id.traverse (id_member_);
-          os << "}";
+          os << "}"
+             << "n++;"
+             << endl;
 
+          // We don't need to update the bind index since this is the
+          // last element.
+          //
           switch (ck)
           {
           case ck_ordered:
             {
               os << "// index" << endl
                  << "//" << endl;
-              bind_member bm (
-                *this, index, "index_", "c", *it, "index_type", "index");
+              bind_member bm (*this, "index_", "c", *it, "index_type", "index");
               bm.traverse (m);
               break;
             }
@@ -1217,8 +1205,7 @@ namespace mysql
             {
               os << "// key" << endl
                  << "//" << endl;
-              bind_member bm (
-                *this, index, "key_", "c", *kt, "key_type", "key");
+              bind_member bm (*this, "key_", "c", *kt, "key_type", "key");
               bm.traverse (m);
               break;
             }
@@ -1227,8 +1214,7 @@ namespace mysql
             {
               os << "// value" << endl
                  << "//" << endl;
-              bind_member bm (
-                *this, index, "value_", "c", vt, "value_type", "value");
+              bind_member bm (*this, "value_", "c", vt, "value_type", "value");
               bm.traverse (m);
               break;
             }
@@ -1240,9 +1226,9 @@ namespace mysql
           //
           os << "void " << scope << "::" << endl
              << "bind (MYSQL_BIND* b, id_image_type* p, data_image_type& d)"
-             << "{";
-
-          index = 0;
+             << "{"
+             << "size_t n (0);"
+             << endl;
 
           os << "// object_id" << endl
              << "//" << endl
@@ -1250,7 +1236,9 @@ namespace mysql
              << "{"
              << "id_image_type& id (*p);";
           bind_id.traverse (id_member_);
-          os << "}";
+          os << "}"
+             << "n++;"
+             << endl;
 
           switch (ck)
           {
@@ -1258,9 +1246,10 @@ namespace mysql
             {
               os << "// index" << endl
                  << "//" << endl;
-              bind_member bm (
-                *this, index, "index_", "d", *it, "index_type", "index");
+              bind_member bm (*this, "index_", "d", *it, "index_type", "index");
               bm.traverse (m);
+              os << "n++;" // Simple value.
+                 << endl;
               break;
             }
           case ck_map:
@@ -1268,9 +1257,15 @@ namespace mysql
             {
               os << "// key" << endl
                  << "//" << endl;
-              bind_member bm (
-                *this, index, "key_", "d", *kt, "key_type", "key");
+              bind_member bm (*this, "key_", "d", *kt, "key_type", "key");
               bm.traverse (m);
+
+              if (semantics::class_* c = comp_value (*kt))
+                os << "n += " << in_column_count (*c) << "UL;"
+                   << endl;
+              else
+                os << "n++;"
+                   << endl;
               break;
             }
           case ck_set:
@@ -1280,10 +1275,12 @@ namespace mysql
             }
           }
 
+          // We don't need to update the bind index since this is the
+          // last element.
+          //
           os << "// value" << endl
              << "//" << endl;
-          bind_member bm (
-            *this, index, "value_", "d", vt, "value_type", "value");
+          bind_member bm (*this, "value_", "d", vt, "value_type", "value");
           bm.traverse (m);
 
           os << "}";
@@ -1915,9 +1912,9 @@ namespace mysql
           : context (c),
             grow_base_ (c, index_),
             grow_member_ (c, index_),
-            bind_base_ (c, index_),
-            bind_member_ (c, index_),
-            bind_id_member_ (c, index_, "id_"),
+            bind_base_ (c),
+            bind_member_ (c),
+            bind_id_member_ (c, "id_"),
             init_image_base_ (c),
             init_image_member_ (c),
             init_id_image_member_ (c, "id_", "id"),
@@ -2103,9 +2100,10 @@ namespace mysql
            << "bind (MYSQL_BIND* b, image_type& i, bool out)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (out);"
+           << endl
+           << "std::size_t n (0);"
            << endl;
 
-        index_ = 0;
         inherits (c, bind_base_inherits_);
         names (c, bind_member_names_);
 
@@ -2115,11 +2113,9 @@ namespace mysql
         //
         os << "void " << traits << "::" << endl
            << "bind (MYSQL_BIND* b, id_image_type& i)"
-           << "{";
-
-        index_ = 0;
+           << "{"
+           << "std::size_t n (0);";
         bind_id_member_.traverse (id);
-
         os << "}";
 
         // init (image, object)
@@ -2479,8 +2475,6 @@ namespace mysql
       virtual void
       traverse_value (type& c)
       {
-        bool columns (in_column_count (c) != 0);
-
         string const& type (c.fq_name ());
         string traits ("access::composite_value_traits< " + type + " >");
 
@@ -2491,9 +2485,10 @@ namespace mysql
         // grow ()
         //
         os << "bool " << traits << "::" << endl
-           << "grow (image_type& i, my_bool*" << (columns ? " e" : "") << ")"
+           << "grow (image_type& i, my_bool* e)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (i);"
+           << "ODB_POTENTIALLY_UNUSED (e);"
            << endl
            << "bool grew (false);"
            << endl;
@@ -2508,11 +2503,15 @@ namespace mysql
         // bind (image_type)
         //
         os << "void " << traits << "::" << endl
-           << "bind (MYSQL_BIND*" << (columns ? " b" : "") << ", " <<
-          "image_type&" << (columns ? " i" : "") << ")"
-           << "{";
+           << "bind (MYSQL_BIND* b, image_type& i)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (b);"
+           << "ODB_POTENTIALLY_UNUSED (i);"
+           << endl
+           << "std::size_t n (0);"
+           << "ODB_POTENTIALLY_UNUSED (n);"
+           << endl;
 
-        index_ = 0;
         inherits (c, bind_base_inherits_);
         names (c, bind_member_names_);
 
@@ -2521,9 +2520,11 @@ namespace mysql
         // init (image, object)
         //
         os << "bool " << traits << "::" << endl
-           << "init (image_type&" << (columns ? " i" : "") << ", " <<
-          "const value_type&" << (columns ? " o" : "") << ")"
+           << "init (image_type& i, const value_type& o)"
            << "{"
+           << "ODB_POTENTIALLY_UNUSED (i);"
+           << "ODB_POTENTIALLY_UNUSED (o);"
+           << endl
            << "bool grew (false);"
            << endl;
 
@@ -2536,10 +2537,10 @@ namespace mysql
         // init (object, image)
         //
         os << "void " << traits << "::" << endl
-           << "init (value_type&" << (columns ? " o" : "") << ", " <<
-          "const image_type&" << (columns ? " i" : "") << ", " <<
-          "database& db)"
+           << "init (value_type& o, const image_type&  i, database& db)"
            << "{"
+           << "ODB_POTENTIALLY_UNUSED (o);"
+           << "ODB_POTENTIALLY_UNUSED (i);"
            << "ODB_POTENTIALLY_UNUSED (db);"
            << endl;
 
