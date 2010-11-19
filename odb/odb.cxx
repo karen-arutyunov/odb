@@ -411,7 +411,7 @@ main (int argc, char* argv[])
       if (i + 1 < end)
       {
         a = plugin_args[i + 1];
-        if (a.size () > 1 && a[0] != '-')
+        if (!(a.size () > 1 && a[0] == '-'))
         {
           v = a;
           ++i;
