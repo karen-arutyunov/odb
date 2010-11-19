@@ -118,6 +118,7 @@ $(gen): $(cli)
 $(gen): cli := $(cli)
 $(gen): cli_options +=  \
 --generate-specifier    \
+--generate-description  \
 --suppress-undocumented \
 --generate-file-scanner \
 --include-with-brackets \

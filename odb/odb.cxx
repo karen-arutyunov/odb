@@ -389,6 +389,7 @@ main (int argc, char* argv[])
 
     // Encode plugin options.
     //
+    cli::options const& desc (options::description ());
     for (size_t i (0); i < end; ++i)
     {
       string k, v;
@@ -401,21 +402,30 @@ main (int argc, char* argv[])
         continue;
       }
 
-      if (a.size () > 2)
+      cli::options::const_iterator it (desc.find (a));
+
+      if (it == desc.end ())
+      {
+        e << argv[0] << ": ice: unexpected option '" << a << "'" << endl;
+        return 1;
+      }
+
+      if (a.size () > 2 && a[0] == '-' && a[1] == '-')
         k = string (a, 2); // long format
       else
         k = string (a, 1); // short format
 
       // If there are more arguments then we may have a value.
       //
-      if (i + 1 < end)
+      if (!it->flag ())
       {
-        a = plugin_args[i + 1];
-        if (!(a.size () > 1 && a[0] == '-'))
+        if (i + 1 == end)
         {
-          v = a;
-          ++i;
+          e << argv[0] << ": ice: expected argument for '" << a << "'" << endl;
+          return 1;
         }
+
+        v = plugin_args[++i];
       }
 
       args.push_back (encode_plugin_option (k, v));
