@@ -128,6 +128,7 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       p == "index_column" ||
       p == "key_column" ||
       p == "id_column" ||
+      p == "inverse" ||
       p == "transient")
   {
     if (tc != FIELD_DECL)
@@ -424,6 +425,40 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
   }
+  else if (p == "inverse")
+  {
+    // inverse (name)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (pragma_lex (&t) != CPP_OPEN_PAREN)
+    {
+      error ("%qs expected after db pragma %qs", "(", pc);
+      return;
+    }
+
+    tt = pragma_lex (&t);
+
+    if (tt != CPP_NAME)
+    {
+      error ("member name expected in db pragma %qs", pc);
+      return;
+    }
+
+    val = IDENTIFIER_POINTER (t);
+
+    if (pragma_lex (&t) != CPP_CLOSE_PAREN)
+    {
+      error ("%qs expected at the end of db pragma %qs", ")", pc);
+      return;
+    }
+
+    tt = pragma_lex (&t);
+  }
   else if (p == "transient")
   {
     // transient
@@ -611,6 +646,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "index_type" ||
            p == "key_type" ||
            p == "table" ||
+           p == "inverse" ||
            p == "transient")
   {
     handle_pragma (reader, p, 0, "");
@@ -739,6 +775,12 @@ handle_pragma_db_table (cpp_reader* reader)
 }
 
 extern "C" void
+handle_pragma_db_inverse (cpp_reader* reader)
+{
+  handle_pragma_qualifier (reader, "inverse");
+}
+
+extern "C" void
 handle_pragma_db_transient (cpp_reader* reader)
 {
   handle_pragma_qualifier (reader, "transient");
@@ -762,5 +804,6 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "index_type", handle_pragma_db_itype);
   c_register_pragma_with_expansion ("db", "key_type", handle_pragma_db_ktype);
   c_register_pragma_with_expansion ("db", "table", handle_pragma_db_table);
+  c_register_pragma_with_expansion ("db", "inverse", handle_pragma_db_inverse);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
 }

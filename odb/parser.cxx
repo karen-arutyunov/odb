@@ -409,6 +409,7 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
         type& type_node (emit_type (t, file, line, clmn));
         data_member& member_node (
           unit_->new_node<data_member> (file, line, clmn, d));
+        unit_->insert (d, member_node);
 
         unit_->new_edge<names> (*c_node, member_node, name, a);
         belongs& edge (unit_->new_edge<belongs> (member_node, type_node));
@@ -562,6 +563,7 @@ emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
         type& type_node (emit_type (t, file, line, clmn));
         data_member& member_node (
           unit_->new_node<data_member> (file, line, clmn, d));
+        unit_->insert (d, member_node);
 
         unit_->new_edge<names> (*u_node, member_node, name, a);
         belongs& edge (unit_->new_edge<belongs> (member_node, type_node));

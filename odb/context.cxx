@@ -326,9 +326,10 @@ namespace
     }
 
     virtual void
-    simple (semantics::data_member&)
+    simple (semantics::data_member& m)
     {
-      count_++;
+      if (out_ || !context::inverse (m))
+        count_++;
     }
 
   private:

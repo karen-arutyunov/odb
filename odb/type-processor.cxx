@@ -421,6 +421,7 @@ namespace
       // element type and see if it is an object.
       //
       using semantics::class_;
+      using semantics::data_member;
 
       tree inst (instantiate_template (pointer_traits_, t.tree_node ()));
 
@@ -449,16 +450,52 @@ namespace
         throw;
       }
 
-      if (class_* c = dynamic_cast<class_*> (unit.find (tn)))
+      class_* c (dynamic_cast<class_*> (unit.find (tn)));
+
+      if (c == 0 || !c->count ("object"))
+        return 0;
+
+      m.set (kp + (kp.empty () ? "": "-") + "object-pointer", c);
+
+      // See if this is the inverse side of a bidirectional relationship.
+      // If so, then resolve the member and cache it in the context.
+      //
+      if (m.count ("inverse"))
       {
-        if (c->count ("object"))
+        string name (m.get<string> ("inverse"));
+        tree decl (
+          lookup_qualified_name (
+            tn, get_identifier (name.c_str ()), false, false));
+
+        if (decl == error_mark_node || TREE_CODE (decl) != FIELD_DECL)
         {
-          m.set (kp + (kp.empty () ? "": "-") + "object-pointer", c);
-          return c;
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "error: unable to resolve data member '" << name << "' "
+             << "specified with '#pragma db inverse' in class '"
+             << c->fq_name () << "'" << endl;
+          throw generation_failed ();
         }
+
+        data_member* im (dynamic_cast<data_member*> (unit.find (decl)));
+
+        if (im == 0)
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "ice: unable to find semantic graph node corresponding to "
+             << "data member '" << name << "' in class '" << c->fq_name ()
+             << "'" << endl;
+          throw generation_failed ();
+        }
+
+        // @@ Would be good to check that the other end is actually
+        // an object pointer and is not marked as inverse. But the
+        // other class may not have been processed yet.
+        //
+        m.remove ("inverse");
+        m.set (kp + (kp.empty () ? "": "-") + "inverse", im);
       }
 
-      return 0;
+      return c;
     }
 
     tree

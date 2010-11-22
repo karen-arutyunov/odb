@@ -36,16 +36,20 @@ namespace mysql
     if (comp_value (t))
     {
       member_info mi (m, t, var, fq_type_override_);
-      pre (mi);
-      traverse_composite (mi);
-      post (mi);
+      if (pre (mi))
+      {
+        traverse_composite (mi);
+        post (mi);
+      }
     }
     else if (container (t))
     {
       member_info mi (m, t, var, fq_type_override_);
-      pre (mi);
-      traverse_container (mi);
-      post (mi);
+      if (pre (mi))
+      {
+        traverse_container (mi);
+        post (mi);
+      }
     }
     else
     {
@@ -55,17 +59,21 @@ namespace mysql
       {
         member_info mi (m, id_member (*c).type (), var, fq_type_override_);
         mi.st = &st;
-        pre (mi);
-        traverse_object_pointer (mi);
-        post (mi);
+        if (pre (mi))
+        {
+          traverse_object_pointer (mi);
+          post (mi);
+        }
       }
       else
       {
         member_info mi (m, t, var, fq_type_override_);
         mi.st = &st;
-        pre (mi);
-        traverse_simple (mi);
-        post (mi);
+        if (pre (mi))
+        {
+          traverse_simple (mi);
+          post (mi);
+        }
       }
     }
   }
@@ -475,7 +483,7 @@ namespace mysql
     }
   }
 
-  void query_columns::
+  bool query_columns::
   column (semantics::data_member& m, string const& col_name, bool)
   {
     string name (public_name (m));
@@ -509,5 +517,7 @@ namespace mysql
          << column << ");"
          << endl;
     }
+
+    return true;
   }
 }

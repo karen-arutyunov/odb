@@ -66,9 +66,13 @@ namespace mysql
       }
     };
 
-    virtual void
+    // The false return value indicates that no further callbacks
+    // should be called for this member.
+    //
+    virtual bool
     pre (member_info&)
     {
+      return true;
     }
 
     virtual void
@@ -248,7 +252,7 @@ namespace mysql
     virtual void
     composite (semantics::data_member&, semantics::type&);
 
-    virtual void
+    virtual bool
     column (semantics::data_member&, string const&, bool);
 
   private:

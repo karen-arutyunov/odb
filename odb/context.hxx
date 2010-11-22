@@ -75,13 +75,26 @@ public:
   }
 
   static semantics::class_*
-  object_pointer (semantics::data_member& m, string const& key_prefix)
+  object_pointer (semantics::data_member& m,
+                  string const& key_prefix = string ())
   {
     using semantics::class_;
 
     return key_prefix.empty ()
       ? m.get<class_*> ("object-pointer", 0)
       : m.get<class_*> (key_prefix + "-object-pointer", 0);
+  }
+
+  static semantics::data_member*
+  inverse (semantics::data_member& m, string const& key_prefix = string ())
+  {
+    using semantics::data_member;
+
+    return object_pointer (m, key_prefix)
+      ? (key_prefix.empty ()
+         ? m.get<data_member*> ("inverse", 0)
+         : m.get<data_member*> (key_prefix + "-inverse", 0))
+      : 0;
   }
 
   // Database names and types.
@@ -94,6 +107,9 @@ public:
   //
   struct table_prefix
   {
+    table_prefix () {}
+    table_prefix (string const& p, size_t l): prefix (p), level (l) {}
+
     string prefix;
     size_t level;
   };

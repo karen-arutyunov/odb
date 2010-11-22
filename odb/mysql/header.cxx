@@ -29,17 +29,19 @@ namespace mysql
       {
       }
 
-      virtual void
+      virtual bool
       pre (member_info& mi)
       {
         if (container (mi.t))
-          return;
+          return false;
 
         image_type = member_image_type_.image_type (mi.m);
 
         if (var_override_.empty ())
           os << "// " << mi.m.name () << endl
              << "//" << endl;
+
+        return true;
       }
 
       virtual void

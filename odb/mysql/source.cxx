@@ -18,34 +18,128 @@ namespace mysql
   {
     struct object_columns: object_columns_base, context
     {
-      object_columns (context& c, char const* suffix = "")
+      object_columns (context& c,
+                      std::string const& table_name,
+                      bool out,
+                      char const* suffix = "")
           : object_columns_base (c),
             context (c),
+            table_name_ (table_name),
+            out_ (out),
             first_ (true),
             suffix_ (suffix)
       {
       }
 
-      object_columns (context& c, bool first, char const* suffix = "")
+      object_columns (context& c,
+                      std::string const& table_name,
+                      bool out,
+                      bool first,
+                      char const* suffix = "")
           : object_columns_base (c),
             context (c),
+            table_name_ (table_name),
+            out_ (out),
             first_ (first),
             suffix_ (suffix)
       {
       }
 
-      virtual void
-      column (semantics::data_member&, string const& name, bool first)
+      virtual bool
+      column (semantics::data_member& m, string const& name, bool first)
       {
+        semantics::data_member* im (inverse (m));
+
+        // Ignore inverse object pointers if we are generating 'in' columns.
+        //
+        if (im != 0 && !out_)
+          return false;
+
         if (!first || !first_)
           os << ",\"" << endl;
 
-        os << "\"`" << name << "`" << suffix_;
+        // Inverse object pointers come from a joined table.
+        //
+        if (im != 0)
+        {
+          semantics::class_* c (object_pointer (m));
+
+          if (container (im->type ()))
+          {
+            // This container is a direct member of the class so the table
+            // prefix is just the class table name.
+            //
+            table_prefix tp (table_name (*c) + "_", 1);
+            string const& it (table_name (*im, tp));
+            string const& id (column_name (*im, "id", "object_id"));
+
+            os << "\"`" << it << "`.`" << id << "`" << suffix_;
+          }
+          else
+          {
+            os << "\"`" << table_name (*c) << "`.`" <<
+              column_name (id_member (*c)) << "`" << suffix_;
+          }
+        }
+        else
+          os << "\"`" << table_name_ << "`.`" << name << "`" << suffix_;
+
+        return true;
       }
 
     private:
+      string table_name_;
+      bool out_;
       bool first_;
       string suffix_;
+    };
+
+    struct object_joins: object_columns_base, context
+    {
+      object_joins (context& c, semantics::class_& scope)
+          : object_columns_base (c),
+            context (c),
+            table_ (table_name (scope)),
+            id_ (id_member (scope))
+      {
+      }
+
+      virtual bool
+      column (semantics::data_member& m, string const&, bool)
+      {
+        if (semantics::data_member* im = inverse (m))
+        {
+          semantics::class_* c (object_pointer (m));
+
+          if (container (im->type ()))
+          {
+            // This container is a direct member of the class so the table
+            // prefix is just the class table name.
+            //
+            table_prefix tp (table_name (*c) + "_", 1);
+            string const& it (table_name (*im, tp));
+            string const& val (column_name (*im, "value", "value"));
+
+            os << "\" LEFT JOIN `" << it << "` ON `" << it << "`.`" <<
+              val << "` = `" << table_ << "`.`" <<
+              column_name (id_) << "`\"" << endl;
+          }
+          else
+          {
+            string const& it (table_name (*c));
+
+            os << "\" LEFT JOIN `" << it << "` ON `" << it << "`.`" <<
+              column_name (*im) << "` = `" << table_ << "`.`" <<
+              column_name (id_) << "`\"" << endl;
+          }
+        }
+
+        return true;
+      }
+
+    private:
+      string table_;
+      semantics::data_member& id_;
     };
 
     const char* integer_buffer_types[] =
@@ -111,11 +205,11 @@ namespace mysql
       {
       }
 
-      virtual void
+      virtual bool
       pre (member_info& mi)
       {
         if (container (mi.t))
-          return;
+          return false;
 
         ostringstream ostr;
         ostr << "b[n]";
@@ -124,16 +218,21 @@ namespace mysql
         arg = arg_override_.empty () ? string ("i") : arg_override_;
 
         if (var_override_.empty ())
+        {
           os << "// " << mi.m.name () << endl
              << "//" << endl;
+
+          if (inverse (mi.m, key_prefix_))
+            os << "if (out)"
+               << "{";
+        }
+
+        return true;
       }
 
       virtual void
       post (member_info& mi)
       {
-        if (container (mi.t))
-          return;
-
         if (var_override_.empty ())
         {
           if (semantics::class_* c = comp_value (mi.t))
@@ -141,7 +240,10 @@ namespace mysql
           else
             os << "n++;";
 
-          os << endl;
+          if (inverse (mi.m, key_prefix_))
+            os << "}";
+          else
+            os << endl;
         }
       }
 
@@ -314,11 +416,11 @@ namespace mysql
       {
       }
 
-      virtual void
+      virtual bool
       pre (member_info& mi)
       {
         if (container (mi.t))
-          return;
+          return false;
 
         ostringstream ostr;
         ostr << "e[" << index_ << "UL]";
@@ -327,14 +429,14 @@ namespace mysql
         if (var_override_.empty ())
           os << "// " << mi.m.name () << endl
              << "//" << endl;
+
+        return true;
       }
 
       virtual void
       post (member_info& mi)
       {
-        if (container (mi.t))
-          return;
-        else if (semantics::class_* c = comp_value (mi.t))
+        if (semantics::class_* c = comp_value (mi.t))
           index_ += in_column_count (*c);
         else
           index_++;
@@ -496,11 +598,14 @@ namespace mysql
       {
       }
 
-      virtual void
+      virtual bool
       pre (member_info& mi)
       {
-        if (container (mi.t))
-          return;
+        // Ignore containers (they get their own table) and inverse
+        // object pointers (they are not present in the 'in' binding).
+        //
+        if (container (mi.t) || inverse (mi.m, key_prefix_))
+          return false;
 
         if (!member_override_.empty ())
           member = member_override_;
@@ -555,14 +660,13 @@ namespace mysql
             + image_type + ",\n    "
             + db_type + " >";
         }
+
+        return true;
       }
 
       virtual void
       post (member_info& mi)
       {
-        if (container (mi.t))
-          return;
-
         if (!comp_value (mi.t))
         {
           if (object_pointer (mi.m, key_prefix_))
@@ -757,11 +861,11 @@ namespace mysql
       {
       }
 
-      virtual void
+      virtual bool
       pre (member_info& mi)
       {
         if (container (mi.t))
-          return;
+          return false;
 
         if (!member_override_.empty ())
           member = member_override_;
@@ -812,14 +916,13 @@ namespace mysql
             + image_type + ",\n    "
             + db_type + " >";
         }
+
+        return true;
       }
 
       virtual void
       post (member_info& mi)
       {
-        if (container (mi.t))
-          return;
-
         if (!comp_value (mi.t) && object_pointer (mi.m, key_prefix_))
         {
           member = member_override_.empty ()
@@ -1060,7 +1163,7 @@ namespace mysql
           {
             if (comp_value (*kt))
             {
-              object_columns t (*this, false);
+              object_columns t (*this, table, false, false);
               t.traverse_composite (m, *kt, "key", "key");
             }
             else
@@ -1079,7 +1182,7 @@ namespace mysql
 
         if (comp_value (vt))
         {
-          object_columns t (*this, false);
+          object_columns t (*this, table, false, false);
           t.traverse_composite (m, vt, "value", "value");
         }
         else
@@ -1116,7 +1219,7 @@ namespace mysql
           {
             if (comp_value (*kt))
             {
-              object_columns t (*this, false);
+              object_columns t (*this, table, false, false);
               t.traverse_composite (m, *kt, "key", "key");
             }
             else
@@ -1135,7 +1238,7 @@ namespace mysql
 
         if (comp_value (vt))
         {
-          object_columns t (*this, false);
+          object_columns t (*this, table, false, false);
           t.traverse_composite (m, vt, "value", "value");
         }
         else
@@ -2008,13 +2111,15 @@ namespace mysql
           t.traverse (c);
         }
 
+        string const& table (table_name (c));
+
         // persist_statement
         //
         os << "const char* const " << traits << "::persist_statement =" << endl
-           << "\"INSERT INTO `" << table_name (c) << "` (\"" << endl;
+           << "\"INSERT INTO `" << table << "` (\"" << endl;
 
         {
-          object_columns t (*this);
+          object_columns t (*this, table, false);
           t.traverse (c);
         }
 
@@ -2033,34 +2138,40 @@ namespace mysql
            << "\"SELECT \"" << endl;
 
         {
-          object_columns t (*this);
+          object_columns t (*this, table, true);
           t.traverse (c);
         }
 
         os << "\"" << endl
-           << "\" FROM `" << table_name (c) << "` WHERE `" <<
-          column_name (id) << "` = ?\";"
+           << "\" FROM `" << table << "`\"" << endl;
+
+        {
+          object_joins t (*this, c);
+          t.traverse (c);
+        }
+
+        os << "\" WHERE `" << table << "`.`" << column_name (id) << "` = ?\";"
            << endl;
 
         // update_statement
         //
         os << "const char* const " << traits << "::update_statement =" << endl
-           << "\"UPDATE `" << table_name (c) << "` SET \"" << endl;
+           << "\"UPDATE `" << table << "` SET \"" << endl;
 
         {
-          object_columns t (*this, " = ?");
+          object_columns t (*this, table, false, " = ?");
           t.traverse (c);
         }
 
         os << "\"" << endl
-           << "\" WHERE `" << column_name (id) << "` = ?\";"
+           << "\" WHERE `" << table << "`.`" << column_name (id) << "` = ?\";"
            << endl;
 
         // erase_statement
         //
         os << "const char* const " << traits << "::erase_statement =" << endl
-           << "\"DELETE FROM `" << table_name (c) << "`\"" << endl
-           << "\" WHERE `" << column_name (id) << "` = ?\";"
+           << "\"DELETE FROM `" << table << "`\"" << endl
+           << "\" WHERE `" << table << "`.`" << column_name (id) << "` = ?\";"
            << endl;
 
         // query_clause
@@ -2071,12 +2182,19 @@ namespace mysql
              << "\"SELECT \"" << endl;
 
           {
-            object_columns t (*this);
+            object_columns t (*this, table, true);
             t.traverse (c);
           }
 
           os << "\"" << endl
-             << "\" FROM `" << table_name (c) << "` \";"
+             << "\" FROM `" << table << "`\"" << endl;
+
+          {
+            object_joins t (*this, c);
+            t.traverse (c);
+          }
+
+          os << "\" \";"
              << endl;
         }
 

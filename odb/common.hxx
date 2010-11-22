@@ -90,7 +90,10 @@ private:
 //
 struct object_columns_base: traversal::class_
 {
-  virtual void
+  // Returning false means that the column has been ignored and the
+  // first flag should not be changed.
+  //
+  virtual bool
   column (semantics::data_member&, std::string const& name, bool first) = 0;
 
   // If you override this function, always call the base. The second argument

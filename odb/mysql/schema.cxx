@@ -23,9 +23,14 @@ namespace mysql
       {
       }
 
-      virtual void
+      virtual bool
       column (semantics::data_member& m, string const& name, bool first)
       {
+        // Ignore inverse object pointers.
+        //
+        if (inverse (m))
+          return false;
+
         if (!first)
           os << "," << endl;
 
@@ -40,6 +45,8 @@ namespace mysql
           os << " REFERENCES `" << table_name (*c) << "` (`" <<
             column_name (id_member (*c)) << "`)";
         }
+
+        return true;
       }
 
     private:
