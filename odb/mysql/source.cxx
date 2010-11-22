@@ -736,10 +736,11 @@ namespace mysql
 
     struct init_value_member: member_base
     {
-      init_value_member (context& c)
+      init_value_member (context& c, string const& member = string ())
           : member_base (c),
             member_image_type_ (c),
-            member_database_type_ (c)
+            member_database_type_ (c),
+            member_override_ (member)
       {
       }
 
@@ -830,7 +831,7 @@ namespace mysql
              << "// cannot be initialized from an object pointer." << endl
              << "//" << endl
              << member << " = ptr_traits::pointer_type (" << endl
-             << "db.load< obj_traits::object_type > (id));"
+             << "db.load< ptr_traits::element_type > (id));"
              << "}"
              << "}";
         }
@@ -1919,7 +1920,8 @@ namespace mysql
             init_image_member_ (c),
             init_id_image_member_ (c, "id_", "id"),
             init_value_base_ (c),
-            init_value_member_ (c)
+            init_value_member_ (c),
+            init_id_value_member_ (c, "id")
       {
         grow_base_inherits_ >> grow_base_;
         grow_member_names_ >> grow_member_;
@@ -2076,6 +2078,20 @@ namespace mysql
           os << "\"" << endl
              << "\" FROM `" << table_name (c) << "` \";"
              << endl;
+        }
+
+        // id
+        //
+        if (options.generate_query ())
+        {
+          os << traits << "::id_type" << endl
+             << traits << "::" << endl
+             << "id (const image_type& i)"
+             << "{"
+             << "id_type id;";
+          init_id_value_member_.traverse (id);
+          os << "return id;"
+             << "}";
         }
 
         // grow ()
@@ -2322,11 +2338,13 @@ namespace mysql
              << "object_statements<object_type>& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
              << endl
-             << "if (find (sts, id))"
+             << "if (find_ (sts, id))"
              << "{"
-             << "pointer_type p (access::object_factory< object_type, " <<
-            "pointer_type  >::create ());"
-             << "pointer_traits< pointer_type >::guard_type g (p);"
+             << "pointer_type p (" << endl
+             << "access::object_factory< object_type, pointer_type  >::create ());"
+             << "pointer_traits< pointer_type >::guard_type pg (p);"
+             << "pointer_cache_traits< pointer_type >::insert_guard ig (" << endl
+             << "pointer_cache_traits< pointer_type >::insert (db, id, p));"
              << "object_type& obj (pointer_traits< pointer_type >::get_ref (p));"
              << "init (obj, sts.image (), db);";
 
@@ -2339,7 +2357,8 @@ namespace mysql
             os << endl;
           }
 
-          os << "g.release ();"
+          os << "ig.release ();"
+             << "pg.release ();"
              << "return p;"
              << "}"
              << "return pointer_type ();"
@@ -2355,8 +2374,10 @@ namespace mysql
            << "object_statements<object_type>& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << endl
-           << "if (find (sts, id))"
+           << "if (find_ (sts, id))"
            << "{"
+           << "reference_cache_traits< object_type >::insert_guard ig (" << endl
+           << "reference_cache_traits< object_type >::insert (db, id, obj));"
            << "init (obj, sts.image (), db);";
 
         if (containers)
@@ -2368,13 +2389,14 @@ namespace mysql
           os << endl;
         }
 
-        os << "return true;"
+        os << "ig.release ();"
+           << "return true;"
            << "}"
            << "return false;"
            << "}";
 
         os << "bool " << traits << "::" << endl
-           << "find (mysql::object_statements<object_type>& sts, " <<
+           << "find_ (mysql::object_statements<object_type>& sts, " <<
           "const id_type& id)"
            << "{"
            << "using namespace mysql;"
@@ -2439,15 +2461,58 @@ namespace mysql
         //
         if (options.generate_query ())
         {
-          os << "result< " << traits << "::object_type >" << endl
+          os << "template<>" << endl
+             << "result< " << traits << "::object_type >" << endl
              << traits << "::" << endl
-             << "query (database&, const query_type& q)"
+             << "query< " << traits << "::object_type > (" << endl
+             << "database& db," << endl
+             << "const query_type& q)"
              << "{"
              << "using namespace mysql;"
              << endl
              << "connection& conn (mysql::transaction::current ().connection ());"
+             << endl
              << "object_statements<object_type>& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
+             << "details::shared_ptr<select_statement> st;"
+             << endl
+             << "query_ (db, q, sts, st);"
+             << endl
+             << "details::shared_ptr<odb::result_impl<object_type> > r (" << endl
+             << "new (details::shared) mysql::result_impl<object_type> (st, sts));"
+             << "return result<object_type> (r);"
+             << "}";
+
+          os << "template<>" << endl
+             << "result< const " << traits << "::object_type >" << endl
+             << traits << "::" << endl
+             << "query< const " << traits << "::object_type > (" << endl
+             << "database& db," << endl
+             << "const query_type& q)"
+             << "{"
+             << "using namespace mysql;"
+             << endl
+             << "connection& conn (mysql::transaction::current ().connection ());"
+             << endl
+             << "object_statements<object_type>& sts (" << endl
+             << "conn.statement_cache ().find<object_type> ());"
+             << "details::shared_ptr<select_statement> st;"
+             << endl
+             << "query_ (db, q, sts, st);"
+             << endl
+             << "details::shared_ptr<odb::result_impl<const object_type> > r (" << endl
+             << "new (details::shared) mysql::result_impl<const object_type> (st, sts));"
+             << "return result<const object_type> (r);"
+             << "}";
+
+          os << "void" << endl
+             << traits << "::" << endl
+             << "query_ (database&," << endl
+             << "const query_type& q," << endl
+             << "mysql::object_statements<object_type>& sts,"
+             << "details::shared_ptr<mysql::select_statement>& st)"
+             << "{"
+             << "using namespace mysql;"
              << endl
              << "image_type& im (sts.image ());"
              << "binding& imb (sts.out_image_binding ());"
@@ -2458,16 +2523,12 @@ namespace mysql
              << "sts.out_image_version (im.version);"
              << "imb.version++;"
              << "}"
-             << "details::shared_ptr<select_statement> st (" << endl
-             << "new (details::shared) select_statement (conn," << endl
+             << "st.reset (new (details::shared) select_statement (" << endl
+             << "sts.connection ()," << endl
              << "query_clause + q.clause ()," << endl
              << "q.parameters ()," << endl
              << "imb));"
              << "st->execute ();"
-             << endl
-             << "details::shared_ptr<odb::result_impl<object_type> > r (" << endl
-             << "new (details::shared) mysql::result_impl<object_type> (st, sts));"
-             << "return result<object_type> (r);"
              << "}";
         }
       }
@@ -2576,6 +2637,7 @@ namespace mysql
       traversal::inherits init_value_base_inherits_;
       init_value_member init_value_member_;
       traversal::names init_value_member_names_;
+      init_value_member init_id_value_member_;
     };
   }
 
@@ -2594,6 +2656,9 @@ namespace mysql
 
     ns >> ns_defines >> ns;
     ns_defines >> c;
+
+    ctx.os << "#include <odb/cache-traits.hxx>" << endl
+           << endl;
 
     ctx.os << "#include <odb/mysql/mysql.hxx>" << endl
            << "#include <odb/mysql/traits.hxx>" << endl

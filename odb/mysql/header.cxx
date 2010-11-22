@@ -787,6 +787,11 @@ namespace mysql
            << "id (const object_type&);"
            << endl;
 
+        if (options.generate_query ())
+          os << "static id_type" << endl
+             << "id (const image_type&);"
+             << endl;
+
         // grow ()
         //
         os << "static void" << endl
@@ -850,7 +855,8 @@ namespace mysql
         // query ()
         //
         if (options.generate_query ())
-          os << "static result<object_type>" << endl
+          os << "template<typename T>" << endl
+             << "static result<T>" << endl
              << "query (database&, const query_type&);"
              << endl;
 
@@ -858,7 +864,16 @@ namespace mysql
         //
         os << "private:" << endl
            << "static bool" << endl
-           << "find (mysql::object_statements<object_type>&, const id_type&);";
+           << "find_ (mysql::object_statements<object_type>&, const id_type&);"
+           << endl;
+
+        if (options.generate_query ())
+          os << "static void" << endl
+             << "query_ (database&," << endl
+             << "const query_type&," << endl
+             << "mysql::object_statements<object_type>&," << endl
+             << "details::shared_ptr<mysql::select_statement>&);"
+             << endl;
 
         os << "};";
       }
