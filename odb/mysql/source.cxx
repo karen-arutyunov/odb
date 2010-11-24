@@ -1103,14 +1103,19 @@ namespace mysql
         type* it (0);
         type* kt (0);
 
+        bool ordered (false);
         bool grow (false);
 
         switch (ck)
         {
         case ck_ordered:
           {
-            it = &container_it (t);
-            grow = grow || context::grow (m, *it, "index");
+            if (!m.count ("unordered"))
+            {
+              it = &container_it (t);
+              ordered = true;
+              grow = grow || context::grow (m, *it, "index");
+            }
             break;
           }
         case ck_map:
@@ -1154,8 +1159,11 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << ",\"" << endl
-               << "\"`" << column_name (m, "index", "index") << "`";
+            if (ordered)
+            {
+              os << ",\"" << endl
+                 << "\"`" << column_name (m, "index", "index") << "`";
+            }
             break;
           }
         case ck_map:
@@ -1210,8 +1218,11 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << ",\"" << endl
-               << "\"`" << column_name (m, "index", "index") << "`";
+            if (ordered)
+            {
+              os << ",\"" << endl
+                 << "\"`" << column_name (m, "index", "index") << "`";
+            }
             break;
           }
         case ck_map:
@@ -1251,7 +1262,7 @@ namespace mysql
            << "\" FROM `" << table << "` WHERE `" <<
           column_name (m, "id", "object_id") << "` = ?\"" << endl;
 
-        if (ck == ck_ordered)
+        if (ordered)
           os << "\" ORDER BY `" << column_name (m, "index", "index") << "`\"";
 
         os << ";"
@@ -1278,6 +1289,8 @@ namespace mysql
           os << "void " << scope << "::" << endl
              << "bind (MYSQL_BIND* b, id_image_type* p, cond_image_type& c)"
              << "{"
+             << "ODB_POTENTIALLY_UNUSED (c);"
+             << endl
              << "std::size_t n (0);"
              << endl;
 
@@ -1298,10 +1311,14 @@ namespace mysql
           {
           case ck_ordered:
             {
-              os << "// index" << endl
-                 << "//" << endl;
-              bind_member bm (*this, "index_", "c", *it, "index_type", "index");
-              bm.traverse (m);
+              if (ordered)
+              {
+                os << "// index" << endl
+                   << "//" << endl;
+                bind_member bm (
+                  *this, "index_", "c", *it, "index_type", "index");
+                bm.traverse (m);
+              }
               break;
             }
           case ck_map:
@@ -1348,12 +1365,16 @@ namespace mysql
           {
           case ck_ordered:
             {
-              os << "// index" << endl
-                 << "//" << endl;
-              bind_member bm (*this, "index_", "d", *it, "index_type", "index");
-              bm.traverse (m);
-              os << "n++;" // Simple value.
-                 << endl;
+              if (ordered)
+              {
+                os << "// index" << endl
+                   << "//" << endl;
+                bind_member bm (
+                  *this, "index_", "d", *it, "index_type", "index");
+                bm.traverse (m);
+                os << "n++;" // Simple value.
+                   << endl;
+              }
               break;
             }
           case ck_map:
@@ -1405,11 +1426,14 @@ namespace mysql
           {
           case ck_ordered:
             {
-              os << "// index" << endl
-                 << "//" << endl;
-              grow_member gm (
-                *this, index, "index_", *it, "index_type", "index");
-              gm.traverse (m);
+              if (ordered)
+              {
+                os << "// index" << endl
+                   << "//" << endl;
+                grow_member gm (
+                  *this, index, "index_", *it, "index_type", "index");
+                gm.traverse (m);
+              }
               break;
             }
           case ck_map:
@@ -1446,16 +1470,24 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "init (data_image_type& i, index_type j, const value_type& v)"
-               << "{"
-               << "bool grew (false);"
-               << endl
-               << "// index" << endl
-               << "//" << endl;
+            if (ordered)
+              os << "init (data_image_type& i, index_type j, const value_type& v)";
+            else
+              os << "init (data_image_type& i, const value_type& v)";
 
-            init_image_member im (
-              *this, "index_", "j", *it, "index_type", "index");
-            im.traverse (m);
+            os<< "{"
+              << "bool grew (false);"
+              << endl;
+
+            if (ordered)
+            {
+              os << "// index" << endl
+                 << "//" << endl;
+
+              init_image_member im (
+                *this, "index_", "j", *it, "index_type", "index");
+              im.traverse (m);
+            }
 
             break;
           }
@@ -1506,17 +1538,26 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "init (index_type& j, value_type& v, " <<
-              "const data_image_type& i, database& db)"
-               << "{"
-               << "ODB_POTENTIALLY_UNUSED (db);"
-               << endl
-               << "// index" << endl
-               << "//" << endl;
+            if (ordered)
+              os << "init (index_type& j, value_type& v, " <<
+                "const data_image_type& i, database& db)";
+            else
+              os << "init (value_type& v, const data_image_type& i, " <<
+                "database& db)";
 
-            init_value_member im (
-              *this, "index_", "j", *it, "index_type", "index");
-            im.traverse (m);
+            os << "{"
+               << "ODB_POTENTIALLY_UNUSED (db);"
+               << endl;
+
+            if (ordered)
+            {
+              os << "// index" << endl
+                 << "//" << endl;
+
+              init_value_member im (
+                *this, "index_", "j", *it, "index_type", "index");
+              im.traverse (m);
+            }
 
             break;
           }
@@ -1568,7 +1609,8 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "insert_one (index_type i, const value_type& v, void* d)";
+            os << "insert_one (index_type" << (ordered ? " i" : "") <<
+              ", const value_type& v, void* d)";
             break;
           }
         case ck_map:
@@ -1598,7 +1640,7 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "init (di, i, v);";
+            os << "init (di, " << (ordered ? "i, " : "") << "v);";
             break;
           }
         case ck_map:
@@ -1635,7 +1677,8 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "load_all (index_type& i, value_type& v, void* d)";
+            os << "load_all (index_type&" << (ordered ? " i" : "") <<
+              ", value_type& v, void* d)";
             break;
           }
         case ck_map:
@@ -1665,7 +1708,8 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "init (i, v, di, sts.connection ().database ());"
+            os << "init (" << (ordered ? "i, " : "") <<
+              "v, di, sts.connection ().database ());"
                << endl;
             break;
           }
@@ -1762,7 +1806,12 @@ namespace mysql
            << "b.version++;"
            << "}"
            << "sts.id_image (id);"
-           << "container_traits::persist (c, sts.functions ());"
+           << "functions_type& fs (sts.functions ());";
+
+        if (ck == ck_ordered)
+          os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+
+        os << "container_traits::persist (c, fs);"
            << "}";
 
         // load
@@ -1821,7 +1870,12 @@ namespace mysql
            << "st.free_result ();"
            << endl
            << "sts.id_image (id);"
-           << "container_traits::load (c, more, sts.functions ());"
+           << "functions_type& fs (sts.functions ());";
+
+        if (ck == ck_ordered)
+          os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+
+        os << "container_traits::load (c, more, fs);"
            << "}";
 
         // update
@@ -1851,7 +1905,12 @@ namespace mysql
            << "cb.version++;"
            << "}"
            << "sts.id_image (id);"
-           << "container_traits::update (c, sts.functions ());"
+           << "functions_type& fs (sts.functions ());";
+
+        if (ck == ck_ordered)
+          os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+
+        os << "container_traits::update (c, fs);"
            << "}";
 
         // erase
@@ -1869,7 +1928,12 @@ namespace mysql
            << "b.version++;"
            << "}"
            << "sts.id_image (id);"
-           << "container_traits::erase (sts.functions ());"
+           << "functions_type& fs (sts.functions ());";
+
+        if (ck == ck_ordered)
+          os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+
+        os << "container_traits::erase (fs);"
            << "}";
       }
 

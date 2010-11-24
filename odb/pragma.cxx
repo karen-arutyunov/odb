@@ -129,6 +129,7 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       p == "key_column" ||
       p == "id_column" ||
       p == "inverse" ||
+      p == "unordered" ||
       p == "transient")
   {
     if (tc != FIELD_DECL)
@@ -459,6 +460,18 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
   }
+  else if (p == "unordered")
+  {
+    // unordered
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_decl_type (decl, decl_name, p, loc))
+      return;
+
+    tt = pragma_lex (&t);
+  }
   else if (p == "transient")
   {
     // transient
@@ -647,6 +660,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "key_type" ||
            p == "table" ||
            p == "inverse" ||
+           p == "unordered" ||
            p == "transient")
   {
     handle_pragma (reader, p, 0, "");
@@ -781,6 +795,12 @@ handle_pragma_db_inverse (cpp_reader* reader)
 }
 
 extern "C" void
+handle_pragma_db_unordered (cpp_reader* reader)
+{
+  handle_pragma_qualifier (reader, "unordered");
+}
+
+extern "C" void
 handle_pragma_db_transient (cpp_reader* reader)
 {
   handle_pragma_qualifier (reader, "transient");
@@ -805,5 +825,6 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "key_type", handle_pragma_db_ktype);
   c_register_pragma_with_expansion ("db", "table", handle_pragma_db_table);
   c_register_pragma_with_expansion ("db", "inverse", handle_pragma_db_inverse);
+  c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
 }

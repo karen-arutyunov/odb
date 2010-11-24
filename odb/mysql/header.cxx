@@ -244,11 +244,17 @@ namespace mysql
         type* it (0);
         type* kt (0);
 
+        bool ordered (false);
+
         switch (ck)
         {
         case ck_ordered:
           {
-            it = &container_it (t);
+            if (!m.count ("unordered"))
+            {
+              it = &container_it (t);
+              ordered = true;
+            }
             break;
           }
         case ck_map:
@@ -276,8 +282,11 @@ namespace mysql
           {
             // Add one for the index.
             //
-            data_columns++;
-            cond_columns++;
+            if (ordered)
+            {
+              data_columns++;
+              cond_columns++;
+            }
             break;
           }
         case ck_map:
@@ -410,10 +419,13 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "// index" << endl
-               << "//" << endl;
-            image_member im (*this, "index_", *it, "index_type", "index");
-            im.traverse (m);
+            if (ordered)
+            {
+              os << "// index" << endl
+                 << "//" << endl;
+              image_member im (*this, "index_", *it, "index_type", "index");
+              im.traverse (m);
+            }
             break;
           }
         case ck_map:
@@ -448,10 +460,13 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "// index" << endl
-               << "//" << endl;
-            image_member im (*this, "index_", *it, "index_type", "index");
-            im.traverse (m);
+            if (ordered)
+            {
+              os << "// index" << endl
+                 << "//" << endl;
+              image_member im (*this, "index_", *it, "index_type", "index");
+              im.traverse (m);
+            }
             break;
           }
         case ck_map:
@@ -511,7 +526,10 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "init (data_image_type&, index_type, const value_type&);";
+            if (ordered)
+              os << "init (data_image_type&, index_type, const value_type&);";
+            else
+              os << "init (data_image_type&, const value_type&);";
             break;
           }
         case ck_map:
@@ -538,7 +556,10 @@ namespace mysql
         {
         case ck_ordered:
           {
-            os << "init (index_type&, value_type&, ";
+            if (ordered)
+              os << "init (index_type&, value_type&, ";
+            else
+              os << "init (value_type&, ";
             break;
           }
         case ck_map:

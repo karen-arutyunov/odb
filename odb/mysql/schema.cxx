@@ -89,7 +89,8 @@ namespace mysql
         // index (simple value)
         //
         string index_name;
-        if (ck == ck_ordered)
+        bool ordered (ck == ck_ordered && !m.count ("unordered"));
+        if (ordered)
         {
           index_name = column_name (m, "index", "index");
 
@@ -143,7 +144,7 @@ namespace mysql
 
         // index index
         //
-        if (ck == ck_ordered)
+        if (ordered)
           os << "," << endl
              << "  INDEX (`" << index_name << "`)";
 
