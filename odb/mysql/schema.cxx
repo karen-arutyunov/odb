@@ -70,6 +70,11 @@ namespace mysql
         using semantics::type;
         using semantics::data_member;
 
+        // Ignore inverse containers of object pointers.
+        //
+        if (inverse (m, "value"))
+          return;
+
         type& t (m.type ());
         container_kind_type ck (container_kind (t));
         type& vt (container_vt (t));
@@ -237,6 +242,11 @@ namespace mysql
       virtual void
       container (semantics::data_member& m)
       {
+        // Ignore inverse containers of object pointers.
+        //
+        if (inverse (m, "value"))
+          return;
+
         string const& name (table_name (m, table_prefix_));
 
         if (tables_.count (name))

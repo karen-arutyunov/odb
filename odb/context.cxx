@@ -432,6 +432,20 @@ namespace
       r_ = r_ || context::is_a (m, flags_);
     }
 
+    virtual void
+    container (semantics::data_member& m)
+    {
+      // We don't cross the container boundaries (separate table).
+      //
+      r_ = r_ || context::is_a (
+        m,
+        flags_ & (context::test_container |
+                  context::test_straight_container |
+                  context::test_inverse_container),
+        context::container_vt (m.type ()),
+        "value");
+    }
+
   private:
     bool r_;
     unsigned short flags_;
@@ -446,9 +460,29 @@ is_a (semantics::data_member& m,
 {
   bool r (false);
 
-  if (f & eager_pointer)
+  if (f & test_pointer)
   {
     r = r || object_pointer (m, kp);
+  }
+
+  if (f & test_eager_pointer)
+  {
+    r = r || object_pointer (m, kp);
+  }
+
+  if (f & test_container)
+  {
+    r = r || container (m.type ());
+  }
+
+  if (f & test_straight_container)
+  {
+    r = r || (container (m.type ()) && !inverse (m, kp));
+  }
+
+  if (f & test_inverse_container)
+  {
+    r = r || (container (m.type ()) && inverse (m, kp));
   }
 
   return r;

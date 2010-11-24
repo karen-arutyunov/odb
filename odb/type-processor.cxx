@@ -408,6 +408,13 @@ namespace
       if (kt != 0)
         process_container_value (*kt, m, "key", false);
 
+      // If this is an inverse side of a bidirectional object relationship
+      // and it is an ordred container, mark it as unordred since there is
+      // no concept of order in this construct.
+      //
+      if (ck == ck_ordered && m.count ("value-inverse"))
+        m.set ("unordered", string ()); // Keep compatible with pragma.
+
       return true;
     }
 

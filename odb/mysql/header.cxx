@@ -245,6 +245,7 @@ namespace mysql
         type* kt (0);
 
         bool ordered (false);
+        bool inverse (context::inverse (m, "value"));
 
         switch (ck)
         {
@@ -520,33 +521,36 @@ namespace mysql
 
         // init (data_image)
         //
-        os << "static void" << endl;
-
-        switch (ck)
+        if (!inverse)
         {
-        case ck_ordered:
-          {
-            if (ordered)
-              os << "init (data_image_type&, index_type, const value_type&);";
-            else
-              os << "init (data_image_type&, const value_type&);";
-            break;
-          }
-        case ck_map:
-        case ck_multimap:
-          {
-            os << "init (data_image_type&, const key_type&, const value_type&);";
-            break;
-          }
-        case ck_set:
-        case ck_multiset:
-          {
-            os << "init (data_image_type&, const value_type&);";
-            break;
-          }
-        }
+          os << "static void" << endl;
 
-        os << endl;
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              if (ordered)
+                os << "init (data_image_type&, index_type, const value_type&);";
+              else
+                os << "init (data_image_type&, const value_type&);";
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              os << "init (data_image_type&, const key_type&, const value_type&);";
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              os << "init (data_image_type&, const value_type&);";
+              break;
+            }
+          }
+
+          os << endl;
+        }
 
         // init (data)
         //
@@ -641,11 +645,12 @@ namespace mysql
 
         // persist
         //
-        os << "static void" << endl
-           << "persist (const container_type&," << endl
-           << "id_image_type&," << endl
-           << "statements_type&);"
-           << endl;
+        if (!inverse)
+          os << "static void" << endl
+             << "persist (const container_type&," << endl
+             << "id_image_type&," << endl
+             << "statements_type&);"
+             << endl;
 
         // load
         //
@@ -657,17 +662,19 @@ namespace mysql
 
         // update
         //
-        os << "static void" << endl
-           << "update (const container_type&," << endl
-           << "id_image_type&," << endl
-           << "statements_type&);"
-           << endl;
+        if (!inverse)
+          os << "static void" << endl
+             << "update (const container_type&," << endl
+             << "id_image_type&," << endl
+             << "statements_type&);"
+             << endl;
 
         // erase
         //
-        os << "static void" << endl
-           << "erase (id_image_type&, statements_type&);"
-           << endl;
+        if (!inverse)
+          os << "static void" << endl
+             << "erase (id_image_type&, statements_type&);"
+             << endl;
 
         os << "};";
       }

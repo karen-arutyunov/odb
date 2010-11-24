@@ -1103,7 +1103,10 @@ namespace mysql
         type* it (0);
         type* kt (0);
 
+        semantics::data_member* im (context::inverse (m, "value"));
+
         bool ordered (false);
+        bool inverse (im != 0);
         bool grow (false);
 
         switch (ck)
@@ -1134,8 +1137,8 @@ namespace mysql
 
         grow = grow || context::grow (m, vt, "value");
 
-        bool eager_ptr (is_a (m, eager_pointer, vt, "value") ||
-                        has_a (vt, eager_pointer));
+        bool eager_ptr (is_a (m, test_eager_pointer, vt, "value") ||
+                        has_a (vt, test_eager_pointer));
 
         string name (prefix_ + public_name (m) + "_traits");
         string scope (obj_scope_ + "::" + name);
@@ -1149,131 +1152,189 @@ namespace mysql
         //
         string table (table_name (m, table_prefix_));
 
-        // insert_one_statement
-        //
-        os << "const char* const " << scope << "::insert_one_statement =" << endl
-           << "\"INSERT INTO `" << table << "` (\"" << endl
-           << "\"`" << column_name (m, "id", "object_id") << "`";
-
-        switch (ck)
-        {
-        case ck_ordered:
-          {
-            if (ordered)
-            {
-              os << ",\"" << endl
-                 << "\"`" << column_name (m, "index", "index") << "`";
-            }
-            break;
-          }
-        case ck_map:
-        case ck_multimap:
-          {
-            if (comp_value (*kt))
-            {
-              object_columns t (*this, table, false, false);
-              t.traverse_composite (m, *kt, "key", "key");
-            }
-            else
-            {
-              os << ",\"" << endl
-                 << "\"`" << column_name (m, "key", "key") << "`";
-            }
-            break;
-          }
-        case ck_set:
-        case ck_multiset:
-          {
-            break;
-          }
-        }
-
-        if (comp_value (vt))
-        {
-          object_columns t (*this, table, false, false);
-          t.traverse_composite (m, vt, "value", "value");
-        }
-        else
-        {
-          os << ",\"" << endl
-             << "\"`" << column_name (m, "value", "value") << "`";
-        }
-
-        os << "\"" << endl
-           << "\") VALUES (";
-
-        for (size_t i (0), n (m.get<size_t> ("data-column-count")); i < n; ++i)
-          os << (i != 0 ? "," : "") << '?';
-
-        os << ")\";"
-           << endl;
-
         // select_all_statement
         //
-        os << "const char* const " << scope << "::select_all_statement =" << endl
-           << "\"SELECT \"" << endl
-           << "\"`" << column_name (m, "id", "object_id") << "`";
+        os << "const char* const " << scope <<
+          "::select_all_statement =" << endl;
 
-        switch (ck)
+        if (inverse)
         {
-        case ck_ordered:
-          {
-            if (ordered)
-            {
-              os << ",\"" << endl
-                 << "\"`" << column_name (m, "index", "index") << "`";
-            }
-            break;
-          }
-        case ck_map:
-        case ck_multimap:
-          {
-            if (comp_value (*kt))
-            {
-              object_columns t (*this, table, false, false);
-              t.traverse_composite (m, *kt, "key", "key");
-            }
-            else
-            {
-              os << ",\"" << endl
-                 << "\"`" << column_name (m, "key", "key") << "`";
-            }
-            break;
-          }
-        case ck_set:
-        case ck_multiset:
-          {
-            break;
-          }
-        }
+          semantics::class_* c (object_pointer (m, "value"));
 
-        if (comp_value (vt))
-        {
-          object_columns t (*this, table, false, false);
-          t.traverse_composite (m, vt, "value", "value");
+          string inv_table; // Other table name.
+          string inv_id;    // Other id column.
+          string inv_fid;   // Other foreign id column (ref to us).
+
+          if (context::container (im->type ()))
+          {
+            // many(i)-to-many
+            //
+
+            // This other container is a direct member of the class so the
+            // table prefix is just the class table name.
+            //
+            table_prefix tp (table_name (*c) + "_", 1);
+            inv_table = table_name (*im, tp);
+            inv_id = column_name (*im, "id", "object_id");
+            inv_fid = column_name (*im, "value", "value");
+          }
+          else
+          {
+            // many(i)-to-one
+            //
+            inv_table = table_name (*c);
+            inv_id = column_name (id_member (*c));
+            inv_fid = column_name (*im);
+          }
+
+          os << "\"SELECT \"" << endl
+             << "\"`" << inv_fid << "`,\"" << endl
+             << "\"`" << inv_id << "`\"" << endl
+             << "\" FROM `" << inv_table << "` WHERE `" <<
+            inv_fid << "` = ?\"";
         }
         else
         {
-          os << ",\"" << endl
-             << "\"`" << column_name (m, "value", "value") << "`";
+          os << "\"SELECT \"" << endl
+             << "\"`" << column_name (m, "id", "object_id") << "`";
+
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              if (ordered)
+              {
+                os << ",\"" << endl
+                   << "\"`" << column_name (m, "index", "index") << "`";
+              }
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              if (comp_value (*kt))
+              {
+                object_columns t (*this, table, false, false);
+                t.traverse_composite (m, *kt, "key", "key");
+              }
+              else
+              {
+                os << ",\"" << endl
+                   << "\"`" << column_name (m, "key", "key") << "`";
+              }
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              break;
+            }
+          }
+
+          if (comp_value (vt))
+          {
+            object_columns t (*this, table, false, false);
+            t.traverse_composite (m, vt, "value", "value");
+          }
+          else
+          {
+            os << ",\"" << endl
+               << "\"`" << column_name (m, "value", "value") << "`";
+          }
+
+          os << "\"" << endl
+             << "\" FROM `" << table << "` WHERE `" <<
+            column_name (m, "id", "object_id") << "` = ?\"" << endl;
+
+          if (ordered)
+            os << "\" ORDER BY `" << column_name (m, "index", "index") <<
+              "`\"";
         }
-
-        os << "\"" << endl
-           << "\" FROM `" << table << "` WHERE `" <<
-          column_name (m, "id", "object_id") << "` = ?\"" << endl;
-
-        if (ordered)
-          os << "\" ORDER BY `" << column_name (m, "index", "index") << "`\"";
 
         os << ";"
            << endl;
 
+        // insert_one_statement
+        //
+        os << "const char* const " << scope <<
+          "::insert_one_statement =" << endl;
+
+        if (inverse)
+          os << " \"\";"
+             << endl;
+        else
+        {
+          os << "\"INSERT INTO `" << table << "` (\"" << endl
+             << "\"`" << column_name (m, "id", "object_id") << "`";
+
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              if (ordered)
+              {
+                os << ",\"" << endl
+                   << "\"`" << column_name (m, "index", "index") << "`";
+              }
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              if (comp_value (*kt))
+              {
+                object_columns t (*this, table, false, false);
+                t.traverse_composite (m, *kt, "key", "key");
+              }
+              else
+              {
+                os << ",\"" << endl
+                   << "\"`" << column_name (m, "key", "key") << "`";
+              }
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              break;
+            }
+          }
+
+          if (comp_value (vt))
+          {
+            object_columns t (*this, table, false, false);
+            t.traverse_composite (m, vt, "value", "value");
+          }
+          else
+          {
+            os << ",\"" << endl
+               << "\"`" << column_name (m, "value", "value") << "`";
+          }
+
+          os << "\"" << endl
+             << "\") VALUES (";
+
+          for (size_t i (0), n (m.get<size_t> ("data-column-count")); i < n; ++i)
+            os << (i != 0 ? "," : "") << '?';
+
+          os << ")\";"
+             << endl;
+        }
+
         // delete_all_statement
         //
-        os << "const char* const " << scope << "::delete_all_statement =" << endl
-           << "\"DELETE FROM `" << table << "`\"" << endl
-           << "\" WHERE `" << column_name (m, "id", "object_id") << "` = ?\";"
-           << endl;
+        os << "const char* const " << scope <<
+          "::delete_all_statement =" << endl;
+
+        if (inverse)
+          os << " \"\";"
+             << endl;
+        else
+        {
+          os << "\"DELETE FROM `" << table << "`\"" << endl
+             << "\" WHERE `" << column_name (m, "id", "object_id") << "` = ?\";"
+             << endl;
+        }
 
         //
         // Functions.
@@ -1464,71 +1525,76 @@ namespace mysql
 
         // init (data_image)
         //
-        os << "void " << scope << "::" << endl;
-
-        switch (ck)
+        if (!inverse)
         {
-        case ck_ordered:
+          os << "void " << scope << "::" << endl;
+
+          switch (ck)
           {
-            if (ordered)
-              os << "init (data_image_type& i, index_type j, const value_type& v)";
-            else
-              os << "init (data_image_type& i, const value_type& v)";
-
-            os<< "{"
-              << "bool grew (false);"
-              << endl;
-
-            if (ordered)
+          case ck_ordered:
             {
-              os << "// index" << endl
+              if (ordered)
+                os << "init (data_image_type& i, index_type j, " <<
+                  "const value_type& v)";
+              else
+                os << "init (data_image_type& i, const value_type& v)";
+
+              os<< "{"
+                << "bool grew (false);"
+                << endl;
+
+              if (ordered)
+              {
+                os << "// index" << endl
+                   << "//" << endl;
+
+                init_image_member im (
+                  *this, "index_", "j", *it, "index_type", "index");
+                im.traverse (m);
+              }
+
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              os << "init (data_image_type& i, const key_type& k, " <<
+                "const value_type& v)"
+                 << "{"
+                 << "bool grew (false);"
+                 << endl
+                 << "// key" << endl
                  << "//" << endl;
 
               init_image_member im (
-                *this, "index_", "j", *it, "index_type", "index");
+                *this, "key_", "k", *kt, "key_type", "key");
               im.traverse (m);
+
+              break;
             }
-
-            break;
+          case ck_set:
+          case ck_multiset:
+            {
+              os << "init (data_image_type& i, const value_type& v)"
+                 << "{"
+                 << "bool grew (false);"
+                 << endl;
+              break;
+            }
           }
-        case ck_map:
-        case ck_multimap:
-          {
-            os << "init (data_image_type& i, const key_type& k, " <<
-              "const value_type& v)"
-               << "{"
-               << "bool grew (false);"
-               << endl
-               << "// key" << endl
-               << "//" << endl;
 
-            init_image_member im (*this, "key_", "k", *kt, "key_type", "key");
+          os << "// value" << endl
+             << "//" << endl;
+          {
+            init_image_member im (
+              *this, "value_", "v", vt, "value_type", "value");
             im.traverse (m);
-
-            break;
           }
-        case ck_set:
-        case ck_multiset:
-          {
-            os << "init (data_image_type& i, const value_type& v)"
-               << "{"
-               << "bool grew (false);"
-               << endl;
-            break;
-          }
-        }
 
-        os << "// value" << endl
-           << "//" << endl;
-        {
-          init_image_member im (
-            *this, "value_", "v", vt, "value_type", "value");
-          im.traverse (m);
+          os << "if (grew)" << endl
+             << "i.version++;"
+             << "}";
         }
-
-        os << "if (grew)" << endl
-           << "i.version++;"
-           << "}";
 
         // init (data)
         //
@@ -1603,70 +1669,92 @@ namespace mysql
 
         // insert_one
         //
-        os << "void " << scope << "::" << endl;
-
-        switch (ck)
         {
-        case ck_ordered:
+          string ia, ka, va, da;
+
+          if (!inverse)
           {
-            os << "insert_one (index_type" << (ordered ? " i" : "") <<
-              ", const value_type& v, void* d)";
-            break;
+            ia = ordered ? " i" : "";
+            ka = " k";
+            va = " v";
+            da = " d";
           }
-        case ck_map:
-        case ck_multimap:
+
+          os << "void " << scope << "::" << endl;
+
+          switch (ck)
           {
-            os << "insert_one (const key_type& k, const value_type& v, void* d)";
-            break;
+          case ck_ordered:
+            {
+              os << "insert_one (index_type" << ia << ", " <<
+                "const value_type&" << va << ", " <<
+                "void*" << da << ")";
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              os << "insert_one (const key_type&" << ka << ", " <<
+                "const value_type&" << va << ", " <<
+                "void*" << da << ")";
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              os << "insert_one (const value_type&" << va << ", " <<
+                "void*" << da << ")";
+              break;
+            }
           }
-        case ck_set:
-        case ck_multiset:
+
+          os << "{";
+
+          if (!inverse)
           {
-            os << "insert_one (const value_type& v, void* d)";
-            break;
+            os << "using namespace mysql;"
+               << endl
+               << "typedef container_statements< " << name << " > statements;"
+               << "statements& sts (*static_cast< statements* > (d));"
+               << "binding& b (sts.data_image_binding ());"
+               << "data_image_type& di (sts.data_image ());"
+               << endl;
+
+            switch (ck)
+            {
+            case ck_ordered:
+              {
+                os << "init (di, " << (ordered ? "i, " : "") << "v);";
+                break;
+              }
+            case ck_map:
+            case ck_multimap:
+              {
+                os << "init (di, k, v);";
+                break;
+              }
+            case ck_set:
+            case ck_multiset:
+              {
+                os << "init (di, v);";
+                break;
+              }
+            }
+
+            os << endl
+               << "if (di.version != sts.data_image_version () || " <<
+              "b.version == 0)"
+               << "{"
+               << "bind (b.bind, 0, di);"
+               << "sts.data_image_version (di.version);"
+               << "b.version++;"
+               << "}"
+               << "if (!sts.insert_one_statement ().execute ())" << endl
+               << "throw object_already_persistent ();";
           }
+
+          os << "}";
         }
-
-        os << "{"
-           << "using namespace mysql;"
-           << endl
-           << "typedef container_statements< " << name << " > statements;"
-           << "statements& sts (*static_cast< statements* > (d));"
-           << "binding& b (sts.data_image_binding ());"
-           << "data_image_type& di (sts.data_image ());"
-           << endl;
-
-        switch (ck)
-        {
-        case ck_ordered:
-          {
-            os << "init (di, " << (ordered ? "i, " : "") << "v);";
-            break;
-          }
-        case ck_map:
-        case ck_multimap:
-          {
-            os << "init (di, k, v);";
-            break;
-          }
-        case ck_set:
-        case ck_multiset:
-          {
-            os << "init (di, v);";
-            break;
-          }
-        }
-
-        os << endl
-           << "if (di.version != sts.data_image_version () ||  b.version == 0)"
-           << "{"
-           << "bind (b.bind, 0, di);"
-           << "sts.data_image_version (di.version);"
-           << "b.version++;"
-           << "}"
-           << "if (!sts.insert_one_statement ().execute ())" << endl
-           << "throw object_already_persistent ();"
-           << "}";
 
 
         // load_all
@@ -1730,7 +1818,7 @@ namespace mysql
         }
 
         // If we are loading an eager pointer, then the call to init
-        // above executed other statements which potentially could
+        // above executes other statements which potentially could
         // change the image.
         //
         if (eager_ptr)
@@ -1780,39 +1868,46 @@ namespace mysql
         // delete_all
         //
         os << "void " << scope << "::" << endl
-           << "delete_all (void* d)"
-           << "{"
-           << "using namespace mysql;"
-           << endl
-           << "typedef container_statements< " << name << " > statements;"
-           << "statements& sts (*static_cast< statements* > (d));"
-           << "sts.delete_all_statement ().execute ();"
-           << "}";
+           << "delete_all (void*" << (inverse ? "" : " d") << ")"
+           << "{";
+
+        if (!inverse)
+          os << "using namespace mysql;"
+             << endl
+             << "typedef container_statements< " << name << " > statements;"
+             << "statements& sts (*static_cast< statements* > (d));"
+             << "sts.delete_all_statement ().execute ();";
+
+        os << "}";
 
         // persist
         //
-        os << "void " << scope << "::" << endl
-           << "persist (const container_type& c," << endl
-           << "id_image_type& id," << endl
-           << "statements_type& sts)"
-           << "{"
-           << "using namespace mysql;"
-           << endl
-           << "binding& b (sts.data_image_binding ());"
-           << "if (id.version != sts.data_id_image_version () || b.version == 0)"
-           << "{"
-           << "bind (b.bind, &id, sts.data_image ());"
-           << "sts.data_id_image_version (id.version);"
-           << "b.version++;"
-           << "}"
-           << "sts.id_image (id);"
-           << "functions_type& fs (sts.functions ());";
+        if (!inverse)
+        {
+          os << "void " << scope << "::" << endl
+             << "persist (const container_type& c," << endl
+             << "id_image_type& id," << endl
+             << "statements_type& sts)"
+             << "{"
+             << "using namespace mysql;"
+             << endl
+             << "binding& b (sts.data_image_binding ());"
+             << "if (id.version != sts.data_id_image_version () || " <<
+            "b.version == 0)"
+             << "{"
+             << "bind (b.bind, &id, sts.data_image ());"
+             << "sts.data_id_image_version (id.version);"
+             << "b.version++;"
+             << "}"
+             << "sts.id_image (id);"
+             << "functions_type& fs (sts.functions ());";
 
-        if (ck == ck_ordered)
-          os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+          if (ck == ck_ordered)
+            os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
 
-        os << "container_traits::persist (c, fs);"
-           << "}";
+          os << "container_traits::persist (c, fs);"
+             << "}";
+        }
 
         // load
         //
@@ -1880,61 +1975,69 @@ namespace mysql
 
         // update
         //
-        os << "void " << scope << "::" << endl
-           << "update (const container_type& c," << endl
-           << "id_image_type& id," << endl
-           << "statements_type& sts)"
-           << "{"
-           << "using namespace mysql;"
-           << endl
-           << "binding& db (sts.data_image_binding ());"
-           << "if (id.version != sts.data_id_image_version () || db.version == 0)"
-           << "{"
-           << "bind (db.bind, &id, sts.data_image ());"
-           << "sts.data_id_image_version (id.version);"
-           << "db.version++;"
-           << "}"
-          //
-          // We may need cond if the specialization calls delete_all.
-          //
-           << "binding& cb (sts.cond_image_binding ());"
-           << "if (id.version != sts.cond_id_image_version () || cb.version == 0)"
-           << "{"
-           << "bind (cb.bind, &id, sts.cond_image ());"
-           << "sts.cond_id_image_version (id.version);"
-           << "cb.version++;"
-           << "}"
-           << "sts.id_image (id);"
-           << "functions_type& fs (sts.functions ());";
+        if (!inverse)
+        {
+          os << "void " << scope << "::" << endl
+             << "update (const container_type& c," << endl
+             << "id_image_type& id," << endl
+             << "statements_type& sts)"
+             << "{"
+             << "using namespace mysql;"
+             << endl
+             << "binding& db (sts.data_image_binding ());"
+             << "if (id.version != sts.data_id_image_version () || " <<
+            "db.version == 0)"
+             << "{"
+             << "bind (db.bind, &id, sts.data_image ());"
+             << "sts.data_id_image_version (id.version);"
+             << "db.version++;"
+             << "}"
+            //
+            // We may need cond if the specialization calls delete_all.
+            //
+             << "binding& cb (sts.cond_image_binding ());"
+             << "if (id.version != sts.cond_id_image_version () || " <<
+            "cb.version == 0)"
+             << "{"
+             << "bind (cb.bind, &id, sts.cond_image ());"
+             << "sts.cond_id_image_version (id.version);"
+             << "cb.version++;"
+             << "}"
+             << "sts.id_image (id);"
+             << "functions_type& fs (sts.functions ());";
 
-        if (ck == ck_ordered)
-          os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+          if (ck == ck_ordered)
+            os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
 
-        os << "container_traits::update (c, fs);"
-           << "}";
+          os << "container_traits::update (c, fs);"
+             << "}";
+        }
 
         // erase
         //
-        os << "void " << scope << "::" << endl
-           << "erase (id_image_type& id, statements_type& sts)"
-           << "{"
-           << "using namespace mysql;"
-           << endl
-           << "binding& b (sts.cond_image_binding ());"
-           << "if (id.version != sts.cond_id_image_version () || b.version == 0)"
-           << "{"
-           << "bind (b.bind, &id, sts.cond_image ());"
-           << "sts.cond_id_image_version (id.version);"
-           << "b.version++;"
-           << "}"
-           << "sts.id_image (id);"
-           << "functions_type& fs (sts.functions ());";
+        if (!inverse)
+        {
+          os << "void " << scope << "::" << endl
+             << "erase (id_image_type& id, statements_type& sts)"
+             << "{"
+             << "using namespace mysql;"
+             << endl
+             << "binding& b (sts.cond_image_binding ());"
+             << "if (id.version != sts.cond_id_image_version () || b.version == 0)"
+             << "{"
+             << "bind (b.bind, &id, sts.cond_image ());"
+             << "sts.cond_id_image_version (id.version);"
+             << "b.version++;"
+             << "}"
+             << "sts.id_image (id);"
+             << "functions_type& fs (sts.functions ());";
 
-        if (ck == ck_ordered)
-          os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+          if (ck == ck_ordered)
+            os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
 
-        os << "container_traits::erase (fs);"
-           << "}";
+          os << "container_traits::erase (fs);"
+             << "}";
+        }
       }
 
     private:
@@ -1948,16 +2051,8 @@ namespace mysql
     struct container_cache_members: object_members_base, context
     {
       container_cache_members (context& c)
-          : object_members_base (c, true, false),
-            context (c),
-            containers_ (false)
+          : object_members_base (c, true, false), context (c)
       {
-      }
-
-      bool
-      containers () const
-      {
-        return containers_;
       }
 
       virtual void
@@ -1966,12 +2061,7 @@ namespace mysql
         string traits (prefix_ + public_name (m) + "_traits");
         os << "mysql::container_statements< " << traits << " > " <<
           prefix_ << m.name () << ";";
-
-        containers_ = true;
       }
-
-    private:
-      bool containers_;
     };
 
     struct container_cache_init_members: object_members_base, context
@@ -2033,6 +2123,8 @@ namespace mysql
       {
         using semantics::type;
 
+        bool inverse (context::inverse (m, "value"));
+
         string const& name (m.name ());
         string obj_name (obj_prefix_ + name);
         string sts_name (prefix_ + name);
@@ -2042,8 +2134,9 @@ namespace mysql
         {
         case persist_call:
           {
-            os << traits << "::persist (obj." << obj_name << ", i, " <<
-              "sts.container_statment_cache ()." << sts_name << ");";
+            if (!inverse)
+              os << traits << "::persist (obj." << obj_name << ", i, " <<
+                "sts.container_statment_cache ()." << sts_name << ");";
             break;
           }
         case load_call:
@@ -2054,14 +2147,16 @@ namespace mysql
           }
         case update_call:
           {
-            os << traits << "::update (obj." << obj_name << ", i, " <<
-              "sts.container_statment_cache ()." << sts_name << ");";
+            if (!inverse)
+              os << traits << "::update (obj." << obj_name << ", i, " <<
+                "sts.container_statment_cache ()." << sts_name << ");";
             break;
           }
         case erase_call:
           {
-            os << traits << "::erase (i, sts.container_statment_cache ()." <<
-              sts_name << ");";
+            if (!inverse)
+              os << traits << "::erase (i, sts.container_statment_cache ()." <<
+                sts_name << ");";
             break;
           }
         }
@@ -2135,17 +2230,17 @@ namespace mysql
         //
         // Containers.
         //
+        bool straight_containers (has_a (c, test_straight_container));
+        bool containers (straight_containers || has_a (c, test_container));
 
         // Statement cache (definition).
         //
-        bool containers;
         {
           os << "struct " << traits << "::container_statement_cache_type"
              << "{";
 
           container_cache_members cm (*this);
           cm.traverse (c);
-          containers = cm.containers ();
 
           os << (containers ? "\n" : "")
              << "container_statement_cache_type (mysql::connection&" <<
@@ -2379,7 +2474,7 @@ namespace mysql
           os << "obj." << id.name () << " = static_cast<id_type> (st.id ());"
              << endl;
 
-        if (containers)
+        if (straight_containers)
         {
           os << "{";
 
@@ -2453,7 +2548,7 @@ namespace mysql
            << "}"
            << "sts.update_statement ().execute ();";
 
-          if (containers)
+          if (straight_containers)
           {
             os << endl;
             container_calls t (*this, container_calls::update_call);
@@ -2497,7 +2592,7 @@ namespace mysql
            << "if (sts.erase_statement ().execute () != 1)" << endl
            << "throw object_not_persistent ();";
 
-        if (containers)
+        if (straight_containers)
         {
           os << endl;
           container_calls t (*this, container_calls::erase_call);

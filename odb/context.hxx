@@ -192,7 +192,13 @@ public:
   // The 'is a' and 'has a' tests. The has_a test currently does not
   // cross the container boundaries.
   //
-  static unsigned short const eager_pointer = 0x01;
+
+  static unsigned short const test_pointer = 0x01;
+  static unsigned short const test_eager_pointer = 0x02;
+  static unsigned short const test_lazy_pointer = 0x04;
+  static unsigned short const test_container = 0x08;
+  static unsigned short const test_straight_container = 0x10;
+  static unsigned short const test_inverse_container = 0x20;
 
   static bool
   is_a (semantics::data_member& m, unsigned short flags)
