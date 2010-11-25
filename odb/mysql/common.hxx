@@ -250,15 +250,17 @@ namespace mysql
     query_columns (context&, semantics::class_&);
 
     virtual void
-    composite (semantics::data_member&, semantics::type&);
+    composite (semantics::data_member&, semantics::class_&);
 
     virtual bool
     column (semantics::data_member&, string const&, bool);
 
   private:
+    bool ptr_;
+    bool decl_;
+
     string scope_;
     string table_;
-    bool decl_;
 
     member_image_type member_image_type_;
     member_database_type member_database_type_;

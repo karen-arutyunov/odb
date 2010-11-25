@@ -111,10 +111,10 @@ namespace mysql
 
           os << "," << endl;
 
-          if (comp_value (kt))
+          if (semantics::class_* ckt = comp_value (kt))
           {
             object_columns oc (*this);
-            oc.traverse_composite (m, kt, "key", "key");
+            oc.traverse_composite (m, *ckt, "key", "key");
           }
           else
           {
@@ -129,10 +129,10 @@ namespace mysql
         {
           os << "," << endl;
 
-          if (comp_value (vt))
+          if (semantics::class_* cvt = comp_value (vt))
           {
             object_columns oc (*this);
-            oc.traverse_composite (m, vt, "value", "value");
+            oc.traverse_composite (m, *cvt, "value", "value");
           }
           else
           {

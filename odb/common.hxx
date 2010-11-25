@@ -24,7 +24,7 @@ struct object_members_base: traversal::class_
   // traverse_composite().
   //
   virtual void
-  composite (semantics::data_member& m, semantics::type& t);
+  composite (semantics::data_member&, semantics::class_&);
 
   virtual void
   container (semantics::data_member&);
@@ -56,7 +56,7 @@ public:
   traverse (semantics::class_&);
 
   virtual void
-  traverse_composite (semantics::data_member&, semantics::type&);
+  traverse_composite (semantics::data_member&, semantics::class_&);
 
 protected:
   std::string prefix_;
@@ -101,7 +101,7 @@ struct object_columns_base: traversal::class_
   // m.type ().
   //
   virtual void
-  composite (semantics::data_member& m, semantics::type& t);
+  composite (semantics::data_member&, semantics::class_&);
 
 public:
   object_columns_base (context& c)
@@ -116,7 +116,7 @@ public:
 
   virtual void
   traverse_composite (semantics::data_member&,
-                      semantics::type&,
+                      semantics::class_&,
                       std::string const& key_prefix,
                       std::string const& default_name);
 

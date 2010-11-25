@@ -5,6 +5,9 @@
 
 #include <odb/gcc.hxx>
 
+#include <map>
+#include <set>
+#include <vector>
 #include <sstream>
 
 #include <odb/mysql/common.hxx>
@@ -96,50 +99,173 @@ namespace mysql
 
     struct object_joins: object_columns_base, context
     {
-      object_joins (context& c, semantics::class_& scope)
+      object_joins (context& c, semantics::class_& scope, bool query)
           : object_columns_base (c),
             context (c),
+            query_ (query),
             table_ (table_name (scope)),
             id_ (id_member (scope))
       {
       }
 
-      virtual bool
-      column (semantics::data_member& m, string const&, bool)
+      size_t
+      count () const
       {
+        return joins_.size ();
+      }
+
+      void
+      write ()
+      {
+        for (joins::iterator i (joins_.begin ()); i != joins_.end (); ++i)
+        {
+          if (i->table.empty ())
+            continue;
+
+          os << "\" LEFT JOIN `" << i->table << "` ON ";
+
+          for (conditions::iterator b (i->cond.begin ()), j (b);
+               j != i->cond.end (); ++j)
+          {
+            if (j != b)
+              os << " OR ";
+
+            os << *j;
+          }
+
+          os << "\"" << endl;
+        }
+      }
+
+      virtual bool
+      column (semantics::data_member& m, string const& col_name, bool)
+      {
+        semantics::class_* c (object_pointer (m));
+
+        if (c == 0)
+          return true;
+
+        string t, dt;
+        ostringstream cond, dcond;
+
         if (semantics::data_member* im = inverse (m))
         {
-          semantics::class_* c (object_pointer (m));
-
           if (container (im->type ()))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
             //
-            table_prefix tp (table_name (*c) + "_", 1);
-            string const& it (table_name (*im, tp));
+            string const& ct (table_name (*c));
+            table_prefix tp (ct + "_", 1);
+            t = table_name (*im, tp);
             string const& val (column_name (*im, "value", "value"));
 
-            os << "\" LEFT JOIN `" << it << "` ON `" << it << "`.`" <<
-              val << "` = `" << table_ << "`.`" <<
-              column_name (id_) << "`\"" << endl;
+            cond << "`" << t << "`.`" << val << "` = `" <<
+              table_ << "`.`" << column_name (id_) << "`";
+
+            // Add the join for the object itself so that we are able to
+            // use it in the WHERE clause.
+            //
+            if (query_)
+            {
+              dt = ct;
+              string const& id (column_name (*im, "id", "object_id"));
+
+              dcond << "`" << dt << "`.`" << column_name (id_member (*c)) <<
+                "` = `" << t << "`.`" << id << "`";
+            }
           }
           else
           {
-            string const& it (table_name (*c));
+            t = table_name (*c);
 
-            os << "\" LEFT JOIN `" << it << "` ON `" << it << "`.`" <<
-              column_name (*im) << "` = `" << table_ << "`.`" <<
-              column_name (id_) << "`\"" << endl;
+            cond << "`" << t << "`.`" << column_name (*im) << "` = `" <<
+              table_ << "`.`" << column_name (id_) << "`";
           }
+        }
+        else if (query_)
+        {
+          // We need the join to be able to use the referenced object
+          // in the WHERE clause.
+          //
+          t = table_name (*c);
+
+          cond << "`" << t << "`.`" << column_name (id_member (*c)) <<
+            "` = `" << table_ << "`.`" << col_name << "`";
+        }
+
+        if (!t.empty ())
+        {
+          size_t i;
+          table_map::iterator it (table_map_.find (t));
+
+          if (it != table_map_.end ())
+            i = it->second;
+          else
+          {
+            i = joins_.size ();
+            joins_.push_back (join ());
+            table_map_[t] = i;
+          }
+
+          joins_[i].table = t;
+          joins_[i].cond.insert (cond.str ());
+        }
+
+        if (!dt.empty ())
+        {
+          // Add dependent join. If one already exists, move it to the
+          // bottom.
+          //
+          size_t i;
+          table_map::iterator it (table_map_.find (dt));
+
+          if (it != table_map_.end ())
+          {
+            i = joins_.size ();
+            joins_.push_back (join ());
+            joins_[it->second].swap (joins_.back ());
+            it->second = i;
+          }
+          else
+          {
+            i = joins_.size ();
+            joins_.push_back (join ());
+            table_map_[dt] = i;
+          }
+
+          joins_[i].table = dt;
+          joins_[i].cond.insert (dcond.str ());
         }
 
         return true;
       }
 
     private:
+      bool query_;
       string table_;
       semantics::data_member& id_;
+
+      typedef set<string> conditions;
+
+      struct join
+      {
+        string table;
+        conditions cond;
+
+        void
+        swap (join& o)
+        {
+          table.swap (o.table);
+          cond.swap (o.cond);
+        }
+      };
+
+      typedef vector<join> joins;
+      typedef map<string, size_t> table_map;
+
+      joins joins_;
+      table_map table_map_;
     };
 
     const char* integer_buffer_types[] =
@@ -1212,10 +1338,10 @@ namespace mysql
           case ck_map:
           case ck_multimap:
             {
-              if (comp_value (*kt))
+              if (semantics::class_* ckt = comp_value (*kt))
               {
                 object_columns t (*this, table, false, false);
-                t.traverse_composite (m, *kt, "key", "key");
+                t.traverse_composite (m, *ckt, "key", "key");
               }
               else
               {
@@ -1231,10 +1357,10 @@ namespace mysql
             }
           }
 
-          if (comp_value (vt))
+          if (semantics::class_* cvt = comp_value (vt))
           {
             object_columns t (*this, table, false, false);
-            t.traverse_composite (m, vt, "value", "value");
+            t.traverse_composite (m, *cvt, "value", "value");
           }
           else
           {
@@ -1281,10 +1407,10 @@ namespace mysql
           case ck_map:
           case ck_multimap:
             {
-              if (comp_value (*kt))
+              if (semantics::class_* ckt = comp_value (*kt))
               {
                 object_columns t (*this, table, false, false);
-                t.traverse_composite (m, *kt, "key", "key");
+                t.traverse_composite (m, *ckt, "key", "key");
               }
               else
               {
@@ -1300,10 +1426,10 @@ namespace mysql
             }
           }
 
-          if (comp_value (vt))
+          if (semantics::class_* cvt = comp_value (vt))
           {
             object_columns t (*this, table, false, false);
-            t.traverse_composite (m, vt, "value", "value");
+            t.traverse_composite (m, *cvt, "value", "value");
           }
           else
           {
@@ -2109,12 +2235,12 @@ namespace mysql
       }
 
       virtual void
-      composite (semantics::data_member& m, semantics::type& t)
+      composite (semantics::data_member& m, semantics::class_& c)
       {
         string old (obj_prefix_);
         obj_prefix_ += m.name ();
         obj_prefix_ += '.';
-        object_members_base::composite (m, t);
+        object_members_base::composite (m, c);
         obj_prefix_ = old;
       }
 
@@ -2305,8 +2431,9 @@ namespace mysql
            << "\" FROM `" << table << "`\"" << endl;
 
         {
-          object_joins t (*this, c);
+          object_joins t (*this, c, false);
           t.traverse (c);
+          t.write ();
         }
 
         os << "\" WHERE `" << table << "`.`" << column_name (id) << "` = ?\";"
@@ -2337,21 +2464,24 @@ namespace mysql
         //
         if (options.generate_query ())
         {
+          object_joins oj (*this, c, true);
+          oj.traverse (c);
+
+          // We only need DISTINCT if there are joins (object pointers)
+          // and can optimize it out otherwise.
+          //
           os << "const char* const " << traits << "::query_clause =" << endl
-             << "\"SELECT \"" << endl;
+             << "\"SELECT " << (oj.count () ? "DISTINCT " : "") << "\"" << endl;
 
           {
-            object_columns t (*this, table, true);
-            t.traverse (c);
+            object_columns oc (*this, table, true);
+            oc.traverse (c);
           }
 
           os << "\"" << endl
              << "\" FROM `" << table << "`\"" << endl;
 
-          {
-            object_joins t (*this, c);
-            t.traverse (c);
-          }
+          oj.write ();
 
           os << "\" \";"
              << endl;

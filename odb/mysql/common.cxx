@@ -438,6 +438,7 @@ namespace mysql
   query_columns (context& c)
       : object_columns_base (c),
         context (c),
+        ptr_ (true),
         decl_ (true),
         member_image_type_ (c),
         member_database_type_ (c)
@@ -448,6 +449,7 @@ namespace mysql
   query_columns (context& c, semantics::class_& cl)
       : object_columns_base (c),
         context (c),
+        ptr_ (true),
         decl_ (false),
         member_image_type_ (c),
         member_database_type_ (c)
@@ -457,7 +459,7 @@ namespace mysql
   }
 
   void query_columns::
-  composite (semantics::data_member& m, semantics::type& t)
+  composite (semantics::data_member& m, semantics::class_& c)
   {
     string name (public_name (m));
 
@@ -468,7 +470,7 @@ namespace mysql
          << "struct " << name
          << "{";
 
-      object_columns_base::composite (m, t);
+      object_columns_base::composite (m, c);
 
       os << "};";
     }
@@ -477,7 +479,7 @@ namespace mysql
       string old_scope (scope_);
       scope_ += "::" + name;
 
-      object_columns_base::composite (m, t);
+      object_columns_base::composite (m, c);
 
       scope_ = old_scope;
     }
@@ -487,35 +489,76 @@ namespace mysql
   column (semantics::data_member& m, string const& col_name, bool)
   {
     string name (public_name (m));
-    string db_type (member_database_type_.database_type (m));
 
-    string type (
-      "mysql::value_traits< "
-      + m.type ().fq_name (m.belongs ().hint ()) + ", "
-      + member_image_type_.image_type (m) + ", "
-      + db_type
-      + " >::query_type");
-
-    if (decl_)
+    if (semantics::class_* c = object_pointer (m))
     {
-      os << "// " << name << endl
-         << "//" << endl
-         << "static const mysql::query_column<" << endl
-         << "  " << type << "," << endl
-         << "  " << db_type << ">" << endl
-         << name << ";"
-         << endl;
+      // We cannot just typedef the query_type from the referenced
+      // object for two reasons: (1) it may not be defined yet and
+      // (2) it will contain columns for its own pointers which
+      // won't work (for now we only support one level of indirection
+      // in queries). So we will have to duplicate the columns (sans
+      // the pointers).
+      //
+      if (ptr_)
+      {
+        ptr_ = false;
+
+        if (decl_)
+        {
+          os << "// " << name << endl
+             << "//" << endl
+             << "struct " << name
+             << "{";
+
+          traverse (*c);
+
+          os << "};";
+        }
+        else
+        {
+          string old_scope (scope_), old_table (table_);
+          scope_ += "::" + name;
+          table_ = table_name (*c);
+          traverse (*c);
+          table_ = old_table;
+          scope_ = old_scope;
+        }
+
+        ptr_ = true;
+      }
     }
     else
     {
-      string column ("\"`" + table_ + "`.`" + col_name + "`\"");
+      string db_type (member_database_type_.database_type (m));
 
-      os << "const mysql::query_column<" << endl
-         << "  " << type << "," << endl
-         << "  " << db_type << ">" << endl
-         << scope_ << "::" << name << " (" << endl
-         << column << ");"
-         << endl;
+      string type (
+        "mysql::value_traits< "
+        + m.type ().fq_name (m.belongs ().hint ()) + ", "
+        + member_image_type_.image_type (m) + ", "
+        + db_type
+        + " >::query_type");
+
+      if (decl_)
+      {
+        os << "// " << name << endl
+           << "//" << endl
+           << "static const mysql::query_column<" << endl
+           << "  " << type << "," << endl
+           << "  " << db_type << ">" << endl
+           << name << ";"
+           << endl;
+      }
+      else
+      {
+        string column ("\"`" + table_ + "`.`" + col_name + "`\"");
+
+        os << "const mysql::query_column<" << endl
+           << "  " << type << "," << endl
+           << "  " << db_type << ">" << endl
+           << scope_ << "::" << name << " (" << endl
+           << column << ");"
+           << endl;
+      }
     }
 
     return true;

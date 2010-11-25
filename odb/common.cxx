@@ -17,9 +17,10 @@ simple (semantics::data_member&)
 }
 
 void object_members_base::
-composite (semantics::data_member&, semantics::type& t)
+composite (semantics::data_member&, semantics::class_& c)
 {
-  dispatch (t);
+  inherits (c);
+  names (c);
 }
 
 void object_members_base::
@@ -28,9 +29,9 @@ container (semantics::data_member&)
 }
 
 void object_members_base::
-traverse_composite (semantics::data_member& m, semantics::type& t)
+traverse_composite (semantics::data_member& m, semantics::class_& c)
 {
-  composite (m, t);
+  composite (m, c);
 }
 
 void object_members_base::
@@ -63,7 +64,7 @@ traverse (semantics::data_member& m)
 
   semantics::type& t (m.type ());
 
-  if (context::comp_value (t))
+  if (semantics::class_* comp = context::comp_value (t))
   {
     string old_prefix, old_table_prefix;
 
@@ -105,7 +106,7 @@ traverse (semantics::data_member& m)
       om_.table_prefix_.level++;
     }
 
-    om_.composite (m, t);
+    om_.composite (m, *comp);
 
     if (om_.build_table_prefix_)
     {
@@ -131,14 +132,15 @@ traverse (semantics::data_member& m)
 //
 
 void object_columns_base::
-composite (semantics::data_member&, semantics::type& t)
+composite (semantics::data_member&, semantics::class_& c)
 {
-  dispatch (t);
+  inherits (c);
+  names (c);
 }
 
 void object_columns_base::
 traverse_composite (semantics::data_member& m,
-                    semantics::type& t,
+                    semantics::class_& c,
                     string const& key_prefix,
                     string const& default_name)
 {
@@ -158,7 +160,7 @@ traverse_composite (semantics::data_member& m,
       member_.prefix_ += '_';
   }
 
-  composite (m, t);
+  composite (m, c);
 }
 
 void object_columns_base::
@@ -176,7 +178,7 @@ traverse (semantics::data_member& m)
 
   semantics::type& t (m.type ());
 
-  if (comp_value (t))
+  if (semantics::class_* comp = comp_value (t))
   {
     string old_prefix (prefix_);
 
@@ -196,7 +198,7 @@ traverse (semantics::data_member& m)
         prefix_ += '_';
     }
 
-    oc_.composite (m, t);
+    oc_.composite (m, *comp);
 
     prefix_ = old_prefix;
   }
