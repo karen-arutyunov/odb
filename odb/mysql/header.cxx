@@ -890,9 +890,9 @@ namespace mysql
              << "query (database&, const query_type&);"
              << endl;
 
-        // Helpers.
+        // Implementation details.
         //
-        os << "private:" << endl
+        os << "public:" << endl
            << "static bool" << endl
            << "find_ (mysql::object_statements<object_type>&, const id_type&);"
            << endl;

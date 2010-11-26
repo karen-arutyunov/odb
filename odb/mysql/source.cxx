@@ -2578,7 +2578,7 @@ namespace mysql
            << "using namespace mysql;"
            << endl
            << "connection& conn (mysql::transaction::current ().connection ());"
-           << "object_statements<object_type>& sts (" << endl
+           << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << "image_type& im (sts.image ());"
            << "binding& imb (sts.in_image_binding ());"
@@ -2638,7 +2638,7 @@ namespace mysql
            << "using namespace mysql;"
            << endl
            << "connection& conn (mysql::transaction::current ().connection ());"
-           << "object_statements<object_type>& sts (" << endl
+           << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << endl;
 
@@ -2695,7 +2695,7 @@ namespace mysql
            << "using namespace mysql;"
            << endl
            << "connection& conn (mysql::transaction::current ().connection ());"
-           << "object_statements<object_type>& sts (" << endl
+           << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << endl;
 
@@ -2742,17 +2742,24 @@ namespace mysql
              << "using namespace mysql;"
              << endl
              << "connection& conn (mysql::transaction::current ().connection ());"
-             << "object_statements<object_type>& sts (" << endl
+             << "object_statements< object_type >& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
+             << "object_statements< object_type >::auto_lock l (sts);"
              << endl
-             << "if (find_ (sts, id))"
+             << "if (l.locked ())"
              << "{"
+             << "if (!find_ (sts, id))" << endl
+             << "return pointer_type ();"
+             << "}"
              << "pointer_type p (" << endl
              << "access::object_factory< object_type, pointer_type  >::create ());"
              << "pointer_traits< pointer_type >::guard_type pg (p);"
              << "pointer_cache_traits< pointer_type >::insert_guard ig (" << endl
              << "pointer_cache_traits< pointer_type >::insert (db, id, p));"
              << "object_type& obj (pointer_traits< pointer_type >::get_ref (p));"
+             << endl
+             << "if (l.locked ())"
+             << "{"
              << "init (obj, sts.image (), db);";
 
           if (containers)
@@ -2764,11 +2771,16 @@ namespace mysql
             os << endl;
           }
 
+          os << "sts.load_delayed ();"
+             << "l.unlock ();"
+             << "}"
+             << "else" << endl
+             << "sts.delay_load (id, obj, ig.position ());"
+             << endl;
+
           os << "ig.release ();"
              << "pg.release ();"
              << "return p;"
-             << "}"
-             << "return pointer_type ();"
              << "}";
         }
 
@@ -2778,13 +2790,20 @@ namespace mysql
            << "using namespace mysql;"
            << endl
            << "connection& conn (mysql::transaction::current ().connection ());"
-           << "object_statements<object_type>& sts (" << endl
+           << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
+           << "object_statements< object_type >::auto_lock l (sts);"
            << endl
-           << "if (find_ (sts, id))"
+           << "if (l.locked ())"
            << "{"
+           << "if (!find_ (sts, id))" << endl
+           << "return false;"
+           << "}"
            << "reference_cache_traits< object_type >::insert_guard ig (" << endl
            << "reference_cache_traits< object_type >::insert (db, id, obj));"
+           << endl
+           << "if (l.locked ())"
+           << "{"
            << "init (obj, sts.image (), db);";
 
         if (containers)
@@ -2796,14 +2815,19 @@ namespace mysql
           os << endl;
         }
 
+        os << "sts.load_delayed ();"
+           << "l.unlock ();"
+           << "}"
+           << "else" << endl
+           << "sts.delay_load (id, obj, ig.position ());"
+           << endl;
+
         os << "ig.release ();"
            << "return true;"
-           << "}"
-           << "return false;"
            << "}";
 
         os << "bool " << traits << "::" << endl
-           << "find_ (mysql::object_statements<object_type>& sts, " <<
+           << "find_ (mysql::object_statements< object_type >& sts, " <<
           "const id_type& id)"
            << "{"
            << "using namespace mysql;"
@@ -2879,7 +2903,7 @@ namespace mysql
              << endl
              << "connection& conn (mysql::transaction::current ().connection ());"
              << endl
-             << "object_statements<object_type>& sts (" << endl
+             << "object_statements< object_type >& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
              << "details::shared_ptr<select_statement> st;"
              << endl
@@ -2901,7 +2925,7 @@ namespace mysql
              << endl
              << "connection& conn (mysql::transaction::current ().connection ());"
              << endl
-             << "object_statements<object_type>& sts (" << endl
+             << "object_statements< object_type >& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
              << "details::shared_ptr<select_statement> st;"
              << endl
@@ -2916,7 +2940,7 @@ namespace mysql
              << traits << "::" << endl
              << "query_ (database&," << endl
              << "const query_type& q," << endl
-             << "mysql::object_statements<object_type>& sts,"
+             << "mysql::object_statements< object_type >& sts,"
              << "details::shared_ptr<mysql::select_statement>& st)"
              << "{"
              << "using namespace mysql;"
