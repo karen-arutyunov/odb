@@ -2753,7 +2753,7 @@ namespace mysql
              << "}"
              << "pointer_type p (" << endl
              << "access::object_factory< object_type, pointer_type  >::create ());"
-             << "pointer_traits< pointer_type >::guard_type pg (p);"
+             << "pointer_traits< pointer_type >::guard pg (p);"
              << "pointer_cache_traits< pointer_type >::insert_guard ig (" << endl
              << "pointer_cache_traits< pointer_type >::insert (db, id, p));"
              << "object_type& obj (pointer_traits< pointer_type >::get_ref (p));"
