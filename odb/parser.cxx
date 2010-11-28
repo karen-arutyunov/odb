@@ -777,12 +777,13 @@ emit ()
         // approximation for this namespace origin. Also resolve
         // the tree node for this namespace.
         //
-        namespace_& node (
-          unit_->new_node<namespace_> (
-            f, l, c,
-            namespace_binding (
-              get_identifier (n.c_str ()), scope_->tree_node ())));
+        tree tree_node (
+          namespace_binding (
+            get_identifier (n.c_str ()), scope_->tree_node ()));
+
+        namespace_& node (unit_->new_node<namespace_> (f, l, c, tree_node));
         unit_->new_edge<defines> (*scope_, node, n);
+        unit_->insert (tree_node, node);
         scope_ = &node;
 
         if (e == string::npos)
