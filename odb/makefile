@@ -8,6 +8,7 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 # Plugin units.
 #
 cxx_ptun :=                  \
+cxx-lexer.cxx                \
 sql-lexer.cxx                \
 context.cxx                  \
 common.cxx                   \

@@ -29,6 +29,7 @@ extern "C"
 
 #include <tm.h>
 
+#include <cpplib.h>
 #include <diagnostic.h>
 #include <c-common.h>
 #include <c-pragma.h>

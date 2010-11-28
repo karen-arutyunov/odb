@@ -5,6 +5,7 @@
 
 #include <odb/gcc.hxx>
 
+#include <odb/cxx-lexer.hxx>
 #include <odb/type-processor.hxx>
 
 namespace
@@ -609,7 +610,7 @@ namespace
             // This is not a template-id. Resolve it and see if it is a
             // template or a type.
             //
-            tree decl  (resolve_type (p, c.scope ()));
+            tree decl  (resolve_name (p, c.scope (), true));
             int tc (TREE_CODE (decl));
 
             if (tc == TYPE_DECL)
@@ -660,6 +661,88 @@ namespace
               throw generation_failed ();
             }
           }
+
+          // Fully-qualify all the unqualified components of the name.
+          //
+          try
+          {
+            lexer.start (ptr);
+            ptr.clear ();
+
+            string t;
+            bool punc (false);
+            bool scoped (false);
+
+            for (cpp_ttype tt = lexer.next (t);
+                 tt != CPP_EOF;
+                 tt = lexer.next (t))
+            {
+              if (punc && tt > CPP_LAST_PUNCTUATOR)
+                ptr += ' ';
+
+              punc = false;
+
+              switch (static_cast<unsigned> (tt))
+              {
+              case CPP_LESS:
+                {
+                  ptr += "< ";
+                  break;
+                }
+              case CPP_GREATER:
+                {
+                  ptr += " >";
+                  break;
+                }
+              case CPP_COMMA:
+                {
+                  ptr += ", ";
+                  break;
+                }
+              case CPP_NAME:
+                {
+                  // If the name was not preceeded with '::', look it
+                  // up in the pragmas's scope and add the qualifer.
+                  //
+                  if (!scoped)
+                  {
+                    tree decl (resolve_name (t, c.scope (), false));
+                    tree scope (CP_DECL_CONTEXT (decl));
+
+                    if (scope != global_namespace)
+                    {
+                      ptr += "::";
+                      ptr += decl_as_string (scope, TFF_PLAIN_IDENTIFIER);
+                    }
+
+                    ptr += "::";
+                  }
+
+                  ptr += t;
+                  punc = true;
+                  break;
+                }
+              case CPP_KEYWORD:
+              case CPP_NUMBER:
+                {
+                  ptr += t;
+                  punc = true;
+                  break;
+                }
+              default:
+                {
+                  ptr += t;
+                  break;
+                }
+              }
+
+              scoped = (tt == CPP_SCOPE);
+            }
+          }
+          catch (cxx_lexer::invalid_input const&)
+          {
+            throw generation_failed ();
+          }
         }
         else
         {
@@ -683,7 +766,7 @@ namespace
       catch (invalid_name const& ex)
       {
         cerr << c.file () << ":" << c.line () << ":" << c.column ()
-             << ": error: type name '" << ex.name () << "' specified with "
+             << ": error: name '" << ex.name () << "' specified with "
              << "'#pragma object pointer' is invalid" << endl;
 
         throw generation_failed ();
@@ -691,7 +774,7 @@ namespace
       catch (unable_to_resolve const& ex)
       {
         cerr << c.file () << ":" << c.line () << ":" << c.column ()
-             << ": error: unable to resolve type name '" << ex.name ()
+             << ": error: unable to resolve name '" << ex.name ()
              << "' specified with '#pragma object pointer'" << endl;
 
         throw generation_failed ();
@@ -722,10 +805,12 @@ namespace
     };
 
     tree
-    resolve_type (string const& qn, semantics::scope& ss)
+    resolve_name (string const& qn, semantics::scope& ss, bool type)
     {
       tree scope (ss.tree_node ());
 
+      // @@ Could use cxx_lexer to parse the name.
+      //
       for (size_t b (0), e (qn.find (':')), size (qn.size ());;
            e = qn.find (':', b))
       {
@@ -742,7 +827,7 @@ namespace
         else
         {
           tree nid (get_identifier (n.c_str ()));
-          scope = lookup_qualified_name (scope, nid, last, false);
+          scope = lookup_qualified_name (scope, nid, last && type, false);
 
           // If this is the first component in the name, then also
           // search the outer scopes.
@@ -754,7 +839,7 @@ namespace
             {
               s = &s->scope_ ();
               scope = lookup_qualified_name (
-                s->tree_node (), nid, last, false);
+                s->tree_node (), nid, last && type, false);
             } while (scope == error_mark_node && !s->global_scope ());
           }
 
@@ -783,6 +868,8 @@ namespace
     }
 
   private:
+    cxx_lexer lexer;
+
     data_member member_;
     traversal::names member_names_;
   };

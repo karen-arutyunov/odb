@@ -3,17 +3,10 @@
 // copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <odb/cxx-lexer.hxx>
 #include <odb/pragma.hxx>
 
 using namespace std;
-
-// Token spelling. See cpplib.h for details.
-//
-#define OP(e, s) s ,
-#define TK(e, s) #e ,
-static char const* token_spelling[N_TTYPES] = { TTYPE_TABLE };
-#undef OP
-#undef TK
 
 // Lists of pragmas.
 //
@@ -256,11 +249,17 @@ handle_pragma (cpp_reader* reader,
     }
 
     size_t pb (0);
+    bool punc (false);
 
     for (tt = pragma_lex (&t);
          tt != CPP_EOF && (tt != CPP_CLOSE_PAREN || pb != 0);
          tt = pragma_lex (&t))
     {
+      if (punc && tt > CPP_LAST_PUNCTUATOR)
+        val += ' ';
+
+      punc = false;
+
       if (tt == CPP_OPEN_PAREN)
         pb++;
       else if (tt == CPP_CLOSE_PAREN)
@@ -288,16 +287,17 @@ handle_pragma (cpp_reader* reader,
       case CPP_NAME:
         {
           val += IDENTIFIER_POINTER (t);
+          punc = true;
           break;
         }
       default:
         {
           if (tt <= CPP_LAST_PUNCTUATOR)
-            val += token_spelling[tt];
+            val += cxx_lexer::token_spelling[tt];
           else
           {
             error ("unexpected token %qs in db pragma %qs",
-                   token_spelling[tt],
+                   cxx_lexer::token_spelling[tt],
                    pc);
             return;
           }
