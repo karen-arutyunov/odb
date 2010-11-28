@@ -32,9 +32,6 @@ namespace
 
       if (type.fq_anonymous (b.hint ()))
       {
-        // Can be a template-id (which we should handle eventually) or an
-        // anonymous type in member declaration (e.g., struct {...} m_;).
-        //
         cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
              << " error: unnamed type in data member declaration" << endl;
 
@@ -132,9 +129,9 @@ namespace
 
         if (!context::comp_value (b))
         {
-          // @@ Should we use hint here? Need template printer.
+          // @@ Should we use hint here?
           //
-          string name (b.fq_anonymous () ? "<anonymous>" : b.fq_name ());
+          string name (b.fq_name ());
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " error: base class '" << name << "' is not a "

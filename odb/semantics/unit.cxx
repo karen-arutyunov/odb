@@ -18,6 +18,7 @@ namespace semantics
     // namespace name ("").
     //
     new_edge<global_names> (*this, *this);
+    node::unit (*this);
   }
 
   // type info

@@ -66,6 +66,7 @@ namespace semantics
   //
   class node;
   class edge;
+  class unit;
 
   //
   //
@@ -142,8 +143,33 @@ namespace semantics
     //
     node ();
 
+  protected:
+    typedef semantics::unit unit_type;
+
+    unit_type const&
+    unit () const
+    {
+      return *unit_;
+    }
+
+    unit_type&
+    unit ()
+    {
+      return *unit_;
+    }
+
+  private:
+    friend class semantics::unit;
+
+    void
+    unit (unit_type& u)
+    {
+      unit_ = &u;
+    }
+
   private:
     tree tree_node_;
+    unit_type* unit_;
 
     path file_;
     size_t line_;
@@ -269,33 +295,67 @@ namespace semantics
   public:
     typedef semantics::scope scope_type;
 
+    // Return true if this type is unnamed and no literal name, such as
+    // template-id or derived type declarator, can be used instead.
+    //
     bool
     anonymous () const
     {
-      return defined_ == 0 && named_.empty ();
+      if (defined_ != 0 || !named_.empty ())
+        return false;
+
+      return anonymous_ ();
     }
 
+    // Return true if the node itself or any of the scopes up to the
+    // global scope is anonymous. For a named class nested in an unnamed
+    // class, anonymous() will return false and fq_anonymous() will
+    // return true.
+    //
     bool
     fq_anonymous () const;
 
-    // If hint is 0, use the defines edge.
+    // As above but use the hint to select the first outer scope. If
+    // hint is 0, use the defines edge.
     //
     bool
     fq_anonymous (names* hint) const;
 
+    // Return the node's unqualifed name. If the node has a name, then
+    // return it, preferring the defines edge. Otherwise, return a
+    // literal name, e.g., template-id or a derived type declarator.
+    // Finally, if the type is anonymous, return <anonymous> string.
+    //
     string
     name () const
     {
-      return named ().name ();
+      if (defined_ != 0)
+        return defined_->name ();
+
+      if (!named_.empty ())
+        return named_[0]->name ();
+
+      return name_ ();
     }
 
+    // Return the node's fully-qualifed name.
+    //
     virtual string
     fq_name () const;
 
-    // If hint is 0, use the defines edge.
+    // As above but use the hint to select the first outer scope. If hint
+    // is 0, use the defines edge.
     //
     virtual string
     fq_name (names* hint) const;
+
+    // Return true if the type is named.
+    //
+    bool
+    named_p () const
+    {
+      return defined_ != 0 || !named_.empty ();
+    }
 
     scope_type&
     scope () const
@@ -329,6 +389,13 @@ namespace semantics
     }
 
     using node::add_edge_right;
+
+  private:
+    bool
+    anonymous_ () const;
+
+    string
+    name_ () const;
 
   private:
     defines* defined_;

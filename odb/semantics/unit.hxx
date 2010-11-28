@@ -18,6 +18,10 @@ namespace semantics
   public:
     unit (path const&);
 
+  private:
+    unit (unit const&);
+    unit& operator= (unit const&);
+
     // Mapping from tree nodes to semantic graph nodes.
     //
   public:
@@ -39,14 +43,18 @@ namespace semantics
     T&
     new_node (path const& file, size_t line, size_t column)
     {
-      return graph_.new_node<T> (file, line, column);
+      T& r (graph_.new_node<T> (file, line, column));
+      r.unit (*this);
+      return r;
     }
 
     template <typename T, typename A0>
     T&
     new_node (path const& file, size_t line, size_t column, A0 const& a0)
     {
-      return graph_.new_node<T> (file, line, column, a0);
+      T& r (graph_.new_node<T> (file, line, column, a0));
+      r.unit (*this);
+      return r;
     }
 
     template <typename T, typename A0, typename A1>
@@ -54,7 +62,9 @@ namespace semantics
     new_node (path const& file, size_t line, size_t column,
               A0 const& a0, A1 const& a1)
     {
-      return graph_.new_node<T> (file, line, column, a0, a1);
+      T& r (graph_.new_node<T> (file, line, column, a0, a1));
+      r.unit (*this);
+      return r;
     }
 
     template <typename T, typename A0, typename A1, typename A2>
@@ -62,7 +72,9 @@ namespace semantics
     new_node (path const& file, size_t line, size_t column,
               A0 const& a0, A1 const& a1, A2 const& a2)
     {
-      return graph_.new_node<T> (file, line, column, a0, a1, a2);
+      T& r (graph_.new_node<T> (file, line, column, a0, a1, a2));
+      r.unit (*this);
+      return r;
     }
 
     template <typename T, typename A0, typename A1, typename A2, typename A3>
@@ -70,7 +82,9 @@ namespace semantics
     new_node (path const& file, size_t line, size_t column,
               A0 const& a0, A1 const& a1, A2 const& a2, A3 const& a3)
     {
-      return graph_.new_node<T> (file, line, column, a0, a1, a2, a3);
+      T& r (graph_.new_node<T> (file, line, column, a0, a1, a2, a3));
+      r.unit (*this);
+      return r;
     }
 
     // For fundamental types.
@@ -79,7 +93,9 @@ namespace semantics
     T&
     new_fund_node (tree tn)
     {
-      return graph_.new_node<T> (tn);
+      T& r (graph_.new_node<T> (tn));
+      r.unit (*this);
+      return r;
     }
 
   protected:
