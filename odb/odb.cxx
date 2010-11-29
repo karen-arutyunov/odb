@@ -515,6 +515,10 @@ main (int argc, char* argv[])
           return 1;
         }
 
+        // Add a new line in case the input file doesn't end with one.
+        //
+        os << endl;
+
         // Add custom epilogue if any.
         //
         strings const& epi (ops.odb_epilogue ());
