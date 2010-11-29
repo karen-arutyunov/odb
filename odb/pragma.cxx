@@ -117,12 +117,7 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       p == "id" ||
       p == "auto" ||
       p == "column" ||
-      p == "value_column" ||
-      p == "index_column" ||
-      p == "key_column" ||
-      p == "id_column" ||
       p == "inverse" ||
-      p == "unordered" ||
       p == "transient")
   {
     if (tc != FIELD_DECL)
@@ -144,11 +139,12 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
   }
   else if (p == "table")
   {
-    // Table can be used for both members (container) and types.
+    // Table can be used for both members (container) and types (container
+    // or object).
     //
-    if (tc != FIELD_DECL && tc != RECORD_TYPE)
+    if (tc != FIELD_DECL && !TYPE_P (d))
     {
-      error_at (l, "name %qs in db pragma %qs does not refer to a class "
+      error_at (l, "name %qs in db pragma %qs does not refer to a type "
                 "or data member", name.c_str (), pc);
       return false;
     }
@@ -173,6 +169,33 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
     {
       error_at (l, "name %qs in db pragma %qs does not refer to "
                 "a type or data member", name.c_str (), pc);
+      return false;
+    }
+  }
+  else if (p == "value_column" ||
+           p == "index_column" ||
+           p == "key_column" ||
+           p == "id_column")
+  {
+    // Container columns can be used for both members (container) and
+    // types (container).
+    //
+    if (tc != FIELD_DECL && !TYPE_P (d))
+    {
+      error_at (l, "name %qs in db pragma %qs does not refer to a type "
+                "or data member", name.c_str (), pc);
+      return false;
+    }
+  }
+  else if (p == "unordered")
+  {
+    // Unordered can be used for both members (container) and
+    // types (container).
+    //
+    if (tc != FIELD_DECL && !TYPE_P (d))
+    {
+      error_at (l, "name %qs in db pragma %qs does not refer to a type "
+                "or data member", name.c_str (), pc);
       return false;
     }
   }

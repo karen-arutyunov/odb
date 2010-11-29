@@ -94,7 +94,7 @@ namespace mysql
         // index (simple value)
         //
         string index_name;
-        bool ordered (ck == ck_ordered && !m.count ("unordered"));
+        bool ordered (ck == ck_ordered && !unordered (m));
         if (ordered)
         {
           index_name = column_name (m, "index", "index");

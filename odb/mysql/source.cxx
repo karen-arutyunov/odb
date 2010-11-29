@@ -1239,7 +1239,7 @@ namespace mysql
         {
         case ck_ordered:
           {
-            if (!m.count ("unordered"))
+            if (!unordered (m))
             {
               it = &container_it (t);
               ordered = true;

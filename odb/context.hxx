@@ -55,7 +55,10 @@ public:
   static bool
   comp_value (semantics::class_& c)
   {
-    return c.count ("value") && !c.count ("type");
+    if (c.count ("composite-value"))
+      return c.get<bool> ("composite-value");
+    else
+      return comp_value_ (c);
   }
 
   // Return the class object if this type is a composite value type
@@ -65,7 +68,7 @@ public:
   comp_value (semantics::type& t)
   {
     semantics::class_* c (dynamic_cast<semantics::class_*> (&t));
-    return c != 0 && t.count ("value") && !t.count ("type") ? c : 0;
+    return c != 0 && comp_value (*c) ? c : 0;
   }
 
   static bool
@@ -95,6 +98,12 @@ public:
          ? m.get<data_member*> ("inverse", 0)
          : m.get<data_member*> (key_prefix + "-inverse", 0))
       : 0;
+  }
+
+  static bool
+  unordered (semantics::data_member& m)
+  {
+    return m.count ("unordered") || m.type ().count ("unordered");
   }
 
   // Database names and types.
@@ -214,6 +223,10 @@ public:
 
   static bool
   has_a (semantics::type&, unsigned short flags);
+
+private:
+  static bool
+  comp_value_ (semantics::class_&);
 
 protected:
   struct data;

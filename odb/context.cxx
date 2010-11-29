@@ -120,6 +120,30 @@ context::
 {
 }
 
+bool context::
+comp_value_ (semantics::class_& c)
+{
+  bool r (true);
+
+  //@@ This is bad. Did I add new value pragmas and forgot to
+  //   account for them here?
+  //
+  r = r && c.count ("value");
+  r = r && !c.count ("table");
+  r = r && !c.count ("type");
+  r = r && !c.count ("value-type");
+  r = r && !c.count ("index-type");
+  r = r && !c.count ("key-type");
+  r = r && !c.count ("value-column");
+  r = r && !c.count ("index-column");
+  r = r && !c.count ("key-column");
+  r = r && !c.count ("id-column");
+  r = r && !c.count ("unordered");
+
+  c.set ("composite-value", r);
+  return r;
+}
+
 string context::
 table_name (semantics::class_& t) const
 {
@@ -147,14 +171,24 @@ table_name (semantics::data_member& m, table_prefix const& p) const
 string context::
 column_name (semantics::data_member& m) const
 {
-  return m.count ("column") ? m.get<string> ("column") : public_name_db (m);
+  if (m.count ("column"))
+    return m.get<string> ("column");
+  else if (m.type ().count ("column"))
+    return m.type ().get<string> ("column");
+  else
+    return public_name_db (m);
 }
 
 string context::
 column_name (semantics::data_member& m, string const& p, string const& d) const
 {
   string key (p + "-column");
-  return m.count (key) ? m.get<string> (key) : d;
+  if (m.count (key))
+    return m.get<string> (key);
+  else if (m.type ().count (key))
+    return m.type ().get<string> (key);
+  else
+    return d;
 }
 
 string context::
