@@ -181,7 +181,7 @@ for consistency.
   }
 
   /* specifiers table */
-  #specifiers {
+  .specifiers {
     margin: 2em 0 2em 0;
 
     border-collapse   : collapse;
@@ -192,16 +192,16 @@ for consistency.
     line-height      : 14px;
   }
 
-  #specifiers th, #specifiers td {
+  .specifiers th, .specifiers td {
     border: 1px solid;
     padding           : 0.9em 0.9em 0.7em 0.9em;
   }
 
-  #specifiers th {
+  .specifiers th {
     background : #cde8f6;
   }
 
-  #specifiers td {
+  .specifiers td {
     text-align: left;
   }
 
@@ -340,6 +340,7 @@ for consistency.
             <th>5.2</th><td><a href="#5.2">Object Type Pragmas</a>
               <table class="toc">
                 <tr><th>5.2.1</th><td><a href="#5.2.1"><code>table</code></a></td></tr>
+		<tr><th>5.2.2</th><td><a href="#5.2.2"><code>pointer</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -347,6 +348,14 @@ for consistency.
             <th>5.3</th><td><a href="#5.3">Value Type Pragmas</a>
               <table class="toc">
                 <tr><th>5.3.1</th><td><a href="#5.3.1"><code>type</code></a></td></tr>
+		<tr><th>5.3.2</th><td><a href="#5.3.2"><code>unordered</code></a></td></tr>
+		<tr><th>5.3.3</th><td><a href="#5.3.3"><code>index_type</code></a></td></tr>
+		<tr><th>5.3.4</th><td><a href="#5.3.4"><code>key_type</code></a></td></tr>
+		<tr><th>5.3.5</th><td><a href="#5.3.5"><code>value_type</code></a></td></tr>
+		<tr><th>5.3.6</th><td><a href="#5.3.6"><code>id_column</code></a></td></tr>
+		<tr><th>5.3.7</th><td><a href="#5.3.7"><code>index_column</code></a></td></tr>
+		<tr><th>5.3.8</th><td><a href="#5.3.8"><code>key_column</code></a></td></tr>
+		<tr><th>5.3.9</th><td><a href="#5.3.9"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -358,6 +367,16 @@ for consistency.
                 <tr><th>5.4.3</th><td><a href="#5.4.3"><code>type</code></a></td></tr>
 		<tr><th>5.4.4</th><td><a href="#5.4.4"><code>column</code></a></td></tr>
 		<tr><th>5.4.5</th><td><a href="#5.4.5"><code>transient</code></a></td></tr>
+		<tr><th>5.4.6</th><td><a href="#5.4.6"><code>inverse</code></a></td></tr>
+		<tr><th>5.4.7</th><td><a href="#5.4.7"><code>unordered</code></a></td></tr>
+		<tr><th>5.4.8</th><td><a href="#5.4.8"><code>table</code></a></td></tr>
+		<tr><th>5.4.9</th><td><a href="#5.4.9"><code>index_type</code></a></td></tr>
+		<tr><th>5.4.10</th><td><a href="#5.4.10"><code>key_type</code></a></td></tr>
+		<tr><th>5.4.11</th><td><a href="#5.4.11"><code>value_type</code></a></td></tr>
+		<tr><th>5.4.12</th><td><a href="#5.4.12"><code>id_column</code></a></td></tr>
+		<tr><th>5.4.13</th><td><a href="#5.4.13"><code>index_column</code></a></td></tr>
+		<tr><th>5.4.14</th><td><a href="#5.4.14"><code>key_column</code></a></td></tr>
+		<tr><th>5.4.15</th><td><a href="#5.4.15"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -3067,13 +3086,36 @@ xlC -qsuppress=1540-1401 ...
   <h2><a name="5.2">5.2 Object Type Pragmas</a></h2>
 
   <p>A pragma with the <code>object</code> qualifier declares a C++ class
-     as a persistent object type. The qualifier can be optionally followed
-     by the <code>table</code> specifier.</p>
+     as a persistent object type. The qualifier can be optionally followed,
+     in any order, by one or more specifiers summarized in the table below:</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table class="specifiers" border="1">
+    <tr>
+      <th>Specifier</th>
+      <th>Summary</th>
+      <th>Section</th>
+    </tr>
+
+    <tr>
+      <td><code>table</code></td>
+      <td>the table name for the persistent class</td>
+      <td><a href="#5.2.1">5.2.1</a></td>
+    </tr>
+
+    <tr>
+      <td><code>pointer</code></td>
+      <td>the pointer type for the persistent class</td>
+      <td><a href="#5.2.2">5.2.2</a></td>
+    </tr>
+
+  </table>
+
 
   <h3><a name="5.2.1">5.2.1 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies the table name that should
-     be used to store objects of this class in a relational database. For
+     be used to store objects of the class in a relational database. For
      example:</p>
 
   <pre class="c++">
@@ -3087,11 +3129,135 @@ class person
   <p>If the table name is not specified, the class name is used as the
      table name.</p>
 
+  <h3><a name="5.2.2">5.2.2 <code>pointer</code></a></h3>
+
+  <p>The <code>pointer</code> specifier specifies the pointer type for
+     the persistent class. The pointer type is used to return and pass
+     dynamically allocated instances of the persistent class in the
+     database operations. For example:</p>
+
+  <pre class="c++">
+#pragma db object pointer(std::tr1::shared_ptr&lt;person>)
+class person
+{
+  ...
+};
+  </pre>
+
+  <p>There are several ways to specify an object pointer with the
+     <code>pointer</code> specifier. You can use a complete pointer
+     type as shown in the example above. Alternatively, you can
+     specify only the template name of a smart pointer in which
+     case the ODB compiler will automatically append the class
+     name as a template argument. The following example is
+     equivalent to the one above:</p>
+
+  <pre class="c++">
+#pragma db object pointer(std::tr1::shared_ptr)
+class person
+{
+  ...
+};
+  </pre>
+
+  <p>If you would like to use a naked pointer as an object pointer,
+     you can use <code>*</code> as a shortcut:</p>
+
+  <pre class="c++">
+#pragma db object pointer(*) // Same as pointer(person*)
+class person
+{
+  ...
+};
+  </pre>
+
+  <p>If a pointer type is not explicitly specified, the default
+     pointer, specified with the <code>--default-pointer</code>
+     ODB compiler option, is used. If this option is not specified
+     either, then the naked pointer is used by default.</p>
+
+  <p>For additional information on object pointers, refer to
+     <a href="#@@">Section @@, ""</a>.</p>
+
   <h2><a name="5.3">5.3 Value Type Pragmas</a></h2>
 
   <p>A pragma with the <code>value</code> qualifier describes a value
-     type and can be optionally followed by the <code>type</code>
-     specifier.</p>
+     type. It can be optionally followed, in any order, by one or more
+     specifiers summarized in the table below:</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table class="specifiers" border="1">
+    <tr>
+      <th>Specifier</th>
+      <th>Summary</th>
+      <th>Section</th>
+    </tr>
+
+    <tr>
+      <td><code>type</code></td>
+      <td>the database type for the value type</td>
+      <td><a href="#5.3.1">5.3.1</a></td>
+    </tr>
+
+    <tr>
+      <td><code>unordered</code></td>
+      <td>ordered container should be stored unordered</td>
+      <td><a href="#5.3.2">5.3.2</a></td>
+    </tr>
+
+    <tr>
+      <td><code>index_type</code></td>
+      <td>the database type for the container's index type</td>
+      <td><a href="#5.3.3">5.3.3</a></td>
+    </tr>
+
+    <tr>
+      <td><code>key_type</code></td>
+      <td>the database type for the container's key type</td>
+      <td><a href="#5.3.4">5.3.4</a></td>
+    </tr>
+
+    <tr>
+      <td><code>value_type</code></td>
+      <td>the database type for the container's value type</td>
+      <td><a href="#5.3.5">5.3.5</a></td>
+    </tr>
+
+    <tr>
+      <td><code>id_column</code></td>
+      <td>the column name for the container's table object id</td>
+      <td><a href="#5.3.6">5.3.6</a></td>
+    </tr>
+
+    <tr>
+      <td><code>index_column</code></td>
+      <td>the column name for the container's table index</td>
+      <td><a href="#5.3.7">5.3.7</a></td>
+    </tr>
+
+    <tr>
+      <td><code>key_column</code></td>
+      <td>the column name for the container's table key</td>
+      <td><a href="#5.3.8">5.3.8</a></td>
+    </tr>
+
+    <tr>
+      <td><code>value_column</code></td>
+      <td>the column name for the container's table value</td>
+      <td><a href="#5.3.9">5.3.9</a></td>
+    </tr>
+
+  </table>
+
+  <p>Many of the value type specifiers have corresponding member type
+     specifiers with the same names (see <a href="#5.4">Section 5.4,
+     "Data Member Pragmas"</a>). The behavior of such specifiers
+     for members is similar to that for value types. The only difference
+     is the scope. A particular value type specifier applies to all
+     members of this value type that don't have a pre-member version
+     of the specifier. While the member specifier always applies only
+     to a single member. In other words, member specifiers take precedence
+     over values specified with value specifiers.</p>
 
   <h3><a name="5.3.1">5.3.1 <code>type</code></a></h3>
 
@@ -3141,9 +3307,119 @@ private:
      <code>mapping</code> example in the <code>odb-examples</code>
      package shows how to do this for all the supported database systems.</p>
 
-  <p>It is also possible to change the database type mapping for individual
-     members, as described in <a href="#5.4">Section 5.4, "Data Member
-     Pragmas"</a>.</p>
+  <h3><a name="5.3.2">5.3.2 <code>unordered</code></a></h3>
+
+  <p>The <code>unordered</code> specifier specifies that the ordered
+     container should be stored in the database unordered. The database
+     table for such a container will not contain the index column
+     and the order in which elements are retrieved from the database may
+     not be the same as the order in which they were stored. For example:</p>
+
+  <pre class="c++">
+typedef std::vector&lt;std::string> names;
+#pragma db value(names) unordered
+  </pre>
+
+  <h3><a name="5.3.3">5.3.3 <code>index_type</code></a></h3>
+
+  <p>The <code>index_type</code> specifier specifies the native
+     database type that should be used for the ordered container's
+     index column. The semantics of <code>index_type</code>
+     are similar to that of the <code>type</code> specifier (see
+     <a href="#5.3.1">Section 5.3.1, "<code>type</code>"</a>). The native
+     database type is expected to be an integer type. For example:</p>
+
+  <pre class="c++">
+typedef std::vector&lt;std::string> names;
+#pragma db value(names) index_type("SMALLINT UNSIGNED NOT NULL")
+  </pre>
+
+  <h3><a name="5.3.4">5.3.4 <code>key_type</code></a></h3>
+
+  <p>The <code>key_type</code> specifier specifies the native
+     database type that should be used for the map container's
+     key column. The semantics of <code>key_type</code>
+     are similar to that of the <code>type</code> specifier (see
+     <a href="#5.3.1">Section 5.3.1, "<code>type</code>"</a>). For
+     example:</p>
+
+  <pre class="c++">
+typedef std::map&lt;unsigned short, double> age_weight_map;
+#pragma db value(age_weight_map) key_type("INT UNSIGNED NOT NULL")
+  </pre>
+
+  <h3><a name="5.3.5">5.3.5 <code>value_type</code></a></h3>
+
+  <p>The <code>value_type</code> specifier specifies the native
+     database type that should be used for the container's
+     value column. The semantics of <code>value_type</code>
+     are similar to that of the <code>type</code> specifier (see
+     <a href="#5.3.1">Section 5.3.1, "<code>type</code>"</a>). For
+     example:</p>
+
+  <pre class="c++">
+typedef std::vector&lt;std::string> names;
+#pragma db value(names) value_type("VARCHAR(255) NOT NULL")
+  </pre>
+
+  <h3><a name="5.3.6">5.3.6 <code>id_column</code></a></h3>
+
+  <p>The <code>id_column</code> specifier specifies the column
+     name that should be used to store the object id in the
+     container's table. For example:</p>
+
+  <pre class="c++">
+typedef std::vector&lt;std::string> names;
+#pragma db value(names) id_column("id")
+  </pre>
+
+  <p>If the column name is not specified, then <code>object_id</code>
+     is used by default.</p>
+
+  <h3><a name="5.3.7">5.3.7 <code>index_column</code></a></h3>
+
+  <p>The <code>index_column</code> specifier specifies the column
+     name that should be used to store the element index in the
+     ordered container's table. For example:</p>
+
+  <pre class="c++">
+typedef std::vector&lt;std::string> names;
+#pragma db value(names) index_column("name_number")
+  </pre>
+
+  <p>If the column name is not specified, then <code>index</code>
+     is used by default.</p>
+
+  <h3><a name="5.3.8">5.3.8 <code>key_column</code></a></h3>
+
+  <p>The <code>key_column</code> specifier specifies the column
+     name that should be used to store the key in the map
+     container's table. For example:</p>
+
+  <pre class="c++">
+typedef std::map&lt;unsigned short, double> age_weight_map;
+#pragma db value(age_weight_map) key_column("age")
+  </pre>
+
+  <p>If the column name is not specified, then <code>key</code>
+     is used by default.</p>
+
+  <h3><a name="5.3.9">5.3.9 <code>value_column</code></a></h3>
+
+  <p>The <code>value_column</code> specifier specifies the column
+     name that should be used to store the element value in the
+     container's table. For example:</p>
+
+  <pre class="c++">
+typedef std::map&lt;unsigned short, double> age_weight_map;
+#pragma db value(age_weight_map) value_column("weight")
+  </pre>
+
+  <p>If the column name is not specified, then <code>value</code>
+     is used by default.</p>
+
+  <!-- Data Member Pragmas -->
+
 
   <h2><a name="5.4">5.4 Data Member Pragmas</a></h2>
 
@@ -3153,7 +3429,7 @@ private:
      summarized in the table below:</p>
 
   <!-- border="1" is necessary for html2ps -->
-  <table id="specifiers" border="1">
+  <table class="specifiers" border="1">
     <tr>
       <th>Specifier</th>
       <th>Summary</th>
@@ -3190,7 +3466,78 @@ private:
       <td><a href="#5.4.5">5.4.5</a></td>
     </tr>
 
+    <tr>
+      <td><code>inverse</code></td>
+      <td>the member is an inverse side of a bidirectional relationship</td>
+      <td><a href="#5.4.6">5.4.6</a></td>
+    </tr>
+
+    <tr>
+      <td><code>unordered</code></td>
+      <td>ordered container should be stored unordered</td>
+      <td><a href="#5.4.7">5.4.7</a></td>
+    </tr>
+
+    <tr>
+      <td><code>table</code></td>
+      <td>the table name for the container</td>
+      <td><a href="#5.4.8">5.4.8</a></td>
+    </tr>
+
+
+    <tr>
+      <td><code>index_type</code></td>
+      <td>the database type for the container's index type</td>
+      <td><a href="#5.4.9">5.4.9</a></td>
+    </tr>
+
+    <tr>
+      <td><code>key_type</code></td>
+      <td>the database type for the container's key type</td>
+      <td><a href="#5.4.10">5.4.10</a></td>
+    </tr>
+
+    <tr>
+      <td><code>value_type</code></td>
+      <td>the database type for the container's value type</td>
+      <td><a href="#5.4.11">5.4.11</a></td>
+    </tr>
+
+    <tr>
+      <td><code>id_column</code></td>
+      <td>the column name for the container's table object id</td>
+      <td><a href="#5.4.12">5.4.12</a></td>
+    </tr>
+
+    <tr>
+      <td><code>index_column</code></td>
+      <td>the column name for the container's table index</td>
+      <td><a href="#5.4.13">5.4.13</a></td>
+    </tr>
+
+    <tr>
+      <td><code>key_column</code></td>
+      <td>the column name for the container's table key</td>
+      <td><a href="#5.4.14">5.4.14</a></td>
+    </tr>
+
+    <tr>
+      <td><code>value_column</code></td>
+      <td>the column name for the container's table value</td>
+      <td><a href="#5.4.15">5.4.15</a></td>
+    </tr>
+
   </table>
+
+  <p>Many of the member specifiers have corresponding value type
+     specifiers with the same names (see <a href="#5.3">Section 5.3,
+     "Value Type Pragmas"</a>). The behavior of such specifiers
+     for members is similar to that for value types. The only difference
+     is the scope. A particular value type specifier applies to all
+     members of this value type that don't have a pre-member version
+     of the specifier. While the member specifier always applies only
+     to a single member. In other words, member specifiers take precedence
+     over values specified with value specifiers.</p>
 
   <h3><a name="5.4.1">5.4.1 <code>id</code></a></h3>
 
@@ -3244,7 +3591,7 @@ private:
   <h3><a name="5.4.3">5.4.3 <code>type</code></a></h3>
 
   <p>The <code>type</code> specifier specifies the native database type
-     that should be used for this data member. For example:</p>
+     that should be used for the data member. For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -3258,18 +3605,10 @@ private:
 };
   </pre>
 
-  <p>The behavior of this specifier for members is similar to that
-     for value types. The only difference is the scope. The value
-     type pragma applies to all members with this value type that
-     don't have their own <code>type</code> specifiers, while the
-     member pragma applies only to a single member. For more
-     information on the semantics of this specifier, refer to
-     <a href="#5.3">Section 5.3, "Value Type Pragmas"</a>.</p>
-
   <h3><a name="5.4.4">5.4.4 <code>column</code></a></h3>
 
   <p>The <code>column</code> specifier specifies the column name
-     that should be used to store this member in a relational database.
+     that should be used to store the member in a relational database.
      For example:</p>
 
   <pre class="c++">
@@ -3311,6 +3650,255 @@ private:
      references that are only meaningful in the application's
      memory, as well as utility members such as mutexes, etc.</p>
 
+  <h3><a name="5.4.6">5.4.6 <code>inverse</code></a></h3>
+
+  <p>The <code>inverse</code> specifier specifies that the member of
+     a pointer or a container of pointers type is an inverse side of
+     a bidirectional object relationship. The single required argument
+     to this specifier is the data member name in the referenced object.
+     For example:</p>
+
+<pre class="c++">
+using std::tr1::shared_ptr;
+using std::tr1::weak_ptr;
+
+class person;
+
+#pragma db object pointer(shared_ptr)
+class employer
+{
+  ...
+private:
+  std::vector&lt;shared_ptr&lt;person> > employees_;
+  ...
+};
+
+#pragma db object pointer(shared_ptr)
+class person
+{
+  ...
+private:
+  #pragma db inverse(employee_)
+  weak_ptr&lt;employer> employer_;
+  ...
+};
+  </pre>
+
+  <p>An inverse member does not have a corresponding column or table in
+     the resulting database schema. Instead, the column or table from
+     the referenced object is used to retrieve the relationship
+     information. Only ordered and set containers can be used for
+     inverse members. If an inverse member is of an ordered container
+     type, it is automatically marked as unordered (see
+     <a href="#5.4.7">Section 5.4.7, "<code>unordered</code>"</a>).</p>
+
+  <h3><a name="5.4.7">5.4.7 <code>unordered</code></a></h3>
+
+  <p>The <code>unordered</code> specifier specifies that the member of
+     an ordered container type should be stored in the database unordered.
+     The database table for such a member will not contain the index column
+     and the order in which elements are retrieved from the database may
+     not be the same as the order in which they were stored. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db unordered
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <h3><a name="5.4.8">5.4.8 <code>table</code></a></h3>
+
+  <p>The <code>table</code> specifier specifies the table name that should
+     be used to store the contents of the container member. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db table("nicknames")
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>If the table name is not specified, then the container table name
+     is constructed by concatenating the object's table name, underscore,
+     and the sanitized member name. The sanitized member name is obtained
+     by removing the common member name decorations, such as leading and
+     trailing underscores, the <code>m_</code> prefix, etc. In the example
+     above, without the <code>table</code> specifier, the container's
+     table name would have been <code>person_nicknames</code>.</p>
+
+  <h3><a name="5.4.9">5.4.9 <code>index_type</code></a></h3>
+
+  <p>The <code>index_type</code> specifier specifies the native
+     database type that should be used for the ordered container's
+     index column of the data member. The semantics of <code>index_type</code>
+     are similar to that of the <code>type</code> specifier (see
+     <a href="#5.4.3">Section 5.4.3, "<code>type</code>"</a>). The native
+     database type is expected to be an integer type. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db index_type("SMALLINT UNSIGNED NOT NULL")
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <h3><a name="5.4.10">5.4.10 <code>key_type</code></a></h3>
+
+  <p>The <code>key_type</code> specifier specifies the native
+     database type that should be used for the map container's
+     key column of the data member. The semantics of <code>key_type</code>
+     are similar to that of the <code>type</code> specifier (see
+     <a href="#5.4.3">Section 5.4.3, "<code>type</code>"</a>). For
+     example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db key_type("INT UNSIGNED NOT NULL")
+  std::map&lt;unsigned short, double> age_weight_map_;
+  ...
+};
+  </pre>
+
+  <h3><a name="5.4.11">5.4.11 <code>value_type</code></a></h3>
+
+  <p>The <code>value_type</code> specifier specifies the native
+     database type that should be used for the container's
+     value column of the data member. The semantics of <code>value_type</code>
+     are similar to that of the <code>type</code> specifier (see
+     <a href="#5.4.3">Section 5.4.3, "<code>type</code>"</a>). For
+     example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db value_type("VARCHAR(255) NOT NULL")
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <h3><a name="5.4.12">5.4.12 <code>id_column</code></a></h3>
+
+  <p>The <code>id_column</code> specifier specifies the column
+     name that should be used to store the object id in the
+     container's table for the member. The semantics of
+     <code>id_column</code> are similar to that of the
+     <code>column</code> specifier (see
+     <a href="#5.4.5">Section 5.4.4, "<code>column</code>"</a>).
+     For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id_column("person_id")
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>If the column name is not specified, then <code>object_id</code>
+     is used by default.</p>
+
+  <h3><a name="5.4.13">5.4.13 <code>index_column</code></a></h3>
+
+  <p>The <code>index_column</code> specifier specifies the column
+     name that should be used to store the element index in the
+     ordered container's table for the member. The semantics of
+     <code>index_column</code> are similar to that of the
+     <code>column</code> specifier (see
+     <a href="#5.4.5">Section 5.4.4, "<code>column</code>"</a>).
+     For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db index_column("nickname_number")
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>If the column name is not specified, then <code>index</code>
+     is used by default.</p>
+
+  <h3><a name="5.4.14">5.4.14 <code>key_column</code></a></h3>
+
+  <p>The <code>key_column</code> specifier specifies the column
+     name that should be used to store the key in the map
+     container's table for the member. The semantics of
+     <code>key_column</code> are similar to that of the
+     <code>column</code> specifier (see
+     <a href="#5.4.5">Section 5.4.4, "<code>column</code>"</a>).
+     For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db key_column("age")
+  std::map&lt;unsigned short, double> age_weight_map_;
+  ...
+};
+  </pre>
+
+  <p>If the column name is not specified, then <code>key</code>
+     is used by default.</p>
+
+  <h3><a name="5.4.15">5.4.15 <code>value_column</code></a></h3>
+
+  <p>The <code>value_column</code> specifier specifies the column
+     name that should be used to store the element value in the
+     container's table for the member. The semantics of
+     <code>value_column</code> are similar to that of the
+     <code>column</code> specifier (see
+     <a href="#5.4.5">Section 5.4.4, "<code>column</code>"</a>).
+     For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db value_column("weight")
+  std::map&lt;unsigned short, double> age_weight_map_;
+  ...
+};
+  </pre>
+
+  <p>If the column name is not specified, then <code>value</code>
+     is used by default.</p>
 
   <!-- CHAPTER -->
 
