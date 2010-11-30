@@ -2287,6 +2287,354 @@ namespace odb
 
   <!-- CHAPTER -->
 
+  <h1><a name="X">X Containers</a></h1>
+
+  <p>The ODB runtime library provides built-in persistence support for
+     all commonly used standard C++ containers, namely,
+     <code>std::vector</code>, <code>std::list</code>, <code>std::set</code>,
+     <code>std::multiset</code>, <code>std::map</code>, and
+     <code>std::multimap</code>. Plus, ODB profile libraries are available
+     for commonly used frameworks and libraries (such as Boost and Qt)
+     that provide persistence support for containers found in these
+     frameworks and libraries. It is also easy to persist custom
+     container types as discussed later in <a href="X.4">Section X.4,
+     "Using Custom Containers"</a>.</p>
+
+  <p>You don't need to do anything special to declare a member of a
+     container type in a persistent class. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  std::vector&lt;std::name> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>A data member in a persistent class that is of a container type
+     behaves like a value type. That is, when an object is made persistent,
+     the elements of the container are store in the database. Similarly,
+     when a persistent object is loaded from the database, the contents
+     of the container are automatically loaded as well.</p>
+
+  <p>While an ordinary member is mapped to one or more columns in the
+     object's table, a member of a container type is mapped to a seperate
+     table. The exact schema of such a table depends on the kind of
+     a container. ODB defines the following container kinds: ordered,
+     set, multiset, map, and multimap. The container kinds and the
+     contents of the tables to which they are mapped are discussed
+     in detail in the following sections.</p>
+
+  <p>Containers in ODB can contain simple value types, composite value
+     types (see @@), and object pointers (see @@). Containers of
+     containers are not supported. A key in map and multimap
+     containers can be a simple or composite value type but not
+     an object pointer. An index in the ordered container should
+     be a simple integer type.</p>
+
+  <p>The value type in the ordered, set, and map containers as well as
+     the key type in the map containers should be default-constructible.
+     The default constructor in these types can be made private in which
+     case the <code>odb::access</code> class should be made a friend of
+     the value or key type. For example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+public:
+  name (const std::string&amp;, const std::string&amp;);
+  ...
+private:
+  friend class odb::access;
+  name ();
+  ...
+};
+
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  std::vector&lt;name> aliases_;
+  ...
+};
+  </pre>
+
+
+  <h2><a name="X.1">X.1 Ordered Containers</a></h2>
+
+  <p>In ODB an ordered container is any container that maintains (explicitly
+     or implicitly) an order of its elements in the form of an integer index.
+     Standard C++ containers that are ordered include <code>std::vector</code>
+     and <code>std::list</code>. While elements in <code>std::set</code>
+     are also kept in a specific order, this order is not based on an
+     integer index but rather on the relationship between elements. As
+     a result, <code>std::set</code> is not considered an ordered
+     container for the purpose of persistence.</p>
+
+  <p>The database table for an ordered container consists of at least
+     three columns. The first column contains the object id of a
+     persistent class instance of which the container is a member.
+     The second column contains the element index within a container.
+     And the last column contains the element value. If the object
+     id or element value are composite, then instead of a single
+     column they can occupy multiple columns.</p>
+
+  <p>Consider the following persistent object as an example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>The resulting database table (called <code>person_nicknames</code>) will
+     contain the object id column of type <code>unsigned long</code>
+     (called <code>object_id</code>), the index column of an integer type
+     (called <code>index</code>), and the value column of type
+     <code>std::string</code> (called <code>value</code>).</p>
+
+  <p>A number of ODB pragmas allow you to customize the table name,
+     column names, and native database types for the container both on
+     the per-container and per-member basis. For more information on
+     these pragmas, refer to <a href="#5">Chapter 5, "ODB Pragma
+     Language"</a>. The following example shows some of the possible
+     customizations:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db table("nicknames")                        \
+             id_column ("person_id")                   \
+             index_type ("SMALLINT UNSIGNED NOT NULL") \
+             index_column ("nickname_number")          \
+             value_type ("VARCHAR(255) NOT NULL")      \
+             value_column ("nickname")
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>While the C++ container used in the persistent class may be ordered,
+     sometimes we may wish to store such a container in the database without
+     the order information. In the example above, for instance, the order
+     of person's nicknames is probably not important. To instruct the ODB
+     compiler to ignore the order in ordered containers we can use the
+     <code>unordered</code> pragma (see <a href="#5">Chapter 5, "ODB
+     Pragma Language"</a> for details). For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db unordered
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>The table for the ordered container that is marked unordered will
+     miss the index column and the order in which elements are retrieved
+     from the database may not be the same as the order in which they
+     were stored.</p>
+
+  <h2><a name="X.2">X.2 Set and Multiset Containers</a></h2>
+
+  <p>In ODB set and multiset containers (referred to as just set
+     containers) are associative containers that contain elements
+     based on some relationship between them. A set container may
+     or may not guarantee a particular order of the elements that
+     it stores. Standard C++ containers that are considered set
+     containers for the purpose of persistence include
+     <code>std::set</code> and <code>std::multiset</code>.</p>
+
+  <p>The database table for a set container consists of at least
+     two columns. The first column contains the object id of a
+     persistent class instance of which the container is a member.
+     And the second column contains the element value. If the object
+     id or element value are composite, then instead of a single
+     column they can occupy multiple columns.</p>
+
+  <p>Consider the following persistent object as an example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  std::set&lt;std::string> emails_;
+  ...
+};
+  </pre>
+
+  <p>The resulting database table (called <code>person_emails</code>) will
+     contain the object id column of type <code>unsigned long</code>
+     (called <code>object_id</code>) and the value column of type
+     <code>std::string</code> (called <code>value</code>).</p>
+
+  <p>A number of ODB pragmas allow you to customize the table name,
+     column names, and native database types for the container both on
+     the per-container and per-member basis. For more information on
+     these pragmas, refer to <a href="#5">Chapter 5, "ODB Pragma
+     Language"</a>. The following example shows some of the possible
+     customizations:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db table("emails")                      \
+             id_column ("person_id")              \
+             value_type ("VARCHAR(255) NOT NULL") \
+             value_column ("email")
+  std::set&lt;std::string> emails_;
+  ...
+};
+  </pre>
+
+  <h2><a name="X.3">X.3 Map and Multimap Containers</a></h2>
+
+  <p>In ODB map and multimap containers (referred to as just set
+     containers) are associative containers that contain key-value
+     elemenst based on some relationship between keys. A map container
+     may or may not guarantee a particular order of the elements that
+     it stores. Standard C++ containers that are considered map
+     containers for the purpose of persistence include
+     <code>std::map</code> and <code>std::multimap</code>.</p>
+
+  <p>The database table for a map container consists of at least
+     three columns. The first column contains the object id of a
+     persistent class instance of which the container is a member.
+     The second column contains the element key. And the last column
+     contains the element value. If the object id, element key, or
+     element value are composite, then instead of a single column
+     they can occupy multiple columns.</p>
+
+  <p>Consider the following persistent object as an example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  std::map&lt;unsigned short, float> age_weight_map_;
+  ...
+};
+  </pre>
+
+  <p>The resulting database table (called <code>person_age_weight_map</code>)
+     will contain the object id column of type <code>unsigned long</code>
+     (called <code>object_id</code>), the key column of type
+     <code>unsigned short</code> (called <code>key</code>), and the value
+     column of type <code>std::string</code> (called <code>value</code>).</p>
+
+  <p>A number of ODB pragmas allow you to customize the table name,
+     column names, and native database types for the container both on
+     the per-container and per-member basis. For more information on
+     these pragmas, refer to <a href="#5">Chapter 5, "ODB Pragma
+     Language"</a>. The following example shows some of the possible
+     customizations:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db table("weight_map")                \
+             id_column ("person_id")            \
+             key_type ("INT UNSIGNED NOT NULL") \
+             key_column ("age")                 \
+             value_type ("DOUBLE NOT NULL")     \
+             value_column ("weight")
+  std::map&lt;unsigned short, float> age_weight_map_;
+  ...
+};
+  </pre>
+
+  <h2><a name="X.4">X.4 Using Custom Containers</a></h2>
+
+  <p>While the ODB runtime and profile libraries provide support for
+     a wide range of containers, it is also easy to persist custom
+     container types.</p>
+
+  <p>To achieve this you will need to implement the
+     <code>container_traits</code> class template specialization for
+     your container. First determine the container kind (ordered, set,
+     multiset, map, or multimap) for your container type. Then use a
+     specialization for one of the standard C++ containers found in
+     the common ODB runtime library (<code>libodb</code>) as a base
+     for your own implementation.</p>
+
+  <p>Once the container traits specialization is ready for your container,
+     you will need to include it into the ODB compilation process using
+     the <code>--odb-epilogue</code> option and into the generated header
+     file with the <code>--hxx-prologue</code> option. As an example,
+     suppose we have a hash table container for which we have the traits
+     specialization implemented in the <code>hashtable-traits.hxx</code>
+     file. Then, we can create an ODB compiler options file for this
+     container and save it to <code>hashtable.options</code>:</p>
+
+  <pre>
+# Options file for the hash table container.
+#
+--odb-epilogue '#include "hashtable-traits.hxx"'
+--hxx-prologue '#include "hashtable-traits.hxx"'
+  </pre>
+
+  <p>Now, whenever we compile a header file that uses the hashtable
+     container, we can pass the following option to make sure it
+     is recognized by the ODB compiler as a container and the traits
+     file is included in the generated code:</p>
+
+  <pre>
+--options-file hashtable.options
+  </pre>
+
+  <!-- CHAPTER -->
+
 
   <h1><a name="4">4 Querying the Database</a></h1>
 
@@ -2358,7 +2706,6 @@ namespace odb
   <pre class="c++">
   query q ("first = 'John'" + (query::age &lt; query::_ref (age)));
   </pre>
-
 
   <h2><a name="4.1">4.1 ODB Query Language</a></h2>
 
@@ -3344,7 +3691,7 @@ typedef std::vector&lt;std::string> names;
      example:</p>
 
   <pre class="c++">
-typedef std::map&lt;unsigned short, double> age_weight_map;
+typedef std::map&lt;unsigned short, float> age_weight_map;
 #pragma db value(age_weight_map) key_type("INT UNSIGNED NOT NULL")
   </pre>
 
@@ -3397,7 +3744,7 @@ typedef std::vector&lt;std::string> names;
      container's table. For example:</p>
 
   <pre class="c++">
-typedef std::map&lt;unsigned short, double> age_weight_map;
+typedef std::map&lt;unsigned short, float> age_weight_map;
 #pragma db value(age_weight_map) key_column("age")
   </pre>
 
@@ -3411,7 +3758,7 @@ typedef std::map&lt;unsigned short, double> age_weight_map;
      container's table. For example:</p>
 
   <pre class="c++">
-typedef std::map&lt;unsigned short, double> age_weight_map;
+typedef std::map&lt;unsigned short, float> age_weight_map;
 #pragma db value(age_weight_map) value_column("weight")
   </pre>
 
@@ -3774,7 +4121,7 @@ class person
   ...
 private:
   #pragma db key_type("INT UNSIGNED NOT NULL")
-  std::map&lt;unsigned short, double> age_weight_map_;
+  std::map&lt;unsigned short, float> age_weight_map_;
   ...
 };
   </pre>
@@ -3867,7 +4214,7 @@ class person
   ...
 private:
   #pragma db key_column("age")
-  std::map&lt;unsigned short, double> age_weight_map_;
+  std::map&lt;unsigned short, float> age_weight_map_;
   ...
 };
   </pre>
@@ -3892,7 +4239,7 @@ class person
   ...
 private:
   #pragma db value_column("weight")
-  std::map&lt;unsigned short, double> age_weight_map_;
+  std::map&lt;unsigned short, float> age_weight_map_;
   ...
 };
   </pre>
