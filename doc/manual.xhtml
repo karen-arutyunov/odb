@@ -1043,17 +1043,13 @@ main (int argc, char* argv[])
 
       transaction t (db->begin ());
 
-      db->persist (john);
-      db->persist (jane);
-      db->persist (joe);
+      // Make objects persistent and save their ids for later use.
+      //
+      john_id = db->persist (john);
+      jane_id = db->persist (jane);
+      joe_id = db->persist (joe);
 
       t.commit ();
-
-      // Save object ids for later use.
-      //
-      john_id = john.id ();
-      jane_id = jane.id ();
-      joe_id = joe.id ();
     }
   }
   catch (const odb::exception&amp; e)
@@ -1109,7 +1105,12 @@ main (int argc, char* argv[])
      Remember that we decided to use database-assigned identifiers for our
      <code>person</code> objects. The call to <code>persist()</code> is
      where this assignment happens. Once this function returns, the
-     <code>id_</code> member contains this object's unique identifier.</p>
+     <code>id_</code> member contains this object's unique identifier.
+     As a convenience, the <code>persist()</code> function also returns
+     a copy of the object's identifier that it made persistent. We
+     save the returned identifier for each object in a local variable.
+     We will use these identifiers later in the chapter to perform other
+     database operations on our persistent objects.</p>
 
   <p>After we have persisted our objects, it is time to commit the
      transaction and make the changes permanent. Only after the
@@ -1129,15 +1130,6 @@ main (int argc, char* argv[])
      cross the transaction boundary, the transaction will
      automatically be rolled back and all the changes made
      to the database undone.</p>
-
-  <p>After the transaction has been committed, we save the
-     objects' identifiers in local variables. We will use them later in this
-     chapter to perform other database operations on our persistent
-     objects. You might have noticed that our <code>person</code>
-     class doesn't have the <code>id()</code> function that we use
-     here. To make our code compile we need to add a simple accessor
-     with this name that returns the value of the <code>id_</code>
-     data member.</p>
 
   <p>The final bit of code in our example is the <code>catch</code>
      block that handles the database exceptions. We do this by catching
