@@ -979,15 +979,6 @@ namespace mysql
     ns >> ns_defines >> ns;
     ns_defines >> c;
 
-    ctx.os << "#include <cstddef>" << endl // std::size_t
-           << endl;
-
-    if (ctx.options.generate_query ())
-      ctx.os << "#include <odb/result.hxx>" << endl;
-
-    ctx.os << "#include <odb/container-traits.hxx>" << endl
-           << endl;
-
     ctx.os << "#include <odb/mysql/version.hxx>" << endl
            << "#include <odb/mysql/forward.hxx>" << endl
            << "#include <odb/mysql/mysql-types.hxx>" << endl;

@@ -81,11 +81,12 @@ void
 generate_header (context& ctx)
 {
   ctx.os << "#include <memory>" << endl
+         << "#include <cstddef>" << endl // std::size_t
          << endl;
 
   ctx.os << "#include <odb/core.hxx>" << endl
          << "#include <odb/traits.hxx>" << endl
-         << endl;
+         << "#include <odb/pointer-traits.hxx>" << endl;
 
   // In case of a boost TR1 implementation, we cannot distinguish
   // between the boost::shared_ptr and std::tr1::shared_ptr usage since
@@ -95,17 +96,23 @@ generate_header (context& ctx)
   if (ctx.unit.count ("tr1-pointer-used") &&
       ctx.unit.get<bool> ("tr1-pointer-used"))
   {
-    ctx.os << "#include <odb/tr1-pointer-traits.hxx>" << endl
-           << endl;
+    ctx.os << "#include <odb/tr1-pointer-traits.hxx>" << endl;
   }
   else if (ctx.unit.count ("boost-pointer-used") &&
            ctx.unit.get<bool> ("boost-pointer-used"))
   {
     ctx.os << "#ifdef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
            << "#  include <odb/tr1-pointer-traits.hxx>" << endl
-           << "#endif" << endl
-           << endl;
+           << "#endif" << endl;
   }
+
+  ctx.os << "#include <odb/container-traits.hxx>" << endl;
+
+  if (ctx.options.generate_query ())
+    ctx.os << "#include <odb/result.hxx>" << endl;
+
+  ctx.os << endl;
+
 
   /*
   traversal::unit unit;
