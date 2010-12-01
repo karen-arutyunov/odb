@@ -107,8 +107,12 @@ namespace
         if (type.empty () && idt.count ("type"))
           type = idt.get<string> ("type");
 
-        type = data_->column_type_impl (
-          idt, type, id, ctf_default_null | ctf_object_id_ref);
+        column_type_flags f (ctf_object_id_ref);
+
+        if (null_pointer (m))
+          f |= ctf_default_null;
+
+        type = data_->column_type_impl (idt, type, id, f);
       }
       else
       {
@@ -190,8 +194,12 @@ namespace
         if (type.empty () && idt.count ("type"))
           type = idt.get<string> ("type");
 
-        type = data_->column_type_impl (
-          idt, type, id, ctf_default_null | ctf_object_id_ref);
+        column_type_flags f (ctf_object_id_ref);
+
+        if (null_pointer (m, prefix))
+          f |= ctf_default_null;
+
+        type = data_->column_type_impl (idt, type, id, f);
       }
       else
         type = data_->column_type_impl (t, type, m, ctf_none);
@@ -464,6 +472,12 @@ namespace
         return 0;
 
       m.set (kp + (kp.empty () ? "": "-") + "object-pointer", c);
+
+      if (m.count ("not-null") && !kp.empty ())
+      {
+        m.remove ("not-null");
+        m.set (kp + "-not-null", string ()); // Keep compatible with pragma.
+      }
 
       // See if this is the inverse side of a bidirectional relationship.
       // If so, then resolve the member and cache it in the context.

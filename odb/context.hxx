@@ -88,6 +88,24 @@ public:
       : m.get<class_*> (key_prefix + "-object-pointer", 0);
   }
 
+  static bool
+  null_pointer (semantics::data_member& m)
+  {
+    return !(m.count ("not-null") || m.type ().count ("not-null"));
+  }
+
+  static bool
+  null_pointer (semantics::data_member& m, string const& key_prefix)
+  {
+    if (key_prefix.empty ())
+      return null_pointer (m);
+
+    return !(m.count (key_prefix + "-not-null") ||
+             m.type ().count ("not-null") ||
+             m.type ().get<semantics::type*> (
+               "tree-" + key_prefix +"-type")->count ("not-null"));
+  }
+
   static semantics::data_member*
   inverse (semantics::data_member& m, string const& key_prefix = string ())
   {

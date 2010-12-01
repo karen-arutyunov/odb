@@ -796,7 +796,13 @@ namespace mysql
         if (!comp_value (mi.t))
         {
           if (object_pointer (mi.m, key_prefix_))
+          {
             os << "}";
+
+            if (!null_pointer (mi.m, key_prefix_))
+              os << "else" << endl
+                 << "throw null_pointer ();";
+          }
 
           os << "i." << mi.var << "null = is_null;"
              << "}";
@@ -1022,9 +1028,14 @@ namespace mysql
                << "typedef pointer_traits< " << mi.fq_type () <<
               " > ptr_traits;"
                << endl
-               << "if (i." << mi.var << "null)" << endl
-               << member << " = ptr_traits::pointer_type ();"
-               << "else"
+               << "if (i." << mi.var << "null)" << endl;
+
+            if (null_pointer (mi.m, key_prefix_))
+              os << member << " = ptr_traits::pointer_type ();";
+            else
+              os << "throw null_pointer ();";
+
+            os << "else"
                << "{"
                << type << " id;";
 

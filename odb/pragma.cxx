@@ -187,6 +187,17 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       return false;
     }
   }
+  else if (p == "not_null")
+  {
+    // Not_null can be used for both members and types (container or pointer).
+    //
+    if (tc != FIELD_DECL && !TYPE_P (d))
+    {
+      error_at (l, "name %qs in db pragma %qs does not refer to a type "
+                "or data member", name.c_str (), pc);
+      return false;
+    }
+  }
   else if (p == "unordered")
   {
     // Unordered can be used for both members (container) and
@@ -449,6 +460,18 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
   }
+  else if (p == "not_null")
+  {
+    // not_null
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_decl_type (decl, decl_name, p, loc))
+      return;
+
+    tt = pragma_lex (&t);
+  }
   else if (p == "inverse")
   {
     // inverse (name)
@@ -682,6 +705,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "index_type" ||
            p == "key_type" ||
            p == "table" ||
+           p == "not_null" ||
            p == "inverse" ||
            p == "unordered" ||
            p == "transient")
@@ -812,6 +836,12 @@ handle_pragma_db_table (cpp_reader* reader)
 }
 
 extern "C" void
+handle_pragma_db_not_null (cpp_reader* reader)
+{
+  handle_pragma_qualifier (reader, "not_null");
+}
+
+extern "C" void
 handle_pragma_db_inverse (cpp_reader* reader)
 {
   handle_pragma_qualifier (reader, "inverse");
@@ -847,6 +877,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "index_type", handle_pragma_db_itype);
   c_register_pragma_with_expansion ("db", "key_type", handle_pragma_db_ktype);
   c_register_pragma_with_expansion ("db", "table", handle_pragma_db_table);
+  c_register_pragma_with_expansion ("db", "not_null", handle_pragma_db_not_null);
   c_register_pragma_with_expansion ("db", "inverse", handle_pragma_db_inverse);
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
