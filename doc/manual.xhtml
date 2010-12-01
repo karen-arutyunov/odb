@@ -348,14 +348,15 @@ for consistency.
             <th>5.3</th><td><a href="#5.3">Value Type Pragmas</a>
               <table class="toc">
                 <tr><th>5.3.1</th><td><a href="#5.3.1"><code>type</code></a></td></tr>
-		<tr><th>5.3.2</th><td><a href="#5.3.2"><code>unordered</code></a></td></tr>
-		<tr><th>5.3.3</th><td><a href="#5.3.3"><code>index_type</code></a></td></tr>
-		<tr><th>5.3.4</th><td><a href="#5.3.4"><code>key_type</code></a></td></tr>
-		<tr><th>5.3.5</th><td><a href="#5.3.5"><code>value_type</code></a></td></tr>
-		<tr><th>5.3.6</th><td><a href="#5.3.6"><code>id_column</code></a></td></tr>
-		<tr><th>5.3.7</th><td><a href="#5.3.7"><code>index_column</code></a></td></tr>
-		<tr><th>5.3.8</th><td><a href="#5.3.8"><code>key_column</code></a></td></tr>
-		<tr><th>5.3.9</th><td><a href="#5.3.9"><code>value_column</code></a></td></tr>
+		<tr><th>5.3.2</th><td><a href="#5.3.2"><code>not_null</code></a></td></tr>
+		<tr><th>5.3.3</th><td><a href="#5.3.3"><code>unordered</code></a></td></tr>
+		<tr><th>5.3.4</th><td><a href="#5.3.4"><code>index_type</code></a></td></tr>
+		<tr><th>5.3.5</th><td><a href="#5.3.5"><code>key_type</code></a></td></tr>
+		<tr><th>5.3.6</th><td><a href="#5.3.6"><code>value_type</code></a></td></tr>
+		<tr><th>5.3.7</th><td><a href="#5.3.7"><code>id_column</code></a></td></tr>
+		<tr><th>5.3.8</th><td><a href="#5.3.8"><code>index_column</code></a></td></tr>
+		<tr><th>5.3.9</th><td><a href="#5.3.9"><code>key_column</code></a></td></tr>
+		<tr><th>5.3.10</th><td><a href="#5.3.10"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -367,16 +368,17 @@ for consistency.
                 <tr><th>5.4.3</th><td><a href="#5.4.3"><code>type</code></a></td></tr>
 		<tr><th>5.4.4</th><td><a href="#5.4.4"><code>column</code></a></td></tr>
 		<tr><th>5.4.5</th><td><a href="#5.4.5"><code>transient</code></a></td></tr>
-		<tr><th>5.4.6</th><td><a href="#5.4.6"><code>inverse</code></a></td></tr>
-		<tr><th>5.4.7</th><td><a href="#5.4.7"><code>unordered</code></a></td></tr>
-		<tr><th>5.4.8</th><td><a href="#5.4.8"><code>table</code></a></td></tr>
-		<tr><th>5.4.9</th><td><a href="#5.4.9"><code>index_type</code></a></td></tr>
-		<tr><th>5.4.10</th><td><a href="#5.4.10"><code>key_type</code></a></td></tr>
-		<tr><th>5.4.11</th><td><a href="#5.4.11"><code>value_type</code></a></td></tr>
-		<tr><th>5.4.12</th><td><a href="#5.4.12"><code>id_column</code></a></td></tr>
-		<tr><th>5.4.13</th><td><a href="#5.4.13"><code>index_column</code></a></td></tr>
-		<tr><th>5.4.14</th><td><a href="#5.4.14"><code>key_column</code></a></td></tr>
-		<tr><th>5.4.15</th><td><a href="#5.4.15"><code>value_column</code></a></td></tr>
+		<tr><th>5.4.6</th><td><a href="#5.4.6"><code>not_null</code></a></td></tr>
+		<tr><th>5.4.7</th><td><a href="#5.4.7"><code>inverse</code></a></td></tr>
+		<tr><th>5.4.8</th><td><a href="#5.4.8"><code>unordered</code></a></td></tr>
+		<tr><th>5.4.9</th><td><a href="#5.4.9"><code>table</code></a></td></tr>
+		<tr><th>5.4.10</th><td><a href="#5.4.10"><code>index_type</code></a></td></tr>
+		<tr><th>5.4.11</th><td><a href="#5.4.11"><code>key_type</code></a></td></tr>
+		<tr><th>5.4.12</th><td><a href="#5.4.12"><code>value_type</code></a></td></tr>
+		<tr><th>5.4.13</th><td><a href="#5.4.13"><code>id_column</code></a></td></tr>
+		<tr><th>5.4.14</th><td><a href="#5.4.14"><code>index_column</code></a></td></tr>
+		<tr><th>5.4.15</th><td><a href="#5.4.15"><code>key_column</code></a></td></tr>
+		<tr><th>5.4.16</th><td><a href="#5.4.16"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -3539,51 +3541,57 @@ class person
     </tr>
 
     <tr>
+      <td><code>not_null</code></td>
+      <td>object pointer cannot be <code>NULL</code></td>
+      <td><a href="#5.3.2">5.3.2</a></td>
+    </tr>
+
+    <tr>
       <td><code>unordered</code></td>
       <td>ordered container should be stored unordered</td>
-      <td><a href="#5.3.2">5.3.2</a></td>
+      <td><a href="#5.3.3">5.3.3</a></td>
     </tr>
 
     <tr>
       <td><code>index_type</code></td>
       <td>the database type for the container's index type</td>
-      <td><a href="#5.3.3">5.3.3</a></td>
+      <td><a href="#5.3.4">5.3.4</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
       <td>the database type for the container's key type</td>
-      <td><a href="#5.3.4">5.3.4</a></td>
+      <td><a href="#5.3.5">5.3.5</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
       <td>the database type for the container's value type</td>
-      <td><a href="#5.3.5">5.3.5</a></td>
+      <td><a href="#5.3.6">5.3.6</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
       <td>the column name for the container's table object id</td>
-      <td><a href="#5.3.6">5.3.6</a></td>
+      <td><a href="#5.3.7">5.3.7</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>the column name for the container's table index</td>
-      <td><a href="#5.3.7">5.3.7</a></td>
+      <td><a href="#5.3.8">5.3.8</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>the column name for the container's table key</td>
-      <td><a href="#5.3.8">5.3.8</a></td>
+      <td><a href="#5.3.9">5.3.9</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>the column name for the container's table value</td>
-      <td><a href="#5.3.9">5.3.9</a></td>
+      <td><a href="#5.3.10">5.3.10</a></td>
     </tr>
 
   </table>
@@ -3646,7 +3654,35 @@ private:
      <code>mapping</code> example in the <code>odb-examples</code>
      package shows how to do this for all the supported database systems.</p>
 
-  <h3><a name="5.3.2">5.3.2 <code>unordered</code></a></h3>
+  <h3><a name="5.3.2">5.3.2 <code>not_null</code></a></h3>
+
+  <p>The <code>not_null</code> specifier specifies that an object pointer
+     or a container of object pointers type cannot have or contain the
+     <code>NULL</code> value. For example:</p>
+
+  <pre class="c++">
+using std::tr1::shared_ptr;
+
+#pragma db object
+class person
+{
+  ...
+};
+
+typedef shared_ptr&lt;person> person_ptr;
+#pragma db value(person_ptr) not_null
+
+#pragma db object
+class account
+{
+  ...
+};
+
+typedef std::vector&lt;shared_ptr&lt;account> > accounts;
+#pragma db value(accounts) not_null
+</pre>
+
+  <h3><a name="5.3.3">5.3.3 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that the ordered
      container should be stored in the database unordered. The database
@@ -3659,7 +3695,7 @@ typedef std::vector&lt;std::string> names;
 #pragma db value(names) unordered
   </pre>
 
-  <h3><a name="5.3.3">5.3.3 <code>index_type</code></a></h3>
+  <h3><a name="5.3.4">5.3.4 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
      database type that should be used for the ordered container's
@@ -3673,7 +3709,7 @@ typedef std::vector&lt;std::string> names;
 #pragma db value(names) index_type("SMALLINT UNSIGNED NOT NULL")
   </pre>
 
-  <h3><a name="5.3.4">5.3.4 <code>key_type</code></a></h3>
+  <h3><a name="5.3.5">5.3.5 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
      database type that should be used for the map container's
@@ -3687,7 +3723,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 #pragma db value(age_weight_map) key_type("INT UNSIGNED NOT NULL")
   </pre>
 
-  <h3><a name="5.3.5">5.3.5 <code>value_type</code></a></h3>
+  <h3><a name="5.3.6">5.3.6 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
      database type that should be used for the container's
@@ -3701,7 +3737,7 @@ typedef std::vector&lt;std::string> names;
 #pragma db value(names) value_type("VARCHAR(255) NOT NULL")
   </pre>
 
-  <h3><a name="5.3.6">5.3.6 <code>id_column</code></a></h3>
+  <h3><a name="5.3.7">5.3.7 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in the
@@ -3715,7 +3751,7 @@ typedef std::vector&lt;std::string> names;
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="5.3.7">5.3.7 <code>index_column</code></a></h3>
+  <h3><a name="5.3.8">5.3.8 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in the
@@ -3729,7 +3765,7 @@ typedef std::vector&lt;std::string> names;
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="5.3.8">5.3.8 <code>key_column</code></a></h3>
+  <h3><a name="5.3.9">5.3.9 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in the map
@@ -3743,7 +3779,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="5.3.9">5.3.9 <code>value_column</code></a></h3>
+  <h3><a name="5.3.10">5.3.10 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in the
@@ -3806,64 +3842,70 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
     </tr>
 
     <tr>
+      <td><code>not_null</code></td>
+      <td>object pointer cannot be NULL</td>
+      <td><a href="#5.4.6">5.4.6</a></td>
+    </tr>
+
+    <tr>
       <td><code>inverse</code></td>
       <td>the member is an inverse side of a bidirectional relationship</td>
-      <td><a href="#5.4.6">5.4.6</a></td>
+      <td><a href="#5.4.7">5.4.7</a></td>
     </tr>
 
     <tr>
       <td><code>unordered</code></td>
       <td>ordered container should be stored unordered</td>
-      <td><a href="#5.4.7">5.4.7</a></td>
+      <td><a href="#5.4.8">5.4.8</a></td>
     </tr>
 
     <tr>
       <td><code>table</code></td>
       <td>the table name for the container</td>
-      <td><a href="#5.4.8">5.4.8</a></td>
+      <td><a href="#5.4.9">5.4.9</a></td>
     </tr>
 
 
     <tr>
       <td><code>index_type</code></td>
       <td>the database type for the container's index type</td>
-      <td><a href="#5.4.9">5.4.9</a></td>
+      <td><a href="#5.4.10">5.4.10</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
       <td>the database type for the container's key type</td>
-      <td><a href="#5.4.10">5.4.10</a></td>
+      <td><a href="#5.4.11">5.4.11</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
       <td>the database type for the container's value type</td>
-      <td><a href="#5.4.11">5.4.11</a></td>
+      <td><a href="#5.4.12">5.4.12</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
       <td>the column name for the container's table object id</td>
-      <td><a href="#5.4.12">5.4.12</a></td>
+      <td><a href="#5.4.13">5.4.13</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>the column name for the container's table index</td>
-      <td><a href="#5.4.13">5.4.13</a></td>
+      <td><a href="#5.4.14">5.4.14</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>the column name for the container's table key</td>
-      <td><a href="#5.4.14">5.4.14</a></td>
+      <td><a href="#5.4.15">5.4.15</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>the column name for the container's table value</td>
-      <td><a href="#5.4.15">5.4.15</a></td>
+      <td><a href="#5.4.16">5.4.16</a></td>
     </tr>
 
   </table>
@@ -3989,13 +4031,42 @@ private:
      references that are only meaningful in the application's
      memory, as well as utility members such as mutexes, etc.</p>
 
-  <h3><a name="5.4.6">5.4.6 <code>inverse</code></a></h3>
+  <h3><a name="5.4.6">5.4.6 <code>not_null</code></a></h3>
+
+  <p>The <code>not_null</code> specifier specifies that the member of
+     an object pointer or a container of object pointers type cannot
+     have or contain the <code>NULL</code> value. For example:</p>
+
+  <pre class="c++">
+using std::tr1::shared_ptr;
+
+#pragma db object
+class person
+{
+  ...
+};
+
+#pragma db object
+class account
+{
+  ...
+private:
+  #pragma db not_null
+  shared_ptr&lt;person> primary_holder_;
+
+  #pragma db not_null
+  std::vector&lt;shared_ptr&lt;person> > secondary_holders_;
+  ...
+};
+</pre>
+
+  <h3><a name="5.4.7">5.4.7 <code>inverse</code></a></h3>
 
   <p>The <code>inverse</code> specifier specifies that the member of
-     a pointer or a container of pointers type is an inverse side of
-     a bidirectional object relationship. The single required argument
-     to this specifier is the data member name in the referenced object.
-     For example:</p>
+     an object pointer or a container of object pointers type is an
+     inverse side of a bidirectional object relationship. The single
+     required argument to this specifier is the data member name in
+     the referenced object. For example:</p>
 
 <pre class="c++">
 using std::tr1::shared_ptr;
@@ -4029,9 +4100,9 @@ private:
      information. Only ordered and set containers can be used for
      inverse members. If an inverse member is of an ordered container
      type, it is automatically marked as unordered (see
-     <a href="#5.4.7">Section 5.4.7, "<code>unordered</code>"</a>).</p>
+     <a href="#5.4.8">Section 5.4.8, "<code>unordered</code>"</a>).</p>
 
-  <h3><a name="5.4.7">5.4.7 <code>unordered</code></a></h3>
+  <h3><a name="5.4.8">5.4.8 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that the member of
      an ordered container type should be stored in the database unordered.
@@ -4051,7 +4122,7 @@ private:
 };
   </pre>
 
-  <h3><a name="5.4.8">5.4.8 <code>table</code></a></h3>
+  <h3><a name="5.4.9">5.4.9 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies the table name that should
      be used to store the contents of the container member. For example:</p>
@@ -4076,7 +4147,7 @@ private:
      above, without the <code>table</code> specifier, the container's
      table name would have been <code>person_nicknames</code>.</p>
 
-  <h3><a name="5.4.9">5.4.9 <code>index_type</code></a></h3>
+  <h3><a name="5.4.10">5.4.10 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
      database type that should be used for the ordered container's
@@ -4097,7 +4168,7 @@ private:
 };
   </pre>
 
-  <h3><a name="5.4.10">5.4.10 <code>key_type</code></a></h3>
+  <h3><a name="5.4.11">5.4.11 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
      database type that should be used for the map container's
@@ -4118,7 +4189,7 @@ private:
 };
   </pre>
 
-  <h3><a name="5.4.11">5.4.11 <code>value_type</code></a></h3>
+  <h3><a name="5.4.12">5.4.12 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
      database type that should be used for the container's
@@ -4139,14 +4210,14 @@ private:
 };
   </pre>
 
-  <h3><a name="5.4.12">5.4.12 <code>id_column</code></a></h3>
+  <h3><a name="5.4.13">5.4.13 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in the
      container's table for the member. The semantics of
      <code>id_column</code> are similar to that of the
      <code>column</code> specifier (see
-     <a href="#5.4.5">Section 5.4.4, "<code>column</code>"</a>).
+     <a href="#5.4.4">Section 5.4.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -4164,14 +4235,14 @@ private:
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="5.4.13">5.4.13 <code>index_column</code></a></h3>
+  <h3><a name="5.4.14">5.4.14 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in the
      ordered container's table for the member. The semantics of
      <code>index_column</code> are similar to that of the
      <code>column</code> specifier (see
-     <a href="#5.4.5">Section 5.4.4, "<code>column</code>"</a>).
+     <a href="#5.4.4">Section 5.4.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -4189,14 +4260,14 @@ private:
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="5.4.14">5.4.14 <code>key_column</code></a></h3>
+  <h3><a name="5.4.15">5.4.15 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in the map
      container's table for the member. The semantics of
      <code>key_column</code> are similar to that of the
      <code>column</code> specifier (see
-     <a href="#5.4.5">Section 5.4.4, "<code>column</code>"</a>).
+     <a href="#5.4.4">Section 5.4.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -4214,14 +4285,14 @@ private:
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="5.4.15">5.4.15 <code>value_column</code></a></h3>
+  <h3><a name="5.4.16">5.4.16 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in the
      container's table for the member. The semantics of
      <code>value_column</code> are similar to that of the
      <code>column</code> specifier (see
-     <a href="#5.4.5">Section 5.4.4, "<code>column</code>"</a>).
+     <a href="#5.4.4">Section 5.4.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
