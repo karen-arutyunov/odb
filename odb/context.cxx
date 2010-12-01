@@ -138,7 +138,7 @@ comp_value_ (semantics::class_& c)
   r = r && !c.count ("index-column");
   r = r && !c.count ("key-column");
   r = r && !c.count ("id-column");
-  r = r && !c.count ("not_null");
+  r = r && !c.count ("not-null");
   r = r && !c.count ("unordered");
 
   c.set ("composite-value", r);
