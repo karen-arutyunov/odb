@@ -90,6 +90,11 @@ namespace mysql
       virtual void
       traverse (type& c)
       {
+        // Ignore transient bases.
+        //
+        if (!(c.count ("object") || context::comp_value (c)))
+          return;
+
         if (c.count ("mysql::grow"))
           r_ = c.get<bool> ("mysql::grow");
         else

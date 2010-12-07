@@ -169,6 +169,11 @@ namespace mysql
       virtual void
       traverse (type& c)
       {
+        // Ignore transient bases.
+        //
+        if (!(c.count ("object") || comp_value (c)))
+          return;
+
         if (first_)
         {
           os << ": ";

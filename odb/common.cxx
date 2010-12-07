@@ -37,6 +37,11 @@ traverse_composite (semantics::data_member& m, semantics::class_& c)
 void object_members_base::
 traverse (semantics::class_& c)
 {
+  // Ignore transient bases.
+  //
+  if (!(c.count ("object") || context::comp_value (c)))
+    return;
+
   if (build_table_prefix_ && c.count ("object"))
   {
     table_prefix_.prefix = ctx_->table_name (c);
@@ -166,6 +171,11 @@ traverse_composite (semantics::data_member& m,
 void object_columns_base::
 traverse (semantics::class_& c)
 {
+  // Ignore transient bases.
+  //
+  if (!(c.count ("object") || context::comp_value (c)))
+    return;
+
   inherits (c);
   names (c);
 }

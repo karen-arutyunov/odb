@@ -84,12 +84,37 @@ namespace
     virtual void
     traverse_object (type& c)
     {
-      if (c.inherits_begin () != c.inherits_end ())
+      for (type::inherits_iterator i (c.inherits_begin ());
+           i != c.inherits_end ();
+           ++i)
       {
-        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-             << " error: object inheritance is not yet supported" << endl;
+        type& b (i->base ());
 
-        valid_ = false;
+        if (b.count ("object"))
+        {
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " error: object inheritance is not yet supported" << endl;
+
+          valid_ = false;
+        }
+        else if (context::comp_value (b))
+        {
+          // @@ Should we use hint here?
+          //
+          string name (b.fq_name ());
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " error: base class '" << name << "' is a value type"
+               << endl;
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " info: object types cannot derive from value types" << endl;
+
+          cerr << b.file () << ":" << b.line () << ":" << b.column () << ":"
+               << " info: class '" << name << "' is defined here" << endl;
+
+          valid_ = false;
+        }
       }
 
       member_.count_ = 0;
@@ -127,19 +152,19 @@ namespace
       {
         type& b (i->base ());
 
-        if (!context::comp_value (b))
+        if (b.count ("object"))
         {
           // @@ Should we use hint here?
           //
           string name (b.fq_name ());
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: base class '" << name << "' is not a "
-               << "composite value type" << endl;
+               << " error: base class '" << name << "' is an object type"
+               << endl;
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: composite value types can only derive from other "
-               << "composite value types" << endl;
+               << " info: composite value types cannot derive from object "
+               << "types" << endl;
 
           cerr << b.file () << ":" << b.line () << ":" << b.column () << ":"
                << " info: class '" << name << "' is defined here" << endl;

@@ -512,6 +512,11 @@ namespace mysql
       virtual void
       traverse (type& c)
       {
+        // Ignore transient bases.
+        //
+        if (!(c.count ("object") || comp_value (c)))
+          return;
+
         os << "// " << c.name () << " base" << endl
            << "//" << endl
            << "composite_value_traits< " << c.fq_name () <<
@@ -680,6 +685,11 @@ namespace mysql
       virtual void
       traverse (type& c)
       {
+        // Ignore transient bases.
+        //
+        if (!(c.count ("object") || comp_value (c)))
+          return;
+
         os << "// " << c.name () << " base" << endl
            << "//" << endl
            << "if (composite_value_traits< " << c.fq_name () <<
@@ -956,6 +966,11 @@ namespace mysql
       virtual void
       traverse (type& c)
       {
+        // Ignore transient bases.
+        //
+        if (!(c.count ("object") || comp_value (c)))
+          return;
+
         os << "// " << c.name () << " base" << endl
            << "//" << endl
            << "if (composite_value_traits< " << c.fq_name () <<
@@ -1207,6 +1222,11 @@ namespace mysql
       virtual void
       traverse (type& c)
       {
+        // Ignore transient bases.
+        //
+        if (!(c.count ("object") || comp_value (c)))
+          return;
+
         os << "// " << c.name () << " base" << endl
            << "//" << endl
            << "composite_value_traits< " << c.fq_name () <<
