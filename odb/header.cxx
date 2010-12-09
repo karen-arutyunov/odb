@@ -96,13 +96,13 @@ generate_header (context& ctx)
   if (ctx.unit.count ("tr1-pointer-used") &&
       ctx.unit.get<bool> ("tr1-pointer-used"))
   {
-    ctx.os << "#include <odb/tr1-pointer-traits.hxx>" << endl;
+    ctx.os << "#include <odb/tr1/pointer-traits.hxx>" << endl;
   }
   else if (ctx.unit.count ("boost-pointer-used") &&
            ctx.unit.get<bool> ("boost-pointer-used"))
   {
     ctx.os << "#ifdef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
-           << "#  include <odb/tr1-pointer-traits.hxx>" << endl
+           << "#  include <odb/tr1/pointer-traits.hxx>" << endl
            << "#endif" << endl;
   }
 

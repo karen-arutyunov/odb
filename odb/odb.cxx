@@ -547,7 +547,7 @@ main (int argc, char* argv[])
         // Standard pointer traits.
         //
         os << "#include <odb/pointer-traits.hxx>" << endl
-           << "#include <odb/tr1-pointer-traits.hxx>" << endl;
+           << "#include <odb/tr1/pointer-traits.hxx>" << endl;
 
         // Standard container traits.
         //
