@@ -55,7 +55,7 @@ namespace mysql
     {
       sql_type const& st (db_type (m, key_prefix_));
 
-      if (semantics::class_* c = object_pointer (m, key_prefix_))
+      if (semantics::class_* c = object_pointer (t))
       {
         member_info mi (m, id_member (*c).type (), var, fq_type_override_);
         mi.st = &st;
@@ -490,7 +490,7 @@ namespace mysql
   {
     string name (public_name (m));
 
-    if (semantics::class_* c = object_pointer (m))
+    if (semantics::class_* c = object_pointer (m.type ()))
     {
       // We cannot just typedef the query_type from the referenced
       // object for two reasons: (1) it may not be defined yet and

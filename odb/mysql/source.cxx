@@ -65,7 +65,7 @@ namespace mysql
         //
         if (im != 0)
         {
-          semantics::class_* c (object_pointer (m));
+          semantics::class_* c (object_pointer (m.type ()));
 
           if (container (im->type ()))
           {
@@ -140,7 +140,7 @@ namespace mysql
       virtual bool
       column (semantics::data_member& m, string const& col_name, bool)
       {
-        semantics::class_* c (object_pointer (m));
+        semantics::class_* c (object_pointer (m.type ()));
 
         if (c == 0)
           return true;
@@ -758,7 +758,12 @@ namespace mysql
           traits = "composite_value_traits< " + mi.fq_type () + " >";
         else
         {
-          if (semantics::class_* c = object_pointer (mi.m, key_prefix_))
+          // When handling a pointer, mi.t is the id type of the referenced
+          // object.
+          //
+          semantics::type& mt (member_type (mi.m, key_prefix_));
+
+          if (semantics::class_* c = object_pointer (mt))
           {
             type = "obj_traits::id_type";
             image_type = member_image_type_.image_type (mi.m);
@@ -768,15 +773,37 @@ namespace mysql
             //
             os << "{"
                << "typedef object_traits< " << c->fq_name () <<
-              " > obj_traits;"
-               << "typedef pointer_traits< " << mi.fq_type () <<
+              " > obj_traits;";
+
+            if (weak_pointer (mt))
+            {
+              os << "typedef pointer_traits< " << mi.fq_type () <<
+                " > wptr_traits;"
+                 << "typedef pointer_traits< wptr_traits::" <<
+                "strong_pointer_type > ptr_traits;"
+                 << endl
+                 << "wptr_traits::strong_pointer_type sp (" <<
+                "wptr_traits::lock (" << member << "));";
+
+              member = "sp";
+            }
+            else
+              os << "typedef pointer_traits< " << mi.fq_type () <<
               " > ptr_traits;"
-               << endl
-               << "bool is_null (ptr_traits::null_ptr (" << member << "));"
+                 << endl;
+
+            os << "bool is_null (ptr_traits::null_ptr (" << member << "));"
                << "if (!is_null)"
                << "{"
-               << "const " << type << "& id (" << endl
-               << "obj_traits::id (ptr_traits::get_ref (" << member << ")));"
+               << "const " << type << "& id (" << endl;
+
+            if (lazy_pointer (mt))
+              os << "ptr_traits::object_id< ptr_traits::element_type  > (" <<
+                member << ")";
+            else
+              os << "obj_traits::id (ptr_traits::get_ref (" << member << "))";
+
+            os << ");"
                << endl;
 
             member = "id";
@@ -805,7 +832,10 @@ namespace mysql
       {
         if (!comp_value (mi.t))
         {
-          if (object_pointer (mi.m, key_prefix_))
+          // When handling a pointer, mi.t is the id type of the referenced
+          // object.
+          //
+          if (object_pointer (member_type (mi.m, key_prefix_)))
           {
             os << "}";
 
@@ -1029,7 +1059,12 @@ namespace mysql
           traits = "composite_value_traits< " + mi.fq_type () + " >";
         else
         {
-          if (semantics::class_* c = object_pointer (mi.m, key_prefix_))
+          // When handling a pointer, mi.t is the id type of the referenced
+          // object.
+          //
+          semantics::type& mt (member_type (mi.m, key_prefix_));
+
+          if (semantics::class_* c = object_pointer (mt))
           {
             type = "obj_traits::id_type";
             image_type = member_image_type_.image_type (mi.m);
@@ -1075,19 +1110,31 @@ namespace mysql
       virtual void
       post (member_info& mi)
       {
-        if (!comp_value (mi.t) && object_pointer (mi.m, key_prefix_))
+        if (comp_value (mi.t))
+          return;
+
+        // When handling a pointer, mi.t is the id type of the referenced
+        // object.
+        //
+        semantics::type& mt (member_type (mi.m, key_prefix_));
+
+        if (object_pointer (mt))
         {
           member = member_override_.empty ()
             ? "o." + mi.m.name ()
             : member_override_;
 
-          os << "// If a compiler error points to the line below, then" << endl
-             << "// it most likely means that a pointer used in a member" << endl
-             << "// cannot be initialized from an object pointer." << endl
-             << "//" << endl
-             << member << " = ptr_traits::pointer_type (" << endl
-             << "db.load< ptr_traits::element_type > (id));"
-             << "}"
+          if (lazy_pointer (mt))
+            os << member << " = ptr_traits::pointer_type (db, id);";
+          else
+            os << "// If a compiler error points to the line below, then" << endl
+               << "// it most likely means that a pointer used in a member" << endl
+               << "// cannot be initialized from an object pointer." << endl
+               << "//" << endl
+               << member << " = ptr_traits::pointer_type (" << endl
+               << "db.load< ptr_traits::element_type > (id));";
+
+          os << "}"
              << "}";
         }
       }
@@ -1316,7 +1363,7 @@ namespace mysql
 
         if (inverse)
         {
-          semantics::class_* c (object_pointer (m, "value"));
+          semantics::class_* c (object_pointer (vt));
 
           string inv_table; // Other table name.
           string inv_id;    // Other id column.

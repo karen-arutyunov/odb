@@ -490,19 +490,24 @@ namespace
 bool context::
 is_a (semantics::data_member& m,
       unsigned short f,
-      semantics::type&,
+      semantics::type& t,
       string const& kp)
 {
   bool r (false);
 
   if (f & test_pointer)
   {
-    r = r || object_pointer (m, kp);
+    r = r || object_pointer (t);
   }
 
   if (f & test_eager_pointer)
   {
-    r = r || object_pointer (m, kp);
+    r = r || (object_pointer (t) && !lazy_pointer (t));
+  }
+
+  if (f & test_lazy_pointer)
+  {
+    r = r || (object_pointer (t) && lazy_pointer (t));
   }
 
   if (f & test_container)

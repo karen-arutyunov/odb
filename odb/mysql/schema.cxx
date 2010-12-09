@@ -40,7 +40,7 @@ namespace mysql
           os << " PRIMARY KEY";
 
         using semantics::class_;
-        if (class_* c = object_pointer (m, prefix_))
+        if (class_* c = object_pointer (member_type (m, prefix_)))
         {
           os << " REFERENCES `" << table_name (*c) << "` (`" <<
             column_name (id_member (*c)) << "`)";

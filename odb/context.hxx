@@ -25,6 +25,16 @@ using std::cerr;
 
 class generation_failed {};
 
+// Keep this enum synchronized with the one in libodb/odb/pointer-traits.hxx.
+//
+enum pointer_kind
+{
+  pk_naked,
+  pk_unique,
+  pk_shared,
+  pk_weak
+};
+
 // Keep this enum synchronized with the one in libodb/odb/container-traits.hxx.
 //
 enum container_kind
@@ -42,6 +52,15 @@ public:
   typedef std::size_t size_t;
   typedef std::string string;
   typedef ::options options_type;
+
+public:
+  static semantics::type&
+  member_type (semantics::data_member& m, string const& key_prefix)
+  {
+    return key_prefix.empty ()
+      ? m.type ()
+      : *m.type ().get<semantics::type*> ("tree-" + key_prefix + "-type");
+  }
 
   // Predicates.
   //
@@ -78,50 +97,9 @@ public:
   }
 
   static semantics::class_*
-  object_pointer (semantics::data_member& m,
-                  string const& key_prefix = string ())
+  object_pointer (semantics::type& t)
   {
-    using semantics::class_;
-
-    return key_prefix.empty ()
-      ? m.get<class_*> ("object-pointer", 0)
-      : m.get<class_*> (key_prefix + "-object-pointer", 0);
-  }
-
-  static bool
-  null_pointer (semantics::data_member& m)
-  {
-    return !(m.count ("not-null") || m.type ().count ("not-null"));
-  }
-
-  static bool
-  null_pointer (semantics::data_member& m, string const& key_prefix)
-  {
-    if (key_prefix.empty ())
-      return null_pointer (m);
-
-    return !(m.count (key_prefix + "-not-null") ||
-             m.type ().count ("not-null") ||
-             m.type ().get<semantics::type*> (
-               "tree-" + key_prefix +"-type")->count ("not-null"));
-  }
-
-  static semantics::data_member*
-  inverse (semantics::data_member& m, string const& key_prefix = string ())
-  {
-    using semantics::data_member;
-
-    return object_pointer (m, key_prefix)
-      ? (key_prefix.empty ()
-         ? m.get<data_member*> ("inverse", 0)
-         : m.get<data_member*> (key_prefix + "-inverse", 0))
-      : 0;
-  }
-
-  static bool
-  unordered (semantics::data_member& m)
-  {
-    return m.count ("unordered") || m.type ().count ("unordered");
+    return t.get<semantics::class_*> ("element-type", 0);
   }
 
   // Database names and types.
@@ -187,6 +165,65 @@ public:
   semantics::data_member&
   id_member (semantics::class_&);
 
+  // Object pointer information.
+  //
+public:
+  typedef ::pointer_kind pointer_kind_type;
+
+  static pointer_kind_type
+  pointer_kind (semantics::type& p)
+  {
+    return p.get<pointer_kind_type> ("pointer-kind");
+  }
+
+  static bool
+  lazy_pointer (semantics::type& p)
+  {
+    return p.get<bool> ("pointer-lazy");
+  }
+
+  static bool
+  weak_pointer (semantics::type& p)
+  {
+    return pointer_kind (p) == pk_weak;
+  }
+
+  static bool
+  null_pointer (semantics::data_member& m)
+  {
+    return !(m.count ("not-null") || m.type ().count ("not-null"));
+  }
+
+  static bool
+  null_pointer (semantics::data_member& m, string const& key_prefix)
+  {
+    if (key_prefix.empty ())
+      return null_pointer (m);
+
+    return !(m.count (key_prefix + "-not-null") ||
+             m.type ().count ("not-null") ||
+             member_type (m, key_prefix).count ("not-null"));
+  }
+
+  static semantics::data_member*
+  inverse (semantics::data_member& m)
+  {
+    return object_pointer (m.type ())
+      ? m.get<semantics::data_member*> ("inverse", 0)
+      : 0;
+  }
+
+  static semantics::data_member*
+  inverse (semantics::data_member& m, string const& key_prefix)
+  {
+    if (key_prefix.empty ())
+      return inverse (m);
+
+    return object_pointer (member_type (m, key_prefix))
+      ? m.get<semantics::data_member*> (key_prefix + "-inverse", 0)
+      : 0;
+  }
+
   // Container information.
   //
 public:
@@ -216,10 +253,16 @@ public:
     return *c.get<semantics::type*> ("tree-key-type");
   }
 
+  static bool
+  unordered (semantics::data_member& m)
+  {
+    return m.count ("unordered") || m.type ().count ("unordered");
+  }
+
   // The 'is a' and 'has a' tests. The has_a test currently does not
   // cross the container boundaries.
   //
-
+public:
   static unsigned short const test_pointer = 0x01;
   static unsigned short const test_eager_pointer = 0x02;
   static unsigned short const test_lazy_pointer = 0x04;

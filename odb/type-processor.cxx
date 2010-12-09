@@ -270,7 +270,6 @@ namespace
         size_t l (DECL_SOURCE_LINE (decl));
         size_t c (DECL_SOURCE_COLUMN (decl));
 
-
         // Determine the container kind.
         //
         try
@@ -313,7 +312,7 @@ namespace
         catch (generation_failed const&)
         {
           os << f << ":" << l << ":" << c << ": error: "
-             << "odb::container_traits specialization does not define the "
+             << "container_traits specialization does not define the "
              << "container kind constant" << endl;
 
           throw;
@@ -339,7 +338,7 @@ namespace
         catch (generation_failed const&)
         {
           os << f << ":" << l << ":" << c << ": error: "
-             << "odb::container_traits specialization does not define the "
+             << "container_traits specialization does not define the "
              << "value_type type" << endl;
 
           throw;
@@ -368,7 +367,7 @@ namespace
           catch (generation_failed const&)
           {
             os << f << ":" << l << ":" << c << ": error: "
-               << "odb::container_traits specialization does not define the "
+               << "container_traits specialization does not define the "
                << "index_type type" << endl;
 
             throw;
@@ -397,7 +396,7 @@ namespace
           catch (generation_failed const&)
           {
             os << f << ":" << l << ":" << c << ": error: "
-               << "odb::container_traits specialization does not define the "
+               << "container_traits specialization does not define the "
                << "key_type type" << endl;
 
             throw;
@@ -439,39 +438,145 @@ namespace
       using semantics::class_;
       using semantics::data_member;
 
-      tree inst (instantiate_template (pointer_traits_, t.tree_node ()));
+      class_* c (0);
 
-      if (inst == 0)
-        return 0;
-
-      // Get the element type.
-      //
-      tree tn (0);
-      try
+      if (t.count ("element-type"))
+        c = t.get<class_*> ("element-type");
+      else
       {
-        tree decl (
-          lookup_qualified_name (
-            inst, get_identifier ("element_type"), true, false));
+        tree inst (instantiate_template (pointer_traits_, t.tree_node ()));
 
-        if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
-          throw generation_failed ();
+        if (inst == 0)
+          return 0;
 
-        tn = TYPE_MAIN_VARIANT (TREE_TYPE (decl));
+        // @@ This points to the primary template, not the specialization.
+        //
+        tree decl (TYPE_NAME (inst));
+
+        string fl (DECL_SOURCE_FILE (decl));
+        size_t ln (DECL_SOURCE_LINE (decl));
+        size_t cl (DECL_SOURCE_COLUMN (decl));
+
+        // Get the element type.
+        //
+        tree tn (0);
+        try
+        {
+          tree decl (
+            lookup_qualified_name (
+              inst, get_identifier ("element_type"), true, false));
+
+          if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
+            throw generation_failed ();
+
+          tn = TYPE_MAIN_VARIANT (TREE_TYPE (decl));
+        }
+        catch (generation_failed const&)
+        {
+          os << fl << ":" << ln << ":" << cl << ": error: pointer_traits "
+             << "specialization does not define the 'element_type' type"
+             << endl;
+          throw;
+        }
+
+        c = dynamic_cast<class_*> (unit.find (tn));
+
+        if (c == 0 || !c->count ("object"))
+          return 0;
+
+        t.set ("element-type", c);
+
+        // Determine the pointer kind.
+        //
+        try
+        {
+          tree kind (
+            lookup_qualified_name (
+              inst, get_identifier ("kind"), false, false));
+
+          if (kind == error_mark_node || TREE_CODE (kind) != VAR_DECL)
+            throw generation_failed ();
+
+          // Instantiate this decalaration so that we can get its value.
+          //
+          if (DECL_TEMPLATE_INSTANTIATION (kind) &&
+              !DECL_TEMPLATE_INSTANTIATED (kind) &&
+              !DECL_EXPLICIT_INSTANTIATION (kind))
+            instantiate_decl (kind, false, false);
+
+          tree init (DECL_INITIAL (kind));
+
+          if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
+            throw generation_failed ();
+
+          unsigned long long e;
+
+          {
+            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
+            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
+
+            unsigned long long l (hwl);
+            unsigned long long h (hwh);
+            unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+            e = (h << width) + l;
+          }
+
+          pointer_kind_type pk = static_cast<pointer_kind_type> (e);
+          t.set ("pointer-kind", pk);
+        }
+        catch (generation_failed const&)
+        {
+          os << fl << ":" << ln << ":" << cl << ": error: pointer_traits "
+             << "specialization does not define the 'kind' constant" << endl;
+          throw;
+        }
+
+        // Get the lazy flag.
+        //
+        try
+        {
+          tree lazy (
+            lookup_qualified_name (
+              inst, get_identifier ("lazy"), false, false));
+
+          if (lazy == error_mark_node || TREE_CODE (lazy) != VAR_DECL)
+            throw generation_failed ();
+
+          // Instantiate this decalaration so that we can get its value.
+          //
+          if (DECL_TEMPLATE_INSTANTIATION (lazy) &&
+              !DECL_TEMPLATE_INSTANTIATED (lazy) &&
+              !DECL_EXPLICIT_INSTANTIATION (lazy))
+            instantiate_decl (lazy, false, false);
+
+          tree init (DECL_INITIAL (lazy));
+
+          if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
+            throw generation_failed ();
+
+          unsigned long long e;
+
+          {
+            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
+            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
+
+            unsigned long long l (hwl);
+            unsigned long long h (hwh);
+            unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+            e = (h << width) + l;
+          }
+
+          t.set ("pointer-lazy", static_cast<bool> (e));
+        }
+        catch (generation_failed const&)
+        {
+          os << fl << ":" << ln << ":" << cl << ": error: pointer_traits "
+             << "specialization does not define the 'kind' constant" << endl;
+          throw;
+        }
       }
-      catch (generation_failed const&)
-      {
-        os << m.file () << ":" << m.line () << ":" << m.column () << ": "
-           << "error: odb::pointer_traits specialization does not define "
-           << "the element_type type" << endl;
-        throw;
-      }
-
-      class_* c (dynamic_cast<class_*> (unit.find (tn)));
-
-      if (c == 0 || !c->count ("object"))
-        return 0;
-
-      m.set (kp + (kp.empty () ? "": "-") + "object-pointer", c);
 
       if (m.count ("not-null") && !kp.empty ())
       {
@@ -487,7 +592,7 @@ namespace
         string name (m.get<string> ("inverse"));
         tree decl (
           lookup_qualified_name (
-            tn, get_identifier (name.c_str ()), false, false));
+            c->tree_node (), get_identifier (name.c_str ()), false, false));
 
         if (decl == error_mark_node || TREE_CODE (decl) != FIELD_DECL)
         {
