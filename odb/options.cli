@@ -71,7 +71,7 @@ class options
     "Use <ptr> as the default pointer for persistent objects. Objects that
      do not  have a pointer assigned with the \cb{pointer} pragma specifier
      will use this pointer by default. The value of this option can be \cb{*}
-     which denotes a 'naked' pointer and is the default, or a qualified name
+     which denotes the raw pointer and is the default, or a qualified name
      of a smart pointer class template, for example, \cb{std::auto_ptr}. In
      the latter case, the ODB compiler constructs the object pointer by adding
      a single template argument of the object type to the qualified name, for
@@ -79,7 +79,7 @@ class options
      ODB runtime to return dynamically allocated instances of the object
      type.
 
-     Except for the 'naked' pointer and the standard smart pointers defined
+     Except for the raw pointer and the standard smart pointers defined
      in the \cb{<memory>} header file, you are expected to include the
      definition of the default pointer at the beginning of the generated
      header file. There are two common ways to achieve this: you can either

@@ -29,7 +29,7 @@ class generation_failed {};
 //
 enum pointer_kind
 {
-  pk_naked,
+  pk_raw,
   pk_unique,
   pk_shared,
   pk_weak
