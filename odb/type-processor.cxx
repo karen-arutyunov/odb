@@ -470,6 +470,41 @@ namespace
             throw generation_failed ();
 
           tn = TYPE_MAIN_VARIANT (TREE_TYPE (decl));
+
+          // Check if the pointer is a TR1 template instantiation.
+          //
+          if (tree ti = TYPE_TEMPLATE_INFO (t.tree_node ()))
+          {
+            decl = TI_TEMPLATE (ti); // DECL_TEMPLATE
+
+            // Get to the most general template declaration.
+            //
+            while (DECL_TEMPLATE_INFO (decl))
+              decl = DECL_TI_TEMPLATE (decl);
+
+            if (!unit.count ("tr1-pointer-used"))
+            {
+              unit.set ("tr1-pointer-used", false);
+              unit.set ("boost-pointer-used", false);
+            }
+
+            bool& tr1 (unit.get<bool> ("tr1-pointer-used"));
+            bool& boost (unit.get<bool> ("boost-pointer-used"));
+
+            string n (decl_as_string (decl, TFF_PLAIN_IDENTIFIER));
+
+            // In case of a boost TR1 implementation, we cannot distinguish
+            // between the boost:: and std::tr1:: usage since the latter is
+            // just a using-declaration for the former.
+            //
+            tr1 = tr1
+              || n.compare (0, 8, "std::tr1") == 0
+              || n.compare (0, 10, "::std::tr1") == 0;
+
+            boost = boost
+              || n.compare (0, 17, "boost::shared_ptr") == 0
+              || n.compare (0, 19, "::boost::shared_ptr") == 0;
+          }
         }
         catch (generation_failed const&)
         {
