@@ -698,14 +698,8 @@ namespace
         string ptr;
         string const& name (c.fq_name ());
 
-        if (!unit.count ("tr1-pointer-used"))
-        {
-          unit.set ("tr1-pointer-used", false);
-          unit.set ("boost-pointer-used", false);
-        }
-
-        bool& tr1 (unit.get<bool> ("tr1-pointer-used"));
-        bool& boost (unit.get<bool> ("boost-pointer-used"));
+        tree decl (0);    // Resolved template node.
+        string decl_name; // User-provided template name.
 
         if (c.count ("pointer"))
         {
@@ -717,19 +711,17 @@ namespace
             ptr = p;
           else if (p.find ('<') != string::npos)
           {
-            // Template-id. See if it is from TR1.
+            // Template-id.
             //
             ptr = p;
-            tr1 = tr1
-              || p.compare (0, 8, "std::tr1") == 0
-              || p.compare (0, 10, "::std::tr1") == 0;
+            decl_name.assign (p, 0, p.find ('<'));
           }
           else
           {
             // This is not a template-id. Resolve it and see if it is a
             // template or a type.
             //
-            tree decl  (resolve_name (p, c.scope (), true));
+            decl = resolve_name (p, c.scope (), true);
             int tc (TREE_CODE (decl));
 
             if (tc == TYPE_DECL)
@@ -740,35 +732,20 @@ namespace
               //
               if (tree ti = TYPE_TEMPLATE_INFO (TREE_TYPE (decl)))
               {
-                tree t (TI_TEMPLATE (ti)); // DECL_TEMPLATE
+                decl = TI_TEMPLATE (ti); // DECL_TEMPLATE
 
                 // Get to the most general template declaration.
                 //
-                while (DECL_TEMPLATE_INFO (t))
-                  t = DECL_TI_TEMPLATE (t);
-
-                string n (decl_as_string (t, TFF_PLAIN_IDENTIFIER));
-
-                // In case of a boost TR1 implementation, we cannot
-                // distinguish between the boost:: and std::tr1::
-                // usage since the latter is just a using-declaration
-                // for the former.
-                //
-                tr1 = tr1
-                  || n.compare (0, 8, "std::tr1") == 0
-                  || n.compare (0, 10, "::std::tr1") == 0;
-
-                boost = boost
-                  || n.compare (0, 17, "boost::shared_ptr") == 0
-                  || n.compare (0, 19, "::boost::shared_ptr") == 0;
+                while (DECL_TEMPLATE_INFO (decl))
+                  decl = DECL_TI_TEMPLATE (decl);
               }
+              else
+                decl = 0; // Not a template.
             }
             else if (tc == TEMPLATE_DECL && DECL_CLASS_TEMPLATE_P (decl))
             {
               ptr = p + "< " + name + " >";
-              tr1 = tr1
-                || p.compare (0, 8, "std::tr1") == 0
-                || p.compare (0, 10, "::std::tr1") == 0;
+              decl_name = p;
             }
             else
             {
@@ -779,88 +756,6 @@ namespace
 
               throw generation_failed ();
             }
-          }
-
-          // Fully-qualify all the unqualified components of the name.
-          //
-          try
-          {
-            lexer.start (ptr);
-            ptr.clear ();
-
-            string t;
-            bool punc (false);
-            bool scoped (false);
-
-            for (cpp_ttype tt = lexer.next (t);
-                 tt != CPP_EOF;
-                 tt = lexer.next (t))
-            {
-              if (punc && tt > CPP_LAST_PUNCTUATOR)
-                ptr += ' ';
-
-              punc = false;
-
-              switch (static_cast<unsigned> (tt))
-              {
-              case CPP_LESS:
-                {
-                  ptr += "< ";
-                  break;
-                }
-              case CPP_GREATER:
-                {
-                  ptr += " >";
-                  break;
-                }
-              case CPP_COMMA:
-                {
-                  ptr += ", ";
-                  break;
-                }
-              case CPP_NAME:
-                {
-                  // If the name was not preceeded with '::', look it
-                  // up in the pragmas's scope and add the qualifer.
-                  //
-                  if (!scoped)
-                  {
-                    tree decl (resolve_name (t, c.scope (), false));
-                    tree scope (CP_DECL_CONTEXT (decl));
-
-                    if (scope != global_namespace)
-                    {
-                      ptr += "::";
-                      ptr += decl_as_string (scope, TFF_PLAIN_IDENTIFIER);
-                    }
-
-                    ptr += "::";
-                  }
-
-                  ptr += t;
-                  punc = true;
-                  break;
-                }
-              case CPP_KEYWORD:
-              case CPP_NUMBER:
-                {
-                  ptr += t;
-                  punc = true;
-                  break;
-                }
-              default:
-                {
-                  ptr += t;
-                  break;
-                }
-              }
-
-              scoped = (tt == CPP_SCOPE);
-            }
-          }
-          catch (cxx_lexer::invalid_input const&)
-          {
-            throw generation_failed ();
           }
         }
         else
@@ -874,10 +769,144 @@ namespace
           else
           {
             ptr = p + "< " + name + " >";
-            tr1 = tr1
-              || p.compare (0, 8, "std::tr1") == 0
-              || p.compare (0, 10, "::std::tr1") == 0;
+            decl_name = p;
           }
+        }
+
+        // Check if we are using TR1.
+        //
+        if (decl != 0 || !decl_name.empty ())
+        {
+          if (!unit.count ("tr1-pointer-used"))
+          {
+            unit.set ("tr1-pointer-used", false);
+            unit.set ("boost-pointer-used", false);
+          }
+
+          bool& tr1 (unit.get<bool> ("tr1-pointer-used"));
+          bool& boost (unit.get<bool> ("boost-pointer-used"));
+
+          // First check the user-supplied name.
+          //
+          tr1 = tr1
+            || decl_name.compare (0, 8, "std::tr1") == 0
+            || decl_name.compare (0, 10, "::std::tr1") == 0;
+
+          // If there was no match, also resolve the name since it can be
+          // a using-declaration for a TR1 template.
+          //
+          if (!tr1)
+          {
+            if (decl == 0)
+              decl = resolve_name (decl_name, c.scope (), false);
+
+            if (TREE_CODE (decl) != TEMPLATE_DECL || !
+                DECL_CLASS_TEMPLATE_P (decl))
+            {
+              cerr << c.file () << ":" << c.line () << ":" << c.column ()
+                   << ": error: name '" << decl_name << "' specified with "
+                   << "'#pragma object pointer' does not name a class "
+                   << "template" << endl;
+
+              throw generation_failed ();
+            }
+
+            string n (decl_as_string (decl, TFF_PLAIN_IDENTIFIER));
+
+            // In case of a boost TR1 implementation, we cannot distinguish
+            // between the boost:: and std::tr1:: usage since the latter is
+            // just a using-declaration for the former.
+            //
+            tr1 = tr1
+              || n.compare (0, 8, "std::tr1") == 0
+              || n.compare (0, 10, "::std::tr1") == 0;
+
+            boost = boost
+              || n.compare (0, 17, "boost::shared_ptr") == 0
+              || n.compare (0, 19, "::boost::shared_ptr") == 0;
+          }
+        }
+
+        // Fully-qualify all the unqualified components of the name.
+        //
+        try
+        {
+          lexer.start (ptr);
+          ptr.clear ();
+
+          string t;
+          bool punc (false);
+          bool scoped (false);
+
+          for (cpp_ttype tt = lexer.next (t);
+               tt != CPP_EOF;
+               tt = lexer.next (t))
+          {
+            if (punc && tt > CPP_LAST_PUNCTUATOR)
+              ptr += ' ';
+
+            punc = false;
+
+            switch (static_cast<unsigned> (tt))
+            {
+            case CPP_LESS:
+              {
+                ptr += "< ";
+                break;
+              }
+            case CPP_GREATER:
+              {
+                ptr += " >";
+                break;
+              }
+            case CPP_COMMA:
+              {
+                ptr += ", ";
+                break;
+              }
+            case CPP_NAME:
+              {
+                // If the name was not preceeded with '::', look it
+                // up in the pragmas's scope and add the qualifer.
+                //
+                if (!scoped)
+                {
+                  tree decl (resolve_name (t, c.scope (), false));
+                  tree scope (CP_DECL_CONTEXT (decl));
+
+                  if (scope != global_namespace)
+                  {
+                    ptr += "::";
+                    ptr += decl_as_string (scope, TFF_PLAIN_IDENTIFIER);
+                  }
+
+                  ptr += "::";
+                }
+
+                ptr += t;
+                punc = true;
+                break;
+              }
+            case CPP_KEYWORD:
+            case CPP_NUMBER:
+              {
+                ptr += t;
+                punc = true;
+                break;
+              }
+            default:
+              {
+                ptr += t;
+                break;
+              }
+            }
+
+            scoped = (tt == CPP_SCOPE);
+          }
+        }
+        catch (cxx_lexer::invalid_input const&)
+        {
+          throw generation_failed ();
         }
 
         c.set ("object-pointer", ptr);
