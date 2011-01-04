@@ -1,6 +1,6 @@
 # file      : build/import/cli/cli-cxx.make
 # author    : Boris Kolpackov <boris@codesynthesis.com>
-# copyright : Copyright (c) 2009-2010 Code Synthesis Tools CC
+# copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 # license   : MIT; see accompanying LICENSE file
 
 # Here we are operating in the importing project's space, not in
