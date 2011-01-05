@@ -857,6 +857,12 @@ namespace mysql
            << "init (object_type&, const image_type&, database&);"
            << endl;
 
+        // init (id_image, id)
+        //
+        os << "static void" << endl
+           << "init (id_image_type&, const id_type&);"
+           << endl;
+
         // persist ()
         //
         os << "static void" << endl
@@ -897,17 +903,28 @@ namespace mysql
 
         // Implementation details.
         //
-        os << "public:" << endl
-           << "static bool" << endl
-           << "find_ (mysql::object_statements<object_type>&, const id_type&);"
+        os << "public:" << endl;
+
+        // Load the object image.
+        //
+        os << "static bool" << endl
+           << "find_ (mysql::object_statements< object_type >&, const id_type&);"
+           << endl;
+
+        // Load the rest of the object (containers, etc). Expects the id
+        // image in the object statements to be initialized to the object
+        // id.
+        //
+        os << "static void" << endl
+           << "load_ (mysql::object_statements< object_type >&, object_type&);"
            << endl;
 
         if (options.generate_query ())
           os << "static void" << endl
              << "query_ (database&," << endl
              << "const query_type&," << endl
-             << "mysql::object_statements<object_type>&," << endl
-             << "details::shared_ptr<mysql::select_statement>&);"
+             << "mysql::object_statements< object_type >&," << endl
+             << "details::shared_ptr< mysql::select_statement >&);"
              << endl;
 
         os << "};";

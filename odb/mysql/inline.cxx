@@ -74,6 +74,17 @@ namespace mysql
            << "{"
            << "return obj." << id.name () << ";" << endl
            << "}";
+
+        // load_()
+        //
+        if (!has_a (c, test_container))
+        {
+          os << "inline" << endl
+             << "void " << traits << "::" << endl
+             << "load_ (mysql::object_statements< object_type >&, object_type&)"
+             << "{"
+             << "}";
+        }
       }
 
       virtual void

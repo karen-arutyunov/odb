@@ -2339,28 +2339,39 @@ namespace mysql
         case persist_call:
           {
             if (!inverse)
-              os << traits << "::persist (obj." << obj_name << ", i, " <<
-                "sts.container_statment_cache ()." << sts_name << ");";
+              os << traits << "::persist (" << endl
+                 << "obj." << obj_name << "," << endl
+                 << "i," << endl
+                 << "sts.container_statment_cache ()." << sts_name << ");"
+                 << endl;
             break;
           }
         case load_call:
           {
-            os << traits << "::load (obj." << obj_name << ", i, " <<
-              "sts.container_statment_cache ()." << sts_name << ");";
+            os << traits << "::load (" << endl
+               << "obj." << obj_name << "," << endl
+               << "i," << endl
+               << "sts.container_statment_cache ()." << sts_name << ");"
+               << endl;
             break;
           }
         case update_call:
           {
             if (!inverse)
-              os << traits << "::update (obj." << obj_name << ", i, " <<
-                "sts.container_statment_cache ()." << sts_name << ");";
+              os << traits << "::update (" << endl
+                 << "obj." << obj_name << "," << endl
+                 << "i," << endl
+                 << "sts.container_statment_cache ()." << sts_name << ");"
+                 << endl;
             break;
           }
         case erase_call:
           {
             if (!inverse)
-              os << traits << "::erase (i, sts.container_statment_cache ()." <<
-                sts_name << ");";
+              os << traits << "::erase (" << endl
+                 << "i," << endl
+                 << "sts.container_statment_cache ()." << sts_name << ");"
+                 << endl;
             break;
           }
         }
@@ -2647,6 +2658,24 @@ namespace mysql
 
         os << "}";
 
+        // init (id_image, id)
+        //
+        os << "void " << traits << "::" << endl
+           << "init (id_image_type& i, const id_type& id)"
+           << "{";
+
+        if (grow_id)
+          os << "bool grew (false);";
+
+        init_id_image_member_.traverse (id);
+
+        if (grow_id)
+          os << endl
+             << "if (grew)" << endl
+             << "i.version++;";
+
+        os << "}";
+
         // persist ()
         //
         os << "void " << traits << "::" << endl
@@ -2684,26 +2713,14 @@ namespace mysql
 
         if (straight_containers)
         {
-          os << "{";
-
           // Initialize id_image.
           //
-          if (grow_id)
-            os << "bool grew (false);";
-
-          os << "const id_type& id (obj." << id.name () << ");"
-             << "id_image_type& i (sts.id_image ());";
-          init_id_image_member_.traverse (id);
-
-          if (grow_id)
-            os << "if (grew)" << endl
-               << "i.version++;"
-               << endl;
+          os << "id_image_type& i (sts.id_image ());"
+             << "init (i, obj." << id.name () << ");"
+             << endl;
 
           container_calls t (*this, container_calls::persist_call);
           t.traverse (c);
-
-          os << "}";
         }
 
         os << "}";
@@ -2722,17 +2739,9 @@ namespace mysql
 
         // Initialize id image.
         //
-        if (grow_id)
-          os << "bool grew (false);";
-
-        os << "const id_type& id (obj." << id.name () << ");"
-           << "id_image_type& i (sts.id_image ());";
-        init_id_image_member_.traverse (id);
-
-        if (grow_id)
-          os << "if (grew)" << endl
-             << "i.version++;"
-             << endl;
+        os << "id_image_type& i (sts.id_image ());"
+           << "init (i, obj." << id.name () << ");"
+           << endl;
 
         os << "binding& idb (sts.id_image_binding ());"
            << "if (i.version != sts.id_image_version () || idb.version == 0)"
@@ -2779,16 +2788,9 @@ namespace mysql
 
         // Initialize id image.
         //
-        if (grow_id)
-          os << "bool grew (false);";
-
-        os << "id_image_type& i (sts.id_image ());";
-        init_id_image_member_.traverse (id);
-
-        if (grow_id)
-          os << "if (grew)" << endl
-             << "i.version++;"
-             << endl;
+        os << "id_image_type& i (sts.id_image ());"
+           << "init (i, id);"
+           << endl;
 
         os << "binding& idb (sts.id_image_binding ());"
            << "if (i.version != sts.id_image_version () || idb.version == 0)"
@@ -2838,18 +2840,9 @@ namespace mysql
              << endl
              << "if (l.locked ())"
              << "{"
-             << "init (obj, sts.image (), db);";
-
-          if (containers)
-          {
-            os << endl
-               << "id_image_type& i (sts.id_image ());";
-            container_calls t (*this, container_calls::load_call);
-            t.traverse (c);
-            os << endl;
-          }
-
-          os << "sts.load_delayed ();"
+             << "init (obj, sts.image (), db);"
+             << "load_ (sts, obj);"
+             << "sts.load_delayed ();"
              << "l.unlock ();"
              << "}"
              << "else" << endl
@@ -2882,18 +2875,9 @@ namespace mysql
            << endl
            << "if (l.locked ())"
            << "{"
-           << "init (obj, sts.image (), db);";
-
-        if (containers)
-        {
-          os << endl
-             << "id_image_type& i (sts.id_image ());";
-          container_calls t (*this, container_calls::load_call);
-          t.traverse (c);
-          os << endl;
-        }
-
-        os << "sts.load_delayed ();"
+           << "init (obj, sts.image (), db);"
+           << "load_ (sts, obj);"
+           << "sts.load_delayed ();"
            << "l.unlock ();"
            << "}"
            << "else" << endl
@@ -2904,6 +2888,8 @@ namespace mysql
            << "return true;"
            << "}";
 
+        //
+        //
         os << "bool " << traits << "::" << endl
            << "find_ (mysql::object_statements< object_type >& sts, " <<
           "const id_type& id)"
@@ -2913,16 +2899,9 @@ namespace mysql
 
         // Initialize id image.
         //
-        if (grow_id)
-          os << "bool grew (false);";
-
-        os << "id_image_type& i (sts.id_image ());";
-        init_id_image_member_.traverse (id);
-
-        if (grow_id)
-          os << "if (grew)" << endl
-             << "i.version++;"
-             << endl;
+        os << "id_image_type& i (sts.id_image ());"
+           << "init (i, id);"
+           << endl;
 
         os << "binding& idb (sts.id_image_binding ());"
            << "if (i.version != sts.id_image_version () || idb.version == 0)"
@@ -2965,6 +2944,21 @@ namespace mysql
         os << "st.free_result ();"
            << "return r != select_statement::no_data;"
            << "}";
+
+        // load_()
+        //
+        if (containers)
+        {
+          os << "void " << traits << "::" << endl
+             << "load_ (mysql::object_statements< object_type >& sts, " <<
+            "object_type& obj)"
+             << "{"
+             << "id_image_type& i (sts.id_image ());"
+             << endl;
+          container_calls t (*this, container_calls::load_call);
+          t.traverse (c);
+          os << "}";
+        }
 
         // query ()
         //
