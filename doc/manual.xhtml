@@ -1977,10 +1977,10 @@ update_age (database&amp; db, person&amp; p)
 person john ("John", "Doe", 33);
 person jane ("Jane", "Doe", 32);
 
-transaction t (db->begin ());
+transaction t (db.begin ());
 
 db->persist (john);
-unsigned long jane_id (db->persist (jane));
+unsigned long jane_id (db.persist (jane));
 
 t.commit ();
 
@@ -2030,11 +2030,11 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
      deduced from the second argument, for example:</p>
 
   <pre class="c++">
-transaction t (db->begin ());
+transaction t (db.begin ());
 
-auto_ptr&lt;person> jane (db->load&lt;person> (jane_id));
+auto_ptr&lt;person> jane (db.load&lt;person> (jane_id));
 
-db->load (jane_id, *jane);
+db.load (jane_id, *jane);
 
 t.commit ();
   </pre>
@@ -2148,10 +2148,10 @@ transfer (database&amp; db,
   <pre class="c++">
 const person&amp; john = ...
 
-transaction t (db->begin ());
+transaction t (db.begin ());
 
-db->erase (john);
-db->erase&lt;person> (jane_id);
+db.erase (john);
+db.erase&lt;person> (jane_id);
 
 t.commit ();
   </pre>
@@ -2291,7 +2291,7 @@ namespace odb
      for commonly used frameworks and libraries (such as Boost and Qt)
      that provide persistence support for containers found in these
      frameworks and libraries. It is also easy to persist custom
-     container types as discussed later in <a href="X.4">Section X.4,
+     container types as discussed later in <a href="#X.4">Section X.4,
      "Using Custom Containers"</a>.</p>
 
   <p>You don't need to do anything special to declare a member of a
@@ -2656,7 +2656,7 @@ private:
 
   for (age = 10; age &lt; 100; age += 10)
   {
-    result r (db->query&lt;person> (q));
+    result r (db.query&lt;person> (q));
     ...
   }
   </pre>
@@ -2855,8 +2855,8 @@ private:
 
   name = "Jane";
 
-  db->query&lt;person> (q1); // Find John.
-  db->query&lt;person> (q2); // Find Jane.
+  db.query&lt;person> (q1); // Find John.
+  db.query&lt;person> (q2); // Find Jane.
   </pre>
 
   <p>The <code>odb::query</code> class provides two special functions,
@@ -2917,8 +2917,8 @@ private:
   typedef odb::query&lt;person> query;
   typedef odb::result&lt;person> result;
 
-  result all (db->query&lt;person> ());
-  result johns (db->query&lt;person> (query::first == "John"));
+  result all (db.query&lt;person> ());
+  result johns (db.query&lt;person> (query::first == "John"));
   </pre>
 
   <p>Note that it is not required to explicitly create a named
@@ -2928,8 +2928,8 @@ private:
   <pre class="c++">
   query q (query::first == "John");
 
-  result r1 (db->query&lt;person> (q));
-  result r1 (db->query&lt;person> (query::first == "John"));
+  result r1 (db.query&lt;person> (q));
+  result r1 (db.query&lt;person> (query::first == "John"));
   </pre>
 
   <p>Normally you would create a named query instance if you are
@@ -2959,7 +2959,7 @@ result r (find_underage (db, query::first == "John"));
   typedef odb::query&lt;person> query;
   typedef odb::result&lt;person> result;
 
-  result johns (db->query&lt;person> (query::first == "John"));
+  result johns (db.query&lt;person> (query::first == "John"));
   </pre>
 
   <p>It is best to view an instance of <code>odb::result</code>
@@ -3057,7 +3057,7 @@ namespace odb
      type, for example:</p>
 
   <pre class="c++">
-  result r (db->query&lt;person> (query::first == "John"));
+  result r (db.query&lt;person> (query::first == "John"));
 
   for (result::iterator i (r.begin ()); i != r.end (); ++i)
   {
@@ -3112,7 +3112,7 @@ namespace odb
      the first <code>load()</code> function (see below). For example:</p>
 
   <pre class="c++">
-  result r (db->query&lt;person> (query::first == "John"));
+  result r (db.query&lt;person> (query::first == "John"));
 
   for (result::iterator i (r.begin ()); i != r.end ();)
   {
@@ -3134,7 +3134,7 @@ namespace odb
      a double allocation:</p>
 
   <pre class="c++">
-  result r (db->query&lt;person> (query::first == "John"));
+  result r (db.query&lt;person> (query::first == "John"));
 
   for (result::iterator i (r.begin ()); i != r.end (); ++i)
   {
@@ -3155,7 +3155,7 @@ namespace odb
      For example:</p>
 
   <pre class="c++">
-  result r (db->query&lt;person> (query::first == "John"));
+  result r (db.query&lt;person> (query::first == "John"));
 
   person p;
   for (result::iterator i (r.begin ()); i != r.end (); ++i)
