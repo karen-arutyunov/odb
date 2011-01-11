@@ -2628,6 +2628,1001 @@ private:
 --options-file hashtable.options
   </pre>
 
+
+  <!-- CHAPTER -->
+
+
+  <h1><a name="Y">Y Relationships</a></h1>
+
+  <p>Relationships between persistent objects are expressed with pointers or
+     containers of pointers. The ODB runtime library provides built-in
+     support for the TR1 <code>shared_ptr</code>/<code>weak_ptr</code>,
+     <code>std::auto_ptr</code>, and raw pointers. Plus, ODB profile
+     libraries are available for commonly used frameworks and libraries
+     (such as Boost and Qt) that provide support for smart pointers found
+     in these frameworks and libraries. It is also easy to add support
+     for a custom smart pointer as discussed later in <a href="#Y.4">
+     Section Y.4, "Using Custom Smart Pointers"</a>. Any supported
+     smart pointer can be used in a data member as long as it can be
+     explicitly constructed from the canonical object pointer (@@ ref).
+     For example, you can use <code>weak_ptr</code> if the object pointer
+     is <code>shared_ptr</code>.</p>
+
+  <p>When an object containing a pointer to another object is loaded,
+     the pointed-to object is loaded as well. In some situations this
+     eager loading of the relationships is undesirable since it
+     can lead to a large number of otherwise unused objects being
+     instantiated from the database. To support finer control
+     over relationships loading, the ODB runtime and profile
+     libraries provide the so-called <em>lazy</em> versions of
+     the supported pointers. An object pointed-to by a lazy pointer
+     is not loaded automatically when the containing object is loaded.
+     Instead, we have to explicitly request the instantiation of the
+     pointed-to object. Lazy pointers are discussed in
+     detail in <a href="#Y.3">Section Y.3, "Lazy Pointers"</a>.</p>
+
+  <p>As a simple example, consider the following employee-employer
+     relationship. Code examples presented in this chapter
+     will use the <code>shared_ptr</code> and <code>weak_ptr</code>
+     smart pointers from the TR1 (<code>std::tr1</code>) namespace.</p>
+
+  <pre class="c++">
+#pragma db object
+class employer
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  std::string first_name_;
+  std::string last_name_;
+
+  shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>By default, an object pointer can be <code>NULL</code>. To
+     specify that a pointer always point to a valid object we can
+     use the <code>not_null</code> pragma, for example:</p>
+
+  <pre class="c++">
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db not_null
+  shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>In this case, if we perform a database operation on the
+     <code>employee</code> object and the <code>employer_</code>
+     pointer is <code>NULL</code>, then the <code>odb::null_pointer</code>
+     exception will be thrown.</p>
+
+  <p>We don't need to do anything special to establish or navigate a
+     relationship between two persistent objects, as shown in the
+     following code fragment:</p>
+
+  <pre class="c++">
+// Create an employer and a few employees.
+//
+unsigned long john_id, jane_id;
+{
+  shared_ptr&lt;employer> er (new employer ("Example Inc"));
+  shared_ptr&lt;employee> john (new employee ("John", "Doe"));
+  shared_ptr&lt;employee> jane (new employee ("Jane", "Doe"));
+
+  john->employer_ = er;
+  jane->employer_ = er;
+
+  transaction t (db.begin ());
+
+  db.persist (er);
+  john_id = db.persist (john);
+  jane_id = db.persist (jane);
+
+  t.commit ();
+}
+
+// Load a few employee objects and print their employer.
+//
+{
+  session s;
+  transaction t (db.begin ());
+
+  shared_ptr&lt;employee> john (db.load&lt;employee> (john_id));
+  shared_ptr&lt;employee> jane (db.load&lt;employee> (jane_id));
+
+  cout &lt;&lt; john->employer_->name_ &lt;&lt; endl;
+  cout &lt;&lt; jane->employer_->name_ &lt;&lt; endl;
+
+  t.commit ();
+}
+  </pre>
+
+  <p>The only notable line in the above code is the creation of a
+     session before the second transaction starts. As discussed in
+     Chapter @@ ref, a session acts as a cache of persistent objects.
+     By creating a session before loading the <code>employee</code>
+     objects we make sure that their <code>employer_</code> pointers
+     point to the same <code>employer</code> object. Without a
+     session, each <code>employee</code> would have ended up pointing
+     to its own, private instance of the Example Inc employer.</p>
+
+  <p>As a general guideline, you should use a session when loading
+     objects that have pointers to other persistent objects. A
+     session makes sure that for a given object id, a single instance
+     is shared among all other objects that relate to it.</p>
+
+  <p>We can also use the data members from the pointed-to
+     objects in database queries (<a href="#4">Chapter 4, "Querying the
+     Database"</a>). For each pointer in a persistent class, the query
+     class defines a nested scope containing members corresponding
+     to the data members in the pointed-to object. For example, the
+     query class for the <code>employee</code> object contains
+     the <code>employer</code> scope (derived from the <code>employer_</code>
+     pointer) which in turn contains the <code>name</code> member
+     (derived from the <code>employer::name_</code> data member of the
+     pointed-to object). As a result, we can use the
+     <code>query::employer::name</code> expression while querying
+     the database for the <code>employee</code> objects. For example,
+     the following transaction finds all the employees of Example Inc
+     that have the Doe last name:</p>
+
+  <pre class="c++">
+typedef odb::query&lt;employee> query;
+typedef odb::result&lt;employee> result;
+
+session s;
+transaction t (db.begin ());
+
+result r (db->query&lt;employee> (
+  query::employer::name == "Example Inc" &amp;&amp; query::last == "Doe"));
+
+for (result::iterator i (r.begin ()); i != r.end (); ++i)
+  cout &lt;&lt; i->first_ &lt;&lt; " " &lt;&lt; i->last_ &lt;&lt; endl;
+
+t.commit ();
+  </pre>
+
+
+  <p>An important concept to keep in mind when working with object
+     relationships is the independence of persistent objects. In particular,
+     when an object containing a pointer to another object is made persistent
+     or is updated, the pointed-to object is not automatically persisted
+     or updated. Rather, only a reference to the object (in the form of the
+     object id) is stored for the pointed-to object in the database.
+     The pointed-to object itself is a separate entity and should
+     be made persistent or updated independently.</p>
+
+  <p>When persisting or updating an object containing a pointer to another
+     object, the pointed-to object must have a valid object id. This,
+     however, may not always be easy to achieve in complex relationships that
+     involve objects with automatically assigned identifiers. In such
+     cases it may be necessary to first persist an object with a pointer
+     set to <code>NULL</code> and then, once the pointed-to object is
+     made persistent and its identifier assigned, set the pointer
+     to the correct value and update the object in the database.</p>
+
+  <p>Persistent object relationships can be divided into two groups:
+     unidirectional and bidirectional. Each group in turn contains
+     several configurations that vary depending on the cardinality
+     of the sides of the relationship. All possible unidirectional
+     and bidirectional configurations are discussed in the following
+     sections.</p>
+
+  <h2><a name="Y.1">Y.1 Unidirectional Relationships</a></h2>
+
+  <p>In unidirectional relationships we are only interested in navigating
+     from object to object in one direction. Because there is no interest
+     in navigating in the opposite direction, the cardinality of the other
+     end of the relationship is unimportant. As a result, there are only
+     two possible unidirectional relationships: to-one and to-many. Each
+     of these relationships is described in the following sections. For
+     sample code that shows how to work with these relationships, refer
+     to the <code>relationship</code> example in the <code>odb-examples</code>
+     package.</p>
+
+  <h3><a name="Y.1.1">Y.1.1 To-One Relationships</a></h3>
+
+  <p>An example of a unidirectional to-one relationship is the
+     employee-employer relationship (an employee has one employer).
+     The following persistent C++ classes model this relationship:</p>
+
+  <pre class="c++">
+#pragma db object
+class employer
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>The corresponding database tables look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE employer (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  employer VARCHAR (255) NOT NULL REFERENCES employer (name));
+  </pre>
+
+  <h3><a name="Y.1.2">Y.1.2 To-Many Relationships</a></h3>
+
+  <p>An example of a unidirectional to-many relationship is the
+     employee-project relationship (an employee can be involved
+     in multiple projects). The following persistent C++ classes
+     model this relationship:</p>
+
+  <pre class="c++">
+#pragma db object
+class project
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null unordered
+  std::vector&lt;shared_ptr&lt;project> > projects_;
+};
+  </pre>
+
+  <p>The corresponding database tables look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE project (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee_projects (
+  object_id BIGINT UNSIGNED NOT NULL,
+  value VARCHAR (255) NOT NULL REFERENCES project (name));
+  </pre>
+
+  <p>To obtain a more canonical database schema, the names of tables
+     and columns above can be customized using ODB pragmas
+     (<a href="#5">Chapter 5, "ODB Pragma Language"</a>). For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db not_null unordered \
+             id_column("employee_id") value_column("project_name")
+  std::vector&lt;shared_ptr&lt;project> > projects_;
+};
+  </pre>
+
+  <p>The resulting <code>employee_projects</code> table would then
+     look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE employee_projects (
+  employee_id BIGINT UNSIGNED NOT NULL,
+  project_name VARCHAR (255) NOT NULL REFERENCES project (name));
+  </pre>
+
+
+  <h2><a name="Y.2">Y.2 Bidirectional Relationships</a></h2>
+
+  <p>In bidirectional relationships we are interested in navigating
+     from object to object in both directions. As a result, each
+     object class in a relationship contains a pointer to the other
+     object. If smart pointers are used, then a weak pointer should
+     be used as one of the pointers to avoid ownership cycles. For
+     example:</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class position
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  weak_ptr&lt;employee> employee_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;position> position_;
+};
+  </pre>
+
+  <p>Note that when we establish a bidirectional relationship, we
+     have to set both pointers consistently. One way to make sure
+     that a relationship is always in a consistent state is to
+     provide a single function that updates both pointers at the
+     same time. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class position: public enable_shared_from_this&lt;position>
+{
+  ...
+
+  void
+  fill (shared_ptr&lt;employee> e)
+  {
+    employee_ = e;
+    e->positions_ = shared_from_this ();
+  }
+
+private:
+  weak_ptr&lt;employee> employee_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+private:
+  friend class position;
+
+  #pragma db not_null
+  shared_ptr&lt;position> position_;
+};
+  </pre>
+
+
+  <p>Above, to model a bidirectional relationship in persistent classes,
+     we used two pointers, one in each object. While this is a natural
+     representation in C++, it does not translate to a canonical
+     relational model. Consider the database schema generated for
+     the above two classes:</p>
+
+  <pre class="sql">
+CREATE TABLE position (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  employee BIGINT UNSIGNED REFERENCES employee (id));
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  position BIGINT UNSIGNED NOT NULL REFERENCES position (id));
+  </pre>
+
+  <p>While this database schema is valid, it is unconventional. We have
+     a reference from a row in the <code>position</code> table to a row
+     in the <code>employee</code> table. We also have a reference
+     from this same row in the <code>employee</code> table back to
+     the row in the <code>position</code> table. From the relational
+     point of view, one of these references is redundant since
+     in SQL we can easily navigate in both directions using just one
+     of these references.</p>
+
+  <p>To eliminate redundant database schema references we can use the
+     <code>inverse</code> pragma (<a href="#5.4.7">Section 5.4.7,
+     "<code>inverse</code>"</a>) which tells the ODB compiler that
+     a pointer is the inverse side of a bidirectional relationship.
+     Either side of a relationship can be made inverse. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class position
+{
+  ...
+
+  #pragma db inverse(position_)
+  weak_ptr&lt;employee> employee_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db not_null
+  shared_ptr&lt;position> position_;
+};
+  </pre>
+
+  <p>The resulting database schema looks like this:</p>
+
+  <pre class="sql">
+CREATE TABLE position (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  position BIGINT UNSIGNED NOT NULL REFERENCES position (id));
+  </pre>
+
+  <p>As you can see, an inverse member does not have a corresponding
+     column (or table, in case of an inverse container of pointers)
+     and, from the point of view of database operations, is effectively
+     read-only. The only way to change a bidirectional relationship
+     with an inverse side is to set its direct (non-inverse)
+     pointer. Also note that an ordered container (<a href="#X.1">Section
+     X.1, "Ordered Containers"</a>) of pointers that is an inverse side
+     of a bidirectional relationship is always treated as unordered
+     (<a href="#5.4.8">Section 5.4.8, "<code>unordered</code>"</a>)
+     because the contents of such a container are implicitly built from
+     the direct side of the relationship which does not contain the
+     element order (index).</p>
+
+  <p>There are three distinct bidirectional relationships that we
+     will cover in the following sections: one-to-one, one-to-many,
+     and many-to-many. We will only talk about bidirectional
+     relationships with inverse sides since they result in canonical
+     database schemas. For sample code that shows how to work with
+     these relationships, refer to the <code>inverse</code> example
+     in the <code>odb-examples</code> package.</p>
+
+  <h3><a name="Y.2.1">Y.2.1 One-to-One Relationships</a></h3>
+
+  <p>An example of a bidirectional one-to-one relationship is the
+     presented above employee-position relationship (an employee
+     fills one position and a position is filled by one employee).
+     The following persistent C++ classes model this relationship:</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class position
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db inverse(position_)
+  weak_ptr&lt;employee> employee_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;position> position_;
+};
+  </pre>
+
+  <p>The corresponding database tables look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE position (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  position BIGINT UNSIGNED NOT NULL REFERENCES position (id));
+  </pre>
+
+  <p>If instead the other side of this relationship is made inverse,
+     then the database tables will change as follows:</p>
+
+  <pre class="sql">
+CREATE TABLE position (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  employee BIGINT UNSIGNED REFERENCES employee (id));
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+  </pre>
+
+  <h3><a name="Y.2.2">Y.2.2 One-to-Many Relationships</a></h3>
+
+  <p>An example of a bidirectional one-to-many relationship is the
+     employer-employee relationship (an employer has multiple
+     employees and an employee is employed by one employer).
+     The following persistent C++ classes model this relationship:</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class employer
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+
+  #pragma db not_null inverse(employer_)
+  std::vector&lt;weak_ptr&lt;employee> > employees_
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>The corresponding database tables differ significantly depending
+     on which side of the relationship is made inverse. If the <em>one</em>
+     side (<code>employer</code>) is inverse as in the code
+     above, then the resulting database schema looks like this:</p>
+
+  <pre class="sql">
+CREATE TABLE employer (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  employer VARCHAR (255) NOT NULL REFERENCES employer (name));
+  </pre>
+
+  <p>If instead the <em>many</em> side (<code>employee</code>) of this
+     relationship is made inverse, then the database tables will change
+     as follows:</p>
+
+  <pre class="sql">
+CREATE TABLE employer (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE employer_employees (
+  object_id VARCHAR (255) NOT NULL,
+  value BIGINT UNSIGNED NOT NULL REFERENCES employee (id));
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+  </pre>
+
+  <h3><a name="Y.2.3">Y.2.3 Many-to-Many Relationships</a></h3>
+
+  <p>An example of a bidirectional many-to-many relationship is the
+     employee-project relationship (an employee can work on multiple
+     projects and a project can have multiple participating employees).
+     The following persistent C++ classes model this relationship:</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class project
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+
+  #pragma db not_null inverse(projects_)
+  std::vector&lt;weak_ptr&lt;employee> > employees_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null unordered
+  std::vector&lt;shared_ptr&lt;project> > projects_;
+};
+  </pre>
+
+  <p>The corresponding database tables look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE project (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee_projects (
+  object_id BIGINT UNSIGNED NOT NULL,
+  value VARCHAR (255) NOT NULL REFERENCES project (name));
+  </pre>
+
+  <p>If instead the other side of this relationship is made inverse,
+     then the database tables will change as follows:</p>
+
+  <pre class="sql">
+CREATE TABLE project (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE project_employees (
+  object_id VARCHAR (255) NOT NULL,
+  value BIGINT UNSIGNED NOT NULL REFERENCES employee (id));
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+  </pre>
+
+  <h2><a name="Y.3">Y.3 Lazy Pointers</a></h2>
+
+  <p>Consider again the bidirectional, one-to-many employer-employee
+     relationship that was presented earlier in this chapter:</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class employer
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+
+  #pragma db not_null inverse(employer_)
+  std::vector&lt;weak_ptr&lt;employee> > employees_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>Consider also the following transaction which obtains the employer
+     name given the employee id:</p>
+
+  <pre class="c++">
+unsigned long id = ...
+string name;
+
+session s;
+transaction t (db.begin ());
+
+shared_ptr&lt;employee> e (db.load&lt;employee> (id));
+name = e->employer_->name_;
+
+t.commit ();
+  </pre>
+
+  <p>While this transaction looks very simple, it actually does a lot more
+     than what meets the eye and is necessary. Consider what happens when
+     we load the <code>employee</code> object: the <code>employer_</code>
+     pointer is also automatically loaded which means the <code>employer</code>
+     object corresponding to this employee is also loaded. But the
+     <code>employer</code> object in turn contains the list of pointers
+     to all the employees, which are also loaded. A a result, when object
+     relationships are involved, a simple transaction like the above can
+     load many more objects than is necessary.</p>
+
+  <p>To overcome this problem ODB offers finer grained control over
+     the relationship loading in the form of lazy pointers. A lazy
+     pointer does not automatically load the pointed-to object
+     when the containing object is loaded. Instead, we have to
+     explicitly load the pointed-to object if and when we need to
+     access it.</p>
+
+  <p>The ODB runtime library provides lazy counterparts for all the
+     supported pointers, namely: <code>odb::lazy_shared_ptr</code> and
+     <code>odb::lazy_weak_ptr</code> for TR1 <code>shared_ptr</code> and
+     <code>weak_ptr</code>, <code>odb::lazy_auto_ptr</code> for
+     <code>std::auto_ptr</code>, and <code>odb::lazy_ptr</code> for raw
+     pointers. The ODB profile libraries provide lazy pointer
+     implementations for smart pointers from popular frameworks and
+     libraries.</p>
+
+  <p>While we will discuss the interface of lazy pointers in more detail
+     shortly, the most commonly used extra function provided by these
+     pointers is <code>load()</code>. This function loads the
+     pointed-to object if it hasn't already been loaded. After
+     the call to this function, the lazy pointer can be used
+     in the the same way as its eager counterpart. The <code>load()</code>
+     function also returns the eager pointer, in case you need to pass
+     it around. For a lazy weak pointer, the
+     <code>load()</code> function also locks the pointer.</p>
+
+  <p>The following example shows how we can change our employer-employee
+     relationship to use lazy pointers. Here we choose to use lazy pointers
+     for both sides of the relationship.</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class employer
+{
+  ...
+
+  #pragma db not_null inverse(employer_)
+  std::vector&lt;lazy_weak_ptr&lt;employee> > employees_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db not_null
+  lazy_shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>And the transaction is changed like this:</p>
+
+  <pre class="c++">
+unsigned long id = ...
+string name;
+
+session s;
+transaction t (db.begin ());
+
+shared_ptr&lt;employee> e (db.load&lt;employee> (id));
+e->employer_.load ();
+name = e->employer_->name_;
+
+t.commit ();
+  </pre>
+
+
+  <p>As a general guideline we recommend that you make at least one side
+     of a bidirectional relationship lazy, especially for relationships
+     with a <em>many</em> side.</p>
+
+  <p>A lazy pointer implementation mimics the interface of its eager
+     counterpart which can be used once the pointer is loaded. It also
+     adds a number of additional functions that are specific to the
+     lazy loading functionality. Overall, the interface of a lazy
+     pointer follows this general outline:</p>
+
+  <pre class="c++">
+template &lt;class T>
+class lazy_ptr
+{
+public:
+  //
+  // The eager pointer interface.
+  //
+
+  // Initialization/assignment from an eager pointer.
+  //
+public:
+  template &lt;class Y> lazy_ptr (const eager_ptr&lt;Y>&amp;);
+  template &lt;class Y> lazy_ptr&amp; operator= (const eager_ptr&lt;Y>&amp;);
+
+  // Lazy loading interface.
+  //
+public:
+  bool loaded () const;
+  eager_ptr&lt;T> load () const;
+
+  // Unload the pointer. For transient objects this function is
+  // equivalent to reset().
+  //
+  void unload () const;
+
+  // Initialization with a persistent loaded object.
+  //
+  template &lt;class Y> lazy_ptr (database&amp;, Y*);
+  template &lt;class Y> lazy_ptr (database&amp;, const eager_ptr&lt;Y>&amp;);
+
+  template &lt;class Y> void reset (database&amp;, Y*);
+  template &lt;class Y> void reset (database&amp;, const eager_ptr&lt;Y>&amp;);
+
+  // Initialization with a persistent unloaded object.
+  //
+  template &lt;class ID> lazy_ptr (database&amp;, const ID&amp;);
+
+  template &lt;class ID> void reset (database&amp;, const ID&amp;);
+
+  // Query object id and database of a persistent object.
+  //
+  template &lt;class O /* = T */>
+  object_traits&lt;O>::id_type object_id () const;
+
+  odb::database&amp; database () const;
+};
+  </pre>
+
+  <p>In a lazy weak pointer interface, the <code>load()</code> function
+     returns the <em>strong</em> (shared) eager pointer. The following
+     transaction demonstrates the use of a lazy weak pointer based on
+     the <code>employer</code> and <code>employee</code> classes
+     presented earlier.</p>
+
+  <pre class="c++">
+typedef std::vector&lt;lazy_weak_ptr&lt;employee> > employees;
+
+session s;
+transaction t (db.begin ());
+
+shared_ptr&lt;employer> er (db.load&lt;employer> ("Example Inc"));
+employees&amp; es (er->employees ());
+
+for (employees::iterator i (es.begin ()); i != es.end (); ++i)
+{
+  // We are only interested in employees with object id less than
+  // 100.
+  //
+  lazy_weak_ptr&lt;employee>&amp; lwp (*i);
+
+  if (lwp.object_id&lt;employee> () &lt; 100)
+  {
+    shared_ptr&lt;employee> e (lwp.load ()); // Load and lock.
+    cout &lt;&lt; e->first_ &lt;&lt; " " &lt;&lt; e->last_ &lt;&lt; endl;
+  }
+}
+
+t.commit ();
+  </pre>
+
+  <p>Notice that inside the for-loop we use a reference to the lazy
+     weak pointer instead of making a copy. This is not merely to
+     avoid a copy. When a lazy pointer is loaded, all other lazy
+     pointers that point to the same object do not automatically
+     become loaded (though an attempt to load such copies will
+     result in them pointing to the same object, provided the
+     same session is still in effect). By using a reference
+     in the above transaction we make sure that we load the
+     pointer that is contained in the <code>employer</code>
+     object. This way, if we later need to re-examine this
+     <code>employee</code> object, the pointer will already
+     be loaded.</p>
+
+  <p>As another example, suppose we want to add an employee
+     to Example Inc. The straightforward implementation of this
+     transaction is presented below:</p>
+
+  <pre class="c++">
+session s;
+transaction t (db.begin ());
+
+shared_ptr&lt;employer> er (db.load&lt;employer> ("Example Inc"));
+shared_ptr&lt;employee> e (new employee ("John", "Doe"));
+
+e->employer_ = er;
+er->employees ().push_back (e);
+
+db.persist (e);
+t.commit ();
+  </pre>
+
+  <p>Notice here that we didn't have to update the employer object
+     in the database since the <code>employees_</code> list of
+     pointers is an inverse side of a bidirectional relationship
+     and is effectively read-only, from the persistence point of
+     view.</p>
+
+  <p>A faster implementation of this transaction, that avoids loading
+     the employer object, relies on the ability to initialize an
+     <em>unloaded</em> lazy pointer with the database where the object
+     is stored as well as its identifier:</p>
+
+  <pre class="c++">
+lazy_shared_ptr&lt;employer> er (db, std::string ("Example Inc"));
+shared_ptr&lt;employee> e (new employee ("John", "Doe"));
+
+e->employer_ = er;
+
+session s;
+transaction t (db.begin ());
+
+db.persist (e);
+
+t.commit ();
+  </pre>
+
+  <h2><a name="Y.4">Y.4 Using Custom Smart Pointers</a></h2>
+
+  <p>While the ODB runtime and profile libraries provide support for
+     the majority of widely-used pointers, it is also easy to add
+     support for a custom smart pointer.</p>
+
+  <p>To achieve this you will need to implement the
+     <code>pointer_traits</code> class template specialization for
+     your pointer. The first step is to determine the pointer kind
+     since the interface of the <code>pointer_traits</code> specialization
+     varies depending on the pointer kind. The supported pointer kinds
+     are: <em>raw</em> (raw pointer or equivalent, that is, unmanaged),
+          <em>unique</em> (smart pointer that doesn't support sharing),
+          <em>shared</em> (smart pointer that supports sharing), and
+          <em>weak</em> (weak counterpart of the shared pointer). Any of
+     these pointers can be lazy, which also affects the
+     interface of the <code>pointer_traits</code> specialization.</p>
+
+  <p>Once you have determined the pointer kind for your smart pointer,
+     use a specialization for one of the standard pointers found in
+     the common ODB runtime library (<code>libodb</code>) as a base
+     for your own implementation.</p>
+
+  <p>Once the pointer traits specialization is ready, you will need to
+     include it into the ODB compilation process using the
+     <code>--odb-epilogue</code> option and into the generated header
+     file with the <code>--hxx-prologue</code> option. As an example,
+     suppose we have the <code>smart_ptr</code> smart pointer for which
+     we have the traits specialization implemented in the
+     <code>smart-ptr-traits.hxx</code> file. Then, we can create an ODB
+     compiler options file for this pointer and save it to
+     <code>smart-ptr.options</code>:</p>
+
+  <pre>
+# Options file for smart_ptr.
+#
+--odb-epilogue '#include "smart-ptr-traits.hxx"'
+--hxx-prologue '#include "smart-ptr-traits.hxx"'
+  </pre>
+
+  <p>Now, whenever we compile a header file that uses <code>smart_ptr</code>,
+     we can pass the following option to make sure it is recognized by the
+     ODB compiler as a smart pointer and the traits file is included in the
+     generated code:</p>
+
+  <pre>
+--options-file smart-ptr.options
+  </pre>
+
+  <p>It is also possible to implement a lazy counterpart for your
+     smart pointer. The ODB runtime library provides a class template
+     that encapsulates the object id management and loading
+     functionality that is needed to implement a lazy pointer. All
+     you need to do is wrap it with an interface that mimics
+     your smart pointer. Using one of the existing lazy pointer
+     implementations (either from the ODB runtime library or one
+     of the profile libraries) as a base for your implementation
+     is the easiest way to get started.</p>
+
+
   <!-- CHAPTER -->
 
 
