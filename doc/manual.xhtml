@@ -333,6 +333,7 @@ for consistency.
                 <tr><th>5.1.2</th><td><a href="#5.1.2">Visual C++</a></td></tr>
                 <tr><th>5.1.3</th><td><a href="#5.1.3">Sun C++</a></td></tr>
 		<tr><th>5.1.4</th><td><a href="#5.1.4">IBM XL C++</a></td></tr>
+		<tr><th>5.1.5</th><td><a href="#5.1.5">HP aC++</a></td></tr>
               </table>
             </td>
           </tr>
@@ -3423,6 +3424,15 @@ CC +w -erroff=unknownpragma ...
 xlC -qsuppress=1540-1401 ...
   </pre>
 
+  <h3><a name="5.1.5">5.1.5 HP aC++</a></h3>
+
+  <p>HP aC++ (aCC) issues an unknown pragma warning (2161) by default.
+     To disable this warning you can add the <code>+W2161</code>
+     command line option, for example:</p>
+
+  <pre class="terminal">
+aCC +W2161 ...
+  </pre>
 
   <h2><a name="5.2">5.2 Object Type Pragmas</a></h2>
 
