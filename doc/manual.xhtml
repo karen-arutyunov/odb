@@ -1539,13 +1539,18 @@ Hello, Joe!
      and an instance of a value type &mdash; a <em>value</em>.</p>
 
   <p>An object is an independent entity. It can be stored, updated,
-     and deleted in the database independent of other objects or values.
+     and deleted in the database independent of other objects.
      An object has an identifier, called <em>object id</em>, that is
-     unique among all instances of an object type within a database.
-     An object consists of data members which are either values or
-     references to other objects. In contrast, a value can only be
-     stored in the database as part of an object and doesn't have
-     its own unique identifier.</p>
+     unique among all instances of an object type within a database. In
+     contrast, a value can only be stored in the database as part of an
+     object and doesn't have its own unique identifier.</p>
+
+  <p>An object consists of data members which are either values, pointers
+     to other objects (<a href="#Y">Chapter Y, "Relationships"</a>), or
+     containers of values or pointers to other objects (<a href="#X">Chapter
+     X, "Containers")</a>. Pointers to other objects and containers can
+     be viewed as special kinds of values since they also can only
+     be stored in the database as part of an object.</p>
 
   <p>An object type is a C++ class. Because of this one-to-one
      relationship, we will use terms <em>object type</em>
@@ -1566,7 +1571,7 @@ Hello, Joe!
      viewed (and mapped) as both simple and composite by different
      applications.</p>
 
-  <p>Seeing how all these concepts map to the relational model
+  <p>Understanding how all these concepts map to the relational model
      will hopefully make these distinctions clearer. In a relational
      database an object type is mapped to a table and a value type is
      mapped to one or more columns. A simple value type is mapped
@@ -1600,11 +1605,11 @@ Hello, Joe!
      example:</p>
 
   <pre class="c++">
-    #pragma db object
-    class person
-    {
-      ...
-    };
+#pragma db object
+class person
+{
+  ...
+};
   </pre>
 
   <p>The other pragma that we often use is <code>db&nbsp;id</code>
@@ -1612,14 +1617,15 @@ Hello, Joe!
      example:</p>
 
   <pre class="c++">
-    #pragma db object
-    class person
-    {
+#pragma db object
+class person
+{
+  ...
 
-    private:
-      #pragma db id
-      unsigned long id_;
-    };
+private:
+  #pragma db id
+  unsigned long id_;
+};
   </pre>
 
   <p>These two pragmas are the minimum required to declare a
@@ -1634,10 +1640,26 @@ Hello, Joe!
      how to convert between the two. On the other hand, if a simple value
      is unknown to the ODB compiler then you will need to provide the
      mapping to the database system type and, possibly, the code to
-     convert between the two. For more information on this refer to
-     <a href="#5.3">Section 5.3, "Value Type Pragmas"</a>. Composite
-     value types are not yet supported by ODB and we will not discuss
-     them further in this revision of the manual.</p>
+     convert between the two. For more information on how to achieve
+     this refer to the <code>db&nbsp;type</code> pragma (<a href="#5.3.1">Section
+     5.3.1, "<code>type</code>"</a>). Similar to object types, composite
+     value types have to be explicitly declared as persistent using the
+     <code>db&nbsp;value</code> pragma, for example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+private:
+  std::string first_;
+  std::string last_;
+};
+  </pre>
+
+  <p>Composite values are discussed in greater detail in <a href="#Z">Chapter
+     Z, "Composite Value Types"</a>.</p>
 
   <p>Normally, you would use object types to model real-world entities,
      things that have their own identity. For example, in the
@@ -1698,15 +1720,15 @@ Hello, Joe!
      database system:</p>
 
   <pre class="c++">
-  #include &lt;odb/database.hxx>
-  #include &lt;odb/mysql/database.hxx>
+#include &lt;odb/database.hxx>
+#include &lt;odb/mysql/database.hxx>
 
-  auto_ptr&lt;odb::database> db (
-    new odb::mysql::database (
-      "test_user"     // database login name
-      "test_password" // database password
-      "test_database" // database name
-      ));
+auto_ptr&lt;odb::database> db (
+  new odb::mysql::database (
+    "test_user"     // database login name
+    "test_password" // database password
+    "test_database" // database name
+    ));
   </pre>
 
   <p>The <code>odb::database</code> class is a common interface for
@@ -2324,11 +2346,11 @@ private:
      in detail in the following sections.</p>
 
   <p>Containers in ODB can contain simple value types, composite value
-     types (see @@), and object pointers (see @@). Containers of
-     containers are not supported. A key in map and multimap
-     containers can be a simple or composite value type but not
-     an object pointer. An index in the ordered container should
-     be a simple integer type.</p>
+     types (see @@), and pointers to objects (see @@). Containers of
+     containers, either directly or indirectly via a composite value
+     type, are not allowed. A key in map and multimap containers can
+     be a simple or composite value type but not a pointer to an object.
+     An index in the ordered container should be a simple integer type.</p>
 
   <p>The value type in the ordered, set, and map containers as well as
      the key type in the map containers should be default-constructible.
@@ -3621,6 +3643,322 @@ t.commit ();
      implementations (either from the ODB runtime library or one
      of the profile libraries) as a base for your implementation
      is the easiest way to get started.</p>
+
+
+  <!-- CHAPTER -->
+
+
+  <h1><a name="Z">Z Composite Value Types</a></h1>
+
+  <p>Composite value type is a <code>class</code> or <code>struct</code>
+     type that is mapped to more than one database column. To declare
+     a composite value type we use the <code>db value</code> pragma,
+     for example:</p>
+
+  <pre class="c++">
+#pragma db value
+class basic_name
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+};
+  </pre>
+
+  <p>A composite value type does not have to define a default constructor,
+     unless it is used as an element of a container, in which case the
+     default constructor can be made private. If a composite value type
+     has private or protected non-transient data members or if its
+     default constructor is not public and the value type is used as
+     an element in a container, then the <code>odb::access</code> class
+     should be declared a friend of this value type. For example:</p>
+
+  <pre class="c++">
+#pragma db value
+class basic_name
+{
+public:
+  basic_name (const std::string&amp; first, const std::string&amp; last);
+
+  ...
+
+private:
+  friend class odb::access;
+
+  basic_name () {} // Needed for storing basic_name in containers.
+
+  std::string first_;
+  std::string last_;
+};
+  </pre>
+
+  <p>The complete versions of the above code fragment as well as other code
+     samples presented in this chapter can found in the <code>composite</code>
+     example in the <code>odb-examples</code> package.</p>
+
+  <p>The members of a composite value can be other value types (either
+     simple or composite), containers (@@ ref), and object pointers (@@ ref).
+     Similarly, a composite value type can be used in object members,
+     as an element in a container, and as a base for another composite
+     value type. In particular, composite value types can be used as
+     element types in set containers (@@ ref) and as key types in map
+     containers (@@ ref). A composite value type that is used as an
+     element of a container cannot contain other containers since
+     containers of containers are not allowed. The following example
+     illustrates some of the possible use cases:</p>
+
+<pre class="c++">
+#pragma db value
+class basic_name
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+};
+
+typedef std::vector&lt;basic_name> basic_names;
+
+#pragma db value
+class name_extras
+{
+  ...
+
+  std::string nickname_;
+  basic_names aliases_;
+};
+
+#pragma db value
+class name: public basic_name
+{
+  ...
+
+  std::string title_;
+  name_extras extras_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id_;
+
+  name name_;
+};
+</pre>
+
+  <p>We can also use the data members from the composite value types
+     in database queries (<a href="#4">Chapter 4, "Querying the
+     Database"</a>). For each composite value in a persistent class,
+     the query class defines a nested scope containing members corresponding
+     to the data members in the value type. For example, the
+     query class for the <code>person</code> object presented above
+     contains the <code>name</code> scope (derived from the <code>name_</code>
+     data member) which in turn contains the <code>extras</code> member
+     (derived from the <code>name::extras_</code> data member of the
+     composite value type). The process continues reqursively for nested
+     composite value types and, as a result, we can use the
+     <code>query::name::extras::nickname</code> expression while querying
+     the database for the <code>person</code> objects. For example:</p>
+
+  <pre class="c++">
+typedef odb::query&lt;person> query;
+typedef odb::result&lt;person> result;
+
+transaction t (db->begin ());
+
+result r (db->query&lt;person> (
+  query::name::extras::nickname == "Squeaky"));
+
+...
+
+t.commit ();
+  </pre>
+
+  <h2><a name="Z.1">Z.1 Composite Value Column and Table Names</a></h2>
+
+  <p>Customizing a column name for a data member of a simple value
+     type is straightforward: we simply specify the desired name with
+     the <code>db column</code> pragma (@@ ref). For composite value
+     types things are slightly more complicated since it is mapped to
+     multiple columns. Consider the following example:</p>
+
+<pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id_;
+
+  name name_;
+};
+</pre>
+
+  <p>The column names for the <code>first_</code> and <code>last_</code>
+     members are constructed by using the sanitized name of the
+     <code>person::name_</code> member as a prefix and the names of the
+     members in the value type (<code>first_</code> and <code>last_</code>)
+     as suffixes. As a result, the database schema for the above classes
+     will look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE person (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  name_first TEXT NOT NULL,
+  name_last TEXT NOT NULL);
+  </pre>
+
+ <p>We can customize both the prefix and the suffix using the
+    <code>db column</code> pragma as shown in the following
+    example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+  #pragma db column("first_name")
+  std::string first_;
+
+  #pragma db column("last_name")
+  std::string last_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db column("person_")
+  name name_;
+};
+  </pre>
+
+  <p>The database schema changes as follows:</p>
+
+  <pre class="sql">
+CREATE TABLE person (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  person_first_name TEXT NOT NULL,
+  person_last_name TEXT NOT NULL);
+  </pre>
+
+  <p>We can also make the column prefix empty, for example:</p>
+
+<pre class="c++">
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db column("")
+  name name_;
+};
+  </pre>
+
+  <p>This will result in the following schema:</p>
+
+  <pre class="sql">
+CREATE TABLE person (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL);
+  </pre>
+
+  <p>The same principal applies when a composite value type is used
+     as an element of a container, except that instead of
+     <code>db column</code> either the <code>db value_column</code>
+     (@@ ref) or <code>db key_column</code> (@@ ref) pragmas are used to
+     specify the column prefix.</p>
+
+  <p>When a composite value type contains a container, an extra table
+     is used to store the elements (@@ ref Chapter X, "Containers").
+     The names of such tables are constructed in a way similar to the
+     column names, except that by default both the object name and the
+     member name are used as a prefix. For example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+  std::vector&lt;std::string> nicknames_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  name name_;
+};
+  </pre>
+
+  <p>The corresponding database schema will look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE `person_name_nicknames` (
+  `object_id` BIGINT UNSIGNED NOT NULL,
+  `index` BIGINT UNSIGNED NOT NULL,
+  `value` TEXT NOT NULL)
+
+CREATE TABLE person (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  name_first TEXT NOT NULL,
+  name_last TEXT NOT NULL);
+  </pre>
+
+  <p>To customize the container table name we can use the
+     <code>db table</code> (@@ ref) pragma, for example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+  #pragma db table("nickname")
+  std::vector&lt;std::string> nicknames_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db table("person_")
+  name name_;
+};
+  </pre>
+
+  <p>This will result in the following schema changes:</p>
+
+  <pre class="sql">
+CREATE TABLE `person_nickname` (
+  `object_id` BIGINT UNSIGNED NOT NULL,
+  `index` BIGINT UNSIGNED NOT NULL,
+  `value` TEXT NOT NULL)
+  </pre>
+
+  <p>Similar to columns, we can make the table prefix empty.</p>
 
 
   <!-- CHAPTER -->
@@ -5009,6 +5347,10 @@ private:
 };
   </pre>
 
+  <p>For a member of a composite value type, the <code>column</code> specifier
+     specifies the column name prefix. Refer to <a href="#Z.1">Section Z.1,
+     "Composite Value Column and Table Names"</a> for details.</p>
+
   <p>If the column name is not specified, it is derived from the member
      name by removing the common member name decorations, such as leading
      and trailing underscores, the <code>m_</code> prefix, etc.</p>
@@ -5151,6 +5493,12 @@ private:
      trailing underscores, the <code>m_</code> prefix, etc. In the example
      above, without the <code>table</code> specifier, the container's
      table name would have been <code>person_nicknames</code>.</p>
+
+  <p>The <code>table</code> specifier can also be used for members of
+     composite value types. In this case it specifies the table name
+     prefix for container members inside the composite value type. Refer
+     to <a href="#Z.1">Section Z.1, "Composite Value Column and Table
+     Names"</a> for details.</p>
 
   <h3><a name="5.4.10">5.4.10 <code>index_type</code></a></h3>
 
