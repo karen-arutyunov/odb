@@ -301,13 +301,14 @@ for consistency.
       <th>3</th><td><a href="#3">Working with Persistent Objects</a>
         <table class="toc">
           <tr><th>3.1</th><td><a href="#3.1">Concepts and Terminology</a></td></tr>
-          <tr><th>3.2</th><td><a href="#3.2">Database</a></td></tr>
-          <tr><th>3.3</th><td><a href="#3.3">Transactions</a></td></tr>
-          <tr><th>3.4</th><td><a href="#3.4">Making Objects Persistent</a></td></tr>
-          <tr><th>3.5</th><td><a href="#3.5">Loading Persistent Objects</a></td></tr>
-          <tr><th>3.6</th><td><a href="#3.6">Updating Persistent Objects</a></td></tr>
-          <tr><th>3.7</th><td><a href="#3.7">Deleting Persistent Objects</a></td></tr>
-          <tr><th>3.8</th><td><a href="#3.8">ODB Exceptions</a></td></tr>
+	  <tr><th>3.2</th><td><a href="#3.2">Object Pointers</a></td></tr>
+          <tr><th>3.3</th><td><a href="#3.3">Database</a></td></tr>
+          <tr><th>3.4</th><td><a href="#3.4">Transactions</a></td></tr>
+          <tr><th>3.5</th><td><a href="#3.5">Making Objects Persistent</a></td></tr>
+          <tr><th>3.6</th><td><a href="#3.6">Loading Persistent Objects</a></td></tr>
+          <tr><th>3.7</th><td><a href="#3.7">Updating Persistent Objects</a></td></tr>
+          <tr><th>3.8</th><td><a href="#3.8">Deleting Persistent Objects</a></td></tr>
+          <tr><th>3.9</th><td><a href="#3.9">ODB Exceptions</a></td></tr>
         </table>
       </td>
     </tr>
@@ -1136,7 +1137,7 @@ main (int argc, char* argv[])
 
   <p>The final bit of code in our example is the <code>catch</code>
      block that handles the database exceptions. We do this by catching
-     the base ODB exception (see <a href="#3.8">Section 3.8, "ODB
+     the base ODB exception (see <a href="#3.9">Section 3.9, "ODB
      Exceptions"</a>) and printing the diagnostics.</p>
 
   <p>Let's now compile (see <a href="#2.3">Section 2.3, "Compiling and
@@ -1370,7 +1371,13 @@ main (int argc, char* argv[])
      <code>load()</code> database function to instantiate a
      <code>person</code> object with Joe's persistent state. We
      pass Joe's object identifier that we stored earlier when we
-     made this object persistent.</p>
+     made this object persistent. While here we use
+     <code>std::auto_ptr</code> to manage the returned object, we
+     could have also used another smart pointer, for example
+     <code>shared_ptr</code> from TR1 or Boost. For more information
+     on the object lifetime management and the smart pointers that we
+     can use for that, see <a href="#3.2">Section 3.2, "Object
+     Pointers"</a>.</p>
 
   <p>With the instantiated object in hand we increment the age
      and call the <code>update()</code> function to update
@@ -1498,8 +1505,8 @@ Hello, Joe!
      well as the core database APIs in greater detail. We will
      start with basic concepts and terminology in <a href="#3.1">Section 3.1</a>
      and continue with the discussion of the <code>odb::database</code>
-     class in <a href="#3.2">Section 3.2</a> and transactions in
-     <a href="#3.3">Section 3.3</a>. The remainder of this chapter
+     class in <a href="#3.3">Section 3.3</a> and transactions in
+     <a href="#3.4">Section 3.4</a>. The remainder of this chapter
      deals with the core database operations and concludes with
      the discussion of ODB exceptions.</p>
 
@@ -1639,7 +1646,7 @@ class person
      can make it private. It is also possible to have an object type
      without the default constructor. However, in this case, the database
      operations can only load the persistent state into an existing instance
-     (<a href="#3.5">Section 3.5, "Loading Persistent Objects"</a>,
+     (<a href="#3.6">Section 3.6, "Loading Persistent Objects"</a>,
      <a href="#4.4">Section 4.4, "Query Result"</a>).</p>
 
   <p>If an object class has private or protected non-transient data
@@ -1737,8 +1744,70 @@ class name
     application terminates unless and until it is explicitly
     deleted from the database.</p>
 
+  <h2><a name="3.2">3.2 Object Pointers</a></h2>
 
-  <h2><a name="3.2">3.2 Database</a></h2>
+  <p>As we have seen in the previous chapter, some database operations
+     create dynamically allocated instances of persistent classes and
+     return pointer to these instances. As we will see in later chapters,
+     pointers are also used to establish relationships between objects
+     (<a href="#Y">Chapter Y, Realtionships</a>) as well as to cache
+     persistent object in a session (<a href="#Q">Chapter Q, Session</a>).</p>
+
+  <p>By default, all these mechanisms use raw pointers to return,
+     pass, and cache objects. This is normally sufficient for applications
+     that have simple object lifetime requirements and do not use sessions
+     or object relationsips. In particular, a dynamically allocated object
+     that is returned as a raw poiner from a database operation can be
+     assigned to a smart pointer of our choice, for example
+     <code>std::auto_ptr</code> or <code>shared_ptr</code> from TR1 or
+     Boost.</p>
+
+  <p>However, to avoid any possibility of a mistake, such as forgetting
+     to use a smart pointer for a returned object, as well as to be able
+     to use more advanced ODB functionality, such as sessions and bidirectional
+     object relationships, it is recommended that you use smart pointers
+     with the sharing semantics, such as <code>shared_ptr</code> mentioned
+     previously, as object pointers.</p>
+
+  <p>ODB provides two mechanisms for changing the object pointer type. You
+     can use the <code>--default-pointer</code> option to specify the
+     alternate default object pointer type. All objects that don't
+     have the object pointer explicitly specified with the
+     <code>db pointer</code> pragma (see below) will use the default
+     pointer type. Refer to the
+     <a href="http://www.codesynthesis.com/products/odb/doc/odb.xhtml">ODB
+     Compiler Command Line Manual</a> for details on this option's argument.
+     The typical usage is shown below:</p>
+
+  <pre class="terminal">
+--default-pointer std::tr1::shared_ptr
+  </pre>
+
+  <p>The second mechanism allows you to specify the object pointer on
+     an object by object basis using the <code>db pointer</code>
+     pragma, for example:</p>
+
+  <pre class="c++">
+#pragma db object pointer(std::tr1::shared_ptr)
+class person
+{
+  ...
+};
+  </pre>
+
+  <p>Refer to <a href="#5.2.2">Section 5.2.2, "<code>pointer</code>"</a>
+     for more information on this pragma.</p>
+
+  <p>Built-in support, provided by the ODB runtime, library allows us to use
+     the TR1 <code>shared_ptr</code> and <code>std::auto_ptr</code> as
+     object pointers. Plus, ODB profile libraries, that are available for
+     commonly used frameworks and libraries (such as Boost and Qt),
+     provide support for smart pointers found in these frameworks and
+     libraries. It is also easy to add support for our own smart pointers,
+     as described in <a href="#Y.4"> Section Y.4, "Using Custom Smart
+     Pointers"</a>.</p>
+
+  <h2><a name="3.3">3.3 Database</a></h2>
 
   <p>Before an application can make use of persistence services
      offered by ODB, it has to create a database class instance. A
@@ -1781,7 +1850,7 @@ auto_ptr&lt;odb::database> db (
      system-specific <code>database</code> classes, refer to
      <a href="#6">Chapter 6, "Database Systems"</a>.</p>
 
-  <h2><a name="3.3">3.3 Transactions</a></h2>
+  <h2><a name="3.4">3.4 Transactions</a></h2>
 
   <p>A transaction is an atomic, consistent, isolated and durable
      (ACID) unit of work. Database operations can only be
@@ -1988,7 +2057,7 @@ update_age (database&amp; db, person&amp; p)
   </pre>
 
 
-  <h2><a name="3.4">3.4 Making Objects Persistent</a></h2>
+  <h2><a name="3.5">3.5 Making Objects Persistent</a></h2>
 
   <p>A newly created instance of a persistent class is transient.
      We use the <code>database::persist()</code> function template
@@ -2056,7 +2125,7 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
      in your application and to other applications as soon as
      possible.</p>
 
-  <h2><a name="3.5">3.5 Loading Persistent Objects</a></h2>
+  <h2><a name="3.6">3.6 Loading Persistent Objects</a></h2>
 
   <p>Once an object is made persistent, and you know its object id, it
      can be loaded by the application using the <code>database::load()</code>
@@ -2121,7 +2190,7 @@ t.commit ();
      identifier can be significantly faster than executing a query.</p>
 
 
-  <h2><a name="3.6">3.6 Updating Persistent Objects</a></h2>
+  <h2><a name="3.7">3.7 Updating Persistent Objects</a></h2>
 
   <p>If a persistent object has been modified, we can store the updated
      state in the database using the <code>database::update()</code>
@@ -2169,7 +2238,7 @@ transfer (database&amp; db,
 }
   </pre>
 
-  <h2><a name="3.7">3.7 Deleting Persistent Objects</a></h2>
+  <h2><a name="3.8">3.8 Deleting Persistent Objects</a></h2>
 
   <p>To delete a persistent object's state from the database we use the
      <code>database::erase()</code> function template. If the application
@@ -2212,7 +2281,7 @@ db.erase&lt;person> (jane_id);
 t.commit ();
   </pre>
 
-  <h2><a name="3.8">3.8 ODB Exceptions</a></h2>
+  <h2><a name="3.9">3.9 ODB Exceptions</a></h2>
 
   <p>In the previous sections we have already mentioned some of the
      exceptions that can be thrown by the database functions. In this
@@ -2300,18 +2369,18 @@ namespace odb
      <code>transaction_already_finalized</code>, and
      <code>deadlock</code>) are thrown by the
      <code>odb::transaction</code> class and are discussed
-     in <a href="#3.3">Section 3.3, "Transactions"</a>.</p>
+     in <a href="#3.4">Section 3.4, "Transactions"</a>.</p>
 
   <p>The <code>object_already_persistent</code> exception is thrown
      by the <code>persist()</code> database function. See
-     <a href="#3.4">Section 3.4, "Making Objects Persistent"</a>
+     <a href="#3.5">Section 3.5, "Making Objects Persistent"</a>
      for details.</p>
 
   <p>The <code>object_not_persistent</code> exception is thrown
      by the <code>load()</code>  and <code>update()</code>
      database functions. Refer to
-     <a href="#3.5">Section 3.5, "Loading Persistent Objects"</a> and
-     <a href="#3.6">Section 3.6, "Updating Persistent Objects"</a> for
+     <a href="#3.6">Section 3.6, "Loading Persistent Objects"</a> and
+     <a href="#3.7">Section 3.7, "Updating Persistent Objects"</a> for
      more information.</p>
 
   <p>The <code>result_not_cached</code> exception is thrown by
@@ -2343,9 +2412,9 @@ namespace odb
      all commonly used standard C++ containers, namely,
      <code>std::vector</code>, <code>std::list</code>, <code>std::set</code>,
      <code>std::multiset</code>, <code>std::map</code>, and
-     <code>std::multimap</code>. Plus, ODB profile libraries are available
-     for commonly used frameworks and libraries (such as Boost and Qt)
-     that provide persistence support for containers found in these
+     <code>std::multimap</code>. Plus, ODB profile libraries, that are
+     available for commonly used frameworks and libraries (such as Boost
+     and Qt), provide persistence support for containers found in these
      frameworks and libraries. It is also easy to persist custom
      container types as discussed later in <a href="#X.4">Section X.4,
      "Using Custom Containers"</a>.</p>
@@ -2693,8 +2762,8 @@ private:
      containers of pointers. The ODB runtime library provides built-in
      support for the TR1 <code>shared_ptr</code>/<code>weak_ptr</code>,
      <code>std::auto_ptr</code>, and raw pointers. Plus, ODB profile
-     libraries are available for commonly used frameworks and libraries
-     (such as Boost and Qt) that provide support for smart pointers found
+     libraries, that available for commonly used frameworks and libraries
+     (such as Boost and Qt), provide support for smart pointers found
      in these frameworks and libraries. It is also easy to add support
      for a custom smart pointer as discussed later in <a href="#Y.4">
      Section Y.4, "Using Custom Smart Pointers"</a>. Any supported
@@ -4848,10 +4917,10 @@ class person
 
   <h3><a name="5.2.2">5.2.2 <code>pointer</code></a></h3>
 
-  <p>The <code>pointer</code> specifier specifies the pointer type for
-     the persistent class. The pointer type is used to return and pass
-     dynamically allocated instances of the persistent class in the
-     database operations. For example:</p>
+  <p>The <code>pointer</code> specifier specifies the object pointer type
+     for the persistent class. The object pointer type is used to return,
+     pass, and cache dynamically allocated instances of the persistent
+     class. For example:</p>
 
   <pre class="c++">
 #pragma db object pointer(std::tr1::shared_ptr&lt;person>)
@@ -5343,7 +5412,7 @@ private:
      choice.</p>
 
   <p>For additional information on the automatic identifier assignment,
-     refer to <a href="#3.4">Section 3.4, "Making Objects Persistent"</a>.</p>
+     refer to <a href="#3.5">Section 3.5, "Making Objects Persistent"</a>.</p>
 
   <h3><a name="5.4.3">5.4.3 <code>type</code></a></h3>
 
