@@ -1622,7 +1622,6 @@ class person
 {
   ...
 
-private:
   #pragma db id
   unsigned long id_;
 };
@@ -1632,6 +1631,41 @@ private:
      persistent class. Other pragmas can be used to fine-tune
      the database-related properties of a class and its
      members (see <a href="#5">Chapter 5, "ODB Pragma Language"</a>).</p>
+
+  <p>Normally, an object class should define the default constructor. The
+     generated database support code uses this constructor when
+     instantiating an object from the persistent state. If you add the
+     default constructor only for the database support code, then you
+     can make it private. It is also possible to have an object type
+     without the default constructor. However, in this case, the database
+     operations can only load the persistent state into an existing instance
+     (<a href="#3.5">Section 3.5, "Loading Persistent Objects"</a>,
+     <a href="#4.4">Section 4.4, "Query Result"</a>).</p>
+
+  <p>If an object class has private or protected non-transient data
+     members or if its default constructor is not public, then the
+     <code>odb::access</code> class, defined in the
+     <code>&lt;odb/core.hxx></code> header, should be declared a
+     friend of this object type. For example:</p>
+
+  <pre class="c++">
+#include &lt;odb/core.hxx>
+
+#pragma db object
+class person
+{
+  ...
+
+private:
+  friend class odb::access;
+
+  person () {}
+
+  #pragma db id
+  unsigned long id_;
+};
+  </pre>
+
 
   <p>You may be wondering whether we also have to declare value types
      as persistent. We don't need to do anything special for simple value
@@ -1652,7 +1686,6 @@ class name
 {
   ...
 
-private:
   std::string first_;
   std::string last_;
 };
