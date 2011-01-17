@@ -2379,6 +2379,14 @@ namespace odb
   <pre class="c++">
 namespace odb
 {
+  struct null_pointer: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  // Transaction exceptions.
+  //
   struct already_in_transaction: odb::exception
   {
     virtual const char*
@@ -2397,6 +2405,28 @@ namespace odb
     what () const throw ();
   };
 
+  // Session exceptions.
+  //
+  struct already_in_session: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct not_in_session: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct const_object: odb::exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  // Database operations exceptions.
+  //
   struct deadlock: odb::exception
   {
     virtual const char*
@@ -2427,12 +2457,27 @@ namespace odb
 }
   </pre>
 
-  <p>The first four exceptions (<code>already_in_transaction</code>,
+  <p>The <code>null_pointer</code> exception is thrown when a
+     pointer to a persistent object declared non-<code>NULL</code>
+     with the <code>db not_null</code> pragma has the <code>NULL</code>
+     value. See <a href="#Y">Chapter Y, "Relationships"</a> for details.</p>
+
+  <p>The next three exceptions (<code>already_in_transaction</code>,
      <code>not_in_transaction</code>,
-     <code>transaction_already_finalized</code>, and
-     <code>deadlock</code>) are thrown by the
+     <code>transaction_already_finalized</code>) are thrown by the
      <code>odb::transaction</code> class and are discussed
      in <a href="#3.4">Section 3.4, "Transactions"</a>.</p>
+
+  <p>The next three exceptions (<code>already_in_session</code>,
+     <code>not_in_session</code>, and
+     <code>const_object</code>) are thrown by the
+     <code>odb::session</code> class and are discussed
+     in <a href="#Q">Chapter Q, "Session"</a>.</p>
+
+  <p>The <code>deadlock</code> exception is thrown when a transaction
+     deadlock is detected by the database system. It can thrown by any
+     database function. See <a href="#3.4">Section 3.4, "Transactions"</a>
+     for details.</p>
 
   <p>The <code>object_already_persistent</code> exception is thrown
      by the <code>persist()</code> database function. See
