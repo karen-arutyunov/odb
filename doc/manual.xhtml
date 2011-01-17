@@ -4129,6 +4129,190 @@ CREATE TABLE `person_nickname` (
   <!-- CHAPTER -->
 
 
+  <h1><a name="Q">Q Session</a></h1>
+
+  <p>A session is an application's unit of work that may encompass several
+     database transactions (@@ ref Transaction). In this version of ODB a
+     session is just an object cache. In the future versions it will provide
+     additional functionality, such as automatic object state change flushing
+     and optimistic concurrency.</p>
+
+  <p>Each thread of execution in an application can have only one active
+     session at a time. A session is started by creating an instance of
+     the <code>odb::session</code> class and is automatically terminated
+     when this instance is destroyed. You will need to include the
+     <code>&lt;odb/session.hxx></code> header file to make this class
+     available in your application. For example:</p>
+
+  <pre class="c++">
+#include &lt;odb/database.hxx>
+#include &lt;odb/session.hxx>
+#include &lt;odb/transaction.hxx>
+
+using namespace odb;
+
+{
+  session s;
+
+  // First transaction.
+  //
+  {
+    transaction t (db.begin ());
+    ...
+    t.commit ();
+  }
+
+  // Second transaction.
+  //
+  {
+    transaction t (db.begin ());
+    ...
+    t.commit ();
+  }
+
+  // Session 's' is terminated here.
+}
+  </pre>
+
+  <p>The <code>odb::session</code> class has the following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  class session
+  {
+  public:
+    session ();
+    ~session ();
+
+    // Copying or assignment of sessions is not supported.
+    //
+  private:
+    session (const session&amp;);
+    session&amp; operator= (const session&amp;);
+
+    // Current session interface.
+    //
+  public:
+    static session&amp;
+    current ();
+
+    static bool
+    has_current ();
+
+    static void
+    current (session&amp;);
+
+    static void
+    reset_current ();
+
+    // Object cache interface.
+    //
+  public:
+    typedef odb::database database_type;
+
+    template &lt;typename T>
+    void
+    insert (database_type&amp;,
+            const object_traits&lt;T>::id_type&amp;,
+            const object_traits&lt;T>::pointer_type&amp;);
+
+    template &lt;typename T>
+    object_traits&lt;T>::pointer_type
+    find (database_type&amp;, const object_traits&lt;T>::id_type&amp;) const;
+
+    template &lt;typename T>
+    void
+    erase (database_type&amp;, const object_traits&lt;T>::id_type&amp;);
+  };
+}
+  </pre>
+
+  <p>The session constructor creates a new session and sets it as a
+     current session for this thread. If you try to create a session
+     while there is already a current session in effect, this constructor
+     throws the <code>odb::already_in_session</code> exception. The
+     destructor clears the current session for this thread if this
+     session is the current one.</p>
+
+  <p>The static <code>current()</code> accessor returns the currently active
+     session for this thread. If there is no active session, this function
+     throws the <code>odb::not_in_session</code> exception. You can check
+     whether there is a session in effect in this thread using the
+     <code>has_current()</code> static function.</p>
+
+  <p>The static <code>current()</code> modifier allows you to set the
+     current session for this thread. The <code>reset_current</code>
+     static function clears the current session. These two functions
+     allow for more advanced use cases, such as multiplexing
+     between two or more sessions in the same thread.</p>
+
+  <p>We normally don't use the object cache interface directly. However,
+     it could be useful in some cases, for example, to find out whether
+     an object has already been loaded.</p>
+
+  <h2><a name="Q.1">Q.1 Object Cache</a></h2>
+
+  <p>A session is an object cache. Every time an object is made persistent
+     by calling the <code>database::persist()</code> function (@@ ref), loaded
+     by calling the <code>database::load()</code> or <code>database::find()</code>
+     function (@@ ref), or loaded by iterating over a query result (@@ ref),
+     the pointer to the persistent object, in the form of the canonical object
+     pouinter (@@ ref), is stored in the session. For as long as the
+     session is in effect, any subsequent calls to load the same object will
+     return the cached instance. When an object's state is deleted from the
+     database with the <code>database::erase()</code> function (@@ ref), the
+     cached object pointer is removed from the session. For example:</p>
+
+  <pre class="c++">
+shared_ptr&lt;person> p (new person ("John", "Doe"));
+
+session s;
+transaction t (db.begin ());
+
+unsigned long id (db.persist (p));            // p is cached in s.
+shared_ptr&lt;person> p1 (db.load&lt;person> (id)); // p1 same as p.
+
+t.commit ();
+  </pre>
+
+
+  <p>The per-object caching policies depend on the object pointer kind
+     (@@ ref). Objects with a unique pointer, such as <code>std::auto_ptr</code>,
+     as an object pointer are never cached since it is not possible to have
+     two such pointers pointing to the same object. When an object is
+     persisted via a pointer or loaded as a dynamically allocated instance,
+     objects with both raw and shared pointers as object pointers are
+     cached. If an object is persisted as a reference or loaded into
+     a pre-allocated instance, the object is only cached if its object
+     pointer is a raw pointer.</p>
+
+  <p>Finally, the session caches both constant and non-constant objects,
+     depending on whether a constant reference or constant pointer was
+     passed to the <code>database::persist()</code> function (in contrast,
+     when loaded, objects are always created and cached as non-constant).
+     If we try to load an object as non-constant that was previously
+     persisted and cached as constant, the <code>odb::const_object</code>
+     exception is thrown. The following transaction illustartes the
+     situation where this would happen:</p>
+
+  <pre class="c++">
+shared_ptr&lt;const person> p (new person ("John", "Doe"));
+
+session s;
+transaction t (db.begin ());
+
+unsigned long id (db.persist (p));
+shared_ptr&lt;const person> p1 (db.load&lt;const person> (id)); // Ok.
+shared_ptr&lt;person> p2 (db.load&lt;person> (id));             // Exception.
+
+t.commit ();
+  </pre>
+
+
+  <!-- CHAPTER -->
+
+
   <h1><a name="4">4 Querying the Database</a></h1>
 
   <p>If you don't know the identifiers of the objects that you are looking
