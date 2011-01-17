@@ -325,62 +325,115 @@ for consistency.
     </tr>
 
     <tr>
-      <th>5</th><td><a href="#5">ODB Pragma Language</a>
+      <th>5</th><td><a href="#5">Containers</a>
+        <table class="toc">
+          <tr><th>5.1</th><td><a href="#5.1">Ordered Containers</a></td></tr>
+          <tr><th>5.2</th><td><a href="#5.2">Set and Multiset Containers</a></td></tr>
+          <tr><th>5.3</th><td><a href="#5.3">Map and Multimap Containers</a></td></tr>
+          <tr><th>5.4</th><td><a href="#5.4">Using Custom Containers</a></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>6</th><td><a href="#6">Relationships</a>
         <table class="toc">
           <tr>
-            <th>5.1</th><td><a href="#5.1">Object Type Pragmas</a>
+            <th>6.1</th><td><a href="#6.1">Unidirectional Relationships</a>
               <table class="toc">
-                <tr><th>5.1.1</th><td><a href="#5.1.1"><code>table</code></a></td></tr>
-		<tr><th>5.1.2</th><td><a href="#5.1.2"><code>pointer</code></a></td></tr>
+                <tr><th>6.1.1</th><td><a href="#6.1.1">To-One Relationships</a></td></tr>
+		<tr><th>6.1.2</th><td><a href="#6.1.2">To-Many Relationships</a></td></tr>
+              </table>
+            </td>
+          </tr>
+	  <tr>
+            <th>6.2</th><td><a href="#6.2">Bidirectional Relationships</a>
+              <table class="toc">
+                <tr><th>6.2.1</th><td><a href="#6.2.1">One-to-One Relationships</a></td></tr>
+		<tr><th>6.2.2</th><td><a href="#6.2.2">One-to-Many Relationships</a></td></tr>
+		<tr><th>6.2.3</th><td><a href="#6.2.3">Many-to-Many Relationships</a></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr><th>6.3</th><td><a href="#6.3">Lazy Pointers</a></td></tr>
+          <tr><th>6.4</th><td><a href="#6.4">Using Custom Smart Pointers</a></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>7</th><td><a href="#7">Composite Value Types</a>
+        <table class="toc">
+          <tr><th>7.1</th><td><a href="#7.1">Composite Value Column and Table Names</a></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>8</th><td><a href="#8">Session</a>
+        <table class="toc">
+          <tr><th>8.1</th><td><a href="#8.1">Object Cache</a></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>9</th><td><a href="#9">ODB Pragma Language</a>
+        <table class="toc">
+          <tr>
+            <th>9.1</th><td><a href="#9.1">Object Type Pragmas</a>
+              <table class="toc">
+                <tr><th>9.1.1</th><td><a href="#9.1.1"><code>table</code></a></td></tr>
+		<tr><th>9.1.2</th><td><a href="#9.1.2"><code>pointer</code></a></td></tr>
               </table>
             </td>
           </tr>
           <tr>
-            <th>5.2</th><td><a href="#5.2">Value Type Pragmas</a>
+            <th>9.2</th><td><a href="#9.2">Value Type Pragmas</a>
               <table class="toc">
-                <tr><th>5.2.1</th><td><a href="#5.2.1"><code>type</code></a></td></tr>
-		<tr><th>5.2.2</th><td><a href="#5.2.2"><code>not_null</code></a></td></tr>
-		<tr><th>5.2.3</th><td><a href="#5.2.3"><code>unordered</code></a></td></tr>
-		<tr><th>5.2.4</th><td><a href="#5.2.4"><code>index_type</code></a></td></tr>
-		<tr><th>5.2.5</th><td><a href="#5.2.5"><code>key_type</code></a></td></tr>
-		<tr><th>5.2.6</th><td><a href="#5.2.6"><code>value_type</code></a></td></tr>
-		<tr><th>5.2.7</th><td><a href="#5.2.7"><code>id_column</code></a></td></tr>
-		<tr><th>5.2.8</th><td><a href="#5.2.8"><code>index_column</code></a></td></tr>
-		<tr><th>5.2.9</th><td><a href="#5.2.9"><code>key_column</code></a></td></tr>
-		<tr><th>5.2.10</th><td><a href="#5.2.10"><code>value_column</code></a></td></tr>
+                <tr><th>9.2.1</th><td><a href="#9.2.1"><code>type</code></a></td></tr>
+		<tr><th>9.2.2</th><td><a href="#9.2.2"><code>not_null</code></a></td></tr>
+		<tr><th>9.2.3</th><td><a href="#9.2.3"><code>unordered</code></a></td></tr>
+		<tr><th>9.2.4</th><td><a href="#9.2.4"><code>index_type</code></a></td></tr>
+		<tr><th>9.2.5</th><td><a href="#9.2.5"><code>key_type</code></a></td></tr>
+		<tr><th>9.2.6</th><td><a href="#9.2.6"><code>value_type</code></a></td></tr>
+		<tr><th>9.2.7</th><td><a href="#9.2.7"><code>id_column</code></a></td></tr>
+		<tr><th>9.2.8</th><td><a href="#9.2.8"><code>index_column</code></a></td></tr>
+		<tr><th>9.2.9</th><td><a href="#9.2.9"><code>key_column</code></a></td></tr>
+		<tr><th>9.2.10</th><td><a href="#9.2.10"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
           <tr>
-            <th>5.3</th><td><a href="#5.3">Data Member Pragmas</a>
+            <th>9.3</th><td><a href="#9.3">Data Member Pragmas</a>
               <table class="toc">
-                <tr><th>5.3.1</th><td><a href="#5.3.1"><code>id</code></a></td></tr>
-                <tr><th>5.3.2</th><td><a href="#5.3.2"><code>auto</code></a></td></tr>
-                <tr><th>5.3.3</th><td><a href="#5.3.3"><code>type</code></a></td></tr>
-		<tr><th>5.3.4</th><td><a href="#5.3.4"><code>column</code></a></td></tr>
-		<tr><th>5.3.5</th><td><a href="#5.3.5"><code>transient</code></a></td></tr>
-		<tr><th>5.3.6</th><td><a href="#5.3.6"><code>not_null</code></a></td></tr>
-		<tr><th>5.3.7</th><td><a href="#5.3.7"><code>inverse</code></a></td></tr>
-		<tr><th>5.3.8</th><td><a href="#5.3.8"><code>unordered</code></a></td></tr>
-		<tr><th>5.3.9</th><td><a href="#5.3.9"><code>table</code></a></td></tr>
-		<tr><th>5.3.10</th><td><a href="#5.3.10"><code>index_type</code></a></td></tr>
-		<tr><th>5.3.11</th><td><a href="#5.3.11"><code>key_type</code></a></td></tr>
-		<tr><th>5.3.12</th><td><a href="#5.3.12"><code>value_type</code></a></td></tr>
-		<tr><th>5.3.13</th><td><a href="#5.3.13"><code>id_column</code></a></td></tr>
-		<tr><th>5.3.14</th><td><a href="#5.3.14"><code>index_column</code></a></td></tr>
-		<tr><th>5.3.15</th><td><a href="#5.3.15"><code>key_column</code></a></td></tr>
-		<tr><th>5.3.16</th><td><a href="#5.3.16"><code>value_column</code></a></td></tr>
+                <tr><th>9.3.1</th><td><a href="#9.3.1"><code>id</code></a></td></tr>
+                <tr><th>9.3.2</th><td><a href="#9.3.2"><code>auto</code></a></td></tr>
+                <tr><th>9.3.3</th><td><a href="#9.3.3"><code>type</code></a></td></tr>
+		<tr><th>9.3.4</th><td><a href="#9.3.4"><code>column</code></a></td></tr>
+		<tr><th>9.3.5</th><td><a href="#9.3.5"><code>transient</code></a></td></tr>
+		<tr><th>9.3.6</th><td><a href="#9.3.6"><code>not_null</code></a></td></tr>
+		<tr><th>9.3.7</th><td><a href="#9.3.7"><code>inverse</code></a></td></tr>
+		<tr><th>9.3.8</th><td><a href="#9.3.8"><code>unordered</code></a></td></tr>
+		<tr><th>9.3.9</th><td><a href="#9.3.9"><code>table</code></a></td></tr>
+		<tr><th>9.3.10</th><td><a href="#9.3.10"><code>index_type</code></a></td></tr>
+		<tr><th>9.3.11</th><td><a href="#9.3.11"><code>key_type</code></a></td></tr>
+		<tr><th>9.3.12</th><td><a href="#9.3.12"><code>value_type</code></a></td></tr>
+		<tr><th>9.3.13</th><td><a href="#9.3.13"><code>id_column</code></a></td></tr>
+		<tr><th>9.3.14</th><td><a href="#9.3.14"><code>index_column</code></a></td></tr>
+		<tr><th>9.3.15</th><td><a href="#9.3.15"><code>key_column</code></a></td></tr>
+		<tr><th>9.3.16</th><td><a href="#9.3.16"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
           <tr>
-            <th>5.4</th><td><a href="#5.4">C++ Compiler Warnings</a>
+            <th>9.4</th><td><a href="#9.4">C++ Compiler Warnings</a>
               <table class="toc">
-                <tr><th>5.4.1</th><td><a href="#5.4.1">GNU C++</a></td></tr>
-                <tr><th>5.4.2</th><td><a href="#5.4.2">Visual C++</a></td></tr>
-                <tr><th>5.4.3</th><td><a href="#5.4.3">Sun C++</a></td></tr>
-		<tr><th>5.4.4</th><td><a href="#5.4.4">IBM XL C++</a></td></tr>
-		<tr><th>5.4.5</th><td><a href="#5.4.5">HP aC++</a></td></tr>
+                <tr><th>9.4.1</th><td><a href="#9.4.1">GNU C++</a></td></tr>
+                <tr><th>9.4.2</th><td><a href="#9.4.2">Visual C++</a></td></tr>
+                <tr><th>9.4.3</th><td><a href="#9.4.3">Sun C++</a></td></tr>
+		<tr><th>9.4.4</th><td><a href="#9.4.4">IBM XL C++</a></td></tr>
+		<tr><th>9.4.5</th><td><a href="#9.4.5">HP aC++</a></td></tr>
               </table>
             </td>
           </tr>
@@ -389,15 +442,15 @@ for consistency.
     </tr>
 
     <tr>
-      <th>6</th><td><a href="#6">Database Systems</a>
+      <th>10</th><td><a href="#10">Database Systems</a>
         <table class="toc">
           <tr>
-            <th>6.1</th><td><a href="#6.1">MySQL Database</a>
+            <th>10.1</th><td><a href="#10.1">MySQL Database</a>
               <table class="toc">
-                <tr><th>6.1.1</th><td><a href="#6.1.1">MySQL Type Mapping</a></td></tr>
-                <tr><th>6.1.2</th><td><a href="#6.1.2">MySQL Database Class</a></td></tr>
-                <tr><th>6.1.3</th><td><a href="#6.1.3">Connection Factory</a></td></tr>
-		<tr><th>6.1.4</th><td><a href="#6.1.4">MySQL Exceptions</a></td></tr>
+                <tr><th>10.1.1</th><td><a href="#10.1.1">MySQL Type Mapping</a></td></tr>
+                <tr><th>10.1.2</th><td><a href="#10.1.2">MySQL Database Class</a></td></tr>
+                <tr><th>10.1.3</th><td><a href="#10.1.3">Connection Factory</a></td></tr>
+		<tr><th>10.1.4</th><td><a href="#10.1.4">MySQL Exceptions</a></td></tr>
               </table>
             </td>
           </tr>
@@ -1084,7 +1137,7 @@ main (int argc, char* argv[])
      database name, etc., from the command line. In your own applications
      you may prefer to use other <code>mysql::database</code>
      constructors which allow you to pass this information directly
-     (see <a href="#6.1.2">Section 6.1.2, "MySQL Database Class"</a>).</p>
+     (see <a href="#10.1.2">Section 10.1.2, "MySQL Database Class"</a>).</p>
 
   <p>Next, we create three <code>person</code> objects. Right now they are
      transient objects, which means that if we terminate the application
@@ -1552,9 +1605,9 @@ Hello, Joe!
      object and doesn't have its own unique identifier.</p>
 
   <p>An object consists of data members which are either values, pointers
-     to other objects (<a href="#Y">Chapter Y, "Relationships"</a>), or
-     containers of values or pointers to other objects (<a href="#X">Chapter
-     X, "Containers")</a>. Pointers to other objects and containers can
+     to other objects (<a href="#6">Chapter 6, "Relationships"</a>), or
+     containers of values or pointers to other objects (<a href="#5">Chapter
+     5, "Containers")</a>. Pointers to other objects and containers can
      be viewed as special kinds of values since they also can only
      be stored in the database as part of an object.</p>
 
@@ -1636,7 +1689,7 @@ class person
   <p>These two pragmas are the minimum required to declare a
      persistent class. Other pragmas can be used to fine-tune
      the database-related properties of a class and its
-     members (see <a href="#5">Chapter 5, "ODB Pragma Language"</a>).</p>
+     members (see <a href="#9">Chapter 9, "ODB Pragma Language"</a>).</p>
 
   <p>Normally, an object class should define the default constructor. The
      generated database support code uses this constructor when
@@ -1682,8 +1735,8 @@ private:
      is unknown to the ODB compiler then we will need to provide the
      mapping to the database system type and, possibly, the code to
      convert between the two. For more information on how to achieve
-     this refer to the <code>db&nbsp;type</code> pragma (<a href="#5.2.1">Section
-     5.2.1, "<code>type</code>"</a>). Similar to object types, composite
+     this refer to the <code>db&nbsp;type</code> pragma (<a href="#9.2.1">Section
+     9.2.1, "<code>type</code>"</a>). Similar to object types, composite
      value types have to be explicitly declared as persistent using the
      <code>db&nbsp;value</code> pragma, for example:</p>
 
@@ -1698,8 +1751,8 @@ class name
 };
   </pre>
 
-  <p>Composite values are discussed in greater detail in <a href="#Z">Chapter
-     Z, "Composite Value Types"</a>.</p>
+  <p>Composite values are discussed in greater detail in <a href="#7">Chapter
+     7, "Composite Value Types"</a>.</p>
 
   <p>Normally, you would use object types to model real-world entities,
      things that have their own identity. For example, in the
@@ -1750,8 +1803,8 @@ class name
      create dynamically allocated instances of persistent classes and
      return pointer to these instances. As we will see in later chapters,
      pointers are also used to establish relationships between objects
-     (<a href="#Y">Chapter Y, Realtionships</a>) as well as to cache
-     persistent object in a session (<a href="#Q">Chapter Q, Session</a>).</p>
+     (<a href="#6">Chapter 6, Realtionships</a>) as well as to cache
+     persistent object in a session (<a href="#8">Chapter 8, Session</a>).</p>
 
   <p>By default, all these mechanisms use raw pointers to return,
      pass, and cache objects. This is normally sufficient for applications
@@ -1795,7 +1848,7 @@ class person
 };
   </pre>
 
-  <p>Refer to <a href="#5.1.2">Section 5.1.2, "<code>pointer</code>"</a>
+  <p>Refer to <a href="#9.1.2">Section 9.1.2, "<code>pointer</code>"</a>
      for more information on this pragma.</p>
 
   <p>Built-in support, provided by the ODB runtime, library allows us to use
@@ -1804,7 +1857,7 @@ class person
      commonly used frameworks and libraries (such as Boost and Qt),
      provide support for smart pointers found in these frameworks and
      libraries. It is also easy to add support for our own smart pointers,
-     as described in <a href="#Y.4"> Section Y.4, "Using Custom Smart
+     as described in <a href="#6.4"> Section 6.4, "Using Custom Smart
      Pointers"</a>.</p>
 
   <h2><a name="3.3">3.3 Database</a></h2>
@@ -1848,7 +1901,7 @@ auto_ptr&lt;odb::database> db (
      as well as the next chapter which is dedicated to the topic of
      querying the database for persistent objects. For details on the
      system-specific <code>database</code> classes, refer to
-     <a href="#6">Chapter 6, "Database Systems"</a>.</p>
+     <a href="#10">Chapter 10, "Database Systems"</a>.</p>
 
   <h2><a name="3.4">3.4 Transactions</a></h2>
 
@@ -2094,7 +2147,7 @@ update_age (database&amp; db, person&amp; p)
   <p>The first <code>persist()</code> function expects a constant reference
      to an instance being persisted. The second function expects a constant
      object pointer. Both of these functions can only be used on objects with
-     application-assigned object ids (<a href="#5.3.2">Section 5.3.2,
+     application-assigned object ids (<a href="#9.3.2">Section 9.3.2,
      "<code>auto</code>"</a>).</p>
 
   <p>The second and third <code>persist()</code> versions are similar to the
@@ -2460,7 +2513,7 @@ namespace odb
   <p>The <code>null_pointer</code> exception is thrown when a
      pointer to a persistent object declared non-<code>NULL</code>
      with the <code>db&nbsp;not_null</code> pragma has the <code>NULL</code>
-     value. See <a href="#Y">Chapter Y, "Relationships"</a> for details.</p>
+     value. See <a href="#6">Chapter 6, "Relationships"</a> for details.</p>
 
   <p>The next three exceptions (<code>already_in_transaction</code>,
      <code>not_in_transaction</code>,
@@ -2472,7 +2525,7 @@ namespace odb
      <code>not_in_session</code>, and
      <code>const_object</code>) are thrown by the
      <code>odb::session</code> class and are discussed
-     in <a href="#Q">Chapter Q, "Session"</a>.</p>
+     in <a href="#8">Chapter 8, "Session"</a>.</p>
 
   <p>The <code>deadlock</code> exception is thrown when a transaction
      deadlock is detected by the database system. It can thrown by any
@@ -2497,8 +2550,8 @@ namespace odb
 
   <p>The <code>database_exception</code> is a base class for all
      database system-specific exceptions that are thrown by the
-     database system-specific runtime library. See <a href="#6">Chapter
-     6, "Database Systems"</a> for more information.</p>
+     database system-specific runtime library. See <a href="#10">Chapter
+     10, "Database Systems"</a> for more information.</p>
 
   <p>The <code>odb::exception</code> class is defined in the
      <code>&lt;odb/exception.hxx></code> header file. All the
@@ -2510,1849 +2563,6 @@ namespace odb
      However, if the source file that handles ODB exceptions
      does not include <code>&lt;odb/database.hxx></code>, then
      you will need to explicitly include one of these headers.</p>
-
-
-  <!-- CHAPTER -->
-
-  <h1><a name="X">X Containers</a></h1>
-
-  <p>The ODB runtime library provides built-in persistence support for
-     all commonly used standard C++ containers, namely,
-     <code>std::vector</code>, <code>std::list</code>, <code>std::set</code>,
-     <code>std::multiset</code>, <code>std::map</code>, and
-     <code>std::multimap</code>. Plus, ODB profile libraries, that are
-     available for commonly used frameworks and libraries (such as Boost
-     and Qt), provide persistence support for containers found in these
-     frameworks and libraries. It is also easy to persist custom
-     container types as discussed later in <a href="#X.4">Section X.4,
-     "Using Custom Containers"</a>.</p>
-
-  <p>We don't need to do anything special to declare a member of a
-     container type in a persistent class. For example:</p>
-
-  <pre class="c++">
-#pragma db object
-class person
-{
-  ...
-private:
-  std::vector&lt;std::name> nicknames_;
-  ...
-};
-  </pre>
-
-  <p>A data member in a persistent class that is of a container type
-     behaves like a value type. That is, when an object is made persistent,
-     the elements of the container are store in the database. Similarly,
-     when a persistent object is loaded from the database, the contents
-     of the container are automatically loaded as well.</p>
-
-  <p>While an ordinary member is mapped to one or more columns in the
-     object's table, a member of a container type is mapped to a seperate
-     table. The exact schema of such a table depends on the kind of
-     a container. ODB defines the following container kinds: ordered,
-     set, multiset, map, and multimap. The container kinds and the
-     contents of the tables to which they are mapped are discussed
-     in detail in the following sections.</p>
-
-  <p>Containers in ODB can contain simple value types, composite value
-     types (see @@), and pointers to objects (see @@). Containers of
-     containers, either directly or indirectly via a composite value
-     type, are not allowed. A key in map and multimap containers can
-     be a simple or composite value type but not a pointer to an object.
-     An index in the ordered container should be a simple integer type.</p>
-
-  <p>The value type in the ordered, set, and map containers as well as
-     the key type in the map containers should be default-constructible.
-     The default constructor in these types can be made private in which
-     case the <code>odb::access</code> class should be made a friend of
-     the value or key type. For example:</p>
-
-  <pre class="c++">
-#pragma db value
-class name
-{
-public:
-  name (const std::string&amp;, const std::string&amp;);
-  ...
-private:
-  friend class odb::access;
-  name ();
-  ...
-};
-
-#pragma db object
-class person
-{
-  ...
-private:
-  #pragma db id auto
-  unsigned long id_;
-
-  std::vector&lt;name> aliases_;
-  ...
-};
-  </pre>
-
-
-  <h2><a name="X.1">X.1 Ordered Containers</a></h2>
-
-  <p>In ODB an ordered container is any container that maintains (explicitly
-     or implicitly) an order of its elements in the form of an integer index.
-     Standard C++ containers that are ordered include <code>std::vector</code>
-     and <code>std::list</code>. While elements in <code>std::set</code>
-     are also kept in a specific order, this order is not based on an
-     integer index but rather on the relationship between elements. As
-     a result, <code>std::set</code> is not considered an ordered
-     container for the purpose of persistence.</p>
-
-  <p>The database table for an ordered container consists of at least
-     three columns. The first column contains the object id of a
-     persistent class instance of which the container is a member.
-     The second column contains the element index within a container.
-     And the last column contains the element value. If the object
-     id or element value are composite, then instead of a single
-     column they can occupy multiple columns.</p>
-
-  <p>Consider the following persistent object as an example:</p>
-
-  <pre class="c++">
-#pragma db object
-class person
-{
-  ...
-private:
-  #pragma db id auto
-  unsigned long id_;
-
-  std::vector&lt;std::string> nicknames_;
-  ...
-};
-  </pre>
-
-  <p>The resulting database table (called <code>person_nicknames</code>) will
-     contain the object id column of type <code>unsigned long</code>
-     (called <code>object_id</code>), the index column of an integer type
-     (called <code>index</code>), and the value column of type
-     <code>std::string</code> (called <code>value</code>).</p>
-
-  <p>A number of ODB pragmas allow us to customize the table name,
-     column names, and native database types for the container both on
-     the per-container and per-member basis. For more information on
-     these pragmas, refer to <a href="#5">Chapter 5, "ODB Pragma
-     Language"</a>. The following example shows some of the possible
-     customizations:</p>
-
-  <pre class="c++">
-#pragma db object
-class person
-{
-  ...
-private:
-  #pragma db id auto
-  unsigned long id_;
-
-  #pragma db table("nicknames")                        \
-             id_column ("person_id")                   \
-             index_type ("SMALLINT UNSIGNED NOT NULL") \
-             index_column ("nickname_number")          \
-             value_type ("VARCHAR(255) NOT NULL")      \
-             value_column ("nickname")
-  std::vector&lt;std::string> nicknames_;
-  ...
-};
-  </pre>
-
-  <p>While the C++ container used in the persistent class may be ordered,
-     sometimes we may wish to store such a container in the database without
-     the order information. In the example above, for instance, the order
-     of person's nicknames is probably not important. To instruct the ODB
-     compiler to ignore the order in ordered containers we can use the
-     <code>unordered</code> pragma (see <a href="#5">Chapter 5, "ODB
-     Pragma Language"</a> for details). For example:</p>
-
-  <pre class="c++">
-#pragma db object
-class person
-{
-  ...
-private:
-  #pragma db id auto
-  unsigned long id_;
-
-  #pragma db unordered
-  std::vector&lt;std::string> nicknames_;
-  ...
-};
-  </pre>
-
-  <p>The table for the ordered container that is marked unordered will
-     miss the index column and the order in which elements are retrieved
-     from the database may not be the same as the order in which they
-     were stored.</p>
-
-  <h2><a name="X.2">X.2 Set and Multiset Containers</a></h2>
-
-  <p>In ODB set and multiset containers (referred to as just set
-     containers) are associative containers that contain elements
-     based on some relationship between them. A set container may
-     or may not guarantee a particular order of the elements that
-     it stores. Standard C++ containers that are considered set
-     containers for the purpose of persistence include
-     <code>std::set</code> and <code>std::multiset</code>.</p>
-
-  <p>The database table for a set container consists of at least
-     two columns. The first column contains the object id of a
-     persistent class instance of which the container is a member.
-     And the second column contains the element value. If the object
-     id or element value are composite, then instead of a single
-     column they can occupy multiple columns.</p>
-
-  <p>Consider the following persistent object as an example:</p>
-
-  <pre class="c++">
-#pragma db object
-class person
-{
-  ...
-private:
-  #pragma db id auto
-  unsigned long id_;
-
-  std::set&lt;std::string> emails_;
-  ...
-};
-  </pre>
-
-  <p>The resulting database table (called <code>person_emails</code>) will
-     contain the object id column of type <code>unsigned long</code>
-     (called <code>object_id</code>) and the value column of type
-     <code>std::string</code> (called <code>value</code>).</p>
-
-  <p>A number of ODB pragmas allow us to customize the table name,
-     column names, and native database types for the container both on
-     the per-container and per-member basis. For more information on
-     these pragmas, refer to <a href="#5">Chapter 5, "ODB Pragma
-     Language"</a>. The following example shows some of the possible
-     customizations:</p>
-
-  <pre class="c++">
-#pragma db object
-class person
-{
-  ...
-private:
-  #pragma db id auto
-  unsigned long id_;
-
-  #pragma db table("emails")                      \
-             id_column ("person_id")              \
-             value_type ("VARCHAR(255) NOT NULL") \
-             value_column ("email")
-  std::set&lt;std::string> emails_;
-  ...
-};
-  </pre>
-
-  <h2><a name="X.3">X.3 Map and Multimap Containers</a></h2>
-
-  <p>In ODB map and multimap containers (referred to as just set
-     containers) are associative containers that contain key-value
-     elemenst based on some relationship between keys. A map container
-     may or may not guarantee a particular order of the elements that
-     it stores. Standard C++ containers that are considered map
-     containers for the purpose of persistence include
-     <code>std::map</code> and <code>std::multimap</code>.</p>
-
-  <p>The database table for a map container consists of at least
-     three columns. The first column contains the object id of a
-     persistent class instance of which the container is a member.
-     The second column contains the element key. And the last column
-     contains the element value. If the object id, element key, or
-     element value are composite, then instead of a single column
-     they can occupy multiple columns.</p>
-
-  <p>Consider the following persistent object as an example:</p>
-
-  <pre class="c++">
-#pragma db object
-class person
-{
-  ...
-private:
-  #pragma db id auto
-  unsigned long id_;
-
-  std::map&lt;unsigned short, float> age_weight_map_;
-  ...
-};
-  </pre>
-
-  <p>The resulting database table (called <code>person_age_weight_map</code>)
-     will contain the object id column of type <code>unsigned long</code>
-     (called <code>object_id</code>), the key column of type
-     <code>unsigned short</code> (called <code>key</code>), and the value
-     column of type <code>std::string</code> (called <code>value</code>).</p>
-
-  <p>A number of ODB pragmas allow us to customize the table name,
-     column names, and native database types for the container both on
-     the per-container and per-member basis. For more information on
-     these pragmas, refer to <a href="#5">Chapter 5, "ODB Pragma
-     Language"</a>. The following example shows some of the possible
-     customizations:</p>
-
-  <pre class="c++">
-#pragma db object
-class person
-{
-  ...
-private:
-  #pragma db id auto
-  unsigned long id_;
-
-  #pragma db table("weight_map")                \
-             id_column ("person_id")            \
-             key_type ("INT UNSIGNED NOT NULL") \
-             key_column ("age")                 \
-             value_type ("DOUBLE NOT NULL")     \
-             value_column ("weight")
-  std::map&lt;unsigned short, float> age_weight_map_;
-  ...
-};
-  </pre>
-
-  <h2><a name="X.4">X.4 Using Custom Containers</a></h2>
-
-  <p>While the ODB runtime and profile libraries provide support for
-     a wide range of containers, it is also easy to persist custom
-     container types.</p>
-
-  <p>To achieve this you will need to implement the
-     <code>container_traits</code> class template specialization for
-     your container. First determine the container kind (ordered, set,
-     multiset, map, or multimap) for your container type. Then use a
-     specialization for one of the standard C++ containers found in
-     the common ODB runtime library (<code>libodb</code>) as a base
-     for your own implementation.</p>
-
-  <p>Once the container traits specialization is ready for your container,
-     you will need to include it into the ODB compilation process using
-     the <code>--odb-epilogue</code> option and into the generated header
-     file with the <code>--hxx-prologue</code> option. As an example,
-     suppose we have a hash table container for which we have the traits
-     specialization implemented in the <code>hashtable-traits.hxx</code>
-     file. Then, we can create an ODB compiler options file for this
-     container and save it to <code>hashtable.options</code>:</p>
-
-  <pre>
-# Options file for the hash table container.
-#
---odb-epilogue '#include "hashtable-traits.hxx"'
---hxx-prologue '#include "hashtable-traits.hxx"'
-  </pre>
-
-  <p>Now, whenever we compile a header file that uses the hashtable
-     container, we can pass the following option to make sure it
-     is recognized by the ODB compiler as a container and the traits
-     file is included in the generated code:</p>
-
-  <pre>
---options-file hashtable.options
-  </pre>
-
-
-  <!-- CHAPTER -->
-
-
-  <h1><a name="Y">Y Relationships</a></h1>
-
-  <p>Relationships between persistent objects are expressed with pointers or
-     containers of pointers. The ODB runtime library provides built-in
-     support for the TR1 <code>shared_ptr</code>/<code>weak_ptr</code>,
-     <code>std::auto_ptr</code>, and raw pointers. Plus, ODB profile
-     libraries, that available for commonly used frameworks and libraries
-     (such as Boost and Qt), provide support for smart pointers found
-     in these frameworks and libraries. It is also easy to add support
-     for a custom smart pointer as discussed later in <a href="#Y.4">
-     Section Y.4, "Using Custom Smart Pointers"</a>. Any supported
-     smart pointer can be used in a data member as long as it can be
-     explicitly constructed from the canonical object pointer (@@ ref).
-     For example, we can use <code>weak_ptr</code> if the object pointer
-     is <code>shared_ptr</code>.</p>
-
-  <p>When an object containing a pointer to another object is loaded,
-     the pointed-to object is loaded as well. In some situations this
-     eager loading of the relationships is undesirable since it
-     can lead to a large number of otherwise unused objects being
-     instantiated from the database. To support finer control
-     over relationships loading, the ODB runtime and profile
-     libraries provide the so-called <em>lazy</em> versions of
-     the supported pointers. An object pointed-to by a lazy pointer
-     is not loaded automatically when the containing object is loaded.
-     Instead, we have to explicitly request the instantiation of the
-     pointed-to object. Lazy pointers are discussed in
-     detail in <a href="#Y.3">Section Y.3, "Lazy Pointers"</a>.</p>
-
-  <p>As a simple example, consider the following employee-employer
-     relationship. Code examples presented in this chapter
-     will use the <code>shared_ptr</code> and <code>weak_ptr</code>
-     smart pointers from the TR1 (<code>std::tr1</code>) namespace.</p>
-
-  <pre class="c++">
-#pragma db object
-class employer
-{
-  ...
-
-  #pragma db id
-  std::string name_;
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-
-  std::string first_name_;
-  std::string last_name_;
-
-  shared_ptr&lt;employer> employer_;
-};
-  </pre>
-
-  <p>By default, an object pointer can be <code>NULL</code>. To
-     specify that a pointer always point to a valid object we can
-     use the <code>not_null</code> pragma, for example:</p>
-
-  <pre class="c++">
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db not_null
-  shared_ptr&lt;employer> employer_;
-};
-  </pre>
-
-  <p>In this case, if we perform a database operation on the
-     <code>employee</code> object and the <code>employer_</code>
-     pointer is <code>NULL</code>, then the <code>odb::null_pointer</code>
-     exception will be thrown.</p>
-
-  <p>We don't need to do anything special to establish or navigate a
-     relationship between two persistent objects, as shown in the
-     following code fragment:</p>
-
-  <pre class="c++">
-// Create an employer and a few employees.
-//
-unsigned long john_id, jane_id;
-{
-  shared_ptr&lt;employer> er (new employer ("Example Inc"));
-  shared_ptr&lt;employee> john (new employee ("John", "Doe"));
-  shared_ptr&lt;employee> jane (new employee ("Jane", "Doe"));
-
-  john->employer_ = er;
-  jane->employer_ = er;
-
-  transaction t (db.begin ());
-
-  db.persist (er);
-  john_id = db.persist (john);
-  jane_id = db.persist (jane);
-
-  t.commit ();
-}
-
-// Load a few employee objects and print their employer.
-//
-{
-  session s;
-  transaction t (db.begin ());
-
-  shared_ptr&lt;employee> john (db.load&lt;employee> (john_id));
-  shared_ptr&lt;employee> jane (db.load&lt;employee> (jane_id));
-
-  cout &lt;&lt; john->employer_->name_ &lt;&lt; endl;
-  cout &lt;&lt; jane->employer_->name_ &lt;&lt; endl;
-
-  t.commit ();
-}
-  </pre>
-
-  <p>The only notable line in the above code is the creation of a
-     session before the second transaction starts. As discussed in
-     Chapter @@ ref, a session acts as a cache of persistent objects.
-     By creating a session before loading the <code>employee</code>
-     objects we make sure that their <code>employer_</code> pointers
-     point to the same <code>employer</code> object. Without a
-     session, each <code>employee</code> would have ended up pointing
-     to its own, private instance of the Example Inc employer.</p>
-
-  <p>As a general guideline, you should use a session when loading
-     objects that have pointers to other persistent objects. A
-     session makes sure that for a given object id, a single instance
-     is shared among all other objects that relate to it.</p>
-
-  <p>We can also use the data members from the pointed-to
-     objects in database queries (<a href="#4">Chapter 4, "Querying the
-     Database"</a>). For each pointer in a persistent class, the query
-     class defines a nested scope containing members corresponding
-     to the data members in the pointed-to object. For example, the
-     query class for the <code>employee</code> object contains
-     the <code>employer</code> scope (derived from the <code>employer_</code>
-     pointer) which in turn contains the <code>name</code> member
-     (derived from the <code>employer::name_</code> data member of the
-     pointed-to object). As a result, we can use the
-     <code>query::employer::name</code> expression while querying
-     the database for the <code>employee</code> objects. For example,
-     the following transaction finds all the employees of Example Inc
-     that have the Doe last name:</p>
-
-  <pre class="c++">
-typedef odb::query&lt;employee> query;
-typedef odb::result&lt;employee> result;
-
-session s;
-transaction t (db.begin ());
-
-result r (db->query&lt;employee> (
-  query::employer::name == "Example Inc" &amp;&amp; query::last == "Doe"));
-
-for (result::iterator i (r.begin ()); i != r.end (); ++i)
-  cout &lt;&lt; i->first_ &lt;&lt; " " &lt;&lt; i->last_ &lt;&lt; endl;
-
-t.commit ();
-  </pre>
-
-
-  <p>An important concept to keep in mind when working with object
-     relationships is the independence of persistent objects. In particular,
-     when an object containing a pointer to another object is made persistent
-     or is updated, the pointed-to object is not automatically persisted
-     or updated. Rather, only a reference to the object (in the form of the
-     object id) is stored for the pointed-to object in the database.
-     The pointed-to object itself is a separate entity and should
-     be made persistent or updated independently.</p>
-
-  <p>When persisting or updating an object containing a pointer to another
-     object, the pointed-to object must have a valid object id. This,
-     however, may not always be easy to achieve in complex relationships that
-     involve objects with automatically assigned identifiers. In such
-     cases it may be necessary to first persist an object with a pointer
-     set to <code>NULL</code> and then, once the pointed-to object is
-     made persistent and its identifier assigned, set the pointer
-     to the correct value and update the object in the database.</p>
-
-  <p>Persistent object relationships can be divided into two groups:
-     unidirectional and bidirectional. Each group in turn contains
-     several configurations that vary depending on the cardinality
-     of the sides of the relationship. All possible unidirectional
-     and bidirectional configurations are discussed in the following
-     sections.</p>
-
-  <h2><a name="Y.1">Y.1 Unidirectional Relationships</a></h2>
-
-  <p>In unidirectional relationships we are only interested in navigating
-     from object to object in one direction. Because there is no interest
-     in navigating in the opposite direction, the cardinality of the other
-     end of the relationship is unimportant. As a result, there are only
-     two possible unidirectional relationships: to-one and to-many. Each
-     of these relationships is described in the following sections. For
-     sample code that shows how to work with these relationships, refer
-     to the <code>relationship</code> example in the <code>odb-examples</code>
-     package.</p>
-
-  <h3><a name="Y.1.1">Y.1.1 To-One Relationships</a></h3>
-
-  <p>An example of a unidirectional to-one relationship is the
-     employee-employer relationship (an employee has one employer).
-     The following persistent C++ classes model this relationship:</p>
-
-  <pre class="c++">
-#pragma db object
-class employer
-{
-  ...
-
-  #pragma db id
-  std::string name_;
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-
-  #pragma db not_null
-  shared_ptr&lt;employer> employer_;
-};
-  </pre>
-
-  <p>The corresponding database tables look like this:</p>
-
-  <pre class="sql">
-CREATE TABLE employer (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
-
-CREATE TABLE employee (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  employer VARCHAR (255) NOT NULL REFERENCES employer (name));
-  </pre>
-
-  <h3><a name="Y.1.2">Y.1.2 To-Many Relationships</a></h3>
-
-  <p>An example of a unidirectional to-many relationship is the
-     employee-project relationship (an employee can be involved
-     in multiple projects). The following persistent C++ classes
-     model this relationship:</p>
-
-  <pre class="c++">
-#pragma db object
-class project
-{
-  ...
-
-  #pragma db id
-  std::string name_;
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-
-  #pragma db not_null unordered
-  std::vector&lt;shared_ptr&lt;project> > projects_;
-};
-  </pre>
-
-  <p>The corresponding database tables look like this:</p>
-
-  <pre class="sql">
-CREATE TABLE project (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
-
-CREATE TABLE employee (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
-
-CREATE TABLE employee_projects (
-  object_id BIGINT UNSIGNED NOT NULL,
-  value VARCHAR (255) NOT NULL REFERENCES project (name));
-  </pre>
-
-  <p>To obtain a more canonical database schema, the names of tables
-     and columns above can be customized using ODB pragmas
-     (<a href="#5">Chapter 5, "ODB Pragma Language"</a>). For example:</p>
-
-  <pre class="c++">
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db not_null unordered \
-             id_column("employee_id") value_column("project_name")
-  std::vector&lt;shared_ptr&lt;project> > projects_;
-};
-  </pre>
-
-  <p>The resulting <code>employee_projects</code> table would then
-     look like this:</p>
-
-  <pre class="sql">
-CREATE TABLE employee_projects (
-  employee_id BIGINT UNSIGNED NOT NULL,
-  project_name VARCHAR (255) NOT NULL REFERENCES project (name));
-  </pre>
-
-
-  <h2><a name="Y.2">Y.2 Bidirectional Relationships</a></h2>
-
-  <p>In bidirectional relationships we are interested in navigating
-     from object to object in both directions. As a result, each
-     object class in a relationship contains a pointer to the other
-     object. If smart pointers are used, then a weak pointer should
-     be used as one of the pointers to avoid ownership cycles. For
-     example:</p>
-
-  <pre class="c++">
-class employee;
-
-#pragma db object
-class position
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-
-  weak_ptr&lt;employee> employee_;
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-
-  #pragma db not_null
-  shared_ptr&lt;position> position_;
-};
-  </pre>
-
-  <p>Note that when we establish a bidirectional relationship, we
-     have to set both pointers consistently. One way to make sure
-     that a relationship is always in a consistent state is to
-     provide a single function that updates both pointers at the
-     same time. For example:</p>
-
-  <pre class="c++">
-#pragma db object
-class position: public enable_shared_from_this&lt;position>
-{
-  ...
-
-  void
-  fill (shared_ptr&lt;employee> e)
-  {
-    employee_ = e;
-    e->positions_ = shared_from_this ();
-  }
-
-private:
-  weak_ptr&lt;employee> employee_;
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-private:
-  friend class position;
-
-  #pragma db not_null
-  shared_ptr&lt;position> position_;
-};
-  </pre>
-
-
-  <p>Above, to model a bidirectional relationship in persistent classes,
-     we used two pointers, one in each object. While this is a natural
-     representation in C++, it does not translate to a canonical
-     relational model. Consider the database schema generated for
-     the above two classes:</p>
-
-  <pre class="sql">
-CREATE TABLE position (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  employee BIGINT UNSIGNED REFERENCES employee (id));
-
-CREATE TABLE employee (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  position BIGINT UNSIGNED NOT NULL REFERENCES position (id));
-  </pre>
-
-  <p>While this database schema is valid, it is unconventional. We have
-     a reference from a row in the <code>position</code> table to a row
-     in the <code>employee</code> table. We also have a reference
-     from this same row in the <code>employee</code> table back to
-     the row in the <code>position</code> table. From the relational
-     point of view, one of these references is redundant since
-     in SQL we can easily navigate in both directions using just one
-     of these references.</p>
-
-  <p>To eliminate redundant database schema references we can use the
-     <code>inverse</code> pragma (<a href="#5.3.7">Section 5.3.7,
-     "<code>inverse</code>"</a>) which tells the ODB compiler that
-     a pointer is the inverse side of a bidirectional relationship.
-     Either side of a relationship can be made inverse. For example:</p>
-
-  <pre class="c++">
-#pragma db object
-class position
-{
-  ...
-
-  #pragma db inverse(position_)
-  weak_ptr&lt;employee> employee_;
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db not_null
-  shared_ptr&lt;position> position_;
-};
-  </pre>
-
-  <p>The resulting database schema looks like this:</p>
-
-  <pre class="sql">
-CREATE TABLE position (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
-
-CREATE TABLE employee (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  position BIGINT UNSIGNED NOT NULL REFERENCES position (id));
-  </pre>
-
-  <p>As you can see, an inverse member does not have a corresponding
-     column (or table, in case of an inverse container of pointers)
-     and, from the point of view of database operations, is effectively
-     read-only. The only way to change a bidirectional relationship
-     with an inverse side is to set its direct (non-inverse)
-     pointer. Also note that an ordered container (<a href="#X.1">Section
-     X.1, "Ordered Containers"</a>) of pointers that is an inverse side
-     of a bidirectional relationship is always treated as unordered
-     (<a href="#5.3.8">Section 5.3.8, "<code>unordered</code>"</a>)
-     because the contents of such a container are implicitly built from
-     the direct side of the relationship which does not contain the
-     element order (index).</p>
-
-  <p>There are three distinct bidirectional relationships that we
-     will cover in the following sections: one-to-one, one-to-many,
-     and many-to-many. We will only talk about bidirectional
-     relationships with inverse sides since they result in canonical
-     database schemas. For sample code that shows how to work with
-     these relationships, refer to the <code>inverse</code> example
-     in the <code>odb-examples</code> package.</p>
-
-  <h3><a name="Y.2.1">Y.2.1 One-to-One Relationships</a></h3>
-
-  <p>An example of a bidirectional one-to-one relationship is the
-     presented above employee-position relationship (an employee
-     fills one position and a position is filled by one employee).
-     The following persistent C++ classes model this relationship:</p>
-
-  <pre class="c++">
-class employee;
-
-#pragma db object
-class position
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-
-  #pragma db inverse(position_)
-  weak_ptr&lt;employee> employee_;
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-
-  #pragma db not_null
-  shared_ptr&lt;position> position_;
-};
-  </pre>
-
-  <p>The corresponding database tables look like this:</p>
-
-  <pre class="sql">
-CREATE TABLE position (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
-
-CREATE TABLE employee (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  position BIGINT UNSIGNED NOT NULL REFERENCES position (id));
-  </pre>
-
-  <p>If instead the other side of this relationship is made inverse,
-     then the database tables will change as follows:</p>
-
-  <pre class="sql">
-CREATE TABLE position (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  employee BIGINT UNSIGNED REFERENCES employee (id));
-
-CREATE TABLE employee (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
-  </pre>
-
-  <h3><a name="Y.2.2">Y.2.2 One-to-Many Relationships</a></h3>
-
-  <p>An example of a bidirectional one-to-many relationship is the
-     employer-employee relationship (an employer has multiple
-     employees and an employee is employed by one employer).
-     The following persistent C++ classes model this relationship:</p>
-
-  <pre class="c++">
-class employee;
-
-#pragma db object
-class employer
-{
-  ...
-
-  #pragma db id
-  std::string name_;
-
-  #pragma db not_null inverse(employer_)
-  std::vector&lt;weak_ptr&lt;employee> > employees_
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-
-  #pragma db not_null
-  shared_ptr&lt;employer> employer_;
-};
-  </pre>
-
-  <p>The corresponding database tables differ significantly depending
-     on which side of the relationship is made inverse. If the <em>one</em>
-     side (<code>employer</code>) is inverse as in the code
-     above, then the resulting database schema looks like this:</p>
-
-  <pre class="sql">
-CREATE TABLE employer (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
-
-CREATE TABLE employee (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  employer VARCHAR (255) NOT NULL REFERENCES employer (name));
-  </pre>
-
-  <p>If instead the <em>many</em> side (<code>employee</code>) of this
-     relationship is made inverse, then the database tables will change
-     as follows:</p>
-
-  <pre class="sql">
-CREATE TABLE employer (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
-
-CREATE TABLE employer_employees (
-  object_id VARCHAR (255) NOT NULL,
-  value BIGINT UNSIGNED NOT NULL REFERENCES employee (id));
-
-CREATE TABLE employee (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
-  </pre>
-
-  <h3><a name="Y.2.3">Y.2.3 Many-to-Many Relationships</a></h3>
-
-  <p>An example of a bidirectional many-to-many relationship is the
-     employee-project relationship (an employee can work on multiple
-     projects and a project can have multiple participating employees).
-     The following persistent C++ classes model this relationship:</p>
-
-  <pre class="c++">
-class employee;
-
-#pragma db object
-class project
-{
-  ...
-
-  #pragma db id
-  std::string name_;
-
-  #pragma db not_null inverse(projects_)
-  std::vector&lt;weak_ptr&lt;employee> > employees_;
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-
-  #pragma db not_null unordered
-  std::vector&lt;shared_ptr&lt;project> > projects_;
-};
-  </pre>
-
-  <p>The corresponding database tables look like this:</p>
-
-  <pre class="sql">
-CREATE TABLE project (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
-
-CREATE TABLE employee (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
-
-CREATE TABLE employee_projects (
-  object_id BIGINT UNSIGNED NOT NULL,
-  value VARCHAR (255) NOT NULL REFERENCES project (name));
-  </pre>
-
-  <p>If instead the other side of this relationship is made inverse,
-     then the database tables will change as follows:</p>
-
-  <pre class="sql">
-CREATE TABLE project (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
-
-CREATE TABLE project_employees (
-  object_id VARCHAR (255) NOT NULL,
-  value BIGINT UNSIGNED NOT NULL REFERENCES employee (id));
-
-CREATE TABLE employee (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
-  </pre>
-
-  <h2><a name="Y.3">Y.3 Lazy Pointers</a></h2>
-
-  <p>Consider again the bidirectional, one-to-many employer-employee
-     relationship that was presented earlier in this chapter:</p>
-
-  <pre class="c++">
-class employee;
-
-#pragma db object
-class employer
-{
-  ...
-
-  #pragma db id
-  std::string name_;
-
-  #pragma db not_null inverse(employer_)
-  std::vector&lt;weak_ptr&lt;employee> > employees_;
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-
-  #pragma db not_null
-  shared_ptr&lt;employer> employer_;
-};
-  </pre>
-
-  <p>Consider also the following transaction which obtains the employer
-     name given the employee id:</p>
-
-  <pre class="c++">
-unsigned long id = ...
-string name;
-
-session s;
-transaction t (db.begin ());
-
-shared_ptr&lt;employee> e (db.load&lt;employee> (id));
-name = e->employer_->name_;
-
-t.commit ();
-  </pre>
-
-  <p>While this transaction looks very simple, it actually does a lot more
-     than what meets the eye and is necessary. Consider what happens when
-     we load the <code>employee</code> object: the <code>employer_</code>
-     pointer is also automatically loaded which means the <code>employer</code>
-     object corresponding to this employee is also loaded. But the
-     <code>employer</code> object in turn contains the list of pointers
-     to all the employees, which are also loaded. A a result, when object
-     relationships are involved, a simple transaction like the above can
-     load many more objects than is necessary.</p>
-
-  <p>To overcome this problem ODB offers finer grained control over
-     the relationship loading in the form of lazy pointers. A lazy
-     pointer does not automatically load the pointed-to object
-     when the containing object is loaded. Instead, we have to
-     explicitly load the pointed-to object if and when we need to
-     access it.</p>
-
-  <p>The ODB runtime library provides lazy counterparts for all the
-     supported pointers, namely: <code>odb::lazy_shared_ptr</code> and
-     <code>odb::lazy_weak_ptr</code> for TR1 <code>shared_ptr</code> and
-     <code>weak_ptr</code>, <code>odb::lazy_auto_ptr</code> for
-     <code>std::auto_ptr</code>, and <code>odb::lazy_ptr</code> for raw
-     pointers. The ODB profile libraries provide lazy pointer
-     implementations for smart pointers from popular frameworks and
-     libraries.</p>
-
-  <p>While we will discuss the interface of lazy pointers in more detail
-     shortly, the most commonly used extra function provided by these
-     pointers is <code>load()</code>. This function loads the
-     pointed-to object if it hasn't already been loaded. After
-     the call to this function, the lazy pointer can be used
-     in the the same way as its eager counterpart. The <code>load()</code>
-     function also returns the eager pointer, in case you need to pass
-     it around. For a lazy weak pointer, the
-     <code>load()</code> function also locks the pointer.</p>
-
-  <p>The following example shows how we can change our employer-employee
-     relationship to use lazy pointers. Here we choose to use lazy pointers
-     for both sides of the relationship.</p>
-
-  <pre class="c++">
-class employee;
-
-#pragma db object
-class employer
-{
-  ...
-
-  #pragma db not_null inverse(employer_)
-  std::vector&lt;lazy_weak_ptr&lt;employee> > employees_;
-};
-
-#pragma db object
-class employee
-{
-  ...
-
-  #pragma db not_null
-  lazy_shared_ptr&lt;employer> employer_;
-};
-  </pre>
-
-  <p>And the transaction is changed like this:</p>
-
-  <pre class="c++">
-unsigned long id = ...
-string name;
-
-session s;
-transaction t (db.begin ());
-
-shared_ptr&lt;employee> e (db.load&lt;employee> (id));
-e->employer_.load ();
-name = e->employer_->name_;
-
-t.commit ();
-  </pre>
-
-
-  <p>As a general guideline we recommend that you make at least one side
-     of a bidirectional relationship lazy, especially for relationships
-     with a <em>many</em> side.</p>
-
-  <p>A lazy pointer implementation mimics the interface of its eager
-     counterpart which can be used once the pointer is loaded. It also
-     adds a number of additional functions that are specific to the
-     lazy loading functionality. Overall, the interface of a lazy
-     pointer follows this general outline:</p>
-
-  <pre class="c++">
-template &lt;class T>
-class lazy_ptr
-{
-public:
-  //
-  // The eager pointer interface.
-  //
-
-  // Initialization/assignment from an eager pointer.
-  //
-public:
-  template &lt;class Y> lazy_ptr (const eager_ptr&lt;Y>&amp;);
-  template &lt;class Y> lazy_ptr&amp; operator= (const eager_ptr&lt;Y>&amp;);
-
-  // Lazy loading interface.
-  //
-public:
-  bool loaded () const;
-  eager_ptr&lt;T> load () const;
-
-  // Unload the pointer. For transient objects this function is
-  // equivalent to reset().
-  //
-  void unload () const;
-
-  // Initialization with a persistent loaded object.
-  //
-  template &lt;class Y> lazy_ptr (database&amp;, Y*);
-  template &lt;class Y> lazy_ptr (database&amp;, const eager_ptr&lt;Y>&amp;);
-
-  template &lt;class Y> void reset (database&amp;, Y*);
-  template &lt;class Y> void reset (database&amp;, const eager_ptr&lt;Y>&amp;);
-
-  // Initialization with a persistent unloaded object.
-  //
-  template &lt;class ID> lazy_ptr (database&amp;, const ID&amp;);
-
-  template &lt;class ID> void reset (database&amp;, const ID&amp;);
-
-  // Query object id and database of a persistent object.
-  //
-  template &lt;class O /* = T */>
-  object_traits&lt;O>::id_type object_id () const;
-
-  odb::database&amp; database () const;
-};
-  </pre>
-
-  <p>In a lazy weak pointer interface, the <code>load()</code> function
-     returns the <em>strong</em> (shared) eager pointer. The following
-     transaction demonstrates the use of a lazy weak pointer based on
-     the <code>employer</code> and <code>employee</code> classes
-     presented earlier.</p>
-
-  <pre class="c++">
-typedef std::vector&lt;lazy_weak_ptr&lt;employee> > employees;
-
-session s;
-transaction t (db.begin ());
-
-shared_ptr&lt;employer> er (db.load&lt;employer> ("Example Inc"));
-employees&amp; es (er->employees ());
-
-for (employees::iterator i (es.begin ()); i != es.end (); ++i)
-{
-  // We are only interested in employees with object id less than
-  // 100.
-  //
-  lazy_weak_ptr&lt;employee>&amp; lwp (*i);
-
-  if (lwp.object_id&lt;employee> () &lt; 100)
-  {
-    shared_ptr&lt;employee> e (lwp.load ()); // Load and lock.
-    cout &lt;&lt; e->first_ &lt;&lt; " " &lt;&lt; e->last_ &lt;&lt; endl;
-  }
-}
-
-t.commit ();
-  </pre>
-
-  <p>Notice that inside the for-loop we use a reference to the lazy
-     weak pointer instead of making a copy. This is not merely to
-     avoid a copy. When a lazy pointer is loaded, all other lazy
-     pointers that point to the same object do not automatically
-     become loaded (though an attempt to load such copies will
-     result in them pointing to the same object, provided the
-     same session is still in effect). By using a reference
-     in the above transaction we make sure that we load the
-     pointer that is contained in the <code>employer</code>
-     object. This way, if we later need to re-examine this
-     <code>employee</code> object, the pointer will already
-     be loaded.</p>
-
-  <p>As another example, suppose we want to add an employee
-     to Example Inc. The straightforward implementation of this
-     transaction is presented below:</p>
-
-  <pre class="c++">
-session s;
-transaction t (db.begin ());
-
-shared_ptr&lt;employer> er (db.load&lt;employer> ("Example Inc"));
-shared_ptr&lt;employee> e (new employee ("John", "Doe"));
-
-e->employer_ = er;
-er->employees ().push_back (e);
-
-db.persist (e);
-t.commit ();
-  </pre>
-
-  <p>Notice here that we didn't have to update the employer object
-     in the database since the <code>employees_</code> list of
-     pointers is an inverse side of a bidirectional relationship
-     and is effectively read-only, from the persistence point of
-     view.</p>
-
-  <p>A faster implementation of this transaction, that avoids loading
-     the employer object, relies on the ability to initialize an
-     <em>unloaded</em> lazy pointer with the database where the object
-     is stored as well as its identifier:</p>
-
-  <pre class="c++">
-lazy_shared_ptr&lt;employer> er (db, std::string ("Example Inc"));
-shared_ptr&lt;employee> e (new employee ("John", "Doe"));
-
-e->employer_ = er;
-
-session s;
-transaction t (db.begin ());
-
-db.persist (e);
-
-t.commit ();
-  </pre>
-
-  <h2><a name="Y.4">Y.4 Using Custom Smart Pointers</a></h2>
-
-  <p>While the ODB runtime and profile libraries provide support for
-     the majority of widely-used pointers, it is also easy to add
-     support for a custom smart pointer.</p>
-
-  <p>To achieve this you will need to implement the
-     <code>pointer_traits</code> class template specialization for
-     your pointer. The first step is to determine the pointer kind
-     since the interface of the <code>pointer_traits</code> specialization
-     varies depending on the pointer kind. The supported pointer kinds
-     are: <em>raw</em> (raw pointer or equivalent, that is, unmanaged),
-          <em>unique</em> (smart pointer that doesn't support sharing),
-          <em>shared</em> (smart pointer that supports sharing), and
-          <em>weak</em> (weak counterpart of the shared pointer). Any of
-     these pointers can be lazy, which also affects the
-     interface of the <code>pointer_traits</code> specialization.</p>
-
-  <p>Once you have determined the pointer kind for your smart pointer,
-     use a specialization for one of the standard pointers found in
-     the common ODB runtime library (<code>libodb</code>) as a base
-     for your own implementation.</p>
-
-  <p>Once the pointer traits specialization is ready, you will need to
-     include it into the ODB compilation process using the
-     <code>--odb-epilogue</code> option and into the generated header
-     file with the <code>--hxx-prologue</code> option. As an example,
-     suppose we have the <code>smart_ptr</code> smart pointer for which
-     we have the traits specialization implemented in the
-     <code>smart-ptr-traits.hxx</code> file. Then, we can create an ODB
-     compiler options file for this pointer and save it to
-     <code>smart-ptr.options</code>:</p>
-
-  <pre>
-# Options file for smart_ptr.
-#
---odb-epilogue '#include "smart-ptr-traits.hxx"'
---hxx-prologue '#include "smart-ptr-traits.hxx"'
-  </pre>
-
-  <p>Now, whenever we compile a header file that uses <code>smart_ptr</code>,
-     we can pass the following option to make sure it is recognized by the
-     ODB compiler as a smart pointer and the traits file is included in the
-     generated code:</p>
-
-  <pre>
---options-file smart-ptr.options
-  </pre>
-
-  <p>It is also possible to implement a lazy counterpart for your
-     smart pointer. The ODB runtime library provides a class template
-     that encapsulates the object id management and loading
-     functionality that is needed to implement a lazy pointer. All
-     you need to do is wrap it with an interface that mimics
-     your smart pointer. Using one of the existing lazy pointer
-     implementations (either from the ODB runtime library or one
-     of the profile libraries) as a base for your implementation
-     is the easiest way to get started.</p>
-
-
-  <!-- CHAPTER -->
-
-
-  <h1><a name="Z">Z Composite Value Types</a></h1>
-
-  <p>Composite value type is a <code>class</code> or <code>struct</code>
-     type that is mapped to more than one database column. To declare
-     a composite value type we use the <code>db&nbsp;value</code> pragma,
-     for example:</p>
-
-  <pre class="c++">
-#pragma db value
-class basic_name
-{
-  ...
-
-  std::string first_;
-  std::string last_;
-};
-  </pre>
-
-  <p>A composite value type does not have to define a default constructor,
-     unless it is used as an element of a container, in which case the
-     default constructor can be made private. If a composite value type
-     has private or protected non-transient data members or if its
-     default constructor is not public and the value type is used as
-     an element in a container, then the <code>odb::access</code> class
-     should be declared a friend of this value type. For example:</p>
-
-  <pre class="c++">
-#pragma db value
-class basic_name
-{
-public:
-  basic_name (const std::string&amp; first, const std::string&amp; last);
-
-  ...
-
-private:
-  friend class odb::access;
-
-  basic_name () {} // Needed for storing basic_name in containers.
-
-  std::string first_;
-  std::string last_;
-};
-  </pre>
-
-  <p>The complete versions of the above code fragment as well as other code
-     samples presented in this chapter can found in the <code>composite</code>
-     example in the <code>odb-examples</code> package.</p>
-
-  <p>The members of a composite value can be other value types (either
-     simple or composite), containers (@@ ref), and object pointers (@@ ref).
-     Similarly, a composite value type can be used in object members,
-     as an element in a container, and as a base for another composite
-     value type. In particular, composite value types can be used as
-     element types in set containers (@@ ref) and as key types in map
-     containers (@@ ref). A composite value type that is used as an
-     element of a container cannot contain other containers since
-     containers of containers are not allowed. The following example
-     illustrates some of the possible use cases:</p>
-
-<pre class="c++">
-#pragma db value
-class basic_name
-{
-  ...
-
-  std::string first_;
-  std::string last_;
-};
-
-typedef std::vector&lt;basic_name> basic_names;
-
-#pragma db value
-class name_extras
-{
-  ...
-
-  std::string nickname_;
-  basic_names aliases_;
-};
-
-#pragma db value
-class name: public basic_name
-{
-  ...
-
-  std::string title_;
-  name_extras extras_;
-};
-
-#pragma db object
-class person
-{
-  ...
-
-  #pragma db id auto
-  unsigned long id_;
-
-  name name_;
-};
-</pre>
-
-  <p>We can also use the data members from the composite value types
-     in database queries (<a href="#4">Chapter 4, "Querying the
-     Database"</a>). For each composite value in a persistent class,
-     the query class defines a nested scope containing members corresponding
-     to the data members in the value type. For example, the
-     query class for the <code>person</code> object presented above
-     contains the <code>name</code> scope (derived from the <code>name_</code>
-     data member) which in turn contains the <code>extras</code> member
-     (derived from the <code>name::extras_</code> data member of the
-     composite value type). The process continues reqursively for nested
-     composite value types and, as a result, we can use the
-     <code>query::name::extras::nickname</code> expression while querying
-     the database for the <code>person</code> objects. For example:</p>
-
-  <pre class="c++">
-typedef odb::query&lt;person> query;
-typedef odb::result&lt;person> result;
-
-transaction t (db->begin ());
-
-result r (db->query&lt;person> (
-  query::name::extras::nickname == "Squeaky"));
-
-...
-
-t.commit ();
-  </pre>
-
-  <h2><a name="Z.1">Z.1 Composite Value Column and Table Names</a></h2>
-
-  <p>Customizing a column name for a data member of a simple value
-     type is straightforward: we simply specify the desired name with
-     the <code>db&nbsp;column</code> pragma (@@ ref). For composite value
-     types things are slightly more complicated since it is mapped to
-     multiple columns. Consider the following example:</p>
-
-<pre class="c++">
-#pragma db value
-class name
-{
-  ...
-
-  std::string first_;
-  std::string last_;
-};
-
-#pragma db object
-class person
-{
-  ...
-
-  #pragma db id auto
-  unsigned long id_;
-
-  name name_;
-};
-</pre>
-
-  <p>The column names for the <code>first_</code> and <code>last_</code>
-     members are constructed by using the sanitized name of the
-     <code>person::name_</code> member as a prefix and the names of the
-     members in the value type (<code>first_</code> and <code>last_</code>)
-     as suffixes. As a result, the database schema for the above classes
-     will look like this:</p>
-
-  <pre class="sql">
-CREATE TABLE person (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  name_first TEXT NOT NULL,
-  name_last TEXT NOT NULL);
-  </pre>
-
- <p>We can customize both the prefix and the suffix using the
-    <code>db&nbsp;column</code> pragma as shown in the following
-    example:</p>
-
-  <pre class="c++">
-#pragma db value
-class name
-{
-  ...
-
-  #pragma db column("first_name")
-  std::string first_;
-
-  #pragma db column("last_name")
-  std::string last_;
-};
-
-#pragma db object
-class person
-{
-  ...
-
-  #pragma db column("person_")
-  name name_;
-};
-  </pre>
-
-  <p>The database schema changes as follows:</p>
-
-  <pre class="sql">
-CREATE TABLE person (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  person_first_name TEXT NOT NULL,
-  person_last_name TEXT NOT NULL);
-  </pre>
-
-  <p>We can also make the column prefix empty, for example:</p>
-
-<pre class="c++">
-#pragma db object
-class person
-{
-  ...
-
-  #pragma db column("")
-  name name_;
-};
-  </pre>
-
-  <p>This will result in the following schema:</p>
-
-  <pre class="sql">
-CREATE TABLE person (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL);
-  </pre>
-
-  <p>The same principal applies when a composite value type is used
-     as an element of a container, except that instead of
-     <code>db&nbsp;column</code> either the <code>db&nbsp;value_column</code>
-     (@@ ref) or <code>db&nbsp;key_column</code> (@@ ref) pragmas are used to
-     specify the column prefix.</p>
-
-  <p>When a composite value type contains a container, an extra table
-     is used to store the elements (@@ ref Chapter X, "Containers").
-     The names of such tables are constructed in a way similar to the
-     column names, except that by default both the object name and the
-     member name are used as a prefix. For example:</p>
-
-  <pre class="c++">
-#pragma db value
-class name
-{
-  ...
-
-  std::string first_;
-  std::string last_;
-  std::vector&lt;std::string> nicknames_;
-};
-
-#pragma db object
-class person
-{
-  ...
-
-  name name_;
-};
-  </pre>
-
-  <p>The corresponding database schema will look like this:</p>
-
-  <pre class="sql">
-CREATE TABLE `person_name_nicknames` (
-  `object_id` BIGINT UNSIGNED NOT NULL,
-  `index` BIGINT UNSIGNED NOT NULL,
-  `value` TEXT NOT NULL)
-
-CREATE TABLE person (
-  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  name_first TEXT NOT NULL,
-  name_last TEXT NOT NULL);
-  </pre>
-
-  <p>To customize the container table name we can use the
-     <code>db&nbsp;table</code> (@@ ref) pragma, for example:</p>
-
-  <pre class="c++">
-#pragma db value
-class name
-{
-  ...
-
-  #pragma db table("nickname")
-  std::vector&lt;std::string> nicknames_;
-};
-
-#pragma db object
-class person
-{
-  ...
-
-  #pragma db table("person_")
-  name name_;
-};
-  </pre>
-
-  <p>This will result in the following schema changes:</p>
-
-  <pre class="sql">
-CREATE TABLE `person_nickname` (
-  `object_id` BIGINT UNSIGNED NOT NULL,
-  `index` BIGINT UNSIGNED NOT NULL,
-  `value` TEXT NOT NULL)
-  </pre>
-
-  <p>Similar to columns, we can make the table prefix empty.</p>
-
-
-  <!-- CHAPTER -->
-
-
-  <h1><a name="Q">Q Session</a></h1>
-
-  <p>A session is an application's unit of work that may encompass several
-     database transactions (@@ ref Transaction). In this version of ODB a
-     session is just an object cache. In the future versions it will provide
-     additional functionality, such as automatic object state change flushing
-     and optimistic concurrency.</p>
-
-  <p>Each thread of execution in an application can have only one active
-     session at a time. A session is started by creating an instance of
-     the <code>odb::session</code> class and is automatically terminated
-     when this instance is destroyed. You will need to include the
-     <code>&lt;odb/session.hxx></code> header file to make this class
-     available in your application. For example:</p>
-
-  <pre class="c++">
-#include &lt;odb/database.hxx>
-#include &lt;odb/session.hxx>
-#include &lt;odb/transaction.hxx>
-
-using namespace odb;
-
-{
-  session s;
-
-  // First transaction.
-  //
-  {
-    transaction t (db.begin ());
-    ...
-    t.commit ();
-  }
-
-  // Second transaction.
-  //
-  {
-    transaction t (db.begin ());
-    ...
-    t.commit ();
-  }
-
-  // Session 's' is terminated here.
-}
-  </pre>
-
-  <p>The <code>odb::session</code> class has the following interface:</p>
-
-  <pre class="c++">
-namespace odb
-{
-  class session
-  {
-  public:
-    session ();
-    ~session ();
-
-    // Copying or assignment of sessions is not supported.
-    //
-  private:
-    session (const session&amp;);
-    session&amp; operator= (const session&amp;);
-
-    // Current session interface.
-    //
-  public:
-    static session&amp;
-    current ();
-
-    static bool
-    has_current ();
-
-    static void
-    current (session&amp;);
-
-    static void
-    reset_current ();
-
-    // Object cache interface.
-    //
-  public:
-    typedef odb::database database_type;
-
-    template &lt;typename T>
-    void
-    insert (database_type&amp;,
-            const object_traits&lt;T>::id_type&amp;,
-            const object_traits&lt;T>::pointer_type&amp;);
-
-    template &lt;typename T>
-    object_traits&lt;T>::pointer_type
-    find (database_type&amp;, const object_traits&lt;T>::id_type&amp;) const;
-
-    template &lt;typename T>
-    void
-    erase (database_type&amp;, const object_traits&lt;T>::id_type&amp;);
-  };
-}
-  </pre>
-
-  <p>The session constructor creates a new session and sets it as a
-     current session for this thread. If we try to create a session
-     while there is already a current session in effect, this constructor
-     throws the <code>odb::already_in_session</code> exception. The
-     destructor clears the current session for this thread if this
-     session is the current one.</p>
-
-  <p>The static <code>current()</code> accessor returns the currently active
-     session for this thread. If there is no active session, this function
-     throws the <code>odb::not_in_session</code> exception. We can check
-     whether there is a session in effect in this thread using the
-     <code>has_current()</code> static function.</p>
-
-  <p>The static <code>current()</code> modifier allows us to set the
-     current session for this thread. The <code>reset_current</code>
-     static function clears the current session. These two functions
-     allow for more advanced use cases, such as multiplexing
-     between two or more sessions in the same thread.</p>
-
-  <p>We normally don't use the object cache interface directly. However,
-     it could be useful in some cases, for example, to find out whether
-     an object has already been loaded.</p>
-
-  <h2><a name="Q.1">Q.1 Object Cache</a></h2>
-
-  <p>A session is an object cache. Every time an object is made persistent
-     by calling the <code>database::persist()</code> function (@@ ref), loaded
-     by calling the <code>database::load()</code> or <code>database::find()</code>
-     function (@@ ref), or loaded by iterating over a query result (@@ ref),
-     the pointer to the persistent object, in the form of the canonical object
-     pouinter (@@ ref), is stored in the session. For as long as the
-     session is in effect, any subsequent calls to load the same object will
-     return the cached instance. When an object's state is deleted from the
-     database with the <code>database::erase()</code> function (@@ ref), the
-     cached object pointer is removed from the session. For example:</p>
-
-  <pre class="c++">
-shared_ptr&lt;person> p (new person ("John", "Doe"));
-
-session s;
-transaction t (db.begin ());
-
-unsigned long id (db.persist (p));            // p is cached in s.
-shared_ptr&lt;person> p1 (db.load&lt;person> (id)); // p1 same as p.
-
-t.commit ();
-  </pre>
-
-
-  <p>The per-object caching policies depend on the object pointer kind
-     (@@ ref). Objects with a unique pointer, such as <code>std::auto_ptr</code>,
-     as an object pointer are never cached since it is not possible to have
-     two such pointers pointing to the same object. When an object is
-     persisted via a pointer or loaded as a dynamically allocated instance,
-     objects with both raw and shared pointers as object pointers are
-     cached. If an object is persisted as a reference or loaded into
-     a pre-allocated instance, the object is only cached if its object
-     pointer is a raw pointer.</p>
-
-  <p>Finally, the session caches both constant and non-constant objects,
-     depending on whether a constant reference or constant pointer was
-     passed to the <code>database::persist()</code> function (in contrast,
-     when loaded, objects are always created and cached as non-constant).
-     If we try to load an object as non-constant that was previously
-     persisted and cached as constant, the <code>odb::const_object</code>
-     exception is thrown. The following transaction illustartes the
-     situation where this would happen:</p>
-
-  <pre class="c++">
-shared_ptr&lt;const person> p (new person ("John", "Doe"));
-
-session s;
-transaction t (db.begin ());
-
-unsigned long id (db.persist (p));
-shared_ptr&lt;const person> p1 (db.load&lt;const person> (id)); // Ok.
-shared_ptr&lt;person> p2 (db.load&lt;person> (id));             // Exception.
-
-t.commit ();
-  </pre>
 
 
   <!-- CHAPTER -->
@@ -4557,7 +2767,6 @@ t.commit ();
   query q ((query::first == "John" || query::first == "Jane") &amp;&amp;
            query::age &lt; 31);
   </pre>
-
 
 
   <h2><a name="4.2">4.2 Parameter Binding</a></h2>
@@ -4897,8 +3106,1851 @@ namespace odb
 
   <!-- CHAPTER -->
 
+  <h1><a name="5">5 Containers</a></h1>
 
-  <h1><a name="5">5 ODB Pragma Language</a></h1>
+  <p>The ODB runtime library provides built-in persistence support for
+     all commonly used standard C++ containers, namely,
+     <code>std::vector</code>, <code>std::list</code>, <code>std::set</code>,
+     <code>std::multiset</code>, <code>std::map</code>, and
+     <code>std::multimap</code>. Plus, ODB profile libraries, that are
+     available for commonly used frameworks and libraries (such as Boost
+     and Qt), provide persistence support for containers found in these
+     frameworks and libraries. It is also easy to persist custom
+     container types as discussed later in <a href="#5.4">Section 5.4,
+     "Using Custom Containers"</a>.</p>
+
+  <p>We don't need to do anything special to declare a member of a
+     container type in a persistent class. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  std::vector&lt;std::name> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>A data member in a persistent class that is of a container type
+     behaves like a value type. That is, when an object is made persistent,
+     the elements of the container are store in the database. Similarly,
+     when a persistent object is loaded from the database, the contents
+     of the container are automatically loaded as well.</p>
+
+  <p>While an ordinary member is mapped to one or more columns in the
+     object's table, a member of a container type is mapped to a seperate
+     table. The exact schema of such a table depends on the kind of
+     a container. ODB defines the following container kinds: ordered,
+     set, multiset, map, and multimap. The container kinds and the
+     contents of the tables to which they are mapped are discussed
+     in detail in the following sections.</p>
+
+  <p>Containers in ODB can contain simple value types, composite value
+     types (see @@), and pointers to objects (see @@). Containers of
+     containers, either directly or indirectly via a composite value
+     type, are not allowed. A key in map and multimap containers can
+     be a simple or composite value type but not a pointer to an object.
+     An index in the ordered container should be a simple integer type.</p>
+
+  <p>The value type in the ordered, set, and map containers as well as
+     the key type in the map containers should be default-constructible.
+     The default constructor in these types can be made private in which
+     case the <code>odb::access</code> class should be made a friend of
+     the value or key type. For example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+public:
+  name (const std::string&amp;, const std::string&amp;);
+  ...
+private:
+  friend class odb::access;
+  name ();
+  ...
+};
+
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  std::vector&lt;name> aliases_;
+  ...
+};
+  </pre>
+
+
+  <h2><a name="5.1">5.1 Ordered Containers</a></h2>
+
+  <p>In ODB an ordered container is any container that maintains (explicitly
+     or implicitly) an order of its elements in the form of an integer index.
+     Standard C++ containers that are ordered include <code>std::vector</code>
+     and <code>std::list</code>. While elements in <code>std::set</code>
+     are also kept in a specific order, this order is not based on an
+     integer index but rather on the relationship between elements. As
+     a result, <code>std::set</code> is not considered an ordered
+     container for the purpose of persistence.</p>
+
+  <p>The database table for an ordered container consists of at least
+     three columns. The first column contains the object id of a
+     persistent class instance of which the container is a member.
+     The second column contains the element index within a container.
+     And the last column contains the element value. If the object
+     id or element value are composite, then instead of a single
+     column they can occupy multiple columns.</p>
+
+  <p>Consider the following persistent object as an example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>The resulting database table (called <code>person_nicknames</code>) will
+     contain the object id column of type <code>unsigned long</code>
+     (called <code>object_id</code>), the index column of an integer type
+     (called <code>index</code>), and the value column of type
+     <code>std::string</code> (called <code>value</code>).</p>
+
+  <p>A number of ODB pragmas allow us to customize the table name,
+     column names, and native database types for the container both on
+     the per-container and per-member basis. For more information on
+     these pragmas, refer to <a href="#9">Chapter 9, "ODB Pragma
+     Language"</a>. The following example shows some of the possible
+     customizations:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db table("nicknames")                        \
+             id_column ("person_id")                   \
+             index_type ("SMALLINT UNSIGNED NOT NULL") \
+             index_column ("nickname_number")          \
+             value_type ("VARCHAR(255) NOT NULL")      \
+             value_column ("nickname")
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>While the C++ container used in the persistent class may be ordered,
+     sometimes we may wish to store such a container in the database without
+     the order information. In the example above, for instance, the order
+     of person's nicknames is probably not important. To instruct the ODB
+     compiler to ignore the order in ordered containers we can use the
+     <code>unordered</code> pragma (see <a href="#9">Chapter 9, "ODB
+     Pragma Language"</a> for details). For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db unordered
+  std::vector&lt;std::string> nicknames_;
+  ...
+};
+  </pre>
+
+  <p>The table for the ordered container that is marked unordered will
+     miss the index column and the order in which elements are retrieved
+     from the database may not be the same as the order in which they
+     were stored.</p>
+
+  <h2><a name="5.2">5.2 Set and Multiset Containers</a></h2>
+
+  <p>In ODB set and multiset containers (referred to as just set
+     containers) are associative containers that contain elements
+     based on some relationship between them. A set container may
+     or may not guarantee a particular order of the elements that
+     it stores. Standard C++ containers that are considered set
+     containers for the purpose of persistence include
+     <code>std::set</code> and <code>std::multiset</code>.</p>
+
+  <p>The database table for a set container consists of at least
+     two columns. The first column contains the object id of a
+     persistent class instance of which the container is a member.
+     And the second column contains the element value. If the object
+     id or element value are composite, then instead of a single
+     column they can occupy multiple columns.</p>
+
+  <p>Consider the following persistent object as an example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  std::set&lt;std::string> emails_;
+  ...
+};
+  </pre>
+
+  <p>The resulting database table (called <code>person_emails</code>) will
+     contain the object id column of type <code>unsigned long</code>
+     (called <code>object_id</code>) and the value column of type
+     <code>std::string</code> (called <code>value</code>).</p>
+
+  <p>A number of ODB pragmas allow us to customize the table name,
+     column names, and native database types for the container both on
+     the per-container and per-member basis. For more information on
+     these pragmas, refer to <a href="#9">Chapter 9, "ODB Pragma
+     Language"</a>. The following example shows some of the possible
+     customizations:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db table("emails")                      \
+             id_column ("person_id")              \
+             value_type ("VARCHAR(255) NOT NULL") \
+             value_column ("email")
+  std::set&lt;std::string> emails_;
+  ...
+};
+  </pre>
+
+  <h2><a name="5.3">5.3 Map and Multimap Containers</a></h2>
+
+  <p>In ODB map and multimap containers (referred to as just set
+     containers) are associative containers that contain key-value
+     elemenst based on some relationship between keys. A map container
+     may or may not guarantee a particular order of the elements that
+     it stores. Standard C++ containers that are considered map
+     containers for the purpose of persistence include
+     <code>std::map</code> and <code>std::multimap</code>.</p>
+
+  <p>The database table for a map container consists of at least
+     three columns. The first column contains the object id of a
+     persistent class instance of which the container is a member.
+     The second column contains the element key. And the last column
+     contains the element value. If the object id, element key, or
+     element value are composite, then instead of a single column
+     they can occupy multiple columns.</p>
+
+  <p>Consider the following persistent object as an example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  std::map&lt;unsigned short, float> age_weight_map_;
+  ...
+};
+  </pre>
+
+  <p>The resulting database table (called <code>person_age_weight_map</code>)
+     will contain the object id column of type <code>unsigned long</code>
+     (called <code>object_id</code>), the key column of type
+     <code>unsigned short</code> (called <code>key</code>), and the value
+     column of type <code>std::string</code> (called <code>value</code>).</p>
+
+  <p>A number of ODB pragmas allow us to customize the table name,
+     column names, and native database types for the container both on
+     the per-container and per-member basis. For more information on
+     these pragmas, refer to <a href="#9">Chapter 9, "ODB Pragma
+     Language"</a>. The following example shows some of the possible
+     customizations:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db table("weight_map")                \
+             id_column ("person_id")            \
+             key_type ("INT UNSIGNED NOT NULL") \
+             key_column ("age")                 \
+             value_type ("DOUBLE NOT NULL")     \
+             value_column ("weight")
+  std::map&lt;unsigned short, float> age_weight_map_;
+  ...
+};
+  </pre>
+
+  <h2><a name="5.4">5.4 Using Custom Containers</a></h2>
+
+  <p>While the ODB runtime and profile libraries provide support for
+     a wide range of containers, it is also easy to persist custom
+     container types.</p>
+
+  <p>To achieve this you will need to implement the
+     <code>container_traits</code> class template specialization for
+     your container. First determine the container kind (ordered, set,
+     multiset, map, or multimap) for your container type. Then use a
+     specialization for one of the standard C++ containers found in
+     the common ODB runtime library (<code>libodb</code>) as a base
+     for your own implementation.</p>
+
+  <p>Once the container traits specialization is ready for your container,
+     you will need to include it into the ODB compilation process using
+     the <code>--odb-epilogue</code> option and into the generated header
+     file with the <code>--hxx-prologue</code> option. As an example,
+     suppose we have a hash table container for which we have the traits
+     specialization implemented in the <code>hashtable-traits.hxx</code>
+     file. Then, we can create an ODB compiler options file for this
+     container and save it to <code>hashtable.options</code>:</p>
+
+  <pre>
+# Options file for the hash table container.
+#
+--odb-epilogue '#include "hashtable-traits.hxx"'
+--hxx-prologue '#include "hashtable-traits.hxx"'
+  </pre>
+
+  <p>Now, whenever we compile a header file that uses the hashtable
+     container, we can pass the following option to make sure it
+     is recognized by the ODB compiler as a container and the traits
+     file is included in the generated code:</p>
+
+  <pre>
+--options-file hashtable.options
+  </pre>
+
+
+  <!-- CHAPTER -->
+
+
+  <h1><a name="6">6 Relationships</a></h1>
+
+  <p>Relationships between persistent objects are expressed with pointers or
+     containers of pointers. The ODB runtime library provides built-in
+     support for the TR1 <code>shared_ptr</code>/<code>weak_ptr</code>,
+     <code>std::auto_ptr</code>, and raw pointers. Plus, ODB profile
+     libraries, that available for commonly used frameworks and libraries
+     (such as Boost and Qt), provide support for smart pointers found
+     in these frameworks and libraries. It is also easy to add support
+     for a custom smart pointer as discussed later in <a href="#6.4">
+     Section 6.4, "Using Custom Smart Pointers"</a>. Any supported
+     smart pointer can be used in a data member as long as it can be
+     explicitly constructed from the canonical object pointer (@@ ref).
+     For example, we can use <code>weak_ptr</code> if the object pointer
+     is <code>shared_ptr</code>.</p>
+
+  <p>When an object containing a pointer to another object is loaded,
+     the pointed-to object is loaded as well. In some situations this
+     eager loading of the relationships is undesirable since it
+     can lead to a large number of otherwise unused objects being
+     instantiated from the database. To support finer control
+     over relationships loading, the ODB runtime and profile
+     libraries provide the so-called <em>lazy</em> versions of
+     the supported pointers. An object pointed-to by a lazy pointer
+     is not loaded automatically when the containing object is loaded.
+     Instead, we have to explicitly request the instantiation of the
+     pointed-to object. Lazy pointers are discussed in
+     detail in <a href="#6.3">Section 6.3, "Lazy Pointers"</a>.</p>
+
+  <p>As a simple example, consider the following employee-employer
+     relationship. Code examples presented in this chapter
+     will use the <code>shared_ptr</code> and <code>weak_ptr</code>
+     smart pointers from the TR1 (<code>std::tr1</code>) namespace.</p>
+
+  <pre class="c++">
+#pragma db object
+class employer
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  std::string first_name_;
+  std::string last_name_;
+
+  shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>By default, an object pointer can be <code>NULL</code>. To
+     specify that a pointer always point to a valid object we can
+     use the <code>not_null</code> pragma, for example:</p>
+
+  <pre class="c++">
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db not_null
+  shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>In this case, if we perform a database operation on the
+     <code>employee</code> object and the <code>employer_</code>
+     pointer is <code>NULL</code>, then the <code>odb::null_pointer</code>
+     exception will be thrown.</p>
+
+  <p>We don't need to do anything special to establish or navigate a
+     relationship between two persistent objects, as shown in the
+     following code fragment:</p>
+
+  <pre class="c++">
+// Create an employer and a few employees.
+//
+unsigned long john_id, jane_id;
+{
+  shared_ptr&lt;employer> er (new employer ("Example Inc"));
+  shared_ptr&lt;employee> john (new employee ("John", "Doe"));
+  shared_ptr&lt;employee> jane (new employee ("Jane", "Doe"));
+
+  john->employer_ = er;
+  jane->employer_ = er;
+
+  transaction t (db.begin ());
+
+  db.persist (er);
+  john_id = db.persist (john);
+  jane_id = db.persist (jane);
+
+  t.commit ();
+}
+
+// Load a few employee objects and print their employer.
+//
+{
+  session s;
+  transaction t (db.begin ());
+
+  shared_ptr&lt;employee> john (db.load&lt;employee> (john_id));
+  shared_ptr&lt;employee> jane (db.load&lt;employee> (jane_id));
+
+  cout &lt;&lt; john->employer_->name_ &lt;&lt; endl;
+  cout &lt;&lt; jane->employer_->name_ &lt;&lt; endl;
+
+  t.commit ();
+}
+  </pre>
+
+  <p>The only notable line in the above code is the creation of a
+     session before the second transaction starts. As discussed in
+     Chapter @@ ref, a session acts as a cache of persistent objects.
+     By creating a session before loading the <code>employee</code>
+     objects we make sure that their <code>employer_</code> pointers
+     point to the same <code>employer</code> object. Without a
+     session, each <code>employee</code> would have ended up pointing
+     to its own, private instance of the Example Inc employer.</p>
+
+  <p>As a general guideline, you should use a session when loading
+     objects that have pointers to other persistent objects. A
+     session makes sure that for a given object id, a single instance
+     is shared among all other objects that relate to it.</p>
+
+  <p>We can also use the data members from the pointed-to
+     objects in database queries (<a href="#4">Chapter 4, "Querying the
+     Database"</a>). For each pointer in a persistent class, the query
+     class defines a nested scope containing members corresponding
+     to the data members in the pointed-to object. For example, the
+     query class for the <code>employee</code> object contains
+     the <code>employer</code> scope (derived from the <code>employer_</code>
+     pointer) which in turn contains the <code>name</code> member
+     (derived from the <code>employer::name_</code> data member of the
+     pointed-to object). As a result, we can use the
+     <code>query::employer::name</code> expression while querying
+     the database for the <code>employee</code> objects. For example,
+     the following transaction finds all the employees of Example Inc
+     that have the Doe last name:</p>
+
+  <pre class="c++">
+typedef odb::query&lt;employee> query;
+typedef odb::result&lt;employee> result;
+
+session s;
+transaction t (db.begin ());
+
+result r (db->query&lt;employee> (
+  query::employer::name == "Example Inc" &amp;&amp; query::last == "Doe"));
+
+for (result::iterator i (r.begin ()); i != r.end (); ++i)
+  cout &lt;&lt; i->first_ &lt;&lt; " " &lt;&lt; i->last_ &lt;&lt; endl;
+
+t.commit ();
+  </pre>
+
+
+  <p>An important concept to keep in mind when working with object
+     relationships is the independence of persistent objects. In particular,
+     when an object containing a pointer to another object is made persistent
+     or is updated, the pointed-to object is not automatically persisted
+     or updated. Rather, only a reference to the object (in the form of the
+     object id) is stored for the pointed-to object in the database.
+     The pointed-to object itself is a separate entity and should
+     be made persistent or updated independently.</p>
+
+  <p>When persisting or updating an object containing a pointer to another
+     object, the pointed-to object must have a valid object id. This,
+     however, may not always be easy to achieve in complex relationships that
+     involve objects with automatically assigned identifiers. In such
+     cases it may be necessary to first persist an object with a pointer
+     set to <code>NULL</code> and then, once the pointed-to object is
+     made persistent and its identifier assigned, set the pointer
+     to the correct value and update the object in the database.</p>
+
+  <p>Persistent object relationships can be divided into two groups:
+     unidirectional and bidirectional. Each group in turn contains
+     several configurations that vary depending on the cardinality
+     of the sides of the relationship. All possible unidirectional
+     and bidirectional configurations are discussed in the following
+     sections.</p>
+
+  <h2><a name="6.1">6.1 Unidirectional Relationships</a></h2>
+
+  <p>In unidirectional relationships we are only interested in navigating
+     from object to object in one direction. Because there is no interest
+     in navigating in the opposite direction, the cardinality of the other
+     end of the relationship is unimportant. As a result, there are only
+     two possible unidirectional relationships: to-one and to-many. Each
+     of these relationships is described in the following sections. For
+     sample code that shows how to work with these relationships, refer
+     to the <code>relationship</code> example in the <code>odb-examples</code>
+     package.</p>
+
+  <h3><a name="6.1.1">6.1.1 To-One Relationships</a></h3>
+
+  <p>An example of a unidirectional to-one relationship is the
+     employee-employer relationship (an employee has one employer).
+     The following persistent C++ classes model this relationship:</p>
+
+  <pre class="c++">
+#pragma db object
+class employer
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>The corresponding database tables look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE employer (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  employer VARCHAR (255) NOT NULL REFERENCES employer (name));
+  </pre>
+
+  <h3><a name="6.1.2">6.1.2 To-Many Relationships</a></h3>
+
+  <p>An example of a unidirectional to-many relationship is the
+     employee-project relationship (an employee can be involved
+     in multiple projects). The following persistent C++ classes
+     model this relationship:</p>
+
+  <pre class="c++">
+#pragma db object
+class project
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null unordered
+  std::vector&lt;shared_ptr&lt;project> > projects_;
+};
+  </pre>
+
+  <p>The corresponding database tables look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE project (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee_projects (
+  object_id BIGINT UNSIGNED NOT NULL,
+  value VARCHAR (255) NOT NULL REFERENCES project (name));
+  </pre>
+
+  <p>To obtain a more canonical database schema, the names of tables
+     and columns above can be customized using ODB pragmas
+     (<a href="#9">Chapter 9, "ODB Pragma Language"</a>). For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db not_null unordered \
+             id_column("employee_id") value_column("project_name")
+  std::vector&lt;shared_ptr&lt;project> > projects_;
+};
+  </pre>
+
+  <p>The resulting <code>employee_projects</code> table would then
+     look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE employee_projects (
+  employee_id BIGINT UNSIGNED NOT NULL,
+  project_name VARCHAR (255) NOT NULL REFERENCES project (name));
+  </pre>
+
+
+  <h2><a name="6.2">6.2 Bidirectional Relationships</a></h2>
+
+  <p>In bidirectional relationships we are interested in navigating
+     from object to object in both directions. As a result, each
+     object class in a relationship contains a pointer to the other
+     object. If smart pointers are used, then a weak pointer should
+     be used as one of the pointers to avoid ownership cycles. For
+     example:</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class position
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  weak_ptr&lt;employee> employee_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;position> position_;
+};
+  </pre>
+
+  <p>Note that when we establish a bidirectional relationship, we
+     have to set both pointers consistently. One way to make sure
+     that a relationship is always in a consistent state is to
+     provide a single function that updates both pointers at the
+     same time. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class position: public enable_shared_from_this&lt;position>
+{
+  ...
+
+  void
+  fill (shared_ptr&lt;employee> e)
+  {
+    employee_ = e;
+    e->positions_ = shared_from_this ();
+  }
+
+private:
+  weak_ptr&lt;employee> employee_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+private:
+  friend class position;
+
+  #pragma db not_null
+  shared_ptr&lt;position> position_;
+};
+  </pre>
+
+
+  <p>Above, to model a bidirectional relationship in persistent classes,
+     we used two pointers, one in each object. While this is a natural
+     representation in C++, it does not translate to a canonical
+     relational model. Consider the database schema generated for
+     the above two classes:</p>
+
+  <pre class="sql">
+CREATE TABLE position (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  employee BIGINT UNSIGNED REFERENCES employee (id));
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  position BIGINT UNSIGNED NOT NULL REFERENCES position (id));
+  </pre>
+
+  <p>While this database schema is valid, it is unconventional. We have
+     a reference from a row in the <code>position</code> table to a row
+     in the <code>employee</code> table. We also have a reference
+     from this same row in the <code>employee</code> table back to
+     the row in the <code>position</code> table. From the relational
+     point of view, one of these references is redundant since
+     in SQL we can easily navigate in both directions using just one
+     of these references.</p>
+
+  <p>To eliminate redundant database schema references we can use the
+     <code>inverse</code> pragma (<a href="#9.3.7">Section 9.3.7,
+     "<code>inverse</code>"</a>) which tells the ODB compiler that
+     a pointer is the inverse side of a bidirectional relationship.
+     Either side of a relationship can be made inverse. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class position
+{
+  ...
+
+  #pragma db inverse(position_)
+  weak_ptr&lt;employee> employee_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db not_null
+  shared_ptr&lt;position> position_;
+};
+  </pre>
+
+  <p>The resulting database schema looks like this:</p>
+
+  <pre class="sql">
+CREATE TABLE position (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  position BIGINT UNSIGNED NOT NULL REFERENCES position (id));
+  </pre>
+
+  <p>As you can see, an inverse member does not have a corresponding
+     column (or table, in case of an inverse container of pointers)
+     and, from the point of view of database operations, is effectively
+     read-only. The only way to change a bidirectional relationship
+     with an inverse side is to set its direct (non-inverse)
+     pointer. Also note that an ordered container (<a href="#5.1">Section
+     5.1, "Ordered Containers"</a>) of pointers that is an inverse side
+     of a bidirectional relationship is always treated as unordered
+     (<a href="#9.3.8">Section 9.3.8, "<code>unordered</code>"</a>)
+     because the contents of such a container are implicitly built from
+     the direct side of the relationship which does not contain the
+     element order (index).</p>
+
+  <p>There are three distinct bidirectional relationships that we
+     will cover in the following sections: one-to-one, one-to-many,
+     and many-to-many. We will only talk about bidirectional
+     relationships with inverse sides since they result in canonical
+     database schemas. For sample code that shows how to work with
+     these relationships, refer to the <code>inverse</code> example
+     in the <code>odb-examples</code> package.</p>
+
+  <h3><a name="6.2.1">6.2.1 One-to-One Relationships</a></h3>
+
+  <p>An example of a bidirectional one-to-one relationship is the
+     presented above employee-position relationship (an employee
+     fills one position and a position is filled by one employee).
+     The following persistent C++ classes model this relationship:</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class position
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db inverse(position_)
+  weak_ptr&lt;employee> employee_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;position> position_;
+};
+  </pre>
+
+  <p>The corresponding database tables look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE position (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  position BIGINT UNSIGNED NOT NULL REFERENCES position (id));
+  </pre>
+
+  <p>If instead the other side of this relationship is made inverse,
+     then the database tables will change as follows:</p>
+
+  <pre class="sql">
+CREATE TABLE position (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  employee BIGINT UNSIGNED REFERENCES employee (id));
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+  </pre>
+
+  <h3><a name="6.2.2">6.2.2 One-to-Many Relationships</a></h3>
+
+  <p>An example of a bidirectional one-to-many relationship is the
+     employer-employee relationship (an employer has multiple
+     employees and an employee is employed by one employer).
+     The following persistent C++ classes model this relationship:</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class employer
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+
+  #pragma db not_null inverse(employer_)
+  std::vector&lt;weak_ptr&lt;employee> > employees_
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>The corresponding database tables differ significantly depending
+     on which side of the relationship is made inverse. If the <em>one</em>
+     side (<code>employer</code>) is inverse as in the code
+     above, then the resulting database schema looks like this:</p>
+
+  <pre class="sql">
+CREATE TABLE employer (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  employer VARCHAR (255) NOT NULL REFERENCES employer (name));
+  </pre>
+
+  <p>If instead the <em>many</em> side (<code>employee</code>) of this
+     relationship is made inverse, then the database tables will change
+     as follows:</p>
+
+  <pre class="sql">
+CREATE TABLE employer (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE employer_employees (
+  object_id VARCHAR (255) NOT NULL,
+  value BIGINT UNSIGNED NOT NULL REFERENCES employee (id));
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+  </pre>
+
+  <h3><a name="6.2.3">6.2.3 Many-to-Many Relationships</a></h3>
+
+  <p>An example of a bidirectional many-to-many relationship is the
+     employee-project relationship (an employee can work on multiple
+     projects and a project can have multiple participating employees).
+     The following persistent C++ classes model this relationship:</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class project
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+
+  #pragma db not_null inverse(projects_)
+  std::vector&lt;weak_ptr&lt;employee> > employees_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null unordered
+  std::vector&lt;shared_ptr&lt;project> > projects_;
+};
+  </pre>
+
+  <p>The corresponding database tables look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE project (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+
+CREATE TABLE employee_projects (
+  object_id BIGINT UNSIGNED NOT NULL,
+  value VARCHAR (255) NOT NULL REFERENCES project (name));
+  </pre>
+
+  <p>If instead the other side of this relationship is made inverse,
+     then the database tables will change as follows:</p>
+
+  <pre class="sql">
+CREATE TABLE project (
+  name VARCHAR (255) NOT NULL PRIMARY KEY);
+
+CREATE TABLE project_employees (
+  object_id VARCHAR (255) NOT NULL,
+  value BIGINT UNSIGNED NOT NULL REFERENCES employee (id));
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
+  </pre>
+
+  <h2><a name="6.3">6.3 Lazy Pointers</a></h2>
+
+  <p>Consider again the bidirectional, one-to-many employer-employee
+     relationship that was presented earlier in this chapter:</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class employer
+{
+  ...
+
+  #pragma db id
+  std::string name_;
+
+  #pragma db not_null inverse(employer_)
+  std::vector&lt;weak_ptr&lt;employee> > employees_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>Consider also the following transaction which obtains the employer
+     name given the employee id:</p>
+
+  <pre class="c++">
+unsigned long id = ...
+string name;
+
+session s;
+transaction t (db.begin ());
+
+shared_ptr&lt;employee> e (db.load&lt;employee> (id));
+name = e->employer_->name_;
+
+t.commit ();
+  </pre>
+
+  <p>While this transaction looks very simple, it actually does a lot more
+     than what meets the eye and is necessary. Consider what happens when
+     we load the <code>employee</code> object: the <code>employer_</code>
+     pointer is also automatically loaded which means the <code>employer</code>
+     object corresponding to this employee is also loaded. But the
+     <code>employer</code> object in turn contains the list of pointers
+     to all the employees, which are also loaded. A a result, when object
+     relationships are involved, a simple transaction like the above can
+     load many more objects than is necessary.</p>
+
+  <p>To overcome this problem ODB offers finer grained control over
+     the relationship loading in the form of lazy pointers. A lazy
+     pointer does not automatically load the pointed-to object
+     when the containing object is loaded. Instead, we have to
+     explicitly load the pointed-to object if and when we need to
+     access it.</p>
+
+  <p>The ODB runtime library provides lazy counterparts for all the
+     supported pointers, namely: <code>odb::lazy_shared_ptr</code> and
+     <code>odb::lazy_weak_ptr</code> for TR1 <code>shared_ptr</code> and
+     <code>weak_ptr</code>, <code>odb::lazy_auto_ptr</code> for
+     <code>std::auto_ptr</code>, and <code>odb::lazy_ptr</code> for raw
+     pointers. The ODB profile libraries provide lazy pointer
+     implementations for smart pointers from popular frameworks and
+     libraries.</p>
+
+  <p>While we will discuss the interface of lazy pointers in more detail
+     shortly, the most commonly used extra function provided by these
+     pointers is <code>load()</code>. This function loads the
+     pointed-to object if it hasn't already been loaded. After
+     the call to this function, the lazy pointer can be used
+     in the the same way as its eager counterpart. The <code>load()</code>
+     function also returns the eager pointer, in case you need to pass
+     it around. For a lazy weak pointer, the
+     <code>load()</code> function also locks the pointer.</p>
+
+  <p>The following example shows how we can change our employer-employee
+     relationship to use lazy pointers. Here we choose to use lazy pointers
+     for both sides of the relationship.</p>
+
+  <pre class="c++">
+class employee;
+
+#pragma db object
+class employer
+{
+  ...
+
+  #pragma db not_null inverse(employer_)
+  std::vector&lt;lazy_weak_ptr&lt;employee> > employees_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db not_null
+  lazy_shared_ptr&lt;employer> employer_;
+};
+  </pre>
+
+  <p>And the transaction is changed like this:</p>
+
+  <pre class="c++">
+unsigned long id = ...
+string name;
+
+session s;
+transaction t (db.begin ());
+
+shared_ptr&lt;employee> e (db.load&lt;employee> (id));
+e->employer_.load ();
+name = e->employer_->name_;
+
+t.commit ();
+  </pre>
+
+
+  <p>As a general guideline we recommend that you make at least one side
+     of a bidirectional relationship lazy, especially for relationships
+     with a <em>many</em> side.</p>
+
+  <p>A lazy pointer implementation mimics the interface of its eager
+     counterpart which can be used once the pointer is loaded. It also
+     adds a number of additional functions that are specific to the
+     lazy loading functionality. Overall, the interface of a lazy
+     pointer follows this general outline:</p>
+
+  <pre class="c++">
+template &lt;class T>
+class lazy_ptr
+{
+public:
+  //
+  // The eager pointer interface.
+  //
+
+  // Initialization/assignment from an eager pointer.
+  //
+public:
+  template &lt;class Y> lazy_ptr (const eager_ptr&lt;Y>&amp;);
+  template &lt;class Y> lazy_ptr&amp; operator= (const eager_ptr&lt;Y>&amp;);
+
+  // Lazy loading interface.
+  //
+public:
+  bool loaded () const;
+  eager_ptr&lt;T> load () const;
+
+  // Unload the pointer. For transient objects this function is
+  // equivalent to reset().
+  //
+  void unload () const;
+
+  // Initialization with a persistent loaded object.
+  //
+  template &lt;class Y> lazy_ptr (database&amp;, Y*);
+  template &lt;class Y> lazy_ptr (database&amp;, const eager_ptr&lt;Y>&amp;);
+
+  template &lt;class Y> void reset (database&amp;, Y*);
+  template &lt;class Y> void reset (database&amp;, const eager_ptr&lt;Y>&amp;);
+
+  // Initialization with a persistent unloaded object.
+  //
+  template &lt;class ID> lazy_ptr (database&amp;, const ID&amp;);
+
+  template &lt;class ID> void reset (database&amp;, const ID&amp;);
+
+  // Query object id and database of a persistent object.
+  //
+  template &lt;class O /* = T */>
+  object_traits&lt;O>::id_type object_id () const;
+
+  odb::database&amp; database () const;
+};
+  </pre>
+
+  <p>In a lazy weak pointer interface, the <code>load()</code> function
+     returns the <em>strong</em> (shared) eager pointer. The following
+     transaction demonstrates the use of a lazy weak pointer based on
+     the <code>employer</code> and <code>employee</code> classes
+     presented earlier.</p>
+
+  <pre class="c++">
+typedef std::vector&lt;lazy_weak_ptr&lt;employee> > employees;
+
+session s;
+transaction t (db.begin ());
+
+shared_ptr&lt;employer> er (db.load&lt;employer> ("Example Inc"));
+employees&amp; es (er->employees ());
+
+for (employees::iterator i (es.begin ()); i != es.end (); ++i)
+{
+  // We are only interested in employees with object id less than
+  // 100.
+  //
+  lazy_weak_ptr&lt;employee>&amp; lwp (*i);
+
+  if (lwp.object_id&lt;employee> () &lt; 100)
+  {
+    shared_ptr&lt;employee> e (lwp.load ()); // Load and lock.
+    cout &lt;&lt; e->first_ &lt;&lt; " " &lt;&lt; e->last_ &lt;&lt; endl;
+  }
+}
+
+t.commit ();
+  </pre>
+
+  <p>Notice that inside the for-loop we use a reference to the lazy
+     weak pointer instead of making a copy. This is not merely to
+     avoid a copy. When a lazy pointer is loaded, all other lazy
+     pointers that point to the same object do not automatically
+     become loaded (though an attempt to load such copies will
+     result in them pointing to the same object, provided the
+     same session is still in effect). By using a reference
+     in the above transaction we make sure that we load the
+     pointer that is contained in the <code>employer</code>
+     object. This way, if we later need to re-examine this
+     <code>employee</code> object, the pointer will already
+     be loaded.</p>
+
+  <p>As another example, suppose we want to add an employee
+     to Example Inc. The straightforward implementation of this
+     transaction is presented below:</p>
+
+  <pre class="c++">
+session s;
+transaction t (db.begin ());
+
+shared_ptr&lt;employer> er (db.load&lt;employer> ("Example Inc"));
+shared_ptr&lt;employee> e (new employee ("John", "Doe"));
+
+e->employer_ = er;
+er->employees ().push_back (e);
+
+db.persist (e);
+t.commit ();
+  </pre>
+
+  <p>Notice here that we didn't have to update the employer object
+     in the database since the <code>employees_</code> list of
+     pointers is an inverse side of a bidirectional relationship
+     and is effectively read-only, from the persistence point of
+     view.</p>
+
+  <p>A faster implementation of this transaction, that avoids loading
+     the employer object, relies on the ability to initialize an
+     <em>unloaded</em> lazy pointer with the database where the object
+     is stored as well as its identifier:</p>
+
+  <pre class="c++">
+lazy_shared_ptr&lt;employer> er (db, std::string ("Example Inc"));
+shared_ptr&lt;employee> e (new employee ("John", "Doe"));
+
+e->employer_ = er;
+
+session s;
+transaction t (db.begin ());
+
+db.persist (e);
+
+t.commit ();
+  </pre>
+
+  <h2><a name="6.4">6.4 Using Custom Smart Pointers</a></h2>
+
+  <p>While the ODB runtime and profile libraries provide support for
+     the majority of widely-used pointers, it is also easy to add
+     support for a custom smart pointer.</p>
+
+  <p>To achieve this you will need to implement the
+     <code>pointer_traits</code> class template specialization for
+     your pointer. The first step is to determine the pointer kind
+     since the interface of the <code>pointer_traits</code> specialization
+     varies depending on the pointer kind. The supported pointer kinds
+     are: <em>raw</em> (raw pointer or equivalent, that is, unmanaged),
+          <em>unique</em> (smart pointer that doesn't support sharing),
+          <em>shared</em> (smart pointer that supports sharing), and
+          <em>weak</em> (weak counterpart of the shared pointer). Any of
+     these pointers can be lazy, which also affects the
+     interface of the <code>pointer_traits</code> specialization.</p>
+
+  <p>Once you have determined the pointer kind for your smart pointer,
+     use a specialization for one of the standard pointers found in
+     the common ODB runtime library (<code>libodb</code>) as a base
+     for your own implementation.</p>
+
+  <p>Once the pointer traits specialization is ready, you will need to
+     include it into the ODB compilation process using the
+     <code>--odb-epilogue</code> option and into the generated header
+     file with the <code>--hxx-prologue</code> option. As an example,
+     suppose we have the <code>smart_ptr</code> smart pointer for which
+     we have the traits specialization implemented in the
+     <code>smart-ptr-traits.hxx</code> file. Then, we can create an ODB
+     compiler options file for this pointer and save it to
+     <code>smart-ptr.options</code>:</p>
+
+  <pre>
+# Options file for smart_ptr.
+#
+--odb-epilogue '#include "smart-ptr-traits.hxx"'
+--hxx-prologue '#include "smart-ptr-traits.hxx"'
+  </pre>
+
+  <p>Now, whenever we compile a header file that uses <code>smart_ptr</code>,
+     we can pass the following option to make sure it is recognized by the
+     ODB compiler as a smart pointer and the traits file is included in the
+     generated code:</p>
+
+  <pre>
+--options-file smart-ptr.options
+  </pre>
+
+  <p>It is also possible to implement a lazy counterpart for your
+     smart pointer. The ODB runtime library provides a class template
+     that encapsulates the object id management and loading
+     functionality that is needed to implement a lazy pointer. All
+     you need to do is wrap it with an interface that mimics
+     your smart pointer. Using one of the existing lazy pointer
+     implementations (either from the ODB runtime library or one
+     of the profile libraries) as a base for your implementation
+     is the easiest way to get started.</p>
+
+
+  <!-- CHAPTER -->
+
+
+  <h1><a name="7">7 Composite Value Types</a></h1>
+
+  <p>Composite value type is a <code>class</code> or <code>struct</code>
+     type that is mapped to more than one database column. To declare
+     a composite value type we use the <code>db&nbsp;value</code> pragma,
+     for example:</p>
+
+  <pre class="c++">
+#pragma db value
+class basic_name
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+};
+  </pre>
+
+  <p>A composite value type does not have to define a default constructor,
+     unless it is used as an element of a container, in which case the
+     default constructor can be made private. If a composite value type
+     has private or protected non-transient data members or if its
+     default constructor is not public and the value type is used as
+     an element in a container, then the <code>odb::access</code> class
+     should be declared a friend of this value type. For example:</p>
+
+  <pre class="c++">
+#pragma db value
+class basic_name
+{
+public:
+  basic_name (const std::string&amp; first, const std::string&amp; last);
+
+  ...
+
+private:
+  friend class odb::access;
+
+  basic_name () {} // Needed for storing basic_name in containers.
+
+  std::string first_;
+  std::string last_;
+};
+  </pre>
+
+  <p>The complete versions of the above code fragment as well as other code
+     samples presented in this chapter can found in the <code>composite</code>
+     example in the <code>odb-examples</code> package.</p>
+
+  <p>The members of a composite value can be other value types (either
+     simple or composite), containers (@@ ref), and object pointers (@@ ref).
+     Similarly, a composite value type can be used in object members,
+     as an element in a container, and as a base for another composite
+     value type. In particular, composite value types can be used as
+     element types in set containers (@@ ref) and as key types in map
+     containers (@@ ref). A composite value type that is used as an
+     element of a container cannot contain other containers since
+     containers of containers are not allowed. The following example
+     illustrates some of the possible use cases:</p>
+
+<pre class="c++">
+#pragma db value
+class basic_name
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+};
+
+typedef std::vector&lt;basic_name> basic_names;
+
+#pragma db value
+class name_extras
+{
+  ...
+
+  std::string nickname_;
+  basic_names aliases_;
+};
+
+#pragma db value
+class name: public basic_name
+{
+  ...
+
+  std::string title_;
+  name_extras extras_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id_;
+
+  name name_;
+};
+</pre>
+
+  <p>We can also use the data members from the composite value types
+     in database queries (<a href="#4">Chapter 4, "Querying the
+     Database"</a>). For each composite value in a persistent class,
+     the query class defines a nested scope containing members corresponding
+     to the data members in the value type. For example, the
+     query class for the <code>person</code> object presented above
+     contains the <code>name</code> scope (derived from the <code>name_</code>
+     data member) which in turn contains the <code>extras</code> member
+     (derived from the <code>name::extras_</code> data member of the
+     composite value type). The process continues reqursively for nested
+     composite value types and, as a result, we can use the
+     <code>query::name::extras::nickname</code> expression while querying
+     the database for the <code>person</code> objects. For example:</p>
+
+  <pre class="c++">
+typedef odb::query&lt;person> query;
+typedef odb::result&lt;person> result;
+
+transaction t (db->begin ());
+
+result r (db->query&lt;person> (
+  query::name::extras::nickname == "Squeaky"));
+
+...
+
+t.commit ();
+  </pre>
+
+  <h2><a name="7.1">7.1 Composite Value Column and Table Names</a></h2>
+
+  <p>Customizing a column name for a data member of a simple value
+     type is straightforward: we simply specify the desired name with
+     the <code>db&nbsp;column</code> pragma (@@ ref). For composite value
+     types things are slightly more complicated since it is mapped to
+     multiple columns. Consider the following example:</p>
+
+<pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id_;
+
+  name name_;
+};
+</pre>
+
+  <p>The column names for the <code>first_</code> and <code>last_</code>
+     members are constructed by using the sanitized name of the
+     <code>person::name_</code> member as a prefix and the names of the
+     members in the value type (<code>first_</code> and <code>last_</code>)
+     as suffixes. As a result, the database schema for the above classes
+     will look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE person (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  name_first TEXT NOT NULL,
+  name_last TEXT NOT NULL);
+  </pre>
+
+ <p>We can customize both the prefix and the suffix using the
+    <code>db&nbsp;column</code> pragma as shown in the following
+    example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+  #pragma db column("first_name")
+  std::string first_;
+
+  #pragma db column("last_name")
+  std::string last_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db column("person_")
+  name name_;
+};
+  </pre>
+
+  <p>The database schema changes as follows:</p>
+
+  <pre class="sql">
+CREATE TABLE person (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  person_first_name TEXT NOT NULL,
+  person_last_name TEXT NOT NULL);
+  </pre>
+
+  <p>We can also make the column prefix empty, for example:</p>
+
+<pre class="c++">
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db column("")
+  name name_;
+};
+  </pre>
+
+  <p>This will result in the following schema:</p>
+
+  <pre class="sql">
+CREATE TABLE person (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL);
+  </pre>
+
+  <p>The same principal applies when a composite value type is used
+     as an element of a container, except that instead of
+     <code>db&nbsp;column</code> either the <code>db&nbsp;value_column</code>
+     (@@ ref) or <code>db&nbsp;key_column</code> (@@ ref) pragmas are used to
+     specify the column prefix.</p>
+
+  <p>When a composite value type contains a container, an extra table
+     is used to store the elements (@@ ref Chapter X, "Containers").
+     The names of such tables are constructed in a way similar to the
+     column names, except that by default both the object name and the
+     member name are used as a prefix. For example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+  std::vector&lt;std::string> nicknames_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  name name_;
+};
+  </pre>
+
+  <p>The corresponding database schema will look like this:</p>
+
+  <pre class="sql">
+CREATE TABLE `person_name_nicknames` (
+  `object_id` BIGINT UNSIGNED NOT NULL,
+  `index` BIGINT UNSIGNED NOT NULL,
+  `value` TEXT NOT NULL)
+
+CREATE TABLE person (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  name_first TEXT NOT NULL,
+  name_last TEXT NOT NULL);
+  </pre>
+
+  <p>To customize the container table name we can use the
+     <code>db&nbsp;table</code> (@@ ref) pragma, for example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+  #pragma db table("nickname")
+  std::vector&lt;std::string> nicknames_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db table("person_")
+  name name_;
+};
+  </pre>
+
+  <p>This will result in the following schema changes:</p>
+
+  <pre class="sql">
+CREATE TABLE `person_nickname` (
+  `object_id` BIGINT UNSIGNED NOT NULL,
+  `index` BIGINT UNSIGNED NOT NULL,
+  `value` TEXT NOT NULL)
+  </pre>
+
+  <p>Similar to columns, we can make the table prefix empty.</p>
+
+
+  <!-- CHAPTER -->
+
+
+  <h1><a name="8">8 Session</a></h1>
+
+  <p>A session is an application's unit of work that may encompass several
+     database transactions (@@ ref Transaction). In this version of ODB a
+     session is just an object cache. In the future versions it will provide
+     additional functionality, such as automatic object state change flushing
+     and optimistic concurrency.</p>
+
+  <p>Each thread of execution in an application can have only one active
+     session at a time. A session is started by creating an instance of
+     the <code>odb::session</code> class and is automatically terminated
+     when this instance is destroyed. You will need to include the
+     <code>&lt;odb/session.hxx></code> header file to make this class
+     available in your application. For example:</p>
+
+  <pre class="c++">
+#include &lt;odb/database.hxx>
+#include &lt;odb/session.hxx>
+#include &lt;odb/transaction.hxx>
+
+using namespace odb;
+
+{
+  session s;
+
+  // First transaction.
+  //
+  {
+    transaction t (db.begin ());
+    ...
+    t.commit ();
+  }
+
+  // Second transaction.
+  //
+  {
+    transaction t (db.begin ());
+    ...
+    t.commit ();
+  }
+
+  // Session 's' is terminated here.
+}
+  </pre>
+
+  <p>The <code>odb::session</code> class has the following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  class session
+  {
+  public:
+    session ();
+    ~session ();
+
+    // Copying or assignment of sessions is not supported.
+    //
+  private:
+    session (const session&amp;);
+    session&amp; operator= (const session&amp;);
+
+    // Current session interface.
+    //
+  public:
+    static session&amp;
+    current ();
+
+    static bool
+    has_current ();
+
+    static void
+    current (session&amp;);
+
+    static void
+    reset_current ();
+
+    // Object cache interface.
+    //
+  public:
+    typedef odb::database database_type;
+
+    template &lt;typename T>
+    void
+    insert (database_type&amp;,
+            const object_traits&lt;T>::id_type&amp;,
+            const object_traits&lt;T>::pointer_type&amp;);
+
+    template &lt;typename T>
+    object_traits&lt;T>::pointer_type
+    find (database_type&amp;, const object_traits&lt;T>::id_type&amp;) const;
+
+    template &lt;typename T>
+    void
+    erase (database_type&amp;, const object_traits&lt;T>::id_type&amp;);
+  };
+}
+  </pre>
+
+  <p>The session constructor creates a new session and sets it as a
+     current session for this thread. If we try to create a session
+     while there is already a current session in effect, this constructor
+     throws the <code>odb::already_in_session</code> exception. The
+     destructor clears the current session for this thread if this
+     session is the current one.</p>
+
+  <p>The static <code>current()</code> accessor returns the currently active
+     session for this thread. If there is no active session, this function
+     throws the <code>odb::not_in_session</code> exception. We can check
+     whether there is a session in effect in this thread using the
+     <code>has_current()</code> static function.</p>
+
+  <p>The static <code>current()</code> modifier allows us to set the
+     current session for this thread. The <code>reset_current</code>
+     static function clears the current session. These two functions
+     allow for more advanced use cases, such as multiplexing
+     between two or more sessions in the same thread.</p>
+
+  <p>We normally don't use the object cache interface directly. However,
+     it could be useful in some cases, for example, to find out whether
+     an object has already been loaded.</p>
+
+  <h2><a name="8.1">8.1 Object Cache</a></h2>
+
+  <p>A session is an object cache. Every time an object is made persistent
+     by calling the <code>database::persist()</code> function (@@ ref), loaded
+     by calling the <code>database::load()</code> or <code>database::find()</code>
+     function (@@ ref), or loaded by iterating over a query result (@@ ref),
+     the pointer to the persistent object, in the form of the canonical object
+     pouinter (@@ ref), is stored in the session. For as long as the
+     session is in effect, any subsequent calls to load the same object will
+     return the cached instance. When an object's state is deleted from the
+     database with the <code>database::erase()</code> function (@@ ref), the
+     cached object pointer is removed from the session. For example:</p>
+
+  <pre class="c++">
+shared_ptr&lt;person> p (new person ("John", "Doe"));
+
+session s;
+transaction t (db.begin ());
+
+unsigned long id (db.persist (p));            // p is cached in s.
+shared_ptr&lt;person> p1 (db.load&lt;person> (id)); // p1 same as p.
+
+t.commit ();
+  </pre>
+
+
+  <p>The per-object caching policies depend on the object pointer kind
+     (@@ ref). Objects with a unique pointer, such as <code>std::auto_ptr</code>,
+     as an object pointer are never cached since it is not possible to have
+     two such pointers pointing to the same object. When an object is
+     persisted via a pointer or loaded as a dynamically allocated instance,
+     objects with both raw and shared pointers as object pointers are
+     cached. If an object is persisted as a reference or loaded into
+     a pre-allocated instance, the object is only cached if its object
+     pointer is a raw pointer.</p>
+
+  <p>Finally, the session caches both constant and non-constant objects,
+     depending on whether a constant reference or constant pointer was
+     passed to the <code>database::persist()</code> function (in contrast,
+     when loaded, objects are always created and cached as non-constant).
+     If we try to load an object as non-constant that was previously
+     persisted and cached as constant, the <code>odb::const_object</code>
+     exception is thrown. The following transaction illustartes the
+     situation where this would happen:</p>
+
+  <pre class="c++">
+shared_ptr&lt;const person> p (new person ("John", "Doe"));
+
+session s;
+transaction t (db.begin ());
+
+unsigned long id (db.persist (p));
+shared_ptr&lt;const person> p1 (db.load&lt;const person> (id)); // Ok.
+shared_ptr&lt;person> p2 (db.load&lt;person> (id));             // Exception.
+
+t.commit ();
+  </pre>
+
+
+  <!-- CHAPTER -->
+
+
+  <h1><a name="9">5 ODB Pragma Language</a></h1>
 
   <p>As we have already seen in previous chapters, ODB uses a pragma-based
      language to capture database-specific information about C++ types.
@@ -5034,10 +5086,10 @@ private:
      the C++ compiler to build our application. Some C++ compilers
      issue warnings about pragmas that they do not recognize. There
      are several ways to deal with this problem which are covered
-     at the end of this chapter in <a href="#5.4">Section 5.4,
+     at the end of this chapter in <a href="#9.4">Section 9.4,
      "C++ Compiler Warnings"</a>.</p>
 
-  <h2><a name="5.1">5.1 Object Type Pragmas</a></h2>
+  <h2><a name="9.1">9.1 Object Type Pragmas</a></h2>
 
   <p>A pragma with the <code>object</code> qualifier declares a C++ class
      as a persistent object type. The qualifier can be optionally followed,
@@ -5054,19 +5106,19 @@ private:
     <tr>
       <td><code>table</code></td>
       <td>the table name for the persistent class</td>
-      <td><a href="#5.1.1">5.1.1</a></td>
+      <td><a href="#9.1.1">9.1.1</a></td>
     </tr>
 
     <tr>
       <td><code>pointer</code></td>
       <td>the pointer type for the persistent class</td>
-      <td><a href="#5.1.2">5.1.2</a></td>
+      <td><a href="#9.1.2">9.1.2</a></td>
     </tr>
 
   </table>
 
 
-  <h3><a name="5.1.1">5.1.1 <code>table</code></a></h3>
+  <h3><a name="9.1.1">9.1.1 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies the table name that should
      be used to store objects of the class in a relational database. For
@@ -5083,7 +5135,7 @@ class person
   <p>If the table name is not specified, the class name is used as the
      table name.</p>
 
-  <h3><a name="5.1.2">5.1.2 <code>pointer</code></a></h3>
+  <h3><a name="9.1.2">9.1.2 <code>pointer</code></a></h3>
 
   <p>The <code>pointer</code> specifier specifies the object pointer type
      for the persistent class. The object pointer type is used to return,
@@ -5133,7 +5185,7 @@ class person
   <p>For additional information on object pointers, refer to
      <a href="#@@">Section @@, ""</a>.</p>
 
-  <h2><a name="5.2">5.2 Value Type Pragmas</a></h2>
+  <h2><a name="9.2">9.2 Value Type Pragmas</a></h2>
 
   <p>A pragma with the <code>value</code> qualifier describes a value
      type. It can be optionally followed, in any order, by one or more
@@ -5150,67 +5202,67 @@ class person
     <tr>
       <td><code>type</code></td>
       <td>the database type for the value type</td>
-      <td><a href="#5.2.1">5.2.1</a></td>
+      <td><a href="#9.2.1">9.2.1</a></td>
     </tr>
 
     <tr>
       <td><code>not_null</code></td>
       <td>object pointer cannot be <code>NULL</code></td>
-      <td><a href="#5.2.2">5.2.2</a></td>
+      <td><a href="#9.2.2">9.2.2</a></td>
     </tr>
 
     <tr>
       <td><code>unordered</code></td>
       <td>ordered container should be stored unordered</td>
-      <td><a href="#5.2.3">5.2.3</a></td>
+      <td><a href="#9.2.3">9.2.3</a></td>
     </tr>
 
     <tr>
       <td><code>index_type</code></td>
       <td>the database type for the container's index type</td>
-      <td><a href="#5.2.4">5.2.4</a></td>
+      <td><a href="#9.2.4">9.2.4</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
       <td>the database type for the container's key type</td>
-      <td><a href="#5.2.5">5.2.5</a></td>
+      <td><a href="#9.2.5">9.2.5</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
       <td>the database type for the container's value type</td>
-      <td><a href="#5.2.6">5.2.6</a></td>
+      <td><a href="#9.2.6">9.2.6</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
       <td>the column name for the container's table object id</td>
-      <td><a href="#5.2.7">5.2.7</a></td>
+      <td><a href="#9.2.7">9.2.7</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>the column name for the container's table index</td>
-      <td><a href="#5.2.8">5.2.8</a></td>
+      <td><a href="#9.2.8">9.2.8</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>the column name for the container's table key</td>
-      <td><a href="#5.2.9">5.2.9</a></td>
+      <td><a href="#9.2.9">9.2.9</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>the column name for the container's table value</td>
-      <td><a href="#5.2.10">5.2.10</a></td>
+      <td><a href="#9.2.10">9.2.10</a></td>
     </tr>
 
   </table>
 
   <p>Many of the value type specifiers have corresponding member type
-     specifiers with the same names (see <a href="#5.3">Section 5.3,
+     specifiers with the same names (see <a href="#9.3">Section 9.3,
      "Data Member Pragmas"</a>). The behavior of such specifiers
      for members is similar to that for value types. The only difference
      is the scope. A particular value type specifier applies to all
@@ -5219,7 +5271,7 @@ class person
      to a single member. In other words, member specifiers take precedence
      over values specified with value specifiers.</p>
 
-  <h3><a name="5.2.1">5.2.1 <code>type</code></a></h3>
+  <h3><a name="9.2.1">9.2.1 <code>type</code></a></h3>
 
   <p>The <code>type</code> specifier specifies the native database type
      that should be used for data members of this type. For example:</p>
@@ -5241,7 +5293,7 @@ private:
      types, such as <code>bool</code>, <code>int</code>, and
      <code>std::string</code> and the database types for each supported
      database system. For more information on the default mapping,
-     refer to <a href="#6">Chapter 6, "Database Systems"</a>.</p>
+     refer to <a href="#10">Chapter 10, "Database Systems"</a>.</p>
 
   <p>In the above example we changed the mapping for the <code>bool</code>
      type which is now mapped to the <code>INT</code> database type. In
@@ -5267,7 +5319,7 @@ private:
      <code>mapping</code> example in the <code>odb-examples</code>
      package shows how to do this for all the supported database systems.</p>
 
-  <h3><a name="5.2.2">5.2.2 <code>not_null</code></a></h3>
+  <h3><a name="9.2.2">9.2.2 <code>not_null</code></a></h3>
 
   <p>The <code>not_null</code> specifier specifies that an object pointer
      or a container of object pointers type cannot have or contain the
@@ -5295,7 +5347,7 @@ typedef std::vector&lt;shared_ptr&lt;account> > accounts;
 #pragma db value(accounts) not_null
 </pre>
 
-  <h3><a name="5.2.3">5.2.3 <code>unordered</code></a></h3>
+  <h3><a name="9.2.3">9.2.3 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that the ordered
      container should be stored in the database unordered. The database
@@ -5308,13 +5360,13 @@ typedef std::vector&lt;std::string> names;
 #pragma db value(names) unordered
   </pre>
 
-  <h3><a name="5.2.4">5.2.4 <code>index_type</code></a></h3>
+  <h3><a name="9.2.4">9.2.4 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
      database type that should be used for the ordered container's
      index column. The semantics of <code>index_type</code>
      are similar to that of the <code>type</code> specifier (see
-     <a href="#5.2.1">Section 5.2.1, "<code>type</code>"</a>). The native
+     <a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>). The native
      database type is expected to be an integer type. For example:</p>
 
   <pre class="c++">
@@ -5322,13 +5374,13 @@ typedef std::vector&lt;std::string> names;
 #pragma db value(names) index_type("SMALLINT UNSIGNED NOT NULL")
   </pre>
 
-  <h3><a name="5.2.5">5.2.5 <code>key_type</code></a></h3>
+  <h3><a name="9.2.5">9.2.5 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
      database type that should be used for the map container's
      key column. The semantics of <code>key_type</code>
      are similar to that of the <code>type</code> specifier (see
-     <a href="#5.2.1">Section 5.2.1, "<code>type</code>"</a>). For
+     <a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>). For
      example:</p>
 
   <pre class="c++">
@@ -5336,13 +5388,13 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 #pragma db value(age_weight_map) key_type("INT UNSIGNED NOT NULL")
   </pre>
 
-  <h3><a name="5.2.6">5.2.6 <code>value_type</code></a></h3>
+  <h3><a name="9.2.6">9.2.6 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
      database type that should be used for the container's
      value column. The semantics of <code>value_type</code>
      are similar to that of the <code>type</code> specifier (see
-     <a href="#5.2.1">Section 5.2.1, "<code>type</code>"</a>). For
+     <a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>). For
      example:</p>
 
   <pre class="c++">
@@ -5350,7 +5402,7 @@ typedef std::vector&lt;std::string> names;
 #pragma db value(names) value_type("VARCHAR(255) NOT NULL")
   </pre>
 
-  <h3><a name="5.2.7">5.2.7 <code>id_column</code></a></h3>
+  <h3><a name="9.2.7">9.2.7 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in the
@@ -5364,7 +5416,7 @@ typedef std::vector&lt;std::string> names;
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="5.2.8">5.2.8 <code>index_column</code></a></h3>
+  <h3><a name="9.2.8">9.2.8 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in the
@@ -5378,7 +5430,7 @@ typedef std::vector&lt;std::string> names;
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="5.2.9">5.2.9 <code>key_column</code></a></h3>
+  <h3><a name="9.2.9">9.2.9 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in the map
@@ -5392,7 +5444,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="5.2.10">5.2.10 <code>value_column</code></a></h3>
+  <h3><a name="9.2.10">9.2.10 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in the
@@ -5409,7 +5461,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <!-- Data Member Pragmas -->
 
 
-  <h2><a name="5.3">5.3 Data Member Pragmas</a></h2>
+  <h2><a name="9.3">9.3 Data Member Pragmas</a></h2>
 
   <p>A pragma with the <code>member</code> qualifier or a positioned
      pragma without a qualifier describes a data member. It can
@@ -5427,104 +5479,104 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
     <tr>
       <td><code>id</code></td>
       <td>the member is an object id</td>
-      <td><a href="#5.3.1">5.3.1</a></td>
+      <td><a href="#9.3.1">9.3.1</a></td>
     </tr>
 
     <tr>
       <td><code>auto</code></td>
       <td>id is assigned by the database</td>
-      <td><a href="#5.3.2">5.3.2</a></td>
+      <td><a href="#9.3.2">9.3.2</a></td>
     </tr>
 
     <tr>
       <td><code>type</code></td>
       <td>the database type for the member</td>
-      <td><a href="#5.3.3">5.3.3</a></td>
+      <td><a href="#9.3.3">9.3.3</a></td>
     </tr>
 
     <tr>
       <td><code>column</code></td>
       <td>the column name for the member</td>
-      <td><a href="#5.3.4">5.3.4</a></td>
+      <td><a href="#9.3.4">9.3.4</a></td>
     </tr>
 
     <tr>
       <td><code>transient</code></td>
       <td>the member is not stored in the database</td>
-      <td><a href="#5.3.5">5.3.5</a></td>
+      <td><a href="#9.3.5">9.3.5</a></td>
     </tr>
 
     <tr>
       <td><code>not_null</code></td>
       <td>object pointer cannot be NULL</td>
-      <td><a href="#5.3.6">5.3.6</a></td>
+      <td><a href="#9.3.6">9.3.6</a></td>
     </tr>
 
     <tr>
       <td><code>inverse</code></td>
       <td>the member is an inverse side of a bidirectional relationship</td>
-      <td><a href="#5.3.7">5.3.7</a></td>
+      <td><a href="#9.3.7">9.3.7</a></td>
     </tr>
 
     <tr>
       <td><code>unordered</code></td>
       <td>ordered container should be stored unordered</td>
-      <td><a href="#5.3.8">5.3.8</a></td>
+      <td><a href="#9.3.8">9.3.8</a></td>
     </tr>
 
     <tr>
       <td><code>table</code></td>
       <td>the table name for the container</td>
-      <td><a href="#5.3.9">5.3.9</a></td>
+      <td><a href="#9.3.9">9.3.9</a></td>
     </tr>
 
 
     <tr>
       <td><code>index_type</code></td>
       <td>the database type for the container's index type</td>
-      <td><a href="#5.3.10">5.3.10</a></td>
+      <td><a href="#9.3.10">9.3.10</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
       <td>the database type for the container's key type</td>
-      <td><a href="#5.3.11">5.3.11</a></td>
+      <td><a href="#9.3.11">9.3.11</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
       <td>the database type for the container's value type</td>
-      <td><a href="#5.3.12">5.3.12</a></td>
+      <td><a href="#9.3.12">9.3.12</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
       <td>the column name for the container's table object id</td>
-      <td><a href="#5.3.13">5.3.13</a></td>
+      <td><a href="#9.3.13">9.3.13</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>the column name for the container's table index</td>
-      <td><a href="#5.3.14">5.3.14</a></td>
+      <td><a href="#9.3.14">9.3.14</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>the column name for the container's table key</td>
-      <td><a href="#5.3.15">5.3.15</a></td>
+      <td><a href="#9.3.15">9.3.15</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>the column name for the container's table value</td>
-      <td><a href="#5.3.16">5.3.16</a></td>
+      <td><a href="#9.3.16">9.3.16</a></td>
     </tr>
 
   </table>
 
   <p>Many of the member specifiers have corresponding value type
-     specifiers with the same names (see <a href="#5.2">Section 5.2,
+     specifiers with the same names (see <a href="#9.2">Section 9.2,
      "Value Type Pragmas"</a>). The behavior of such specifiers
      for members is similar to that for value types. The only difference
      is the scope. A particular value type specifier applies to all
@@ -5533,7 +5585,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
      to a single member. In other words, member specifiers take precedence
      over values specified with value specifiers.</p>
 
-  <h3><a name="5.3.1">5.3.1 <code>id</code></a></h3>
+  <h3><a name="9.3.1">9.3.1 <code>id</code></a></h3>
 
   <p>The <code>id</code> specifier specifies that the data member contains
      the object id. Every persistent class must have a member designated
@@ -5554,7 +5606,7 @@ private:
   <p>In a relational database, an identifier member is mapped to a
      primary key.</p>
 
-  <h3><a name="5.3.2">5.3.2 <code>auto</code></a></h3>
+  <h3><a name="9.3.2">9.3.2 <code>auto</code></a></h3>
 
   <p>The <code>auto</code> specifier specifies that the object's identifier
      is automatically assigned by the database. Only a member that was
@@ -5582,7 +5634,7 @@ private:
   <p>For additional information on the automatic identifier assignment,
      refer to <a href="#3.5">Section 3.5, "Making Objects Persistent"</a>.</p>
 
-  <h3><a name="5.3.3">5.3.3 <code>type</code></a></h3>
+  <h3><a name="9.3.3">9.3.3 <code>type</code></a></h3>
 
   <p>The <code>type</code> specifier specifies the native database type
      that should be used for the data member. For example:</p>
@@ -5599,7 +5651,7 @@ private:
 };
   </pre>
 
-  <h3><a name="5.3.4">5.3.4 <code>column</code></a></h3>
+  <h3><a name="9.3.4">9.3.4 <code>column</code></a></h3>
 
   <p>The <code>column</code> specifier specifies the column name
      that should be used to store the member in a relational database.
@@ -5618,14 +5670,14 @@ private:
   </pre>
 
   <p>For a member of a composite value type, the <code>column</code> specifier
-     specifies the column name prefix. Refer to <a href="#Z.1">Section Z.1,
+     specifies the column name prefix. Refer to <a href="#7.1">Section 7.1,
      "Composite Value Column and Table Names"</a> for details.</p>
 
   <p>If the column name is not specified, it is derived from the member
      name by removing the common member name decorations, such as leading
      and trailing underscores, the <code>m_</code> prefix, etc.</p>
 
-  <h3><a name="5.3.5">5.3.5 <code>transient</code></a></h3>
+  <h3><a name="9.3.5">9.3.5 <code>transient</code></a></h3>
 
   <p>The <code>transient</code> specifier instructs the ODB compiler
      not to store the data member in the database. For example:</p>
@@ -5648,7 +5700,7 @@ private:
      references that are only meaningful in the application's
      memory, as well as utility members such as mutexes, etc.</p>
 
-  <h3><a name="5.3.6">5.3.6 <code>not_null</code></a></h3>
+  <h3><a name="9.3.6">9.3.6 <code>not_null</code></a></h3>
 
   <p>The <code>not_null</code> specifier specifies that the member of
      an object pointer or a container of object pointers type cannot
@@ -5677,7 +5729,7 @@ private:
 };
 </pre>
 
-  <h3><a name="5.3.7">5.3.7 <code>inverse</code></a></h3>
+  <h3><a name="9.3.7">9.3.7 <code>inverse</code></a></h3>
 
   <p>The <code>inverse</code> specifier specifies that the member of
      an object pointer or a container of object pointers type is an
@@ -5717,9 +5769,9 @@ private:
      information. Only ordered and set containers can be used for
      inverse members. If an inverse member is of an ordered container
      type, it is automatically marked as unordered (see
-     <a href="#5.3.8">Section 5.3.8, "<code>unordered</code>"</a>).</p>
+     <a href="#9.3.8">Section 9.3.8, "<code>unordered</code>"</a>).</p>
 
-  <h3><a name="5.3.8">5.3.8 <code>unordered</code></a></h3>
+  <h3><a name="9.3.8">9.3.8 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that the member of
      an ordered container type should be stored in the database unordered.
@@ -5739,7 +5791,7 @@ private:
 };
   </pre>
 
-  <h3><a name="5.3.9">5.3.9 <code>table</code></a></h3>
+  <h3><a name="9.3.9">9.3.9 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies the table name that should
      be used to store the contents of the container member. For example:</p>
@@ -5767,16 +5819,16 @@ private:
   <p>The <code>table</code> specifier can also be used for members of
      composite value types. In this case it specifies the table name
      prefix for container members inside the composite value type. Refer
-     to <a href="#Z.1">Section Z.1, "Composite Value Column and Table
+     to <a href="#7.1">Section 7.1, "Composite Value Column and Table
      Names"</a> for details.</p>
 
-  <h3><a name="5.3.10">5.3.10 <code>index_type</code></a></h3>
+  <h3><a name="9.3.10">9.3.10 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
      database type that should be used for the ordered container's
      index column of the data member. The semantics of <code>index_type</code>
      are similar to that of the <code>type</code> specifier (see
-     <a href="#5.3.3">Section 5.3.3, "<code>type</code>"</a>). The native
+     <a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>). The native
      database type is expected to be an integer type. For example:</p>
 
   <pre class="c++">
@@ -5791,13 +5843,13 @@ private:
 };
   </pre>
 
-  <h3><a name="5.3.11">5.3.11 <code>key_type</code></a></h3>
+  <h3><a name="9.3.11">9.3.11 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
      database type that should be used for the map container's
      key column of the data member. The semantics of <code>key_type</code>
      are similar to that of the <code>type</code> specifier (see
-     <a href="#5.3.3">Section 5.3.3, "<code>type</code>"</a>). For
+     <a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>). For
      example:</p>
 
   <pre class="c++">
@@ -5812,13 +5864,13 @@ private:
 };
   </pre>
 
-  <h3><a name="5.3.12">5.3.12 <code>value_type</code></a></h3>
+  <h3><a name="9.3.12">9.3.12 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
      database type that should be used for the container's
      value column of the data member. The semantics of <code>value_type</code>
      are similar to that of the <code>type</code> specifier (see
-     <a href="#5.3.3">Section 5.3.3, "<code>type</code>"</a>). For
+     <a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>). For
      example:</p>
 
   <pre class="c++">
@@ -5833,14 +5885,14 @@ private:
 };
   </pre>
 
-  <h3><a name="5.3.13">5.3.13 <code>id_column</code></a></h3>
+  <h3><a name="9.3.13">9.3.13 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in the
      container's table for the member. The semantics of
      <code>id_column</code> are similar to that of the
      <code>column</code> specifier (see
-     <a href="#5.3.4">Section 5.3.4, "<code>column</code>"</a>).
+     <a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -5858,14 +5910,14 @@ private:
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="5.3.14">5.3.14 <code>index_column</code></a></h3>
+  <h3><a name="9.3.14">9.3.14 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in the
      ordered container's table for the member. The semantics of
      <code>index_column</code> are similar to that of the
      <code>column</code> specifier (see
-     <a href="#5.3.4">Section 5.3.4, "<code>column</code>"</a>).
+     <a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -5883,14 +5935,14 @@ private:
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="5.3.15">5.3.15 <code>key_column</code></a></h3>
+  <h3><a name="9.3.15">9.3.15 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in the map
      container's table for the member. The semantics of
      <code>key_column</code> are similar to that of the
      <code>column</code> specifier (see
-     <a href="#5.3.4">Section 5.3.4, "<code>column</code>"</a>).
+     <a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -5908,14 +5960,14 @@ private:
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="5.3.16">5.3.16 <code>value_column</code></a></h3>
+  <h3><a name="9.3.16">9.3.16 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in the
      container's table for the member. The semantics of
      <code>value_column</code> are similar to that of the
      <code>column</code> specifier (see
-     <a href="#5.3.4">Section 5.3.4, "<code>column</code>"</a>).
+     <a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -5933,7 +5985,7 @@ private:
   <p>If the column name is not specified, then <code>value</code>
      is used by default.</p>
 
-  <h2><a name="5.4">5.4 C++ Compiler Warnings</a></h2>
+  <h2><a name="9.4">9.4 C++ Compiler Warnings</a></h2>
 
   <p>When the C++ header file defining our persistent classes and
      containing ODB pragmas is processed by a C++ compiler, it
@@ -5988,7 +6040,7 @@ private:
   <p>The disadvantage of this approach is that it can quickly become
      overly verbose when positioned pragmas are used.</p>
 
-  <h3><a name="5.4.1">5.4.1 GNU C++</a></h3>
+  <h3><a name="9.4.1">9.4.1 GNU C++</a></h3>
 
   <p>GNU g++ does not issue warnings about unknown pragmas
      unless requested with the <code>-Wall</code> command line option.
@@ -6000,7 +6052,7 @@ private:
 g++ -Wall -Wno-unknown-pragmas ...
   </pre>
 
-  <h3><a name="5.4.2">5.4.2 Visual C++</a></h3>
+  <h3><a name="9.4.2">9.4.2 Visual C++</a></h3>
 
   <p>Microsoft Visual C++ issues an unknown pragma warning (C4068) at
      warning level 1 or higher. This means that unless we have disabled
@@ -6035,7 +6087,7 @@ private:
 #pragma warning (pop)
   </pre>
 
-  <h3><a name="5.4.3">5.4.3 Sun C++</a></h3>
+  <h3><a name="9.4.3">9.4.3 Sun C++</a></h3>
 
   <p>The Sun C++ compiler does not issue warnings about unknown pragmas
      unless the <code>+w</code> or <code>+w2</code> option is specified.
@@ -6047,7 +6099,7 @@ private:
 CC +w -erroff=unknownpragma ...
   </pre>
 
-  <h3><a name="5.4.4">5.4.4 IBM XL C++</a></h3>
+  <h3><a name="9.4.4">9.4.4 IBM XL C++</a></h3>
 
   <p>IBM XL C++ issues an unknown pragma warning (1540-1401) by default.
      To disable this warning we can add the <code>-qsuppress=1540-1401</code>
@@ -6057,7 +6109,7 @@ CC +w -erroff=unknownpragma ...
 xlC -qsuppress=1540-1401 ...
   </pre>
 
-  <h3><a name="5.4.5">5.4.5 HP aC++</a></h3>
+  <h3><a name="9.4.5">9.4.5 HP aC++</a></h3>
 
   <p>HP aC++ (aCC) issues an unknown pragma warning (2161) by default.
      To disable this warning we can add the <code>+W2161</code>
@@ -6071,7 +6123,7 @@ aCC +W2161 ...
   <!-- CHAPTER -->
 
 
-  <h1><a name="6">6 Database Systems</a></h1>
+  <h1><a name="10">10 Database Systems</a></h1>
 
   <p>This chapter covers topics specific to the database system
      implementations and their support in ODB. In particular, it
@@ -6080,7 +6132,7 @@ aCC +W2161 ...
      and native database types.</p>
 
 
-  <h2><a name="6.1">6.1 MySQL Database</a></h2>
+  <h2><a name="10.1">10.1 MySQL Database</a></h2>
 
   <p>To generate support code for the MySQL database you will need
      to pass the "<code>--database&nbsp;mysql</code>"
@@ -6089,12 +6141,12 @@ aCC +W2161 ...
      library (<code>libodb-mysql</code>). All MySQL-specific ODB
      classes are defined in the <code>odb::mysql</code> namespace.</p>
 
-  <h3><a name="6.1.1">6.1.1 MySQL Type Mapping</a></h3>
+  <h3><a name="10.1.1">10.1.1 MySQL Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between basic
      C++ value types and MySQL database types. This mapping can be
      customized on the per-type and per-member basis using the ODB
-     Pragmas Language (see <a href="#5">Chapter 5, "ODB Pragma
+     Pragmas Language (see <a href="#9">Chapter 9, "ODB Pragma
      Language"</a>).</p>
 
   <!-- border="1" is necessary for html2ps -->
@@ -6187,7 +6239,7 @@ aCC +W2161 ...
      to <code>VARCHAR(255) NOT NULL</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT NOT NULL</code>.</p>
 
-  <h3><a name="6.1.2">6.1.2 MySQL Database Class</a></h3>
+  <h3><a name="10.1.2">10.1.2 MySQL Database Class</a></h3>
 
   <p>The MySQL <code>database</code> class has the following
      interface:</p>
@@ -6326,7 +6378,7 @@ namespace odb
 
   <p>This constructor throws the <code>odb::mysql::cli_exception</code>
      exception if the MySQL option values are missing or invalid.
-     See section <a href="#6.1.4">Section 6.1.4, "MySQL Exceptions"</a>
+     See section <a href="#10.1.4">Section 10.1.4, "MySQL Exceptions"</a>
      for more information on this exception.</p>
 
   <p>The static <code>print_usage()</code> function prints the list of options
@@ -6350,7 +6402,7 @@ namespace odb
      handle, refer to the MySQL ODB runtime source code for the interface
      of the <code>connection</code> class.</p>
 
-  <h3><a name="6.1.3">6.1.3 Connection Factory</a></h3>
+  <h3><a name="10.1.3">10.1.3 Connection Factory</a></h3>
 
   <p>The <code>connection_factory</code> abstract class has the
      following interface:</p>
@@ -6464,7 +6516,7 @@ main (int argc, char* argv[])
 }
   </pre>
 
-  <h3><a name="6.1.4">6.1.4 MySQL Exceptions</a></h3>
+  <h3><a name="10.1.4">10.1.4 MySQL Exceptions</a></h3>
 
   <p>The MySQL ODB runtime library defines the following MySQL-specific
      exceptions:</p>
