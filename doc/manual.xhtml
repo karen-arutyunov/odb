@@ -308,7 +308,8 @@ for consistency.
           <tr><th>3.6</th><td><a href="#3.6">Loading Persistent Objects</a></td></tr>
           <tr><th>3.7</th><td><a href="#3.7">Updating Persistent Objects</a></td></tr>
           <tr><th>3.8</th><td><a href="#3.8">Deleting Persistent Objects</a></td></tr>
-          <tr><th>3.9</th><td><a href="#3.9">ODB Exceptions</a></td></tr>
+	  <tr><th>3.9</th><td><a href="#3.9">Executing Native SQL Statements</a></td></tr>
+          <tr><th>3.10</th><td><a href="#3.10">ODB Exceptions</a></td></tr>
         </table>
       </td>
     </tr>
@@ -1189,7 +1190,7 @@ main (int argc, char* argv[])
 
   <p>The final bit of code in our example is the <code>catch</code>
      block that handles the database exceptions. We do this by catching
-     the base ODB exception (see <a href="#3.9">Section 3.9, "ODB
+     the base ODB exception (see <a href="#3.10">Section 3.10, "ODB
      Exceptions"</a>) and printing the diagnostics.</p>
 
   <p>Let's now compile (see <a href="#2.3">Section 2.3, "Compiling and
@@ -2397,7 +2398,44 @@ db.erase&lt;person> (joe_id);
 t.commit ();
   </pre>
 
-  <h2><a name="3.9">3.9 ODB Exceptions</a></h2>
+  <h2><a name="3.9">3.9 Executing Native SQL Statements</a></h2>
+
+  <p>In some situations we may need to execute native SQL statements
+     instead of using the object-oriented API described above. For
+     example, we may want to tune the database schema generated
+     by the ODB compiler or take advantage of a feature that is
+     specific to the database system we are using. The
+     <code>database::execute()</code> function, which has three
+     overloaded versions, provides this functionality:</p>
+
+  <pre class="c++">
+  unsigned long long
+  execute (const char* statement);
+
+  unsigned long long
+  execute (const std::string&amp; statement);
+
+  unsigned long long
+  execute (const char* statement, std::size_t length)
+  </pre>
+
+  <p>The first <code>execute()</code> function expects the SQL statement
+     as a zero-terminated C-string. The last version expects the explicit
+     statement length as the second argument and the statement itself
+     may contain <code>'\0'</code> characters, for example to represent
+     binary data, if the database system supports it. All three functions
+     return the number of rows affected by the statement. For example:</p>
+
+  <pre class="c++">
+transaction t (db.begin ());
+
+db.execute ("DROP TABLE test");
+db.execute ("CREATE TABLE test (n INT PRIMARY KEY)");
+
+t.commit ();
+  </pre>
+
+  <h2><a name="3.10">3.10 ODB Exceptions</a></h2>
 
   <p>In the previous sections we have already mentioned some of the
      exceptions that can be thrown by the database functions. In this
