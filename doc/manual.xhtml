@@ -3186,7 +3186,8 @@ private:
      in detail in the following sections.</p>
 
   <p>Containers in ODB can contain simple value types, composite value
-     types (see @@), and pointers to objects (see @@). Containers of
+     types (<a href="#5">Chapter 5, "Containers"</a>), and pointers to
+     objects (<a href="#6">Chapter 6, "Relationships"</a>). Containers of
      containers, either directly or indirectly via a composite value
      type, are not allowed. A key in map and multimap containers can
      be a simple or composite value type but not a pointer to an object.
@@ -3506,7 +3507,8 @@ private:
      for a custom smart pointer as discussed later in <a href="#6.4">
      Section 6.4, "Using Custom Smart Pointers"</a>. Any supported
      smart pointer can be used in a data member as long as it can be
-     explicitly constructed from the canonical object pointer (@@ ref).
+     explicitly constructed from the canonical object pointer
+     (<a href="#3.2">Section 3.2, "Object Pointers"</a>).
      For example, we can use <code>weak_ptr</code> if the object pointer
      is <code>shared_ptr</code>.</p>
 
@@ -3616,7 +3618,8 @@ unsigned long john_id, jane_id;
 
   <p>The only notable line in the above code is the creation of a
      session before the second transaction starts. As discussed in
-     Chapter @@ ref, a session acts as a cache of persistent objects.
+     <a href="#8">Chapter 8, "Session"</a>, a session acts as a cache
+     of persistent objects.
      By creating a session before loading the <code>employee</code>
      objects we make sure that their <code>employer_</code> pointers
      point to the same <code>employer</code> object. Without a
@@ -4538,15 +4541,19 @@ private:
      example in the <code>odb-examples</code> package.</p>
 
   <p>The members of a composite value can be other value types (either
-     simple or composite), containers (@@ ref), and object pointers (@@ ref).
+     simple or composite), containers (<a href="#5">Chapter 5,
+     "Containers"</a>), and pointers to objects (<a href="#6">Chapter 6,
+     "Relationships"</a>).
      Similarly, a composite value type can be used in object members,
      as an element in a container, and as a base for another composite
      value type. In particular, composite value types can be used as
-     element types in set containers (@@ ref) and as key types in map
-     containers (@@ ref). A composite value type that is used as an
-     element of a container cannot contain other containers since
-     containers of containers are not allowed. The following example
-     illustrates some of the possible use cases:</p>
+     element types in set containers (<a href="#5.2">Section 5.2, "Set
+     and Multiset Containers"</a>) and as key types in map containers
+     (<a href="#5.3">Section 5.3, "Map and Multimap Containers"</a>).
+     A composite value type that is used as an element of a container
+     cannot contain other containers since containers of containers
+     are not allowed. The following example illustrates some of the
+     possible use cases:</p>
 
 <pre class="c++">
 #pragma db value
@@ -4622,7 +4629,8 @@ t.commit ();
 
   <p>Customizing a column name for a data member of a simple value
      type is straightforward: we simply specify the desired name with
-     the <code>db&nbsp;column</code> pragma (@@ ref). For composite value
+     the <code>db&nbsp;column</code> pragma (<a href="#9.3.4">Section
+     9.3.4, "<code>column</code>"</a>). For composite value
      types things are slightly more complicated since it is mapped to
      multiple columns. Consider the following example:</p>
 
@@ -4723,11 +4731,13 @@ CREATE TABLE person (
   <p>The same principal applies when a composite value type is used
      as an element of a container, except that instead of
      <code>db&nbsp;column</code> either the <code>db&nbsp;value_column</code>
-     (@@ ref) or <code>db&nbsp;key_column</code> (@@ ref) pragmas are used to
-     specify the column prefix.</p>
+     (<a href="#9.3.16">Section 9.3.16, "<code>value_column</code>"</a>) or
+     <code>db&nbsp;key_column</code>
+     (<a href="#9.3.15">Section 9.3.15, "<code>key_column</code>"</a>)
+     pragmas are used to specify the column prefix.</p>
 
   <p>When a composite value type contains a container, an extra table
-     is used to store the elements (@@ ref Chapter X, "Containers").
+     is used to store the elements (<a href="#5">Chapter 5, "Containers"</a>).
      The names of such tables are constructed in a way similar to the
      column names, except that by default both the object name and the
      member name are used as a prefix. For example:</p>
@@ -4767,7 +4777,8 @@ CREATE TABLE person (
   </pre>
 
   <p>To customize the container table name we can use the
-     <code>db&nbsp;table</code> (@@ ref) pragma, for example:</p>
+     <code>db&nbsp;table</code> pragma (<a href="#9.3.9">Section
+     9.3.9, "<code>table</code>"</a>), for example:</p>
 
   <pre class="c++">
 #pragma db value
@@ -4807,9 +4818,9 @@ CREATE TABLE `person_nickname` (
   <h1><a name="8">8 Session</a></h1>
 
   <p>A session is an application's unit of work that may encompass several
-     database transactions (@@ ref Transaction). In this version of ODB a
-     session is just an object cache. In the future versions it will provide
-     additional functionality, such as automatic object state change flushing
+     database transactions. In this version of ODB a session is just an
+     object cache. In the future versions it will provide additional
+     functionality, such as automatic object state change flushing
      and optimistic concurrency.</p>
 
   <p>Each thread of execution in an application can have only one active
@@ -4929,14 +4940,18 @@ namespace odb
   <h2><a name="8.1">8.1 Object Cache</a></h2>
 
   <p>A session is an object cache. Every time an object is made persistent
-     by calling the <code>database::persist()</code> function (@@ ref), loaded
+     by calling the <code>database::persist()</code> function
+     (<a href="#3.5">Section 3.5, "Making Objects Persistent"</a>), loaded
      by calling the <code>database::load()</code> or <code>database::find()</code>
-     function (@@ ref), or loaded by iterating over a query result (@@ ref),
-     the pointer to the persistent object, in the form of the canonical object
-     pouinter (@@ ref), is stored in the session. For as long as the
+     function (<a href="#3.6">Section 3.6, "Loading Persistent Objects"</a>),
+     or loaded by iterating over a query result (<a href="#4.4">Section 4.4,
+     "Query Result"</a>), the pointer to the persistent object, in the form
+     of the canonical object pointer (<a href="#3.2">Section 3.2, "Object
+     Pointers"</a>), is stored in the session. For as long as the
      session is in effect, any subsequent calls to load the same object will
      return the cached instance. When an object's state is deleted from the
-     database with the <code>database::erase()</code> function (@@ ref), the
+     database with the <code>database::erase()</code> function
+     (<a href="#3.8">Section 3.8, "Deleting Persistent Objects"</a>), the
      cached object pointer is removed from the session. For example:</p>
 
   <pre class="c++">
@@ -4953,7 +4968,8 @@ t.commit ();
 
 
   <p>The per-object caching policies depend on the object pointer kind
-     (@@ ref). Objects with a unique pointer, such as <code>std::auto_ptr</code>,
+     (<a href="#6.4">Section 6.4, "Using Custom Smart Pointers"</a>).
+     Objects with a unique pointer, such as <code>std::auto_ptr</code>,
      as an object pointer are never cached since it is not possible to have
      two such pointers pointing to the same object. When an object is
      persisted via a pointer or loaded as a dynamically allocated instance,
@@ -5220,8 +5236,8 @@ class person
      ODB compiler option, is used. If this option is not specified
      either, then the raw pointer is used by default.</p>
 
-  <p>For additional information on object pointers, refer to
-     <a href="#@@">Section @@, ""</a>.</p>
+  <p>For additional information on object pointers refer to
+     <a href="#3.2">Section 3.2, "Object Pointers"</a>.</p>
 
   <h2><a name="9.2">9.2 Value Type Pragmas</a></h2>
 
