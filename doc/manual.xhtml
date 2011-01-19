@@ -1804,14 +1804,14 @@ class name
      create dynamically allocated instances of persistent classes and
      return pointer to these instances. As we will see in later chapters,
      pointers are also used to establish relationships between objects
-     (<a href="#6">Chapter 6, Realtionships</a>) as well as to cache
+     (<a href="#6">Chapter 6, Relationships</a>) as well as to cache
      persistent object in a session (<a href="#8">Chapter 8, Session</a>).</p>
 
   <p>By default, all these mechanisms use raw pointers to return,
      pass, and cache objects. This is normally sufficient for applications
      that have simple object lifetime requirements and do not use sessions
-     or object relationsips. In particular, a dynamically allocated object
-     that is returned as a raw poiner from a database operation can be
+     or object relationships. In particular, a dynamically allocated object
+     that is returned as a raw pointer from a database operation can be
      assigned to a smart pointer of our choice, for example
      <code>std::auto_ptr</code> or <code>shared_ptr</code> from TR1 or
      Boost.</p>
@@ -2320,7 +2320,7 @@ transfer (database&amp; db,
 }
   </pre>
 
-  <p>The same can be acomplished using dynamically allocated objects
+  <p>The same can be accomplished using dynamically allocated objects
      and the object pointer version of the <code>update()</code> function,
      for example:</p>
 
@@ -3178,7 +3178,7 @@ private:
      of the container are automatically loaded as well.</p>
 
   <p>While an ordinary member is mapped to one or more columns in the
-     object's table, a member of a container type is mapped to a seperate
+     object's table, a member of a container type is mapped to a separate
      table. The exact schema of such a table depends on the kind of
      a container. ODB defines the following container kinds: ordered,
      set, multiset, map, and multimap. The container kinds and the
@@ -3389,7 +3389,7 @@ private:
 
   <p>In ODB map and multimap containers (referred to as just set
      containers) are associative containers that contain key-value
-     elemenst based on some relationship between keys. A map container
+     elements based on some relationship between keys. A map container
      may or may not guarantee a particular order of the elements that
      it stores. Standard C++ containers that are considered map
      containers for the purpose of persistence include
@@ -4606,7 +4606,7 @@ class person
      contains the <code>name</code> scope (derived from the <code>name_</code>
      data member) which in turn contains the <code>extras</code> member
      (derived from the <code>name::extras_</code> data member of the
-     composite value type). The process continues reqursively for nested
+     composite value type). The process continues recursively for nested
      composite value types and, as a result, we can use the
      <code>query::name::extras::nickname</code> expression while querying
      the database for the <code>person</code> objects. For example:</p>
@@ -4984,7 +4984,7 @@ t.commit ();
      when loaded, objects are always created and cached as non-constant).
      If we try to load an object as non-constant that was previously
      persisted and cached as constant, the <code>odb::const_object</code>
-     exception is thrown. The following transaction illustartes the
+     exception is thrown. The following transaction illustrates the
      situation where this would happen:</p>
 
   <pre class="c++">
