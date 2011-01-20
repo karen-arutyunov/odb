@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <stdlib.h>    // getenv, setenv
 #include <string.h>    // strerror, memset
-#include <unistd.h>    // stat
+#include <unistd.h>    // stat, close
 #include <sys/types.h> // stat
 #include <sys/stat.h>  // stat
 
@@ -45,6 +45,9 @@ using namespace std;
 using cutl::fs::path;
 using cutl::fs::invalid_path;
 
+typedef vector<string> strings;
+typedef vector<path> paths;
+
 //
 // Path manipulation.
 //
@@ -78,23 +81,25 @@ struct process_info
   HANDLE id;
 #endif
 
-  int fd;
+  int out_fd;
+  int in_fd;
 };
 
 struct process_failure {};
 
 // Start another process using the specified command line. Connect the
-// newly created process stdin to our stdout. Issue diagnostics and
-// throw process_failure if anything goes wrong. The name argument
-// is the name of the current process for diagnostics.
+// newly created process' stdin to out_fd. Also if connect_out is true,
+// connect the created process' stdout and stderr to in_fd. Issue
+// diagnostics and throw process_failure if anything goes wrong. The
+// name argument is the name of the current process for diagnostics.
 //
 static process_info
-start_process (char const* args[], char const* name);
+start_process (char const* args[], char const* name, bool connect_out = false);
 
-// Close stdout and wait for the process to terminate. Return true if
-// the process terminated normally and with the zero exit status. Issue
-// diagnostics and throw process_failure if anything goes wrong. The name
-// argument is the name of the current process for diagnostics.
+// Wait for the process to terminate. Return true if the process terminated
+// normally and with the zero exit status. Issue diagnostics and throw
+// process_failure if anything goes wrong. The name argument is the name
+// of the current process for diagnostics.
 //
 static bool
 wait_process (process_info, char const* name);
@@ -104,6 +109,27 @@ wait_process (process_info, char const* name);
 static string
 encode_plugin_option (string const& k, string const& v);
 
+// Extract header search paths from GCC's -v output. May throw the
+// profile_failure, process_failure and invalid_path exceptions. Name
+// is the program name (argv[0]) for diagnostics.
+//
+struct profile_failure {};
+
+static paths
+profile_paths (strings const& args, char const* name);
+
+// Search for the profile options file.
+//
+struct profile_data
+{
+  profile_data (paths const& p, char const* n): search_paths (p), name (n) {}
+
+  paths const& search_paths;
+  char const* name;
+};
+
+static string
+profile_search (char const* profile, void* arg);
 
 static char const* const db_macro[] =
 {
@@ -118,8 +144,6 @@ main (int argc, char* argv[])
 
   try
   {
-    typedef vector<string> strings;
-
     // Find the plugin. It should be in the same directory as the
     // driver.
     //
@@ -315,6 +339,19 @@ main (int argc, char* argv[])
         plugin_args.push_back (a);
     }
 
+    // Obtain profile (-I) search paths.
+    //
+    paths prof_paths (profile_paths (args, argv[0]));
+
+    if (v)
+    {
+      e << "Profile search paths:" << endl;
+
+      for (paths::const_iterator i (prof_paths.begin ());
+           i != prof_paths.end (); ++i)
+        e << " " << *i << endl;
+    }
+
     // Parse plugin options.
     //
     vector<char*> av;
@@ -327,7 +364,19 @@ main (int argc, char* argv[])
     }
 
     int ac (static_cast<int> (av.size ()));
-    cli::argv_file_scanner scan (ac, &av[0], "--options-file");
+
+    profile_data pd (prof_paths, argv[0]);
+    cli::argv_file_scanner::option_info oi[3];
+    oi[0].option = "--options-file";
+    oi[0].search_func = 0;
+    oi[1].option = "-p";
+    oi[1].search_func = &profile_search;
+    oi[1].arg = &pd;
+    oi[2].option = "--profile";
+    oi[2].search_func = &profile_search;
+    oi[2].arg = &pd;
+
+    cli::argv_file_scanner scan (ac, &av[0], oi, 3);
 
     options ops (scan);
 
@@ -487,7 +536,7 @@ main (int argc, char* argv[])
 
       {
         __gnu_cxx::stdio_filebuf<char> fb (
-          pi.fd, ios_base::out | ios_base::binary);
+          pi.out_fd, ios_base::out | ios_base::binary);
         ostream os (&fb);
 
         // Add the standard prologue.
@@ -558,6 +607,12 @@ main (int argc, char* argv[])
         return 1;
     }
   }
+  catch (profile_failure const&)
+  {
+    // Diagnostics has already been issued.
+    //
+    return 1;
+  }
   catch (process_failure const&)
   {
     // Diagnostics has already been issued.
@@ -609,6 +664,154 @@ encode_plugin_option (string const& k, string const& cv)
   }
 
   return o;
+}
+
+static paths
+profile_paths (strings const& sargs, char const* name)
+{
+  // Copy some of the arguments from the passed list. We only need
+  // the g++ executable and the -I options.
+  //
+  strings args;
+
+  args.push_back (sargs[0]);
+  args.push_back ("-v");
+  args.push_back ("-x");
+  args.push_back ("c++");
+  args.push_back ("-E");
+  args.push_back ("-P");
+
+  for (strings::const_iterator i (++sargs.begin ()), end (sargs.end ());
+       i != end; ++i)
+  {
+    string const& a (*i);
+
+    if (a.size () > 1 && a[0] == '-' && a[1] == 'I')
+    {
+      args.push_back (a);
+
+      if (a.size () == 2) // -I /path
+      {
+        ++i;
+        args.push_back (*i);
+      }
+    }
+  }
+
+  // Create an execvp-compatible argument array.
+  //
+  vector<char const*> exec_args;
+
+  for (strings::const_iterator i (args.begin ()), end (args.end ());
+       i != end; ++i)
+  {
+    exec_args.push_back (i->c_str ());
+  }
+
+  exec_args.push_back ("-"); // Compile stdin.
+  exec_args.push_back (0);
+
+  process_info pi (start_process (&exec_args[0], name, true));
+  close (pi.out_fd); // Preprocess empty file.
+
+  // Read and parse the output.
+  //
+  paths r;
+  {
+    __gnu_cxx::stdio_filebuf<char> fb (pi.in_fd, ios_base::in);
+    istream is (&fb);
+
+    enum
+    {
+      read_prefix,
+      read_path,
+      read_suffix
+    } state = read_prefix;
+
+    while (!is.eof ())
+    {
+      string line;
+      getline (is, line);
+
+      if (is.fail () && !is.eof ())
+      {
+        cerr << name << ": error: "
+             << "io failure while parsing profile paths" << endl;
+        throw profile_failure ();
+      }
+
+      switch (state)
+      {
+      case read_prefix:
+        {
+          if (line == "#include <...> search starts here:")
+            state = read_path;
+          break;
+        }
+      case read_path:
+        {
+          if (line == "End of search list.")
+            state = read_suffix;
+          else
+            // Paths are indented with a space.
+            //
+            r.push_back (path (string (line, 1)));
+
+          break;
+        }
+      case read_suffix:
+        {
+          // Keep reading until eof to make sure the process is not
+          // blocked.
+          break;
+        }
+      }
+    }
+
+    if (state != read_suffix)
+    {
+      cerr << name << ": error: unable to parse profile paths" << endl;
+      throw profile_failure ();
+    }
+  }
+
+  wait_process (pi, name);
+  return r;
+}
+
+static string
+profile_search (char const* prof, void* arg)
+{
+  profile_data* pd (static_cast<profile_data*> (arg));
+  paths const& ps (pd->search_paths);
+
+  path p (prof), odb ("odb"), r;
+  p.normalize (); // Convert '/' to the canonical path separator form.
+  p += ".options";
+
+  struct stat info;
+
+  for (paths::const_iterator i (ps.begin ()), end (ps.end ()); i != end; ++i)
+  {
+    // First check in the search directory itself and then try the odb/
+    // subdirectory.
+    //
+    r = *i / p;
+
+    // Just check that the file exist without checking for permissions, etc.
+    //
+    if (stat (r.string ().c_str (), &info) == 0 && S_ISREG (info.st_mode))
+      return r.string ();
+
+    r = *i / odb / p;
+
+    if (stat (r.string ().c_str (), &info) == 0 && S_ISREG (info.st_mode))
+      return r.string ();
+  }
+
+  cerr << pd->name << ": error: unable to locate options file for profile '"
+       << prof << "'" << endl;
+  throw profile_failure ();
 }
 
 //
@@ -750,11 +953,12 @@ plugin_path (path const& drv)
 #ifndef _WIN32
 
 static process_info
-start_process (char const* args[], char const* name)
+start_process (char const* args[], char const* name, bool out)
 {
-  int fd[2];
+  int out_fd[2];
+  int in_fd[2];
 
-  if (pipe (fd) == -1)
+  if (pipe (out_fd) == -1 || (out && pipe (in_fd) == -1))
   {
     char const* err (strerror (errno));
     cerr << name << ": error: " <<  err << endl;
@@ -775,13 +979,28 @@ start_process (char const* args[], char const* name)
     // Child. Close the write end of the pipe and duplicate the read end
     // to stdin. Then close the original read end descriptors.
     //
-    if (close (fd[1]) == -1 ||
-        dup2 (fd[0], STDIN_FILENO) == -1 ||
-        close (fd[0]) == -1)
+    if (close (out_fd[1]) == -1 ||
+        dup2 (out_fd[0], STDIN_FILENO) == -1 ||
+        close (out_fd[0]) == -1)
     {
       char const* err (strerror (errno));
       cerr << name << ": error: " <<  err << endl;
       throw process_failure ();
+    }
+
+    // Do the same for the out if requested.
+    //
+    if (out)
+    {
+      if (close (in_fd[0]) == -1 ||
+          dup2 (in_fd[1], STDOUT_FILENO) == -1 ||
+          dup2 (in_fd[1], STDERR_FILENO) == -1 ||
+          close (in_fd[1]) == -1)
+      {
+        char const* err (strerror (errno));
+        cerr << name << ": error: " <<  err << endl;
+        throw process_failure ();
+      }
     }
 
     if (execvp (args[0], const_cast<char**> (&args[0])) == -1)
@@ -793,9 +1012,9 @@ start_process (char const* args[], char const* name)
   }
   else
   {
-    // Parent. Close the read end of the pipe and.
+    // Parent. Close the other ends of the pipes.
     //
-    if (close (fd[0]) == -1)
+    if (close (out_fd[0]) == -1 || (out && close (in_fd[1]) == -1))
     {
       char const* err (strerror (errno));
       cerr << name << ": error: " <<  err << endl;
@@ -805,7 +1024,8 @@ start_process (char const* args[], char const* name)
 
   process_info r;
   r.id = pid;
-  r.fd = fd[1];
+  r.out_fd = out_fd[1];
+  r.in_fd = out ? in_fd[0] : 0;
   return r;
 }
 
@@ -852,20 +1072,31 @@ print_error (char const* name)
 }
 
 static process_info
-start_process (char const* args[], char const* name)
+start_process (char const* args[], char const* name, bool out)
 {
-  HANDLE in, out;
+  HANDLE out_h[2];
+  HANDLE in_h[2];
   SECURITY_ATTRIBUTES sa;
 
   sa.nLength = sizeof (SECURITY_ATTRIBUTES);
   sa.bInheritHandle = true;
   sa.lpSecurityDescriptor = 0;
 
-  if (!CreatePipe (&in, &out, &sa, 0) ||
-      !SetHandleInformation (out, HANDLE_FLAG_INHERIT, 0))
+  if (!CreatePipe (&out_h[0], &out_h[1], &sa, 0) ||
+      !SetHandleInformation (out_h[1], HANDLE_FLAG_INHERIT, 0))
   {
     print_error (name);
     throw process_failure ();
+  }
+
+  if (out)
+  {
+    if (!CreatePipe (&in_h[0], &in_h[1], &sa, 0) ||
+        !SetHandleInformation (in_h[0], HANDLE_FLAG_INHERIT, 0))
+    {
+      print_error (name);
+      throw process_failure ();
+    }
   }
 
   // Create the process.
@@ -903,9 +1134,17 @@ start_process (char const* args[], char const* name)
   memset (&pi, 0, sizeof (PROCESS_INFORMATION));
 
   si.cb = sizeof(STARTUPINFO);
-  si.hStdError = GetStdHandle (STD_ERROR_HANDLE);
-  si.hStdOutput = GetStdHandle (STD_OUTPUT_HANDLE);
-  si.hStdInput = in;
+  if (out)
+  {
+    si.hStdError = in_h[1];
+    si.hStdOutput = in_h[1];
+  }
+  else
+  {
+    si.hStdError = GetStdHandle (STD_ERROR_HANDLE);
+    si.hStdOutput = GetStdHandle (STD_OUTPUT_HANDLE);
+  }
+  si.hStdInput = out_h[0];
   si.dwFlags |= STARTF_USESTDHANDLES;
 
   if (!CreateProcess (
@@ -926,17 +1165,29 @@ start_process (char const* args[], char const* name)
 
   CloseHandle (pi.hThread);
 
-  int fd (_open_osfhandle ((intptr_t) (out), 0));
+  process_info r;
+  r.id = pi.hProcess;
+  r.out_fd = _open_osfhandle ((intptr_t) (out_h[1]), 0);
 
-  if (fd == -1)
+  if (r.out_fd == -1)
   {
     cerr << name << ": error: unable to obtain C file handle" << endl;
     throw process_failure ();
   }
 
-  process_info r;
-  r.id = pi.hProcess;
-  r.fd = fd;
+  if (out)
+  {
+    r.in_fd = _open_osfhandle ((intptr_t) (in_h[0]), 0);
+
+    if (r.in_fd == -1)
+    {
+      cerr << name << ": error: unable to obtain C file handle" << endl;
+      throw process_failure ();
+    }
+  }
+  else
+    r.in_fd = 0;
+
   return r;
 }
 
