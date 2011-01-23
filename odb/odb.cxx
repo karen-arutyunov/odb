@@ -716,13 +716,57 @@ profile_paths (strings const& sargs, char const* name)
   process_info pi (start_process (&exec_args[0], name, true));
   close (pi.out_fd); // Preprocess empty file.
 
-  // Read and parse the output.
+  // Read the output into a temporary string stream. We don't parse
+  // it on the fly because we don't know whether it is the data or
+  // diagnostics until after the process is terminated and we get
+  // the exit code. We also cannot first wait for the exist code
+  // and then read the output because the process might get blocked.
   //
-  paths r;
+  stringstream ss;
   {
     __gnu_cxx::stdio_filebuf<char> fb (pi.in_fd, ios_base::in);
     istream is (&fb);
 
+    for (bool first (true); !is.eof (); )
+    {
+      string line;
+      getline (is, line);
+
+      if (is.fail () && !is.eof ())
+      {
+        cerr << name << ": error: "
+             << "io failure while parsing profile paths" << endl;
+
+        wait_process (pi, name);
+        throw profile_failure ();
+      }
+
+      if (first)
+        first = false;
+      else
+        ss << endl;
+
+      ss << line;
+    }
+  }
+
+  if (!wait_process (pi, name))
+  {
+    // Things didn't go well and ss should contain the diagnostics.
+    // In case it is empty, issue our won.
+    //
+    if (!ss.str ().empty ())
+      cerr << ss.rdbuf ();
+    else
+      cerr << name << ": error: unable to extract profile paths" << endl;
+
+    throw profile_failure ();
+  }
+
+  // Parse the cached output.
+  //
+  paths r;
+  {
     enum
     {
       read_prefix,
@@ -730,12 +774,12 @@ profile_paths (strings const& sargs, char const* name)
       read_suffix
     } state = read_prefix;
 
-    while (!is.eof ())
+    while (!ss.eof () && state != read_suffix)
     {
       string line;
-      getline (is, line);
+      getline (ss, line);
 
-      if (is.fail () && !is.eof ())
+      if (ss.fail () && !ss.eof ())
       {
         cerr << name << ": error: "
              << "io failure while parsing profile paths" << endl;
@@ -763,8 +807,7 @@ profile_paths (strings const& sargs, char const* name)
         }
       case read_suffix:
         {
-          // Keep reading until eof to make sure the process is not
-          // blocked.
+          // We shouldn't get here.
           break;
         }
       }
@@ -777,7 +820,6 @@ profile_paths (strings const& sargs, char const* name)
     }
   }
 
-  wait_process (pi, name);
   return r;
 }
 
