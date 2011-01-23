@@ -24,6 +24,7 @@
 #  include <io.h>        // _open_osfhandle
 #endif
 
+#include <set>
 #include <string>
 #include <vector>
 #include <cstddef>     // size_t
@@ -125,6 +126,7 @@ struct profile_data
   profile_data (paths const& p, char const* n): search_paths (p), name (n) {}
 
   paths const& search_paths;
+  set<path> loaded;
   char const* name;
 };
 
@@ -790,8 +792,9 @@ profile_search (char const* prof, void* arg)
   p += ".options";
 
   struct stat info;
+  paths::const_iterator i (ps.begin ()), end (ps.end ());
 
-  for (paths::const_iterator i (ps.begin ()), end (ps.end ()); i != end; ++i)
+  for (; i != end; ++i)
   {
     // First check in the search directory itself and then try the odb/
     // subdirectory.
@@ -801,17 +804,26 @@ profile_search (char const* prof, void* arg)
     // Just check that the file exist without checking for permissions, etc.
     //
     if (stat (r.string ().c_str (), &info) == 0 && S_ISREG (info.st_mode))
-      return r.string ();
+      break;
 
     r = *i / odb / p;
 
     if (stat (r.string ().c_str (), &info) == 0 && S_ISREG (info.st_mode))
-      return r.string ();
+      break;
   }
 
-  cerr << pd->name << ": error: unable to locate options file for profile '"
-       << prof << "'" << endl;
-  throw profile_failure ();
+  if (i == end)
+  {
+    cerr << pd->name << ": error: unable to locate options file for profile '"
+         << prof << "'" << endl;
+    throw profile_failure ();
+  }
+
+  if (pd->loaded.find (r) != pd->loaded.end ())
+    return string ();
+
+  pd->loaded.insert (r);
+  return r.string ();
 }
 
 //
