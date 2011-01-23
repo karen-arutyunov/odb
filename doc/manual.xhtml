@@ -5118,6 +5118,33 @@ private:
 };
   </pre>
 
+  <p>If we would like to factor the ODB pragmas into a separate file,
+     we can include this file into the original header file (the one
+     that defines the persistent types) using the <code>#include</code>
+     directive, for example:</p>
+
+  <pre class="c++">
+// person.hxx
+
+class person
+{
+  ...
+};
+
+#ifdef ODB_COMPILER
+#  include "person-pragmas.hxx"
+#endif
+  </pre>
+
+  <p>Alternatively, instead of using the <code>#include</code> directive,
+     we can use the <code>--odb-epilogue</code> option to make the pragmas
+     known to the ODB compiler when compiling the original header file,
+     for example:</p>
+
+  <pre class="terminal">
+--odb-epilogue  '#include "person-pragmas.hxx"'
+  </pre>
+
   <p>The following three sections cover the specifiers applicable
      to the <code>object</code>, <code>value</code>, and <code>member</code>
      qualifiers.</p>
