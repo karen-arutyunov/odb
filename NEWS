@@ -1,10 +1,53 @@
 Version 1.1.0
 
-  * Add support for persistent classes without default constructors. For
-    objects of such classes only the load() and find() database functions
-    that populate an existing instance can be used. Similarly, only the 
-    load() query result iterator function which populates an existing 
-    instance can be used.
+  * Support for storing containers in the database. For more information refer
+    to Chapter 5, "Containers" in the ODB manual as well as the 'container'
+    example in the odb-examples package.
+
+  * Support for unidirectional and bidirectional object relationships,
+    including lazy loading. For more information refer to Chapter 6,
+    "Relationships" in the ODB manual as well as the 'relationship' and
+    'inverse' examples in the odb-examples package.
+
+  * Support for composite value types. For more information refer to Chapter
+    7, "Composite Value Types" in the ODB manual as well as the 'composite'
+    example in the odb-examples package.
+
+  * Support for sessions. A session is an application's unit of work that
+    may encompass several database transactions. In this version of ODB a
+    session is just an object cache. For more information refer to Chapter
+    8, "Session" in the ODB manual.
+
+  * Support for custom object pointers that allows you to use smart pointers
+    to return, pass, and cache persistent objects. See Section 3.2, "Object
+    Pointers" in the ODB manual for details.
+
+  * Support for native SQL statement execution. See Section 3.9, "Executing
+    Native SQL Statements" in the ODB manual for details.
+
+  * New option, --profile/-p, instructs the ODB compiler to use the specified
+    profile library. See the ODB compiler command line manual for details.
+
+  * Support for literal names (template-id, derived type declarator such as
+    pointers, etc) in data member declarations. Now, for example, you can use 
+    std::vector<std::string> directly instead of having to create a typedef
+    alias for it.
+
+  * Support for inheritance from transient base types for object types and
+    composite value types.
+
+  * New example, 'schema', shows how to map persistent C++ classes to a custom
+    database schema.
+
+  * New options, --odb-prologue, --odb-epilogue, allow inclusion of extra code
+    into the ODB compilation process. This can be useful for making additional
+    traits specializations or ODB pragmas known to the ODB compiler.
+
+  * Support for persistent classes without default constructors. For objects
+    of such classes only the load() and find() database functions that
+    populate an existing instance can be used. Similarly, only the load()
+    query result iterator function which populates an existing instance can
+    be used.
 
 Version 1.0.0
 
