@@ -1138,7 +1138,7 @@ main (int argc, char* argv[])
      database name, etc., from the command line. In your own applications
      you may prefer to use other <code>mysql::database</code>
      constructors which allow you to pass this information directly
-     (see <a href="#10.1.2">Section 10.1.2, "MySQL Database Class"</a>).</p>
+     (<a href="#10.1.2">Section 10.1.2, "MySQL Database Class"</a>).</p>
 
   <p>Next, we create three <code>person</code> objects. Right now they are
      transient objects, which means that if we terminate the application
@@ -1190,10 +1190,10 @@ main (int argc, char* argv[])
 
   <p>The final bit of code in our example is the <code>catch</code>
      block that handles the database exceptions. We do this by catching
-     the base ODB exception (see <a href="#3.10">Section 3.10, "ODB
+     the base ODB exception (<a href="#3.10">Section 3.10, "ODB
      Exceptions"</a>) and printing the diagnostics.</p>
 
-  <p>Let's now compile (see <a href="#2.3">Section 2.3, "Compiling and
+  <p>Let's now compile (<a href="#2.3">Section 2.3, "Compiling and
      Running"</a>) and then run our first ODB application:</p>
 
   <pre class="terminal">
@@ -1690,7 +1690,7 @@ class person
   <p>These two pragmas are the minimum required to declare a
      persistent class. Other pragmas can be used to fine-tune
      the database-related properties of a class and its
-     members (see <a href="#9">Chapter 9, "ODB Pragma Language"</a>).</p>
+     members (<a href="#9">Chapter 9, "ODB Pragma Language"</a>).</p>
 
   <p>Normally, an object class should define the default constructor. The
      generated database support code uses this constructor when
@@ -1700,7 +1700,8 @@ class person
      without the default constructor. However, in this case, the database
      operations can only load the persistent state into an existing instance
      (<a href="#3.6">Section 3.6, "Loading Persistent Objects"</a>,
-     <a href="#4.4">Section 4.4, "Query Result"</a>).</p>
+     <a href="#4.4">Section 4.4, "Query Result"</a>). <p>The object id type
+     should be default-constructible.</p></p>
 
   <p>If an object class has private or protected non-transient data
      members or if its default constructor is not public, then the
@@ -1726,8 +1727,6 @@ private:
 };
   </pre>
 
-  <p>The object id type should be default-constructible.</p>
-
   <p>You may be wondering whether we also have to declare value types
      as persistent. We don't need to do anything special for simple value
      types such as <code>int</code> or <code>std::string</code> since the
@@ -1736,10 +1735,10 @@ private:
      is unknown to the ODB compiler then we will need to provide the
      mapping to the database system type and, possibly, the code to
      convert between the two. For more information on how to achieve
-     this refer to the <code>db&nbsp;type</code> pragma (<a href="#9.2.1">Section
-     9.2.1, "<code>type</code>"</a>). Similar to object types, composite
-     value types have to be explicitly declared as persistent using the
-     <code>db&nbsp;value</code> pragma, for example:</p>
+     this refer to the <code>db&nbsp;type</code> pragma description
+     in <a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>. Similar
+     to object types, composite value types have to be explicitly declared
+     as persistent using the <code>db&nbsp;value</code> pragma, for example:</p>
 
   <pre class="c++">
 #pragma db value
@@ -1752,8 +1751,8 @@ class name
 };
   </pre>
 
-  <p>Composite values are discussed in greater detail in <a href="#7">Chapter
-     7, "Composite Value Types"</a>.</p>
+  <p>Composite value types are discussed in more detail in
+     <a href="#7">Chapter 7, "Composite Value Types"</a>.</p>
 
   <p>Normally, you would use object types to model real-world entities,
      things that have their own identity. For example, in the
@@ -1783,7 +1782,7 @@ class name
      objects in this database have the same names and surnames and
      the overhead of storing them in every object may negatively
      affect the performance. In this case, we could make the first name
-     and last name each an object and only store references to
+     and last name each an object and only store pointers to
      these objects in the <code>person</code> class.</p>
 
   <p>An instance of a persistent class can be in one of two states:
@@ -1817,18 +1816,17 @@ class name
      Boost.</p>
 
   <p>However, to avoid any possibility of a mistake, such as forgetting
-     to use a smart pointer for a returned object, as well as to be able
-     to use more advanced ODB functionality, such as sessions and bidirectional
+     to use a smart pointer for a returned object, as well as to simplify the
+     use of more advanced ODB functionality, such as sessions and bidirectional
      object relationships, it is recommended that you use smart pointers
-     with the sharing semantics, such as <code>shared_ptr</code> mentioned
-     previously, as object pointers.</p>
+     with the sharing semantics as object pointers. The <code>shared_ptr</code>
+     smart pointer from TR1 or Boost is a good default choice.</p>
 
   <p>ODB provides two mechanisms for changing the object pointer type. We
      can use the <code>--default-pointer</code> option to specify the
-     alternate default object pointer type. All objects that don't
-     have the object pointer explicitly specified with the
-     <code>db&nbsp;pointer</code> pragma (see below) will use the default
-     pointer type. Refer to the
+     default object pointer type. All objects that don't have the object
+     pointer explicitly specified with the <code>db&nbsp;pointer</code>
+     pragma (see below) will use the default pointer type. Refer to the
      <a href="http://www.codesynthesis.com/products/odb/doc/odb.xhtml">ODB
      Compiler Command Line Manual</a> for details on this option's argument.
      The typical usage is shown below:</p>
@@ -1852,8 +1850,8 @@ class person
   <p>Refer to <a href="#9.1.2">Section 9.1.2, "<code>pointer</code>"</a>
      for more information on this pragma.</p>
 
-  <p>Built-in support, provided by the ODB runtime, library allows us to use
-     the TR1 <code>shared_ptr</code> and <code>std::auto_ptr</code> as
+  <p>Built-in support that is provided by the ODB runtime library allows us
+     to use the TR1 <code>shared_ptr</code> and <code>std::auto_ptr</code> as
      object pointers. Plus, ODB profile libraries, that are available for
      commonly used frameworks and libraries (such as Boost and Qt),
      provide support for smart pointers found in these frameworks and
@@ -2151,7 +2149,7 @@ update_age (database&amp; db, person&amp; p)
      application-assigned object ids (<a href="#9.3.2">Section 9.3.2,
      "<code>auto</code>"</a>).</p>
 
-  <p>The second and third <code>persist()</code> versions are similar to the
+  <p>The second and third <code>persist()</code> functions are similar to the
      first two except that they operate on unrestricted references and object
      pointers. If the identifier of the object being persisted is assigned
      by the database, these functions update the id member of the passed
@@ -2256,8 +2254,8 @@ t.commit ();
      returns <code>false</code>.</p>
 
   <p>If we don't know the object id, then we can use queries to
-     find the object (or objects) matching some criteria (see
-     <a href="#4">Chapter 4, "Querying the Database"</a>). Note,
+     find the object (or objects) matching some criteria
+     (<a href="#4">Chapter 4, "Querying the Database"</a>). Note,
      however, that loading an object's state using its
      identifier can be significantly faster than executing a query.</p>
 
@@ -2285,8 +2283,9 @@ t.commit ();
 
   <p>The first <code>update()</code> function expects an object reference,
      while the other two expect object pointers. If the object passed to
-     these functions does not exist in the database, <code>update()</code>
-     throws the <code>odb::object_not_persistent</code> exception.</p>
+     one of these functions does not exist in the database,
+     <code>update()</code> throws the <code>odb::object_not_persistent</code>
+     exception.</p>
 
   <p>Below is an example of the funds transfer that we talked about
      in the earlier section on transactions. It uses the hypothetical
@@ -2321,7 +2320,7 @@ transfer (database&amp; db,
   </pre>
 
   <p>The same can be accomplished using dynamically allocated objects
-     and the object pointer version of the <code>update()</code> function,
+     and the <code>update()</code> function with object pointer argument,
      for example:</p>
 
   <pre class="c++">
@@ -2401,8 +2400,8 @@ t.commit ();
   <h2><a name="3.9">3.9 Executing Native SQL Statements</a></h2>
 
   <p>In some situations we may need to execute native SQL statements
-     instead of using the object-oriented API described above. For
-     example, we may want to tune the database schema generated
+     instead of using the object-oriented database API described above.
+     For example, we may want to tune the database schema generated
      by the ODB compiler or take advantage of a feature that is
      specific to the database system we are using. The
      <code>database::execute()</code> function, which has three
@@ -2424,7 +2423,8 @@ t.commit ();
      statement length as the second argument and the statement itself
      may contain <code>'\0'</code> characters, for example to represent
      binary data, if the database system supports it. All three functions
-     return the number of rows affected by the statement. For example:</p>
+     return the number of rows that were affected by the statement. For
+     example:</p>
 
   <pre class="c++">
 transaction t (db.begin ());
@@ -3147,7 +3147,7 @@ namespace odb
   <h1><a name="5">5 Containers</a></h1>
 
   <p>The ODB runtime library provides built-in persistence support for
-     all commonly used standard C++ containers, namely,
+     all the commonly used standard C++ containers, namely,
      <code>std::vector</code>, <code>std::list</code>, <code>std::set</code>,
      <code>std::multiset</code>, <code>std::map</code>, and
      <code>std::multimap</code>. Plus, ODB profile libraries, that are
@@ -3166,10 +3166,14 @@ class person
 {
   ...
 private:
-  std::vector&lt;std::name> nicknames_;
+  std::vector&lt;std::string> nicknames_;
   ...
 };
   </pre>
+
+  <p>The complete version of the above code fragment and the other code
+     samples presented in this chapter can found in the <code>container</code>
+     example in the <code>odb-examples</code> package.</p>
 
   <p>A data member in a persistent class that is of a container type
      behaves like a value type. That is, when an object is made persistent,
@@ -3186,12 +3190,13 @@ private:
      in detail in the following sections.</p>
 
   <p>Containers in ODB can contain simple value types, composite value
-     types (<a href="#5">Chapter 5, "Containers"</a>), and pointers to
-     objects (<a href="#6">Chapter 6, "Relationships"</a>). Containers of
+     types (<a href="#7">Chapter 7, "Composite Value Types"</a>), and pointers
+     to objects (<a href="#6">Chapter 6, "Relationships"</a>). Containers of
      containers, either directly or indirectly via a composite value
-     type, are not allowed. A key in map and multimap containers can
+     type, are not allowed. A key in a map or multimap container can
      be a simple or composite value type but not a pointer to an object.
-     An index in the ordered container should be a simple integer type.</p>
+     An index in the ordered container should be a simple integer value
+     type.</p>
 
   <p>The value type in the ordered, set, and map containers as well as
      the key type in the map containers should be default-constructible.
@@ -3217,9 +3222,6 @@ class person
 {
   ...
 private:
-  #pragma db id auto
-  unsigned long id_;
-
   std::vector&lt;name> aliases_;
   ...
 };
@@ -3267,8 +3269,8 @@ private:
      (called <code>index</code>), and the value column of type
      <code>std::string</code> (called <code>value</code>).</p>
 
-  <p>A number of ODB pragmas allow us to customize the table name,
-     column names, and native database types for the container both on
+  <p>A number of ODB pragmas allow us to customize the table name, column
+     names, and native database types of an ordered container both, on
      the per-container and per-member basis. For more information on
      these pragmas, refer to <a href="#9">Chapter 9, "ODB Pragma
      Language"</a>. The following example shows some of the possible
@@ -3280,9 +3282,6 @@ class person
 {
   ...
 private:
-  #pragma db id auto
-  unsigned long id_;
-
   #pragma db table("nicknames")                        \
              id_column ("person_id")                   \
              index_type ("SMALLINT UNSIGNED NOT NULL") \
@@ -3294,13 +3293,14 @@ private:
 };
   </pre>
 
-  <p>While the C++ container used in the persistent class may be ordered,
+  <p>While the C++ container used in a persistent class may be ordered,
      sometimes we may wish to store such a container in the database without
      the order information. In the example above, for instance, the order
      of person's nicknames is probably not important. To instruct the ODB
      compiler to ignore the order in ordered containers we can use the
-     <code>unordered</code> pragma (see <a href="#9">Chapter 9, "ODB
-     Pragma Language"</a> for details). For example:</p>
+     <code>db&nbsp;unordered</code> pragma (<a href="#9.2.3">Section 9.2.3,
+     "<code>unordered</code>"</a>, <a href="#9.3.8">Section 9.3.8,
+     "<code>unordered</code>"</a>). For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -3308,17 +3308,14 @@ class person
 {
   ...
 private:
-  #pragma db id auto
-  unsigned long id_;
-
   #pragma db unordered
   std::vector&lt;std::string> nicknames_;
   ...
 };
   </pre>
 
-  <p>The table for the ordered container that is marked unordered will
-     miss the index column and the order in which elements are retrieved
+  <p>The table for an ordered container that is marked unordered won't
+     have the index column and the order in which elements are retrieved
      from the database may not be the same as the order in which they
      were stored.</p>
 
@@ -3361,7 +3358,7 @@ private:
      <code>std::string</code> (called <code>value</code>).</p>
 
   <p>A number of ODB pragmas allow us to customize the table name,
-     column names, and native database types for the container both on
+     column names, and native database types of a set container, both on
      the per-container and per-member basis. For more information on
      these pragmas, refer to <a href="#9">Chapter 9, "ODB Pragma
      Language"</a>. The following example shows some of the possible
@@ -3373,9 +3370,6 @@ class person
 {
   ...
 private:
-  #pragma db id auto
-  unsigned long id_;
-
   #pragma db table("emails")                      \
              id_column ("person_id")              \
              value_type ("VARCHAR(255) NOT NULL") \
@@ -3387,7 +3381,7 @@ private:
 
   <h2><a name="5.3">5.3 Map and Multimap Containers</a></h2>
 
-  <p>In ODB map and multimap containers (referred to as just set
+  <p>In ODB map and multimap containers (referred to as just map
      containers) are associative containers that contain key-value
      elements based on some relationship between keys. A map container
      may or may not guarantee a particular order of the elements that
@@ -3426,7 +3420,7 @@ private:
      column of type <code>std::string</code> (called <code>value</code>).</p>
 
   <p>A number of ODB pragmas allow us to customize the table name,
-     column names, and native database types for the container both on
+     column names, and native database types of a map container, both on
      the per-container and per-member basis. For more information on
      these pragmas, refer to <a href="#9">Chapter 9, "ODB Pragma
      Language"</a>. The following example shows some of the possible
@@ -3438,9 +3432,6 @@ class person
 {
   ...
 private:
-  #pragma db id auto
-  unsigned long id_;
-
   #pragma db table("weight_map")                \
              id_column ("person_id")            \
              key_type ("INT UNSIGNED NOT NULL") \
@@ -3469,7 +3460,7 @@ private:
   <p>Once the container traits specialization is ready for your container,
      you will need to include it into the ODB compilation process using
      the <code>--odb-epilogue</code> option and into the generated header
-     file with the <code>--hxx-prologue</code> option. As an example,
+     files with the <code>--hxx-prologue</code> option. As an example,
      suppose we have a hash table container for which we have the traits
      specialization implemented in the <code>hashtable-traits.hxx</code>
      file. Then, we can create an ODB compiler options file for this
@@ -3631,7 +3622,7 @@ unsigned long john_id, jane_id;
      session makes sure that for a given object id, a single instance
      is shared among all other objects that relate to it.</p>
 
-  <p>We can also use the data members from the pointed-to
+  <p>We can also use data members from pointed-to
      objects in database queries (<a href="#4">Chapter 4, "Querying the
      Database"</a>). For each pointer in a persistent class, the query
      class defines a nested scope containing members corresponding
@@ -4454,7 +4445,7 @@ t.commit ();
   <p>Once the pointer traits specialization is ready, you will need to
      include it into the ODB compilation process using the
      <code>--odb-epilogue</code> option and into the generated header
-     file with the <code>--hxx-prologue</code> option. As an example,
+     files with the <code>--hxx-prologue</code> option. As an example,
      suppose we have the <code>smart_ptr</code> smart pointer for which
      we have the traits specialization implemented in the
      <code>smart-ptr-traits.hxx</code> file. Then, we can create an ODB
@@ -4509,12 +4500,16 @@ class basic_name
 };
   </pre>
 
+  <p>The complete version of the above code fragment and the other code
+     samples presented in this chapter can found in the <code>composite</code>
+     example in the <code>odb-examples</code> package.</p>
+
   <p>A composite value type does not have to define a default constructor,
      unless it is used as an element of a container, in which case the
      default constructor can be made private. If a composite value type
      has private or protected non-transient data members or if its
      default constructor is not public and the value type is used as
-     an element in a container, then the <code>odb::access</code> class
+     an element of a container, then the <code>odb::access</code> class
      should be declared a friend of this value type. For example:</p>
 
   <pre class="c++">
@@ -4536,16 +4531,12 @@ private:
 };
   </pre>
 
-  <p>The complete versions of the above code fragment as well as other code
-     samples presented in this chapter can found in the <code>composite</code>
-     example in the <code>odb-examples</code> package.</p>
-
   <p>The members of a composite value can be other value types (either
      simple or composite), containers (<a href="#5">Chapter 5,
      "Containers"</a>), and pointers to objects (<a href="#6">Chapter 6,
      "Relationships"</a>).
      Similarly, a composite value type can be used in object members,
-     as an element in a container, and as a base for another composite
+     as an element of a container, and as a base for another composite
      value type. In particular, composite value types can be used as
      element types in set containers (<a href="#5.2">Section 5.2, "Set
      and Multiset Containers"</a>) and as key types in map containers
@@ -4590,14 +4581,11 @@ class person
 {
   ...
 
-  #pragma db id auto
-  unsigned long id_;
-
   name name_;
 };
 </pre>
 
-  <p>We can also use the data members from the composite value types
+  <p>We can also use data members from composite value types
      in database queries (<a href="#4">Chapter 4, "Querying the
      Database"</a>). For each composite value in a persistent class,
      the query class defines a nested scope containing members corresponding
@@ -4606,7 +4594,7 @@ class person
      contains the <code>name</code> scope (derived from the <code>name_</code>
      data member) which in turn contains the <code>extras</code> member
      (derived from the <code>name::extras_</code> data member of the
-     composite value type). The process continues recursively for nested
+     composite value type). This process continues recursively for nested
      composite value types and, as a result, we can use the
      <code>query::name::extras::nickname</code> expression while querying
      the database for the <code>person</code> objects. For example:</p>
@@ -4631,7 +4619,7 @@ t.commit ();
      type is straightforward: we simply specify the desired name with
      the <code>db&nbsp;column</code> pragma (<a href="#9.3.4">Section
      9.3.4, "<code>column</code>"</a>). For composite value
-     types things are slightly more complicated since it is mapped to
+     types things are slightly more complex since they are mapped to
      multiple columns. Consider the following example:</p>
 
 <pre class="c++">
@@ -4728,16 +4716,16 @@ CREATE TABLE person (
   last_name TEXT NOT NULL);
   </pre>
 
-  <p>The same principal applies when a composite value type is used
+  <p>The same principle applies when a composite value type is used
      as an element of a container, except that instead of
-     <code>db&nbsp;column</code> either the <code>db&nbsp;value_column</code>
+     <code>db&nbsp;column</code>, either the <code>db&nbsp;value_column</code>
      (<a href="#9.3.16">Section 9.3.16, "<code>value_column</code>"</a>) or
      <code>db&nbsp;key_column</code>
      (<a href="#9.3.15">Section 9.3.15, "<code>key_column</code>"</a>)
      pragmas are used to specify the column prefix.</p>
 
   <p>When a composite value type contains a container, an extra table
-     is used to store the elements (<a href="#5">Chapter 5, "Containers"</a>).
+     is used to store its elements (<a href="#5">Chapter 5, "Containers"</a>).
      The names of such tables are constructed in a way similar to the
      column names, except that by default both the object name and the
      member name are used as a prefix. For example:</p>
@@ -4820,7 +4808,7 @@ CREATE TABLE `person_nickname` (
   <p>A session is an application's unit of work that may encompass several
      database transactions. In this version of ODB a session is just an
      object cache. In the future versions it will provide additional
-     functionality, such as automatic object state change flushing
+     functionality, such as automatic object state change tracking
      and optimistic concurrency.</p>
 
   <p>Each thread of execution in an application can have only one active
@@ -4860,7 +4848,7 @@ using namespace odb;
 }
   </pre>
 
-  <p>The <code>odb::session</code> class has the following interface:</p>
+  <p>The <code>session</code> class has the following interface:</p>
 
   <pre class="c++">
 namespace odb
@@ -4928,7 +4916,7 @@ namespace odb
      <code>has_current()</code> static function.</p>
 
   <p>The static <code>current()</code> modifier allows us to set the
-     current session for this thread. The <code>reset_current</code>
+     current session for this thread. The <code>reset_current()</code>
      static function clears the current session. These two functions
      allow for more advanced use cases, such as multiplexing
      between two or more sessions in the same thread.</p>
@@ -4984,7 +4972,7 @@ t.commit ();
      when loaded, objects are always created and cached as non-constant).
      If we try to load an object as non-constant that was previously
      persisted and cached as constant, the <code>odb::const_object</code>
-     exception is thrown. The following transaction illustrates the
+     exception is thrown. The following transaction shows the
      situation where this would happen:</p>
 
   <pre class="c++">
@@ -5137,7 +5125,7 @@ private:
   <p>The C++ header file that defines our persistent classes and
      normally contains one or more ODB pragmas is compiled by both
      the ODB compiler to generate the database support code and
-     the C++ compiler to build our application. Some C++ compilers
+     the C++ compiler to build the application. Some C++ compilers
      issue warnings about pragmas that they do not recognize. There
      are several ways to deal with this problem which are covered
      at the end of this chapter in <a href="#9.4">Section 9.4,
@@ -5159,13 +5147,13 @@ private:
 
     <tr>
       <td><code>table</code></td>
-      <td>the table name for the persistent class</td>
+      <td>table name for a persistent class</td>
       <td><a href="#9.1.1">9.1.1</a></td>
     </tr>
 
     <tr>
       <td><code>pointer</code></td>
-      <td>the pointer type for the persistent class</td>
+      <td>pointer type for a persistent class</td>
       <td><a href="#9.1.2">9.1.2</a></td>
     </tr>
 
@@ -5175,7 +5163,7 @@ private:
   <h3><a name="9.1.1">9.1.1 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies the table name that should
-     be used to store objects of the class in a relational database. For
+     be used to store objects of a class in a relational database. For
      example:</p>
 
   <pre class="c++">
@@ -5192,8 +5180,8 @@ class person
   <h3><a name="9.1.2">9.1.2 <code>pointer</code></a></h3>
 
   <p>The <code>pointer</code> specifier specifies the object pointer type
-     for the persistent class. The object pointer type is used to return,
-     pass, and cache dynamically allocated instances of the persistent
+     for a persistent class. The object pointer type is used to return,
+     pass, and cache dynamically allocated instances of a persistent
      class. For example:</p>
 
   <pre class="c++">
@@ -5209,7 +5197,7 @@ class person
      type as shown in the example above. Alternatively, we can
      specify only the template name of a smart pointer in which
      case the ODB compiler will automatically append the class
-     name as a template argument. The following example is
+     name as a template argument. The following example is therefore
      equivalent to the one above:</p>
 
   <pre class="c++">
@@ -5236,7 +5224,7 @@ class person
      ODB compiler option, is used. If this option is not specified
      either, then the raw pointer is used by default.</p>
 
-  <p>For additional information on object pointers refer to
+  <p>For a more detailed discussion of object pointers, refer to
      <a href="#3.2">Section 3.2, "Object Pointers"</a>.</p>
 
   <h2><a name="9.2">9.2 Value Type Pragmas</a></h2>
@@ -5255,7 +5243,7 @@ class person
 
     <tr>
       <td><code>type</code></td>
-      <td>the database type for the value type</td>
+      <td>database type for a value type</td>
       <td><a href="#9.2.1">9.2.1</a></td>
     </tr>
 
@@ -5273,57 +5261,57 @@ class person
 
     <tr>
       <td><code>index_type</code></td>
-      <td>the database type for the container's index type</td>
+      <td>database type for a container's index type</td>
       <td><a href="#9.2.4">9.2.4</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
-      <td>the database type for the container's key type</td>
+      <td>database type for a container's key type</td>
       <td><a href="#9.2.5">9.2.5</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
-      <td>the database type for the container's value type</td>
+      <td>database type for a container's value type</td>
       <td><a href="#9.2.6">9.2.6</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
-      <td>the column name for the container's table object id</td>
+      <td>column name for a container's table object id</td>
       <td><a href="#9.2.7">9.2.7</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
-      <td>the column name for the container's table index</td>
+      <td>column name for a container's table index</td>
       <td><a href="#9.2.8">9.2.8</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
-      <td>the column name for the container's table key</td>
+      <td>column name for a container's table key</td>
       <td><a href="#9.2.9">9.2.9</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
-      <td>the column name for the container's table value</td>
+      <td>column name for a container's table value</td>
       <td><a href="#9.2.10">9.2.10</a></td>
     </tr>
 
   </table>
 
   <p>Many of the value type specifiers have corresponding member type
-     specifiers with the same names (see <a href="#9.3">Section 9.3,
+     specifiers with the same names (<a href="#9.3">Section 9.3,
      "Data Member Pragmas"</a>). The behavior of such specifiers
      for members is similar to that for value types. The only difference
      is the scope. A particular value type specifier applies to all
      members of this value type that don't have a pre-member version
      of the specifier. While the member specifier always applies only
      to a single member. In other words, member specifiers take precedence
-     over values specified with value specifiers.</p>
+     over parameters specified with value specifiers.</p>
 
   <h3><a name="9.2.1">9.2.1 <code>type</code></a></h3>
 
@@ -5376,7 +5364,7 @@ private:
   <h3><a name="9.2.2">9.2.2 <code>not_null</code></a></h3>
 
   <p>The <code>not_null</code> specifier specifies that an object pointer
-     or a container of object pointers type cannot have or contain the
+     or a container of object pointers cannot have or contain the
      <code>NULL</code> value. For example:</p>
 
   <pre class="c++">
@@ -5401,6 +5389,9 @@ typedef std::vector&lt;shared_ptr&lt;account> > accounts;
 #pragma db value(accounts) not_null
 </pre>
 
+  <p>For a more detailed discussion of the <code>NULL</code> object pointer
+     semantics, refer to <a href="#6">Chapter 6, "Relationships"</a>.</p>
+
   <h3><a name="9.2.3">9.2.3 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that the ordered
@@ -5414,13 +5405,17 @@ typedef std::vector&lt;std::string> names;
 #pragma db value(names) unordered
   </pre>
 
+  <p>For a more detailed discussion of ordered containers and their
+     storage in the database, refer to <a href="#5.1">Section 5.1,
+     "Ordered Containers"</a>.</p>
+
   <h3><a name="9.2.4">9.2.4 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
-     database type that should be used for the ordered container's
+     database type that should be used for an ordered container's
      index column. The semantics of <code>index_type</code>
-     are similar to that of the <code>type</code> specifier (see
-     <a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>). The native
+     are similar to that of the <code>type</code> specifier
+     (<a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>). The native
      database type is expected to be an integer type. For example:</p>
 
   <pre class="c++">
@@ -5431,10 +5426,10 @@ typedef std::vector&lt;std::string> names;
   <h3><a name="9.2.5">9.2.5 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
-     database type that should be used for the map container's
+     database type that should be used for a map container's
      key column. The semantics of <code>key_type</code>
-     are similar to that of the <code>type</code> specifier (see
-     <a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>). For
+     are similar to that of the <code>type</code> specifier
+     (<a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>). For
      example:</p>
 
   <pre class="c++">
@@ -5445,10 +5440,10 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <h3><a name="9.2.6">9.2.6 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
-     database type that should be used for the container's
+     database type that should be used for a container's
      value column. The semantics of <code>value_type</code>
-     are similar to that of the <code>type</code> specifier (see
-     <a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>). For
+     are similar to that of the <code>type</code> specifier
+     (<a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>). For
      example:</p>
 
   <pre class="c++">
@@ -5459,7 +5454,7 @@ typedef std::vector&lt;std::string> names;
   <h3><a name="9.2.7">9.2.7 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
-     name that should be used to store the object id in the
+     name that should be used to store the object id in a
      container's table. For example:</p>
 
   <pre class="c++">
@@ -5473,7 +5468,7 @@ typedef std::vector&lt;std::string> names;
   <h3><a name="9.2.8">9.2.8 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
-     name that should be used to store the element index in the
+     name that should be used to store the element index in an
      ordered container's table. For example:</p>
 
   <pre class="c++">
@@ -5487,7 +5482,7 @@ typedef std::vector&lt;std::string> names;
   <h3><a name="9.2.9">9.2.9 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
-     name that should be used to store the key in the map
+     name that should be used to store the key in a map
      container's table. For example:</p>
 
   <pre class="c++">
@@ -5501,7 +5496,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <h3><a name="9.2.10">9.2.10 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
-     name that should be used to store the element value in the
+     name that should be used to store the element value in a
      container's table. For example:</p>
 
   <pre class="c++">
@@ -5532,7 +5527,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 
     <tr>
       <td><code>id</code></td>
-      <td>the member is an object id</td>
+      <td>member is an object id</td>
       <td><a href="#9.3.1">9.3.1</a></td>
     </tr>
 
@@ -5544,19 +5539,19 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 
     <tr>
       <td><code>type</code></td>
-      <td>the database type for the member</td>
+      <td>database type for member</td>
       <td><a href="#9.3.3">9.3.3</a></td>
     </tr>
 
     <tr>
       <td><code>column</code></td>
-      <td>the column name for the member</td>
+      <td>column name for member</td>
       <td><a href="#9.3.4">9.3.4</a></td>
     </tr>
 
     <tr>
       <td><code>transient</code></td>
-      <td>the member is not stored in the database</td>
+      <td>member is not stored in the database</td>
       <td><a href="#9.3.5">9.3.5</a></td>
     </tr>
 
@@ -5568,7 +5563,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 
     <tr>
       <td><code>inverse</code></td>
-      <td>the member is an inverse side of a bidirectional relationship</td>
+      <td>member is an inverse side of a bidirectional relationship</td>
       <td><a href="#9.3.7">9.3.7</a></td>
     </tr>
 
@@ -5580,68 +5575,68 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 
     <tr>
       <td><code>table</code></td>
-      <td>the table name for the container</td>
+      <td>table name for a container</td>
       <td><a href="#9.3.9">9.3.9</a></td>
     </tr>
 
 
     <tr>
       <td><code>index_type</code></td>
-      <td>the database type for the container's index type</td>
+      <td>database type for a container's index type</td>
       <td><a href="#9.3.10">9.3.10</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
-      <td>the database type for the container's key type</td>
+      <td>database type for a container's key type</td>
       <td><a href="#9.3.11">9.3.11</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
-      <td>the database type for the container's value type</td>
+      <td>database type for a container's value type</td>
       <td><a href="#9.3.12">9.3.12</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
-      <td>the column name for the container's table object id</td>
+      <td>column name for a container's object id</td>
       <td><a href="#9.3.13">9.3.13</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
-      <td>the column name for the container's table index</td>
+      <td>column name for a container's index</td>
       <td><a href="#9.3.14">9.3.14</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
-      <td>the column name for the container's table key</td>
+      <td>column name for a container's key</td>
       <td><a href="#9.3.15">9.3.15</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
-      <td>the column name for the container's table value</td>
+      <td>column name for a container's value</td>
       <td><a href="#9.3.16">9.3.16</a></td>
     </tr>
 
   </table>
 
   <p>Many of the member specifiers have corresponding value type
-     specifiers with the same names (see <a href="#9.2">Section 9.2,
+     specifiers with the same names (<a href="#9.2">Section 9.2,
      "Value Type Pragmas"</a>). The behavior of such specifiers
      for members is similar to that for value types. The only difference
      is the scope. A particular value type specifier applies to all
      members of this value type that don't have a pre-member version
      of the specifier. While the member specifier always applies only
      to a single member. In other words, member specifiers take precedence
-     over values specified with value specifiers.</p>
+     over parameters specified with value specifiers.</p>
 
   <h3><a name="9.3.1">9.3.1 <code>id</code></a></h3>
 
-  <p>The <code>id</code> specifier specifies that the data member contains
+  <p>The <code>id</code> specifier specifies that a data member contains
      the object id. Every persistent class must have a member designated
      as an object's identifier. For example:</p>
 
@@ -5691,7 +5686,7 @@ private:
   <h3><a name="9.3.3">9.3.3 <code>type</code></a></h3>
 
   <p>The <code>type</code> specifier specifies the native database type
-     that should be used for the data member. For example:</p>
+     that should be used for a data member. For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -5708,7 +5703,7 @@ private:
   <h3><a name="9.3.4">9.3.4 <code>column</code></a></h3>
 
   <p>The <code>column</code> specifier specifies the column name
-     that should be used to store the member in a relational database.
+     that should be used to store a data member in a relational database.
      For example:</p>
 
   <pre class="c++">
@@ -5728,13 +5723,13 @@ private:
      "Composite Value Column and Table Names"</a> for details.</p>
 
   <p>If the column name is not specified, it is derived from the member
-     name by removing the common member name decorations, such as leading
+     name by removing the common data member name decorations, such as leading
      and trailing underscores, the <code>m_</code> prefix, etc.</p>
 
   <h3><a name="9.3.5">9.3.5 <code>transient</code></a></h3>
 
   <p>The <code>transient</code> specifier instructs the ODB compiler
-     not to store the data member in the database. For example:</p>
+     not to store a data member in the database. For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -5756,7 +5751,7 @@ private:
 
   <h3><a name="9.3.6">9.3.6 <code>not_null</code></a></h3>
 
-  <p>The <code>not_null</code> specifier specifies that the member of
+  <p>The <code>not_null</code> specifier specifies that a data member of
      an object pointer or a container of object pointers type cannot
      have or contain the <code>NULL</code> value. For example:</p>
 
@@ -5783,13 +5778,16 @@ private:
 };
 </pre>
 
+  <p>For a more detailed discussion of the <code>NULL</code> object pointer
+     semantics, refer to <a href="#6">Chapter 6, "Relationships"</a>.</p>
+
   <h3><a name="9.3.7">9.3.7 <code>inverse</code></a></h3>
 
-  <p>The <code>inverse</code> specifier specifies that the member of
+  <p>The <code>inverse</code> specifier specifies that a data member of
      an object pointer or a container of object pointers type is an
      inverse side of a bidirectional object relationship. The single
-     required argument to this specifier is the data member name in
-     the referenced object. For example:</p>
+     required argument to this specifier is the corresponding data
+     member name in the referenced object. For example:</p>
 
 <pre class="c++">
 using std::tr1::shared_ptr;
@@ -5817,17 +5815,20 @@ private:
 };
   </pre>
 
-  <p>An inverse member does not have a corresponding column or table in
-     the resulting database schema. Instead, the column or table from
-     the referenced object is used to retrieve the relationship
-     information. Only ordered and set containers can be used for
-     inverse members. If an inverse member is of an ordered container
-     type, it is automatically marked as unordered (see
-     <a href="#9.3.8">Section 9.3.8, "<code>unordered</code>"</a>).</p>
+  <p>An inverse member does not have a corresponding column or, in case
+     of a container, table in the resulting database schema. Instead, the
+     column or table from the referenced object is used to retrieve the
+     relationship information. Only ordered and set containers can be used
+     for inverse members. If an inverse member is of an ordered container
+     type, it is automatically marked as unordered
+     (<a href="#9.3.8">Section 9.3.8, "<code>unordered</code>"</a>).</p>
+
+  <p>For a more detailed discussion of inverse members, refer to
+     <a href="#6.2">Section 6.2, "Bidirectional Relationships"</a>.</p>
 
   <h3><a name="9.3.8">9.3.8 <code>unordered</code></a></h3>
 
-  <p>The <code>unordered</code> specifier specifies that the member of
+  <p>The <code>unordered</code> specifier specifies that a member of
      an ordered container type should be stored in the database unordered.
      The database table for such a member will not contain the index column
      and the order in which elements are retrieved from the database may
@@ -5845,10 +5846,14 @@ private:
 };
   </pre>
 
+  <p>For a more detailed discussion of ordered containers and their
+     storage in the database, refer to <a href="#5.1">Section 5.1,
+     "Ordered Containers"</a>.</p>
+
   <h3><a name="9.3.9">9.3.9 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies the table name that should
-     be used to store the contents of the container member. For example:</p>
+     be used to store the contents of a container member. For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -5879,10 +5884,10 @@ private:
   <h3><a name="9.3.10">9.3.10 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
-     database type that should be used for the ordered container's
-     index column of the data member. The semantics of <code>index_type</code>
-     are similar to that of the <code>type</code> specifier (see
-     <a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>). The native
+     database type that should be used for an ordered container's
+     index column of a data member. The semantics of <code>index_type</code>
+     are similar to that of the <code>type</code> specifier
+     (<a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>). The native
      database type is expected to be an integer type. For example:</p>
 
   <pre class="c++">
@@ -5900,10 +5905,10 @@ private:
   <h3><a name="9.3.11">9.3.11 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
-     database type that should be used for the map container's
-     key column of the data member. The semantics of <code>key_type</code>
-     are similar to that of the <code>type</code> specifier (see
-     <a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>). For
+     database type that should be used for a map container's
+     key column of a data member. The semantics of <code>key_type</code>
+     are similar to that of the <code>type</code> specifier
+     (<a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>). For
      example:</p>
 
   <pre class="c++">
@@ -5921,10 +5926,10 @@ private:
   <h3><a name="9.3.12">9.3.12 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
-     database type that should be used for the container's
-     value column of the data member. The semantics of <code>value_type</code>
-     are similar to that of the <code>type</code> specifier (see
-     <a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>). For
+     database type that should be used for a container's
+     value column of a data member. The semantics of <code>value_type</code>
+     are similar to that of the <code>type</code> specifier
+     (<a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>). For
      example:</p>
 
   <pre class="c++">
@@ -5942,11 +5947,11 @@ private:
   <h3><a name="9.3.13">9.3.13 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
-     name that should be used to store the object id in the
-     container's table for the member. The semantics of
+     name that should be used to store the object id in a
+     container's table for a data member. The semantics of
      <code>id_column</code> are similar to that of the
-     <code>column</code> specifier (see
-     <a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
+     <code>column</code> specifier
+     (<a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -5967,11 +5972,11 @@ private:
   <h3><a name="9.3.14">9.3.14 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
-     name that should be used to store the element index in the
-     ordered container's table for the member. The semantics of
+     name that should be used to store the element index in an
+     ordered container's table for a data member. The semantics of
      <code>index_column</code> are similar to that of the
-     <code>column</code> specifier (see
-     <a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
+     <code>column</code> specifier
+     (<a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -5992,11 +5997,11 @@ private:
   <h3><a name="9.3.15">9.3.15 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
-     name that should be used to store the key in the map
-     container's table for the member. The semantics of
+     name that should be used to store the key in a map
+     container's table for a data member. The semantics of
      <code>key_column</code> are similar to that of the
-     <code>column</code> specifier (see
-     <a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
+     <code>column</code> specifier
+     (<a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -6017,11 +6022,11 @@ private:
   <h3><a name="9.3.16">9.3.16 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
-     name that should be used to store the element value in the
-     container's table for the member. The semantics of
+     name that should be used to store the element value in a
+     container's table for a data member. The semantics of
      <code>value_column</code> are similar to that of the
-     <code>column</code> specifier (see
-     <a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
+     <code>column</code> specifier
+     (<a href="#9.3.4">Section 9.3.4, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -6041,9 +6046,9 @@ private:
 
   <h2><a name="9.4">9.4 C++ Compiler Warnings</a></h2>
 
-  <p>When the C++ header file defining our persistent classes and
-     containing ODB pragmas is processed by a C++ compiler, it
-     may issue warnings about pragmas that it doesn't recognize. There
+  <p>When a C++ header file defining persistent classes and containing
+     ODB pragmas is used to build the application, the C++ compiler may
+     issue warnings about pragmas that it doesn't recognize. There
      are several ways to deal with this problem. The easiest is to
      disable such warnings using one of the compiler-specific command
      line options or warning control pragmas. This method is described
@@ -6200,7 +6205,7 @@ aCC +W2161 ...
   <p>The following table summarizes the default mapping between basic
      C++ value types and MySQL database types. This mapping can be
      customized on the per-type and per-member basis using the ODB
-     Pragmas Language (see <a href="#9">Chapter 9, "ODB Pragma
+     Pragmas Language (<a href="#9">Chapter 9, "ODB Pragma
      Language"</a>).</p>
 
   <!-- border="1" is necessary for html2ps -->
