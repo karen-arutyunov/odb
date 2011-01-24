@@ -22,6 +22,7 @@
 #  endif
 #  include <windows.h>   // CreatePipe, CreateProcess
 #  include <io.h>        // _open_osfhandle
+#  include <fcntl.h>     // _O_TEXT
 #endif
 
 #include <set>
@@ -1218,6 +1219,10 @@ start_process (char const* args[], char const* name, bool out)
   }
 
   CloseHandle (pi.hThread);
+  CloseHandle (out_h[0]);
+
+  if (out)
+    CloseHandle (in_h[1]);
 
   process_info r;
   r.id = pi.hProcess;
@@ -1231,7 +1236,9 @@ start_process (char const* args[], char const* name, bool out)
 
   if (out)
   {
-    r.in_fd = _open_osfhandle ((intptr_t) (in_h[0]), 0);
+    // Pass _O_TEXT to get newline translation.
+    //
+    r.in_fd = _open_osfhandle ((intptr_t) (in_h[0]), _O_TEXT);
 
     if (r.in_fd == -1)
     {
