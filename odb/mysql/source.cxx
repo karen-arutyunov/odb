@@ -878,7 +878,7 @@ namespace mysql
       {
         // @@ Optimization: can remove growth check if buffer is fixed.
         //
-        os << "std::size_t size;"
+        os << "std::size_t size (0);"
            << "std::size_t cap (i." << mi.var << "value.capacity ());"
            << traits << "::set_image (" << endl
            << "i." << mi.var << "value," << endl
@@ -901,7 +901,7 @@ namespace mysql
       {
         // @@ Optimization: can remove growth check if buffer is fixed.
         //
-        os << "std::size_t size;"
+        os << "std::size_t size (0);"
            << "std::size_t cap (i." << mi.var << "value.capacity ());"
            << traits << "::set_image (" << endl
            << "i." << mi.var << "value," << endl
@@ -915,7 +915,7 @@ namespace mysql
       virtual void
       traverse_long_string (member_info& mi)
       {
-        os << "std::size_t size;"
+        os << "std::size_t size (0);"
            << "std::size_t cap (i." << mi.var << "value.capacity ());"
            << traits << "::set_image (" << endl
            << "i." << mi.var << "value," << endl
@@ -931,7 +931,7 @@ namespace mysql
       {
         // Represented as a BLOB.
         //
-        os << "std::size_t size;"
+        os << "std::size_t size (0);"
            << traits << "::set_image (" << endl
            << "i." << mi.var << "value," << endl
            << "sizeof (i." << mi.var << "value)," << endl
@@ -946,7 +946,7 @@ namespace mysql
       {
         // Represented as a string.
         //
-        os << "std::size_t size;"
+        os << "std::size_t size (0);"
            << "std::size_t cap (i." << mi.var << "value.capacity ());"
            << traits << "::set_image (" << endl
            << "i." << mi.var << "value," << endl
@@ -962,7 +962,7 @@ namespace mysql
       {
         // Represented as a string.
         //
-        os << "std::size_t size;"
+        os << "std::size_t size (0);"
            << "std::size_t cap (i." << mi.var << "value.capacity ());"
            << traits << "::set_image (" << endl
            << "i." << mi.var << "value," << endl
