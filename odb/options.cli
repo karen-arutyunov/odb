@@ -69,15 +69,15 @@ class options
   {
     "<ptr>",
     "Use <ptr> as the default pointer for persistent objects. Objects that
-     do not  have a pointer assigned with the \cb{pointer} pragma specifier
+     do not  have a pointer assigned with the \cb{db pointer} pragma
      will use this pointer by default. The value of this option can be \cb{*}
      which denotes the raw pointer and is the default, or a qualified name
      of a smart pointer class template, for example, \cb{std::auto_ptr}. In
      the latter case, the ODB compiler constructs the object pointer by adding
      a single template argument of the object type to the qualified name, for
      example \cb{std::auto_ptr<object>}. The object pointer is used by the
-     ODB runtime to return dynamically allocated instances of the object
-     type.
+     ODB runtime to return, pass, and cache dynamically allocated instances
+     of the object type.
 
      Except for the raw pointer and the standard smart pointers defined
      in the \cb{<memory>} header file, you are expected to include the
@@ -287,14 +287,14 @@ class options
   std::string --profile|-p
   {
     "<name>",
-    "Specify a profile that should be used during compilation.
-     Profile is an options file with the name constructed by appending
+    "Specify a profile that should be used during compilation. A
+     profile is an options file with the name constructed by appending
      the \cb{.options} suffix to <name>. It is searched for in the
      same set of directories as C++ headers included with the
      \cb{#include <...>} directive (built-in paths plus those specified
      with the \cb{-I} options). The options file is first searched for
      in the directory itself and then in its \cb{odb/} subdirectory. For
-     format of the options file refer to the \cb{--options-file} option
+     the format of the options file refer to the \cb{--options-file} option
      below. You can repeat this option to specify more than one profile."
   };
 
