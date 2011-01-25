@@ -1801,10 +1801,10 @@ class name
 
   <p>As we have seen in the previous chapter, some database operations
      create dynamically allocated instances of persistent classes and
-     return pointer to these instances. As we will see in later chapters,
+     return pointers to these instances. As we will see in later chapters,
      pointers are also used to establish relationships between objects
      (<a href="#6">Chapter 6, Relationships</a>) as well as to cache
-     persistent object in a session (<a href="#8">Chapter 8, Session</a>).</p>
+     persistent objects in a session (<a href="#8">Chapter 8, Session</a>).</p>
 
   <p>By default, all these mechanisms use raw pointers to return,
      pass, and cache objects. This is normally sufficient for applications
@@ -2154,7 +2154,7 @@ update_age (database&amp; db, person&amp; p)
      pointers. If the identifier of the object being persisted is assigned
      by the database, these functions update the id member of the passed
      instance with the assigned value. All four functions return the object
-     id of the newly persistent object.</p>
+     id of the newly persisted object.</p>
 
   <p>If the database already contains an object of this type with this
      identifier, the <code>persist()</code> functions throw the
@@ -2370,7 +2370,7 @@ transfer (database&amp; db,
 
   <p>The first <code>erase()</code> function uses an object itself, in
      the form of an object reference, to delete its state from the
-     database. The next two functions accomplish the same but using
+     database. The next two functions accomplish the same result but using
      object pointers. Note that all three functions leave the passed
      object unchanged. It simply becomes transient. The last function
      uses the object id to identify the object to be deleted. If the
@@ -2421,7 +2421,7 @@ t.commit ();
   <p>The first <code>execute()</code> function expects the SQL statement
      as a zero-terminated C-string. The last version expects the explicit
      statement length as the second argument and the statement itself
-     may contain <code>'\0'</code> characters, for example to represent
+     may contain <code>'\0'</code> characters, for example, to represent
      binary data, if the database system supports it. All three functions
      return the number of rows that were affected by the statement. For
      example:</p>
@@ -2566,7 +2566,7 @@ namespace odb
      in <a href="#8">Chapter 8, "Session"</a>.</p>
 
   <p>The <code>deadlock</code> exception is thrown when a transaction
-     deadlock is detected by the database system. It can thrown by any
+     deadlock is detected by the database system. It can be thrown by any
      database function. See <a href="#3.4">Section 3.4, "Transactions"</a>
      for details.</p>
 
@@ -3172,19 +3172,19 @@ private:
   </pre>
 
   <p>The complete version of the above code fragment and the other code
-     samples presented in this chapter can found in the <code>container</code>
+     samples presented in this chapter can be found in the <code>container</code>
      example in the <code>odb-examples</code> package.</p>
 
   <p>A data member in a persistent class that is of a container type
      behaves like a value type. That is, when an object is made persistent,
-     the elements of the container are store in the database. Similarly,
+     the elements of the container are stored in the database. Similarly,
      when a persistent object is loaded from the database, the contents
      of the container are automatically loaded as well.</p>
 
   <p>While an ordinary member is mapped to one or more columns in the
      object's table, a member of a container type is mapped to a separate
      table. The exact schema of such a table depends on the kind of
-     a container. ODB defines the following container kinds: ordered,
+     container. ODB defines the following container kinds: ordered,
      set, multiset, map, and multimap. The container kinds and the
      contents of the tables to which they are mapped are discussed
      in detail in the following sections.</p>
@@ -3244,8 +3244,8 @@ private:
      persistent class instance of which the container is a member.
      The second column contains the element index within a container.
      And the last column contains the element value. If the object
-     id or element value are composite, then instead of a single
-     column they can occupy multiple columns.</p>
+     id or element value are composite, then, instead of a single
+     column, they can occupy multiple columns.</p>
 
   <p>Consider the following persistent object as an example:</p>
 
@@ -3333,8 +3333,8 @@ private:
      two columns. The first column contains the object id of a
      persistent class instance of which the container is a member.
      And the second column contains the element value. If the object
-     id or element value are composite, then instead of a single
-     column they can occupy multiple columns.</p>
+     id or element value are composite, then, instead of a single
+     column, they can occupy multiple columns.</p>
 
   <p>Consider the following persistent object as an example:</p>
 
@@ -3451,7 +3451,7 @@ private:
 
   <p>To achieve this you will need to implement the
      <code>container_traits</code> class template specialization for
-     your container. First determine the container kind (ordered, set,
+     your container. First, determine the container kind (ordered, set,
      multiset, map, or multimap) for your container type. Then use a
      specialization for one of the standard C++ containers found in
      the common ODB runtime library (<code>libodb</code>) as a base
@@ -3474,9 +3474,9 @@ private:
   </pre>
 
   <p>Now, whenever we compile a header file that uses the hashtable
-     container, we can pass the following option to make sure it
-     is recognized by the ODB compiler as a container and the traits
-     file is included in the generated code:</p>
+     container, we can specify the following command line option to
+     make sure it is recognized by the ODB compiler as a container
+     and the traits file is included in the generated code:</p>
 
   <pre>
 --options-file hashtable.options
@@ -4460,9 +4460,9 @@ t.commit ();
   </pre>
 
   <p>Now, whenever we compile a header file that uses <code>smart_ptr</code>,
-     we can pass the following option to make sure it is recognized by the
-     ODB compiler as a smart pointer and the traits file is included in the
-     generated code:</p>
+     we can specify the following command line option to make sure it is
+     recognized by the ODB compiler as a smart pointer and the traits file
+     is included in the generated code:</p>
 
   <pre>
 --options-file smart-ptr.options
@@ -4484,7 +4484,7 @@ t.commit ();
 
   <h1><a name="7">7 Composite Value Types</a></h1>
 
-  <p>Composite value type is a <code>class</code> or <code>struct</code>
+  <p>A composite value type is a <code>class</code> or <code>struct</code>
      type that is mapped to more than one database column. To declare
      a composite value type we use the <code>db&nbsp;value</code> pragma,
      for example:</p>
@@ -4501,7 +4501,7 @@ class basic_name
   </pre>
 
   <p>The complete version of the above code fragment and the other code
-     samples presented in this chapter can found in the <code>composite</code>
+     samples presented in this chapter can be found in the <code>composite</code>
      example in the <code>odb-examples</code> package.</p>
 
   <p>A composite value type does not have to define a default constructor,
@@ -4807,7 +4807,7 @@ CREATE TABLE `person_nickname` (
 
   <p>A session is an application's unit of work that may encompass several
      database transactions. In this version of ODB a session is just an
-     object cache. In the future versions it will provide additional
+     object cache. In future versions it will provide additional
      functionality, such as automatic object state change tracking
      and optimistic concurrency.</p>
 
@@ -4903,11 +4903,11 @@ namespace odb
   </pre>
 
   <p>The session constructor creates a new session and sets it as a
-     current session for this thread. If we try to create a session
-     while there is already a current session in effect, this constructor
-     throws the <code>odb::already_in_session</code> exception. The
-     destructor clears the current session for this thread if this
-     session is the current one.</p>
+     current session for this thread. If we try to create another
+     session while there is already a current session in effect,
+     the constructor throws the <code>odb::already_in_session</code>
+     exception. The destructor clears the current session for this
+     thread if this session is the current one.</p>
 
   <p>The static <code>current()</code> accessor returns the currently active
      session for this thread. If there is no active session, this function
@@ -5334,9 +5334,9 @@ class person
      specifiers with the same names (<a href="#9.3">Section 9.3,
      "Data Member Pragmas"</a>). The behavior of such specifiers
      for members is similar to that for value types. The only difference
-     is the scope. A particular value type specifier applies to all
+     is the scope. A particular value type specifier applies to all the
      members of this value type that don't have a pre-member version
-     of the specifier. While the member specifier always applies only
+     of the specifier, while the member specifier always applies only
      to a single member. In other words, member specifiers take precedence
      over parameters specified with value specifiers.</p>
 
@@ -5380,7 +5380,7 @@ private:
 
   <p>The possible database values for the C++ <code>true</code> value could
      be <code>"true"</code>, or <code>"TRUE"</code>, or <code>"True"</code>.
-     Or, maybe, all of the above are valid. The ODB compiler has no way
+     Or, maybe, all of the above could be valid. The ODB compiler has no way
      of knowing how your application wants to convert <code>bool</code>
      to a string and back. To support such custom value type mappings,
      ODB allows you to provide your own database conversion functions
@@ -5422,7 +5422,7 @@ typedef std::vector&lt;shared_ptr&lt;account> > accounts;
   <h3><a name="9.2.3">9.2.3 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that the ordered
-     container should be stored in the database unordered. The database
+     container should be stored unordered in the database. The database
      table for such a container will not contain the index column
      and the order in which elements are retrieved from the database may
      not be the same as the order in which they were stored. For example:</p>
@@ -5655,9 +5655,9 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
      specifiers with the same names (<a href="#9.2">Section 9.2,
      "Value Type Pragmas"</a>). The behavior of such specifiers
      for members is similar to that for value types. The only difference
-     is the scope. A particular value type specifier applies to all
+     is the scope. A particular value type specifier applies to all the
      members of this value type that don't have a pre-member version
-     of the specifier. While the member specifier always applies only
+     of the specifier, while the member specifier always applies only
      to a single member. In other words, member specifiers take precedence
      over parameters specified with value specifiers.</p>
 
@@ -5856,7 +5856,7 @@ private:
   <h3><a name="9.3.8">9.3.8 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that a member of
-     an ordered container type should be stored in the database unordered.
+     an ordered container type should be stored unordered in the database.
      The database table for such a member will not contain the index column
      and the order in which elements are retrieved from the database may
      not be the same as the order in which they were stored. For example:</p>
