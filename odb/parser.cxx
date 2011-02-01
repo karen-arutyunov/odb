@@ -623,6 +623,8 @@ auto_ptr<unit> parser::impl::
 parse (tree global_scope, path const& main_file)
 {
   auto_ptr<unit> u (new unit (main_file));
+  u->insert (global_namespace, *u);
+
   unit_ = u.get ();
   scope_ = unit_;
   error_ = 0;
