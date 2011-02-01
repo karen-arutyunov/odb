@@ -68,7 +68,7 @@ cxx_dtun := odb.cxx
 
 # Common units.
 #
-cxx_ctun := database.cxx
+cxx_ctun := database.cxx profile.cxx
 
 # Options file.
 #

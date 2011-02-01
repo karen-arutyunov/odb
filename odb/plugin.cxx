@@ -11,9 +11,12 @@
 #include <cstring> // std::strcpy
 #include <iostream>
 
+#include <cutl/fs/path.hxx>
+
 #include <odb/pragma.hxx>
 #include <odb/parser.hxx>
 #include <odb/options.hxx>
+#include <odb/profile.hxx>
 #include <odb/version.hxx>
 #include <odb/validator.hxx>
 #include <odb/generator.hxx>
@@ -22,8 +25,14 @@
 using namespace std;
 using namespace semantics;
 
+using cutl::fs::path;
+using cutl::fs::invalid_path;
+
+typedef vector<path> paths;
+
 int plugin_is_GPL_compatible;
 auto_ptr<options const> options_;
+paths profile_paths_;
 
 // A prefix of the _cpp_file struct. This struct is not part of the
 // public interface so we have to resort to this technique (based on
@@ -154,6 +163,14 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
       {
         plugin_argument& a (plugin_info->argv[i]);
 
+        // Handle service options.
+        //
+        if (strcmp (a.key, "svc-path") == 0)
+        {
+          profile_paths_.push_back (path (a.value));
+          continue;
+        }
+
         string opt (strlen (a.key) > 1 ? "--" : "-");
         opt += a.key;
 
@@ -168,7 +185,19 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
       }
 
       int argc (static_cast<int> (argv.size ()));
-      cli::argv_file_scanner scan (argc, &argv[0], "--options-file");
+
+      profile_data pd (profile_paths_, "odb plugin");
+      cli::argv_file_scanner::option_info oi[3];
+      oi[0].option = "--options-file";
+      oi[0].search_func = 0;
+      oi[1].option = "-p";
+      oi[1].search_func = &profile_search;
+      oi[1].arg = &pd;
+      oi[2].option = "--profile";
+      oi[2].search_func = &profile_search;
+      oi[2].arg = &pd;
+
+      cli::argv_file_scanner scan (argc, &argv[0], oi, 3);
 
       options_.reset (
         new options (scan, cli::unknown_mode::fail, cli::unknown_mode::fail));

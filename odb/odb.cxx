@@ -25,7 +25,6 @@
 #  include <fcntl.h>     // _O_TEXT
 #endif
 
-#include <set>
 #include <string>
 #include <vector>
 #include <cstddef>     // size_t
@@ -38,6 +37,7 @@
 
 #include <odb/version.hxx>
 #include <odb/options.hxx>
+#include <odb/profile.hxx>
 
 #ifdef HAVE_CONFIG_H
 #  include <odb/config.h>
@@ -115,24 +115,8 @@ encode_plugin_option (string const& k, string const& v);
 // profile_failure, process_failure and invalid_path exceptions. Name
 // is the program name (argv[0]) for diagnostics.
 //
-struct profile_failure {};
-
 static paths
 profile_paths (strings const& args, char const* name);
-
-// Search for the profile options file.
-//
-struct profile_data
-{
-  profile_data (paths const& p, char const* n): search_paths (p), name (n) {}
-
-  paths const& search_paths;
-  set<path> loaded;
-  char const* name;
-};
-
-static string
-profile_search (char const* profile, void* arg);
 
 static char const* const db_macro[] =
 {
@@ -483,7 +467,15 @@ main (int argc, char* argv[])
       args.push_back (encode_plugin_option (k, v));
     }
 
-    // Reserve space for and remember the position of the --svc-file
+    // Pass profile search paths (svc-path option).
+    //
+    for (paths::const_iterator i (prof_paths.begin ());
+         i != prof_paths.end (); ++i)
+    {
+      args.push_back (encode_plugin_option ("svc-path", i->string ()));
+    }
+
+    // Reserve space for and remember the position of the svc-file
     // option.
     //
     size_t svc_file_pos (args.size ());
@@ -822,51 +814,6 @@ profile_paths (strings const& sargs, char const* name)
   }
 
   return r;
-}
-
-static string
-profile_search (char const* prof, void* arg)
-{
-  profile_data* pd (static_cast<profile_data*> (arg));
-  paths const& ps (pd->search_paths);
-
-  path p (prof), odb ("odb"), r;
-  p.normalize (); // Convert '/' to the canonical path separator form.
-  p += ".options";
-
-  struct stat info;
-  paths::const_iterator i (ps.begin ()), end (ps.end ());
-
-  for (; i != end; ++i)
-  {
-    // First check in the search directory itself and then try the odb/
-    // subdirectory.
-    //
-    r = *i / p;
-
-    // Just check that the file exist without checking for permissions, etc.
-    //
-    if (stat (r.string ().c_str (), &info) == 0 && S_ISREG (info.st_mode))
-      break;
-
-    r = *i / odb / p;
-
-    if (stat (r.string ().c_str (), &info) == 0 && S_ISREG (info.st_mode))
-      break;
-  }
-
-  if (i == end)
-  {
-    cerr << pd->name << ": error: unable to locate options file for profile '"
-         << prof << "'" << endl;
-    throw profile_failure ();
-  }
-
-  if (pd->loaded.find (r) != pd->loaded.end ())
-    return string ();
-
-  pd->loaded.insert (r);
-  return r.string ();
 }
 
 //
