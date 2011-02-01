@@ -313,7 +313,10 @@ namespace semantics
     // return true.
     //
     bool
-    fq_anonymous () const;
+    fq_anonymous () const
+    {
+      return fq_anonymous_ (0);
+    }
 
     // As above but use the hint to select the first outer scope. If
     // hint is 0, use the defines edge.
@@ -390,12 +393,51 @@ namespace semantics
 
     using node::add_edge_right;
 
-  private:
+  protected:
+    // We need to keep the scope we have seen in the fq_* function
+    // family in order to detect names that are inside the node
+    // and which would otherwise lead to infinite recursion. Here
+    // is the canonical example:
+    //
+    // template <typename X>
+    // class c
+    // {
+    //   typedef c this_type;
+    // };
+    //
+    struct scope_entry
+    {
+      scope_entry (nameable const* e, scope_entry const* p)
+          : entry_ (e), prev_ (p)
+      {
+      }
+
+      bool
+      find (nameable const* n) const
+      {
+        for (scope_entry const* i (this); i != 0; i = i->prev_)
+          if (i->entry_ == n)
+            return true;
+
+        return false;
+      }
+
+    private:
+      nameable const* entry_;
+      scope_entry const* prev_;
+    };
+
     bool
     anonymous_ () const;
 
+    bool
+    fq_anonymous_ (scope_entry const*) const;
+
     string
     name_ () const;
+
+    string
+    fq_name_ (scope_entry const*) const;
 
   private:
     defines* defined_;

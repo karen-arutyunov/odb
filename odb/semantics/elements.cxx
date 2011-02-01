@@ -64,8 +64,10 @@ namespace semantics
   }
 
   bool nameable::
-  fq_anonymous () const
+  fq_anonymous_ (scope_entry const* prev) const
   {
+    scope_entry scope (this, prev);
+
     // Nameable is fq-anonymous if all the paths to the global scope
     // have at least one anonymous link.
     //
@@ -74,44 +76,49 @@ namespace semantics
       if (named ().global_scope ())
         return false;
 
-      if (defined_ != 0 && !defined_->scope ().fq_anonymous ())
-        return false;
+      if (defined_ != 0)
+      {
+        nameable const& s (defined_->scope ());
+
+        if (!scope.find (&s) && !s.fq_anonymous_ (&scope))
+          return false;
+      }
 
       for (names_list::const_iterator i (named_.begin ()), e (named_.end ());
            i != e; ++i)
       {
-        if (!(*i)->scope ().fq_anonymous ())
+        nameable const& s ((*i)->scope ());
+
+        if (!scope.find (&s) && !s.fq_anonymous_ (&scope))
           return false;
       }
     }
-    else
+
+    // If we can get a literal name for this type node, then it is not
+    // anonymous as long as its scope is not anonymous.
+    //
+    tree type (tree_node ());
+
+    if (TYPE_P (type))
     {
-      // If we can get a literal name for this type, then it is not
-      // anonymous as long as its scope is not anonymous.
-      //
-      tree type (tree_node ());
+      tree name (0);
 
-      if (TYPE_P (type))
+      if (tree decl = TYPE_NAME (type))
       {
-        tree name (0);
+        name = DECL_NAME (decl);
+        if (name != 0 && ANON_AGGRNAME_P (name))
+          return true;
 
-        if (tree decl = TYPE_NAME (type))
-        {
-          name = DECL_NAME (decl);
-          if (name != 0 && ANON_AGGRNAME_P (name))
-            return true;
+        tree s (CP_DECL_CONTEXT (decl));
 
-          tree s (CP_DECL_CONTEXT (decl));
+        if (TREE_CODE (s) == TYPE_DECL)
+          s = TREE_TYPE (s);
 
-          if (TREE_CODE (s) == TYPE_DECL)
-            s = TREE_TYPE (s);
-
-          if (nameable* n = dynamic_cast<nameable*> (unit ().find (s)))
-            return n->fq_anonymous ();
-        }
-        else
-          return false; // Assume this is a derived type (e.g., pointer).
+        if (nameable* n = dynamic_cast<nameable*> (unit ().find (s)))
+          return scope.find (n)  || n->fq_anonymous_ (&scope);
       }
+      else
+        return false; // Assume this is a derived type (e.g., pointer).
     }
 
     return true;
@@ -224,21 +231,35 @@ namespace semantics
   string nameable::
   fq_name () const
   {
+    return fq_name_ (0);
+  }
+
+  string nameable::
+  fq_name_ (scope_entry const* prev) const
+  {
     // @@ Doing this once and caching the result is probably a
     //    good idea.
     //
+    scope_entry scope (this, prev);
 
     if (named_p () && named ().global_scope ())
       return "";
 
-    if (defined_ != 0 && !defined_->scope ().fq_anonymous ())
-      return defined_->scope ().fq_name () + "::" + name ();
+    if (defined_ != 0)
+    {
+      nameable const& s (defined_->scope ());
+
+      if (!scope.find (&s) && !s.fq_anonymous_ (&scope))
+        return s.fq_name_ (&scope) + "::" + name ();
+    }
 
     for (names_list::const_iterator i (named_.begin ()), e (named_.end ());
          i != e; ++i)
     {
-      if (!(*i)->scope ().fq_anonymous ())
-        return (*i)->scope ().fq_name () + "::" + name ();
+      nameable const& s ((*i)->scope ());
+
+      if (!scope.find (&s) && !s.fq_anonymous_ (&scope))
+        return s.fq_name_ (&scope) + "::" + name ();
     }
 
     tree n (tree_node ());
