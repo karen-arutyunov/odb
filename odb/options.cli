@@ -343,10 +343,4 @@ class options
      database-default engine, pass \cb{default} as the value for this
      option."
   };
-
-  //
-  // Undocumented options that are used to pass service information
-  // between the frontend and the plugin.
-  //
-  std::string --svc-file;
 };

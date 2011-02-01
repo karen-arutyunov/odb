@@ -33,6 +33,7 @@ typedef vector<path> paths;
 int plugin_is_GPL_compatible;
 auto_ptr<options const> options_;
 paths profile_paths_;
+path file_; // File being compiled.
 
 // A prefix of the _cpp_file struct. This struct is not part of the
 // public interface so we have to resort to this technique (based on
@@ -64,8 +65,7 @@ start_unit_callback (void*, void*)
       && fp->path == p         // Our prefix corresponds to the actual type.
       && fp->dir_name == 0)    // The directory part hasn't been initialized.
   {
-    path p (options_->svc_file ());
-    path d (p.directory ());
+    path d (file_.directory ());
     char* s;
 
     if (d.empty ())
@@ -104,14 +104,13 @@ gate_callback (void*, void*)
 
   try
   {
-    path file (options_->svc_file ());
     parser p (*options_, loc_pragmas_, decl_pragmas_);
-    auto_ptr<unit> u (p.parse (global_namespace, file));
+    auto_ptr<unit> u (p.parse (global_namespace, file_));
 
     //
     //
     validator v;
-    if (!v.validate (*options_, *u, file))
+    if (!v.validate (*options_, *u, file_))
       r = 1;
 
     //
@@ -119,7 +118,7 @@ gate_callback (void*, void*)
     if (r == 0)
     {
       generator g;
-      g.generate (*options_, *u, file);
+      g.generate (*options_, *u, file_);
     }
   }
   catch (parser::failed const&)
@@ -168,6 +167,12 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
         if (strcmp (a.key, "svc-path") == 0)
         {
           profile_paths_.push_back (path (a.value));
+          continue;
+        }
+
+        if (strcmp (a.key, "svc-file") == 0)
+        {
+          file_ = path (a.value);
           continue;
         }
 
