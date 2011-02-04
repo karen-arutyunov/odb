@@ -536,7 +536,16 @@ main (int argc, char* argv[])
 
         // Add the standard prologue.
         //
-        // os << "#line 1 \"<standard-odb-prologue>\"" << endl;
+        os << "#line 1 \"<standard-odb-prologue>\"" << endl;
+
+        // Make sure ODB compiler and libodb versions are compatible.
+        //
+        os << "#include <odb/version.hxx>" << endl
+           << endl
+           << "#if ODB_VERSION != " << ODB_VERSION << endl
+           << "#  error incompatible ODB compiler and runtime versions" << endl
+           << "#endif" << endl
+           << endl;
 
         // Add custom prologue if any.
         //
