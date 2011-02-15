@@ -4,9 +4,9 @@ checked out from the git repository.
 The major difference between using a released source code package and source
 code from the repository is that the former does not contain autotools-based
 makefiles or Visual Studio project files. Instead, it contains templates for
-these files as well as its own, custom build system. This build system is 
+these files as well as its own, custom build system. This build system is
 used for development as well as to automatically generate the autotools and
-Visual Studio files. 
+Visual Studio files.
 
 This file describes how to use this build system to build the package as well
 as to create a release-ready source distribution which contains the autotools
@@ -22,6 +22,7 @@ following additional packages:
   - GNU bash >= 2.0.0   http://www.gnu.org/software/bash/
   - GNU make >= 3.81    http://www.gnu.org/software/make/
   - build    >= latest  http://www.codesynthesis.com/projects/build/
+  - cli      >= latest  http://www.codesynthesis.com/projects/cli/
 
 If you are planning to create the source code distributions, then you will
 also need the following packages:
@@ -39,7 +40,7 @@ Configuring and Building
 
 To build the source code simply run make in the root directory of the package.
 The first time you run make, the build process will also configure the
-package by asking you several questions. On the subsequent runs, make will 
+package by asking you several questions. On the subsequent runs, make will
 only rebuild what has changed.
 
 To run the automated test suite (if any), run 'make test'. To clean the object
