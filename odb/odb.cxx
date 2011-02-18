@@ -213,6 +213,54 @@ main (int argc, char* argv[])
     args.push_back ("g++");
 #endif // GXX_NAME
 
+    // Parse the default options file if we have one.
+    //
+    strings def_inc_dirs;
+#ifdef DEFAULT_OPTIONS_FILE
+    {
+      path file (DEFAULT_OPTIONS_FILE);
+
+      // If the path is relative, then use the driver's path as a base.
+      //
+      if (file.relative ())
+      {
+        path dp (driver_path (path (argv[0])));
+        file = dp.directory () / file;
+      }
+
+      int ac (3);
+      const char* av[4] = {argv[0], "--file", file.string ().c_str (), 0};
+      cli::argv_file_scanner s (ac, const_cast<char**> (av), "--file");
+
+      while (s.more ())
+      {
+        string a (s.next ());
+        size_t n (a.size ());
+
+        // -I
+        //
+        if (n > 1 && a[0] == '-' && a[1] == 'I')
+        {
+          def_inc_dirs.push_back (a);
+
+          if (n == 2) // -I /path
+          {
+            if (!s.more () || (a = s.next ()).empty ())
+            {
+              e << file << ": error: expected argument for the -I option"
+                << endl;
+              return 1;
+            }
+
+            def_inc_dirs.push_back (a);
+          }
+        }
+        else
+          plugin_args.push_back (a);
+      }
+    }
+#endif
+
     // Default options.
     //
     args.push_back ("-x");
@@ -325,6 +373,11 @@ main (int argc, char* argv[])
       else
         plugin_args.push_back (a);
     }
+
+    // Add the default include directories (-I) after the user-supplied
+    // ones.
+    //
+    args.insert (args.end (), def_inc_dirs.begin (), def_inc_dirs.end ());
 
     // Obtain profile (-I) search paths.
     //

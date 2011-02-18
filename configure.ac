@@ -31,7 +31,7 @@ AS_IF([test x$static_plugin = xyes],
 #
 AS_IF([test x$static_plugin = xno], GCC_PLUGIN)
 
-#
+# G++ name.
 #
 AC_ARG_WITH(
   [gxx-name],
@@ -53,6 +53,27 @@ AS_IF(
   [test "x$gxx_name" != x],
   [AC_DEFINE_UNQUOTED([GXX_NAME], ["$gxx_name"], [g++ binary.])])
 
+# Default options file.
+#
+AC_ARG_WITH(
+  [options-file],
+  [AC_HELP_STRING([--with-options-file=PATH], [default options file path to embed in the driver])],
+  [case $withval in
+     no)
+       options_file=
+       ;;
+     yes)
+       options_file=../etc/odb/default.options
+       ;;
+     *)
+       options_file="$withval"
+       ;;
+   esac],
+  [options_file=])
+
+AS_IF(
+  [test "x$options_file" != x],
+  [AC_DEFINE_UNQUOTED([DEFAULT_OPTIONS_FILE], ["$options_file"], [default options file path.])])
 
 # Create the libtool executable so that we can use it in further tests.
 #
