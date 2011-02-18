@@ -1080,14 +1080,14 @@ mysql --user=odb_test --database=odb_test &lt; person.sql
 #include "person-odb.hxx"
 
 using namespace std;
-using namespace odb;
+using namespace odb::core;
 
 int
 main (int argc, char* argv[])
 {
   try
   {
-    auto_ptr&lt;database> db (new mysql::database (argc, argv));
+    auto_ptr&lt;database> db (new odb::mysql::database (argc, argv));
 
     unsigned long john_id, jane_id, joe_id;
 
@@ -1127,6 +1127,19 @@ main (int argc, char* argv[])
      MySQL implementation of the <code>database</code> interface. Finally,
      we include <code>person.hxx</code> and <code>person-odb.hxx</code>
      which define our persistent <code>person</code> class.</p>
+
+  <p>Then we have two <code>using namespace</code> directives. The first
+     one brings in the names from the standard namespace and the second
+     brings in the ODB declarations which we will use later in the file.
+     Notice that in the second directive we use the <code>odb::core</code>
+     namespace instead of just <code>odb</code>. The former only brings
+     into the current namespace the essential ODB names, such as the
+     <code>database</code> and <code>transaction</code> classes, without
+     any of the auxiliary objects. This minimizes the likelihood of name
+     conflicts with other libraries. Note also that you should continue
+     using the <code>odb</code> namespace when qualifying individual names.
+     For example, you should write <code>odb::database</code>, not
+     <code>odb::core::database</code>.</p>
 
   <p>Once we are in <code>main()</code>, the first thing we do is create
      the MySQL database object. Notice that this is the last line in
@@ -4823,7 +4836,7 @@ CREATE TABLE `person_nickname` (
 #include &lt;odb/session.hxx>
 #include &lt;odb/transaction.hxx>
 
-using namespace odb;
+using namespace odb::core;
 
 {
   session s;

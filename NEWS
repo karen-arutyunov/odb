@@ -1,3 +1,21 @@
+Version 1.2.0
+
+  * New namespace, odb::core, contains using-declarations for the core ODB
+    constructs, such as the database, transaction, etc. The primary use of
+    this namespace is in the using-directives:
+
+    using namespace odb::core;
+
+    The above form should be preferred over the old variant:
+
+    using namespace odb;
+
+    The new approach brings all the essential ODB names into the current
+    namespace without any of the auxiliary objects such as traits, etc.,
+    which minimizes the likelihood of conflicts with other libraries.
+    Note that you can still use the odb namespace when qualifying
+    individual names, for example, odb::database.
+
 Version 1.1.0
 
   * Support for storing containers in the database. For more information refer
@@ -29,7 +47,7 @@ Version 1.1.0
     profile library. See the ODB compiler command line manual for details.
 
   * Support for literal names (template-id, derived type declarator such as
-    pointers, etc) in data member declarations. Now, for example, you can use 
+    pointers, etc) in data member declarations. Now, for example, you can use
     std::vector<std::string> directly instead of having to create a typedef
     alias for it.
 
