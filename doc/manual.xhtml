@@ -6553,7 +6553,8 @@ namespace odb
     class connection_pool_factory: public connection_factory
     {
       connection_pool_factory (std::size_t max_connections = 0,
-                               std::size_t min_connections = 0)
+                               std::size_t min_connections = 0,
+                               bool ping = true)
     };
 };
   </pre>
@@ -6562,7 +6563,9 @@ namespace odb
      number of concurrent connections that this pool factory will
      maintain. Similarly, the <code>min_connections</code> argument
      specifies the minimum number of available connections that
-     should be kept open.</p>
+     should be kept open. The <code>ping</code> argument specifies
+     whether the factory should validate the connection before
+     returning it to the caller.</p>
 
   <p>Whenever a connection is requested, the pool factory first
      checks if there is an unused connection that can be returned.
@@ -6591,12 +6594,20 @@ namespace odb
      the pool will never close a connection and instead maintain all
      the connections that were ever created.</p>
 
+  <p>Connection validation (the <code>ping</code> argument) is useful
+     if your application may experience long periods of inactivity. In
+     such cases the MySQL server may close network connections that have
+     been inactive for too long. If during connection validation the pool
+     factory detects that the connection has been terminated, it silently
+     closes it and tries to find or create another connection instead.</p>
+
   <p>If you pass <code>NULL</code> as the connection factory to
      one of the <code>database</code> constructors, then the
      <code>connection_pool_factory</code> instance will be
      created by default with the min and max connections values
-     set to 0. The following code fragment shows how we can
-     pass our own connection factory instance:</p>
+     set to <code>0</code> and connection validation enabled.
+     The following code fragment shows how we can pass our own
+     connection factory instance:</p>
 
   <pre class="c++">
 #include &lt;odb/database.hxx>

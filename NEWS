@@ -16,6 +16,10 @@ Version 1.2.0
     Note that you can still use the odb namespace when qualifying
     individual names, for example, odb::database.
 
+  * Support for connection validation (ping) in MySQL connection_pool_factory.
+    This transparently deals with the MySQL server closing connections after
+    a certain period of inactivity.
+
 Version 1.1.0
 
   * Support for storing containers in the database. For more information refer
