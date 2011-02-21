@@ -16,6 +16,12 @@ Version 1.2.0
     Note that you can still use the odb namespace when qualifying
     individual names, for example, odb::database.
 
+  * New exceptions: odb::recoverbale, odb::connection_lost, and odb::timeout.
+    The odb::recoverbale exception is a common base class for all recoverable
+    ODB exceptions. The other two exceptions plus odb::deadlock now inherit
+    from this base. Refer to Section 3.5, "Error Handling and Recovery" for
+    details.
+
   * Support for connection validation (ping) in MySQL connection_pool_factory.
     This transparently deals with the MySQL server closing connections after
     a certain period of inactivity.

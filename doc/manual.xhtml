@@ -304,12 +304,13 @@ for consistency.
 	  <tr><th>3.2</th><td><a href="#3.2">Object Pointers</a></td></tr>
           <tr><th>3.3</th><td><a href="#3.3">Database</a></td></tr>
           <tr><th>3.4</th><td><a href="#3.4">Transactions</a></td></tr>
-          <tr><th>3.5</th><td><a href="#3.5">Making Objects Persistent</a></td></tr>
-          <tr><th>3.6</th><td><a href="#3.6">Loading Persistent Objects</a></td></tr>
-          <tr><th>3.7</th><td><a href="#3.7">Updating Persistent Objects</a></td></tr>
-          <tr><th>3.8</th><td><a href="#3.8">Deleting Persistent Objects</a></td></tr>
-	  <tr><th>3.9</th><td><a href="#3.9">Executing Native SQL Statements</a></td></tr>
-          <tr><th>3.10</th><td><a href="#3.10">ODB Exceptions</a></td></tr>
+	  <tr><th>3.5</th><td><a href="#3.5">Error Handling and Recovery</a></td></tr>
+          <tr><th>3.6</th><td><a href="#3.6">Making Objects Persistent</a></td></tr>
+          <tr><th>3.7</th><td><a href="#3.7">Loading Persistent Objects</a></td></tr>
+          <tr><th>3.8</th><td><a href="#3.8">Updating Persistent Objects</a></td></tr>
+          <tr><th>3.9</th><td><a href="#3.9">Deleting Persistent Objects</a></td></tr>
+	  <tr><th>3.10</th><td><a href="#3.10">Executing Native SQL Statements</a></td></tr>
+          <tr><th>3.11</th><td><a href="#3.11">ODB Exceptions</a></td></tr>
         </table>
       </td>
     </tr>
@@ -1203,7 +1204,7 @@ main (int argc, char* argv[])
 
   <p>The final bit of code in our example is the <code>catch</code>
      block that handles the database exceptions. We do this by catching
-     the base ODB exception (<a href="#3.10">Section 3.10, "ODB
+     the base ODB exception (<a href="#3.11">Section 3.11, "ODB
      Exceptions"</a>) and printing the diagnostics.</p>
 
   <p>Let's now compile (<a href="#2.3">Section 2.3, "Compiling and
@@ -1712,7 +1713,7 @@ class person
      can make it private. It is also possible to have an object type
      without the default constructor. However, in this case, the database
      operations can only load the persistent state into an existing instance
-     (<a href="#3.6">Section 3.6, "Loading Persistent Objects"</a>,
+     (<a href="#3.7">Section 3.7, "Loading Persistent Objects"</a>,
      <a href="#4.4">Section 4.4, "Query Result"</a>). <p>The object id type
      should be default-constructible.</p></p>
 
@@ -2006,44 +2007,6 @@ namespace odb
      We can check whether there is a transaction in effect in
      this thread using the <code>has_current()</code> static function.</p>
 
-  <p>If two or more transactions access or modify more than one object
-     and are executed concurrently by different applications or by
-     different threads within the same application, then it is possible
-     that these transactions will try to access objects in an incompatible
-     order and deadlock. The canonical example of a deadlock are
-     two transactions in which the first has modified <code>object1</code>
-     and is waiting for the second transaction to commit its changes to
-     <code>object2</code> so that it can also update <code>object2</code>.
-     At the same time the second transaction has modified <code>object2</code>
-     and is waiting for the first transaction to commit its changes to
-     <code>object1</code> because it also needs to modify <code>object1</code>.
-     As a result, none of the two transactions can be completed.</p>
-
-  <p>The database system detects such situations and automatically
-     aborts the waiting operation in one of the deadlocked transactions.
-     In ODB this translates to the <code>odb::deadlock</code> exception
-     being thrown from one of the database functions. You would normally
-     handle a deadlock by restarting the transaction, for example:</p>
-
-  <pre class="c++">
-for (;;)
-{
-  try
-  {
-    transaction t (db.begin ());
-
-    ...
-
-    t.commit ();
-    break;
-  }
-  catch (const odb::deadlock&amp;)
-  {
-    continue;
-  }
-}
-  </pre>
-
   <p>Note that in the above discussion of atomicity, consistency,
      isolation, and durability, all of those guarantees only apply
      to the object's state in the database as opposed to the object's
@@ -2122,7 +2085,85 @@ update_age (database&amp; db, person&amp; p)
   </pre>
 
 
-  <h2><a name="3.5">3.5 Making Objects Persistent</a></h2>
+  <h2><a name="3.5">3.5 Error Handling and Recovery</a></h2>
+
+  <p>ODB uses C++ exceptions to report database operation errors. Most
+     ODB exceptions signify <em>hard</em> errors or errors that cannot
+     be corrected without some intervention from the application.
+     For example, if we try to load an object with an unknown object
+     id, the <code>odb::object_not_persistent</code> exception is
+     thrown. Our application may be able to correct this error, for
+     instance, by obtaining a valid object id and trying again.
+     The hard errors and corresponding ODB exceptions that can be
+     thrown by each database function are described in the remainder
+     of this chapter with <a href="">Section 3.11, "ODB Exceptions"</a>
+     providing a quick reference for all the ODB exceptions.</p>
+
+  <p>The second group of ODB exceptions signify <em>soft</em> or
+     <em>recoverable</em> errors. Such errors are temporary
+     failures which normally can be corrected by simply re-executing
+     the transaction. ODB defines three such exceptions:
+     <code>odb::connection_lost</code>, <code>odb::timeout</code>,
+     and <code>odb::deadlock</code>. All recoverable ODB exceptions
+     are derived from the common <code>odb::recoverable</code> base
+     exception which can be used to handle all the recoverable
+     conditions with a single <code>catch</code> block.</p>
+
+  <p>The <code>odb::connection_lost</code> exception is thrown if
+     a connection to the database is lost in the middle of
+     a transaction. In this situation the transaction is aborted but
+     it can be re-tried without any changes. Similarly, the
+     <code>odb::timeout</code> exception is thrown if one of the
+     database operations or the whole transaction has timed out.
+     Again, in this case the transaction is aborted but can be
+     re-tried as is.</p>
+
+  <p>If two or more transactions access or modify more than one object
+     and are executed concurrently by different applications or by
+     different threads within the same application, then it is possible
+     that these transactions will try to access objects in an incompatible
+     order and deadlock. The canonical example of a deadlock are
+     two transactions in which the first has modified <code>object1</code>
+     and is waiting for the second transaction to commit its changes to
+     <code>object2</code> so that it can also update <code>object2</code>.
+     At the same time the second transaction has modified <code>object2</code>
+     and is waiting for the first transaction to commit its changes to
+     <code>object1</code> because it also needs to modify <code>object1</code>.
+     As a result, none of the two transactions can be completed.</p>
+
+  <p>The database system detects such situations and automatically
+     aborts the waiting operation in one of the deadlocked transactions.
+     In ODB this translates to the <code>odb::deadlock</code>
+     recoverable exception being thrown from one of the database functions.</p>
+
+  <p>The following code fragment shows how to handle the recoverable
+     exceptions by restarting the affected transaction:</p>
+
+  <pre class="c++">
+const unsigned short max_retries = 5;
+
+for (unsigned short retry_count (0); ; retry_count++)
+{
+  try
+  {
+    transaction t (db.begin ());
+
+    ...
+
+    t.commit ();
+    break;
+  }
+  catch (const odb::recoverable&amp; e)
+  {
+    if (retry_count > max_retries)
+      throw retry_limit_exceeded (e.what ());
+    else
+      continue;
+  }
+}
+  </pre>
+
+  <h2><a name="3.6">3.6 Making Objects Persistent</a></h2>
 
   <p>A newly created instance of a persistent class is transient.
      We use the <code>database::persist()</code> function template
@@ -2208,7 +2249,7 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
      threads in your application and to other applications as soon as
      possible.</p>
 
-  <h2><a name="3.6">3.6 Loading Persistent Objects</a></h2>
+  <h2><a name="3.7">3.7 Loading Persistent Objects</a></h2>
 
   <p>Once an object is made persistent, and you know its object id, it
      can be loaded by the application using the <code>database::load()</code>
@@ -2273,7 +2314,7 @@ t.commit ();
      identifier can be significantly faster than executing a query.</p>
 
 
-  <h2><a name="3.7">3.7 Updating Persistent Objects</a></h2>
+  <h2><a name="3.8">3.8 Updating Persistent Objects</a></h2>
 
   <p>If a persistent object has been modified, we can store the updated
      state in the database using the <code>database::update()</code>
@@ -2355,7 +2396,7 @@ transfer (database&amp; db,
   t.commit ();
   </pre>
 
-  <h2><a name="3.8">3.8 Deleting Persistent Objects</a></h2>
+  <h2><a name="3.9">3.9 Deleting Persistent Objects</a></h2>
 
   <p>To delete a persistent object's state from the database we use the
      <code>database::erase()</code> function template. If the application
@@ -2410,7 +2451,7 @@ db.erase&lt;person> (joe_id);
 t.commit ();
   </pre>
 
-  <h2><a name="3.9">3.9 Executing Native SQL Statements</a></h2>
+  <h2><a name="3.10">3.10 Executing Native SQL Statements</a></h2>
 
   <p>In some situations we may need to execute native SQL statements
      instead of using the object-oriented database API described above.
@@ -2448,7 +2489,7 @@ db.execute ("CREATE TABLE test (n INT PRIMARY KEY)");
 t.commit ();
   </pre>
 
-  <h2><a name="3.10">3.10 ODB Exceptions</a></h2>
+  <h2><a name="3.11">3.11 ODB Exceptions</a></h2>
 
   <p>In the previous sections we have already mentioned some of the
      exceptions that can be thrown by the database functions. In this
@@ -2483,7 +2524,7 @@ namespace odb
   <pre class="c++">
 namespace odb
 {
-  struct null_pointer: odb::exception
+  struct null_pointer: exception
   {
     virtual const char*
     what () const throw ();
@@ -2491,19 +2532,19 @@ namespace odb
 
   // Transaction exceptions.
   //
-  struct already_in_transaction: odb::exception
+  struct already_in_transaction: exception
   {
     virtual const char*
     what () const throw ();
   };
 
-  struct not_in_transaction: odb::exception
+  struct not_in_transaction: exception
   {
     virtual const char*
     what () const throw ();
   };
 
-  struct transaction_already_finalized: odb::exception
+  struct transaction_already_finalized: exception
   {
     virtual const char*
     what () const throw ();
@@ -2511,19 +2552,19 @@ namespace odb
 
   // Session exceptions.
   //
-  struct already_in_session: odb::exception
+  struct already_in_session: exception
   {
     virtual const char*
     what () const throw ();
   };
 
-  struct not_in_session: odb::exception
+  struct not_in_session: exception
   {
     virtual const char*
     what () const throw ();
   };
 
-  struct const_object: odb::exception
+  struct const_object: exception
   {
     virtual const char*
     what () const throw ();
@@ -2531,31 +2572,47 @@ namespace odb
 
   // Database operations exceptions.
   //
-  struct deadlock: odb::exception
+  struct recoverable: exception
+  {
+  };
+
+  struct connection_lost: recoverable
   {
     virtual const char*
     what () const throw ();
   };
 
-  struct object_not_persistent: odb::exception
+  struct timeout: recoverable
   {
     virtual const char*
     what () const throw ();
   };
 
-  struct object_already_persistent: odb::exception
+  struct deadlock: recoverable
   {
     virtual const char*
     what () const throw ();
   };
 
-  struct result_not_cached: odb::exception
+  struct object_not_persistent: exception
   {
     virtual const char*
     what () const throw ();
   };
 
-  struct database_exception: odb::exception
+  struct object_already_persistent: exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct result_not_cached: exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct database_exception: exception
   {
   };
 }
@@ -2578,21 +2635,28 @@ namespace odb
      <code>odb::session</code> class and are discussed
      in <a href="#8">Chapter 8, "Session"</a>.</p>
 
-  <p>The <code>deadlock</code> exception is thrown when a transaction
-     deadlock is detected by the database system. It can be thrown by any
-     database function. See <a href="#3.4">Section 3.4, "Transactions"</a>
+  <p>The <code>recoverable</code> exception serves as a common base
+     for all the recoverable exceptions, which are: <code>connection_lost</code>,
+     <code>timeout</code>, and <code>deadlock</code>. The
+     <code>connection_lost</code> exception is thrown when a connection
+     to the database is lost. Similarly, the <code>timeout</code> exception
+     is thrown if one of the database operations or the whole transaction
+     has timed out. The <code>deadlock</code> exception is thrown when a
+     transaction deadlock is detected by the database system. These
+     exceptions can be thrown by any database function. See
+     <a href="#3.5">Section 3.5, "Error Handling and Recovery"</a>
      for details.</p>
 
   <p>The <code>object_already_persistent</code> exception is thrown
      by the <code>persist()</code> database function. See
-     <a href="#3.5">Section 3.5, "Making Objects Persistent"</a>
+     <a href="#3.6">Section 3.6, "Making Objects Persistent"</a>
      for details.</p>
 
   <p>The <code>object_not_persistent</code> exception is thrown
      by the <code>load()</code>  and <code>update()</code>
      database functions. Refer to
-     <a href="#3.6">Section 3.6, "Loading Persistent Objects"</a> and
-     <a href="#3.7">Section 3.7, "Updating Persistent Objects"</a> for
+     <a href="#3.7">Section 3.7, "Loading Persistent Objects"</a> and
+     <a href="#3.8">Section 3.8, "Updating Persistent Objects"</a> for
      more information.</p>
 
   <p>The <code>result_not_cached</code> exception is thrown by
@@ -4942,9 +5006,9 @@ namespace odb
 
   <p>A session is an object cache. Every time an object is made persistent
      by calling the <code>database::persist()</code> function
-     (<a href="#3.5">Section 3.5, "Making Objects Persistent"</a>), loaded
+     (<a href="#3.6">Section 3.6, "Making Objects Persistent"</a>), loaded
      by calling the <code>database::load()</code> or <code>database::find()</code>
-     function (<a href="#3.6">Section 3.6, "Loading Persistent Objects"</a>),
+     function (<a href="#3.7">Section 3.7, "Loading Persistent Objects"</a>),
      or loaded by iterating over a query result (<a href="#4.4">Section 4.4,
      "Query Result"</a>), the pointer to the persistent object, in the form
      of the canonical object pointer (<a href="#3.2">Section 3.2, "Object
@@ -4952,7 +5016,7 @@ namespace odb
      session is in effect, any subsequent calls to load the same object will
      return the cached instance. When an object's state is deleted from the
      database with the <code>database::erase()</code> function
-     (<a href="#3.8">Section 3.8, "Deleting Persistent Objects"</a>), the
+     (<a href="#3.9">Section 3.9, "Deleting Persistent Objects"</a>), the
      cached object pointer is removed from the session. For example:</p>
 
   <pre class="c++">
@@ -5721,7 +5785,7 @@ private:
      choice.</p>
 
   <p>For additional information on the automatic identifier assignment,
-     refer to <a href="#3.5">Section 3.5, "Making Objects Persistent"</a>.</p>
+     refer to <a href="#3.6">Section 3.6, "Making Objects Persistent"</a>.</p>
 
   <h3><a name="9.3.3">9.3.3 <code>type</code></a></h3>
 
