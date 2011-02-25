@@ -64,8 +64,8 @@ Version 1.1.0
   * Support for inheritance from transient base types for object types and
     composite value types.
 
-  * New example, 'schema', shows how to map persistent C++ classes to a custom
-    database schema.
+  * New example, 'schema/custom', shows how to map persistent C++ classes to
+    a custom database schema.
 
   * New options, --odb-prologue, --odb-epilogue, allow inclusion of extra code
     into the ODB compilation process. This can be useful for making additional
