@@ -120,6 +120,7 @@ namespace mysql
   public:
     context (std::ostream&, semantics::unit&, options_type const&);
     context (context&);
+    context (context&, std::ostream&);
   };
 }
 

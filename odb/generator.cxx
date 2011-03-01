@@ -29,10 +29,10 @@
 #include <odb/tracer/source.hxx>
 
 #include <odb/mysql/context.hxx>
-#include <odb/mysql/schema.hxx>
 #include <odb/mysql/header.hxx>
 #include <odb/mysql/inline.hxx>
 #include <odb/mysql/source.hxx>
+#include <odb/mysql/sql-schema.hxx>
 
 using namespace std;
 using namespace cutl;
@@ -201,9 +201,11 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
     //
     //
+    bool sql_schema (ops.generate_schema () &&
+                     ops.schema_format ().count (schema_format::sql));
     ofstream sql;
 
-    if (ops.generate_schema ())
+    if (sql_schema)
     {
       sql.open (sql_path.string ().c_str (), ios_base::out);
 
@@ -429,7 +431,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
     // SQL
     //
-    if (ops.generate_schema ())
+    if (sql_schema)
     {
       // Copy prologue.
       //

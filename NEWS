@@ -11,10 +11,19 @@ Version 1.2.0
     using namespace odb;
 
     The new approach brings all the essential ODB names into the current
-    namespace without any of the auxiliary objects such as traits, etc.,
-    which minimizes the likelihood of conflicts with other libraries.
-    Note that you can still use the odb namespace when qualifying
-    individual names, for example, odb::database.
+    namespace without any of the auxiliary objects such as traits, etc., which
+    minimizes the likelihood of conflicts with other libraries.  Note that you
+    can still use the odb namespace when qualifying individual names, for
+    example, odb::database.
+
+  * Support for embedded database schemas. The new option, --schema-format,
+    allows the selection of the schema format. The valid values for this
+    option are 'sql' for a standalone SQL file and 'embedded' for a schema
+    embedded into the generated C++ code. The new odb::schema_catalog class
+    provides support for accessing embedded schemas from within the
+    application. For details refer to Section 3.3, "Database" in the ODB
+    manual as well as the 'schema/embedded' example in the odb-examples
+    package.
 
   * New exceptions: odb::recoverbale, odb::connection_lost, and odb::timeout.
     The odb::recoverbale exception is a common base class for all recoverable

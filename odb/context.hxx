@@ -15,7 +15,6 @@
 
 #include <cutl/shared-ptr.hxx>
 
-#include <odb/database.hxx>
 #include <odb/options.hxx>
 #include <odb/semantics.hxx>
 #include <odb/traversal.hxx>
@@ -148,10 +147,22 @@ public:
   string
   public_name (semantics::data_member&) const;
 
+  // "Flatten" fully-qualified C++ name by replacing '::' with '_'
+  // and removing leading '::', if any.
+  //
+  static string
+  flat_name (string const& fqname);
+
   // Escape C++ keywords, reserved names, and illegal characters.
   //
   string
   escape (string const&) const;
+
+  // Return a string literal that can be used in C++ source code. It
+  // includes "".
+  //
+  string
+  strlit (string const&);
 
   // Counts and other information.
   //
@@ -302,6 +313,8 @@ public:
   typedef std::set<string> keyword_set_type;
   keyword_set_type const& keyword_set;
 
+  bool embedded_schema;
+
   struct db_type_type
   {
     db_type_type () {}
@@ -355,6 +368,7 @@ public:
            options_type const&,
            data_ptr = data_ptr ());
   context (context&);
+  context (context&, std::ostream&);
 
   virtual
   ~context ();

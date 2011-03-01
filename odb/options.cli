@@ -3,10 +3,11 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-include <string>;
+include <set>;
 include <vector>;
+include <string>;
 
-include <odb/database.hxx>;
+include <odb/option-types.hxx>;
 
 class options
 {
@@ -59,10 +60,37 @@ class options
 
   bool --generate-schema
   {
-    "Generate database schema. The resulting SQL file creates database
-     tables required to store classes defined in the file being compiled.
-     Note that all the existing information stored in such tables will be
-     lost."
+    "Generate the database schema. The database schema contains SQL
+     statements that create database tables necessary to store persistent
+     classes defined in the file being compiled. Note that by applying
+     this schema, all the existing information stored in such tables will
+     be lost.
+
+     Depending on the database being used (\cb{--database} option), the
+     schema is generated either as a standalone SQL file or embedded into
+     the generated C++ code. By default the SQL file is generated for
+     the MySQL database and the schema is embedded into the C++ code for
+     the SQLite database. Use the \cb{--schema-format} option to alter
+     the default schema format."
+  };
+
+  std::set< ::schema_format> --schema-format
+  {
+    "<format>",
+    "Generate the database schema in the specified format. Pass \cb{sql} as
+     <format> to generate the database schema as a standalone SQL file or
+     pass \cb{embedded} to embed the schema into the generated C++ code.
+     Repeat this option to generate the same database schema in multiple
+     formats."
+  };
+
+  std::string --default-schema = ""
+  {
+    "<name>",
+    "Use <name> as the default database schema name. Schema names are
+     primarily used for distinguishing between multiple embedded schemas in
+     the schema catalog. If this option is not specified, the empty name,
+     which corresponds to the default schema, is used."
   };
 
   std::string --default-pointer = "*"

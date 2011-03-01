@@ -16,6 +16,7 @@
 #include <odb/pragma.hxx>
 #include <odb/parser.hxx>
 #include <odb/options.hxx>
+#include <odb/option-functions.hxx>
 #include <odb/profile.hxx>
 #include <odb/version.hxx>
 #include <odb/validator.hxx>
@@ -204,8 +205,14 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
 
       cli::argv_file_scanner scan (argc, &argv[0], oi, 3);
 
-      options_.reset (
+      auto_ptr<options> ops (
         new options (scan, cli::unknown_mode::fail, cli::unknown_mode::fail));
+
+      // Process options.
+      //
+      process_options (*ops);
+
+      options_ = ops;
     }
 
     if (options_->trace ())

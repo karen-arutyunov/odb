@@ -3,6 +3,8 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <cctype>  // std::is{alpha,upper,lower}
+
 #include <odb/context.hxx>
 #include <odb/common.hxx>
 
@@ -99,7 +101,9 @@ context (ostream& os_,
       os (os_),
       unit (u),
       options (ops),
-      keyword_set (data_->keyword_set_)
+      keyword_set (data_->keyword_set_),
+      embedded_schema (ops.generate_schema () &&
+                       ops.schema_format ().count (schema_format::embedded))
 {
   for (size_t i (0); i < sizeof (keywords) / sizeof (char*); ++i)
     data_->keyword_set_.insert (keywords[i]);
@@ -111,7 +115,19 @@ context (context& c)
       os (c.os),
       unit (c.unit),
       options (c.options),
-      keyword_set (c.keyword_set)
+      keyword_set (c.keyword_set),
+      embedded_schema (c.embedded_schema)
+{
+}
+
+context::
+context (context& c, ostream& os_)
+    : data_ (c.data_),
+      os (os_),
+      unit (c.unit),
+      options (c.options),
+      keyword_set (c.keyword_set),
+      embedded_schema (c.embedded_schema)
 {
 }
 
@@ -263,6 +279,29 @@ public_name (semantics::data_member& m) const
 }
 
 string context::
+flat_name (string const& fq)
+{
+  string r;
+  r.reserve (fq.size ());
+
+  for (string::size_type i (0), n (fq.size ()); i < n; ++i)
+  {
+    char c (fq[i]);
+
+    if (c == ':')
+    {
+      if (!r.empty ())
+        r += '_';
+      ++i; // Skip the second ':'.
+    }
+    else
+      r += c;
+  }
+
+  return r;
+}
+
+string context::
 escape (string const& name) const
 {
   typedef string::size_type size;
@@ -334,6 +373,151 @@ escape (string const& name) const
   }
 
   return r;
+}
+
+static string
+charlit (unsigned int u)
+{
+  string r ("\\x");
+  bool lead (true);
+
+  for (short i (7); i >= 0; --i)
+  {
+    unsigned int x ((u >> (i * 4)) & 0x0F);
+
+    if (lead)
+    {
+      if (x == 0)
+        continue;
+
+      lead = false;
+    }
+
+    r += static_cast<char> (x < 10 ? ('0' + x) : ('A' + x - 10));
+  }
+
+  return r;
+}
+
+static string
+strlit_ascii (string const& str)
+{
+  string r;
+  string::size_type n (str.size ());
+
+  // In most common cases we will have that many chars.
+  //
+  r.reserve (n + 2);
+
+  r += '"';
+
+  bool escape (false);
+
+  for (string::size_type i (0); i < n; ++i)
+  {
+    unsigned int u (static_cast<unsigned int> (str[i]));
+
+    // [128 - ]     - unrepresentable
+    // 127          - \x7F
+    // [32  - 126]  - as is
+    // [0   - 31]   - \X or \xXX
+    //
+
+    if (u < 32 || u == 127)
+    {
+      switch (u)
+      {
+      case '\n':
+        {
+          r += "\\n";
+          break;
+        }
+      case '\t':
+        {
+          r += "\\t";
+          break;
+        }
+      case '\v':
+        {
+          r += "\\v";
+          break;
+        }
+      case '\b':
+        {
+          r += "\\b";
+          break;
+        }
+      case '\r':
+        {
+          r += "\\r";
+          break;
+        }
+      case '\f':
+        {
+          r += "\\f";
+          break;
+        }
+      case '\a':
+        {
+          r += "\\a";
+          break;
+        }
+      default:
+        {
+          r += charlit (u);
+          escape = true;
+          break;
+        }
+      }
+    }
+    else if (u < 127)
+    {
+      if (escape)
+      {
+        // Close and open the string so there are no clashes.
+        //
+        r += '"';
+        r += '"';
+
+        escape = false;
+      }
+
+      switch (u)
+      {
+      case '"':
+        {
+          r += "\\\"";
+          break;
+        }
+      case '\\':
+        {
+          r += "\\\\";
+          break;
+        }
+      default:
+        {
+          r += static_cast<char> (u);
+          break;
+        }
+      }
+    }
+    else
+    {
+      // @@ Unrepresentable character.
+      //
+      r += '?';
+    }
+  }
+
+  r += '"';
+
+  return r;
+}
+
+string context::
+strlit (string const& str)
+{
+  return strlit_ascii (str);
 }
 
 namespace

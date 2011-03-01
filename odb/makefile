@@ -12,6 +12,7 @@ cxx-lexer.cxx                \
 sql-lexer.cxx                \
 context.cxx                  \
 common.cxx                   \
+emitter.cxx                  \
 type-processor.cxx           \
 include.cxx                  \
 header.cxx                   \
@@ -34,10 +35,11 @@ tracer/source.cxx
 cxx_ptun +=                  \
 mysql/context.cxx            \
 mysql/common.cxx             \
-mysql/schema.cxx             \
 mysql/header.cxx             \
 mysql/inline.cxx             \
-mysql/source.cxx
+mysql/source.cxx             \
+mysql/schema.cxx             \
+mysql/sql-schema.cxx
 
 cxx_ptun +=                  \
 semantics/class.cxx          \
@@ -68,7 +70,7 @@ cxx_dtun := odb.cxx
 
 # Common units.
 #
-cxx_ctun := database.cxx profile.cxx
+cxx_ctun := option-types.cxx option-functions.cxx profile.cxx
 
 # Options file.
 #
@@ -118,6 +120,7 @@ gen  := $(addprefix $(out_base)/,$(genf))
 $(gen): $(cli)
 $(gen): cli := $(cli)
 $(gen): cli_options +=  \
+--generate-modifier     \
 --generate-specifier    \
 --generate-description  \
 --suppress-undocumented \

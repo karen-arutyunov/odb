@@ -77,6 +77,13 @@ namespace mysql
   {
   }
 
+  context::
+  context (context& c, ostream& os)
+      : base_context (c, os),
+        data_ (c.data_)
+  {
+  }
+
   namespace
   {
     struct has_grow: traversal::class_

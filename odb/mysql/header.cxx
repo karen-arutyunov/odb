@@ -901,6 +901,15 @@ namespace mysql
              << "query (database&, const query_type&);"
              << endl;
 
+        // create_schema ()
+        //
+        if (embedded_schema)
+        {
+          os << "static void" << endl
+             << "create_schema (database&);"
+             << endl;
+        }
+
         // Implementation details.
         //
         os << "public:" << endl;

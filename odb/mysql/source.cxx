@@ -11,6 +11,7 @@
 #include <sstream>
 
 #include <odb/mysql/common.hxx>
+#include <odb/mysql/schema.hxx>
 #include <odb/mysql/source.hxx>
 
 using namespace std;
@@ -19,6 +20,38 @@ namespace mysql
 {
   namespace
   {
+    struct schema_emitter: emitter, context
+    {
+      schema_emitter (context& c): context (c) {}
+
+      virtual void
+      pre ()
+      {
+        first_ = true;
+        os << "db.execute (";
+      }
+
+      virtual void
+      line (const std::string& l)
+      {
+        if (first_)
+          first_ = false;
+        else
+          os << endl;
+
+        os << strlit (l);
+      }
+
+      virtual void
+      post ()
+      {
+        os << ");" << endl;
+      }
+
+    private:
+      bool first_;
+    };
+
     struct object_columns: object_columns_base, context
     {
       object_columns (context& c,
@@ -2398,7 +2431,11 @@ namespace mysql
             init_id_image_member_ (c, "id_", "id"),
             init_value_base_ (c),
             init_value_member_ (c),
-            init_id_value_member_ (c, "id")
+            init_id_value_member_ (c, "id"),
+
+            schema_emitter_ (c),
+            schema_drop_ (c, schema_emitter_),
+            schema_create_ (c, schema_emitter_)
       {
         grow_base_inherits_ >> grow_base_;
         grow_member_names_ >> grow_member_;
@@ -3008,8 +3045,7 @@ namespace mysql
              << "return result<const object_type> (r);"
              << "}";
 
-          os << "void" << endl
-             << traits << "::" << endl
+          os << "void " << traits << "::" << endl
              << "query_ (database&," << endl
              << "const query_type& q," << endl
              << "mysql::object_statements< object_type >& sts,"
@@ -3033,6 +3069,26 @@ namespace mysql
              << "imb));"
              << "st->execute ();"
              << "}";
+        }
+
+        // create_schema ()
+        //
+        if (embedded_schema)
+        {
+          os << "void " << traits << "::" << endl
+             << "create_schema (database& db)"
+             << "{";
+
+          schema_drop_.traverse (c);
+          schema_create_.traverse (c);
+
+          os << "}";
+
+          os << "static const schema_catalog_entry" << endl
+             << "schema_catalog_entry_" << flat_name (type) << "_ (" << endl
+             << strlit (options.default_schema ()) << "," << endl
+             << "&" << traits << "::create_schema);"
+             << endl;
         }
       }
 
@@ -3141,6 +3197,10 @@ namespace mysql
       init_value_member init_value_member_;
       traversal::names init_value_member_names_;
       init_value_member init_id_value_member_;
+
+      schema_emitter schema_emitter_;
+      class_drop schema_drop_;
+      class_create schema_create_;
     };
   }
 
@@ -3160,9 +3220,17 @@ namespace mysql
     ns >> ns_defines >> ns;
     ns_defines >> c;
 
-    ctx.os << "#include <odb/cache-traits.hxx>" << endl
-           << endl;
+    //
+    //
+    ctx.os << "#include <odb/cache-traits.hxx>" << endl;
 
+    if (ctx.embedded_schema)
+      ctx.os << "#include <odb/schema-catalog-impl.hxx>" << endl;
+
+    ctx.os << endl;
+
+    //
+    //
     ctx.os << "#include <odb/mysql/mysql.hxx>" << endl
            << "#include <odb/mysql/traits.hxx>" << endl
            << "#include <odb/mysql/database.hxx>" << endl
