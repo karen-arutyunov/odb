@@ -52,13 +52,13 @@ class options
      \cb{tracer}."
   };
 
-  bool --generate-query
+  bool --generate-query | -q
   {
     "Generate query support code. Without this support you can only
      load objects via their ids."
   };
 
-  bool --generate-schema
+  bool --generate-schema | -s
   {
     "Generate the database schema. The database schema contains SQL
      statements that create database tables necessary to store persistent
