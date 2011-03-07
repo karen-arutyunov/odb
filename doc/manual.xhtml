@@ -62,6 +62,16 @@ for consistency.
     padding-top : 0.8em;
   }
 
+  /* Force page break for both PDF and HTML (when printing). */
+  hr.page-break {
+    height: 0;
+    width: 0;
+    border: 0;
+    visibility: hidden;
+
+    page-break-after: always;
+  }
+
   /* Adjust indentation for three levels. */
   #container {
     max-width: 48em;
@@ -261,6 +271,7 @@ for consistency.
     <a href="http://www.codesynthesis.com/products/odb/doc/odb-manual.ps">PostScript</a>.</p>
   </div>
 
+  <hr class="page-break"/>
   <h1>Table of Contents</h1>
 
   <table class="toc">
@@ -271,6 +282,10 @@ for consistency.
 	  <tr><th></th><td><a href="#0.2">More Information</a></td></tr>
         </table>
       </td>
+    </tr>
+
+    <tr>
+      <th colspan="2"><a href="#I">PART I OBJECT-RELATIONAL MAPPING</a></th>
     </tr>
 
     <tr>
@@ -444,18 +459,16 @@ for consistency.
     </tr>
 
     <tr>
-      <th>10</th><td><a href="#10">Database Systems</a>
+      <th colspan="2"><a href="#II">PART II DATABASE SYSTEMS</a></th>
+    </tr>
+
+    <tr>
+      <th>10</th><td><a href="#10">MySQL Database</a>
         <table class="toc">
-          <tr>
-            <th>10.1</th><td><a href="#10.1">MySQL Database</a>
-              <table class="toc">
-                <tr><th>10.1.1</th><td><a href="#10.1.1">MySQL Type Mapping</a></td></tr>
-                <tr><th>10.1.2</th><td><a href="#10.1.2">MySQL Database Class</a></td></tr>
-                <tr><th>10.1.3</th><td><a href="#10.1.3">Connection Factory</a></td></tr>
-		<tr><th>10.1.4</th><td><a href="#10.1.4">MySQL Exceptions</a></td></tr>
-              </table>
-            </td>
-          </tr>
+          <tr><th>10.1</th><td><a href="#10.1">MySQL Type Mapping</a></td></tr>
+          <tr><th>10.2</th><td><a href="#10.2">MySQL Database Class</a></td></tr>
+          <tr><th>10.3</th><td><a href="#10.3">Connection Factory</a></td></tr>
+	  <tr><th>10.4</th><td><a href="#10.4">MySQL Exceptions</a></td></tr>
         </table>
       </td>
     </tr>
@@ -463,6 +476,7 @@ for consistency.
   </table>
   </div>
 
+  <hr class="page-break"/>
   <h1><a name="0">Preface</a></h1>
 
   <p>As more critical aspects of our lives become dependant on software
@@ -552,9 +566,22 @@ for consistency.
   </ul>
 
 
+  <!-- PART -->
+
+
+  <hr class="page-break"/>
+  <h1><a name="I">PART I&nbsp;&nbsp;
+      <span style="font-weight: normal;">OBJECT-RELATIONAL MAPPING</span></a></h1>
+
+  <p>Part I describes the essential database concepts, APIs, and tools that
+     together comprise the object-relational mapping for C++ as implemented
+     by ODB.</p>
+
+
   <!-- CHAPTER -->
 
 
+  <hr class="page-break"/>
   <h1><a name="1">1 Introduction</a></h1>
 
   <p>ODB is an object-relational mapping (ORM) system for C++. It provides
@@ -759,6 +786,7 @@ for consistency.
   <!-- CHAPTER -->
 
 
+  <hr class="page-break"/>
   <h1><a name="2">2 Hello World Example</a></h1>
 
   <p>In this chapter we will show how to create a simple C++
@@ -1158,7 +1186,7 @@ main (int argc, char* argv[])
      database name, etc., from the command line. In your own applications
      you may prefer to use other <code>mysql::database</code>
      constructors which allow you to pass this information directly
-     (<a href="#10.1.2">Section 10.1.2, "MySQL Database Class"</a>).</p>
+     (<a href="#10.2">Section 10.2, "MySQL Database Class"</a>).</p>
 
   <p>Next, we create three <code>person</code> objects. Right now they are
      transient objects, which means that if we terminate the application
@@ -1570,6 +1598,7 @@ Hello, Joe!
   <!-- CHAPTER -->
 
 
+  <hr class="page-break"/>
   <h1><a name="3">3 Working with Persistent Objects</a></h1>
 
   <p>The previous chapters gave us a high-level overview of ODB and
@@ -1920,7 +1949,7 @@ auto_ptr&lt;odb::database> db (
      as well as the next chapter which is dedicated to the topic of
      querying the database for persistent objects. For details on the
      system-specific <code>database</code> classes, refer to
-     <a href="#10">Chapter 10, "Database Systems"</a>.</p>
+     <a href="#II">Part II, "Database Systems"</a>.</p>
 
   <p>Before we can persist our objects, the corresponding database schema has
      to be created in the database. The schema contains table definitions and
@@ -2756,8 +2785,8 @@ namespace odb
 
   <p>The <code>database_exception</code> exception is a base class for all
      database system-specific exceptions that are thrown by the
-     database system-specific runtime library. See <a href="#10">Chapter
-     10, "Database Systems"</a> for more information.</p>
+     database system-specific runtime library. Refer to <a href="#II">Part
+     II, "Database Systems"</a> for more information.</p>
 
   <p>The <code>unknown_schema</code> exception is thrown by the
      <code>odb::schema_catalog</code> class if a schema with the specified
@@ -2779,6 +2808,7 @@ namespace odb
   <!-- CHAPTER -->
 
 
+  <hr class="page-break"/>
   <h1><a name="4">4 Querying the Database</a></h1>
 
   <p>If we don't know the identifiers of the objects that we are looking
@@ -3317,6 +3347,7 @@ namespace odb
 
   <!-- CHAPTER -->
 
+  <hr class="page-break"/>
   <h1><a name="5">5 Containers</a></h1>
 
   <p>The ODB runtime library provides built-in persistence support for
@@ -3659,6 +3690,7 @@ private:
   <!-- CHAPTER -->
 
 
+  <hr class="page-break"/>
   <h1><a name="6">6 Relationships</a></h1>
 
   <p>Relationships between persistent objects are expressed with pointers or
@@ -4655,6 +4687,7 @@ t.commit ();
   <!-- CHAPTER -->
 
 
+  <hr class="page-break"/>
   <h1><a name="7">7 Composite Value Types</a></h1>
 
   <p>A composite value type is a <code>class</code> or <code>struct</code>
@@ -4976,6 +5009,7 @@ CREATE TABLE `person_nickname` (
   <!-- CHAPTER -->
 
 
+  <hr class="page-break"/>
   <h1><a name="8">8 Session</a></h1>
 
   <p>A session is an application's unit of work that may encompass several
@@ -5165,6 +5199,7 @@ t.commit ();
   <!-- CHAPTER -->
 
 
+  <hr class="page-break"/>
   <h1><a name="9">5 ODB Pragma Language</a></h1>
 
   <p>As we have already seen in previous chapters, ODB uses a pragma-based
@@ -5535,7 +5570,7 @@ private:
      types, such as <code>bool</code>, <code>int</code>, and
      <code>std::string</code> and the database types for each supported
      database system. For more information on the default mapping,
-     refer to <a href="#10">Chapter 10, "Database Systems"</a>.</p>
+     refer to <a href="#II">Part II, "Database Systems"</a>.</p>
 
   <p>In the above example we changed the mapping for the <code>bool</code>
      type which is now mapped to the <code>INT</code> database type. In
@@ -6379,19 +6414,24 @@ aCC +W2161 ...
   </pre>
 
 
-  <!-- CHAPTER -->
+  <!-- PART -->
 
 
-  <h1><a name="10">10 Database Systems</a></h1>
+  <hr class="page-break"/>
+  <h1><a name="II">PART II&nbsp;&nbsp;
+      <span style="font-weight: normal;">DATABASE SYSTEMS</span></a></h1>
 
-  <p>This chapter covers topics specific to the database system
+  <p>Part II covers topics specific to the database system
      implementations and their support in ODB. In particular, it
      describes the system-specific <code>database</code> classes
      as well as the default mapping between basic C++ value types
      and native database types.</p>
 
+  <!-- CHAPTER -->
 
-  <h2><a name="10.1">10.1 MySQL Database</a></h2>
+
+  <hr class="page-break"/>
+  <h1><a name="10">10 MySQL Database</a></h1>
 
   <p>To generate support code for the MySQL database you will need
      to pass the "<code>--database&nbsp;mysql</code>"
@@ -6400,7 +6440,7 @@ aCC +W2161 ...
      library (<code>libodb-mysql</code>). All MySQL-specific ODB
      classes are defined in the <code>odb::mysql</code> namespace.</p>
 
-  <h3><a name="10.1.1">10.1.1 MySQL Type Mapping</a></h3>
+  <h2><a name="10.1">10.1 MySQL Type Mapping</a></h2>
 
   <p>The following table summarizes the default mapping between basic
      C++ value types and MySQL database types. This mapping can be
@@ -6498,7 +6538,7 @@ aCC +W2161 ...
      to <code>VARCHAR(255) NOT NULL</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT NOT NULL</code>.</p>
 
-  <h3><a name="10.1.2">10.1.2 MySQL Database Class</a></h3>
+  <h2><a name="10.2">10.2 MySQL Database Class</a></h2>
 
   <p>The MySQL <code>database</code> class has the following
      interface:</p>
@@ -6637,7 +6677,7 @@ namespace odb
 
   <p>This constructor throws the <code>odb::mysql::cli_exception</code>
      exception if the MySQL option values are missing or invalid.
-     See section <a href="#10.1.4">Section 10.1.4, "MySQL Exceptions"</a>
+     See section <a href="#10.4">Section 10.4, "MySQL Exceptions"</a>
      for more information on this exception.</p>
 
   <p>The static <code>print_usage()</code> function prints the list of options
@@ -6661,7 +6701,7 @@ namespace odb
      handle, refer to the MySQL ODB runtime source code for the interface
      of the <code>connection</code> class.</p>
 
-  <h3><a name="10.1.3">10.1.3 Connection Factory</a></h3>
+  <h2><a name="10.3">10.3 Connection Factory</a></h2>
 
   <p>The <code>connection_factory</code> abstract class has the
      following interface:</p>
@@ -6786,7 +6826,7 @@ main (int argc, char* argv[])
 }
   </pre>
 
-  <h3><a name="10.1.4">10.1.4 MySQL Exceptions</a></h3>
+  <h2><a name="10.4">10.4 MySQL Exceptions</a></h2>
 
   <p>The MySQL ODB runtime library defines the following MySQL-specific
      exceptions:</p>
