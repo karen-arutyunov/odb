@@ -473,6 +473,24 @@ for consistency.
       </td>
     </tr>
 
+    <tr>
+      <th colspan="2"><a href="#III">PART III PROFILES</a></th>
+    </tr>
+
+    <tr>
+      <th>11</th><td><a href="#11">Profiles Introduction</a></td>
+    </tr>
+
+    <tr>
+      <th>12</th><td><a href="#12">Boost Profile</a>
+        <table class="toc">
+          <tr><th>12.1</th><td><a href="#12.1"></a></td></tr>
+          <tr><th>12.2</th><td><a href="#12.2"></a></td></tr>
+          <tr><th>12.3</th><td><a href="#12.3"></a></td></tr>
+        </table>
+      </td>
+    </tr>
+
   </table>
   </div>
 
@@ -1904,9 +1922,9 @@ class person
      object pointers. Plus, ODB profile libraries, that are available for
      commonly used frameworks and libraries (such as Boost and Qt),
      provide support for smart pointers found in these frameworks and
-     libraries. It is also easy to add support for our own smart pointers,
-     as described in <a href="#6.4"> Section 6.4, "Using Custom Smart
-     Pointers"</a>.</p>
+     libraries (<a href="#III">Part III, "Profiles"</a>). It is also
+     easy to add support for our own smart pointers, as described in
+     <a href="#6.4"> Section 6.4, "Using Custom Smart Pointers"</a>.</p>
 
   <h2><a name="3.3">3.3 Database</a></h2>
 
@@ -3350,16 +3368,16 @@ namespace odb
   <hr class="page-break"/>
   <h1><a name="5">5 Containers</a></h1>
 
-  <p>The ODB runtime library provides built-in persistence support for
-     all the commonly used standard C++ containers, namely,
+  <p>The ODB runtime library provides built-in persistence support for all the
+     commonly used standard C++ containers, namely,
      <code>std::vector</code>, <code>std::list</code>, <code>std::set</code>,
      <code>std::multiset</code>, <code>std::map</code>, and
      <code>std::multimap</code>. Plus, ODB profile libraries, that are
-     available for commonly used frameworks and libraries (such as Boost
-     and Qt), provide persistence support for containers found in these
-     frameworks and libraries. It is also easy to persist custom
-     container types as discussed later in <a href="#5.4">Section 5.4,
-     "Using Custom Containers"</a>.</p>
+     available for commonly used frameworks and libraries (such as Boost and
+     Qt), provide persistence support for containers found in these frameworks
+     and libraries (<a href="#III">Part III, "Profiles"</a>).  It is also easy
+     to persist custom container types as discussed later
+     in <a href="#5.4">Section 5.4, "Using Custom Containers"</a>.</p>
 
   <p>We don't need to do anything special to declare a member of a
      container type in a persistent class. For example:</p>
@@ -3694,18 +3712,18 @@ private:
   <h1><a name="6">6 Relationships</a></h1>
 
   <p>Relationships between persistent objects are expressed with pointers or
-     containers of pointers. The ODB runtime library provides built-in
-     support for the TR1 <code>shared_ptr</code>/<code>weak_ptr</code>,
+     containers of pointers. The ODB runtime library provides built-in support
+     for the TR1 <code>shared_ptr</code>/<code>weak_ptr</code>,
      <code>std::auto_ptr</code>, and raw pointers. Plus, ODB profile
      libraries, that available for commonly used frameworks and libraries
-     (such as Boost and Qt), provide support for smart pointers found
-     in these frameworks and libraries. It is also easy to add support
-     for a custom smart pointer as discussed later in <a href="#6.4">
-     Section 6.4, "Using Custom Smart Pointers"</a>. Any supported
-     smart pointer can be used in a data member as long as it can be
+     (such as Boost and Qt), provide support for smart pointers found in these
+     frameworks and libraries (<a href="#III">Part III, "Profiles"</a>). It is
+     also easy to add support for a custom smart pointer as discussed later
+     in <a href="#6.4"> Section 6.4, "Using Custom Smart Pointers"</a>. Any
+     supported smart pointer can be used in a data member as long as it can be
      explicitly constructed from the canonical object pointer
-     (<a href="#3.2">Section 3.2, "Object Pointers"</a>).
-     For example, we can use <code>weak_ptr</code> if the object pointer
+     (<a href="#3.2">Section 3.2, "Object Pointers"</a>).  For example, we can
+     use <code>weak_ptr</code> if the object pointer
      is <code>shared_ptr</code>.</p>
 
   <p>When an object containing a pointer to another object is loaded,
@@ -4422,7 +4440,7 @@ t.commit ();
      <code>std::auto_ptr</code>, and <code>odb::lazy_ptr</code> for raw
      pointers. The ODB profile libraries provide lazy pointer
      implementations for smart pointers from popular frameworks and
-     libraries.</p>
+     libraries (<a href="#III">Part III, "Profiles"</a>).</p>
 
   <p>While we will discuss the interface of lazy pointers in more detail
      shortly, the most commonly used extra function provided by these
@@ -6877,6 +6895,79 @@ namespace odb
      class if the MySQL option values are missing or invalid. The
      <code>what()</code> function returns a human-readable description
      of an error.</p>
+
+
+  <!-- PART -->
+
+
+  <hr class="page-break"/>
+  <h1><a name="III">PART III&nbsp;&nbsp;
+      <span style="font-weight: normal;">PROFILES</span></a></h1>
+
+  <p>Part III covers the integration of ODB with popular C++ frameworks
+     and libraries.</p>
+
+  <!-- CHAPTER -->
+
+
+  <hr class="page-break"/>
+  <h1><a name="11">11 Profiles Introduction</a></h1>
+
+  <p>ODB profiles are a generic mechanism for integrating ODB with other
+     C++ frameworks and libraries. A profile provides glue code, packaged
+     into a profile library, which allows you to seamlesly persist various
+     components, such as smart pointers, containers, and value types from
+     your favorite C++ framework or library. For example, the Boost profile
+     implementation is provided by the <code>libodb-boost</code> profile
+     library.</p>
+
+  <p>While we will need to link the profile library to our application,
+     it is also necessary to let the ODB compiler know which profiles we
+     are using. This is acomplished with the <code>--profile</code>
+     (or <code>-p</code> alias) option. For example:</p>
+
+  <pre class="terminal">
+odb --profile boost ...
+  </pre>
+
+  <p>Some profiles, especially those covering frameworks or libraries that
+     consist of multiple sub-libraries, provide sub-profiles which allow you
+     to pick and chooses which components you would like to use in your
+     application. For example, the <code>boost</code> profile contains
+     the <code>boost/data-time</code> sub-profile. If we are only
+     interested in the <code>date_time</code> types, then we can
+     pass <code>boost/data-time</code> instead of <code>boost</code>
+     to the <code>--profile</code> option, for example:</p>
+
+  <pre class="terminal">
+odb --profile boost/date-time ...
+  </pre>
+
+  <p>To summarize, you will need to perform the following steps in order
+     to make use of a profile in your application:</p>
+
+  <ol>
+    <li>ODB compiler: if necessary, specify the path to the profile library
+        headers (<code>-I</code> option).</li>
+    <li>ODB compiler: specify the profile you would like to use with
+        the <code>--profile</code> option.</li>
+    <li>C++ compiler: if necessary, specify the path to the profile library
+        headers (normally <code>-I</code> option).</li>
+    <li>Linker: link the application with the profile library.</li>
+  </ol>
+
+  <p>The remaining chapters in this part of the manual describe the
+     individual profiles supported by ODB.</p>
+
+  <hr class="page-break"/>
+  <h1><a name="12">12 Boost Profile</a></h1>
+
+  <p>The ODB profile implementation for Boost is provided by the
+     <code>libodb-boost</code> profile library. To enable all supported Boost
+     sub-libraries, specify <code>boost</code> as the profile name in
+     the <code>--profile</code> ODB compiler option. Alternatively you can
+     enable only specific sub-profiles.  The available sub-profiles are
+     discussed in the following sections.</p>
 
   </div>
 </div>
