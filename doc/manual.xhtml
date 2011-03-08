@@ -6913,17 +6913,18 @@ namespace odb
   <hr class="page-break"/>
   <h1><a name="11">11 Profiles Introduction</a></h1>
 
-  <p>ODB profiles are a generic mechanism for integrating ODB with other
-     C++ frameworks and libraries. A profile provides glue code, packaged
-     into a profile library, which allows you to seamlesly persist various
-     components, such as smart pointers, containers, and value types from
-     your favorite C++ framework or library. For example, the Boost profile
-     implementation is provided by the <code>libodb-boost</code> profile
-     library.</p>
+  <p>ODB profiles are a generic mechanism for integrating ODB with
+     widely-used C++ frameworks and libraries. A profile provides glue
+     code which allows you to seamlessly persist various components, such
+     as smart pointers, containers, and value types found in these
+     frameworks or libraries. The code necessary to implement a profile
+     is packaged into the so called profile library. For example, the
+     Boost profile implementation is provided by the <code>libodb-boost</code>
+     profile library.</p>
 
-  <p>While we will need to link the profile library to our application,
-     it is also necessary to let the ODB compiler know which profiles we
-     are using. This is acomplished with the <code>--profile</code>
+  <p>Besides linking the profile library to our application, it is also
+     necessary to let the ODB compiler know which profiles we
+     are using. This is accomplished with the <code>--profile</code>
      (or <code>-p</code> alias) option. For example:</p>
 
   <pre class="terminal">
@@ -6931,8 +6932,8 @@ odb --profile boost ...
   </pre>
 
   <p>Some profiles, especially those covering frameworks or libraries that
-     consist of multiple sub-libraries, provide sub-profiles which allow you
-     to pick and chooses which components you would like to use in your
+     consist of multiple sub-libraries, provide sub-profiles that allow you
+     to pick and choose which components you would like to use in your
      application. For example, the <code>boost</code> profile contains
      the <code>boost/data-time</code> sub-profile. If we are only
      interested in the <code>date_time</code> types, then we can
@@ -6953,18 +6954,18 @@ odb --profile boost/date-time ...
         the <code>--profile</code> option.</li>
     <li>C++ compiler: if necessary, specify the path to the profile library
         headers (normally <code>-I</code> option).</li>
-    <li>Linker: link the application with the profile library.</li>
+    <li>Linker: link the profile library to the application.</li>
   </ol>
 
   <p>The remaining chapters in this part of the manual describe the
-     individual profiles supported by ODB.</p>
+     standard profiles provided by ODB.</p>
 
   <hr class="page-break"/>
   <h1><a name="12">12 Boost Profile</a></h1>
 
   <p>The ODB profile implementation for Boost is provided by the
-     <code>libodb-boost</code> profile library. To enable all supported Boost
-     sub-libraries, specify <code>boost</code> as the profile name in
+     <code>libodb-boost</code> profile library. To enable all the supported
+     Boost sub-libraries, specify <code>boost</code> as the profile name in
      the <code>--profile</code> ODB compiler option. Alternatively you can
      enable only specific sub-profiles.  The available sub-profiles are
      discussed in the following sections.</p>
