@@ -2223,7 +2223,7 @@ update_age (database&amp; db, person&amp; p)
      instance, by obtaining a valid object id and trying again.
      The hard errors and corresponding ODB exceptions that can be
      thrown by each database function are described in the remainder
-     of this chapter with <a href="">Section 3.11, "ODB Exceptions"</a>
+     of this chapter with <a href="#3.11">Section 3.11, "ODB Exceptions"</a>
      providing a quick reference for all the ODB exceptions.</p>
 
   <p>The second group of ODB exceptions signify <em>soft</em> or
@@ -2625,7 +2625,7 @@ t.commit ();
      runtime.</p>
 
   <p>The root of the ODB exception hierarchy is the abstract
-     <code>odb::exception</code> class. This class inherits
+     <code>odb::exception</code> class. This class derives
      from <code>std::exception</code> and has the following
      interface:</p>
 
@@ -5218,7 +5218,7 @@ t.commit ();
 
 
   <hr class="page-break"/>
-  <h1><a name="9">5 ODB Pragma Language</a></h1>
+  <h1><a name="9">9 ODB Pragma Language</a></h1>
 
   <p>As we have already seen in previous chapters, ODB uses a pragma-based
      language to capture database-specific information about C++ types.
@@ -6969,11 +6969,234 @@ odb --profile boost/date-time ...
   <h1><a name="12">12 Boost Profile</a></h1>
 
   <p>The ODB profile implementation for Boost is provided by the
-     <code>libodb-boost</code> profile library. To enable all the supported
-     Boost sub-libraries, specify <code>boost</code> as the profile name in
-     the <code>--profile</code> ODB compiler option. Alternatively you can
-     enable only specific sub-profiles.  The available sub-profiles are
-     discussed in the following sections.</p>
+     <code>libodb-boost</code> library and consists of multiple sub-profiles
+     corresponding to the individual Boost libraries. To enable all the
+     available Boost sub-profiles, pass <code>boost</code> as the profile
+     name to the <code>--profile</code> ODB compiler option. Alternatively,
+     you can enable only specific sub-profiles by passing individual
+     sub-profile names to <code>--profile</code>. The following sections in
+     this chapter discuss each Boost sub-profile in detail. The
+     <code>boost</code> example in the <code>odb-examples</code>
+     package shows how to enable and use the Boost profile.</p>
+
+  <p>Some sub-profiles may throw exceptions to indicate error conditions,
+     such as the inability to store a specific value in a particular database
+     system. All such exceptions derive from the
+     <code>odb::boost::exception</code> class which in turn derives from
+     the root of the ODB exception hierarchy, class <code>odb::exception</code>
+     (<a href="#3.11">Section 3.11, "ODB Exceptions"</a>). The
+     <code>odb::boost::exception</code> class is defined in the
+     <code>&lt;odb/boost/exception.hxx></code> header file and has the
+     same interface as <code>odb::exception</code>. The concrete exceptions
+     that can be thrown by the Boost sub-profiles are described in the
+     following sections.</p>
+
+  <h2><a name="12.1">12.1 Smart Pointers Library</a></h2>
+
+  <p>The <code>smart-ptr</code> sub-profile provides persistence
+     support for a subset of smart pointers from the Boost
+     <code>smart_ptr</code> library. To enable only this profile,
+     pass <code>boost/smart-ptr</code> to the <code>--profile</code>
+     ODB compiler option.</p>
+
+  <p>The currently supported smart pointers are
+     <code>boost::shared_ptr</code> and <code>boost::weak_ptr</code>.  For
+     more information on using smart pointers with ODB refer to
+     <a href="#3.2">Section 3.2, "Object Pointers"</a> and
+     <a href="#6">Chapter 6, "Relationships"</a>. The <code>smart-ptr</code>
+     sub-profile also provides the lazy counterparts for the above
+     pointers: <code>odb::boost::lazy_shared_ptr</code> and
+     <code>odb::boost::lazy_weak_ptr</code>. You will need to include the
+     <code>&lt;odb/boost/lazy-ptr.hxx></code> header file to make the lazy
+     variants available in your application. For the description of the lazy
+     pointer interface and semantics refer to <a href="#6.3">Section 6.3,
+     "Lazy Pointers"</a>. The following example shows how we can use these
+     smart pointers to establish a relationship between persistent objects.</p>
+
+<pre class="c++">
+#pragma db object
+class position
+{
+  ...
+
+  #pragma db inverse(position_)
+  odb::boost::lazy_weak_ptr&lt;employee> employee_;
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db not_null
+  boost::shared_ptr&lt;position> position_;
+};
+</pre>
+
+  <p>Besides providing persistence support for the above smart pointers,
+     the <code>smart-ptr</code> sub-profile also changes the default object
+     pointer (<a href="#3.2">Section 3.2, "Object Pointers"</a>)
+     to <code>boost::shared_ptr</code>.  In particular, this means that
+     database functions that return dynamically allocated objects will return
+     them as <code>boost::shared_ptr</code> pointers.  To override this
+     behavior, add the <code>--default-pointer</code> option specifying the
+     alternative object pointer after the <code>--profile</code> option.</p>
+
+  <h2><a name="12.2">12.2 Unordered Containers Library</a></h2>
+
+  <p>The <code>unordered</code> sub-profile provides persistence support for
+     the containers from the Boost <code>unordered</code> library. To enable
+     only this profile, pass <code>boost/unordered</code> to
+     the <code>--profile</code> ODB compiler option.</p>
+
+  <p>The supported containers are <code>boost::unordered_set</code>,
+     <code>boost::unordered_map</code>, <code>boost::unordered_multiset</code>,
+     and <code>boost::unordered_multimap</code>. For more information on using
+     the set and multiset containers with ODB refer to <a href="#5.2">Section
+     5.2, "Set and Multiset Containers"</a>. For more information on using the
+     map and multimap containers with ODB refer to <a href="#5.3"> Section
+     5.3, "Map and Multimap Containers"</a>. The following example shows how
+     the <code>unordered_set</code> container may be used within a persistent
+     object.</p>
+
+<pre class="c++">
+#pragma db object
+class employee
+{
+  ...
+  boost::unordered_set&lt;std::string&gt; emails_;
+};
+</pre>
+
+  <h2><a name="12.3">12.3 Date Time Library</a></h2>
+
+  <p>The <code>date-time</code> sub-profile provides persistence support for a
+     subset of types from the Boost <code>date_time</code> library. It is
+     further subdivided into two sub-profiles, <code>gregorian</code>
+     and <code>posix_time</code>. The <code>gregorian</code> sub-profile
+     provides support for types from the <code>boost::gregorian</code>
+     namespace, while the <code>posix-time</code> sub-profile provides support
+     for types from the <code>boost::posix_time</code> namespace. To enable
+     the entire <code>date-time</code> sub-profile, pass
+     <code>boost/date-time</code> to the <code>--profile</code> ODB compiler
+     option. To enable only the <code>gregorian</code> sub-profile, pass
+     <code>boost/date-time/gregorian</code>, and to enable only the
+     <code>posix-time</code> sub-profile, pass
+     <code>boost/date-time/posix-time</code>.</p>
+
+  <p>The only type that the <code>gregorian</code> sub-profile currently
+     supports is <code>gregorian::date</code>. The types currently supported
+     by the <code>posix-time</code> sub-profile are
+     <code>posix_time::ptime</code> and
+     <code>posix_time::time_duration</code>. The manner in which these these
+     types are persisted is database system dependent and is discussed in the
+     sub-sections that follow. The example below shows how
+     <code>gregorian::date</code> may be used within a persistent object.</p>
+
+<pre class="c++">
+#pragma db object
+class person
+{
+  ...
+  boost::gregorian::date date_of_birth_;
+};
+</pre>
+
+  <p>The concrete exceptions that can be thrown by the <code>date-time</code>
+     sub-profile implementation are presented below.</p>
+
+
+<pre class="c++">
+namespace odb
+{
+  namespace boost
+  {
+    namespace date_time
+    {
+      struct special_value: odb::boost::exception
+      {
+        virtual const char*
+        what () const throw ();
+      };
+
+      struct value_out_of_range: odb::boost::exception
+      {
+        virtual const char*
+        what () const throw ();
+      };
+    }
+  }
+}
+</pre>
+
+  <p>You will need to include the
+     <code>&lt;odb/boost/date-time/exceptions.hxx&gt;</code> header file to
+     make these exceptions available in your application.</p>
+
+  <p>The <code>special_value</code> exception is thrown if an attempt is made
+     to store a Boost date-time special value that cannot be represented in
+     the target database. The <code>value_out_of_range</code> exception is
+     thrown if an attempt is made to store a date-time value that is out of
+     the target database range. The specific conditions under which these
+     exceptions are thrown are database system dependent and are discussed in
+     more detail in the following sub-sections.</p>
+
+  <h3><a name="12.3.1">12.3.1 MySQL Database Type Mapping</a></h3>
+
+  <p>The following table summarizes the default mapping between the currently
+     supported Boost <code>date_time</code> types and the MySQL database
+     types.</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>Boost <code>date_time</code> type</th>
+      <th>MySQL type</th>
+    </tr>
+
+    <tr>
+      <td><code>gregorian::date</code></td>
+      <td><code>DATE</code></td>
+    </tr>
+
+    <tr>
+      <td><code>posix_time::ptime</code></td>
+      <td><code>DATETIME</code></td>
+    </tr>
+
+    <tr>
+      <td><code>posix_time::time_duration</code></td>
+      <td><code>TIME</code></td>
+    </tr>
+  </table>
+
+  <p>The Boost special value <code>date_time::not_a_date_time</code> is stored
+     as a <code>NULL</code> value in a MySQL database.</p>
+
+  <p>The <code>posix-time</code> sub-profile implementation also provides
+     support for mapping <code>posix_time::ptime</code> to the
+     <code>TIMESTAMP</code> MySQL type. However, this mapping has to be
+     explicitly requested using the <code>db&nbsp;type</code> pragma
+     (<a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>), as shown in
+     the following example:</p>
+
+<pre class="c++">
+#pragma db object
+class employee
+{
+  ...
+  #pragma db type("TIMESTAMP")
+  boost::posix_time::ptime employment_date_;
+};
+</pre>
+
+  <p>Some valid Boost date-time values cannot be stored in a MySQL database.
+     Attempting to persist any Boost date-time special value other than
+     <code>date_time::not_a_date_time</code> will result in the
+     <code>special_value</code> exception. Attempting to persist a Boost
+     date-time value that is out of the MySQL type range will result in
+     the <code>out_of_range</code> exception.  Refer to the MySQL
+     documentation for more information on the MySQL data type ranges.</p>
 
   </div>
 </div>
