@@ -231,20 +231,6 @@ namespace relational
     // SQL type parsing.
     //
 
-    string context::
-    database_type_impl (semantics::type& t,
-                        string const& type,
-                        semantics::context& ctx,
-                        column_type_flags f)
-    {
-      string r (::context::database_type_impl (t, type, ctx, f));
-
-      if (!r.empty () && ctx.count ("auto") && (f & ctf_object_id_ref) == 0)
-        r += " AUTO_INCREMENT";
-
-      return r;
-    }
-
     static sql_type
     parse_sql_type (semantics::data_member& m, std::string const& sql);
 

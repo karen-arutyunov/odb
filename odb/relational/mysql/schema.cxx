@@ -37,6 +37,22 @@ namespace relational
         }
       };
 
+      struct object_columns: relational::object_columns
+      {
+        object_columns (base const& x): base (x) {}
+
+        virtual void
+        constraints (semantics::data_member& m)
+        {
+          base::constraints (m);
+
+          if (m.count ("auto"))
+            os << " AUTO_INCREMENT";
+        }
+
+      };
+      entry<object_columns> object_columns_;
+
       struct member_create: relational::member_create, create_common
       {
         member_create (base const& x): base (x) {}

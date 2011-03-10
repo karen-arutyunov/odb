@@ -162,8 +162,7 @@ namespace relational
 
         os << "  " << quote_id (name) << " " << column_type (m, prefix_);
 
-        if (m.count ("id"))
-          os << " PRIMARY KEY";
+        constraints (m);
 
         if (semantics::class_* c = object_pointer (member_type (m, prefix_)))
         {
@@ -172,6 +171,13 @@ namespace relational
         }
 
         return true;
+      }
+
+      virtual void
+      constraints (semantics::data_member& m)
+      {
+        if (m.count ("id"))
+          os << " PRIMARY KEY";
       }
 
     protected:
