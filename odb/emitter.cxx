@@ -3,6 +3,7 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <odb/context.hxx>
 #include <odb/emitter.hxx>
 
 using namespace std;
@@ -30,7 +31,22 @@ sync ()
       s.resize (n - 1);
   }
 
+  // Temporary restore output diversion.
+  //
+  bool r (false);
+  context& ctx (context::current ());
+
+  if (ctx.os.rdbuf () == this)
+  {
+    ctx.restore ();
+    r = true;
+  }
+
   e_.line (s);
+
+  if (r)
+    ctx.diverge (this);
+
   str (string ());
   return 0;
 }

@@ -1,21 +1,21 @@
-// file      : odb/mysql/inline.cxx
+// file      : odb/relational/inline.hxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <odb/mysql/common.hxx>
-#include <odb/mysql/inline.hxx>
+#ifndef ODB_RELATIONAL_INLINE_HXX
+#define ODB_RELATIONAL_INLINE_HXX
 
-namespace mysql
+#include <odb/relational/context.hxx>
+#include <odb/relational/common.hxx>
+
+namespace relational
 {
-  namespace
+  namespace inline_
   {
-    struct class_: traversal::class_, context
+    struct class_: traversal::class_, virtual context
     {
-      class_ (context& c)
-          : context (c)
-      {
-      }
+      typedef class_ base;
 
       virtual void
       traverse (type& c)
@@ -91,39 +91,17 @@ namespace mysql
       traverse_value (type&)
       {
         /*
-        string const& type (c.fq_name ());
-        string traits ("access::composite_value_traits< " + type + " >");
+          string const& type (c.fq_name ());
+          string traits ("access::composite_value_traits< " + type + " >");
 
-        os << "// " << c.name () << endl
-           << "//" << endl
-           << endl;
+          os << "// " << c.name () << endl
+          << "//" << endl
+          << endl;
 
         */
       }
     };
   }
-
-  void
-  generate_inline (context& ctx)
-  {
-    traversal::unit unit;
-    traversal::defines unit_defines;
-    traversal::namespace_ ns;
-    class_ c (ctx);
-
-    unit >> unit_defines >> ns;
-    unit_defines >> c;
-
-    traversal::defines ns_defines;
-
-    ns >> ns_defines >> ns;
-    ns_defines >> c;
-
-    ctx.os << "namespace odb"
-           << "{";
-
-    unit.dispatch (ctx.unit);
-
-    ctx.os << "}";
-  }
 }
+
+#endif // ODB_RELATIONAL_INLINE_HXX

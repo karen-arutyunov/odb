@@ -30,16 +30,24 @@ tracer/header.cxx            \
 tracer/inline.cxx            \
 tracer/source.cxx
 
-# MySQL
+# Relational
 #
 cxx_ptun +=                  \
-mysql/context.cxx            \
-mysql/common.cxx             \
-mysql/header.cxx             \
-mysql/inline.cxx             \
-mysql/source.cxx             \
-mysql/schema.cxx             \
-mysql/sql-schema.cxx
+relational/common.cxx        \
+relational/context.cxx       \
+relational/header.cxx        \
+relational/inline.cxx        \
+relational/source.cxx        \
+relational/schema.cxx
+
+# Relational/MySQL
+#
+cxx_ptun +=                  \
+relational/mysql/common.cxx  \
+relational/mysql/context.cxx \
+relational/mysql/header.cxx  \
+relational/mysql/source.cxx  \
+relational/mysql/schema.cxx
 
 cxx_ptun +=                  \
 semantics/class.cxx          \

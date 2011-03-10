@@ -4,6 +4,7 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cctype> // std::toupper, std::is{alpha,upper,lower}
+#include <cassert>
 
 #include <odb/context.hxx>
 #include <odb/common.hxx>
@@ -93,47 +94,85 @@ namespace
 }
 
 context::
+~context ()
+{
+  if (current_ == this)
+    current_ = 0;
+}
+
+context::
 context (ostream& os_,
          semantics::unit& u,
          options_type const& ops,
          data_ptr d)
-    : data_ (d ? d : data_ptr (new (shared) data)),
-      os (os_),
+    : data_ (d ? d : data_ptr (new (shared) data (os_))),
+      os (data_->os_),
       unit (u),
       options (ops),
       keyword_set (data_->keyword_set_),
       embedded_schema (ops.generate_schema () &&
-                       ops.schema_format ().count (schema_format::embedded))
+                       ops.schema_format ().count (schema_format::embedded)),
+      object (data_->object_)
 {
+  assert (current_ == 0);
+  current_ = this;
+
   for (size_t i (0); i < sizeof (keywords) / sizeof (char*); ++i)
     data_->keyword_set_.insert (keywords[i]);
 }
 
 context::
-context (context& c)
+context (const context& c)
     : data_ (c.data_),
       os (c.os),
       unit (c.unit),
       options (c.options),
       keyword_set (c.keyword_set),
-      embedded_schema (c.embedded_schema)
+      embedded_schema (c.embedded_schema),
+      object (c.object)
 {
 }
 
 context::
-context (context& c, ostream& os_)
-    : data_ (c.data_),
-      os (os_),
-      unit (c.unit),
-      options (c.options),
-      keyword_set (c.keyword_set),
-      embedded_schema (c.embedded_schema)
+context ()
+  : data_ (current ().data_),
+    os (current ().os),
+    unit (current ().unit),
+    options (current ().options),
+    keyword_set (current ().keyword_set),
+    embedded_schema (current ().embedded_schema),
+    object (current ().object)
 {
 }
 
-context::
-~context ()
+context* context::current_;
+
+void context::
+diverge (streambuf* sb)
 {
+  data_->os_stack_.push (data_->os_.rdbuf ());
+  data_->os_.rdbuf (sb);
+}
+
+void context::
+restore ()
+{
+  data_->os_.rdbuf (data_->os_stack_.top ());
+  data_->os_stack_.pop ();
+}
+
+semantics::type& context::
+member_type (semantics::data_member& m, string const& key_prefix)
+{
+  if (key_prefix.empty ())
+    return m.type ();
+
+  string const key ("tree-" + key_prefix + "-type");
+
+  if (m.count (key))
+    return *indirect_value<semantics::type*> (m, key);
+
+  return *indirect_value<semantics::type*> (m.type (), key);
 }
 
 string context::
@@ -223,11 +262,11 @@ column_name (semantics::data_member& m, string const& p, string const& d) const
 }
 
 string context::
-column_type (semantics::data_member& m, string const& kp) const
+column_type (semantics::data_member& m, string const& kp)
 {
   return kp.empty ()
     ? m.get<string> ("column-type")
-    : m.get<string> (kp + "-column-type");
+    : indirect_value<string> (m, kp + "-column-type");
 }
 
 string context::data::

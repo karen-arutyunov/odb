@@ -28,11 +28,9 @@
 #include <odb/tracer/inline.hxx>
 #include <odb/tracer/source.hxx>
 
-#include <odb/mysql/context.hxx>
-#include <odb/mysql/header.hxx>
-#include <odb/mysql/inline.hxx>
-#include <odb/mysql/source.hxx>
-#include <odb/mysql/sql-schema.hxx>
+#include <odb/relational/generate.hxx>
+
+#include <odb/relational/mysql/context.hxx>
 
 using namespace std;
 using namespace cutl;
@@ -119,7 +117,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       {
       case database::mysql:
         {
-          ctx.reset (new mysql::context (cerr, unit, ops));
+          ctx.reset (new relational::mysql::context (cerr, unit, ops));
           break;
         }
       case database::tracer:
@@ -249,7 +247,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       {
       case database::mysql:
         {
-          ctx.reset (new mysql::context (hxx, unit, ops));
+          ctx.reset (new relational::mysql::context (hxx, unit, ops));
           break;
         }
       case database::tracer:
@@ -297,7 +295,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       {
       case database::mysql:
         {
-          mysql::generate_header (static_cast<mysql::context&> (*ctx));
+          relational::header::generate ();
           break;
         }
       case database::tracer:
@@ -336,7 +334,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       {
       case database::mysql:
         {
-          ctx.reset (new mysql::context (ixx, unit, ops));
+          ctx.reset (new relational::mysql::context (ixx, unit, ops));
           break;
         }
       case database::tracer:
@@ -361,7 +359,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       {
       case database::mysql:
         {
-          mysql::generate_inline (static_cast<mysql::context&> (*ctx));
+          relational::inline_::generate ();
           break;
         }
       case database::tracer:
@@ -405,8 +403,8 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       {
       case database::mysql:
         {
-          mysql::context ctx (cxx, unit, ops);
-          mysql::generate_source (ctx);
+          relational::mysql::context ctx (cxx, unit, ops);
+          relational::source::generate ();
           break;
         }
       case database::tracer:
@@ -441,8 +439,8 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       {
       case database::mysql:
         {
-          mysql::context ctx (sql, unit, ops);
-          mysql::generate_schema (ctx);
+          relational::mysql::context ctx (sql, unit, ops);
+          relational::schema::generate ();
           break;
         }
       case database::tracer:

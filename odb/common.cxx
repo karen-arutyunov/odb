@@ -37,14 +37,23 @@ traverse_composite (semantics::data_member& m, semantics::class_& c)
 void object_members_base::
 traverse (semantics::class_& c)
 {
+  bool obj (c.count ("object"));
+
   // Ignore transient bases.
   //
-  if (!(c.count ("object") || context::comp_value (c)))
+  if (!(obj || context::comp_value (c)))
     return;
 
-  if (build_table_prefix_ && c.count ("object"))
+  semantics::class_* prev;
+  if (obj)
   {
-    table_prefix_.prefix = ctx_->table_name (c);
+    prev = object;
+    object = &c;
+  }
+
+  if (obj && build_table_prefix_)
+  {
+    table_prefix_.prefix = table_name (c);
     table_prefix_.prefix += '_';
     table_prefix_.level = 1;
 
@@ -59,6 +68,9 @@ traverse (semantics::class_& c)
     inherits (c);
     names (c);
   }
+
+  if (obj)
+    object = prev;
 }
 
 void object_members_base::member::
@@ -76,7 +88,7 @@ traverse (semantics::data_member& m)
     if (om_.build_prefix_)
     {
       old_prefix = om_.prefix_;
-      om_.prefix_ += om_.ctx_->public_name (m);
+      om_.prefix_ += om_.public_name (m);
       om_.prefix_ += '_';
     }
 
@@ -99,7 +111,7 @@ traverse (semantics::data_member& m)
       //
       else
       {
-        string name (om_.ctx_->public_name_db (m));
+        string name (om_.public_name_db (m));
         size_t n (name.size ());
 
         om_.table_prefix_.prefix += name;

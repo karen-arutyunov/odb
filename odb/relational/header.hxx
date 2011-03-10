@@ -1,170 +1,43 @@
-// file      : odb/mysql/header.cxx
+// file      : odb/relational/header.hxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <odb/gcc.hxx>
+#ifndef ODB_RELATIONAL_HEADER_HXX
+#define ODB_RELATIONAL_HEADER_HXX
 
-#include <odb/mysql/common.hxx>
-#include <odb/mysql/header.hxx>
+#include <odb/gcc.hxx> //@@ ??
 
-namespace mysql
+#include <odb/relational/context.hxx>
+#include <odb/relational/common.hxx>
+
+namespace relational
 {
-  namespace
+  namespace header
   {
-    struct image_member: member_base
+    struct image_member: virtual member_base
     {
-      image_member (context& c, string const& var = string ())
-          : member_base (c, var), member_image_type_ (c)
+      typedef image_member base;
+
+      image_member (string const& var = string ())
+          : member_base (var, 0, string (), string ())
       {
       }
 
-      image_member (context& c,
-                    string const& var,
+      image_member (string const& var,
                     semantics::type& t,
                     string const& fq_type,
                     string const& key_prefix)
-          : member_base (c, var, t, fq_type, key_prefix),
-            member_image_type_ (c, t, fq_type, key_prefix)
+          : member_base (var, &t, fq_type, key_prefix)
       {
       }
-
-      virtual bool
-      pre (member_info& mi)
-      {
-        if (container (mi.t))
-          return false;
-
-        image_type = member_image_type_.image_type (mi.m);
-
-        if (var_override_.empty ())
-          os << "// " << mi.m.name () << endl
-             << "//" << endl;
-
-        return true;
-      }
-
-      virtual void
-      traverse_composite (member_info& mi)
-      {
-        os << image_type << " " << mi.var << "value;"
-           << endl;
-      }
-
-      virtual void
-      traverse_integer (member_info& mi)
-      {
-        os << image_type << " " << mi.var << "value;"
-           << "my_bool " << mi.var << "null;"
-           << endl;
-      }
-
-      virtual void
-      traverse_float (member_info& mi)
-      {
-        os << image_type << " " << mi.var << "value;"
-           << "my_bool " << mi.var << "null;"
-           << endl;
-      }
-
-      virtual void
-      traverse_decimal (member_info& mi)
-      {
-        // Exchanged as strings. Can have up to 65 digits not counting
-        // '-' and '.'. If range is not specified, the default is 10.
-        //
-
-        /*
-          @@ Disabled.
-        os << "char " << mi.var << "value[" <<
-          (t.range ? t.range_value : 10) + 3 << "];"
-        */
-
-        os << image_type << " " << mi.var << "value;"
-           << "unsigned long " << mi.var << "size;"
-           << "my_bool " << mi.var << "null;"
-           << endl;
-      }
-
-      virtual void
-      traverse_date_time (member_info& mi)
-      {
-        os << image_type << " " << mi.var << "value;"
-           << "my_bool " << mi.var << "null;"
-           << endl;
-
-      }
-
-      virtual void
-      traverse_short_string (member_info& mi)
-      {
-        // If range is not specified, the default buffer size is 255.
-        //
-        /*
-          @@ Disabled.
-        os << "char " << mi.var << "value[" <<
-          (t.range ? t.range_value : 255) + 1 << "];"
-        */
-
-        os << image_type << " " << mi.var << "value;"
-           << "unsigned long " << mi.var << "size;"
-           << "my_bool " << mi.var << "null;"
-           << endl;
-      }
-
-      virtual void
-      traverse_long_string (member_info& mi)
-      {
-        os << image_type << " " << mi.var << "value;"
-           << "unsigned long " << mi.var << "size;"
-           << "my_bool " << mi.var << "null;"
-           << endl;
-      }
-
-      virtual void
-      traverse_bit (member_info& mi)
-      {
-        // Valid range is 1 to 64.
-        //
-        unsigned int n (mi.st->range / 8 + (mi.st->range % 8 ? 1 : 0));
-
-        os << "unsigned char " << mi.var << "value[" << n << "];"
-           << "unsigned long " << mi.var << "size;"
-           << "my_bool " << mi.var << "null;"
-           << endl;
-      }
-
-      virtual void
-      traverse_enum (member_info& mi)
-      {
-        // Represented as string.
-        //
-        os << image_type << " " << mi.var << "value;"
-           << "unsigned long " << mi.var << "size;"
-           << "my_bool " << mi.var << "null;"
-           << endl;
-      }
-
-      virtual void
-      traverse_set (member_info& mi)
-      {
-        // Represented as string.
-        //
-        os << image_type << " " << mi.var << "value;"
-           << "unsigned long " << mi.var << "size;"
-           << "my_bool " << mi.var << "null;"
-           << endl;
-      }
-
-    private:
-      string image_type;
-
-      member_image_type member_image_type_;
     };
 
-    struct image_base: traversal::class_, context
+    struct image_base: traversal::class_, virtual context
     {
-      image_base (context& c): context (c), first_ (true) {}
+      typedef image_base base;
+
+      image_base (): first_ (true) {}
 
       virtual void
       traverse (type& c)
@@ -192,10 +65,17 @@ namespace mysql
       bool first_;
     };
 
-    struct image_type: traversal::class_, context
+    struct image_type: traversal::class_, virtual context
     {
-      image_type (context& c)
-          : context (c), member_ (c)
+      typedef image_type base;
+
+      image_type ()
+      {
+        *this >> names_member_ >> member_;
+      }
+
+      image_type (image_type const&)
+          : root_context (), context () //@@ -Wextra
       {
         *this >> names_member_ >> member_;
       }
@@ -206,8 +86,8 @@ namespace mysql
         os << "struct image_type";
 
         {
-          image_base b (*this);
-          traversal::inherits i (b);
+          instance<image_base> b;
+          traversal::inherits i (*b);
           inherits (c, i);
         }
 
@@ -222,16 +102,18 @@ namespace mysql
       }
 
     private:
-      image_member member_;
+      instance<image_member> member_;
       traversal::names names_member_;
     };
 
     // Member-specific traits types for container members.
     //
-    struct container_traits: object_members_base, context
+    struct container_traits: object_members_base, virtual context
     {
-      container_traits (context& c, semantics::class_& obj)
-          : object_members_base (c, true, false), context (c)
+      typedef container_traits base;
+
+      container_traits (semantics::class_& obj) //@@ context::object
+          : object_members_base (true, false)
       {
         scope_ = "object_traits< " + obj.fq_name () + " >";
       }
@@ -429,8 +311,8 @@ namespace mysql
             {
               os << "// index" << endl
                  << "//" << endl;
-              image_member im (*this, "index_", *it, "index_type", "index");
-              im.traverse (m);
+              instance<image_member> im ("index_", *it, "index_type", "index");
+              im->traverse (m);
             }
             break;
           }
@@ -439,8 +321,8 @@ namespace mysql
           {
             os << "// key" << endl
                << "//" << endl;
-            image_member im (*this, "key_", *kt, "key_type", "key");
-            im.traverse (m);
+            instance<image_member> im ("key_", *kt, "key_type", "key");
+            im->traverse (m);
             break;
           }
         case ck_set:
@@ -448,8 +330,8 @@ namespace mysql
           {
             os << "// value" << endl
                << "//" << endl;
-            image_member im (*this, "value_", vt, "value_type", "value");
-            im.traverse (m);
+            instance<image_member> im ("value_", vt, "value_type", "value");
+            im->traverse (m);
             break;
           }
         }
@@ -470,8 +352,8 @@ namespace mysql
             {
               os << "// index" << endl
                  << "//" << endl;
-              image_member im (*this, "index_", *it, "index_type", "index");
-              im.traverse (m);
+              instance<image_member> im ("index_", *it, "index_type", "index");
+              im->traverse (m);
             }
             break;
           }
@@ -480,8 +362,8 @@ namespace mysql
           {
             os << "// key" << endl
                << "//" << endl;
-            image_member im (*this, "key_", *kt, "key_type", "key");
-            im.traverse (m);
+            instance<image_member> im ("key_", *kt, "key_type", "key");
+            im->traverse (m);
             break;
           }
         case ck_set:
@@ -493,8 +375,8 @@ namespace mysql
 
         os << "// value" << endl
            << "//" << endl;
-        image_member im (*this, "value_", vt, "value_type", "value");
-        im.traverse (m);
+        instance<image_member> im ("value_", vt, "value_type", "value");
+        im->traverse (m);
 
         os << "std::size_t version;"
            << "};";
@@ -518,7 +400,7 @@ namespace mysql
            << "bind (MYSQL_BIND*, id_image_type*, data_image_type&);"
            << endl;
 
-        // grow()
+        // grow ()
         //
         os << "static void" << endl
            << "grow (data_image_type&, my_bool*);"
@@ -690,10 +572,16 @@ namespace mysql
 
     //
     //
-    struct class_: traversal::class_, context
+    struct class_: traversal::class_, virtual context
     {
-      class_ (context& c)
-          : context (c), image_type_ (c), id_image_member_ (c, "id_")
+      typedef class_ base;
+
+      class_ (): id_image_member_ ("id_") {}
+
+      class_ (class_ const&)
+          : root_context (), //@@ -Wextra
+            context (),
+            id_image_member_ ("id_")
       {
       }
 
@@ -739,14 +627,14 @@ namespace mysql
 
         // image_type
         //
-        image_type_.traverse (c);
+        image_type_->traverse (c);
 
         // id_image_type
         //
         os << "struct id_image_type"
            << "{";
 
-        id_image_member_.traverse (id);
+        id_image_member_->traverse (id);
 
         os << "std::size_t version;"
            << "};";
@@ -766,8 +654,8 @@ namespace mysql
              << "{";
 
           {
-            query_columns t (*this);
-            t.traverse (c);
+            instance<query_columns> t;
+            t->traverse (c);
           }
 
           os << "query_type ();"
@@ -803,8 +691,8 @@ namespace mysql
         // Traits types.
         //
         {
-          container_traits t (*this, c);
-          t.traverse (c);
+          instance<container_traits> t (c);
+          t->traverse (c);
         }
 
         // Statement cache (forward declaration).
@@ -959,7 +847,7 @@ namespace mysql
 
         // image_type
         //
-        image_type_.traverse (c);
+        image_type_->traverse (c);
 
         // grow ()
         //
@@ -989,43 +877,10 @@ namespace mysql
       }
 
     private:
-      image_type image_type_;
-      image_member id_image_member_;
+      instance<image_type> image_type_;
+      instance<image_member> id_image_member_;
     };
   }
-
-  void
-  generate_header (context& ctx)
-  {
-    traversal::unit unit;
-    traversal::defines unit_defines;
-    traversal::namespace_ ns;
-    class_ c (ctx);
-
-    unit >> unit_defines >> ns;
-    unit_defines >> c;
-
-    traversal::defines ns_defines;
-
-    ns >> ns_defines >> ns;
-    ns_defines >> c;
-
-    ctx.os << "#include <odb/mysql/version.hxx>" << endl
-           << "#include <odb/mysql/forward.hxx>" << endl
-           << "#include <odb/mysql/mysql-types.hxx>" << endl;
-
-    if (ctx.options.generate_query ())
-      ctx.os << "#include <odb/mysql/query.hxx>" << endl;
-
-    ctx.os << endl
-           << "#include <odb/details/buffer.hxx>" << endl
-           << endl;
-
-    ctx.os << "namespace odb"
-           << "{";
-
-    unit.dispatch (ctx.unit);
-
-    ctx.os << "}";
-  }
 }
+
+#endif // ODB_RELATIONAL_HEADER_HXX

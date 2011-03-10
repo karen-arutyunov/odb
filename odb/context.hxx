@@ -8,6 +8,7 @@
 
 #include <map>
 #include <set>
+#include <stack>
 #include <string>
 #include <ostream>
 #include <cstddef> // std::size_t
@@ -50,19 +51,16 @@ class context
 public:
   typedef std::size_t size_t;
   typedef std::string string;
+  typedef std::ostream ostream;
+
   typedef ::options options_type;
 
   static string
   upcase (string const&);
 
 public:
-  static semantics::type&
-  member_type (semantics::data_member& m, string const& key_prefix)
-  {
-    return key_prefix.empty ()
-      ? m.type ()
-      : *m.type ().get<semantics::type*> ("tree-" + key_prefix + "-type");
-  }
+  semantics::type&
+  member_type (semantics::data_member& m, string const& key_prefix);
 
   // Predicates.
   //
@@ -132,9 +130,8 @@ public:
                string const& key_prefix,
                string const& default_name) const;
 
-  virtual string
-  column_type (semantics::data_member&,
-               string const& key_prefix = string ()) const;
+  string
+  column_type (semantics::data_member&, string const& key_prefix = string ());
 
   // Cleaned-up member name that can be used for database names.
   //
@@ -184,31 +181,31 @@ public:
 public:
   typedef ::pointer_kind pointer_kind_type;
 
-  static pointer_kind_type
+  pointer_kind_type
   pointer_kind (semantics::type& p)
   {
     return p.get<pointer_kind_type> ("pointer-kind");
   }
 
-  static bool
+  bool
   lazy_pointer (semantics::type& p)
   {
     return p.get<bool> ("pointer-lazy");
   }
 
-  static bool
+  bool
   weak_pointer (semantics::type& p)
   {
     return pointer_kind (p) == pk_weak;
   }
 
-  static bool
+  bool
   null_pointer (semantics::data_member& m)
   {
     return !(m.count ("not-null") || m.type ().count ("not-null"));
   }
 
-  static bool
+  bool
   null_pointer (semantics::data_member& m, string const& key_prefix)
   {
     if (key_prefix.empty ())
@@ -219,7 +216,7 @@ public:
              member_type (m, key_prefix).count ("not-null"));
   }
 
-  static semantics::data_member*
+  semantics::data_member*
   inverse (semantics::data_member& m)
   {
     return object_pointer (m.type ())
@@ -227,7 +224,7 @@ public:
       : 0;
   }
 
-  static semantics::data_member*
+  semantics::data_member*
   inverse (semantics::data_member& m, string const& key_prefix)
   {
     if (key_prefix.empty ())
@@ -284,24 +281,54 @@ public:
   static unsigned short const test_straight_container = 0x10;
   static unsigned short const test_inverse_container = 0x20;
 
-  static bool
+  bool
   is_a (semantics::data_member& m, unsigned short flags)
   {
     return is_a (m, flags, m.type (), "");
   }
 
-  static bool
+  bool
   is_a (semantics::data_member&,
         unsigned short flags,
         semantics::type&,
         string const& key_prefix);
 
-  static bool
+  bool
   has_a (semantics::type&, unsigned short flags);
 
+  // Diverge output.
+  //
+public:
+  void
+  diverge (std::ostream& os)
+  {
+    diverge (os.rdbuf ());
+  }
+
+  void
+  diverge (std::streambuf* sb);
+
+  void
+  restore ();
+
+  // Implementation details.
+  //
 private:
   static bool
   comp_value_ (semantics::class_&);
+
+  template <typename X>
+  X
+  indirect_value (semantics::context const& c, string const& key)
+  {
+    typedef X (*func) (context&);
+    std::type_info const& ti (c.type_info (key));
+
+    if (ti == typeid (func))
+      return c.get<func> (key) (*this);
+    else
+      return c.get<X> (key);
+  }
 
 protected:
   struct data;
@@ -317,6 +344,8 @@ public:
   keyword_set_type const& keyword_set;
 
   bool embedded_schema;
+
+  semantics::class_*& object; // Object currently being traversed.
 
   struct db_type_type
   {
@@ -347,7 +376,15 @@ protected:
 
   struct data
   {
-    virtual ~data () {}
+    virtual
+    ~data () {}
+    data (std::ostream& os): os_ (os.rdbuf ()), object_ (0) {}
+
+  public:
+    std::ostream os_;
+    std::stack<std::streambuf*> os_stack_;
+
+    semantics::class_* object_;
 
     // Per-database customizable functionality.
     //
@@ -366,15 +403,28 @@ protected:
   };
 
 public:
+  virtual
+  ~context ();
+
+  typedef context root_context;
+
   context (std::ostream&,
            semantics::unit&,
            options_type const&,
            data_ptr = data_ptr ());
-  context (context&);
-  context (context&, std::ostream&);
+  context (const context&);
 
-  virtual
-  ~context ();
+  static context&
+  current ()
+  {
+    return *current_;
+  }
+
+protected:
+  context ();
+
+private:
+  static context* current_;
 
 private:
   context&

@@ -13,7 +13,7 @@
 
 // Traverse object members recursively by going into composite members.
 //
-struct object_members_base: traversal::class_
+struct object_members_base: traversal::class_, virtual context
 {
   virtual void
   simple (semantics::data_member&);
@@ -31,25 +31,21 @@ struct object_members_base: traversal::class_
 
 public:
   object_members_base ()
-      : ctx_ (0),
-        build_prefix_ (false),
-        build_table_prefix_ (false),
-        member_ (*this)
+      : member_ (*this)
   {
-    *this >> names_ >> member_;
-    *this >> inherits_ >> *this;
+    init (false, false);
   }
 
-  object_members_base (context& c,
-                       bool build_prefix,
-                       bool build_table_prefix)
-      : ctx_ (&c),
-        build_prefix_ (build_prefix),
-        build_table_prefix_ (build_table_prefix),
-        member_ (*this)
+  object_members_base (bool build_prefix, bool build_table_prefix)
+      : member_ (*this)
   {
-    *this >> names_ >> member_;
-    *this >> inherits_ >> *this;
+    init (build_prefix, build_table_prefix);
+  }
+
+  object_members_base (object_members_base const& x)
+      : context (), member_ (*this)
+  {
+    init (x.build_prefix_, x.build_table_prefix_);
   }
 
   virtual void
@@ -61,6 +57,17 @@ public:
 protected:
   std::string prefix_;
   context::table_prefix table_prefix_;
+
+private:
+  void
+  init (bool build_prefix, bool build_table_prefix)
+  {
+    build_prefix_ = build_prefix;
+    build_table_prefix_ = build_table_prefix;
+
+    *this >> names_ >> member_;
+    *this >> inherits_ >> *this;
+  }
 
 private:
   struct member: traversal::data_member
@@ -77,7 +84,6 @@ private:
     object_members_base& om_;
   };
 
-  context* ctx_;
   bool build_prefix_;
   bool build_table_prefix_;
 
@@ -104,11 +110,16 @@ struct object_columns_base: traversal::class_
   composite (semantics::data_member&, semantics::class_&);
 
 public:
-  object_columns_base (context& c)
-      : member_ (c, *this)
+  object_columns_base ()
+      : member_ (*this)
   {
-    *this >> names_ >> member_;
-    *this >> inherits_ >> *this;
+    init ();
+  }
+
+  object_columns_base (object_columns_base const&)
+      : member_ (*this)
+  {
+    init ();
   }
 
   virtual void
@@ -121,10 +132,18 @@ public:
                       std::string const& default_name);
 
 private:
+  void
+  init ()
+  {
+    *this >> names_ >> member_;
+    *this >> inherits_ >> *this;
+  }
+
+private:
   struct member: traversal::data_member, context
   {
-    member (context& c, object_columns_base& oc)
-        : context (c), oc_ (oc), first_ (true)
+    member (object_columns_base& oc)
+        : oc_ (oc), first_ (true)
     {
     }
 

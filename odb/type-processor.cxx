@@ -8,8 +8,26 @@
 #include <odb/cxx-lexer.hxx>
 #include <odb/type-processor.hxx>
 
+using namespace std;
+
 namespace
 {
+  // Indirect (dynamic) context values.
+  //
+  static semantics::type*
+  id_tree_type (context& c)
+  {
+    semantics::data_member& id (c.id_member (*c.object));
+    return &id.type ();
+  }
+
+  static string
+  id_column_type (context& c)
+  {
+    semantics::data_member& id (c.id_member (*c.object));
+    return id.get<string> ("ref-column-type");
+  }
+
   struct data_member: traversal::data_member, context
   {
     data_member (context& c)
@@ -408,6 +426,9 @@ namespace
 
       // Process member data.
       //
+      m.set ("tree-id-type", &id_tree_type);
+      m.set ("id-column-type", &id_column_type);
+
       process_container_value (*vt, m, "value", true);
 
       if (it != 0)
@@ -417,7 +438,7 @@ namespace
         process_container_value (*kt, m, "key", false);
 
       // If this is an inverse side of a bidirectional object relationship
-      // and it is an ordred container, mark it as unordred since there is
+      // and it is an ordered container, mark it as unordred since there is
       // no concept of order in this construct.
       //
       if (ck == ck_ordered && m.count ("value-inverse"))
