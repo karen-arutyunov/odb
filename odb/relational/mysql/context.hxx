@@ -101,26 +101,29 @@ namespace relational
                           string const& type,
                           semantics::context&,
                           column_type_flags);
+
+    public:
+      virtual
+      ~context ();
+      context ();
+      context (std::ostream&, semantics::unit&, options_type const&);
+
+      static context&
+      current ()
+      {
+        return *current_;
+      }
+
+    private:
+      static context* current_;
+
     private:
       struct data: base_context::data
       {
         data (std::ostream& os): base_context::data (os) {}
       };
 
-    private:
       data* data_;
-
-    public:
-      static context&
-      current ()
-      {
-        return dynamic_cast<context&> (base_context::current ());
-      }
-
-      context (std::ostream&, semantics::unit&, options_type const&);
-
-    protected:
-      context ();
     };
   }
 }

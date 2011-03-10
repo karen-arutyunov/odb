@@ -424,6 +424,7 @@ public:
            semantics::unit&,
            options_type const&,
            data_ptr = data_ptr ());
+
   context (const context&);
 
   static context&

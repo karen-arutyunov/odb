@@ -3,12 +3,23 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <cassert>
+
 #include <odb/relational/context.hxx>
 
 using namespace std;
 
 namespace relational
 {
+  context* context::current_;
+
+  context::
+  ~context ()
+  {
+    if (current_ == this)
+      current_ = 0;
+  }
+
   context::
   context ()
       : data_ (current ().data_)
@@ -19,6 +30,8 @@ namespace relational
   context (data* d)
       : data_ (d)
   {
+    assert (current_ == 0);
+    current_ = this;
   }
 
   bool context::

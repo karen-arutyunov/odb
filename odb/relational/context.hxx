@@ -33,15 +33,6 @@ namespace relational
     string
     quote_id (string const&) const;
 
-  public:
-    context ();
-
-    static context&
-    current ()
-    {
-      return dynamic_cast<context&> (root_context::current ());
-    }
-
   protected:
     // The default implementation returns false.
     //
@@ -61,11 +52,25 @@ namespace relational
     virtual string
     quote_id_impl (string const&) const;
 
+  public:
+    virtual
+    ~context ();
+    context ();
+
+    static context&
+    current ()
+    {
+      return *current_;
+    }
+
   protected:
     struct data;
     typedef context base_context;
 
     context (data*);
+
+  private:
+    static context* current_;
 
   protected:
     struct data: root_context::data

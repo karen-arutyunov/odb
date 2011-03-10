@@ -3,6 +3,7 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <cassert>
 #include <sstream>
 
 #include <odb/sql-token.hxx>
@@ -53,12 +54,24 @@ namespace relational
       };
     }
 
+    context* context::current_;
+
+    context::
+    ~context ()
+    {
+      if (current_ == this)
+        current_ = 0;
+    }
+
     context::
     context (ostream& os, semantics::unit& u, options_type const& ops)
         : root_context (os, u, ops, data_ptr (new (shared) data (os))),
           base_context (static_cast<data*> (root_context::data_.get ())),
           data_ (static_cast<data*> (base_context::data_))
     {
+      assert (current_ == 0);
+      current_ = this;
+
       // Populate the C++ type to DB type map.
       //
       for (size_t i (0); i < sizeof (type_map) / sizeof (type_map_entry); ++i)
