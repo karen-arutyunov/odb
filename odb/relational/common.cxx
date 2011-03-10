@@ -104,13 +104,13 @@ namespace relational
     else
     {
       string im_type (image_type (m));
-      string db_type (database_type (m));
+      string db_type_id (database_type_id (m));
 
       string type (
         "mysql::value_traits< "
         + m.type ().fq_name (m.belongs ().hint ()) + ", "
         + im_type + ", "
-        + db_type
+        + db_type_id
         + " >::query_type");
 
       if (decl_)
@@ -119,7 +119,7 @@ namespace relational
            << "//" << endl
            << "static const mysql::query_column<" << endl
            << "  " << type << "," << endl
-           << "  " << db_type << ">" << endl
+           << "  " << db_type_id << ">" << endl
            << name << ";"
            << endl;
       }
@@ -129,7 +129,7 @@ namespace relational
 
         os << "const mysql::query_column<" << endl
            << "  " << type << "," << endl
-           << "  " << db_type << ">" << endl
+           << "  " << db_type_id << ">" << endl
            << scope_ << "::" << name << " (" << endl
            << column << ");"
            << endl;

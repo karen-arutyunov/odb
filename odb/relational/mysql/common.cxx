@@ -344,79 +344,79 @@ namespace relational
       };
     }
 
-    member_database_type::
-    member_database_type (semantics::type* type,
+    member_database_type_id::
+    member_database_type_id (semantics::type* type,
                           string const& fq_type,
                           string const& key_prefix)
         : relational::member_base (type, fq_type, key_prefix)
     {
     }
 
-    string member_database_type::
-    database_type (type& m)
+    string member_database_type_id::
+    database_type_id (type& m)
     {
-      type_.clear ();
+      type_id_.clear ();
       member_base::traverse (m);
-      return type_;
+      return type_id_;
     }
 
-    void member_database_type::
+    void member_database_type_id::
     traverse_composite (member_info&)
     {
       assert (false);
     }
 
-    void member_database_type::
+    void member_database_type_id::
     traverse_integer (member_info& mi)
     {
       size_t i (
         (mi.st->type - sql_type::TINYINT) * 2 + (mi.st->unsign ? 1 : 0));
-      type_ = string ("mysql::") + integer_database_id[i];
+      type_id_ = string ("mysql::") + integer_database_id[i];
     }
 
-    void member_database_type::
+    void member_database_type_id::
     traverse_float (member_info& mi)
     {
-      type_ = string ("mysql::") +
+      type_id_ = string ("mysql::") +
         float_database_id[mi.st->type - sql_type::FLOAT];
     }
 
-    void member_database_type::
+    void member_database_type_id::
     traverse_decimal (member_info&)
     {
-      type_ = "mysql::id_decimal";
+      type_id_ = "mysql::id_decimal";
     }
 
-    void member_database_type::
+    void member_database_type_id::
     traverse_date_time (member_info& mi)
     {
-      type_ = string ("mysql::") +
+      type_id_ = string ("mysql::") +
         date_time_database_id[mi.st->type - sql_type::DATE];
     }
 
-    void member_database_type::
+    void member_database_type_id::
     traverse_string (member_info& mi)
     {
-      type_ = string ("mysql::") +
+      type_id_ = string ("mysql::") +
         char_bin_database_id[mi.st->type - sql_type::CHAR];
     }
 
-    void member_database_type::
+    void member_database_type_id::
     traverse_bit (member_info&)
     {
-      type_ = "mysql::id_bit";
+      type_id_ = "mysql::id_bit";
     }
 
-    void member_database_type::
+    void member_database_type_id::
     traverse_enum (member_info&)
     {
-      type_ = "mysql::id_enum";
+      type_id_ = "mysql::id_enum";
     }
 
-    void member_database_type::
+    void member_database_type_id::
     traverse_set (member_info&)
     {
-      type_ = "mysql::id_set";
+      type_id_ = "mysql::id_set";
     }
 
     //
@@ -434,14 +434,14 @@ namespace relational
       }
 
       virtual string
-      database_type (semantics::data_member& m)
+      database_type_id (semantics::data_member& m)
       {
-        return member_database_type_.database_type (m);
+        return member_database_type_id_.database_type_id (m);
       }
 
     private:
       member_image_type member_image_type_;
-      member_database_type member_database_type_;
+      member_database_type_id member_database_type_id_;
     };
     entry<query_columns> query_columns_;
   }

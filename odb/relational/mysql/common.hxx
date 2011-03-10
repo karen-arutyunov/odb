@@ -183,13 +183,13 @@ namespace relational
       string type_;
     };
 
-    struct member_database_type: member_base
+    struct member_database_type_id: member_base
     {
-      member_database_type (semantics::type* type = 0,
-                            string const& fq_type = string (),
-                            string const& key_prefix = string ());
+      member_database_type_id (semantics::type* type = 0,
+                               string const& fq_type = string (),
+                               string const& key_prefix = string ());
       string
-      database_type (type&);
+      database_type_id (type&);
 
       virtual void
       traverse_composite (member_info&);
@@ -219,7 +219,7 @@ namespace relational
       traverse_set (member_info&);
 
     private:
-      string type_;
+      string type_id_;
     };
   }
 }

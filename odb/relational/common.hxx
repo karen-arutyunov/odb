@@ -68,7 +68,7 @@ namespace relational
     }
 
     virtual string
-    database_type (semantics::data_member&)
+    database_type_id (semantics::data_member&)
     {
       assert (false);
     }
