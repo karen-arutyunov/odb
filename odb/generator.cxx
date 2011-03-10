@@ -18,12 +18,8 @@
 #include <odb/context.hxx>
 #include <odb/generator.hxx>
 
-#include <odb/include.hxx>
-#include <odb/header.hxx>
-#include <odb/inline.hxx>
-
+#include <odb/generate.hxx>
 #include <odb/tracer/generate.hxx>
-
 #include <odb/relational/generate.hxx>
 #include <odb/relational/type-processor.hxx>
 
@@ -283,8 +279,8 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         (br ? '>' : '"') << endl
           << endl;
 
-      generate_include (*ctx);
-      generate_header (*ctx);
+      include::generate ();
+      header::generate ();
 
       switch (ops.database ())
       {
@@ -348,7 +344,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << "// End prologue." << endl
           << endl;
 
-      generate_inline (*ctx);
+      inline_::generate ();
 
       switch (ops.database ())
       {

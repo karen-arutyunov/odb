@@ -11,7 +11,9 @@
 #include <cassert>
 #include <fstream>
 
-#include <odb/include.hxx>
+#include <odb/common.hxx>
+#include <odb/context.hxx>
+#include <odb/generate.hxx>
 
 #include <iostream>
 
@@ -20,7 +22,7 @@ using semantics::path;
 
 namespace
 {
-  struct include
+  struct include_directive
   {
     enum type { quote, bracket };
 
@@ -28,13 +30,13 @@ namespace
     path path_;
   };
 
-  typedef std::map<line_map const*, include> includes;
+  typedef std::map<line_map const*, include_directive> includes;
   typedef std::map<path, includes> include_map;
 
   // Map of files to the lines which contain include directives
   // that we are interested in.
   //
-  typedef std::map<size_t, include*> include_lines;
+  typedef std::map<size_t, include_directive*> include_lines;
   typedef std::map<path, include_lines> file_map;
 
   // Set of include directives sorted in the preference order.
@@ -42,7 +44,7 @@ namespace
   struct include_comparator
   {
     bool
-    operator() (include const* x, include const* y) const
+    operator() (include_directive const* x, include_directive const* y) const
     {
       // Prefer <> over "".
       //
@@ -56,13 +58,15 @@ namespace
     }
   };
 
-  typedef std::multiset<include const*, include_comparator> include_set;
+  typedef
+  std::multiset<include_directive const*, include_comparator>
+  include_set;
 
 
   struct class_: traversal::class_, context
   {
-    class_ (context& c, include_map& map)
-        : context (c), map_ (map)
+    class_ (include_map& map)
+        : map_ (map)
     {
     }
 
@@ -98,7 +102,7 @@ namespace
           f.normalize ();
 
           if (map_.find (f) == map_.end ())
-            map_[f][lm] = include ();
+            map_[f][lm] = include_directive ();
         }
       }
     }
@@ -197,7 +201,7 @@ namespace
 
   private:
     bool
-    parse_line (string const& l, include& inc)
+    parse_line (string const& l, include_directive& inc)
     {
       enum state
       {
@@ -294,12 +298,12 @@ namespace
             if (c == '"')
             {
               path_end = '"';
-              inc.type_ = include::quote;
+              inc.type_ = include_directive::quote;
             }
             else if (c == '<')
             {
               path_end = '>';
-              inc.type_ = include::bracket;
+              inc.type_ = include_directive::bracket;
             }
             else
               return false;
@@ -353,152 +357,160 @@ namespace
   };
 }
 
-void
-generate_include (context& ctx)
+namespace include
 {
-  include_map imap;
-
-  traversal::unit unit;
-  traversal::defines unit_defines;
-  traversal::namespace_ ns;
-  class_ c (ctx, imap);
-
-  unit >> unit_defines >> ns;
-  unit_defines >> c;
-
-  traversal::defines ns_defines;
-
-  ns >> ns_defines >> ns;
-  ns_defines >> c;
-
-  unit.dispatch (ctx.unit);
-
-  // Add all the known include locations for each file in the map.
-  //
-  for (size_t i (0); i < line_table->used; ++i)
+  void
+  generate ()
   {
-    line_map const* m (line_table->maps + i);
+    context ctx;
+    include_map imap;
 
-    if (MAIN_FILE_P (m) || m->reason != LC_ENTER)
-      continue;
+    traversal::unit unit;
+    traversal::defines unit_defines;
+    traversal::namespace_ ns;
+    class_ c (imap);
 
-    line_map const* i (INCLUDED_FROM (line_table, m));
+    unit >> unit_defines >> ns;
+    unit_defines >> c;
 
-    path f (m->to_file);
-    f.complete ();
-    f.normalize ();
+    traversal::defines ns_defines;
 
-    include_map::iterator it (imap.find (f));
+    ns >> ns_defines >> ns;
+    ns_defines >> c;
 
-    if (it != imap.end ())
-      it->second[i] = include ();
-  }
+    unit.dispatch (ctx.unit);
 
-  //
-  //
-  file_map fmap;
-
-  for (include_map::iterator i (imap.begin ()), e (imap.end ()); i != e; ++i)
-  {
-    /*
-    cerr << endl
-         << i->first << " included from" << endl;
-
-    for (includes::iterator j (i->second.begin ()); j != i->second.end (); ++j)
-    {
-      line_map const* lm (j->first);
-      cerr << '\t' << lm->to_file << ":" << LAST_SOURCE_LINE (lm) << endl;
-    }
-    */
-
-    // First see if there is an include from the main file. If so, then
-    // it is preferred over all others. Use the first one if there are
-    // several.
+    // Add all the known include locations for each file in the map.
     //
-    line_map const* main_lm (0);
-    include* main_inc (0);
-
-    for (includes::iterator j (i->second.begin ()); j != i->second.end (); ++j)
+    for (size_t i (0); i < line_table->used; ++i)
     {
-      line_map const* lm (j->first);
+      line_map const* m (line_table->maps + i);
 
-      if (MAIN_FILE_P (lm))
-      {
-        if (main_lm == 0 || LAST_SOURCE_LINE (main_lm) > LAST_SOURCE_LINE (lm))
-        {
-          main_lm = lm;
-          main_inc = &j->second;
-        }
-      }
-    }
+      if (MAIN_FILE_P (m) || m->reason != LC_ENTER)
+        continue;
 
-    if (main_lm != 0)
-    {
-      path f (main_lm->to_file);
+      line_map const* i (INCLUDED_FROM (line_table, m));
+
+      path f (m->to_file);
       f.complete ();
       f.normalize ();
 
-      fmap[f][LAST_SOURCE_LINE (main_lm)] = main_inc;
-      continue;
+      include_map::iterator it (imap.find (f));
+
+      if (it != imap.end ())
+        it->second[i] = include_directive ();
     }
 
-    // Otherwise, add all entries.
     //
-    for (includes::iterator j (i->second.begin ()); j != i->second.end (); ++j)
+    //
+    file_map fmap;
+
+    for (include_map::iterator i (imap.begin ()), e (imap.end ()); i != e; ++i)
     {
-      line_map const* lm (j->first);
+      /*
+      cerr << endl
+           << i->first << " included from" << endl;
 
-      path f (lm->to_file);
-      f.complete ();
-      f.normalize ();
-
-      fmap[f][LAST_SOURCE_LINE (lm)] = &j->second;
-    }
-  }
-
-  //
-  //
-  include_parser ip;
-
-  for (file_map::iterator i (fmap.begin ()), e (fmap.end ()); i != e; ++i)
-  {
-    ip.parse_file (i->first, i->second);
-  }
-
-  // Finally, output the include directives.
-  //
-  for (include_map::const_iterator i (imap.begin ()), e (imap.end ());
-       i != e; ++i)
-  {
-    includes const& is (i->second);
-    include const* inc (0);
-
-    if (is.size () == 1)
-    {
-      inc = &is.begin ()->second;
-    }
-    else
-    {
-      include_set set;
-
-      for (includes::const_iterator j (i->second.begin ());
+      for (includes::iterator j (i->second.begin ());
            j != i->second.end (); ++j)
       {
-        if (!j->second.path_.empty ())
-          set.insert (&j->second);
+        line_map const* lm (j->first);
+        cerr << '\t' << lm->to_file << ":" << LAST_SOURCE_LINE (lm) << endl;
+      }
+      */
+
+      // First see if there is an include from the main file. If so, then
+      // it is preferred over all others. Use the first one if there are
+      // several.
+      //
+      line_map const* main_lm (0);
+      include_directive* main_inc (0);
+
+      for (includes::iterator j (i->second.begin ());
+           j != i->second.end (); ++j)
+      {
+        line_map const* lm (j->first);
+
+        if (MAIN_FILE_P (lm))
+        {
+          if (main_lm == 0 ||
+              LAST_SOURCE_LINE (main_lm) > LAST_SOURCE_LINE (lm))
+          {
+            main_lm = lm;
+            main_inc = &j->second;
+          }
+        }
       }
 
-      assert (set.size () > 0);
-      inc = *set.rbegin ();
+      if (main_lm != 0)
+      {
+        path f (main_lm->to_file);
+        f.complete ();
+        f.normalize ();
+
+        fmap[f][LAST_SOURCE_LINE (main_lm)] = main_inc;
+        continue;
+      }
+
+      // Otherwise, add all entries.
+      //
+      for (includes::iterator j (i->second.begin ());
+           j != i->second.end (); ++j)
+      {
+        line_map const* lm (j->first);
+
+        path f (lm->to_file);
+        f.complete ();
+        f.normalize ();
+
+        fmap[f][LAST_SOURCE_LINE (lm)] = &j->second;
+      }
     }
 
-    path f (inc->path_.base ());
-    f += ctx.options.odb_file_suffix ();
-    f += ctx.options.hxx_suffix ();
+    //
+    //
+    include_parser ip;
 
-    ctx.os << "#include " <<
-      (inc->type_ == include::quote ? '"' : '<') << f <<
-      (inc->type_ == include::quote ? '"' : '>') << endl
-           << endl;
+    for (file_map::iterator i (fmap.begin ()), e (fmap.end ()); i != e; ++i)
+    {
+      ip.parse_file (i->first, i->second);
+    }
+
+    // Finally, output the include directives.
+    //
+    for (include_map::const_iterator i (imap.begin ()), e (imap.end ());
+         i != e; ++i)
+    {
+      includes const& is (i->second);
+      include_directive const* inc (0);
+
+      if (is.size () == 1)
+      {
+        inc = &is.begin ()->second;
+      }
+      else
+      {
+        include_set set;
+
+        for (includes::const_iterator j (i->second.begin ());
+             j != i->second.end (); ++j)
+        {
+          if (!j->second.path_.empty ())
+            set.insert (&j->second);
+        }
+
+        assert (set.size () > 0);
+        inc = *set.rbegin ();
+      }
+
+      path f (inc->path_.base ());
+      f += ctx.options.odb_file_suffix ();
+      f += ctx.options.hxx_suffix ();
+
+      ctx.os << "#include " <<
+        (inc->type_ == include_directive::quote ? '"' : '<') << f <<
+        (inc->type_ == include_directive::quote ? '"' : '>') << endl
+             << endl;
+    }
   }
 }

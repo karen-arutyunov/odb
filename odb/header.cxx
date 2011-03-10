@@ -4,17 +4,15 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <odb/common.hxx>
-#include <odb/header.hxx>
+#include <odb/context.hxx>
+#include <odb/generate.hxx>
+
+using namespace std;
 
 namespace
 {
   struct data_member: traversal::data_member, context
   {
-    data_member (context& c)
-        : context (c)
-    {
-    }
-
     virtual void
     traverse (semantics::data_member& m)
     {
@@ -36,8 +34,7 @@ namespace
 
   struct class_: traversal::class_, context
   {
-    class_ (context& c)
-        : context (c), member_ (c)
+    class_ ()
     {
       member_names_ >> member_;
     }
@@ -77,62 +74,67 @@ namespace
   };
 }
 
-void
-generate_header (context& ctx)
+namespace header
 {
-  ctx.os << "#include <memory>" << endl
-         << "#include <cstddef>" << endl // std::size_t
-         << endl;
-
-  ctx.os << "#include <odb/core.hxx>" << endl
-         << "#include <odb/traits.hxx>" << endl
-         << "#include <odb/pointer-traits.hxx>" << endl;
-
-  // In case of a boost TR1 implementation, we cannot distinguish
-  // between the boost::shared_ptr and std::tr1::shared_ptr usage since
-  // the latter is just a using-declaration for the former. To resolve
-  // this we will include TR1 traits if the Boost TR1 header is included.
-  //
-  if (ctx.unit.count ("tr1-pointer-used") &&
-      ctx.unit.get<bool> ("tr1-pointer-used"))
+  void
+  generate ()
   {
-    ctx.os << "#include <odb/tr1/pointer-traits.hxx>" << endl;
-  }
-  else if (ctx.unit.count ("boost-pointer-used") &&
-           ctx.unit.get<bool> ("boost-pointer-used"))
-  {
-    ctx.os << "#ifdef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
-           << "#  include <odb/tr1/pointer-traits.hxx>" << endl
-           << "#endif" << endl;
-  }
+    context ctx;
+    ostream& os (ctx.os);
 
-  ctx.os << "#include <odb/container-traits.hxx>" << endl;
+    os << "#include <memory>" << endl
+       << "#include <cstddef>" << endl // std::size_t
+       << endl;
 
-  if (ctx.options.generate_query ())
-    ctx.os << "#include <odb/result.hxx>" << endl;
+    os << "#include <odb/core.hxx>" << endl
+       << "#include <odb/traits.hxx>" << endl
+       << "#include <odb/pointer-traits.hxx>" << endl;
 
-  ctx.os << endl;
+    // In case of a boost TR1 implementation, we cannot distinguish
+    // between the boost::shared_ptr and std::tr1::shared_ptr usage since
+    // the latter is just a using-declaration for the former. To resolve
+    // this we will include TR1 traits if the Boost TR1 header is included.
+    //
+    if (ctx.unit.count ("tr1-pointer-used") &&
+        ctx.unit.get<bool> ("tr1-pointer-used"))
+    {
+      os << "#include <odb/tr1/pointer-traits.hxx>" << endl;
+    }
+    else if (ctx.unit.count ("boost-pointer-used") &&
+             ctx.unit.get<bool> ("boost-pointer-used"))
+    {
+      os << "#ifdef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
+         << "#  include <odb/tr1/pointer-traits.hxx>" << endl
+         << "#endif" << endl;
+    }
 
+    os << "#include <odb/container-traits.hxx>" << endl;
 
-  /*
-  traversal::unit unit;
-  traversal::defines unit_defines;
-  traversal::namespace_ ns;
-  class_ c (ctx);
+    if (ctx.options.generate_query ())
+      os << "#include <odb/result.hxx>" << endl;
 
-  unit >> unit_defines >> ns;
-  unit_defines >> c;
+    os << endl;
 
-  traversal::defines ns_defines;
+    /*
+      traversal::unit unit;
+      traversal::defines unit_defines;
+      traversal::namespace_ ns;
+      class_ c;
 
-  ns >> ns_defines >> ns;
-  ns_defines >> c;
+      unit >> unit_defines >> ns;
+      unit_defines >> c;
 
-  ctx.os << "namespace odb"
+      traversal::defines ns_defines;
+
+      ns >> ns_defines >> ns;
+      ns_defines >> c;
+
+      os << "namespace odb"
          << "{";
 
-  unit.dispatch (ctx.unit);
+      unit.dispatch (ctx.unit);
 
-  ctx.os << "}";
-  */
+      os << "}";
+    */
+  }
 }

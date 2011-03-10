@@ -173,7 +173,7 @@ public:
   static size_t
   out_column_count (semantics::class_&);
 
-  semantics::data_member&
+  static semantics::data_member&
   id_member (semantics::class_&);
 
   // Object pointer information.
@@ -321,11 +321,11 @@ private:
   X
   indirect_value (semantics::context const& c, string const& key)
   {
-    typedef X (*func) (context&);
+    typedef X (*func) ();
     std::type_info const& ti (c.type_info (key));
 
     if (ti == typeid (func))
-      return c.get<func> (key) (*this);
+      return c.get<func> (key) ();
     else
       return c.get<X> (key);
   }
@@ -457,8 +457,6 @@ has (Y& y)
 //
 struct namespace_: traversal::namespace_, context
 {
-  namespace_ (context& c) : context (c) {}
-
   virtual void
   traverse (type&);
 };

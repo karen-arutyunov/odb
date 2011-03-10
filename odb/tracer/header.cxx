@@ -4,6 +4,7 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <odb/common.hxx>
+#include <odb/context.hxx>
 #include <odb/tracer/generate.hxx>
 
 using namespace std;

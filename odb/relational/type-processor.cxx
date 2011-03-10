@@ -12,26 +12,28 @@
 
 using namespace std;
 
-// Indirect (dynamic) context values.
-//
-static semantics::type*
-id_tree_type (context& c)
-{
-  semantics::data_member& id (c.id_member (*c.object));
-  return &id.type ();
-}
-
-static string
-id_column_type (context& c)
-{
-  semantics::data_member& id (c.id_member (*c.object));
-  return id.get<string> ("ref-column-type");
-}
-
 namespace relational
 {
   namespace
   {
+    // Indirect (dynamic) context values.
+    //
+    static semantics::type*
+    id_tree_type ()
+    {
+      context& c (context::current ());
+      semantics::data_member& id (context::id_member (*c.object));
+      return &id.type ();
+    }
+
+    static string
+    id_column_type ()
+    {
+      context& c (context::current ());
+      semantics::data_member& id (context::id_member (*c.object));
+      return id.get<string> ("ref-column-type");
+    }
+
     struct data_member: traversal::data_member, context
     {
       data_member ()
