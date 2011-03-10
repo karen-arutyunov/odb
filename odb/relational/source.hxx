@@ -6,8 +6,6 @@
 #ifndef ODB_RELATIONAL_SOURCE_HXX
 #define ODB_RELATIONAL_SOURCE_HXX
 
-#include <odb/gcc.hxx> // @@ ??
-
 #include <map>
 #include <set>
 #include <vector>
@@ -1682,7 +1680,6 @@ namespace relational
         string traits ("access::object_traits< " + type + " >");
 
         bool grow (context::grow (c));
-        bool def_ctor (TYPE_HAS_DEFAULT_CONSTRUCTOR (c.tree_node ()));
 
         semantics::data_member& id (id_member (c));
         bool auto_id (id.count ("auto"));
@@ -2066,7 +2063,7 @@ namespace relational
 
         // find ()
         //
-        if (def_ctor)
+        if (c.default_ctor ())
         {
           os << traits << "::pointer_type" << endl
              << traits << "::" << endl

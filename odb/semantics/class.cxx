@@ -3,6 +3,8 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <odb/gcc.hxx> // TYPE_HAS_DEFAULT_CONSTRUCTOR
+
 #include <cutl/compiler/type-info.hxx>
 #include <odb/semantics/class.hxx>
 
@@ -18,6 +20,12 @@ namespace semantics
   class_ (path const& file, size_t line, size_t column, tree tn)
       : node (file, line, column, tn)
   {
+  }
+
+  bool class_::
+  default_ctor () const
+  {
+    return TYPE_HAS_DEFAULT_CONSTRUCTOR (tree_node ());
   }
 
   // type info

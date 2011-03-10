@@ -6,8 +6,6 @@
 #ifndef ODB_RELATIONAL_HEADER_HXX
 #define ODB_RELATIONAL_HEADER_HXX
 
-#include <odb/gcc.hxx> //@@ ??
-
 #include <odb/relational/context.hxx>
 #include <odb/relational/common.hxx>
 
@@ -601,7 +599,6 @@ namespace relational
       traverse_object (type& c)
       {
         string const& type (c.fq_name ());
-        bool def_ctor (TYPE_HAS_DEFAULT_CONSTRUCTOR (c.tree_node ()));
 
         semantics::data_member& id (id_member (c));
         bool auto_id (id.count ("auto"));
@@ -772,7 +769,7 @@ namespace relational
 
         // find ()
         //
-        if (def_ctor)
+        if (c.default_ctor ())
           os << "static pointer_type" << endl
              << "find (database&, const id_type&);"
              << endl;

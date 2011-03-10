@@ -88,6 +88,10 @@ namespace semantics
     }
 
   public:
+    bool
+    default_ctor () const;
+
+  public:
     class_ (path const&, size_t line, size_t column, tree);
 
     void
