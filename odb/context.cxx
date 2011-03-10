@@ -122,18 +122,6 @@ context (ostream& os_,
 }
 
 context::
-context (const context& c)
-    : data_ (c.data_),
-      os (c.os),
-      unit (c.unit),
-      options (c.options),
-      keyword_set (c.keyword_set),
-      embedded_schema (c.embedded_schema),
-      object (c.object)
-{
-}
-
-context::
 context ()
   : data_ (current ().data_),
     os (current ().os),

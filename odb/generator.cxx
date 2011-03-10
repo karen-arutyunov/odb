@@ -22,9 +22,7 @@
 #include <odb/header.hxx>
 #include <odb/inline.hxx>
 
-#include <odb/tracer/header.hxx>
-#include <odb/tracer/inline.hxx>
-#include <odb/tracer/source.hxx>
+#include <odb/tracer/generate.hxx>
 
 #include <odb/relational/generate.hxx>
 #include <odb/relational/type-processor.hxx>
@@ -297,7 +295,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         }
       case database::tracer:
         {
-          tracer::generate_header (*ctx);
+          tracer::header::generate ();
           break;
         }
       }
@@ -361,7 +359,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         }
       case database::tracer:
         {
-          tracer::generate_inline (*ctx);
+          tracer::inline_::generate ();
           break;
         }
       }
@@ -407,7 +405,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       case database::tracer:
         {
           context ctx (cxx, unit, ops);
-          tracer::generate_source (ctx);
+          tracer::source::generate ();
           break;
         }
       }

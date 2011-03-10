@@ -4,7 +4,9 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <odb/common.hxx>
-#include <odb/tracer/source.hxx>
+#include <odb/tracer/generate.hxx>
+
+using namespace std;
 
 namespace tracer
 {
@@ -12,11 +14,6 @@ namespace tracer
   {
     struct class_: traversal::class_, context
     {
-      class_ (context& c)
-          : context (c)
-      {
-      }
-
       virtual void
       traverse (type& c)
       {
@@ -117,33 +114,39 @@ namespace tracer
     };
   }
 
-  void
-  generate_source (context& ctx)
+  namespace source
   {
-    traversal::unit unit;
-    traversal::defines unit_defines;
-    traversal::namespace_ ns;
-    class_ c (ctx);
+    void
+    generate ()
+    {
+      context ctx;
+      ostream& os (ctx.os);
 
-    unit >> unit_defines >> ns;
-    unit_defines >> c;
+      traversal::unit unit;
+      traversal::defines unit_defines;
+      traversal::namespace_ ns;
+      class_ c;
 
-    traversal::defines ns_defines;
+      unit >> unit_defines >> ns;
+      unit_defines >> c;
 
-    ns >> ns_defines >> ns;
-    ns_defines >> c;
+      traversal::defines ns_defines;
 
-    ctx.os << "#include <iostream>" << endl
-           << endl;
+      ns >> ns_defines >> ns;
+      ns_defines >> c;
 
-    ctx.os << "#include <odb/exceptions.hxx>" << endl
-           << endl;
+      os << "#include <iostream>" << endl
+         << endl;
 
-    ctx.os << "namespace odb"
-           << "{";
+      os << "#include <odb/exceptions.hxx>" << endl
+         << endl;
 
-    unit.dispatch (ctx.unit);
+      os << "namespace odb"
+         << "{";
 
-    ctx.os << "}";
+      unit.dispatch (ctx.unit);
+
+      os << "}";
+    }
   }
 }

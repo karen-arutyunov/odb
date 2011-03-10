@@ -415,26 +415,21 @@ protected:
   };
 
 public:
-  virtual
-  ~context ();
-
   typedef context root_context;
 
+  virtual
+  ~context ();
+  context ();
   context (std::ostream&,
            semantics::unit&,
            options_type const&,
            data_ptr = data_ptr ());
-
-  context (const context&);
 
   static context&
   current ()
   {
     return *current_;
   }
-
-protected:
-  context ();
 
 private:
   static context* current_;
