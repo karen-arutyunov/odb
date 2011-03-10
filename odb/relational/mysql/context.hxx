@@ -78,7 +78,8 @@ namespace relational
     {
     public:
       sql_type const&
-      db_type (semantics::data_member&, string const& key_prefix = string ());
+      column_sql_type (semantics::data_member&,
+                       string const& key_prefix = string ());
 
     protected:
       virtual bool

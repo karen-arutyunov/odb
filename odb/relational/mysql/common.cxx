@@ -55,7 +55,7 @@ namespace relational
       }
       else
       {
-        sql_type const& st (db_type (m, key_prefix_));
+        sql_type const& st (column_sql_type (m, key_prefix_));
 
         if (semantics::class_* c = object_pointer (t))
         {

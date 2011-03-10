@@ -108,8 +108,8 @@ namespace relational
           if (!(c.count ("object") || context::comp_value (c)))
             return;
 
-          if (c.count ("mysql::grow"))
-            r_ = c.get<bool> ("mysql::grow");
+          if (c.count ("mysql-grow"))
+            r_ = c.get<bool> ("mysql-grow");
           else
           {
             // r_ should be false.
@@ -119,7 +119,7 @@ namespace relational
             if (!r_)
               names (c);
 
-            c.set ("mysql::grow", r_);
+            c.set ("mysql-grow", r_);
           }
         }
 
@@ -184,8 +184,8 @@ namespace relational
     bool context::
     grow_impl (semantics::class_& c)
     {
-      if (c.count ("mysql::grow"))
-        return c.get<bool> ("mysql::grow");
+      if (c.count ("mysql-grow"))
+        return c.get<bool> ("mysql-grow");
 
       bool r (false);
       has_grow ct (r);
@@ -236,9 +236,11 @@ namespace relational
     parse_sql_type (semantics::data_member& m, std::string const& sql);
 
     sql_type const& context::
-    db_type (semantics::data_member& m, string const& kp)
+    column_sql_type (semantics::data_member& m, string const& kp)
     {
-      string key (kp.empty () ? string ("db-type") : kp + "-db-type");
+      string key (kp.empty ()
+                  ? string ("mysql-column-sql-type")
+                  : "mysql-" + kp + "-column-sql-type");
 
       if (!m.count (key))
         m.set (key, parse_sql_type (m, column_type (m, kp)));
