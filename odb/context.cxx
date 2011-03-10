@@ -269,12 +269,15 @@ column_type (semantics::data_member& m, string const& kp)
     : indirect_value<string> (m, kp + "-column-type");
 }
 
-string context::data::
-column_type_impl (semantics::type& t,
-                  string const& type,
-                  semantics::context& ctx,
-                  column_type_flags f) const
+string context::
+database_type_impl (semantics::type& t,
+                    string const& type,
+                    semantics::context& ctx,
+                    column_type_flags f)
 {
+  // @@ If I handle additional qualifiers (e.g., NOT NULL, AUTO_INCREMENT)
+  // separately, then I won't need to pass custom type anymore.
+  //
   if (!type.empty ())
     return type;
 
@@ -282,9 +285,9 @@ column_type_impl (semantics::type& t,
   // ::std::string) instead of a user typedef (e.g., my_string).
   //
   string const& name (t.fq_name ());
-  type_map_type::const_iterator i (type_map_.find (name));
+  type_map_type::const_iterator i (data_->type_map_.find (name));
 
-  if (i != type_map_.end ())
+  if (i != data_->type_map_.end ())
   {
     string r (ctx.count ("id") ? i->second.id_type : i->second.type);
 

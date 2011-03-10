@@ -361,6 +361,8 @@ public:
 
   typedef std::map<string, db_type_type> type_map_type;
 
+  // Per-database customizable functionality.
+  //
 protected:
   typedef unsigned short column_type_flags;
 
@@ -374,6 +376,28 @@ protected:
   //
   static column_type_flags const ctf_object_id_ref = 0x02;
 
+  // Return empty string if there is no mapping. The second argument
+  // is the custom type or empty string if it is not specified.
+  //
+  string
+  database_type (semantics::type& t,
+                 string const& type,
+                 semantics::context& c,
+                 column_type_flags f)
+  {
+    return current ().database_type_impl (t, type, c, f);
+  }
+
+  // The default implementation uses the type map (populated by the database-
+  // specific context implementation) to come up with a mapping.
+  //
+  virtual string
+  database_type_impl (semantics::type&,
+                      string const& type,
+                      semantics::context&,
+                      column_type_flags);
+
+protected:
   struct data
   {
     virtual
@@ -385,18 +409,6 @@ protected:
     std::stack<std::streambuf*> os_stack_;
 
     semantics::class_* object_;
-
-    // Per-database customizable functionality.
-    //
-  public:
-    // Return empty string if there is no mapping. The second argument
-    // is the custom type or empty string if it is not specified.
-    //
-    virtual string
-    column_type_impl (semantics::type&,
-                      string const& type,
-                      semantics::context&,
-                      column_type_flags) const;
 
     keyword_set_type keyword_set_;
     type_map_type type_map_;

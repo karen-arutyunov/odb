@@ -130,15 +130,15 @@ namespace
         if (null_pointer (m))
           f |= ctf_default_null;
 
-        type = data_->column_type_impl (idt, type, id, f);
+        type = database_type (idt, type, id, f);
       }
       else
       {
         string orig (type);
-        type = data_->column_type_impl (t, orig, m, ctf_none);
+        type = database_type (t, orig, m, ctf_none);
 
         if (m.count ("id"))
-          ref_type = data_->column_type_impl (t, orig, m, ctf_object_id_ref);
+          ref_type = database_type (t, orig, m, ctf_object_id_ref);
       }
 
       if (!type.empty ())
@@ -217,10 +217,10 @@ namespace
         if (null_pointer (m, prefix))
           f |= ctf_default_null;
 
-        type = data_->column_type_impl (idt, type, id, f);
+        type = database_type (idt, type, id, f);
       }
       else
-        type = data_->column_type_impl (t, type, m, ctf_none);
+        type = database_type (t, type, m, ctf_none);
 
       if (!type.empty ())
       {
