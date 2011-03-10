@@ -43,7 +43,8 @@ public:
   }
 
   object_members_base (object_members_base const& x)
-      : context (), member_ (*this)
+      : context (), //@@ -Wextra
+        member_ (*this)
   {
     init (x.build_prefix_, x.build_table_prefix_);
   }
@@ -94,7 +95,7 @@ private:
 
 // Traverse object columns recursively by going into composite members.
 //
-struct object_columns_base: traversal::class_
+struct object_columns_base: traversal::class_, virtual context
 {
   // Returning false means that the column has been ignored and the
   // first flag should not be changed.
@@ -117,7 +118,8 @@ public:
   }
 
   object_columns_base (object_columns_base const&)
-      : member_ (*this)
+      : context (), //@@ -Wextra
+        member_ (*this)
   {
     init ();
   }

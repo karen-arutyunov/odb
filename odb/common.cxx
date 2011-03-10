@@ -183,13 +183,25 @@ traverse_composite (semantics::data_member& m,
 void object_columns_base::
 traverse (semantics::class_& c)
 {
+  bool obj (c.count ("object"));
+
   // Ignore transient bases.
   //
-  if (!(c.count ("object") || context::comp_value (c)))
+  if (!(obj || context::comp_value (c)))
     return;
+
+  semantics::class_* prev;
+  if (obj)
+  {
+    prev = object;
+    object = &c;
+  }
 
   inherits (c);
   names (c);
+
+  if (obj)
+    object = prev;
 }
 
 void object_columns_base::member::
