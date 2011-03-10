@@ -18,8 +18,6 @@
 #include <odb/context.hxx>
 #include <odb/generator.hxx>
 
-#include <odb/type-processor.hxx>
-
 #include <odb/include.hxx>
 #include <odb/header.hxx>
 #include <odb/inline.hxx>
@@ -29,6 +27,7 @@
 #include <odb/tracer/source.hxx>
 
 #include <odb/relational/generate.hxx>
+#include <odb/relational/type-processor.hxx>
 
 #include <odb/relational/mysql/context.hxx>
 
@@ -122,14 +121,12 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         }
       case database::tracer:
         {
-          // Do not assign database types for tracer.
-          //
           break;
         }
       }
 
       if (ctx.get () != 0)
-        process_types (*ctx);
+        relational::process_types ();
     }
 
     // Output files.

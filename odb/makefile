@@ -7,68 +7,68 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 
 # Plugin units.
 #
-cxx_ptun :=                  \
-cxx-lexer.cxx                \
-sql-lexer.cxx                \
-context.cxx                  \
-common.cxx                   \
-emitter.cxx                  \
-type-processor.cxx           \
-include.cxx                  \
-header.cxx                   \
-inline.cxx                   \
-validator.cxx                \
-generator.cxx                \
-parser.cxx                   \
-plugin.cxx                   \
+cxx_ptun :=                    \
+cxx-lexer.cxx                  \
+sql-lexer.cxx                  \
+context.cxx                    \
+common.cxx                     \
+emitter.cxx                    \
+include.cxx                    \
+header.cxx                     \
+inline.cxx                     \
+validator.cxx                  \
+generator.cxx                  \
+parser.cxx                     \
+plugin.cxx                     \
 pragma.cxx
 
 # Tracer
 #
-cxx_ptun +=                  \
-tracer/header.cxx            \
-tracer/inline.cxx            \
+cxx_ptun +=                    \
+tracer/header.cxx              \
+tracer/inline.cxx              \
 tracer/source.cxx
 
 # Relational
 #
-cxx_ptun +=                  \
-relational/common.cxx        \
-relational/context.cxx       \
-relational/header.cxx        \
-relational/inline.cxx        \
-relational/source.cxx        \
-relational/schema.cxx
+cxx_ptun +=                    \
+relational/common.cxx          \
+relational/context.cxx         \
+relational/header.cxx          \
+relational/inline.cxx          \
+relational/source.cxx          \
+relational/schema.cxx          \
+relational/type-processor.cxx
 
 # Relational/MySQL
 #
-cxx_ptun +=                  \
-relational/mysql/common.cxx  \
-relational/mysql/context.cxx \
-relational/mysql/header.cxx  \
-relational/mysql/source.cxx  \
+cxx_ptun +=                    \
+relational/mysql/common.cxx    \
+relational/mysql/context.cxx   \
+relational/mysql/header.cxx    \
+relational/mysql/source.cxx    \
 relational/mysql/schema.cxx
 
-cxx_ptun +=                  \
-semantics/class.cxx          \
-semantics/class-template.cxx \
-semantics/derived.cxx        \
-semantics/elements.cxx       \
-semantics/enum.cxx           \
-semantics/fundamental.cxx    \
-semantics/namespace.cxx      \
-semantics/template.cxx       \
-semantics/union.cxx          \
-semantics/union-template.cxx \
+cxx_ptun +=                    \
+semantics/class.cxx            \
+semantics/class-template.cxx   \
+semantics/derived.cxx          \
+semantics/elements.cxx         \
+semantics/enum.cxx             \
+semantics/fundamental.cxx      \
+semantics/namespace.cxx        \
+semantics/template.cxx         \
+semantics/union.cxx            \
+semantics/union-template.cxx   \
 semantics/unit.cxx
 
-cxx_ptun +=                  \
-traversal/class.cxx          \
-traversal/class-template.cxx \
-traversal/derived.cxx        \
-traversal/elements.cxx       \
-traversal/enum.cxx           \
-traversal/template.cxx       \
+cxx_ptun +=                    \
+traversal/class.cxx            \
+traversal/class-template.cxx   \
+traversal/derived.cxx          \
+traversal/elements.cxx         \
+traversal/enum.cxx             \
+traversal/template.cxx         \
 traversal/union-template.cxx
 
 
