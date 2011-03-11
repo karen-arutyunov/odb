@@ -24,6 +24,7 @@
 #include <odb/relational/type-processor.hxx>
 
 #include <odb/relational/mysql/context.hxx>
+#include <odb/relational/sqlite/context.hxx>
 
 using namespace std;
 using namespace cutl;
@@ -96,6 +97,33 @@ generator ()
 {
 }
 
+static auto_ptr<context>
+create_context (ostream& os, semantics::unit& unit, options const& ops)
+{
+  auto_ptr<context> r;
+
+  switch (ops.database ())
+  {
+  case database::mysql:
+    {
+      r.reset (new relational::mysql::context (os, unit, ops));
+      break;
+    }
+  case database::sqlite:
+    {
+      r.reset (new relational::sqlite::context (os, unit, ops));
+      break;
+    }
+  case database::tracer:
+    {
+      r.reset (new context (os, unit, ops));
+      break;
+    }
+  }
+
+  return r;
+}
+
 void generator::
 generate (options const& ops, semantics::unit& unit, path const& p)
 {
@@ -103,24 +131,10 @@ generate (options const& ops, semantics::unit& unit, path const& p)
   {
     // Process types.
     //
+    if (ops.database () != database::tracer)
     {
-      auto_ptr<context> ctx;
-
-      switch (ops.database ())
-      {
-      case database::mysql:
-        {
-          ctx.reset (new relational::mysql::context (cerr, unit, ops));
-          break;
-        }
-      case database::tracer:
-        {
-          break;
-        }
-      }
-
-      if (ctx.get () != 0)
-        relational::process_types ();
+      auto_ptr<context> ctx (create_context (cerr, unit, ops));
+      relational::process_types ();
     }
 
     // Output files.
@@ -232,21 +246,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     {
       cxx_filter filt (hxx);
-      auto_ptr<context> ctx;
-
-      switch (ops.database ())
-      {
-      case database::mysql:
-        {
-          ctx.reset (new relational::mysql::context (hxx, unit, ops));
-          break;
-        }
-      case database::tracer:
-        {
-          ctx.reset (new context (hxx, unit, ops));
-          break;
-        }
-      }
+      auto_ptr<context> ctx (create_context (hxx, unit, ops));
 
       string guard (make_guard (gp + hxx_name, *ctx));
 
@@ -285,6 +285,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       switch (ops.database ())
       {
       case database::mysql:
+      case database::sqlite:
         {
           relational::header::generate ();
           break;
@@ -319,21 +320,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     {
       cxx_filter filt (ixx);
-      auto_ptr<context> ctx;
-
-      switch (ops.database ())
-      {
-      case database::mysql:
-        {
-          ctx.reset (new relational::mysql::context (ixx, unit, ops));
-          break;
-        }
-      case database::tracer:
-        {
-          ctx.reset (new context (ixx, unit, ops));
-          break;
-        }
-      }
+      auto_ptr<context> ctx (create_context (ixx, unit, ops));
 
       // Copy prologue.
       //
@@ -349,6 +336,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       switch (ops.database ())
       {
       case database::mysql:
+      case database::sqlite:
         {
           relational::inline_::generate ();
           break;
@@ -373,6 +361,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     {
       cxx_filter filt (cxx);
+      auto_ptr<context> ctx (create_context (cxx, unit, ops));
 
       cxx << "#include <odb/pre.hxx>" << endl
           << endl;
@@ -393,14 +382,13 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       switch (ops.database ())
       {
       case database::mysql:
+      case database::sqlite:
         {
-          relational::mysql::context ctx (cxx, unit, ops);
           relational::source::generate ();
           break;
         }
       case database::tracer:
         {
-          context ctx (cxx, unit, ops);
           tracer::source::generate ();
           break;
         }
@@ -422,6 +410,8 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     if (sql_schema)
     {
+      auto_ptr<context> ctx (create_context (sql, unit, ops));
+
       // Copy prologue.
       //
       append (sql, ops.sql_prologue (), ops.sql_prologue_file ());
@@ -429,8 +419,8 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       switch (ops.database ())
       {
       case database::mysql:
+      case database::sqlite:
         {
-          relational::mysql::context ctx (sql, unit, ops);
           relational::schema::generate ();
           break;
         }

@@ -121,6 +121,7 @@ profile_paths (strings const& args, char const* name);
 static char const* const db_macro[] =
 {
   "-DODB_DATABASE_MYSQL",
+  "-DODB_DATABASE_SQLITE",
   "-DODB_DATABASE_TRACER"
 };
 

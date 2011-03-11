@@ -25,6 +25,11 @@ process_options (options& o)
         f.insert (schema_format::sql);
         break;
       }
+    case database::sqlite:
+      {
+        f.insert (schema_format::embedded);
+        break;
+      }
     case database::tracer:
       {
         break;

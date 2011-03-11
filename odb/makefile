@@ -49,6 +49,15 @@ relational/mysql/header.cxx    \
 relational/mysql/source.cxx    \
 relational/mysql/schema.cxx
 
+# Relational/SQLite
+#
+cxx_ptun +=                    \
+relational/sqlite/common.cxx   \
+relational/sqlite/context.cxx  \
+relational/sqlite/header.cxx   \
+relational/sqlite/source.cxx   \
+relational/sqlite/schema.cxx
+
 cxx_ptun +=                    \
 semantics/class.cxx            \
 semantics/class-template.cxx   \

@@ -48,8 +48,8 @@ class options
   ::database --database | -d
   {
     "<db>",
-    "Generate code for the <db> database. Valid values are \cb{mysql} and
-     \cb{tracer}."
+    "Generate code for the <db> database. Valid values are \cb{mysql},
+     \cb{sqlite}, and \cb{tracer}."
   };
 
   bool --generate-query | -q
@@ -373,5 +373,18 @@ class options
      options see the MySQL documentation. If you would like to use the
      database-default engine, pass \cb{default} as the value for this
      option."
+  };
+
+  //
+  // SQLite-specific options.
+  //
+
+  bool --sqlite-lax-auto-id
+  {
+    "Do not force monotonically increasing automatically-assigned
+     object ids. In this mode the generated database schema omits the
+     \cb{AUTOINCREMENT} keyword which results in faster object persistence
+     but may lead to automatically-assigned ids not being in a strictly
+     ascending order. Refer to the SQLite documentation for details."
   };
 };
