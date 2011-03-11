@@ -31,21 +31,24 @@ sync ()
       s.resize (n - 1);
   }
 
-  // Temporary restore output diversion.
-  //
-  bool r (false);
-  context& ctx (context::current ());
-
-  if (ctx.os.rdbuf () == this)
+  if (!s.empty ())
   {
-    ctx.restore ();
-    r = true;
+    // Temporary restore output diversion.
+    //
+    bool r (false);
+    context& ctx (context::current ());
+
+    if (ctx.os.rdbuf () == this)
+    {
+      ctx.restore ();
+      r = true;
+    }
+
+    e_.line (s);
+
+    if (r)
+      ctx.diverge (this);
   }
-
-  e_.line (s);
-
-  if (r)
-    ctx.diverge (this);
 
   str (string ());
   return 0;
