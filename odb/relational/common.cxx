@@ -164,13 +164,11 @@ namespace relational
     if (r != 0)
       abort (); // We are in static initialization, so this is fatal.
 
-    //
-    //
     string str (s + 12); // 12 for "relational::"
-    istringstream is (string (str, str.find (':')));
+    istringstream is (string (str, 0, str.find (':')));
 
     database d;
-    if (!is >> d)
+    if (!(is >> d))
       abort ();
 
     return d;
