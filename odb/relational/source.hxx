@@ -27,14 +27,16 @@ namespace relational
       pre ()
       {
         first_ = true;
-        os << "db.execute (";
       }
 
       virtual void
       line (const std::string& l)
       {
         if (first_)
+        {
           first_ = false;
+          os << "db.execute (";
+        }
         else
           os << endl;
 
@@ -44,7 +46,8 @@ namespace relational
       virtual void
       post ()
       {
-        os << ");" << endl;
+        if (!first_) // Ignore empty statements.
+          os << ");" << endl;
       }
 
     private:

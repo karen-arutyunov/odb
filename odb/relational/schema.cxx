@@ -36,8 +36,9 @@ namespace relational
       virtual void
       post ()
       {
-        os << ';' << endl
-           << endl;
+        if (!first_) // Ignore empty statements.
+          os << ';' << endl
+             << endl;
       }
 
     private:

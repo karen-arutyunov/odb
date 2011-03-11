@@ -23,7 +23,7 @@ namespace relational
       struct create_common: virtual relational::create_common
       {
         virtual void
-        create_post ()
+        create_table_post ()
         {
           os << ")";
 

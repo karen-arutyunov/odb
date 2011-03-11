@@ -50,9 +50,19 @@ namespace relational
     struct drop_common: virtual context
     {
       virtual void
-      drop (string const& table)
+      drop_table (string const& table)
       {
         os << "DROP TABLE IF EXISTS " << quote_id (table) << endl;
+      }
+
+      virtual void
+      drop_index (string const& /*table*/, string const& /*column*/)
+      {
+        // Most database systems drop indexes together with the table.
+        //
+
+        //os << "DROP INDEX IF EXISTS " << quote_id (table + '_' + column)
+        //   << endl;
       }
     };
 
@@ -78,11 +88,26 @@ namespace relational
         if (tables_.count (name))
           return;
 
+        // Drop table.
+        //
         pre_statement ();
-        drop (name);
+        drop_table (name);
         post_statement ();
 
         tables_.insert (name);
+
+        // Drop indexes.
+        //
+        pre_statement ();
+        drop_index (name, column_name (m, "id", "object_id"));
+        post_statement ();
+
+        if (container_kind (m.type ()) == ck_ordered && !unordered (m))
+        {
+          pre_statement ();
+          drop_index (name, column_name (m, "index", "index"));
+          post_statement ();
+        }
       }
 
     protected:
@@ -120,7 +145,7 @@ namespace relational
           return;
 
         pre_statement ();
-        drop (name);
+        drop_table (name);
         post_statement ();
 
         tables_.insert (name);
@@ -187,24 +212,25 @@ namespace relational
     struct create_common: virtual context
     {
       virtual void
-      create_pre (string const& table)
+      create_table_pre (string const& table)
       {
         os << "CREATE TABLE " << quote_id (table) << " (" << endl;
       }
 
       virtual void
-      index (string const& column)
-      {
-        os << "INDEX (" << quote_id (column) << ")";
-      }
-
-      virtual void
-      create_post ()
+      create_table_post ()
       {
         os << ")" << endl;
       }
-    };
 
+      virtual void
+      create_index (string const& table, string const& column)
+      {
+        os << "CREATE INDEX " << quote_id (table + '_' + column) << endl
+           << "  ON " << quote_id (table) << " (" << quote_id (column) << ")"
+           << endl;
+      }
+    };
 
     struct member_create: object_members_base, common, virtual create_common
     {
@@ -236,7 +262,7 @@ namespace relational
           return;
 
         pre_statement ();
-        create_pre (name);
+        create_table_pre (name);
 
         // object_id (simple value)
         //
@@ -298,25 +324,23 @@ namespace relational
           }
         }
 
-        // object_id index
-        //
-        os << "," << endl
-           << "  ";
-        index (id_name);
-
-        // index index
-        //
-        if (ordered)
-        {
-          os << "," << endl
-             << "  ";
-          index (index_name);
-        }
-
-        create_post ();
+        create_table_post ();
         post_statement ();
 
         tables_.insert (name);
+
+        // Create indexes.
+        //
+        pre_statement ();
+        create_index (name, id_name);
+        post_statement ();
+
+        if (ordered)
+        {
+          pre_statement ();
+          create_index (name, index_name);
+          post_statement ();
+        }
       }
 
     protected:
@@ -357,14 +381,14 @@ namespace relational
           return;
 
         pre_statement ();
-        create_pre (name);
+        create_table_pre (name);
 
         {
           instance<object_columns> oc;
           oc->traverse (c);
         }
 
-        create_post ();
+        create_table_post ();
         post_statement ();
 
         tables_.insert (name);
