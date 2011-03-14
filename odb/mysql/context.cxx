@@ -287,7 +287,7 @@ namespace mysql
           {
             if (tt == sql_token::t_identifier)
             {
-              string const& id (t.identifier ());
+              string const& id (context::upcase (t.identifier ()));
 
               if (id == "NATIONAL" ||
                   id == "CHAR" ||
@@ -309,7 +309,7 @@ namespace mysql
             if (tt == sql_token::t_identifier)
             {
               bool match (true);
-              string const& id (t.identifier ());
+              string const& id (context::upcase (t.identifier ()));
 
               // Numeric types.
               //
@@ -576,7 +576,8 @@ namespace mysql
           }
         case parse_sign:
           {
-            if (tt == sql_token::t_identifier && t.identifier () == "UNSIGNED")
+            if (tt == sql_token::t_identifier &&
+                context::upcase (t.identifier ()) == "UNSIGNED")
             {
               r.unsign = true;
             }
