@@ -484,9 +484,15 @@ for consistency.
     <tr>
       <th>12</th><td><a href="#12">Boost Profile</a>
         <table class="toc">
-          <tr><th>12.1</th><td><a href="#12.1"></a></td></tr>
-          <tr><th>12.2</th><td><a href="#12.2"></a></td></tr>
-          <tr><th>12.3</th><td><a href="#12.3"></a></td></tr>
+          <tr><th>12.1</th><td><a href="#12.1">Smart Pointers Library</a></td></tr>
+          <tr><th>12.2</th><td><a href="#12.2">Unordered Containers Library</a></td></tr>
+          <tr>
+	    <th>12.3</th><td><a href="#12.3">Date Time Library</a>
+	      <table class="toc">
+	        <tr><th>12.3.1</th><td><a href="#12.3.1">MySQL Database Type Mapping</a></td></tr>
+	      </table>
+	    </td>
+	  </tr>
         </table>
       </td>
     </tr>
@@ -7088,8 +7094,8 @@ class employee
      supports is <code>gregorian::date</code>. The types currently supported
      by the <code>posix-time</code> sub-profile are
      <code>posix_time::ptime</code> and
-     <code>posix_time::time_duration</code>. The manner in which these these
-     types are persisted is database system dependent and is discussed in the
+     <code>posix_time::time_duration</code>. The manner in which these types
+     are persisted is database system dependent and is discussed in the
      sub-sections that follow. The example below shows how
      <code>gregorian::date</code> may be used within a persistent object.</p>
 

@@ -1,5 +1,12 @@
 Version 1.2.0
 
+  * New profile, boost, provides support for Boost library types. This version
+    provides support for a subset of types from the 'smart_ptr', 'unordered',
+    and 'date_time' libraries. The boost profile implementation is provided by
+    the libodb-boost library. For more information refer to Chapter 12, "Boost
+    Profile" in the ODB manual as well as the 'boost' example in the
+    odb-examples package.
+
   * New namespace, odb::core, contains using-declarations for the core ODB
     constructs, such as the database, transaction, etc. The primary use of
     this namespace is in the using-directives:
