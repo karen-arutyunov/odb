@@ -153,7 +153,7 @@ namespace relational
           os << b << ".buffer_type = MYSQL_TYPE_NEWDECIMAL;"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
              << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "" << arg << "." << mi.var << "value.capacity ());"
+             << arg << "." << mi.var << "value.capacity ());"
              << b << ".length = &" << arg << "." << mi.var << "size;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
@@ -183,7 +183,7 @@ namespace relational
             char_bin_buffer_types[mi.st->type - sql_type::CHAR] << ";"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
              << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "" << arg << "." << mi.var << "value.capacity ());"
+             << arg << "." << mi.var << "value.capacity ());"
              << b << ".length = &" << arg << "." << mi.var << "size;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
@@ -195,7 +195,7 @@ namespace relational
             char_bin_buffer_types[mi.st->type - sql_type::CHAR] << ";"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
              << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "" << arg << "." << mi.var << "value.capacity ());"
+             << arg << "." << mi.var << "value.capacity ());"
              << b << ".length = &" << arg << "." << mi.var << "size;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
@@ -221,7 +221,7 @@ namespace relational
           os << b << ".buffer_type = MYSQL_TYPE_STRING;"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
              << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "" << arg << "." << mi.var << "value.capacity ());"
+             << arg << "." << mi.var << "value.capacity ());"
              << b << ".length = &" << arg << "." << mi.var << "size;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
@@ -234,7 +234,7 @@ namespace relational
           os << b << ".buffer_type = MYSQL_TYPE_STRING;"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
              << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "" << arg << "." << mi.var << "value.capacity ());"
+             << arg << "." << mi.var << "value.capacity ());"
              << b << ".length = &" << arg << "." << mi.var << "size;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
