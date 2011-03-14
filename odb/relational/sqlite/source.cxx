@@ -18,49 +18,6 @@ namespace relational
     {
       namespace relational = relational::source;
 
-      namespace
-      {
-        const char* integer_buffer_types[] =
-        {
-          "MYSQL_TYPE_TINY",
-          "MYSQL_TYPE_SHORT",
-          "MYSQL_TYPE_LONG",     // *_bind_param() doesn't support INT24.
-          "MYSQL_TYPE_LONG",
-          "MYSQL_TYPE_LONGLONG"
-        };
-
-        const char* float_buffer_types[] =
-        {
-          "MYSQL_TYPE_FLOAT",
-          "MYSQL_TYPE_DOUBLE"
-        };
-
-        const char* date_time_buffer_types[] =
-        {
-          "MYSQL_TYPE_DATE",
-          "MYSQL_TYPE_TIME",
-          "MYSQL_TYPE_DATETIME",
-          "MYSQL_TYPE_TIMESTAMP",
-          "MYSQL_TYPE_SHORT"
-        };
-
-        const char* char_bin_buffer_types[] =
-        {
-          "MYSQL_TYPE_STRING", // CHAR
-          "MYSQL_TYPE_BLOB",   // BINARY,
-          "MYSQL_TYPE_STRING", // VARCHAR
-          "MYSQL_TYPE_BLOB",   // VARBINARY
-          "MYSQL_TYPE_STRING", // TINYTEXT
-          "MYSQL_TYPE_BLOB",   // TINYBLOB
-          "MYSQL_TYPE_STRING", // TEXT
-          "MYSQL_TYPE_BLOB",   // BLOB
-          "MYSQL_TYPE_STRING", // MEDIUMTEXT
-          "MYSQL_TYPE_BLOB",   // MEDIUMBLOB
-          "MYSQL_TYPE_STRING", // LONGTEXT
-          "MYSQL_TYPE_BLOB"    // LONGBLOB
-        };
-      }
-
       //
       // bind
       //
@@ -126,116 +83,38 @@ namespace relational
         virtual void
         traverse_integer (member_info& mi)
         {
-          // While the is_unsigned should indicate whether the
-          // buffer variable is unsigned, rather than whether the
-          // database type is unsigned, in case of the image types,
-          // this is the same.
-          //
-          os << b << ".buffer_type = " <<
-            integer_buffer_types[mi.st->type - sql_type::TINYINT] << ";"
-             << b << ".is_unsigned = " << (mi.st->unsign ? "1" : "0") << ";"
+          os << b << ".type = sqlite::binding::integer;"
              << b << ".buffer = &" << arg << "." << mi.var << "value;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
 
         virtual void
-        traverse_float (member_info& mi)
+        traverse_real (member_info& mi)
         {
-          os << b << ".buffer_type = " <<
-            float_buffer_types[mi.st->type - sql_type::FLOAT] << ";"
+          os << b << ".type = sqlite::binding::real;"
              << b << ".buffer = &" << arg << "." << mi.var << "value;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
 
         virtual void
-        traverse_decimal (member_info& mi)
+        traverse_text (member_info& mi)
         {
-          os << b << ".buffer_type = MYSQL_TYPE_NEWDECIMAL;"
+          os << b << ".type = sqlite::binding::text;"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
-             << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "" << arg << "." << mi.var << "value.capacity ());"
-             << b << ".length = &" << arg << "." << mi.var << "size;"
+             << b << ".size = &" << arg << "." << mi.var << "size;"
+             << b << ".capacity = " << arg << "." << mi.var <<
+            "value.capacity ());"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
 
         virtual void
-        traverse_date_time (member_info& mi)
+        traverse_blob (member_info& mi)
         {
-          os << b << ".buffer_type = " <<
-            date_time_buffer_types[mi.st->type - sql_type::DATE] << ";"
-             << b << ".buffer = &" << arg << "." << mi.var << "value;";
-
-          if (mi.st->type == sql_type::YEAR)
-            os << b << ".is_unsigned = 0;";
-
-          os << b << ".is_null = &" << arg << "." << mi.var << "null;";
-        }
-
-        virtual void
-        traverse_short_string (member_info& mi)
-        {
-          // MySQL documentation is quite confusing about the use of
-          // buffer_length and length when it comes to input parameters.
-          // Source code, however, tells us that it uses buffer_length
-          // only if length is NULL.
-          //
-          os << b << ".buffer_type = " <<
-            char_bin_buffer_types[mi.st->type - sql_type::CHAR] << ";"
+          os << b << ".type = sqlite::binding::blob;"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
-             << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "" << arg << "." << mi.var << "value.capacity ());"
-             << b << ".length = &" << arg << "." << mi.var << "size;"
-             << b << ".is_null = &" << arg << "." << mi.var << "null;";
-        }
-
-        virtual void
-        traverse_long_string (member_info& mi)
-        {
-          os << b << ".buffer_type = " <<
-            char_bin_buffer_types[mi.st->type - sql_type::CHAR] << ";"
-             << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
-             << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "" << arg << "." << mi.var << "value.capacity ());"
-             << b << ".length = &" << arg << "." << mi.var << "size;"
-             << b << ".is_null = &" << arg << "." << mi.var << "null;";
-        }
-
-        virtual void
-        traverse_bit (member_info& mi)
-        {
-          // Treated as a BLOB.
-          //
-          os << b << ".buffer_type = MYSQL_TYPE_BLOB;"
-             << b << ".buffer = " << arg << "." << mi.var << "value;"
-             << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "sizeof (" << arg << "." << mi.var << "value));"
-             << b << ".length = &" << arg << "." << mi.var << "size;"
-             << b << ".is_null = &" << arg << "." << mi.var << "null;";
-        }
-
-        virtual void
-        traverse_enum (member_info& mi)
-        {
-          // Represented as a string.
-          //
-          os << b << ".buffer_type = MYSQL_TYPE_STRING;"
-             << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
-             << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "" << arg << "." << mi.var << "value.capacity ());"
-             << b << ".length = &" << arg << "." << mi.var << "size;"
-             << b << ".is_null = &" << arg << "." << mi.var << "null;";
-        }
-
-        virtual void
-        traverse_set (member_info& mi)
-        {
-          // Represented as a string.
-          //
-          os << b << ".buffer_type = MYSQL_TYPE_STRING;"
-             << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
-             << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << "" << arg << "." << mi.var << "value.capacity ());"
-             << b << ".length = &" << arg << "." << mi.var << "size;"
+             << b << ".size = &" << arg << "." << mi.var << "size;"
+             << b << ".capacity = " << arg << "." << mi.var <<
+            "value.capacity ());"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
 
@@ -298,82 +177,20 @@ namespace relational
         virtual void
         traverse_integer (member_info&)
         {
-          os << e << " = 0;"
+          os << e << " = false;"
              << endl;
         }
 
         virtual void
-        traverse_float (member_info&)
+        traverse_real (member_info&)
         {
-          os << e << " = 0;"
+          os << e << " = false;"
              << endl;
         }
 
         virtual void
-        traverse_decimal (member_info& mi)
+        traverse_string (member_info& mi)
         {
-          // @@ Optimization disabled.
-          //
-          os << "if (" << e << ")" << endl
-             << "{"
-             << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
-             << "grew = true;"
-             << "}";
-        }
-
-        virtual void
-        traverse_date_time (member_info&)
-        {
-          os << e << " = 0;"
-             << endl;
-        }
-
-        virtual void
-        traverse_short_string (member_info& mi)
-        {
-          // @@ Optimization disabled.
-          //
-          os << "if (" << e << ")" << endl
-             << "{"
-             << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
-             << "grew = true;"
-             << "}";
-        }
-
-        virtual void
-        traverse_long_string (member_info& mi)
-        {
-          os << "if (" << e << ")" << endl
-             << "{"
-             << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
-             << "grew = true;"
-             << "}";
-        }
-
-        virtual void
-        traverse_bit (member_info&)
-        {
-          os << e << " = 0;"
-             << endl;
-        }
-
-        virtual void
-        traverse_enum (member_info& mi)
-        {
-          // Represented as a string.
-          //
-          os << "if (" << e << ")" << endl
-             << "{"
-             << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
-             << "grew = true;"
-             << "}";
-        }
-
-        virtual void
-        traverse_set (member_info& mi)
-        {
-          // Represented as a string.
-          //
           os << "if (" << e << ")" << endl
              << "{"
              << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
@@ -485,11 +302,10 @@ namespace relational
               image_type = member_image_type_.image_type (mi.m);
               db_type_id = member_database_type_id_.database_type_id (mi.m);
 
-              os << "{"
-                 << "bool is_null;";
+              os << "{";
             }
 
-            traits = "mysql::value_traits<\n    "
+            traits = "sqlite::value_traits<\n    "
               + type + ",\n    "
               + image_type + ",\n    "
               + db_type_id + " >";
@@ -515,8 +331,7 @@ namespace relational
                    << "throw null_pointer ();";
             }
 
-            os << "i." << mi.var << "null = is_null;"
-               << "}";
+            os << "}";
           }
         }
 
@@ -534,113 +349,29 @@ namespace relational
         traverse_integer (member_info& mi)
         {
           os << traits << "::set_image (" << endl
-             << "i." << mi.var << "value, is_null, " << member << ");";
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "null," << endl
+             << member << ");";
         }
 
         virtual void
-        traverse_float (member_info& mi)
+        traverse_real (member_info& mi)
         {
           os << traits << "::set_image (" << endl
-             << "i." << mi.var << "value, is_null, " << member << ");";
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "null," << endl
+             << member << ");";
         }
 
         virtual void
-        traverse_decimal (member_info& mi)
+        traverse_string (member_info& mi)
         {
-          // @@ Optimization: can remove growth check if buffer is fixed.
-          //
-          os << "std::size_t size (0);"
-             << "std::size_t cap (i." << mi.var << "value.capacity ());"
+          os << "std::size_t cap (i." << mi.var << "value.capacity ());"
              << traits << "::set_image (" << endl
              << "i." << mi.var << "value," << endl
-             << "size," << endl
-             << "is_null," << endl
+             << "i." << mi.var << "size," << endl
+             << "i." << mi.var << "null," << endl
              << member << ");"
-             << "i." << mi.var << "size = static_cast<unsigned long> (size);"
-             << "grew = grew || (cap != i." << mi.var << "value.capacity ());";
-        }
-
-        virtual void
-        traverse_date_time (member_info& mi)
-        {
-          os << traits << "::set_image (" << endl
-             << "i." << mi.var << "value, is_null, " << member << ");";
-        }
-
-        virtual void
-        traverse_short_string (member_info& mi)
-        {
-          // @@ Optimization: can remove growth check if buffer is fixed.
-          //
-          os << "std::size_t size (0);"
-             << "std::size_t cap (i." << mi.var << "value.capacity ());"
-             << traits << "::set_image (" << endl
-             << "i." << mi.var << "value," << endl
-             << "size," << endl
-             << "is_null," << endl
-             << member << ");"
-             << "i." << mi.var << "size = static_cast<unsigned long> (size);"
-             << "grew = grew || (cap != i." << mi.var << "value.capacity ());";
-        }
-
-        virtual void
-        traverse_long_string (member_info& mi)
-        {
-          os << "std::size_t size (0);"
-             << "std::size_t cap (i." << mi.var << "value.capacity ());"
-             << traits << "::set_image (" << endl
-             << "i." << mi.var << "value," << endl
-             << "size," << endl
-             << "is_null," << endl
-             << member << ");"
-             << "i." << mi.var << "size = static_cast<unsigned long> (size);"
-             << "grew = grew || (cap != i." << mi.var << "value.capacity ());";
-        }
-
-        virtual void
-        traverse_bit (member_info& mi)
-        {
-          // Represented as a BLOB.
-          //
-          os << "std::size_t size (0);"
-             << traits << "::set_image (" << endl
-             << "i." << mi.var << "value," << endl
-             << "sizeof (i." << mi.var << "value)," << endl
-             << "size," << endl
-             << "is_null," << endl
-             << member << ");"
-             << "i." << mi.var << "size = static_cast<unsigned long> (size);";
-        }
-
-        virtual void
-        traverse_enum (member_info& mi)
-        {
-          // Represented as a string.
-          //
-          os << "std::size_t size (0);"
-             << "std::size_t cap (i." << mi.var << "value.capacity ());"
-             << traits << "::set_image (" << endl
-             << "i." << mi.var << "value," << endl
-             << "size," << endl
-             << "is_null," << endl
-             << member << ");"
-             << "i." << mi.var << "size = static_cast<unsigned long> (size);"
-             << "grew = grew || (cap != i." << mi.var << "value.capacity ());";
-        }
-
-        virtual void
-        traverse_set (member_info& mi)
-        {
-          // Represented as a string.
-          //
-          os << "std::size_t size (0);"
-             << "std::size_t cap (i." << mi.var << "value.capacity ());"
-             << traits << "::set_image (" << endl
-             << "i." << mi.var << "value," << endl
-             << "size," << endl
-             << "is_null," << endl
-             << member << ");"
-             << "i." << mi.var << "size = static_cast<unsigned long> (size);"
              << "grew = grew || (cap != i." << mi.var << "value.capacity ());";
         }
 
@@ -735,7 +466,7 @@ namespace relational
               db_type_id = member_database_type_id_.database_type_id (mi.m);
             }
 
-            traits = "mysql::value_traits<\n    "
+            traits = "sqlite::value_traits<\n    "
               + type + ",\n    "
               + image_type + ",\n    "
               + db_type_id + " >";
@@ -788,93 +519,25 @@ namespace relational
         traverse_integer (member_info& mi)
         {
           os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, " <<
-            "i." << mi.var << "null);"
-             << endl;
-        }
-
-        virtual void
-        traverse_float (member_info& mi)
-        {
-          os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, " <<
-            "i." << mi.var << "null);"
-             << endl;
-        }
-
-        virtual void
-        traverse_decimal (member_info& mi)
-        {
-          os << traits << "::set_value (" << endl
              << member << "," << endl
              << "i." << mi.var << "value," << endl
-             << "i." << mi.var << "size," << endl
              << "i." << mi.var << "null);"
              << endl;
         }
 
         virtual void
-        traverse_date_time (member_info& mi)
-        {
-          os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, " <<
-            "i." << mi.var << "null);"
-             << endl;
-        }
-
-        virtual void
-        traverse_short_string (member_info& mi)
+        traverse_real (member_info& mi)
         {
           os << traits << "::set_value (" << endl
              << member << "," << endl
              << "i." << mi.var << "value," << endl
-             << "i." << mi.var << "size," << endl
              << "i." << mi.var << "null);"
              << endl;
         }
 
         virtual void
-        traverse_long_string (member_info& mi)
+        traverse_string (member_info& mi)
         {
-          os << traits << "::set_value (" << endl
-             << member << "," << endl
-             << "i." << mi.var << "value," << endl
-             << "i." << mi.var << "size," << endl
-             << "i." << mi.var << "null);"
-             << endl;
-        }
-
-        virtual void
-        traverse_bit (member_info& mi)
-        {
-          // Represented as a BLOB.
-          //
-          os << traits << "::set_value (" << endl
-             << member << "," << endl
-             << "i." << mi.var << "value," << endl
-             << "i." << mi.var << "size," << endl
-             << "i." << mi.var << "null);"
-             << endl;
-        }
-
-        virtual void
-        traverse_enum (member_info& mi)
-        {
-          // Represented as a string.
-          //
-          os << traits << "::set_value (" << endl
-             << member << "," << endl
-             << "i." << mi.var << "value," << endl
-             << "i." << mi.var << "size," << endl
-             << "i." << mi.var << "null);"
-             << endl;
-        }
-
-        virtual void
-        traverse_set (member_info& mi)
-        {
-          // Represented as a string.
-          //
           os << traits << "::set_value (" << endl
              << member << "," << endl
              << "i." << mi.var << "value," << endl

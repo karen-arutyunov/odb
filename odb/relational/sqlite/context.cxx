@@ -3,6 +3,7 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <vector>
 #include <cassert>
 #include <sstream>
 
@@ -220,8 +221,161 @@ namespace relational
     // SQL type parsing.
     //
 
-    static sql_type
-    parse_sql_type (semantics::data_member& m, std::string const& sql);
+    namespace
+    {
+      struct sql_parser
+      {
+        sql_parser (semantics::data_member& m, std::string const& sql)
+            : m_ (m), l_ (sql)
+        {
+        }
+
+        // Issues diagnostics and throws generation_failed in case of
+        // an error.
+        //
+        sql_type
+        parse ()
+        {
+          try
+          {
+            for (sql_token t (l_.next ()); t.type () != sql_token::t_eos;)
+            {
+              sql_token::token_type tt (t.type ());
+
+              if (tt == sql_token::t_identifier)
+              {
+                string const& id (context::upcase (t.identifier ()));
+
+                // Column constraints start with one of the following
+                // keywords. Use them to determine when to stop parsing.
+                //
+                if (id == "CONSTRAINT" ||
+                    id == "PRIMARY" ||
+                    id == "NOT" ||
+                    id == "UNIQUE" ||
+                    id == "CHECK" ||
+                    id == "DEFAULT" ||
+                    id == "COLLATE" ||
+                    id == "REFERENCES")
+                {
+                  break;
+                }
+
+                ids_.push_back (id);
+                t = l_.next ();
+
+                if (t.punctuation () == sql_token::p_lparen)
+                {
+                  parse_range ();
+                  t = l_.next ();
+                }
+              }
+              else
+              {
+                cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
+                     << ": error: expected SQLite type name instead of '"
+                     << t << "'" << endl;
+                throw generation_failed ();
+              }
+            }
+          }
+          catch (sql_lexer::invalid_input const& e)
+          {
+            cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
+                 << ": error: invalid SQLite type declaration: " << e.message
+                 << endl;
+            throw generation_failed ();
+          }
+
+          if (ids_.empty ())
+          {
+            cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
+                 << ": error: expected SQLite type name" << endl;
+            throw generation_failed ();
+          }
+
+          sql_type r;
+
+          // Apply the first four rules of the SQLite type to affinity
+          // conversion algorithm.
+          //
+          if (find ("INT"))
+            r.type = sql_type::INTEGER;
+          else if (find ("TEXT") || find ("CHAR") || find ("CLOB"))
+            r.type = sql_type::TEXT;
+          else if (find ("BLOB"))
+            r.type = sql_type::BLOB;
+          else if (find ("REAL") || find ("FLOA") || find ("DOUB"))
+            r.type = sql_type::REAL;
+          else
+          {
+            // Instead of the fifth rule which maps everything else
+            // to NUMERICAL (which we don't have), map some commonly
+            // used type names to one of the above types.
+            //
+            string const& id (ids_[0]);
+
+            if (id == "NUMERIC")
+              r.type = sql_type::REAL;
+            else if (id == "DECIMAL")
+              r.type = sql_type::TEXT;
+            else if (id == "BOOLEAN" || id == "BOOL")
+              r.type = sql_type::INTEGER;
+            else if (id == "DATE" || id == "TIME" || id == "DATETIME")
+              r.type = sql_type::TEXT;
+            else
+            {
+              cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
+                   << " error: unknown SQLite type '" << id << "'" << endl;
+              throw generation_failed ();
+            }
+          }
+
+          return r;
+        }
+
+        void
+        parse_range ()
+        {
+          // Skip tokens until we get the closing paren.
+          //
+          for (sql_token t (l_.next ());; t = l_.next ())
+          {
+            if (t.punctuation () == sql_token::p_rparen)
+              break;
+
+            if (t.type () != sql_token::t_eos)
+            {
+              cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
+                   << ": error: missing ')' in SQLite type declaration"
+                   << endl;
+              throw generation_failed ();
+            }
+          }
+        }
+
+        bool
+        find (string const& str) const
+        {
+          for (identifiers::const_iterator i (ids_.begin ());
+               i != ids_.end (); ++i)
+          {
+            if (i->find (str) != string::npos)
+              return true;
+          }
+
+          return false;
+        }
+
+      private:
+        typedef vector<string> identifiers;
+
+      private:
+        semantics::data_member& m_;
+        sql_lexer l_;
+        identifiers ids_;
+      };
+    }
 
     sql_type const& context::
     column_sql_type (semantics::data_member& m, string const& kp)
@@ -231,402 +385,12 @@ namespace relational
                   : "sqlite-" + kp + "-column-sql-type");
 
       if (!m.count (key))
-        m.set (key, parse_sql_type (m, column_type (m, kp)));
+      {
+        sql_parser p (m, column_type (m, kp));
+        m.set (key, p.parse ());
+      }
 
       return m.get<sql_type> (key);
-    }
-
-    static sql_type
-    parse_sql_type (semantics::data_member& m, string const& sql)
-    {
-      try
-      {
-        sql_type r;
-        sql_lexer l (sql);
-
-        // While most type names use single identifier, there are
-        // a couple of exceptions to this rule:
-        //
-        // NATIONAL CHAR|VARCHAR
-        // CHAR BYTE             (BINARY)
-        // CHARACTER VARYING     (VARCHAR)
-        // LONG VARBINARY        (MEDIUMBLOB)
-        // LONG VARCHAR          (MEDIUMTEXT)
-        //
-        //
-        enum state
-        {
-          parse_prefix,
-          parse_name,
-          parse_range,
-          parse_sign,
-          parse_done
-        };
-
-        state s (parse_prefix);
-        string prefix;
-
-        for (sql_token t (l.next ());
-             s != parse_done && t.type () != sql_token::t_eos;
-             t = l.next ())
-        {
-          sql_token::token_type tt (t.type ());
-
-          switch (s)
-          {
-          case parse_prefix:
-            {
-              if (tt == sql_token::t_identifier)
-              {
-                string const& id (t.identifier ());
-
-                if (id == "NATIONAL" ||
-                    id == "CHAR" ||
-                    id == "CHARACTER" ||
-                    id == "LONG")
-                {
-                  prefix = id;
-                  s = parse_name;
-                  continue;
-                }
-              }
-
-              // Fall through.
-              //
-              s = parse_name;
-            }
-          case parse_name:
-            {
-              if (tt == sql_token::t_identifier)
-              {
-                bool match (true);
-                string const& id (t.identifier ());
-
-                // Numeric types.
-                //
-                if (id == "BIT")
-                {
-                  r.type = sql_type::BIT;
-                }
-                else if (id == "TINYINT" || id == "INT1")
-                {
-                  r.type = sql_type::TINYINT;
-                }
-                else if (id == "BOOL" || id == "BOOLEAN")
-                {
-                  r.type = sql_type::TINYINT;
-                  r.range = true;
-                  r.range_value = 1;
-                }
-                else if (id == "SMALLINT" || id == "INT2")
-                {
-                  r.type = sql_type::SMALLINT;
-                }
-                else if (id == "MEDIUMINT" ||
-                         id == "INT3" ||
-                         id == "MIDDLEINT")
-                {
-                  r.type = sql_type::MEDIUMINT;
-                }
-                else if (id == "INT" || id == "INTEGER" || id == "INT4")
-                {
-                  r.type = sql_type::INT;
-                }
-                else if (id == "BIGINT" || id == "INT8")
-                {
-                  r.type = sql_type::BIGINT;
-                }
-                else if (id == "SERIAL")
-                {
-                  r.type = sql_type::BIGINT;
-                  r.unsign = true;
-                }
-                else if (id == "FLOAT" || id == "FLOAT4")
-                {
-                  r.type = sql_type::FLOAT;
-                }
-                else if (id == "DOUBLE" || id == "FLOAT8")
-                {
-                  r.type = sql_type::DOUBLE;
-                }
-                else if (id == "DECIMAL" ||
-                         id == "DEC" ||
-                         id == "NUMERIC" ||
-                         id == "FIXED")
-                {
-                  r.type = sql_type::DECIMAL;
-                }
-                //
-                // Date-time types.
-                //
-                else if (id == "DATE")
-                {
-                  r.type = sql_type::DATE;
-                }
-                else if (id == "TIME")
-                {
-                  r.type = sql_type::TIME;
-                }
-                else if (id == "DATETIME")
-                {
-                  r.type = sql_type::DATETIME;
-                }
-                else if (id == "TIMESTAMP")
-                {
-                  r.type = sql_type::TIMESTAMP;
-                }
-                else if (id == "YEAR")
-                {
-                  r.type = sql_type::YEAR;
-                }
-                //
-                // String and binary types.
-                //
-                else if (id == "NCHAR")
-                {
-                  r.type = sql_type::CHAR;
-                }
-                else if (id == "VARCHAR")
-                {
-                  r.type = prefix == "LONG"
-                    ? sql_type::MEDIUMTEXT
-                    : sql_type::VARCHAR;
-                }
-                else if (id == "NVARCHAR")
-                {
-                  r.type = sql_type::VARCHAR;
-                }
-                else if (id == "VARYING" && prefix == "CHARACTER")
-                {
-                  r.type = sql_type::VARCHAR;
-                }
-                else if (id == "BINARY")
-                {
-                  r.type = sql_type::BINARY;
-                }
-                else if (id == "BYTE" && prefix == "CHAR")
-                {
-                  r.type = sql_type::BINARY;
-                }
-                else if (id == "VARBINARY")
-                {
-                  r.type = prefix == "LONG"
-                    ? sql_type::MEDIUMBLOB
-                    : sql_type::VARBINARY;
-                }
-                else if (id == "TINYBLOB")
-                {
-                  r.type = sql_type::TINYBLOB;
-                }
-                else if (id == "TINYTEXT")
-                {
-                  r.type = sql_type::TINYTEXT;
-                }
-                else if (id == "BLOB")
-                {
-                  r.type = sql_type::BLOB;
-                }
-                else if (id == "TEXT")
-                {
-                  r.type = sql_type::TEXT;
-                }
-                else if (id == "MEDIUMBLOB")
-                {
-                  r.type = sql_type::MEDIUMBLOB;
-                }
-                else if (id == "MEDIUMTEXT")
-                {
-                  r.type = sql_type::MEDIUMTEXT;
-                }
-                else if (id == "LONGBLOB")
-                {
-                  r.type = sql_type::LONGBLOB;
-                }
-                else if (id == "LONGTEXT")
-                {
-                  r.type = sql_type::LONGTEXT;
-                }
-                else if (id == "ENUM")
-                {
-                  r.type = sql_type::ENUM;
-                }
-                else if (id == "SET")
-                {
-                  r.type = sql_type::SET;
-                }
-                else
-                  match = false;
-
-                if (match)
-                {
-                  s = parse_range;
-                  continue;
-                }
-              }
-
-              // Some prefixes can also be type names if not followed
-              // by the actual type name.
-              //
-              if (!prefix.empty ())
-              {
-                if (prefix == "CHAR" || prefix == "CHARACTER")
-                {
-                  r.type = sql_type::CHAR;
-                }
-                else if (prefix == "LONG")
-                {
-                  r.type = sql_type::MEDIUMTEXT;
-                }
-              }
-
-              if (r.type == sql_type::invalid)
-              {
-                cerr << m.file () << ":" << m.line () << ":" <<
-                  m.column () << ":";
-
-                if (tt == sql_token::t_identifier)
-                  cerr << " error: unknown MySQL type '" <<
-                    t.identifier () << "'" << endl;
-                else
-                  cerr << " error: expected MySQL type name" << endl;
-
-                throw generation_failed ();
-              }
-
-              // Fall through.
-              //
-              s = parse_range;
-            }
-          case parse_range:
-            {
-              if (t.punctuation () == sql_token::p_lparen)
-              {
-                t = l.next ();
-
-                // ENUM and SET have a list of members instead of the range.
-                //
-                if (r.type == sql_type::ENUM || r.type == sql_type::SET)
-                {
-                  // Skip tokens until we get the closing paren.
-                  //
-                  while (t.type () != sql_token::t_eos &&
-                         t.punctuation () != sql_token::p_rparen)
-                    t = l.next ();
-                }
-                else
-                {
-                  if (t.type () != sql_token::t_int_lit)
-                  {
-                    cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                         << ": error: integer range expected in MySQL type "
-                         << "declaration" << endl;
-
-                    throw generation_failed ();
-                  }
-
-                  unsigned int v;
-                  istringstream is (t.literal ());
-
-                  if (!(is >> v && is.eof ()))
-                  {
-                    cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                         << ": error: invalid range value '" << t.literal ()
-                         << "'in MySQL type declaration" << endl;
-
-                    throw generation_failed ();
-                  }
-
-                  r.range = true;
-                  r.range_value = v;
-
-                  t = l.next ();
-
-                  if (t.punctuation () == sql_token::p_comma)
-                  {
-                    // We have the second range value. Skip it.
-                    //
-                    l.next ();
-                    t = l.next ();
-                  }
-                }
-
-                if (t.punctuation () != sql_token::p_rparen)
-                {
-                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                       << ": error: expected ')' in MySQL type declaration"
-                       << endl;
-
-                  throw generation_failed ();
-                }
-
-                s = parse_sign;
-                continue;
-              }
-
-              // Fall through.
-              //
-              s = parse_sign;
-            }
-          case parse_sign:
-            {
-              if (tt == sql_token::t_identifier &&
-                  t.identifier () == "UNSIGNED")
-              {
-                r.unsign = true;
-              }
-
-              s = parse_done;
-              break;
-            }
-          case parse_done:
-            {
-              assert (false);
-              break;
-            }
-          }
-        }
-
-        if (s == parse_name && !prefix.empty ())
-        {
-          // Some prefixes can also be type names if not followed
-          // by the actual type name.
-          //
-          if (prefix == "CHAR" || prefix == "CHARACTER")
-          {
-            r.type = sql_type::CHAR;
-          }
-          else if (prefix == "LONG")
-          {
-            r.type = sql_type::MEDIUMTEXT;
-          }
-        }
-
-        if (r.type == sql_type::invalid)
-        {
-          cerr << m.file () << ":" << m.line () << ":" << m.column ()
-               << ": error: incomplete MySQL type declaration" << endl;
-
-          throw generation_failed ();
-        }
-
-        // If range is omitted for CHAR or BIT types, it defaults to 1.
-        //
-        if ((r.type == sql_type::CHAR || r.type == sql_type::BIT) && !r.range)
-        {
-          r.range = true;
-          r.range_value = 1;
-        }
-
-        return r;
-      }
-      catch (sql_lexer::invalid_input const& e)
-      {
-        cerr << m.file () << ":" << m.line () << ":" << m.column ()
-             << ": error: invalid MySQL type declaration: " << e.message
-             << endl;
-
-        throw generation_failed ();
-      }
     }
   }
 }

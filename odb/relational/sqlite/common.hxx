@@ -97,49 +97,26 @@ namespace relational
       }
 
       virtual void
-      traverse_float (member_info&)
+      traverse_real (member_info&)
       {
       }
 
       virtual void
-      traverse_decimal (member_info&)
+      traverse_text (member_info& m)
       {
+        traverse_string (m);
       }
 
       virtual void
-      traverse_date_time (member_info&)
+      traverse_blob (member_info& m)
       {
+        traverse_string (m);
       }
 
+      // String covers both text and blob.
+      //
       virtual void
       traverse_string (member_info&)
-      {
-      }
-
-      virtual void
-      traverse_short_string (member_info& mi)
-      {
-        traverse_string (mi);
-      }
-
-      virtual void
-      traverse_long_string (member_info& mi)
-      {
-        traverse_string (mi);
-      }
-
-      virtual void
-      traverse_bit (member_info&)
-      {
-      }
-
-      virtual void
-      traverse_enum (member_info&)
-      {
-      }
-
-      virtual void
-      traverse_set (member_info&)
       {
       }
     };
@@ -159,25 +136,10 @@ namespace relational
       traverse_integer (member_info&);
 
       virtual void
-      traverse_float (member_info&);
-
-      virtual void
-      traverse_decimal (member_info&);
-
-      virtual void
-      traverse_date_time (member_info&);
+      traverse_real (member_info&);
 
       virtual void
       traverse_string (member_info&);
-
-      virtual void
-      traverse_bit (member_info&);
-
-      virtual void
-      traverse_enum (member_info&);
-
-      virtual void
-      traverse_set (member_info&);
 
     private:
       string type_;
@@ -198,25 +160,13 @@ namespace relational
       traverse_integer (member_info&);
 
       virtual void
-      traverse_float (member_info&);
+      traverse_real (member_info&);
 
       virtual void
-      traverse_decimal (member_info&);
+      traverse_text (member_info&);
 
       virtual void
-      traverse_date_time (member_info&);
-
-      virtual void
-      traverse_string (member_info&);
-
-      virtual void
-      traverse_bit (member_info&);
-
-      virtual void
-      traverse_enum (member_info&);
-
-      virtual void
-      traverse_set (member_info&);
+      traverse_blob (member_info&);
 
     private:
       string type_id_;

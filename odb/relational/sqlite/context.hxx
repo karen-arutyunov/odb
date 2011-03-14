@@ -18,60 +18,16 @@ namespace relational
       //
       enum core_type
       {
-        // Integral types.
-        //
-        TINYINT,
-        SMALLINT,
-        MEDIUMINT,
-        INT,
-        BIGINT,
-
-        // Float types.
-        //
-        FLOAT,
-        DOUBLE,
-        DECIMAL,
-
-        // Data-time types.
-        //
-        DATE,
-        TIME,
-        DATETIME,
-        TIMESTAMP,
-        YEAR,
-
-        // String and binary types.
-        //
-        CHAR,
-        BINARY,
-        VARCHAR,
-        VARBINARY,
-        TINYTEXT,
-        TINYBLOB,
+        INTEGER,
+        REAL,
         TEXT,
         BLOB,
-        MEDIUMTEXT,
-        MEDIUMBLOB,
-        LONGTEXT,
-        LONGBLOB,
-
-        // Other types.
-        //
-        BIT,
-        ENUM,
-        SET,
-
-        // Invalid type.
-        //
         invalid
       };
 
-      sql_type () : type (invalid), unsign (false), range (false) {}
+      sql_type (): type (invalid) {}
 
       core_type type;
-      bool unsign;
-      bool range;
-      unsigned int range_value; // MySQL max value is 2^32 - 1 (LONGBLOG/TEXT).
     };
 
     class context: public virtual relational::context

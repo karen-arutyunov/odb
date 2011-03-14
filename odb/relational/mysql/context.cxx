@@ -289,7 +289,7 @@ namespace relational
             {
               if (tt == sql_token::t_identifier)
               {
-                string const& id (t.identifier ());
+                string const& id (context::upcase (t.identifier ()));
 
                 if (id == "NATIONAL" ||
                     id == "CHAR" ||
@@ -311,7 +311,7 @@ namespace relational
               if (tt == sql_token::t_identifier)
               {
                 bool match (true);
-                string const& id (t.identifier ());
+                string const& id (context::upcase (t.identifier ()));
 
                 // Numeric types.
                 //
@@ -581,7 +581,7 @@ namespace relational
           case parse_sign:
             {
               if (tt == sql_token::t_identifier &&
-                  t.identifier () == "UNSIGNED")
+                  context::upcase (t.identifier ()) == "UNSIGNED")
               {
                 r.unsign = true;
               }

@@ -9,6 +9,7 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 #
 cxx_ptun :=                    \
 cxx-lexer.cxx                  \
+sql-token.cxx                  \
 sql-lexer.cxx                  \
 context.cxx                    \
 common.cxx                     \

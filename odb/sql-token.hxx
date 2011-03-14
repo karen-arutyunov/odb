@@ -7,6 +7,7 @@
 #define ODB_SQL_TOKEN_HXX
 
 #include <string>
+#include <iosfwd>
 #include <cstddef> // std::size_t
 
 class sql_token
@@ -36,6 +37,8 @@ public:
 public:
   enum punctuation_type
   {
+    // Keep synched with punctuation_literals in source file.
+    //
     p_semi,
     p_comma,
     p_lparen,
@@ -73,6 +76,9 @@ private:
   punctuation_type punctuation_;
   std::string str_;
 };
+
+std::ostream&
+operator<< (std::ostream&, sql_token const&);
 
 #include <odb/sql-token.ixx>
 

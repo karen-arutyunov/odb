@@ -135,6 +135,20 @@ context ()
 
 context* context::current_;
 
+string context::
+upcase (string const& s)
+{
+  string r;
+  string::size_type n (s.size ());
+
+  r.reserve (n);
+
+  for (string::size_type i (0); i < n; ++i)
+    r.push_back (toupper (s[i]));
+
+  return r;
+}
+
 void context::
 diverge (streambuf* sb)
 {
@@ -161,20 +175,6 @@ member_type (semantics::data_member& m, string const& key_prefix)
     return *indirect_value<semantics::type*> (m, key);
 
   return *indirect_value<semantics::type*> (m.type (), key);
-}
-
-string context::
-upcase (string const& s)
-{
-  string r;
-  string::size_type n (s.size ());
-
-  r.reserve (n);
-
-  for (string::size_type i (0); i < n; ++i)
-    r.push_back (toupper (s[i]));
-
-  return r;
 }
 
 bool context::
