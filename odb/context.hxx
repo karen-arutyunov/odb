@@ -52,6 +52,9 @@ public:
   typedef std::string string;
   typedef ::options options_type;
 
+  static string
+  upcase (string const&);
+
 public:
   static semantics::type&
   member_type (semantics::data_member& m, string const& key_prefix)

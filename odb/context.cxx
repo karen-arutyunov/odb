@@ -3,7 +3,7 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <cctype>  // std::is{alpha,upper,lower}
+#include <cctype> // std::toupper, std::is{alpha,upper,lower}
 
 #include <odb/context.hxx>
 #include <odb/common.hxx>
@@ -134,6 +134,20 @@ context (context& c, ostream& os_)
 context::
 ~context ()
 {
+}
+
+string context::
+upcase (string const& s)
+{
+  string r;
+  string::size_type n (s.size ());
+
+  r.reserve (n);
+
+  for (string::size_type i (0); i < n; ++i)
+    r.push_back (toupper (s[i]));
+
+  return r;
 }
 
 bool context::
