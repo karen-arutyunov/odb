@@ -1,11 +1,30 @@
 Version 1.2.0
 
-  * New profile, boost, provides support for Boost library types. This version
-    provides support for a subset of types from the 'smart_ptr', 'unordered',
-    and 'date_time' libraries. The boost profile implementation is provided by
-    the libodb-boost library. For more information refer to Chapter 12, "Boost
-    Profile" in the ODB manual as well as the 'boost' example in the
-    odb-examples package.
+  * New profile, boost, provides persistence support for the Boost libraries.
+    This version covers the most commonly used types from the smart_ptr,
+    unordered, and date_time libraries. The boost profile implementation is
+    provided by the libodb-boost library. For more information refer to
+    Chapter 11, "Profiles Introduction" and Chapter 12, "Boost Profile" in
+    the ODB manual as well as the 'boost' example in the odb-examples package.
+
+  * Support for embedded database schemas. The new option, --schema-format,
+    allows the selection of the schema format. The valid values for this
+    option are 'sql' for a standalone SQL file and 'embedded' for a schema
+    embedded into the generated C++ code. The new odb::schema_catalog class
+    provides support for accessing embedded schemas from within the
+    application. For details refer to Section 3.3, "Database" in the ODB
+    manual as well as the 'schema/embedded' example in the odb-examples
+    package.
+
+  * New exceptions: odb::recoverable, odb::connection_lost, and odb::timeout.
+    The odb::recoverable exception is a common base class for all recoverable
+    ODB exceptions. The other two exceptions plus odb::deadlock now inherit
+    from this base. Refer to Section 3.5, "Error Handling and Recovery" for
+    details.
+
+  * Support for connection validation (ping) in MySQL connection_pool_factory.
+    This transparently deals with the MySQL server closing connections after
+    a certain period of inactivity.
 
   * New namespace, odb::core, contains using-declarations for the core ODB
     constructs, such as the database, transaction, etc. The primary use of
@@ -20,29 +39,16 @@ Version 1.2.0
     The new approach brings all the essential ODB names into the current
     namespace without any of the auxiliary objects such as traits, etc., which
     minimizes the likelihood of conflicts with other libraries.  Note that you
-    can still use the odb namespace when qualifying individual names, for
+    should still use the odb namespace when qualifying individual names, for
     example, odb::database.
 
-  * Support for embedded database schemas. The new option, --schema-format,
-    allows the selection of the schema format. The valid values for this
-    option are 'sql' for a standalone SQL file and 'embedded' for a schema
-    embedded into the generated C++ code. The new odb::schema_catalog class
-    provides support for accessing embedded schemas from within the
-    application. For details refer to Section 3.3, "Database" in the ODB
-    manual as well as the 'schema/embedded' example in the odb-examples
-    package.
-
-  * New exceptions: odb::recoverbale, odb::connection_lost, and odb::timeout.
-    The odb::recoverbale exception is a common base class for all recoverable
-    ODB exceptions. The other two exceptions plus odb::deadlock now inherit
-    from this base. Refer to Section 3.5, "Error Handling and Recovery" for
-    details.
-
-  * Support for connection validation (ping) in MySQL connection_pool_factory.
-    This transparently deals with the MySQL server closing connections after
-    a certain period of inactivity.
-
   * New option aliases: -q for --generate-query and -s for --generate-schema.
+
+  * Support for the default options file. Now, if configured, the ODB compiler
+    loads the default options file (by default ../etc/odb/default.options,
+    relative to the ODB compiler binary). This file can be used for
+    installation-wide customization, such as adding extra include search
+    paths.
 
 Version 1.1.0
 
