@@ -698,25 +698,6 @@ encode_plugin_option (string const& k, string const& cv)
   if (!v.empty ())
   {
     o += '=';
-
-    // On Windows we need to protect values with spaces using quotes.
-    // Since there could be actual quotes in the value, we need to
-    // escape them.
-    //
-#ifdef _WIN32
-    {
-      string t ("\"");
-      for (size_t i (0); i < v.size (); ++i)
-      {
-        if (v[i] == '"')
-          t += "\\\"";
-        else
-          t += v[i];
-      }
-      t += '"';
-      v = t;
-    }
-#endif
     o += v;
   }
 
@@ -1181,12 +1162,32 @@ start_process (char const* args[], char const* name, bool out)
   // Serialize the arguments to string.
   //
   string cmd_line;
+
   for (char const** p (args); *p != 0; ++p)
   {
     if (p != args)
       cmd_line += ' ';
 
-    cmd_line += *p;
+    // On Windows we need to protect values with spaces using quotes.
+    // Since there could be actual quotes in the value, we need to
+    // escape them.
+    //
+    string a (*p);
+    bool quote (a.find (' ') != string::npos);
+
+    if (quote)
+      cmd_line += '"';
+
+    for (size_t i (0); i < a.size (); ++i)
+    {
+      if (a[i] == '"')
+        cmd_line += "\\\"";
+      else
+        cmd_line += a[i];
+    }
+
+    if (quote)
+      cmd_line += '"';
   }
 
   // Prepare other info.
