@@ -83,7 +83,7 @@ namespace relational
         virtual void
         traverse_integer (member_info& mi)
         {
-          os << b << ".type = sqlite::binding::integer;"
+          os << b << ".type = sqlite::bind::integer;"
              << b << ".buffer = &" << arg << "." << mi.var << "value;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
@@ -91,7 +91,7 @@ namespace relational
         virtual void
         traverse_real (member_info& mi)
         {
-          os << b << ".type = sqlite::binding::real;"
+          os << b << ".type = sqlite::bind::real;"
              << b << ".buffer = &" << arg << "." << mi.var << "value;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
@@ -99,7 +99,7 @@ namespace relational
         virtual void
         traverse_text (member_info& mi)
         {
-          os << b << ".type = sqlite::binding::text;"
+          os << b << ".type = sqlite::bind::text;"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".capacity = " << arg << "." << mi.var <<
@@ -110,7 +110,7 @@ namespace relational
         virtual void
         traverse_blob (member_info& mi)
         {
-          os << b << ".type = sqlite::binding::blob;"
+          os << b << ".type = sqlite::bind::blob;"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".capacity = " << arg << "." << mi.var <<
