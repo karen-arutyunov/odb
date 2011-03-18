@@ -150,31 +150,7 @@ namespace relational
         }
 
         virtual void
-        traverse_decimal (member_info&)
-        {
-          r_ = true;
-        }
-
-        virtual void
-        traverse_long_string (member_info&)
-        {
-          r_ = true;
-        }
-
-        virtual void
-        traverse_short_string (member_info&)
-        {
-          r_ = true; // @@ Short string optimization disabled.
-        }
-
-        virtual void
-        traverse_enum (member_info&)
-        {
-          r_ = true;
-        }
-
-        virtual void
-        traverse_set (member_info&)
+        traverse_string (member_info&)
         {
           r_ = true;
         }
