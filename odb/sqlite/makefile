@@ -29,9 +29,9 @@ $(call import,\
   $(scf_root)/import/libodb/stub.make,\
   l: odb.l,cpp-options: odb.l.cpp-options)
 
-#$(call import,\
-#  $(scf_root)/import/libsqlite/stub.make,\
-#  l: sqlite.l,cpp-options: sqlite.l.cpp-options)
+$(call import,\
+  $(scf_root)/import/libsqlite/stub.make,\
+  l: sqlite.l,cpp-options: sqlite.l.cpp-options)
 
 # Build.
 #
