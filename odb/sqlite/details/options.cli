@@ -22,13 +22,13 @@ namespace odb
            in-memory database."
         };
 
-        bool --database-create
+        bool --create
         {
           "Create the SQLite database if it does not already exist. By default
            opening the database fails if it does not already exist."
         };
 
-        bool --database-readonly
+        bool --read-only
         {
           "Open the SQLite database in read-only mode. By default the database
            is opened for reading and writing if possible, or reading only if
