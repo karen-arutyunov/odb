@@ -44,7 +44,7 @@ namespace odb
       case SQLITE_IOERR:
         {
           if (e != SQLITE_IOERR || ee == SQLITE_IOERR_BLOCKED)
-            throw deadlock ();
+            throw timeout ();
 
           // Fall throught.
         }
