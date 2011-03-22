@@ -13,6 +13,7 @@ error.cxx               \
 exceptions.cxx          \
 statement-cache.cxx     \
 statement.cxx           \
+traits.cxx              \
 transaction.cxx         \
 transaction-impl.cxx
 
