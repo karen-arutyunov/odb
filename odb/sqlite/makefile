@@ -11,6 +11,7 @@ connection-factory.cxx  \
 database.cxx            \
 error.cxx               \
 exceptions.cxx          \
+object-statements.cxx   \
 statement-cache.cxx     \
 statement.cxx           \
 traits.cxx              \

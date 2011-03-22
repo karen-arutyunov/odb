@@ -17,10 +17,7 @@
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/statement.hxx>
-/*
 #include <odb/sqlite/object-statements.hxx>
-*/
-
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
@@ -52,8 +49,6 @@ namespace odb
         return *rollback_;
       }
 
-/*
-  @@
       template <typename T>
       object_statements<T>&
       find ()
@@ -69,14 +64,11 @@ namespace odb
         map_.insert (map::value_type (&typeid (T), p));
         return *p;
       }
-*/
 
     private:
-      /*
       typedef std::map<const std::type_info*,
                        details::shared_ptr<object_statements_base>,
                        details::type_info_comparator> map;
-      */
 
       connection& conn_;
 
@@ -84,9 +76,7 @@ namespace odb
       details::shared_ptr<simple_statement> commit_;
       details::shared_ptr<simple_statement> rollback_;
 
-      /*
       map map_;
-      */
     };
   }
 }
