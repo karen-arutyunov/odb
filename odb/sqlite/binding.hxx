@@ -12,33 +12,13 @@
 
 #include <odb/forward.hxx>
 
+#include <odb/sqlite/sqlite-types.hxx>
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
 {
   namespace sqlite
   {
-    // The SQLite parameter/result binding. This data structures is
-    // modelled after MYSQL_BIND from MySQL.
-    //
-    struct bind
-    {
-      enum buffer_type
-      {
-        integer, // Buffer is long long; size, capacity, truncated are unused.
-        real,    // Buffer is double; size, capacity, truncated are unused.
-        text,    // Buffer is a char array.
-        blob     // Buffer is a char array.
-      };
-
-      buffer_type type;
-      void* buffer;
-      std::size_t* size;
-      std::size_t capacity;
-      bool* is_null;
-      bool* truncated;
-    };
-
     class LIBODB_SQLITE_EXPORT binding
     {
     public:
@@ -51,7 +31,7 @@ namespace odb
 
       bind_type* bind;
       std::size_t count;
-      std::size_t version;
+      std::size_t version; // @@ Don't really need it (gen code).
 
     private:
       binding (const binding&);
