@@ -12,12 +12,14 @@
 
 #include <string>
 #include <cstddef>  // std::size_t
+#include <cassert>
 
 #include <odb/forward.hxx>
 #include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/binding.hxx>
+#include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
@@ -32,10 +34,49 @@ namespace odb
       virtual
       ~statement () = 0;
 
-    protected:
-      statement (connection&, const std::string& statement);
-      statement (connection&, const char* statement, std::size_t n);
+      sqlite3_stmt*
+      handle ()
+      {
+        return stmt_;
+      }
 
+      // Cached state (public part).
+      //
+    public:
+      bool
+      cached () const
+      {
+        return cached_;
+      }
+
+      void
+      cached (bool cached)
+      {
+        assert (cached);
+
+        if (!cached_)
+        {
+          if (!active_)
+            list_remove ();
+
+          cached_ = true;
+        }
+      }
+
+    protected:
+      statement (connection& conn, const std::string& statement)
+        : conn_ (conn)
+      {
+        init (statement.c_str (), statement.size () + 1);
+      }
+
+      statement (connection& conn, const char* statement, std::size_t n)
+        : conn_ (conn)
+      {
+        init (statement, n);
+      }
+
+    protected:
       void
       bind_param (const bind*, std::size_t count, std::size_t start_param = 0);
 
@@ -47,9 +88,104 @@ namespace odb
       bool
       bind_result (const bind*, std::size_t count, bool truncated = false);
 
+      // Active state.
+      //
     protected:
+      bool
+      active () const
+      {
+        return active_;
+      }
+
+      void
+      active (bool active)
+      {
+        assert (active);
+
+        if (!active_)
+        {
+          list_add ();
+          active_ = true;
+        }
+      }
+
+      void
+      reset ()
+      {
+        if (active_)
+        {
+          if (stmt_ != 0)
+            sqlite3_reset (stmt_);
+
+          if (cached_)
+            list_remove ();
+
+          active_ = false;
+        }
+      }
+
+      // Cached state (protected part).
+      //
+    protected:
+      void
+      finilize ()
+      {
+        list_remove ();
+
+        if (stmt_ != 0)
+        {
+          sqlite3_finalize (stmt_);
+          stmt_ = 0;
+        }
+      }
+
+    protected:
+      friend class connection;
+
       connection& conn_;
       sqlite3_stmt* stmt_;
+
+      bool active_;
+      bool cached_;
+
+    private:
+      void
+      init (const char* statement, std::size_t n);
+
+      // Doubly-linked list of active/uncached statements.
+      //
+    private:
+      void list_add ()
+      {
+        if (next_ == this)
+        {
+          next_ = conn_.statements_;
+          conn_.statements_ = this;
+        }
+      }
+
+      void list_remove ()
+      {
+        if (next_ != this)
+        {
+          if (prev_ == 0)
+            conn_.statements_ = next_;
+          else
+          {
+            prev_->next_ = next_;
+            prev_ = 0;
+          }
+
+          next_ = this;
+        }
+      }
+
+      // prev_ == 0 means we are the first element.
+      // next_ == 0 means we are the last element.
+      // next_ == this means we are not on the list (prev_ should be 0).
+      //
+      statement* prev_;
+      statement* next_;
     };
 
     class LIBODB_SQLITE_EXPORT simple_statement: public statement

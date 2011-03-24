@@ -164,9 +164,13 @@ namespace odb
       insert_one_statement ()
       {
         if (insert_one_ == 0)
+        {
           insert_one_.reset (
             new (details::shared) insert_statement_type (
               conn_, traits::insert_one_statement, data_image_binding_));
+
+          insert_one_->cached (true);
+        }
 
         return *insert_one_;
       }
@@ -175,12 +179,16 @@ namespace odb
       select_all_statement ()
       {
         if (select_all_ == 0)
+        {
           select_all_.reset (
             new (details::shared) select_statement_type (
               conn_,
               traits::select_all_statement,
               cond_image_binding_,
               data_image_binding_));
+
+          select_all_->cached (true);
+        }
 
         return *select_all_;
       }
@@ -189,9 +197,13 @@ namespace odb
       delete_all_statement ()
       {
         if (delete_all_ == 0)
+        {
           delete_all_.reset (
             new (details::shared) delete_statement_type (
               conn_, traits::delete_all_statement, cond_image_binding_));
+
+          delete_all_->cached (true);
+        }
 
         return *delete_all_;
       }

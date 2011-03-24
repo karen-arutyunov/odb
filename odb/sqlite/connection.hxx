@@ -23,6 +23,7 @@ namespace odb
 {
   namespace sqlite
   {
+    class statement;
     class statement_cache;
 
     class LIBODB_SQLITE_EXPORT connection: public details::shared_base
@@ -55,13 +56,26 @@ namespace odb
         return *statement_cache_;
       }
 
+    public:
+      // Reset active and finalize uncached statements.
+      //
+      void
+      clear ();
+
     private:
       connection (const connection&);
       connection& operator= (const connection&);
 
     private:
+      friend class statement;
+
       database_type& db_;
       sqlite3* handle_;
+
+      // Linked list of active and uncached statements currently associated
+      // with this connection.
+      //
+      statement* statements_;
 
       std::auto_ptr<statement_cache_type> statement_cache_;
     };

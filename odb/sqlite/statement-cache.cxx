@@ -21,6 +21,9 @@ namespace odb
           commit_ (new (shared) simple_statement (conn, "COMMIT", 7)),
           rollback_ (new (shared) simple_statement (conn, "ROLLBACK", 9))
     {
+      rollback_->cached (true);
+      commit_->cached (true);
+      begin_->cached (true);
     }
   }
 }

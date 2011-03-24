@@ -24,27 +24,11 @@ namespace odb
     statement::
     ~statement ()
     {
-      sqlite3_finalize (stmt_);
+      finilize ();
     }
 
-    statement::
-    statement (connection& conn, const string& s)
-        : conn_ (conn)
-    {
-      if (int e = sqlite3_prepare_v2 (
-            conn_.handle (),
-            s.c_str (),
-            static_cast<int> (s.size () + 1),
-            &stmt_,
-            0))
-      {
-        translate_error (e, conn_);
-      }
-    }
-
-    statement::
-    statement (connection& conn, const char* s, std::size_t n)
-        : conn_ (conn)
+    void statement::
+    init (const char* s, std::size_t n)
     {
       if (int e = sqlite3_prepare_v2 (
             conn_.handle (),
@@ -55,6 +39,14 @@ namespace odb
       {
         translate_error (e, conn_);
       }
+
+      active_ = false;
+      cached_ = false;
+
+      prev_ = 0;
+      next_ = this;
+
+      list_add (); // Add to the list because we are uncached.
     }
 
     void statement::
@@ -233,14 +225,19 @@ namespace odb
     void select_statement::
     execute ()
     {
+      if (active ())
+        reset ();
+
       done_ = false;
       bind_param (cond_.bind, cond_.count);
+      active (true);
     }
 
     void select_statement::
     free_result ()
     {
-      sqlite3_reset (stmt_);
+      reset ();
+      done_ = true;
     }
 
     bool select_statement::
@@ -250,23 +247,13 @@ namespace odb
       {
         int e (sqlite3_step (stmt_));
 
-        switch (e)
+        if (e != SQLITE_ROW)
         {
-        case SQLITE_DONE:
-          {
-            done_ = true;
-            sqlite3_reset (stmt_);
-            break;
-          }
-        case SQLITE_ROW:
-          {
-            break;
-          }
-        default:
-          {
-            sqlite3_reset (stmt_);
+          reset ();
+          done_ = true;
+
+          if (e != SQLITE_DONE)
             translate_error (e, conn_);
-          }
         }
       }
 

@@ -9,6 +9,7 @@
 
 #include <odb/sqlite/database.hxx>
 #include <odb/sqlite/connection.hxx>
+#include <odb/sqlite/statement.hxx>
 #include <odb/sqlite/statement-cache.hxx>
 #include <odb/sqlite/error.hxx>
 
@@ -19,8 +20,17 @@ namespace odb
   namespace sqlite
   {
     connection::
+    ~connection ()
+    {
+      statement_cache_.reset (); // Free prepared statements.
+
+      if (sqlite3_close (handle_) == SQLITE_BUSY)
+        assert (false); // Connection has outstanding prepared statements.
+    }
+
+    connection::
     connection (database_type& db)
-        : db_ (db)
+        : db_ (db), statements_ (0)
     {
       int f (db.flags ());
       const string& n (db.name ());
@@ -47,13 +57,21 @@ namespace odb
       statement_cache_.reset (new statement_cache_type (*this));
     }
 
-    connection::
-    ~connection ()
+    void connection::
+    clear ()
     {
-      statement_cache_.reset (); // Free prepared statements.
-
-      if (sqlite3_close (handle_) == SQLITE_BUSY)
-        assert (false); // Connection has outstanding prepared statements.
+      // The current first statement will remove itself from the list
+      // and make the second statement (if any) the new first.
+      //
+      while (statement* s = statements_)
+      {
+        if (!s->cached ())
+          s->finilize ();
+        else if (s->active ())
+          s->reset ();
+        else
+          assert (false); // Statement is neither active nor unached.
+      }
     }
   }
 }

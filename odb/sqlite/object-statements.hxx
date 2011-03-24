@@ -246,9 +246,13 @@ namespace odb
       persist_statement ()
       {
         if (persist_ == 0)
+        {
           persist_.reset (
             new (details::shared) persist_statement_type (
               conn_, object_traits::persist_statement, in_image_binding_));
+
+          persist_->cached (true);
+        }
 
         return *persist_;
       }
@@ -257,12 +261,16 @@ namespace odb
       find_statement ()
       {
         if (find_ == 0)
+        {
           find_.reset (
             new (details::shared) find_statement_type (
               conn_,
               object_traits::find_statement,
               id_image_binding_,
               out_image_binding_));
+
+          find_->cached (true);
+        }
 
         return *find_;
       }
@@ -271,12 +279,16 @@ namespace odb
       update_statement ()
       {
         if (update_ == 0)
+        {
           update_.reset (
             new (details::shared) update_statement_type (
               conn_,
               object_traits::update_statement,
               id_image_binding_,
               in_image_binding_));
+
+          update_->cached (true);
+        }
 
         return *update_;
       }
@@ -285,11 +297,15 @@ namespace odb
       erase_statement ()
       {
         if (erase_ == 0)
+        {
           erase_.reset (
             new (details::shared) erase_statement_type (
               conn_,
               object_traits::erase_statement,
               id_image_binding_));
+
+          erase_->cached (true);
+        }
 
         return *erase_;
       }

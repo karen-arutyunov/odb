@@ -28,6 +28,13 @@ namespace odb
     void transaction_impl::
     commit ()
     {
+      // Reset active and finilize uncached statements. Active statements
+      // will prevent COMMIT from completing (write statements) or releasing
+      // the locks (read statements). Finilization of uncached statements is
+      // needed to release the connection.
+      //
+      connection_->clear ();
+
       connection_->statement_cache ().commit_statement ().execute ();
 
       // Release the connection.
@@ -38,6 +45,12 @@ namespace odb
     void transaction_impl::
     rollback ()
     {
+      // Reset active and finilize uncached statements. Active statements
+      // will prevent ROLLBACK from completing. Finilization of uncached
+      // statements is needed to release the connection.
+      //
+      connection_->clear ();
+
       connection_->statement_cache ().rollback_statement ().execute ();
 
       // Release the connection.
