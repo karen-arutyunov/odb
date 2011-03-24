@@ -33,6 +33,34 @@ namespace relational
     string
     quote_id (string const&) const;
 
+    // Quoted column and table names.
+    //
+    string
+    column_qname (semantics::data_member& m) const
+    {
+      return quote_id (column_name (m));
+    }
+
+    string
+    column_qname (semantics::data_member& m,
+                  string const& key_prefix,
+                  string const& default_name) const
+    {
+      return quote_id (column_name (m, key_prefix, default_name));
+    }
+
+    string
+    table_qname (semantics::class_& c) const
+    {
+      return quote_id (table_name (c));
+    }
+
+    string
+    table_qname (semantics::data_member& m, table_prefix const& p) const
+    {
+      return quote_id (table_name (m, p));
+    }
+
   protected:
     // The default implementation returns false.
     //
@@ -76,8 +104,15 @@ namespace relational
     struct data: root_context::data
     {
       data (std::ostream& os): root_context::data (os) {}
+
+      string bind_vector_;
+      string truncated_vector_;
     };
     data* data_;
+
+  public:
+    string const& bind_vector;
+    string const& truncated_vector;
   };
 }
 

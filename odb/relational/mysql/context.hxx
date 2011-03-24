@@ -115,7 +115,6 @@ namespace relational
       {
         data (std::ostream& os): base_context::data (os) {}
       };
-
       data* data_;
     };
   }

@@ -29,7 +29,7 @@ namespace relational
       : ptr_ (true), decl_ (false)
   {
     scope_ = "access::object_traits< " + cl.fq_name () + " >::query_type";
-    table_ = table_name (cl);
+    table_ = table_qname (cl);
   }
 
   void query_columns::
@@ -92,7 +92,7 @@ namespace relational
         {
           string old_scope (scope_), old_table (table_);
           scope_ += "::" + name;
-          table_ = table_name (*c);
+          table_ = table_qname (*c);
           traverse (*c);
           table_ = old_table;
           scope_ = old_scope;
@@ -125,13 +125,13 @@ namespace relational
       }
       else
       {
-        string column ("\"`" + table_ + "`.`" + col_name + "`\"");
+        string column (table_ + '.' + quote_id (col_name));
 
         os << "const mysql::query_column<" << endl
            << "  " << type << "," << endl
            << "  " << db_type_id << ">" << endl
            << scope_ << "::" << name << " (" << endl
-           << column << ");"
+           << strlit (column) << ");"
            << endl;
       }
     }

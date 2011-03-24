@@ -339,6 +339,7 @@ public:
   std::ostream& os;
   semantics::unit& unit;
   options_type const& options;
+  database const db;
 
   typedef std::set<string> keyword_set_type;
   keyword_set_type const& keyword_set;

@@ -110,15 +110,22 @@ struct object_columns_base: traversal::class_, virtual context
   virtual void
   composite (semantics::data_member&, semantics::class_&);
 
+  // Called after the last column, provided at least one column hasn't
+  // been ignored.
+  //
+  virtual void
+  flush ();
+
 public:
   object_columns_base ()
-      : member_ (*this)
+      : top_level_ (true), member_ (*this)
   {
     init ();
   }
 
   object_columns_base (object_columns_base const&)
       : context (), //@@ -Wextra
+        top_level_ (true),
         member_ (*this)
   {
     init ();
@@ -158,6 +165,8 @@ private:
     string prefix_;
     bool first_;
   };
+
+  bool top_level_;
 
   member member_;
   traversal::names names_;

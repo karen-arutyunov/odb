@@ -17,7 +17,6 @@ namespace relational
     {
       context ctx;
       ostream& os (ctx.os);
-      options const& ops (ctx.options);
 
       traversal::unit unit;
       traversal::defines unit_defines;
@@ -32,16 +31,8 @@ namespace relational
       ns >> ns_defines >> ns;
       ns_defines >> c;
 
-      os << "#include <odb/mysql/version.hxx>" << endl
-         << "#include <odb/mysql/forward.hxx>" << endl
-         << "#include <odb/mysql/mysql-types.hxx>" << endl;
-
-      if (ops.generate_query ())
-        os << "#include <odb/mysql/query.hxx>" << endl;
-
-      os << endl
-         << "#include <odb/details/buffer.hxx>" << endl
-         << endl;
+      instance<include> i;
+      i->generate ();
 
       os << "namespace odb"
          << "{";

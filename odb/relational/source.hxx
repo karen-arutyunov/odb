@@ -58,24 +58,17 @@ namespace relational
     {
       typedef object_columns base;
 
-      object_columns (std::string const& table_name,
-                      bool out,
+      object_columns (bool out,
+                      bool last = true,
                       char const* suffix = "")
-          : table_name_ (table_name),
-            out_ (out),
-            first_ (true),
-            suffix_ (suffix)
+          : out_ (out), last_ (last), suffix_ (suffix)
       {
       }
 
-      object_columns (std::string const& table_name,
+      object_columns (std::string const& table_qname,
                       bool out,
-                      bool first,
-                      char const* suffix = "")
-          : table_name_ (table_name),
-            out_ (out),
-            first_ (first),
-            suffix_ (suffix)
+                      bool last = true)
+          : table_name_ (table_qname), out_ (out), last_ (last)
       {
       }
 
@@ -89,8 +82,13 @@ namespace relational
         if (im != 0 && !out_)
           return false;
 
-        if (!first || !first_)
-          os << ",\"" << endl;
+        if (!first)
+        {
+          line_ += ',';
+          os << strlit (line_) << endl;
+        }
+
+        line_.clear ();
 
         // Inverse object pointers come from a joined table.
         //
@@ -103,29 +101,58 @@ namespace relational
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
             //
-            table_prefix tp (table_name (*c) + "_", 1);
-            string const& it (table_name (*im, tp));
-            string const& id (column_name (*im, "id", "object_id"));
+            if (!table_name_.empty ())
+            {
+              table_prefix tp (table_name (*c) + "_", 1);
+              string const& it (table_qname (*im, tp));
 
-            os << "\"`" << it << "`.`" << id << "`" << suffix_;
+              line_ += it;
+              line_ += '.';
+            }
+
+            line_ += column_qname (*im, "id", "object_id");
           }
           else
           {
-            os << "\"`" << table_name (*c) << "`.`" <<
-              column_name (id_member (*c)) << "`" << suffix_;
+            if (!table_name_.empty ())
+            {
+              line_ += table_qname (*c);
+              line_ += '.';
+            }
+
+            line_ += column_qname (id_member (*c));
           }
         }
         else
-          os << "\"`" << table_name_ << "`.`" << name << "`" << suffix_;
+        {
+          if (!table_name_.empty ())
+          {
+            line_ += table_name_;
+            line_ += '.';
+          }
 
+          line_ += quote_id (name);
+        }
+
+        line_ += suffix_;
         return true;
+      }
+
+      virtual void
+      flush ()
+      {
+        if (!last_)
+          line_ += ',';
+
+        os << strlit (line_) << endl;
       }
 
     private:
       string table_name_;
       bool out_;
-      bool first_;
+      bool last_;
       string suffix_;
+      string line_;
     };
 
     struct object_joins: object_columns_base, virtual context
@@ -136,7 +163,7 @@ namespace relational
       //
       object_joins (semantics::class_& scope, bool query)
           : query_ (query),
-            table_ (table_name (scope)),
+            table_ (table_qname (scope)),
             id_ (id_member (scope))
       {
       }
@@ -155,18 +182,20 @@ namespace relational
           if (i->table.empty ())
             continue;
 
-          os << "\" LEFT JOIN `" << i->table << "` ON ";
+          string line (" LEFT JOIN ");
+          line += i->table;
+          line += " ON ";
 
           for (conditions::iterator b (i->cond.begin ()), j (b);
                j != i->cond.end (); ++j)
           {
             if (j != b)
-              os << " OR ";
+              line += " OR ";
 
-            os << *j;
+            line += *j;
           }
 
-          os << "\"" << endl;
+          os << strlit (line) << endl;
         }
       }
 
@@ -190,11 +219,11 @@ namespace relational
             //
             string const& ct (table_name (*c));
             table_prefix tp (ct + "_", 1);
-            t = table_name (*im, tp);
-            string const& val (column_name (*im, "value", "value"));
+            t = table_qname (*im, tp);
+            string const& val (column_qname (*im, "value", "value"));
 
-            cond << "`" << t << "`.`" << val << "` = `" <<
-              table_ << "`.`" << column_name (id_) << "`";
+            cond << t << '.' << val << " = " << table_ << '.' <<
+              column_qname (id_);
 
             // Add the join for the object itself so that we are able to
             // use it in the WHERE clause.
@@ -202,18 +231,18 @@ namespace relational
             if (query_)
             {
               dt = ct;
-              string const& id (column_name (*im, "id", "object_id"));
+              string const& id (column_qname (*im, "id", "object_id"));
 
-              dcond << "`" << dt << "`.`" << column_name (id_member (*c)) <<
-                "` = `" << t << "`.`" << id << "`";
+              dcond << dt << '.' << column_qname (id_member (*c)) << " = " <<
+                t << '.' << id;
             }
           }
           else
           {
-            t = table_name (*c);
+            t = table_qname (*c);
 
-            cond << "`" << t << "`.`" << column_name (*im) << "` = `" <<
-              table_ << "`.`" << column_name (id_) << "`";
+            cond << t << '.' << column_qname (*im) << " = " <<
+              table_ << '.' << column_qname (id_);
           }
         }
         else if (query_)
@@ -221,10 +250,10 @@ namespace relational
           // We need the join to be able to use the referenced object
           // in the WHERE clause.
           //
-          t = table_name (*c);
+          t = table_qname (*c);
 
-          cond << "`" << t << "`.`" << column_name (id_member (*c)) <<
-            "` = `" << table_ << "`.`" << col_name << "`";
+          cond << t << '.' << column_qname (id_member (*c)) << " = " <<
+            table_ << '.' << quote_id (col_name);
         }
 
         if (!t.empty ())
@@ -394,7 +423,7 @@ namespace relational
         os << "// " << c.name () << " base" << endl
            << "//" << endl
            << "if (composite_value_traits< " << c.fq_name () <<
-          " >::grow (i, e + " << index_ << "UL))"
+          " >::grow (i, t + " << index_ << "UL))"
            << "{"
            << "grew = true;"
            << "}";
@@ -578,7 +607,7 @@ namespace relational
         //
         // Statements.
         //
-        string table (table_name (m, table_prefix_));
+        string table (table_qname (m, table_prefix_));
 
         // select_all_statement
         //
@@ -602,29 +631,31 @@ namespace relational
             // table prefix is just the class table name.
             //
             table_prefix tp (table_name (*c) + "_", 1);
-            inv_table = table_name (*im, tp);
-            inv_id = column_name (*im, "id", "object_id");
-            inv_fid = column_name (*im, "value", "value");
+            inv_table = table_qname (*im, tp);
+            inv_id = column_qname (*im, "id", "object_id");
+            inv_fid = column_qname (*im, "value", "value");
           }
           else
           {
             // many(i)-to-one
             //
-            inv_table = table_name (*c);
-            inv_id = column_name (id_member (*c));
-            inv_fid = column_name (*im);
+            inv_table = table_qname (*c);
+            inv_id = column_qname (id_member (*c));
+            inv_fid = column_qname (*im);
           }
 
-          os << "\"SELECT \"" << endl
-             << "\"`" << inv_fid << "`,\"" << endl
-             << "\"`" << inv_id << "`\"" << endl
-             << "\" FROM `" << inv_table << "` WHERE `" <<
-            inv_fid << "` = ?\"";
+          os << strlit ("SELECT ") << endl
+             << strlit (inv_table + '.' + inv_fid + ',') << endl
+             << strlit (inv_table + '.' + inv_id) << endl
+             << strlit (" FROM " + inv_table +
+                        " WHERE " + inv_table + '.' + inv_fid + " = ?");
         }
         else
         {
-          os << "\"SELECT \"" << endl
-             << "\"`" << column_name (m, "id", "object_id") << "`";
+          string const& id_col (column_qname (m, "id", "object_id"));
+
+          os << strlit ("SELECT ") << endl
+             << strlit (table + '.' + id_col + ',') << endl;
 
           switch (ck)
           {
@@ -632,8 +663,8 @@ namespace relational
             {
               if (ordered)
               {
-                os << ",\"" << endl
-                   << "\"`" << column_name (m, "index", "index") << "`";
+                string const& col (column_qname (m, "index", "index"));
+                os << strlit (table + '.' + col + ',') << endl;
               }
               break;
             }
@@ -647,8 +678,8 @@ namespace relational
               }
               else
               {
-                os << ",\"" << endl
-                   << "\"`" << column_name (m, "key", "key") << "`";
+                string const& col (column_qname (m, "key", "key"));
+                os << strlit (table + '.' + col + ',') << endl;
               }
               break;
             }
@@ -661,22 +692,23 @@ namespace relational
 
           if (semantics::class_* cvt = comp_value (vt))
           {
-            instance<object_columns> t (table, false, false);
+            instance<object_columns> t (table, false);
             t->traverse_composite (m, *cvt, "value", "value");
           }
           else
           {
-            os << ",\"" << endl
-               << "\"`" << column_name (m, "value", "value") << "`";
+            string const& col (column_qname (m, "value", "value"));
+            os << strlit (table + '.' + col) << endl;
           }
 
-          os << "\"" << endl
-             << "\" FROM `" << table << "` WHERE `" <<
-            column_name (m, "id", "object_id") << "` = ?\"" << endl;
+          os << strlit (" FROM " + table +
+                        " WHERE " + table + '.' + id_col + " = ?") << endl;
 
           if (ordered)
-            os << "\" ORDER BY `" << column_name (m, "index", "index") <<
-              "`\"";
+          {
+            string const& col (column_qname (m, "index", "index"));
+            os << strlit (" ORDER BY " + table + '.' + col) << endl;
+          }
         }
 
         os << ";"
@@ -688,22 +720,20 @@ namespace relational
           "::insert_one_statement =" << endl;
 
         if (inverse)
-          os << " \"\";"
+          os << strlit ("") << ";"
              << endl;
         else
         {
-          os << "\"INSERT INTO `" << table << "` (\"" << endl
-             << "\"`" << column_name (m, "id", "object_id") << "`";
+          os << strlit ("INSERT INTO " + table + " (") << endl
+             << strlit (column_qname (m, "id", "object_id") + ',') << endl;
 
           switch (ck)
           {
           case ck_ordered:
             {
               if (ordered)
-              {
-                os << ",\"" << endl
-                   << "\"`" << column_name (m, "index", "index") << "`";
-              }
+                os << strlit (column_qname (m, "index", "index") + ',') <<
+                  endl;
               break;
             }
           case ck_map:
@@ -711,14 +741,11 @@ namespace relational
             {
               if (semantics::class_* ckt = comp_value (*kt))
               {
-                instance<object_columns> t (table, false, false);
+                instance<object_columns> t (false, false);
                 t->traverse_composite (m, *ckt, "key", "key");
               }
               else
-              {
-                os << ",\"" << endl
-                   << "\"`" << column_name (m, "key", "key") << "`";
-              }
+                os << strlit (column_qname (m, "key", "key") + ',') << endl;
               break;
             }
           case ck_set:
@@ -730,22 +757,18 @@ namespace relational
 
           if (semantics::class_* cvt = comp_value (vt))
           {
-            instance<object_columns> t (table, false, false);
+            instance<object_columns> t (false);
             t->traverse_composite (m, *cvt, "value", "value");
           }
           else
-          {
-            os << ",\"" << endl
-               << "\"`" << column_name (m, "value", "value") << "`";
-          }
+            os << strlit (column_qname (m, "value", "value")) << endl;
 
-          os << "\"" << endl
-             << "\") VALUES (";
+          string values;
+          for (size_t i (0), n (m.get<size_t> ("data-column-count"));
+               i < n; ++i)
+            values += i != 0 ? ",?" : "?";
 
-          for (size_t i (0), n (m.get<size_t> ("data-column-count")); i < n; ++i)
-            os << (i != 0 ? "," : "") << '?';
-
-          os << ")\";"
+          os << strlit (") VALUES (" + values + ")") << ";"
              << endl;
         }
 
@@ -755,12 +778,13 @@ namespace relational
           "::delete_all_statement =" << endl;
 
         if (inverse)
-          os << " \"\";"
+          os << strlit ("") << ";"
              << endl;
         else
         {
-          os << "\"DELETE FROM `" << table << "`\"" << endl
-             << "\" WHERE `" << column_name (m, "id", "object_id") << "` = ?\";"
+          os << strlit ("DELETE FROM " + table) << endl
+             << strlit (" WHERE " + column_qname (m, "id", "object_id") +
+                        " = ?") << ";"
              << endl;
         }
 
@@ -776,7 +800,8 @@ namespace relational
           // bind (cond_image_type)
           //
           os << "void " << scope << "::" << endl
-             << "bind (MYSQL_BIND* b, id_image_type* p, cond_image_type& c)"
+             << "bind (" << bind_vector << " b, id_image_type* p, " <<
+            "cond_image_type& c)"
              << "{"
              << "ODB_POTENTIALLY_UNUSED (c);"
              << endl
@@ -796,6 +821,9 @@ namespace relational
           // We don't need to update the bind index since this is the
           // last element.
           //
+          // Index/key is currently not used (see also cond_column_count).
+          //
+#if 0
           switch (ck)
           {
           case ck_ordered:
@@ -830,13 +858,15 @@ namespace relational
               break;
             }
           }
+#endif
 
           os << "}";
 
           // bind (data_image_type)
           //
           os << "void " << scope << "::" << endl
-             << "bind (MYSQL_BIND* b, id_image_type* p, data_image_type& d)"
+             << "bind (" << bind_vector << " b, id_image_type* p, " <<
+            "data_image_type& d)"
              << "{"
              << "size_t n (0);"
              << endl;
@@ -907,7 +937,7 @@ namespace relational
           size_t index (0);
 
           os << "void " << scope << "::" << endl
-             << "grow (data_image_type& i, my_bool* e)"
+             << "grow (data_image_type& i, " << truncated_vector << " t)"
              << "{"
              << "bool grew (false);"
              << endl;
@@ -1143,7 +1173,7 @@ namespace relational
 
           if (!inverse)
           {
-            os << "using namespace mysql;"
+            os << "using namespace " << db << ";"
                << endl
                << "typedef container_statements< " << name << " > statements;"
                << "statements& sts (*static_cast< statements* > (d));"
@@ -1215,7 +1245,7 @@ namespace relational
         }
 
         os << "{"
-           << "using namespace mysql;"
+           << "using namespace " << db << ";"
            << endl
            << "typedef container_statements< " << name << " > statements;"
            << "statements& sts (*static_cast< statements* > (d));"
@@ -1276,7 +1306,7 @@ namespace relational
           os << endl
              << "if (r == select_statement::truncated)"
              << "{"
-             << "grow (di, sts.data_image_error ());"
+             << "grow (di, sts.data_image_truncated ());"
              << endl
              << "if (di.version != sts.data_image_version ())"
              << "{"
@@ -1303,7 +1333,7 @@ namespace relational
            << "{";
 
         if (!inverse)
-          os << "using namespace mysql;"
+          os << "using namespace " << db << ";"
              << endl
              << "typedef container_statements< " << name << " > statements;"
              << "statements& sts (*static_cast< statements* > (d));"
@@ -1320,7 +1350,7 @@ namespace relational
              << "id_image_type& id," << endl
              << "statements_type& sts)"
              << "{"
-             << "using namespace mysql;"
+             << "using namespace " << db << ";"
              << endl
              << "binding& b (sts.data_image_binding ());"
              << "if (id.version != sts.data_id_image_version () || " <<
@@ -1347,7 +1377,7 @@ namespace relational
            << "id_image_type& id," << endl
            << "statements_type& sts)"
            << "{"
-           << "using namespace mysql;"
+           << "using namespace " << db << ";"
            << endl
            << "binding& db (sts.data_image_binding ());"
            << "if (id.version != sts.data_id_image_version () || db.version == 0)"
@@ -1379,7 +1409,7 @@ namespace relational
              << "if (r == select_statement::truncated)"
              << "{"
              << "data_image_type& di (sts.data_image ());"
-             << "grow (di, sts.data_image_error ());"
+             << "grow (di, sts.data_image_truncated ());"
              << endl
              << "if (di.version != sts.data_image_version ())"
              << "{"
@@ -1413,7 +1443,7 @@ namespace relational
              << "id_image_type& id," << endl
              << "statements_type& sts)"
              << "{"
-             << "using namespace mysql;"
+             << "using namespace " << db << ";"
              << endl
              << "binding& db (sts.data_image_binding ());"
              << "if (id.version != sts.data_id_image_version () || " <<
@@ -1451,7 +1481,7 @@ namespace relational
           os << "void " << scope << "::" << endl
              << "erase (id_image_type& id, statements_type& sts)"
              << "{"
-             << "using namespace mysql;"
+             << "using namespace " << db << ";"
              << endl
              << "binding& b (sts.cond_image_binding ());"
              << "if (id.version != sts.cond_id_image_version () || b.version == 0)"
@@ -1492,7 +1522,7 @@ namespace relational
       container (semantics::data_member& m)
       {
         string traits (prefix_ + public_name (m) + "_traits");
-        os << "mysql::container_statements< " << traits << " > " <<
+        os << db << "::container_statements< " << traits << " > " <<
           prefix_ << m.name () << ";";
       }
     };
@@ -1663,6 +1693,12 @@ namespace relational
         init_value_member_names_ >> init_value_member_;
       }
 
+      virtual void
+      init_auto_id (semantics::data_member&, // id member
+                    string const&)           // image variable prefix
+      {
+        assert (false);
+      }
 
       virtual void
       traverse (type& c)
@@ -1708,7 +1744,7 @@ namespace relational
           cm->traverse (c);
 
           os << (containers ? "\n" : "")
-             << "container_statement_cache_type (mysql::connection&" <<
+             << "container_statement_cache_type (" << db << "::connection&" <<
             (containers ? " c" : "") << ")";
 
           instance<container_cache_init_members> im;
@@ -1735,39 +1771,37 @@ namespace relational
           t->traverse (c);
         }
 
-        string const& table (table_name (c));
+        string const& table (table_qname (c));
+        string const& id_col (column_qname (id));
 
         // persist_statement
         //
         os << "const char* const " << traits << "::persist_statement =" << endl
-           << "\"INSERT INTO `" << table << "` (\"" << endl;
+           << strlit ("INSERT INTO " + table + " (") << endl;
 
         {
-          instance<object_columns> t (table, false);
+          instance<object_columns> t (false);
           t->traverse (c);
         }
 
-        os << "\"" << endl
-           << "\") VALUES (";
-
+        string values;
         for (size_t i (0), n (in_column_count (c)); i < n; ++i)
-          os << (i != 0 ? "," : "") << '?';
+          values += i != 0 ? ",?" : "?";
 
-        os << ")\";"
+        os << strlit (") VALUES (" + values + ")") << ";"
            << endl;
 
         // find_statement
         //
         os << "const char* const " << traits << "::find_statement =" << endl
-           << "\"SELECT \"" << endl;
+           << strlit ("SELECT ") << endl;
 
         {
           instance<object_columns> t (table, true);
           t->traverse (c);
         }
 
-        os << "\"" << endl
-           << "\" FROM `" << table << "`\"" << endl;
+        os << strlit (" FROM " + table) << endl;
 
         {
           bool f (false);
@@ -1776,28 +1810,27 @@ namespace relational
           t->write ();
         }
 
-        os << "\" WHERE `" << table << "`.`" << column_name (id) << "` = ?\";"
+        os << strlit (" WHERE " + table + '.' + id_col + " = ?") << ";"
            << endl;
 
         // update_statement
         //
         os << "const char* const " << traits << "::update_statement =" << endl
-           << "\"UPDATE `" << table << "` SET \"" << endl;
+           << strlit ("UPDATE " + table + " SET ") << endl;
 
         {
-          instance<object_columns> t (table, false, " = ?");
+          instance<object_columns> t (false, true, " = ?");
           t->traverse (c);
         }
 
-        os << "\"" << endl
-           << "\" WHERE `" << table << "`.`" << column_name (id) << "` = ?\";"
+        os << strlit (" WHERE " + table + '.' + id_col + " = ?") << ";"
            << endl;
 
         // erase_statement
         //
         os << "const char* const " << traits << "::erase_statement =" << endl
-           << "\"DELETE FROM `" << table << "`\"" << endl
-           << "\" WHERE `" << table << "`.`" << column_name (id) << "` = ?\";"
+           << strlit ("DELETE FROM " + table) << endl
+           << strlit (" WHERE " + table + '.' + id_col + " = ?") << ";"
            << endl;
 
         // query_clause
@@ -1812,20 +1845,16 @@ namespace relational
           // and can optimize it out otherwise.
           //
           os << "const char* const " << traits << "::query_clause =" << endl
-             << "\"SELECT " << (oj->count () ? "DISTINCT " : "") << "\""
-             << endl;
+             << strlit (oj->count () ? "SELECT DISTINCT " : "SELECT ") << endl;
 
           {
             instance<object_columns> oc (table, true);
             oc->traverse (c);
           }
 
-          os << "\"" << endl
-             << "\" FROM `" << table << "`\"" << endl;
-
+          os << strlit (" FROM " + table) << endl;
           oj->write ();
-
-          os << "\" \";"
+          os << strlit (" ") << ";"
              << endl;
         }
 
@@ -1846,7 +1875,7 @@ namespace relational
         // grow ()
         //
         os << "void " << traits << "::" << endl
-           << "grow (image_type& i, my_bool* e)"
+           << "grow (image_type& i, " << truncated_vector << " t)"
            << "{"
            << "bool grew (false);"
            << endl;
@@ -1862,7 +1891,7 @@ namespace relational
         // bind (image_type)
         //
         os << "void " << traits << "::" << endl
-           << "bind (MYSQL_BIND* b, image_type& i, bool out)"
+           << "bind (" << bind_vector << " b, image_type& i, bool out)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (out);"
            << endl
@@ -1877,7 +1906,7 @@ namespace relational
         // bind (id_image_type)
         //
         os << "void " << traits << "::" << endl
-           << "bind (MYSQL_BIND* b, id_image_type& i)"
+           << "bind (" << bind_vector << " b, id_image_type& i)"
            << "{"
            << "std::size_t n (0);";
         bind_id_member_->traverse (id);
@@ -1935,20 +1964,25 @@ namespace relational
            << "persist (database&, " << (auto_id ? "" : "const ") <<
           "object_type& obj)"
            << "{"
-           << "using namespace mysql;"
+           << "using namespace " << db << ";"
            << endl
-           << "connection& conn (mysql::transaction::current ().connection ());"
+           << "connection& conn (" << db <<
+          "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << "image_type& im (sts.image ());"
            << "binding& imb (sts.in_image_binding ());"
-           << endl;
+           << endl
+           << "init (im, obj);";
 
         if (auto_id)
-          os << "obj." << id.name () << " = 0;";
+        {
+          string const& n (id.name ());
+          string var ("im." + n + (n[n.size () - 1] == '_' ? "" : "_"));
+          init_auto_id (id, var);
+        }
 
-        os << "init (im, obj);"
-           << endl
+        os << endl
            << "if (im.version != sts.in_image_version () || imb.version == 0)"
            << "{"
            << "bind (imb.bind, im, false);"
@@ -1983,9 +2017,10 @@ namespace relational
         os << "void " << traits << "::" << endl
            << "update (database&, const object_type& obj)"
            << "{"
-           << "using namespace mysql;"
+           << "using namespace " << db << ";"
            << endl
-           << "connection& conn (mysql::transaction::current ().connection ());"
+           << "connection& conn (" << db <<
+          "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << endl;
@@ -2032,9 +2067,10 @@ namespace relational
         os << "void " << traits << "::" << endl
            << "erase (database&, const id_type& id)"
            << "{"
-           << "using namespace mysql;"
+           << "using namespace " << db << ";"
            << endl
-           << "connection& conn (mysql::transaction::current ().connection ());"
+           << "connection& conn (" << db <<
+          "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << endl;
@@ -2072,9 +2108,10 @@ namespace relational
              << traits << "::" << endl
              << "find (database& db, const id_type& id)"
              << "{"
-             << "using namespace mysql;"
+             << "using namespace " << db << ";"
              << endl
-             << "connection& conn (mysql::transaction::current ().connection ());"
+             << "connection& conn (" << db <<
+            "::transaction::current ().connection ());"
              << "object_statements< object_type >& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
              << "object_statements< object_type >::auto_lock l (sts);"
@@ -2111,9 +2148,10 @@ namespace relational
         os << "bool " << traits << "::" << endl
            << "find (database& db, const id_type& id, object_type& obj)"
            << "{"
-           << "using namespace mysql;"
+           << "using namespace " << db << ";"
            << endl
-           << "connection& conn (mysql::transaction::current ().connection ());"
+           << "connection& conn (" << db <<
+          "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
            << "object_statements< object_type >::auto_lock l (sts);"
@@ -2144,10 +2182,10 @@ namespace relational
         //
         //
         os << "bool " << traits << "::" << endl
-           << "find_ (mysql::object_statements< object_type >& sts, " <<
+           << "find_ (" << db << "::object_statements< object_type >& sts, " <<
           "const id_type& id)"
            << "{"
-           << "using namespace mysql;"
+           << "using namespace " << db << ";"
            << endl;
 
         // Initialize id image.
@@ -2183,7 +2221,7 @@ namespace relational
           os << endl
              << "if (r == select_statement::truncated)"
              << "{"
-             << "grow (im, sts.out_image_error ());"
+             << "grow (im, sts.out_image_truncated ());"
              << endl
              << "if (im.version != sts.out_image_version ())"
              << "{"
@@ -2203,8 +2241,8 @@ namespace relational
         if (containers)
         {
           os << "void " << traits << "::" << endl
-             << "load_ (mysql::object_statements< object_type >& sts, " <<
-            "object_type& obj)"
+             << "load_ (" << db << "::object_statements< object_type >& " <<
+            "sts, object_type& obj)"
              << "{"
              << "id_image_type& i (sts.id_image ());"
              << endl;
@@ -2224,9 +2262,10 @@ namespace relational
              << "database& db," << endl
              << "const query_type& q)"
              << "{"
-             << "using namespace mysql;"
+             << "using namespace " << db << ";"
              << endl
-             << "connection& conn (mysql::transaction::current ().connection ());"
+             << "connection& conn (" << db <<
+            "::transaction::current ().connection ());"
              << endl
              << "object_statements< object_type >& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
@@ -2235,7 +2274,8 @@ namespace relational
              << "query_ (db, q, sts, st);"
              << endl
              << "details::shared_ptr<odb::result_impl<object_type> > r (" << endl
-             << "new (details::shared) mysql::result_impl<object_type> (st, sts));"
+             << "new (details::shared) " << db <<
+            "::result_impl<object_type> (st, sts));"
              << "return result<object_type> (r);"
              << "}";
 
@@ -2246,9 +2286,10 @@ namespace relational
              << "database& db," << endl
              << "const query_type& q)"
              << "{"
-             << "using namespace mysql;"
+             << "using namespace " << db << ";"
              << endl
-             << "connection& conn (mysql::transaction::current ().connection ());"
+             << "connection& conn (" << db <<
+            "::transaction::current ().connection ());"
              << endl
              << "object_statements< object_type >& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
@@ -2257,17 +2298,18 @@ namespace relational
              << "query_ (db, q, sts, st);"
              << endl
              << "details::shared_ptr<odb::result_impl<const object_type> > r (" << endl
-             << "new (details::shared) mysql::result_impl<const object_type> (st, sts));"
+             << "new (details::shared) " << db <<
+            "::result_impl<const object_type> (st, sts));"
              << "return result<const object_type> (r);"
              << "}";
 
           os << "void " << traits << "::" << endl
              << "query_ (database&," << endl
              << "const query_type& q," << endl
-             << "mysql::object_statements< object_type >& sts,"
-             << "details::shared_ptr<mysql::select_statement>& st)"
+             << db << "::object_statements< object_type >& sts,"
+             << "details::shared_ptr<" << db << "::select_statement>& st)"
              << "{"
-             << "using namespace mysql;"
+             << "using namespace " << db << ";"
              << endl
              << "image_type& im (sts.image ());"
              << "binding& imb (sts.out_image_binding ());"
@@ -2321,10 +2363,10 @@ namespace relational
         // grow ()
         //
         os << "bool " << traits << "::" << endl
-           << "grow (image_type& i, my_bool* e)"
+           << "grow (image_type& i, " << truncated_vector << " t)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (e);"
+           << "ODB_POTENTIALLY_UNUSED (t);"
            << endl
            << "bool grew (false);"
            << endl;
@@ -2339,7 +2381,7 @@ namespace relational
         // bind (image_type)
         //
         os << "void " << traits << "::" << endl
-           << "bind (MYSQL_BIND* b, image_type& i)"
+           << "bind (" << bind_vector << " b, image_type& i)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (b);"
            << "ODB_POTENTIALLY_UNUSED (i);"
@@ -2417,6 +2459,56 @@ namespace relational
       schema_emitter schema_emitter_;
       instance<schema::class_drop> schema_drop_;
       instance<schema::class_create> schema_create_;
+    };
+
+    struct include: virtual context
+    {
+      typedef include base;
+
+      virtual void
+      generate ()
+      {
+        os << "#include <odb/cache-traits.hxx>" << endl;
+
+        if (embedded_schema)
+          os << "#include <odb/schema-catalog-impl.hxx>" << endl;
+
+        os << "#include <odb/details/unused.hxx>" << endl;
+
+        if (options.generate_query ())
+          os << "#include <odb/details/shared-ptr.hxx>" << endl;
+
+        os << endl;
+
+        extra_pre ();
+
+        os << "#include <odb/" << db << "/traits.hxx>" << endl
+           << "#include <odb/" << db << "/database.hxx>" << endl
+           << "#include <odb/" << db << "/transaction.hxx>" << endl
+           << "#include <odb/" << db << "/connection.hxx>" << endl
+           << "#include <odb/" << db << "/statement.hxx>" << endl
+           << "#include <odb/" << db << "/statement-cache.hxx>" << endl
+           << "#include <odb/" << db << "/object-statements.hxx>" << endl
+           << "#include <odb/" << db << "/container-statements.hxx>" << endl
+           << "#include <odb/" << db << "/exceptions.hxx>" << endl;
+
+        if (options.generate_query ())
+          os << "#include <odb/" << db << "/result.hxx>" << endl;
+
+        extra_post ();
+
+        os << endl;
+      }
+
+      virtual void
+      extra_pre ()
+      {
+      }
+
+      virtual void
+      extra_post ()
+      {
+      }
     };
   }
 }

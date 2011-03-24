@@ -103,7 +103,7 @@ namespace relational
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".capacity = " << arg << "." << mi.var <<
-            "value.capacity ());"
+            "value.capacity ();"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
 
@@ -114,7 +114,7 @@ namespace relational
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".capacity = " << arg << "." << mi.var <<
-            "value.capacity ());"
+            "value.capacity ();"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
 
@@ -144,7 +144,7 @@ namespace relational
             return false;
 
           ostringstream ostr;
-          ostr << "e[" << index_ << "UL]";
+          ostr << "t[" << index_ << "UL]";
           e = ostr.str ();
 
           if (var_override_.empty ())
@@ -168,7 +168,7 @@ namespace relational
         {
           os << "if (composite_value_traits< " << mi.fq_type () <<
             " >::grow (" << endl
-             << "i." << mi.var << "value, e + " << index_ << "UL))"
+             << "i." << mi.var << "value, t + " << index_ << "UL))"
              << "{"
              << "grew = true;"
              << "}";
@@ -557,6 +557,18 @@ namespace relational
         member_database_type_id member_database_type_id_;
       };
       entry<init_value_member> init_value_member_;
+
+      struct class_: relational::class_, context
+      {
+        class_ (base const& x): base (x) {}
+
+        virtual void
+        init_auto_id (semantics::data_member&, string const& im)
+        {
+          os << im << "null = true;";
+        }
+      };
+      entry<class_> class_entry_;
     }
   }
 }

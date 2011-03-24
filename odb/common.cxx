@@ -149,6 +149,11 @@ traverse (semantics::data_member& m)
 //
 
 void object_columns_base::
+flush ()
+{
+}
+
+void object_columns_base::
 composite (semantics::data_member&, semantics::class_& c)
 {
   inherits (c);
@@ -178,6 +183,9 @@ traverse_composite (semantics::data_member& m,
   }
 
   composite (m, c);
+
+  if (!member_.first_)
+    flush ();
 }
 
 void object_columns_base::
@@ -189,6 +197,11 @@ traverse (semantics::class_& c)
   //
   if (!(obj || context::comp_value (c)))
     return;
+
+  bool f (top_level_);
+
+  if (top_level_)
+    top_level_ = false;
 
   semantics::class_* prev;
   if (obj)
@@ -202,6 +215,9 @@ traverse (semantics::class_& c)
 
   if (obj)
     object = prev;
+
+  if (f && !member_.first_)
+    flush ();
 }
 
 void object_columns_base::member::
@@ -243,9 +259,10 @@ traverse (semantics::data_member& m)
   }
   else
   {
-    oc_.column (m, prefix_ + column_name (m), first_);
-
-    if (first_)
-      first_ = false;
+    if (oc_.column (m, prefix_ + column_name (m), first_))
+    {
+      if (first_)
+        first_ = false;
+    }
   }
 }

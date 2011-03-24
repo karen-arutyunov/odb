@@ -22,13 +22,17 @@ namespace relational
 
   context::
   context ()
-      : data_ (current ().data_)
+      : data_ (current ().data_),
+        bind_vector (data_->bind_vector_),
+        truncated_vector (data_->truncated_vector_)
   {
   }
 
   context::
   context (data* d)
-      : data_ (d)
+      : data_ (d),
+        bind_vector (data_->bind_vector_),
+        truncated_vector (data_->truncated_vector_)
   {
     assert (current_ == 0);
     current_ = this;

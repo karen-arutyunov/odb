@@ -109,6 +109,7 @@ context (ostream& os_,
       os (data_->os_),
       unit (u),
       options (ops),
+      db (options.database ()),
       keyword_set (data_->keyword_set_),
       embedded_schema (ops.generate_schema () &&
                        ops.schema_format ().count (schema_format::embedded)),
@@ -127,6 +128,7 @@ context ()
     os (current ().os),
     unit (current ().unit),
     options (current ().options),
+    db (current ().db),
     keyword_set (current ().keyword_set),
     embedded_schema (current ().embedded_schema),
     object (current ().object)

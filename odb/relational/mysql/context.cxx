@@ -72,6 +72,9 @@ namespace relational
       assert (current_ == 0);
       current_ = this;
 
+      data_->bind_vector_ = "MYSQL_BIND*";
+      data_->truncated_vector_ = "my_bool*";
+
       // Populate the C++ type to DB type map.
       //
       for (size_t i (0); i < sizeof (type_map) / sizeof (type_map_entry); ++i)

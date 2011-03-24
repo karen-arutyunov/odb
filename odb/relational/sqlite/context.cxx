@@ -73,6 +73,9 @@ namespace relational
       assert (current_ == 0);
       current_ = this;
 
+      data_->bind_vector_ = "sqlite::bind*";
+      data_->truncated_vector_ = "bool*";
+
       // Populate the C++ type to DB type map.
       //
       for (size_t i (0); i < sizeof (type_map) / sizeof (type_map_entry); ++i)

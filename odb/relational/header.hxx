@@ -171,7 +171,10 @@ namespace relational
             if (ordered)
             {
               data_columns++;
-              cond_columns++;
+
+              // Index is not currently used (see also bind()).
+              //
+              // cond_columns++;
             }
             break;
           }
@@ -188,18 +191,24 @@ namespace relational
               n = 1;
 
             data_columns += n;
-            cond_columns += n;
+
+            // Key is not currently used (see also bind()).
+            //
+            // cond_columns += n;
+
             break;
           }
         case ck_set:
         case ck_multiset:
           {
+            // Not currently used (see also bind())
+            //
             // Value is also a key.
             //
-            if (class_* vc = comp_value (vt))
-              cond_columns += in_column_count (*vc);
-            else
-              cond_columns++;
+            //if (class_* vc = comp_value (vt))
+            //  cond_columns += in_column_count (*vc);
+            //else
+            //  cond_columns++;
 
             break;
           }
@@ -279,7 +288,7 @@ namespace relational
           }
         }
 
-        os << "typedef mysql::container_statements< " << name <<
+        os << "typedef " << db << "::container_statements< " << name <<
           " > statements_type;"
            << endl;
 
@@ -389,19 +398,19 @@ namespace relational
         // bind (cond_image)
         //
         os << "static void" << endl
-           << "bind (MYSQL_BIND*, id_image_type*, cond_image_type&);"
+           << "bind (" << bind_vector << ", id_image_type*, cond_image_type&);"
            << endl;
 
         // bind (data_image)
         //
         os << "static void" << endl
-           << "bind (MYSQL_BIND*, id_image_type*, data_image_type&);"
+           << "bind (" << bind_vector << ", id_image_type*, data_image_type&);"
            << endl;
 
         // grow ()
         //
         os << "static void" << endl
-           << "grow (data_image_type&, my_bool*);"
+           << "grow (data_image_type&, " << truncated_vector << ");"
            << endl;
 
         // init (data_image)
@@ -642,7 +651,7 @@ namespace relational
         {
           // query_base_type
           //
-          os << "typedef mysql::query query_base_type;"
+          os << "typedef " << db << "::query query_base_type;"
              << endl;
 
           // query_type
@@ -715,19 +724,19 @@ namespace relational
         // grow ()
         //
         os << "static void" << endl
-           << "grow (image_type&, my_bool*);"
+           << "grow (image_type&, " << truncated_vector << ");"
            << endl;
 
         // bind (image_type)
         //
         os << "static void" << endl
-           << "bind (MYSQL_BIND*, image_type&, bool);"
+           << "bind (" << bind_vector << ", image_type&, bool);"
            << endl;
 
         // bind (id_image_type)
         //
         os << "static void" << endl
-           << "bind (MYSQL_BIND*, id_image_type&);"
+           << "bind (" << bind_vector << ", id_image_type&);"
            << endl;
 
         // init (image, object)
@@ -802,7 +811,8 @@ namespace relational
         // Load the object image.
         //
         os << "static bool" << endl
-           << "find_ (mysql::object_statements< object_type >&, const id_type&);"
+           << "find_ (" << db << "::object_statements< object_type >&, " <<
+          "const id_type&);"
            << endl;
 
         // Load the rest of the object (containers, etc). Expects the id
@@ -810,15 +820,16 @@ namespace relational
         // id.
         //
         os << "static void" << endl
-           << "load_ (mysql::object_statements< object_type >&, object_type&);"
+           << "load_ (" << db << "::object_statements< object_type >&, " <<
+          "object_type&);"
            << endl;
 
         if (options.generate_query ())
           os << "static void" << endl
              << "query_ (database&," << endl
              << "const query_type&," << endl
-             << "mysql::object_statements< object_type >&," << endl
-             << "details::shared_ptr< mysql::select_statement >&);"
+             << db << "::object_statements< object_type >&," << endl
+             << "details::shared_ptr< " << db << "::select_statement >&);"
              << endl;
 
         os << "};";
@@ -849,13 +860,13 @@ namespace relational
         // grow ()
         //
         os << "static bool" << endl
-           << "grow (image_type&, my_bool*);"
+           << "grow (image_type&, " << truncated_vector << ");"
            << endl;
 
         // bind (image_type)
         //
         os << "static void" << endl
-           << "bind (MYSQL_BIND*, image_type&);"
+           << "bind (" << bind_vector << ", image_type&);"
            << endl;
 
         // init (image, object)
@@ -876,6 +887,27 @@ namespace relational
     private:
       instance<image_type> image_type_;
       instance<image_member> id_image_member_;
+    };
+
+    struct include: virtual context
+    {
+      typedef include base;
+
+      virtual void
+      generate ()
+      {
+        os << "#include <odb/details/buffer.hxx>" << endl
+           << endl;
+
+        os << "#include <odb/" << db << "/version.hxx>" << endl
+           << "#include <odb/" << db << "/forward.hxx>" << endl
+           << "#include <odb/" << db << "/" << db << "-types.hxx>" << endl;
+
+        if (options.generate_query ())
+          os << "#include <odb/" << db << "/query.hxx>" << endl;
+
+        os << endl;
+      }
     };
   }
 }

@@ -17,12 +17,11 @@ namespace relational
     {
       context ctx;
       ostream& os (ctx.os);
-      options const& ops (ctx.options);
 
       traversal::unit unit;
       traversal::defines unit_defines;
       traversal::namespace_ ns;
-      class_ c;
+      instance<class_> c;
 
       unit >> unit_defines >> ns;
       unit_defines >> c;
@@ -32,44 +31,11 @@ namespace relational
       ns >> ns_defines >> ns;
       ns_defines >> c;
 
-      //
-      //
-      os << "#include <odb/cache-traits.hxx>" << endl;
-
-      if (ctx.embedded_schema)
-        os << "#include <odb/schema-catalog-impl.hxx>" << endl;
-
-      os << endl;
-
-      //
-      //
-      os << "#include <odb/mysql/mysql.hxx>" << endl
-         << "#include <odb/mysql/traits.hxx>" << endl
-         << "#include <odb/mysql/database.hxx>" << endl
-         << "#include <odb/mysql/transaction.hxx>" << endl
-         << "#include <odb/mysql/connection.hxx>" << endl
-         << "#include <odb/mysql/statement.hxx>" << endl
-         << "#include <odb/mysql/statement-cache.hxx>" << endl
-         << "#include <odb/mysql/object-statements.hxx>" << endl
-         << "#include <odb/mysql/container-statements.hxx>" << endl
-         << "#include <odb/mysql/exceptions.hxx>" << endl;
-
-      if (ops.generate_query ())
-        os << "#include <odb/mysql/result.hxx>" << endl;
-
-      os << endl;
-
-      // Details includes.
-      //
-      os << "#include <odb/details/unused.hxx>" << endl;
-
-      if (ops.generate_query ())
-        os << "#include <odb/details/shared-ptr.hxx>" << endl;
-
-      os << endl;
+      instance<include> i;
+      i->generate ();
 
       os << "namespace odb"
-             << "{";
+         << "{";
 
       unit.dispatch (ctx.unit);
 
