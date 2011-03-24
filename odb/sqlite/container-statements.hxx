@@ -8,6 +8,8 @@
 
 #include <odb/pre.hxx>
 
+#include <cstddef> // std::size_t
+
 #include <odb/forward.hxx>
 #include <odb/traits.hxx>
 
@@ -80,6 +82,30 @@ namespace odb
         return cond_image_;
       }
 
+            std::size_t
+      cond_image_version () const
+      {
+        return cond_image_version_;
+      }
+
+      void
+      cond_image_version (std::size_t v)
+      {
+        cond_image_version_ = v;
+      }
+
+      std::size_t
+      cond_id_image_version () const
+      {
+        return cond_id_image_version_;
+      }
+
+      void
+      cond_id_image_version (std::size_t v)
+      {
+        cond_id_image_version_ = v;
+      }
+
       binding&
       cond_image_binding ()
       {
@@ -94,6 +120,30 @@ namespace odb
         return data_image_;
       }
 
+            std::size_t
+      data_image_version () const
+      {
+        return data_image_version_;
+      }
+
+      void
+      data_image_version (std::size_t v)
+      {
+        data_image_version_ = v;
+      }
+
+      std::size_t
+      data_id_image_version () const
+      {
+        return data_id_image_version_;
+      }
+
+      void
+      data_id_image_version (std::size_t v)
+      {
+        data_id_image_version_ = v;
+      }
+
       binding&
       data_image_binding ()
       {
@@ -103,7 +153,7 @@ namespace odb
       bool*
       data_image_truncated ()
       {
-        return data_image_truncation_;
+        return data_image_truncated_;
       }
 
       //
@@ -157,10 +207,14 @@ namespace odb
       id_image_type* id_image_;
 
       cond_image_type cond_image_;
+      std::size_t cond_image_version_;
+      std::size_t cond_id_image_version_;
       binding cond_image_binding_;
       bind cond_image_bind_[traits::cond_column_count];
 
       data_image_type data_image_;
+      std::size_t data_image_version_;
+      std::size_t data_id_image_version_;
       binding data_image_binding_;
       bind data_image_bind_[traits::data_column_count];
       bool data_image_truncated_[traits::data_column_count];

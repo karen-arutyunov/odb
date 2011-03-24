@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <cassert>
+#include <cstddef> // std::size_t
 
 #include <odb/forward.hxx>
 #include <odb/traits.hxx>
@@ -171,6 +172,30 @@ namespace odb
         return image_;
       }
 
+      std::size_t
+      in_image_version () const
+      {
+        return in_image_version_;
+      }
+
+      std::size_t
+      out_image_version () const
+      {
+        return out_image_version_;
+      }
+
+      void
+      in_image_version (std::size_t v)
+      {
+        in_image_version_ = v;
+      }
+
+      void
+      out_image_version (std::size_t v)
+      {
+        out_image_version_ = v;
+      }
+
       binding&
       in_image_binding ()
       {
@@ -195,6 +220,18 @@ namespace odb
       id_image ()
       {
         return id_image_;
+      }
+
+      std::size_t
+      id_image_version () const
+      {
+        return id_image_version_;
+      }
+
+      void
+      id_image_version (std::size_t v)
+      {
+        id_image_version_ = v;
       }
 
       binding&
@@ -283,11 +320,13 @@ namespace odb
 
       // In (send) binding. The last element is the id parameter.
       //
+      std::size_t in_image_version_;
       binding in_image_binding_;
       bind in_image_bind_[object_traits::in_column_count + 1];
 
       // Out (receive) binding.
       //
+      std::size_t out_image_version_;
       binding out_image_binding_;
       bind out_image_bind_[object_traits::out_column_count];
       bool out_image_truncated_[object_traits::out_column_count];
@@ -295,6 +334,7 @@ namespace odb
       // Id image binding (only in).
       //
       id_image_type id_image_;
+      std::size_t id_image_version_;
       binding id_image_binding_;
 
       details::shared_ptr<persist_statement_type> persist_;

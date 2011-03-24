@@ -24,6 +24,13 @@ namespace odb
           out_image_binding_ (out_image_bind_, object_traits::out_column_count),
           id_image_binding_ (in_image_bind_ + object_traits::in_column_count, 1)
     {
+      image_.version = 0;
+      in_image_version_ = 0;
+      out_image_version_ = 0;
+
+      id_image_.version = 0;
+      id_image_version_ = 0;
+
       std::memset (in_image_bind_, 0, sizeof (in_image_bind_));
       std::memset (out_image_bind_, 0, sizeof (out_image_bind_));
       std::memset (out_image_truncated_, 0, sizeof (out_image_truncated_));
