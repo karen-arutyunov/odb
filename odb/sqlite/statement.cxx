@@ -132,7 +132,7 @@ namespace odb
         //
         if (!truncated)
         {
-          *b.is_null = sqlite3_column_type (stmt_, j) != SQLITE_NULL;
+          *b.is_null = sqlite3_column_type (stmt_, j) == SQLITE_NULL;
 
           if (*b.is_null)
             continue;
@@ -200,14 +200,13 @@ namespace odb
       if (stmt_ == 0) // Empty statement or comment.
         return 0;
 
-      if (int e = sqlite3_reset (stmt_))
-        translate_error (e, conn_);
-
       unsigned long long r (0);
 
       int e;
       for (e = sqlite3_step (stmt_); e == SQLITE_ROW; e = sqlite3_step (stmt_))
         r++;
+
+      sqlite3_reset (stmt_);
 
       if (e != SQLITE_DONE)
         translate_error (e, conn_);
@@ -235,11 +234,13 @@ namespace odb
     execute ()
     {
       done_ = false;
-
-      if (int e = sqlite3_reset (stmt_))
-        translate_error (e, conn_);
-
       bind_param (cond_.bind, cond_.count);
+    }
+
+    void select_statement::
+    free_result ()
+    {
+      sqlite3_reset (stmt_);
     }
 
     bool select_statement::
@@ -254,6 +255,7 @@ namespace odb
         case SQLITE_DONE:
           {
             done_ = true;
+            sqlite3_reset (stmt_);
             break;
           }
         case SQLITE_ROW:
@@ -262,6 +264,7 @@ namespace odb
           }
         default:
           {
+            sqlite3_reset (stmt_);
             translate_error (e, conn_);
           }
         }
@@ -300,12 +303,11 @@ namespace odb
     bool insert_statement::
     execute ()
     {
-      if (int e = sqlite3_reset (stmt_))
-        translate_error (e, conn_);
-
       bind_param (data_.bind, data_.count);
 
       int e (sqlite3_step (stmt_));
+
+      sqlite3_reset (stmt_);
 
       if (e != SQLITE_DONE)
       {
@@ -345,13 +347,12 @@ namespace odb
     void update_statement::
     execute ()
     {
-      if (int e = sqlite3_reset (stmt_))
-        translate_error (e, conn_);
-
       bind_param (data_.bind, data_.count);
       bind_param (cond_.bind, cond_.count, data_.count);
 
       int e (sqlite3_step (stmt_));
+
+      sqlite3_reset (stmt_);
 
       if (e != SQLITE_DONE)
         translate_error (e, conn_);
@@ -372,12 +373,11 @@ namespace odb
     unsigned long long delete_statement::
     execute ()
     {
-      if (int e = sqlite3_reset (stmt_))
-        translate_error (e, conn_);
-
       bind_param (cond_.bind, cond_.count);
 
       int e (sqlite3_step (stmt_));
+
+      sqlite3_reset (stmt_);
 
       if (e != SQLITE_DONE)
         translate_error (e, conn_);

@@ -109,15 +109,15 @@ namespace odb
       // Free the result set.
       //
       void
-      free_result ()
-      {
-      }
+      free_result ();
 
       // More fine-grained SQLite-specific interface that splits fetch()
       // into next() and load().
       //
     public:
-      // Return false if there is no more rows.
+      // Return false if there is no more rows. You should call next()
+      // until it returns false or, alternatively, call free_result ().
+      // Otherwise the statement will remain unfinished.
       //
       bool
       next ();
