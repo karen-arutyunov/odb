@@ -3134,9 +3134,16 @@ namespace odb
   result r1 (db.query&lt;person> (query::first == "John"));
   </pre>
 
-  <p>Normally we would create a named query instance if we are
+  <p>Normally, we would create a named query instance if we are
      planning to run the same query multiple times and would use the
-     in-line version for those that are executed only once.</p>
+     in-line version for those that are executed only once. A named
+     query instance that does not have any by-reference parameters is
+     immutable and can be shared between multiple threads without
+     synchronization. On the other hand, a query instance with
+     by-reference parameters is modified every time it is executed.
+     If such a query is shared among multiple threads, then access
+     to this query instance must be synchronized from the execution
+     point and until the completion of the iteration over the result.</p>
 
   <p>It is also possible to create queries from other queries by
      combining them using logical operators. For example:</p>
