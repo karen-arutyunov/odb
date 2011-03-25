@@ -1,0 +1,18 @@
+// file      : odb/sqlite/result.cxx
+// author    : Boris Kolpackov <boris@codesynthesis.com>
+// copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
+// license   : GNU GPL v2; see accompanying LICENSE file
+
+#include <odb/sqlite/result.hxx>
+
+namespace odb
+{
+  namespace sqlite
+  {
+    result_impl_base::
+    result_impl_base (const query& q, details::shared_ptr<select_statement> s)
+        : params_ (q.parameters ()), statement_ (s)
+    {
+    }
+  }
+}

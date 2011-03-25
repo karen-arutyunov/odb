@@ -12,6 +12,8 @@ database.cxx            \
 error.cxx               \
 exceptions.cxx          \
 object-statements.cxx   \
+query.cxx               \
+result.cxx              \
 statement-cache.cxx     \
 statement.cxx           \
 traits.cxx              \
