@@ -8,12 +8,12 @@
 
 #include <odb/pre.hxx>
 
+#include <odb/forward.hxx>
+
 namespace odb
 {
   namespace sqlite
   {
-    // @@ Any garbage here?
-    //
     class database;
     class connection;
     class connection_factory;
@@ -29,6 +29,17 @@ namespace odb
 
     template <typename T>
     class container_statements;
+
+    class query_params;
+  }
+
+  namespace details
+  {
+    template <>
+    struct counter_type<sqlite::query_params>
+    {
+      typedef shared_base counter;
+    };
   }
 }
 

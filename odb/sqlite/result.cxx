@@ -4,6 +4,7 @@
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #include <odb/sqlite/result.hxx>
+#include <odb/sqlite/query.hxx>
 
 namespace odb
 {

@@ -76,8 +76,9 @@ namespace odb
 
     class query;
 
-    struct LIBODB_SQLITE_EXPORT query_params: details::shared_base
+    class LIBODB_SQLITE_EXPORT query_params: public details::shared_base
     {
+    public:
       typedef sqlite::binding binding_type;
 
       binding_type&

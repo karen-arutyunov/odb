@@ -13,8 +13,7 @@
 #include <odb/result.hxx>
 
 #include <odb/sqlite/version.hxx>
-#include <odb/sqlite/forward.hxx>
-#include <odb/sqlite/query.hxx>
+#include <odb/sqlite/forward.hxx> // query, query_params
 #include <odb/sqlite/statement.hxx>
 
 #include <odb/details/shared-ptr.hxx>
