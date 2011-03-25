@@ -81,7 +81,8 @@ namespace relational
         {
           os << "inline" << endl
              << "void " << traits << "::" << endl
-             << "load_ (mysql::object_statements< object_type >&, object_type&)"
+             << "load_ (" << db << "::object_statements< object_type >&, " <<
+            "object_type&)"
              << "{"
              << "}";
         }

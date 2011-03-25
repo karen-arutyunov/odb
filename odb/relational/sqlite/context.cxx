@@ -323,7 +323,7 @@ namespace relational
             if (t.punctuation () == sql_token::p_rparen)
               break;
 
-            if (t.type () != sql_token::t_eos)
+            if (t.type () == sql_token::t_eos)
             {
               cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
                    << ": error: missing ')' in SQLite type declaration"

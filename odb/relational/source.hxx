@@ -548,6 +548,15 @@ namespace relational
         obj_scope_ = "access::object_traits< " + obj.fq_name () + " >";
       }
 
+      // Unless the database system can execute several interleaving
+      // statements, cache the result set.
+      //
+      virtual void
+      cache_result (string const& statement)
+      {
+        os << statement << ".cache ();";
+      }
+
       virtual void
       container (semantics::data_member& m)
       {
@@ -1396,11 +1405,11 @@ namespace relational
            << "select_statement& st (sts.select_all_statement ());"
            << "st.execute ();";
 
-        // If we are loading eager object pointers, cache the result
-        // since we will be loading other objects.
+        // If we are loading eager object pointers, we may need to cache
+        // the result since we will be loading other objects.
         //
         if (eager_ptr)
-          os << "st.cache ();";
+          cache_result ("st");
 
         os << "select_statement::result r (st.fetch ());";
 
@@ -2275,7 +2284,7 @@ namespace relational
              << endl
              << "details::shared_ptr<odb::result_impl<object_type> > r (" << endl
              << "new (details::shared) " << db <<
-            "::result_impl<object_type> (st, sts));"
+            "::result_impl<object_type> (q, st, sts));"
              << "return result<object_type> (r);"
              << "}";
 
@@ -2299,14 +2308,14 @@ namespace relational
              << endl
              << "details::shared_ptr<odb::result_impl<const object_type> > r (" << endl
              << "new (details::shared) " << db <<
-            "::result_impl<const object_type> (st, sts));"
+            "::result_impl<const object_type> (q, st, sts));"
              << "return result<const object_type> (r);"
              << "}";
 
           os << "void " << traits << "::" << endl
              << "query_ (database&," << endl
              << "const query_type& q," << endl
-             << db << "::object_statements< object_type >& sts,"
+             << db << "::object_statements< object_type >& sts," << endl
              << "details::shared_ptr<" << db << "::select_statement>& st)"
              << "{"
              << "using namespace " << db << ";"
@@ -2323,7 +2332,7 @@ namespace relational
              << "st.reset (new (details::shared) select_statement (" << endl
              << "sts.connection ()," << endl
              << "query_clause + q.clause ()," << endl
-             << "q.parameters ()," << endl
+             << "q.parameters_binding ()," << endl
              << "imb));"
              << "st->execute ();"
              << "}";

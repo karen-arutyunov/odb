@@ -107,7 +107,7 @@ namespace relational
       string db_type_id (database_type_id (m));
 
       string type (
-        "mysql::value_traits< "
+        string (db.string ()) + "::value_traits< "
         + m.type ().fq_name (m.belongs ().hint ()) + ", "
         + im_type + ", "
         + db_type_id
@@ -117,7 +117,7 @@ namespace relational
       {
         os << "// " << name << endl
            << "//" << endl
-           << "static const mysql::query_column<" << endl
+           << "static const " << db << "::query_column<" << endl
            << "  " << type << "," << endl
            << "  " << db_type_id << ">" << endl
            << name << ";"
@@ -127,7 +127,7 @@ namespace relational
       {
         string column (table_ + '.' + quote_id (col_name));
 
-        os << "const mysql::query_column<" << endl
+        os << "const " << db << "::query_column<" << endl
            << "  " << type << "," << endl
            << "  " << db_type_id << ">" << endl
            << scope_ << "::" << name << " (" << endl
