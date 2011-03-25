@@ -60,7 +60,7 @@ namespace odb
         const bind& b (p[i]);
         int j (static_cast<int> (i + start_param));
 
-        if (*b.is_null)
+        if (b.is_null != 0 && *b.is_null)
         {
           e = sqlite3_bind_null (stmt_, j);
           continue;
