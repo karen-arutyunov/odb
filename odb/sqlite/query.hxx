@@ -92,6 +92,12 @@ namespace odb
       query_params&
       operator= (const query_params&);
 
+      query_params&
+      operator+= (const query_params&);
+
+      void
+      add (details::shared_ptr<query_param>);
+
     private:
       typedef std::vector<details::shared_ptr<query_param> > params;
 

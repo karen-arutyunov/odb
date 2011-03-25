@@ -30,6 +30,18 @@ namespace odb
         : details::shared_base (x),
           params_ (x.params_), bind_ (x.bind_), binding_ (0, 0)
     {
+      // Here and below we want to maintain up to date binding info so
+      // that the call to binding() below is an immutable operation,
+      // provided the query does not have any by-reference parameters.
+      // This way a by-value-only query can be shared between multiple
+      // threads without the need for synchronization.
+      //
+      if (size_t n = bind_.size ())
+      {
+        binding_.bind = &bind_[0];
+        binding_.count = n;
+        binding_.version++;
+      }
     }
 
     query_params& query_params::
@@ -39,9 +51,46 @@ namespace odb
       {
         params_ = x.params_;
         bind_ = x.bind_;
+
+        size_t n (bind_.size ());
+        binding_.bind = n != 0 ? &bind_[0] : 0;
+        binding_.count = n;
+        binding_.version++;
       }
 
       return *this;
+    }
+
+    query_params& query_params::
+    operator+= (const query_params& x)
+    {
+      size_t n (bind_.size ());
+
+      params_.insert (params_.end (), x.params_.begin (), x.params_.end ());
+      bind_.insert (bind_.end (), x.bind_.begin (), x.bind_.end ());
+
+      if (n != bind_.size ())
+      {
+        binding_.bind = &bind_[0];
+        binding_.count = bind_.size ();
+        binding_.version++;
+      }
+
+      return *this;
+    }
+
+    void query_params::
+    add (details::shared_ptr<query_param> p)
+    {
+      params_.push_back (p);
+      bind_.push_back (sqlite::bind ());
+      binding_.bind = &bind_[0];
+      binding_.count = bind_.size ();
+      binding_.version++;
+
+      sqlite::bind* b (&bind_.back ());
+      memset (b, 0, sizeof (sqlite::bind));
+      p->bind (b);
     }
 
     query_params::binding_type& query_params::
@@ -51,18 +100,10 @@ namespace odb
       binding_type& r (binding_);
 
       if (n == 0)
-        return r; // r.bind and r.count should be 0.
-
-      sqlite::bind* b (&bind_[0]);
+        return r;
 
       bool inc_ver (false);
-
-      if (r.bind != b || r.count != n)
-      {
-        r.bind = b;
-        r.count = n;
-        inc_ver = true;
-      }
+      sqlite::bind* b (&bind_[0]);
 
       for (size_t i (0); i < n; ++i)
       {
@@ -116,14 +157,7 @@ namespace odb
         clause_ += ' ';
 
       clause_ += q.clause_;
-
-      query_params& p (*parameters_);
-      query_params& qp (*q.parameters_);
-
-      p.params_.insert (
-        p.params_.end (), qp.params_.begin (), qp.params_.end ());
-
-      p.bind_.insert (p.bind_.end (), qp.bind_.begin (), qp.bind_.end ());
+      *parameters_ += *q.parameters_;
 
       return *this;
     }
@@ -137,13 +171,7 @@ namespace odb
         clause_ += ' ';
 
       clause_ += '?';
-
-      parameters_->params_.push_back (p);
-      parameters_->bind_.push_back (sqlite::bind ());
-      sqlite::bind* b (&parameters_->bind_.back ());
-      memset (b, 0, sizeof (sqlite::bind));
-
-      p->bind (b);
+      parameters_->add (p);
     }
 
     std::string query::
