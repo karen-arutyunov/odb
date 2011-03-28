@@ -2344,7 +2344,9 @@ namespace relational
         {
           os << "void " << traits << "::" << endl
              << "create_schema (database& db)"
-             << "{";
+             << "{"
+             << "ODB_POTENTIALLY_UNUSED (db);"
+             << endl;
 
           schema_drop_->traverse (c);
           schema_create_->traverse (c);
