@@ -161,6 +161,9 @@ namespace odb
         {
           next_ = conn_.statements_;
           conn_.statements_ = this;
+
+          if (next_ != 0)
+            next_->prev_ = this;
         }
       }
 
@@ -173,9 +176,12 @@ namespace odb
           else
           {
             prev_->next_ = next_;
-            prev_ = 0;
           }
 
+          if (next_ != 0)
+            next_->prev_ = prev_;
+
+          prev_ = 0;
           next_ = this;
         }
       }
