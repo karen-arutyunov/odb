@@ -280,8 +280,9 @@ namespace relational
                   " > ptr_traits;"
                    << endl;
 
-              os << "bool is_null (ptr_traits::null_ptr (" << member << "));"
-                 << "if (!is_null)"
+              os << "i." << mi.var << "null = ptr_traits::null_ptr (" <<
+                member << ");"
+                 << "if (!i." << mi.var << "null)"
                  << "{"
                  << "const " << type << "& id (" << endl;
 
