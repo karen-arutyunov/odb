@@ -13,7 +13,7 @@ else
 
 $(dcf_root)/import/libsqlite/sqlite.l: $(libsqlite_root)/.libs/libsqlite3.so
 	@echo $< >$@
-	@echo rpath:$(root) >>$@
+	@echo rpath:$(root)/.libs >>$@
 endif
 
 $(dcf_root)/import/libsqlite/sqlite.l.cpp-options:
