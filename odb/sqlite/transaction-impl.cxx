@@ -58,7 +58,7 @@ namespace odb
 
       // Release the connection.
       //
-      //connection_.reset ();
+      connection_.reset ();
     }
 
     void transaction_impl::
@@ -74,7 +74,7 @@ namespace odb
 
       // Release the connection.
       //
-      //connection_.reset ();
+      connection_.reset ();
     }
   }
 }
