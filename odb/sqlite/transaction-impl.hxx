@@ -28,7 +28,14 @@ namespace odb
       typedef sqlite::database database_type;
       typedef sqlite::connection connection_type;
 
-      transaction_impl (database_type&);
+      enum lock
+      {
+        deferred,
+        immediate,
+        exclusive
+      };
+
+      transaction_impl (database_type&, lock);
 
       virtual
       ~transaction_impl ();

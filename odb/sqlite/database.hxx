@@ -78,12 +78,20 @@ namespace odb
       }
 
     public:
+      using odb::database::execute;
+
       virtual unsigned long long
       execute (const char* statement, std::size_t length);
 
     public:
       virtual transaction_impl*
       begin ();
+
+      transaction_impl*
+      begin_immediate ();
+
+      transaction_impl*
+      begin_exclusive ();
 
     public:
       details::shared_ptr<connection_type>

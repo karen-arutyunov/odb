@@ -97,7 +97,25 @@ namespace odb
       if (transaction::has_current ())
         throw already_in_transaction ();
 
-      return new transaction_impl (*this);
+      return new transaction_impl (*this, transaction_impl::deferred);
+    }
+
+    transaction_impl* database::
+    begin_immediate ()
+    {
+      if (transaction::has_current ())
+        throw already_in_transaction ();
+
+      return new transaction_impl (*this, transaction_impl::immediate);
+    }
+
+    transaction_impl* database::
+    begin_exclusive ()
+    {
+      if (transaction::has_current ())
+        throw already_in_transaction ();
+
+      return new transaction_impl (*this, transaction_impl::exclusive);
     }
   }
 }

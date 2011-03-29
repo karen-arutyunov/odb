@@ -14,10 +14,29 @@ namespace odb
   namespace sqlite
   {
     transaction_impl::
-    transaction_impl (database_type& db)
+    transaction_impl (database_type& db, lock l)
         : odb::transaction_impl (db), connection_ (db.connection ())
     {
-      connection_->statement_cache ().begin_statement ().execute ();
+      statement_cache& c (connection_->statement_cache ());
+
+      switch (l)
+      {
+      case deferred:
+        {
+          c.begin_statement ().execute ();
+          break;
+        }
+      case immediate:
+        {
+          c.begin_immediate_statement ().execute ();
+          break;
+        }
+      case exclusive:
+        {
+          c.begin_exclusive_statement ().execute ();
+          break;
+        }
+      }
     }
 
     transaction_impl::

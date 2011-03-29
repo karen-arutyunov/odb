@@ -38,6 +38,24 @@ namespace odb
       }
 
       simple_statement&
+      begin_immediate_statement () const
+      {
+        if (!begin_immediate_)
+          begin_immediate_statement_ ();
+
+        return *begin_immediate_;
+      }
+
+      simple_statement&
+      begin_exclusive_statement () const
+      {
+        if (!begin_exclusive_)
+          begin_exclusive_statement_ ();
+
+        return *begin_exclusive_;
+      }
+
+      simple_statement&
       commit_statement () const
       {
         return *commit_;
@@ -66,6 +84,13 @@ namespace odb
       }
 
     private:
+      void
+      begin_immediate_statement_ () const;
+
+      void
+      begin_exclusive_statement_ () const;
+
+    private:
       typedef std::map<const std::type_info*,
                        details::shared_ptr<object_statements_base>,
                        details::type_info_comparator> map;
@@ -73,6 +98,8 @@ namespace odb
       connection& conn_;
 
       details::shared_ptr<simple_statement> begin_;
+      mutable details::shared_ptr<simple_statement> begin_immediate_;
+      mutable details::shared_ptr<simple_statement> begin_exclusive_;
       details::shared_ptr<simple_statement> commit_;
       details::shared_ptr<simple_statement> rollback_;
 
