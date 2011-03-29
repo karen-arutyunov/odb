@@ -40,6 +40,64 @@ namespace odb
       ~connection_factory ();
     };
 
+    // Share a single connection.
+    //
+    class LIBODB_SQLITE_EXPORT single_connection_factory:
+      public connection_factory
+    {
+    public:
+      single_connection_factory (): db_ (0) {}
+
+      virtual details::shared_ptr<connection>
+      connect ();
+
+      virtual void
+      database (database_type&);
+
+      virtual
+      ~single_connection_factory ();
+
+    private:
+      single_connection_factory (const single_connection_factory&);
+      single_connection_factory& operator= (const single_connection_factory&);
+
+    private:
+      class single_connection: public connection
+      {
+      public:
+        // NULL factory value indicates that the connection is not in use.
+        //
+        single_connection (database_type&,
+                           int extra_flags,
+                           single_connection_factory*);
+
+      private:
+        static bool
+        zero_counter (void*);
+
+      private:
+        friend class single_connection_factory;
+
+        shared_base::refcount_callback callback_;
+        single_connection_factory* factory_;
+      };
+
+      friend class single_connection;
+
+    private:
+      // Return true if the connection should be deleted, false otherwise.
+      //
+      bool
+      release (single_connection*);
+
+    private:
+      database_type* db_;
+      details::mutex mutex_;
+      details::shared_ptr<single_connection> connection_;
+    };
+
+    // Create a new connection every time one is requested.
+    //
     class LIBODB_SQLITE_EXPORT new_connection_factory:
       public connection_factory
     {
@@ -61,6 +119,8 @@ namespace odb
       int extra_flags_;
     };
 
+    // Pool a number of connections.
+    //
     class LIBODB_SQLITE_EXPORT connection_pool_factory:
       public connection_factory
     {

@@ -26,6 +26,67 @@ namespace odb
     }
 
     //
+    // single_connection_factory
+    //
+
+    single_connection_factory::
+    ~single_connection_factory ()
+    {
+      // If the connection is currently in use, wait for it to return to
+      // the factory.
+      //
+      lock l (mutex_);
+    }
+
+    shared_ptr<connection> single_connection_factory::
+    connect ()
+    {
+      mutex_.lock ();
+      connection_->factory_ = this;
+      shared_ptr<connection> r (connection_);
+      connection_.reset ();
+      return r;
+    }
+
+    void single_connection_factory::
+    database (database_type& db)
+    {
+      db_ = &db;
+      connection_.reset (new (shared) single_connection (*db_, 0, 0));
+    }
+
+    bool single_connection_factory::
+    release (single_connection* c)
+    {
+      c->factory_ = 0;
+      connection_.reset (inc_ref (c));
+      mutex_.unlock ();
+      return false;
+    }
+
+    //
+    // single_connection_factory::single_connection
+    //
+
+    single_connection_factory::single_connection::
+    single_connection (database_type& db,
+                       int extra_flags,
+                       single_connection_factory* factory)
+        : connection (db, extra_flags), factory_ (factory)
+    {
+      callback_.arg = this;
+      callback_.zero_counter = &zero_counter;
+      shared_base::callback_ = &callback_;
+    }
+
+    bool single_connection_factory::single_connection::
+    zero_counter (void* arg)
+    {
+      single_connection* c (static_cast<single_connection*> (arg));
+      return c->factory_ ? c->factory_->release (c) : true;
+    }
+
+    //
     // new_connection_factory
     //
 
