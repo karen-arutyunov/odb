@@ -39,8 +39,17 @@ namespace odb
           m = "SQLite API misuse";
           break;
         }
-      case SQLITE_BUSY:
       case SQLITE_LOCKED:
+        {
+          if (ee != SQLITE_LOCKED_SHAREDCACHE)
+            throw deadlock (); // The DROP TABLE special case.
+
+          // Getting SQLITE_LOCKED_SHAREDCACHE here means we don't have
+          // the unlock notify support. Translate this to timeout.
+          //
+          throw timeout ();
+        }
+      case SQLITE_BUSY:
       case SQLITE_IOERR:
         {
           if (e != SQLITE_IOERR || ee == SQLITE_IOERR_BLOCKED)

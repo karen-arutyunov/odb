@@ -13,6 +13,8 @@
 #include <memory> // std::auto_ptr
 
 #include <odb/forward.hxx>
+#include <odb/details/mutex.hxx>
+#include <odb/details/condition.hxx>
 #include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
@@ -35,7 +37,7 @@ namespace odb
       virtual
       ~connection ();
 
-      connection (database_type&);
+      connection (database_type&, int extra_flags = 0);
 
       database_type&
       database ()
@@ -56,6 +58,12 @@ namespace odb
         return *statement_cache_;
       }
 
+      // Wait for the locks to be released via unlock notification. Can
+      // be called after getting SQLITE_LOCKED_SHAREDCACHE.
+      //
+      void
+      wait ();
+
     public:
       // Reset active and finalize uncached statements.
       //
@@ -67,14 +75,24 @@ namespace odb
       connection& operator= (const connection&);
 
     private:
-      friend class statement;
-
       database_type& db_;
       sqlite3* handle_;
+
+      // Unlock notification machinery.
+      //
+    private:
+      bool unlocked_;
+      details::mutex unlock_mutex_;
+      details::condition unlock_cond_;
+
+      friend void
+      connection_unlock_callback (void**, int);
 
       // Linked list of active and uncached statements currently associated
       // with this connection.
       //
+    private:
+      friend class statement;
       statement* statements_;
 
       std::auto_ptr<statement_cache_type> statement_cache_;

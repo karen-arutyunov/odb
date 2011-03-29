@@ -44,10 +44,7 @@ namespace odb
       public connection_factory
     {
     public:
-      new_connection_factory ()
-          : db_ (0)
-      {
-      }
+      new_connection_factory (): db_ (0), extra_flags_ (0) {}
 
       virtual details::shared_ptr<connection>
       connect ();
@@ -61,6 +58,7 @@ namespace odb
 
     private:
       database_type* db_;
+      int extra_flags_;
     };
 
     class LIBODB_SQLITE_EXPORT connection_pool_factory:
@@ -87,6 +85,7 @@ namespace odb
                                std::size_t min_connections = 0)
           : max_ (max_connections),
             min_ (min_connections),
+            extra_flags_ (0),
             in_use_ (0),
             waiters_ (0),
             db_ (0),
@@ -114,7 +113,9 @@ namespace odb
       public:
         // NULL pool value indicates that the connection is not in use.
         //
-        pooled_connection (database_type&, connection_pool_factory*);
+        pooled_connection (database_type&,
+                           int extra_flags,
+                           connection_pool_factory*);
 
       private:
         static bool
@@ -139,6 +140,7 @@ namespace odb
     private:
       const std::size_t max_;
       const std::size_t min_;
+      int extra_flags_;
 
       std::size_t in_use_;  // Number of connections currently in use.
       std::size_t waiters_; // Number of threads waiting for a connection.

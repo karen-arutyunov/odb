@@ -5,6 +5,7 @@
 
 #include <odb/details/lock.hxx>
 
+#include <odb/sqlite/database.hxx>
 #include <odb/sqlite/connection-factory.hxx>
 
 using namespace std;
@@ -31,13 +32,19 @@ namespace odb
     shared_ptr<connection> new_connection_factory::
     connect ()
     {
-      return shared_ptr<connection> (new (shared) connection (*db_));
+      return shared_ptr<connection> (
+        new (shared) connection (*db_, extra_flags_));
     }
 
     void new_connection_factory::
     database (database_type& db)
     {
       db_ = &db;
+
+      // Unless explicitly disabled, enable shared cache.
+      //
+      if ((db_->flags () & SQLITE_OPEN_PRIVATECACHE) == 0)
+        extra_flags_ |= SQLITE_OPEN_SHAREDCACHE;
     }
 
     //
@@ -82,7 +89,7 @@ namespace odb
         if(max_ == 0 || in_use_ < max_)
         {
           shared_ptr<pooled_connection> c (
-            new (shared) pooled_connection (*db_, this));
+            new (shared) pooled_connection (*db_, extra_flags_, this));
           in_use_++;
           return c;
         }
@@ -100,6 +107,11 @@ namespace odb
     {
       db_ = &db;
 
+      // Unless explicitly disabled, enable shared cache.
+      //
+      if ((db_->flags () & SQLITE_OPEN_PRIVATECACHE) == 0)
+        extra_flags_ |= SQLITE_OPEN_SHAREDCACHE;
+
       if (min_ > 0)
       {
         connections_.reserve (min_);
@@ -108,7 +120,7 @@ namespace odb
         {
           connections_.push_back (
             shared_ptr<pooled_connection> (
-              new (shared) pooled_connection (*db_, 0)));
+              new (shared) pooled_connection (*db_, extra_flags_, 0)));
         }
       }
     }
@@ -143,8 +155,10 @@ namespace odb
     //
 
     connection_pool_factory::pooled_connection::
-    pooled_connection (database_type& db, connection_pool_factory* pool)
-        : connection (db), pool_ (pool)
+    pooled_connection (database_type& db,
+                       int extra_flags,
+                       connection_pool_factory* pool)
+        : connection (db, extra_flags), pool_ (pool)
     {
       callback_.arg = this;
       callback_.zero_counter = &zero_counter;

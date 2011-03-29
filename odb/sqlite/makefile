@@ -73,6 +73,7 @@ $(out_base)/details/config.h:
 	@echo '#ifndef ODB_SQLITE_DETAILS_CONFIG_H'                     >>$@
 	@echo '#define ODB_SQLITE_DETAILS_CONFIG_H'                     >>$@
 	@echo ''                                                        >>$@
+	@echo '#define LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY 1'              >>$@
 	@echo ''                                                        >>$@
 	@echo '#endif /* ODB_SQLITE_DETAILS_CONFIG_H */'                >>$@
 

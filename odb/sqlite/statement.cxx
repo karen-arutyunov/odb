@@ -30,15 +30,18 @@ namespace odb
     void statement::
     init (const char* s, std::size_t n)
     {
-      if (int e = sqlite3_prepare_v2 (
-            conn_.handle (),
-            s,
-            static_cast<int> (n),
-            &stmt_,
-            0))
+      int e;
+      while ((e = sqlite3_prepare_v2 (conn_.handle (),
+                                      s,
+                                      static_cast<int> (n),
+                                      &stmt_,
+                                      0)) == SQLITE_LOCKED)
       {
-        translate_error (e, conn_);
+        conn_.wait ();
       }
+
+      if (e != SQLITE_OK)
+        translate_error (e, conn_);
 
       active_ = false;
       cached_ = false;
@@ -194,8 +197,20 @@ namespace odb
 
       unsigned long long r (0);
 
+      // Only the first call to sqlite3_step() can return SQLITE_LOCKED.
+      //
       int e;
-      for (e = sqlite3_step (stmt_); e == SQLITE_ROW; e = sqlite3_step (stmt_))
+      sqlite3* h (conn_.handle ());
+      while ((e = sqlite3_step (stmt_)) == SQLITE_LOCKED)
+      {
+        if (sqlite3_extended_errcode (h) != SQLITE_LOCKED_SHAREDCACHE)
+          break;
+
+        sqlite3_reset (stmt_);
+        conn_.wait ();
+      }
+
+      for (; e == SQLITE_ROW; e = sqlite3_step (stmt_))
         r++;
 
       sqlite3_reset (stmt_);
@@ -245,7 +260,16 @@ namespace odb
     {
       if (!done_)
       {
-        int e (sqlite3_step (stmt_));
+        int e;
+        sqlite3* h (conn_.handle ());
+        while ((e = sqlite3_step (stmt_)) == SQLITE_LOCKED)
+        {
+          if (sqlite3_extended_errcode (h) != SQLITE_LOCKED_SHAREDCACHE)
+            break;
+
+          sqlite3_reset (stmt_);
+          conn_.wait ();
+        }
 
         if (e != SQLITE_ROW)
         {
@@ -292,7 +316,16 @@ namespace odb
     {
       bind_param (data_.bind, data_.count);
 
-      int e (sqlite3_step (stmt_));
+      int e;
+      sqlite3* h (conn_.handle ());
+      while ((e = sqlite3_step (stmt_)) == SQLITE_LOCKED)
+      {
+        if (sqlite3_extended_errcode (h) != SQLITE_LOCKED_SHAREDCACHE)
+          break;
+
+        sqlite3_reset (stmt_);
+        conn_.wait ();
+      }
 
       sqlite3_reset (stmt_);
 
@@ -337,7 +370,16 @@ namespace odb
       bind_param (data_.bind, data_.count);
       bind_param (cond_.bind, cond_.count, data_.count);
 
-      int e (sqlite3_step (stmt_));
+      int e;
+      sqlite3* h (conn_.handle ());
+      while ((e = sqlite3_step (stmt_)) == SQLITE_LOCKED)
+      {
+        if (sqlite3_extended_errcode (h) != SQLITE_LOCKED_SHAREDCACHE)
+          break;
+
+        sqlite3_reset (stmt_);
+        conn_.wait ();
+      }
 
       sqlite3_reset (stmt_);
 
@@ -362,7 +404,16 @@ namespace odb
     {
       bind_param (cond_.bind, cond_.count);
 
-      int e (sqlite3_step (stmt_));
+      int e;
+      sqlite3* h (conn_.handle ());
+      while ((e = sqlite3_step (stmt_)) == SQLITE_LOCKED)
+      {
+        if (sqlite3_extended_errcode (h) != SQLITE_LOCKED_SHAREDCACHE)
+          break;
+
+        sqlite3_reset (stmt_);
+        conn_.wait ();
+      }
 
       sqlite3_reset (stmt_);
 

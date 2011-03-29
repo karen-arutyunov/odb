@@ -7,13 +7,21 @@
 #include <string>
 #include <cassert>
 
+#include <odb/details/lock.hxx>
+
 #include <odb/sqlite/database.hxx>
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/statement.hxx>
 #include <odb/sqlite/statement-cache.hxx>
 #include <odb/sqlite/error.hxx>
+#include <odb/sqlite/exceptions.hxx> // deadlock
+
+#include <odb/sqlite/details/config.hxx> // LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
 
 using namespace std;
+
+extern "C" void
+odb_sqlite_connection_unlock_callback (void**, int);
 
 namespace odb
 {
@@ -29,10 +37,10 @@ namespace odb
     }
 
     connection::
-    connection (database_type& db)
-        : db_ (db), statements_ (0)
+    connection (database_type& db, int extra_flags)
+        : db_ (db), unlock_cond_ (unlock_mutex_), statements_ (0)
     {
-      int f (db.flags ());
+      int f (db.flags () | extra_flags);
       const string& n (db.name ());
 
       // If we are opening a temporary database, then add the create flag.
@@ -57,6 +65,41 @@ namespace odb
       statement_cache_.reset (new statement_cache_type (*this));
     }
 
+    inline void
+    connection_unlock_callback (void** args, int n)
+    {
+      for (int i (0); i < n; ++i)
+      {
+        connection* c (static_cast<connection*> (args[i]));
+        details::lock l (c->unlock_mutex_);
+        c->unlocked_ = true;
+        c->unlock_cond_.signal ();
+      }
+    }
+
+    void connection::
+    wait ()
+    {
+#ifdef LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
+      unlocked_ = false;
+
+      // unlock_notify() returns SQLITE_OK or SQLITE_LOCKED (deadlock).
+      //
+      int e (sqlite3_unlock_notify (handle_,
+                                    &odb_sqlite_connection_unlock_callback,
+                                    this));
+      if (e == SQLITE_LOCKED)
+        throw deadlock ();
+
+      details::lock l (unlock_mutex_);
+
+      while (!unlocked_)
+        unlock_cond_.wait ();
+#else
+      translate_error (SQLITE_LOCKED, *this);
+#endif
+    }
+
     void connection::
     clear ()
     {
@@ -74,4 +117,10 @@ namespace odb
       }
     }
   }
+}
+
+extern "C" void
+odb_sqlite_connection_unlock_callback (void** args, int n)
+{
+  odb::sqlite::connection_unlock_callback (args, n);
 }
