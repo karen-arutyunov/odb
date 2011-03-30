@@ -34,6 +34,12 @@ LIBSQLITE(
   [],
   [AC_MSG_ERROR([libsqlite3 is not found; consider using CPPFLAGS/LDFLAGS to specify its location])])
 
+AS_IF([test x$libsqlite_unlock_notify = xyes],
+AC_DEFINE([LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY], [1], [Have sqlite3_unlock_notify.]))
+
+AS_IF([test x$threads != xnone -a x$libsqlite_unlock_notify = xno],
+AC_MSG_WARN([libsqlite3 is built without sqlite3_unlock_notify support; multi-threaded support will be limited]))
+
 # Check for libodb.
 #
 LIBODB([],[AC_MSG_ERROR([libodb is not found; consider using --with-libodb=DIR])])
