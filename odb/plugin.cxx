@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <cstring> // std::strcpy
+#include <cassert>
 #include <iostream>
 
 #include <cutl/fs/path.hxx>
@@ -190,21 +191,34 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
         }
       }
 
+      // Two-phase options parsing, similar to the driver.
+      //
       int argc (static_cast<int> (argv.size ()));
 
-      profile_data pd (profile_paths_, "odb plugin");
       cli::argv_file_scanner::option_info oi[3];
       oi[0].option = "--options-file";
       oi[0].search_func = 0;
       oi[1].option = "-p";
-      oi[1].search_func = &profile_search;
-      oi[1].arg = &pd;
       oi[2].option = "--profile";
+
+      database db;
+      {
+        oi[1].search_func = &profile_search_ignore;
+        oi[2].search_func = &profile_search_ignore;
+
+        cli::argv_file_scanner scan (argc, &argv[0], oi, 3);
+        options ops (scan);
+        assert (ops.database_specified ());
+        db = ops.database ();
+      }
+
+      profile_data pd (profile_paths_, db, "odb plugin");
+      oi[1].search_func = &profile_search;
       oi[2].search_func = &profile_search;
+      oi[1].arg = &pd;
       oi[2].arg = &pd;
 
       cli::argv_file_scanner scan (argc, &argv[0], oi, 3);
-
       auto_ptr<options> ops (
         new options (scan, cli::unknown_mode::fail, cli::unknown_mode::fail));
 

@@ -13,6 +13,18 @@
 
 using namespace std;
 
+
+
+static bool
+exist (profile_data::path const& p)
+{
+  struct stat info;
+
+  // Just check that the file exist without checking for permissions, etc.
+  //
+  return stat (p.string ().c_str (), &info) == 0 && S_ISREG (info.st_mode);
+}
+
 string
 profile_search (char const* prof, void* arg)
 {
@@ -24,26 +36,30 @@ profile_search (char const* prof, void* arg)
 
   path p (prof), odb ("odb"), r;
   p.normalize (); // Convert '/' to the canonical path separator form.
+  path p_db (p);
+  p_db += "-";
+  p_db += pd->db.string ();
   p += ".options";
+  p_db += ".options";
 
-  struct stat info;
   paths::const_iterator i (ps.begin ()), end (ps.end ());
-
   for (; i != end; ++i)
   {
-    // First check in the search directory itself and then try the odb/
-    // subdirectory.
+    // First check for the database-specific version in the search directory
+    // itself and then try the odb/ subdirectory.
     //
-    r = *i / p;
-
-    // Just check that the file exist without checking for permissions, etc.
-    //
-    if (stat (r.string ().c_str (), &info) == 0 && S_ISREG (info.st_mode))
+    if (exist (r = *i / p_db))
       break;
 
-    r = *i / odb / p;
+    if (exist (r = *i / odb / p_db))
+      break;
 
-    if (stat (r.string ().c_str (), &info) == 0 && S_ISREG (info.st_mode))
+    // Then try the same with the database-independent version.
+    //
+    if (exist (r = *i / p))
+      break;
+
+    if (exist (r = *i / odb / p))
       break;
   }
 
@@ -59,4 +75,10 @@ profile_search (char const* prof, void* arg)
 
   pd->loaded.insert (r);
   return r.string ();
+}
+
+string
+profile_search_ignore (char const*, void*)
+{
+  return string ();
 }

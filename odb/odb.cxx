@@ -393,7 +393,8 @@ main (int argc, char* argv[])
         e << " " << *i << endl;
     }
 
-    // Parse plugin options.
+    // Parse plugin options. We have to do it twice to get the target
+    // database which is need while loading profiles.
     //
     vector<char*> av;
     av.push_back (argv[0]);
@@ -406,56 +407,67 @@ main (int argc, char* argv[])
 
     int ac (static_cast<int> (av.size ()));
 
-    profile_data pd (prof_paths, argv[0]);
     cli::argv_file_scanner::option_info oi[3];
     oi[0].option = "--options-file";
     oi[0].search_func = 0;
     oi[1].option = "-p";
-    oi[1].search_func = &profile_search;
-    oi[1].arg = &pd;
     oi[2].option = "--profile";
+
+    database db;
+    {
+      oi[1].search_func = &profile_search_ignore;
+      oi[2].search_func = &profile_search_ignore;
+
+      cli::argv_file_scanner scan (ac, &av[0], oi, 3);
+      options ops (scan);
+
+      // Handle --version.
+      //
+      if (ops.version ())
+      {
+        e << "ODB object-relational mapping (ORM) compiler for C++ "
+          ODB_COMPILER_VERSION_STR << endl
+          << "Copyright (c) 2009-2011 Code Synthesis Tools CC" << endl;
+
+        e << "This is free software; see the source for copying conditions. "
+          << "There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS "
+          << "FOR A PARTICULAR PURPOSE." << endl;
+
+        return 0;
+      }
+
+      // Handle --help.
+      //
+      if (ops.help ())
+      {
+        e << "Usage: " << argv[0] << " [options] file [file ...]"
+          << endl
+          << "Options:" << endl;
+
+        options::print_usage (e);
+        return 0;
+      }
+
+      // Check that required options were specifed.
+      //
+      if (!ops.database_specified ())
+      {
+        e << argv[0] << ": error: no database specified with the --database "
+          << "option" << endl;
+        return 1;
+      }
+
+      db = ops.database ();
+    }
+
+    profile_data pd (prof_paths, db, argv[0]);
+    oi[1].search_func = &profile_search;
     oi[2].search_func = &profile_search;
+    oi[1].arg = &pd;
     oi[2].arg = &pd;
 
     cli::argv_file_scanner scan (ac, &av[0], oi, 3);
-
     options ops (scan);
-
-    // Handle --version.
-    //
-    if (ops.version ())
-    {
-      e << "ODB object-relational mapping (ORM) compiler for C++ "
-        ODB_COMPILER_VERSION_STR << endl
-        << "Copyright (c) 2009-2011 Code Synthesis Tools CC" << endl;
-
-      e << "This is free software; see the source for copying conditions. "
-        << "There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS "
-        << "FOR A PARTICULAR PURPOSE." << endl;
-
-      return 0;
-    }
-
-    // Handle --help.
-    //
-    if (ops.help ())
-    {
-      e << "Usage: " << argv[0] << " [options] file [file ...]"
-        << endl
-        << "Options:" << endl;
-
-      options::print_usage (e);
-      return 0;
-    }
-
-    // Check that required options were specifed.
-    //
-    if (!ops.database_specified ())
-    {
-      e << argv[0] << ": error: no database specified with the --database "
-        << "option" << endl;
-      return 1;
-    }
 
     size_t end (scan.end () - 1); // We have one less in plugin_args.
 
