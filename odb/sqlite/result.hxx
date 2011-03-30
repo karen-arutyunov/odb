@@ -11,18 +11,18 @@
 #include <cstddef> // std::size_t
 
 #include <odb/result.hxx>
+#include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx> // query, query_params
 #include <odb/sqlite/statement.hxx>
-
-#include <odb/details/shared-ptr.hxx>
+#include <odb/sqlite/details/export.hxx>
 
 namespace odb
 {
   namespace sqlite
   {
-    class result_impl_base
+    class LIBODB_SQLITE_EXPORT result_impl_base
     {
     public:
       result_impl_base (const query&, details::shared_ptr<select_statement>);
