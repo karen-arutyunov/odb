@@ -31,7 +31,7 @@ namespace odb
 
       bind_type* bind;
       std::size_t count;
-      std::size_t version; // @@ Don't really need it (gen code).
+      std::size_t version;
 
     private:
       binding (const binding&);
