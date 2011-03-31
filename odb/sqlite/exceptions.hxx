@@ -52,6 +52,7 @@ namespace odb
       int error_;
       int extended_error_;
       std::string message_;
+      std::string what_;
     };
 
     struct LIBODB_SQLITE_EXPORT cli_exception: odb::exception

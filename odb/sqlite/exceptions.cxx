@@ -3,6 +3,8 @@
 // copyright : Copyright (c) 2005-2011 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
+#include <sstream>
+
 #include <odb/sqlite/exceptions.hxx>
 
 using namespace std;
@@ -24,12 +26,20 @@ namespace odb
     database_exception (int e, int ee, const string& m)
         : error_ (e), extended_error_ (ee), message_ (m)
     {
+      ostringstream ostr;
+      ostr << error_;
+
+      if (error_ != extended_error_)
+        ostr << " (" << extended_error_ << ")";
+
+      ostr << ": " << message_;
+      what_ = ostr.str ();
     }
 
     const char* database_exception::
     what () const throw ()
     {
-      return message_.c_str ();
+      return what_.c_str ();
     }
 
     //
