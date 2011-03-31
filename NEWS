@@ -1,3 +1,9 @@
+Version 1.3.0
+
+  * Support for the SQLite database, including shared cache and unlock
+    notification to aid concurrency. For more information, refer to
+    Chapter 11, "SQLite Database" in the ODB manual.
+
 Version 1.2.0
 
   * New profile, boost, provides persistence support for the Boost libraries.
