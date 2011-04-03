@@ -19,6 +19,7 @@
 
 extern "C"
 {
+#include <bversion.h>
 #include <gcc-plugin.h>
 
 #include <config.h>
@@ -30,10 +31,10 @@ extern "C"
 #include <tm.h>
 
 #include <cpplib.h>
-#include <diagnostic.h>
+#include <cp/cp-tree.h>
 #include <c-common.h>
 #include <c-pragma.h>
-#include <cp/cp-tree.h>
+#include <diagnostic.h>
 }
 
 #ifndef LOCATION_COLUMN

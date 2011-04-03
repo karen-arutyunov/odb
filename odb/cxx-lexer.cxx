@@ -28,8 +28,15 @@ char const* cxx_lexer::token_spelling[N_TTYPES + 1] = { TTYPE_TABLE "KEYWORD"};
 //
 extern "C" bool
 cpp_error_callback (
-  cpp_reader* reader, int level, location_t, unsigned int,
-  char const* msg, va_list *ap)
+  cpp_reader* reader,
+  int level,
+#if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 5
+  int /*reason*/, // Added in GCC 4.6.0.
+#endif
+  location_t,
+  unsigned int,
+  char const* msg,
+  va_list *ap)
 {
   char const* kind (0);
   switch (level)
