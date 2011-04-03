@@ -215,7 +215,7 @@ namespace
 
       bool com (false);  // In C-style comment.
       string lex;
-      char path_end;
+      char path_end ('\0');
       state s (start_hash);
 
       for (size_t i (0), n (l.size ()); i < n; ++i)
