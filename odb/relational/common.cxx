@@ -119,7 +119,7 @@ namespace relational
            << "//" << endl
            << "static const " << db << "::query_column<" << endl
            << "  " << type << "," << endl
-           << "  " << db_type_id << ">" << endl
+           << "  " << db_type_id << " >" << endl
            << name << ";"
            << endl;
       }
@@ -129,7 +129,7 @@ namespace relational
 
         os << "const " << db << "::query_column<" << endl
            << "  " << type << "," << endl
-           << "  " << db_type_id << ">" << endl
+           << "  " << db_type_id << " >" << endl
            << scope_ << "::" << name << " (" << endl
            << strlit (column) << ");"
            << endl;
