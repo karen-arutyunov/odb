@@ -513,6 +513,7 @@ for consistency.
 	    <th>13.3</th><td><a href="#13.3">Date Time Library</a>
 	      <table class="toc">
 	        <tr><th>13.3.1</th><td><a href="#13.3.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>13.3.2</th><td><a href="#13.3.2">SQLite Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -7793,12 +7794,85 @@ class employee
 </pre>
 
   <p>Some valid Boost date-time values cannot be stored in a MySQL database.
-     Attempting to persist any Boost date-time special value other than
+     An attempt to persist any Boost date-time special value other than
      <code>date_time::not_a_date_time</code> will result in the
-     <code>special_value</code> exception. Attempting to persist a Boost
+     <code>special_value</code> exception. An attempt to persist a Boost
      date-time value that is out of the MySQL type range will result in
      the <code>out_of_range</code> exception.  Refer to the MySQL
      documentation for more information on the MySQL data type ranges.</p>
+
+  <h3><a name="13.3.2">13.3.2 SQLite Database Type Mapping</a></h3>
+
+  <p>The following table summarizes the default mapping between the currently
+     supported Boost <code>date_time</code> types and the SQLite database
+     types.</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>Boost <code>date_time</code> type</th>
+      <th>SQLite type</th>
+    </tr>
+
+    <tr>
+      <td><code>gregorian::date</code></td>
+      <td><code>TEXT</code></td>
+    </tr>
+
+    <tr>
+      <td><code>posix_time::ptime</code></td>
+      <td><code>TEXT</code></td>
+    </tr>
+
+    <tr>
+      <td><code>posix_time::time_duration</code></td>
+      <td><code>TEXT</code></td>
+    </tr>
+  </table>
+
+  <p>The Boost special value <code>date_time::not_a_date_time</code> is stored
+     as a <code>NULL</code> value in an SQLite database.</p>
+
+  <p>The <code>date-time</code> sub-profile implementation also provides
+     support for mapping <code>gregorian::date</code> and
+     <code>posix_time::ptime</code> to the <code>INTEGER</code> SQLite type,
+     with the integer value representing the UNIX time. Similarly, an
+     alternative mapping for <code>posix_time::time_duration</code> to the
+     <code>INTEGER</code> type represents the duration as a number of
+     seconds. These mappings have to be explicitly requested using the
+     <code>db&nbsp;type</code> pragma (<a href="#9.3.3">Section 9.3.3,
+     "<code>type</code>"</a>), as shown in the following example:</p>
+
+<pre class="c++">
+#pragma db object
+class employee
+{
+  ...
+  #pragma db type("INTEGER")
+  boost::gregorian::date born_;
+};
+</pre>
+
+  <!--
+
+  <p>The Boost UNIX time interface does not support 64 bit time arithmetic.
+     As a result, the UNIX time representations of <code>gregorian::date</code>
+     and <code>posix_time::ptime</code> are restricted to the 32 bit range.
+     The minimum and maximum date representable by
+     <code>gregorian::date</code> is 1901-12-14 and 2038-01-19 respectively,
+     while the minimum and maximum date-time representable by
+     <code>posix_time::ptime</code> is 1901-12-13&nbsp;20:45:54 GMT and
+     2038-01-19&nbsp;03:14:07&nbsp;GMT respectively. Persisting and loading
+     of values outside of these ranges will result in undefined behavior.</p>
+
+  -->
+
+  <p>Some valid Boost date-time values cannot be stored in an SQLite database.
+     An attempt to persist any Boost date-time special value other than
+     <code>date_time::not_a_date_time</code> will result in the
+     <code>special_value</code> exception. An attempt to persist a negative
+     <code>posix_time::time_duration</code> value as SQLite <code>TEXT</code>
+     will result in the <code>out_of_range</code> exception.</p>
 
   </div>
 </div>
