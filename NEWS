@@ -1,8 +1,18 @@
 Version 1.3.0
 
-  * Support for the SQLite database, including shared cache and unlock
-    notification to aid concurrency. For more information, refer to
-    Chapter 11, "SQLite Database" in the ODB manual.
+  * Support for the SQLite database. Provided connection factories include
+    'new' (new connection is created every time one is requested), 'single'
+    (single connection is shared among all the callers), and 'pool' (a pool
+    of connections is maintained). In multi-threaded applications the runtime
+    uses the SQLite shared cache and unlock notification features to aid
+    concurrency. For more information, refer to Chapter 11, "SQLite Database"
+    in the ODB manual.
+
+  * Support for database-specific profiles. Now the ODB compiler first looks
+    for the <profile>-<database>.options file and only if this file is not
+    found, does it fall back to <profile>.options.
+
+  * Support for the GCC 4.6 plugin interface changes.
 
 Version 1.2.0
 
