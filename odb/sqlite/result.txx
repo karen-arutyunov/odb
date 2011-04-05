@@ -112,8 +112,6 @@ namespace odb
     std::size_t result_impl<T>::
     size ()
     {
-      // @@ Should we rather throw unsupported_operation or some such?
-      //
       throw result_not_cached ();
     }
   }
