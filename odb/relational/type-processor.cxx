@@ -130,7 +130,7 @@ namespace relational
           if (type.empty () && idt.count ("type"))
             type = idt.get<string> ("type");
 
-          column_type_flags f (ctf_object_id_ref);
+          column_type_flags f (ctf_none);
 
           if (null_pointer (m))
             f |= ctf_default_null;
@@ -143,7 +143,7 @@ namespace relational
           type = database_type (t, orig, m, ctf_none);
 
           if (m.count ("id"))
-            ref_type = database_type (t, orig, m, ctf_object_id_ref);
+            ref_type = database_type (t, orig, m, ctf_none);
         }
 
         if (!type.empty ())
@@ -217,7 +217,7 @@ namespace relational
           if (type.empty () && idt.count ("type"))
             type = idt.get<string> ("type");
 
-          column_type_flags f (ctf_object_id_ref);
+          column_type_flags f (ctf_none);
 
           if (null_pointer (m, prefix))
             f |= ctf_default_null;

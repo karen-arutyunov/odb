@@ -373,10 +373,6 @@ protected:
   //
   static column_type_flags const ctf_default_null = 0x01;
 
-  // Get object id reference instead of object id.
-  //
-  static column_type_flags const ctf_object_id_ref = 0x02;
-
   // Return empty string if there is no mapping. The second argument
   // is the custom type or empty string if it is not specified.
   //
