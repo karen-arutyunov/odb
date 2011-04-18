@@ -54,7 +54,7 @@ namespace semantics
 
   //
   //
-  class enumerator: public instance
+  class enumerator: public nameable, public instance
   {
   public:
     typedef semantics::enum_ enum_type;
@@ -80,7 +80,7 @@ namespace semantics
       enumerated_ = &e;
     }
 
-    using instance::add_edge_right;
+    using nameable::add_edge_right;
 
   private:
     enumerates* enumerated_;

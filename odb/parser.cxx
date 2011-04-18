@@ -85,16 +85,23 @@ private:
   T&
   emit_union (tree, path const& f, size_t l, size_t c, bool stub = false);
 
+  // Access is not used when creating a stub.
+  //
   enum_&
-  emit_enum (tree, path const& f, size_t l, size_t c, bool stub = false);
+  emit_enum (tree,
+             access,
+             path const& f,
+             size_t l,
+             size_t c,
+             bool stub = false);
 
   // Create new or find existing semantic graph type.
   //
   type&
-  emit_type (tree, path const& f, size_t l, size_t c);
+  emit_type (tree, access, path const& f, size_t l, size_t c);
 
   type&
-  create_type (tree, path const& f, size_t l, size_t c);
+  create_type (tree, access, path const& f, size_t l, size_t c);
 
   string
   emit_type_name (tree, bool direct = true);
@@ -276,7 +283,11 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
     }
     else
     {
-      b_node = &dynamic_cast<class_&> (emit_type (base, file, line, clmn));
+      // Use public access for a template instantiation in the inheritance
+      // declaration.
+      //
+      b_node = &dynamic_cast<class_&> (
+        emit_type (base, access::public_, file, line, clmn));
 
       if (trace)
         name = emit_type_name (base);
@@ -406,7 +417,7 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
 
         access a (decl_access (d));
 
-        type& type_node (emit_type (t, file, line, clmn));
+        type& type_node (emit_type (t, a, file, line, clmn));
         data_member& member_node (
           unit_->new_node<data_member> (file, line, clmn, d));
         unit_->insert (d, member_node);
@@ -560,7 +571,7 @@ emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
 
         access a (decl_access (d));
 
-        type& type_node (emit_type (t, file, line, clmn));
+        type& type_node (emit_type (t, a, file, line, clmn));
         data_member& member_node (
           unit_->new_node<data_member> (file, line, clmn, d));
         unit_->insert (d, member_node);
@@ -892,9 +903,8 @@ emit_type_decl (tree decl)
     {
 
       if (trace)
-        ts << "start " <<  tree_code_name[tc] << " " << name << " at "
-           << DECL_SOURCE_FILE (decl) << ":"
-           << DECL_SOURCE_LINE (decl) << endl;
+        ts << "start " <<  tree_code_name[tc] << " " << name
+           << " at " << file << ":" << line << endl;
 
       switch (tc)
       {
@@ -910,7 +920,7 @@ emit_type_decl (tree decl)
         }
       case ENUMERAL_TYPE:
         {
-          node = &emit_enum (t, file, line, clmn);
+          node = &emit_enum (t, decl_access (decl), file, line, clmn);
           break;
         }
       }
@@ -945,7 +955,7 @@ emit_type_decl (tree decl)
     size_t l (DECL_SOURCE_LINE (decl));
     size_t c (DECL_SOURCE_COLUMN (decl));
 
-    type& node (emit_type (t, f, l, c));
+    type& node (emit_type (t, decl_access (decl), f, l, c));
     typedefs& edge (unit_->new_edge<typedefs> (*scope_, node, name));
 
     if (name_hints_.find (t) != name_hints_.end ())
@@ -1205,7 +1215,12 @@ emit_union_template (tree t, bool stub)
 }
 
 enum_& parser::impl::
-emit_enum (tree e, path const& file, size_t line, size_t clmn, bool stub)
+emit_enum (tree e,
+           access access,
+           path const& file,
+           size_t line,
+           size_t clmn,
+           bool stub)
 {
   e = TYPE_MAIN_VARIANT (e);
 
@@ -1238,6 +1253,10 @@ emit_enum (tree e, path const& file, size_t line, size_t clmn, bool stub)
     enumerator& er_node = unit_->new_node<enumerator> (file, line, clmn, er);
     unit_->new_edge<enumerates> (*e_node, er_node);
 
+    // Inject enumerators into the outer scope.
+    //
+    unit_->new_edge<names> (*scope_, er_node, name, access);
+
     if (trace)
       ts << "\tenumerator " << name << " at " << file << ":" << line << endl;
   }
@@ -1247,6 +1266,7 @@ emit_enum (tree e, path const& file, size_t line, size_t clmn, bool stub)
 
 type& parser::impl::
 emit_type (tree t,
+           access access,
            path const& file,
            size_t line,
            size_t clmn)
@@ -1266,7 +1286,7 @@ emit_type (tree t,
 
   type& r (n != 0
            ? dynamic_cast<type&> (*n)
-           : create_type (t, file, line, clmn));
+           : create_type (t, access, file, line, clmn));
 
   if (trace && n != 0)
     ts << "found node " << &r << " for type " << mv << endl;
@@ -1306,6 +1326,7 @@ emit_type (tree t,
 
 type& parser::impl::
 create_type (tree t,
+             access access,
              path const& file,
              size_t line,
              size_t clmn)
@@ -1455,7 +1476,7 @@ create_type (tree t,
 
       if (d == NULL_TREE || ANON_AGGRNAME_P (DECL_NAME (d)))
       {
-        r = &emit_enum (t, file, line, clmn);
+        r = &emit_enum (t, access, file, line, clmn);
       }
       else
       {
@@ -1466,7 +1487,7 @@ create_type (tree t,
         size_t l (DECL_SOURCE_LINE (d));
         size_t c (DECL_SOURCE_COLUMN (d));
 
-        r = &emit_enum (t, f, l, c, true);
+        r = &emit_enum (t, access, f, l, c, true);
       }
 
       if (trace)
@@ -1516,7 +1537,8 @@ create_type (tree t,
         }
       }
 
-      type& bt (emit_type (TREE_TYPE (t), file, line, clmn));
+      type& bt (
+        emit_type (TREE_TYPE (t), access::public_, file, line, clmn));
       t = TYPE_MAIN_VARIANT (t);
       array& a (unit_->new_node<array> (file, line, clmn, t, size));
       unit_->insert (t, a);
@@ -1527,7 +1549,8 @@ create_type (tree t,
     }
   case REFERENCE_TYPE:
     {
-      type& bt (emit_type (TREE_TYPE (t), file, line, clmn));
+      type& bt (
+        emit_type (TREE_TYPE (t), access::public_, file, line, clmn));
       t = TYPE_MAIN_VARIANT (t);
       reference& ref (unit_->new_node<reference> (file, line, clmn, t));
       unit_->insert (t, ref);
@@ -1540,7 +1563,8 @@ create_type (tree t,
     {
       if (!TYPE_PTRMEM_P (t))
       {
-        type& bt (emit_type (TREE_TYPE (t), file, line, clmn));
+        type& bt (
+          emit_type (TREE_TYPE (t), access::public_, file, line, clmn));
         t = TYPE_MAIN_VARIANT (t);
         pointer& p (unit_->new_node<pointer> (file, line, clmn, t));
         unit_->insert (t, p);
