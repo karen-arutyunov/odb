@@ -47,6 +47,12 @@ namespace relational
       virtual bool
       grow_impl (semantics::data_member&, semantics::type&, string const&);
 
+    protected:
+      virtual string
+      database_type_impl (semantics::type&,
+                          string const& type,
+                          semantics::context&,
+                          column_type_flags);
     public:
       virtual
       ~context ();

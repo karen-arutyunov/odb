@@ -95,6 +95,13 @@ namespace relational
       virtual string
       quote_id_impl (string const&) const;
 
+    protected:
+      virtual string
+      database_type_impl (semantics::type&,
+                          string const& type,
+                          semantics::context&,
+                          column_type_flags);
+
     public:
       virtual
       ~context ();

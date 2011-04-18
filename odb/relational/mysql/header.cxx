@@ -136,7 +136,9 @@ namespace relational
         virtual void
         traverse_enum (member_info& mi)
         {
-          // Represented as string.
+          // Represented as either integer or string. Since we don't know
+          // at the code generation time which one it is, we have to always
+          // keep size in case it is a string.
           //
           os << image_type << " " << mi.var << "value;"
              << "unsigned long " << mi.var << "size;"

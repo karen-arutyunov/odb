@@ -230,6 +230,46 @@ namespace relational
       return r;
     }
 
+    string context::
+    database_type_impl (semantics::type& t,
+                        string const& type,
+                        semantics::context& ctx,
+                        column_type_flags f)
+    {
+      string r (base_context::database_type_impl (t, type, ctx, f));
+
+      if (!r.empty ())
+        return r;
+
+      using semantics::enum_;
+
+      if (enum_* e = dynamic_cast<enum_*> (&t))
+      {
+        enum_::enumerates_iterator b (e->enumerates_begin ()),
+          end (e->enumerates_end ());
+
+        if (b != end)
+        {
+          r += "ENUM (";
+          for (enum_::enumerates_iterator i (b); i != end; ++i)
+          {
+            if (i != b)
+              r += ", ";
+
+            r += '\'';
+            r += i->enumerator ().name ();
+            r += '\'';
+          }
+          r += ")";
+
+          if ((f & ctf_default_null) == 0)
+            r += " NOT NULL";
+        }
+      }
+
+      return r;
+    }
+
     //
     // SQL type parsing.
     //

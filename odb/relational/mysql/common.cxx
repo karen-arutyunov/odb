@@ -277,11 +277,12 @@ namespace relational
     }
 
     void member_image_type::
-    traverse_enum (member_info&)
+    traverse_enum (member_info& mi)
     {
-      // Represented as string.
+      // Represented as either integer or string.
       //
-      type_ = "details::buffer";
+      type_ = "mysql::value_traits< " + mi.fq_type () +
+        ", mysql::id_enum >::image_type";
     }
 
     void member_image_type::

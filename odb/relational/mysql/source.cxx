@@ -62,6 +62,87 @@ namespace relational
       }
 
       //
+      //
+      //
+      struct object_columns: relational::object_columns, context
+      {
+        object_columns (base const& x): base (x) {}
+
+        virtual void
+        column (semantics::data_member& m,
+                string const& key_prefix,
+                string const& table,
+                string const& column)
+        {
+          // When we store a ENUM column in the MySQL database, if we bind
+          // an integer parameter, then it is treated as an index and if we
+          // bind a string, then it is treated as a enumerator. Everything
+          // would have worked well if the same logic applied to the load
+          // operation. That is, if we bind integer, then the database sends
+          // the index and if we bind string then the database sends the
+          // enumerator. Unfortunately, MySQL always sends the enumerator
+          // and to get the index one has to resort to the enum+0 hack.
+          //
+          // This causes the following problem: at code generation time we
+          // do not yet know which format we want. This is determined at
+          // C++ compile time by traits (the reason we don't know this is
+          // because we don't want to drag database-specific runtimes,
+          // which define the necessary traits, as well as their
+          // prerequisites into the ODB compilation process). As a result,
+          // we cannot decide at code generation time whether we need the
+          // +0 hack or not. One way to overcome this would be to construct
+          // the SELECT statements at runtime, something along these lines:
+          //
+          // "enum" + enum_traits<type>::hack + ","
+          //
+          // However, this complicates the code generator quite a bit: we
+          // either have to move to std::string storage for all the
+          // statements and all the databases, which is kind of a waste,
+          // or do some deep per-database customizations, which is hairy).
+          // So, instead, we are going to use another hack (hey, what the
+          // hell, right?) by loading both the index and enumerator
+          // combined into a string:
+          //
+          // CONCAT (enum+0, ' ', enum)
+          //
+          // For cases where we need the index, everything works since
+          // MySQL will convert the leading number and stop at the space.
+          // For cases where we need the enumerator, we do a bit of pre-
+          // processing (see enum_traits) before handing the value off
+          // to value_traits.
+          //
+
+          if (!out_ || column_sql_type (m, key_prefix).type != sql_type::ENUM)
+          {
+            base::column (m, key_prefix, table, column);
+            return;
+          }
+
+          line_ += "CONCAT(";
+
+          if (!table.empty ())
+          {
+            line_ += table;
+            line_ += '.';
+          }
+
+          line_ += column;
+          line_ += "+0, ' ', ";
+
+          if (!table.empty ())
+          {
+            line_ += table;
+            line_ += '.';
+          }
+
+          line_ += column;
+
+          line_ += ")";
+        }
+      };
+      entry<object_columns> object_columns_;
+
+      //
       // bind
       //
 
@@ -216,14 +297,12 @@ namespace relational
         virtual void
         traverse_enum (member_info& mi)
         {
-          // Represented as a string.
+          // Represented as either integer or string.
           //
-          os << b << ".buffer_type = MYSQL_TYPE_STRING;"
-             << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
-             << b << ".buffer_length = static_cast<unsigned long> (" << endl
-             << arg << "." << mi.var << "value.capacity ());"
-             << b << ".length = &" << arg << "." << mi.var << "size;"
-             << b << ".is_null = &" << arg << "." << mi.var << "null;";
+          os << "mysql::enum_traits::bind (" << b << "," << endl
+             << arg << "." << mi.var << "value," << endl
+             << arg << "." << mi.var << "size," << endl
+             << "&" << arg << "." << mi.var << "null);";
         }
 
         virtual void
@@ -360,12 +439,17 @@ namespace relational
         virtual void
         traverse_enum (member_info& mi)
         {
-          // Represented as a string.
+          // Represented as either integer or string (and we don't know
+          // at the code generation time which one it is).
           //
           os << "if (" << e << ")" << endl
              << "{"
-             << "i." << mi.var << "value.capacity (i." << mi.var << "size);"
-             << "grew = true;"
+             << "if (mysql::enum_traits::grow (" <<
+            "i." << mi.var << "value, " <<
+            "i." << mi.var << "size))" << endl
+             << "grew = true;" // String
+             << "else" << endl
+             << e << " = 0;" // Integer.
              << "}";
         }
 
@@ -609,17 +693,14 @@ namespace relational
         virtual void
         traverse_enum (member_info& mi)
         {
-          // Represented as a string.
+          // Represented as either integer or string.
           //
-          os << "std::size_t size (0);"
-             << "std::size_t cap (i." << mi.var << "value.capacity ());"
-             << traits << "::set_image (" << endl
+          os << "if (mysql::enum_traits::set_image (" << endl
              << "i." << mi.var << "value," << endl
-             << "size," << endl
+             << "i." << mi.var << "size," << endl
              << "is_null," << endl
-             << member << ");"
-             << "i." << mi.var << "size = static_cast<unsigned long> (size);"
-             << "grew = grew || (cap != i." << mi.var << "value.capacity ());";
+             << member << "))" << endl
+             << "grew = true;";
         }
 
         virtual void
@@ -846,9 +927,9 @@ namespace relational
         virtual void
         traverse_enum (member_info& mi)
         {
-          // Represented as a string.
+          // Represented as either integer or string.
           //
-          os << traits << "::set_value (" << endl
+          os << "mysql::enum_traits::set_value (" << endl
              << member << "," << endl
              << "i." << mi.var << "value," << endl
              << "i." << mi.var << "size," << endl
@@ -890,6 +971,18 @@ namespace relational
         }
       };
       entry<class_> class_entry_;
+
+      struct include: relational::include, context
+      {
+        include (base const& x): base (x) {}
+
+        virtual void
+        extra_post ()
+        {
+          os << "#include <odb/mysql/enum.hxx>" << endl;
+        }
+      };
+      entry<include> include_;
     }
   }
 }
