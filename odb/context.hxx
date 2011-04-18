@@ -247,6 +247,12 @@ public:
   }
 
   static semantics::type&
+  container_idt (semantics::type& c)
+  {
+    return *c.get<semantics::type*> ("tree-id-type");
+  }
+
+  static semantics::type&
   container_vt (semantics::type& c)
   {
     return *c.get<semantics::type*> ("tree-value-type");
