@@ -61,14 +61,14 @@ namespace relational
       object_columns (bool out,
                       bool last = true,
                       char const* suffix = "")
-          : out_ (out), last_ (last), suffix_ (suffix)
+          : out_ (out), suffix_ (suffix), last_ (last)
       {
       }
 
       object_columns (std::string const& table_qname,
                       bool out,
                       bool last = true)
-          : table_name_ (table_qname), out_ (out), last_ (last)
+          : out_ (out), table_name_ (table_qname), last_ (last)
       {
       }
 
@@ -101,41 +101,42 @@ namespace relational
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
             //
-            if (!table_name_.empty ())
-            {
-              table_prefix tp (table_name (*c) + "_", 1);
-              string const& it (table_qname (*im, tp));
+            column (
+              *im, "id",
+              table_name_.empty ()
+              ? table_name_
+              : table_qname (*im, table_prefix (table_name (*c) + "_", 1)),
+              column_qname (*im, "id", "object_id"));
 
-              line_ += it;
-              line_ += '.';
-            }
-
-            line_ += column_qname (*im, "id", "object_id");
           }
           else
           {
-            if (!table_name_.empty ())
-            {
-              line_ += table_qname (*c);
-              line_ += '.';
-            }
-
-            line_ += column_qname (id_member (*c));
+            semantics::data_member& id (id_member (*c));
+            column (id, "",
+                    table_name_.empty () ? table_name_ : table_qname (*c),
+                    column_qname (id));
           }
         }
         else
-        {
-          if (!table_name_.empty ())
-          {
-            line_ += table_name_;
-            line_ += '.';
-          }
-
-          line_ += quote_id (name);
-        }
+          column (m, "", table_name_, quote_id (name));
 
         line_ += suffix_;
         return true;
+      }
+
+      virtual void
+      column (semantics::data_member&,
+              string const& /*key_prefix*/,
+              string const& table,
+              string const& column)
+      {
+        if (!table.empty ())
+        {
+          line_ += table;
+          line_ += '.';
+        }
+
+        line_ += column; // Already quoted.
       }
 
       virtual void
@@ -144,15 +145,20 @@ namespace relational
         if (!last_)
           line_ += ',';
 
-        os << strlit (line_) << endl;
+        if (!line_.empty ())
+          os << strlit (line_);
+
+        os << endl;
       }
+
+    protected:
+      bool out_;
+      string suffix_;
+      string line_;
 
     private:
       string table_name_;
-      bool out_;
       bool last_;
-      string suffix_;
-      string line_;
     };
 
     struct object_joins: object_columns_base, virtual context
@@ -672,23 +678,25 @@ namespace relational
             {
               if (ordered)
               {
+                instance<object_columns> t (table, false, false);
                 string const& col (column_qname (m, "index", "index"));
-                os << strlit (table + '.' + col + ',') << endl;
+                t->column (m, "index", table, col);
+                t->flush ();
               }
               break;
             }
           case ck_map:
           case ck_multimap:
             {
+              instance<object_columns> t (table, false, false);
+
               if (semantics::class_* ckt = comp_value (*kt))
-              {
-                instance<object_columns> t (table, false, false);
                 t->traverse_composite (m, *ckt, "key", "key");
-              }
               else
               {
                 string const& col (column_qname (m, "key", "key"));
-                os << strlit (table + '.' + col + ',') << endl;
+                t->column (m, "key", table, col);
+                t->flush ();
               }
               break;
             }
@@ -699,15 +707,15 @@ namespace relational
             }
           }
 
+          instance<object_columns> t (table, false);
+
           if (semantics::class_* cvt = comp_value (vt))
-          {
-            instance<object_columns> t (table, false);
             t->traverse_composite (m, *cvt, "value", "value");
-          }
           else
           {
             string const& col (column_qname (m, "value", "value"));
-            os << strlit (table + '.' + col) << endl;
+            t->column (m, "value", table, col);
+            t->flush ();
           }
 
           os << strlit (" FROM " + table +
@@ -741,20 +749,25 @@ namespace relational
           case ck_ordered:
             {
               if (ordered)
-                os << strlit (column_qname (m, "index", "index") + ',') <<
-                  endl;
+              {
+                instance<object_columns> t (false, false);
+                t->column (m, "index", "", column_qname (m, "index", "index"));
+                t->flush ();
+              }
               break;
             }
           case ck_map:
           case ck_multimap:
             {
+              instance<object_columns> t (false, false);
+
               if (semantics::class_* ckt = comp_value (*kt))
-              {
-                instance<object_columns> t (false, false);
                 t->traverse_composite (m, *ckt, "key", "key");
-              }
               else
-                os << strlit (column_qname (m, "key", "key") + ',') << endl;
+              {
+                t->column (m, "key", "", column_qname (m, "key", "key"));
+                t->flush ();
+              }
               break;
             }
           case ck_set:
@@ -764,13 +777,15 @@ namespace relational
             }
           }
 
+          instance<object_columns> t (false);
+
           if (semantics::class_* cvt = comp_value (vt))
-          {
-            instance<object_columns> t (false);
             t->traverse_composite (m, *cvt, "value", "value");
-          }
           else
-            os << strlit (column_qname (m, "value", "value")) << endl;
+          {
+            t->column (m, "value", "", column_qname (m, "value", "value"));
+            t->flush ();
+          }
 
           string values;
           for (size_t i (0), n (m.get<size_t> ("data-column-count"));
