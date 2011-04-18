@@ -2494,6 +2494,8 @@ namespace relational
       virtual void
       generate ()
       {
+        extra_pre ();
+
         os << "#include <odb/cache-traits.hxx>" << endl;
 
         if (embedded_schema)
@@ -2505,8 +2507,6 @@ namespace relational
           os << "#include <odb/details/shared-ptr.hxx>" << endl;
 
         os << endl;
-
-        extra_pre ();
 
         os << "#include <odb/" << db << "/traits.hxx>" << endl
            << "#include <odb/" << db << "/database.hxx>" << endl
