@@ -4572,7 +4572,15 @@ public:
   // Lazy loading interface.
   //
 public:
+  //  NULL      loaded()
+  //
+  //  true       true      NULL pointer to transient object
+  //  false      true      valid pointer to persistent object
+  //  true       false     unloaded pointer to persistent object
+  //  false      false     valid pointer to transient object
+  //
   bool loaded () const;
+
   eager_ptr&lt;T> load () const;
 
   // Unload the pointer. For transient objects this function is
