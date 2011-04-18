@@ -30,26 +30,45 @@ namespace odb
     };
 
     //
+    // image_traits
+    //
+
+    template <database_type_id>
+    struct image_traits;
+
+    template <>
+    struct image_traits<id_integer> {typedef long long image_type;};
+
+    template <>
+    struct image_traits<id_real> {typedef double image_type;};
+
+    template <>
+    struct image_traits<id_text> {typedef details::buffer image_type;};
+
+    template <>
+    struct image_traits<id_blob> {typedef details::buffer image_type;};
+
+    //
     // value_traits
     //
 
-    template <typename T, typename I, database_type_id>
+    template <typename T, database_type_id>
     struct default_value_traits;
 
-    template <typename T, typename I, database_type_id ID>
-    class value_traits: public default_value_traits<T, I, ID>
+    template <typename T, database_type_id ID>
+    class value_traits: public default_value_traits<T, ID>
     {
     };
 
-    template <typename T, typename I, database_type_id>
+    template <typename T, database_type_id ID>
     struct default_value_traits
     {
       typedef T value_type;
       typedef T query_type;
-      typedef I image_type;
+      typedef typename image_traits<ID>::image_type image_type;
 
       static void
-      set_value (T& v, I i, bool is_null)
+      set_value (T& v, const image_type& i, bool is_null)
       {
         if (!is_null)
           v = T (i);
@@ -58,18 +77,17 @@ namespace odb
       }
 
       static void
-      set_image (I& i, bool& is_null, T v)
+      set_image (image_type& i, bool& is_null, T v)
       {
         is_null = false;
-        i = I (v);
+        i = image_type (v);
       }
     };
 
     // std::string specialization.
     //
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<
-      std::string, details::buffer, id_text>
+    struct LIBODB_SQLITE_EXPORT default_value_traits<std::string, id_text>
     {
       typedef std::string value_type;
       typedef std::string query_type;
@@ -101,8 +119,7 @@ namespace odb
     // we can pass such values to the queries.
     //
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<
-      const char*, details::buffer, id_text>
+    struct LIBODB_SQLITE_EXPORT default_value_traits<const char*, id_text>
     {
       typedef const char* value_type;
       typedef const char* query_type;

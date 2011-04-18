@@ -17,7 +17,7 @@ namespace odb
 
     // default_value_traits<std::string>
     //
-    void default_value_traits<string, buffer, id_text>::
+    void default_value_traits<string, id_text>::
     set_image (buffer& b,
                size_t& n,
                bool& is_null,
@@ -35,7 +35,7 @@ namespace odb
 
     // default_value_traits<const char*>
     //
-    void default_value_traits<const char*, buffer, id_text>::
+    void default_value_traits<const char*, id_text>::
     set_image (buffer& b,
                size_t& n,
                bool& is_null,

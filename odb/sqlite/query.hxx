@@ -1059,7 +1059,7 @@ namespace odb
       init (const T& v)
       {
         bool dummy;
-        value_traits<T, long long, id_integer>::set_image (image_, dummy, v);
+        value_traits<T, id_integer>::set_image (image_, dummy, v);
       }
 
     private:
@@ -1093,7 +1093,7 @@ namespace odb
       init (const T& v)
       {
         bool dummy;
-        value_traits<T, double, id_real>::set_image (image_, dummy, v);
+        value_traits<T, id_real>::set_image (image_, dummy, v);
       }
 
     private:
@@ -1128,8 +1128,7 @@ namespace odb
       {
         bool dummy;
         std::size_t cap (buffer_.capacity ());
-        value_traits<T, details::buffer, id_text>::set_image (
-          buffer_, size_, dummy, v);
+        value_traits<T, id_text>::set_image (buffer_, size_, dummy, v);
         return cap != buffer_.capacity ();
       }
 
@@ -1166,8 +1165,7 @@ namespace odb
       {
         bool dummy;
         std::size_t cap (buffer_.capacity ());
-        value_traits<T, details::buffer, id_blob>::set_image (
-          buffer_, size_, dummy, v);
+        value_traits<T, id_blob>::set_image (buffer_, size_, dummy, v);
         return cap != buffer_.capacity ();
       }
 
