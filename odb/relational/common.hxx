@@ -62,12 +62,6 @@ namespace relational
     query_columns (semantics::class_&);
 
     virtual string
-    image_type (semantics::data_member&)
-    {
-      assert (false);
-    }
-
-    virtual string
     database_type_id (semantics::data_member&)
     {
       assert (false);

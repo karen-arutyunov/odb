@@ -216,19 +216,12 @@ namespace relational
       query_columns (base const& x): base (x) {}
 
       virtual string
-      image_type (semantics::data_member& m)
-      {
-        return member_image_type_.image_type (m);
-      }
-
-      virtual string
       database_type_id (semantics::data_member& m)
       {
         return member_database_type_id_.database_type_id (m);
       }
 
     private:
-      member_image_type member_image_type_;
       member_database_type_id member_database_type_id_;
     };
     entry<query_columns> query_columns_;

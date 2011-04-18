@@ -396,9 +396,6 @@ namespace relational
             : member_base::base (x), // virtual base
               base (x),
               member_base (x),
-              member_image_type_ (base::type_override_,
-                                  base::fq_type_override_,
-                                  base::key_prefix_),
               member_database_type_id_ (base::type_override_,
                                         base::fq_type_override_,
                                         base::key_prefix_)
@@ -437,7 +434,6 @@ namespace relational
             if (semantics::class_* c = object_pointer (mt))
             {
               type = "obj_traits::id_type";
-              image_type = member_image_type_.image_type (mi.m);
               db_type_id = member_database_type_id_.database_type_id (mi.m);
 
               // Handle NULL pointers and extract the id.
@@ -482,7 +478,6 @@ namespace relational
             else
             {
               type = mi.fq_type ();
-              image_type = member_image_type_.image_type (mi.m);
               db_type_id = member_database_type_id_.database_type_id (mi.m);
 
               os << "{"
@@ -491,7 +486,6 @@ namespace relational
 
             traits = "mysql::value_traits<\n    "
               + type + ",\n    "
-              + image_type + ",\n    "
               + db_type_id + " >";
           }
 
@@ -648,10 +642,8 @@ namespace relational
         string type;
         string db_type_id;
         string member;
-        string image_type;
         string traits;
 
-        member_image_type member_image_type_;
         member_database_type_id member_database_type_id_;
       };
       entry<init_image_member> init_image_member_;
@@ -666,9 +658,6 @@ namespace relational
             : member_base::base (x), // virtual base
               base (x),
               member_base (x),
-              member_image_type_ (base::type_override_,
-                                  base::fq_type_override_,
-                                  base::key_prefix_),
               member_database_type_id_ (base::type_override_,
                                         base::fq_type_override_,
                                         base::key_prefix_)
@@ -704,7 +693,6 @@ namespace relational
             if (semantics::class_* c = object_pointer (mt))
             {
               type = "obj_traits::id_type";
-              image_type = member_image_type_.image_type (mi.m);
               db_type_id = member_database_type_id_.database_type_id (mi.m);
 
               // Handle NULL pointers and extract the id.
@@ -731,13 +719,11 @@ namespace relational
             else
             {
               type = mi.fq_type ();
-              image_type = member_image_type_.image_type (mi.m);
               db_type_id = member_database_type_id_.database_type_id (mi.m);
             }
 
             traits = "mysql::value_traits<\n    "
               + type + ",\n    "
-              + image_type + ",\n    "
               + db_type_id + " >";
           }
 
@@ -886,11 +872,9 @@ namespace relational
       private:
         string type;
         string db_type_id;
-        string image_type;
         string traits;
         string member;
 
-        member_image_type member_image_type_;
         member_database_type_id member_database_type_id_;
       };
       entry<init_value_member> init_value_member_;

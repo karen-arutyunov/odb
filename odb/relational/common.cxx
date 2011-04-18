@@ -103,13 +103,11 @@ namespace relational
     }
     else
     {
-      string im_type (image_type (m));
       string db_type_id (database_type_id (m));
 
       string type (
         string (db.string ()) + "::value_traits< "
         + m.type ().fq_name (m.belongs ().hint ()) + ", "
-        + im_type + ", "
         + db_type_id
         + " >::query_type");
 
