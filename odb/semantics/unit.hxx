@@ -39,7 +39,7 @@ namespace semantics
     }
 
   public:
-    template <typename T>
+    template <class T>
     T&
     new_node (path const& file, size_t line, size_t column)
     {
@@ -48,7 +48,7 @@ namespace semantics
       return r;
     }
 
-    template <typename T, typename A0>
+    template <class T, class A0>
     T&
     new_node (path const& file, size_t line, size_t column, A0 const& a0)
     {
@@ -57,7 +57,7 @@ namespace semantics
       return r;
     }
 
-    template <typename T, typename A0, typename A1>
+    template <class T, class A0, class A1>
     T&
     new_node (path const& file, size_t line, size_t column,
               A0 const& a0, A1 const& a1)
@@ -67,7 +67,7 @@ namespace semantics
       return r;
     }
 
-    template <typename T, typename A0, typename A1, typename A2>
+    template <class T, class A0, class A1, class A2>
     T&
     new_node (path const& file, size_t line, size_t column,
               A0 const& a0, A1 const& a1, A2 const& a2)
@@ -77,7 +77,7 @@ namespace semantics
       return r;
     }
 
-    template <typename T, typename A0, typename A1, typename A2, typename A3>
+    template <class T, class A0, class A1, class A2, class A3>
     T&
     new_node (path const& file, size_t line, size_t column,
               A0 const& a0, A1 const& a1, A2 const& a2, A3 const& a3)
@@ -87,9 +87,20 @@ namespace semantics
       return r;
     }
 
+    template <class T, class A0, class A1, class A2, class A3, class A4>
+    T&
+    new_node (path const& file, size_t line, size_t column,
+              A0 const& a0, A1 const& a1, A2 const& a2, A3 const& a3,
+              A4 const& a4)
+    {
+      T& r (graph_.new_node<T> (file, line, column, a0, a1, a2, a3, a4));
+      r.unit (*this);
+      return r;
+    }
+
     // For fundamental types.
     //
-    template <typename T>
+    template <class T>
     T&
     new_fund_node (tree tn)
     {
