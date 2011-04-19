@@ -242,29 +242,54 @@ namespace relational
         return r;
 
       using semantics::enum_;
+      using semantics::enumerator;
 
       if (enum_* e = dynamic_cast<enum_*> (&t))
       {
-        enum_::enumerates_iterator b (e->enumerates_begin ()),
-          end (e->enumerates_end ());
-
-        if (b != end)
+        // We can only map to ENUM if the C++ enumeration is contiguous
+        // and starts with 0.
+        //
+        if (e->unsigned_ ())
         {
-          r += "ENUM (";
-          for (enum_::enumerates_iterator i (b); i != end; ++i)
+          enum_::enumerates_iterator i (e->enumerates_begin ()),
+            end (e->enumerates_end ());
+
+          if (i != end)
           {
-            if (i != b)
-              r += ", ";
+            r += "ENUM (";
 
-            r += '\'';
-            r += i->enumerator ().name ();
-            r += '\'';
+            for (unsigned long long j (0); i != end; ++i, ++j)
+            {
+              enumerator const& er (i->enumerator ());
+
+              if (er.value () != j)
+                break;
+
+              if (j != 0)
+                r += ", ";
+
+              r += '\'';
+              r += er.name ();
+              r += '\'';
+            }
+
+            if (i == end)
+              r += ")";
+            else
+              r.clear ();
           }
-          r += ")";
-
-          if ((f & ctf_default_null) == 0)
-            r += " NOT NULL";
         }
+
+        if (r.empty ())
+        {
+          r = "INT";
+
+          if (e->unsigned_ ())
+            r += " UNSIGNED";
+        }
+
+        if ((f & ctf_default_null) == 0)
+          r += " NOT NULL";
       }
 
       return r;
