@@ -6620,6 +6620,32 @@ aCC +W2161 ...
      to <code>VARCHAR(255) NOT NULL</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT NOT NULL</code>.</p>
 
+  <p>Additionally, by default, C++ enumerations are automatically
+     mapped to a suitable MySQL type. Contiguous enumerations with
+     the zero first enumerator are mapped to the MySQL <code>ENUM NOT
+     NULL</code> type. All other enumerations are mapped to <code>INT
+     NOT NULL</code> or <code>INT UNSIGNED NOT NULL</code>. For example:</p>
+
+  <pre class="c++">
+enum color {red, green, blue};
+enum taste
+{
+  bitter = 1, // Non-zero first enumerator.
+  sweet,
+  sour = 4,   // Non-contiguous.
+  salty
+};
+
+#pragma object
+class object
+{
+  ...
+
+  color color_; // Mapped to ENUM ('red', 'green', 'blue') NOT NULL.
+  taste taste_; // Mapped to INT UNSIGNED NOT NULL.
+};
+  </pre>
+
   <h2><a name="10.2">10.2 MySQL Database Class</a></h2>
 
   <p>The MySQL <code>database</code> class has the following
@@ -7082,7 +7108,10 @@ namespace odb
     </tr>
   </table>
 
-  <p>Note that SQLite only operates with signed integers and the largest
+  <p>Additionally, by default, C++ enumerations are automatically mapped to
+     the SQLite <code>INTEGER NOT NULL</code> type.</p>
+
+  <p>Note also that SQLite only operates with signed integers and the largest
      value that an SQLite database can store is a signed 64-bit integer. As
      a result, greater <code>unsigned&nbsp;long&nbsp;long</code> values will be
      represented in the database as negative values.</p>
