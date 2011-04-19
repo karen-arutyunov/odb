@@ -14,14 +14,22 @@ namespace semantics
   }
 
   enumerator::
-  enumerator (path const& file, size_t line, size_t column, tree tn)
-      : node (file, line, column, tn)
+  enumerator (path const& file,
+              size_t line,
+              size_t column,
+              tree tn,
+              unsigned long long value)
+      : node (file, line, column, tn), value_ (value)
   {
   }
 
   enum_::
-  enum_ (path const& file, size_t line, size_t column, tree tn)
-      : node (file, line, column, tn)
+  enum_ (path const& file,
+         size_t line,
+         size_t column,
+         tree tn,
+         bool unsigned_)
+      : node (file, line, column, tn), unsigned__ (unsigned_)
   {
   }
 

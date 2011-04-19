@@ -71,8 +71,21 @@ namespace semantics
       return *enumerated_;
     }
 
+    // If the enumeration is signed, then this value should be re-
+    // interpreted as signed.
+    //
+    unsigned long long
+    value () const
+    {
+      return value_;
+    }
+
   public:
-    enumerator (path const&, size_t line, size_t column, tree);
+    enumerator (path const&,
+                size_t line,
+                size_t column,
+                tree,
+                unsigned long long value);
 
     void
     add_edge_right (enumerates& e)
@@ -83,6 +96,7 @@ namespace semantics
     using nameable::add_edge_right;
 
   private:
+    unsigned long long value_;
     enumerates* enumerated_;
   };
 
@@ -110,8 +124,14 @@ namespace semantics
       return enumerates_.end ();
     }
 
+    bool
+    unsigned_ () const
+    {
+      return unsigned__;
+    }
+
   public:
-    enum_ (path const&, size_t line, size_t column, tree);
+    enum_ (path const&, size_t line, size_t column, tree, bool unsigned_);
 
     void
     add_edge_left (enumerates& e)
@@ -120,6 +140,7 @@ namespace semantics
     }
 
   private:
+    bool unsigned__;
     enumerates_list enumerates_;
   };
 }

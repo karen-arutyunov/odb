@@ -1234,7 +1234,8 @@ emit_enum (tree e,
   }
   else
   {
-    e_node = &unit_->new_node<enum_> (file, line, clmn, e);
+    e_node = &unit_->new_node<enum_> (
+      file, line, clmn, e, TYPE_UNSIGNED (e) != 0);
     unit_->insert (e, *e_node);
   }
 
@@ -1246,11 +1247,22 @@ emit_enum (tree e,
   for (tree er (TYPE_VALUES (e)); er != NULL_TREE ; er = TREE_CHAIN (er))
   {
     char const* name (IDENTIFIER_POINTER (TREE_PURPOSE (er)));
+    tree tval (DECL_INITIAL (TREE_VALUE (er)));
+
+    HOST_WIDE_INT hwl (TREE_INT_CST_LOW (tval));
+    HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (tval));
+
+    unsigned long long l (hwl);
+    unsigned long long h (hwh);
+    unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+    unsigned long long val ((h << width) + l);
 
     // There doesn't seem to be a way to get the proper position for
     // each enumerator.
     //
-    enumerator& er_node = unit_->new_node<enumerator> (file, line, clmn, er);
+    enumerator& er_node = unit_->new_node<enumerator> (
+      file, line, clmn, er, val);
     unit_->new_edge<enumerates> (*e_node, er_node);
 
     // Inject enumerators into the outer scope.
