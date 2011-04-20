@@ -249,25 +249,25 @@ public:
   static semantics::type&
   container_idt (semantics::type& c)
   {
-    return *c.get<semantics::type*> ("tree-id-type");
+    return *c.get<semantics::type*> ("id-tree-type");
   }
 
   static semantics::type&
   container_vt (semantics::type& c)
   {
-    return *c.get<semantics::type*> ("tree-value-type");
+    return *c.get<semantics::type*> ("value-tree-type");
   }
 
   static semantics::type&
   container_it (semantics::type& c)
   {
-    return *c.get<semantics::type*> ("tree-index-type");
+    return *c.get<semantics::type*> ("index-tree-type");
   }
 
   static semantics::type&
   container_kt (semantics::type& c)
   {
-    return *c.get<semantics::type*> ("tree-key-type");
+    return *c.get<semantics::type*> ("key-tree-type");
   }
 
   static bool

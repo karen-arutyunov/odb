@@ -270,13 +270,13 @@ namespace relational
         if (t.count ("container"))
         {
           ck = t.get<container_kind_type> ("container-kind");
-          vt = t.get<semantics::type*> ("tree-value-type");
+          vt = t.get<semantics::type*> ("value-tree-type");
 
           if (ck == ck_ordered)
-            it = t.get<semantics::type*> ("tree-index-type");
+            it = t.get<semantics::type*> ("index-tree-type");
 
           if (ck == ck_map || ck == ck_multimap)
-            kt = t.get<semantics::type*> ("tree-key-type");
+            kt = t.get<semantics::type*> ("key-tree-type");
         }
         else
         {
@@ -367,7 +367,7 @@ namespace relational
             throw;
           }
 
-          t.set ("tree-value-type", vt);
+          t.set ("value-tree-type", vt);
 
 
           // Get the index type for ordered containers.
@@ -396,7 +396,7 @@ namespace relational
               throw;
             }
 
-            t.set ("tree-index-type", it);
+            t.set ("index-tree-type", it);
           }
 
           // Get the key type for maps.
@@ -425,13 +425,13 @@ namespace relational
               throw;
             }
 
-            t.set ("tree-key-type", kt);
+            t.set ("key-tree-type", kt);
           }
         }
 
         // Process member data.
         //
-        m.set ("tree-id-type", &id_tree_type);
+        m.set ("id-tree-type", &id_tree_type);
         m.set ("id-column-type", &id_column_type);
 
         process_container_value (*vt, m, "value", true);

@@ -171,7 +171,7 @@ member_type (semantics::data_member& m, string const& key_prefix)
   if (key_prefix.empty ())
     return m.type ();
 
-  string const key ("tree-" + key_prefix + "-type");
+  string const key (key_prefix + "-tree-type");
 
   if (m.count (key))
     return *indirect_value<semantics::type*> (m, key);
