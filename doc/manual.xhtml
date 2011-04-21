@@ -521,6 +521,31 @@ for consistency.
       </td>
     </tr>
 
+    <tr>
+      <th>14</th><td><a href="#14">Qt Profile</a>
+        <table class="toc">
+          <tr>
+	    <th>14.1</th><td><a href="#14.1">Basic Types Library</a>
+	      <table class="toc">
+	        <tr><th>14.1.1</th><td><a href="#14.1.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>14.1.2</th><td><a href="#14.1.2">SQLite Database Type Mapping</a></td></tr>
+	      </table>
+	    </td>
+	  </tr>
+          <tr><th>14.2</th><td><a href="#14.2">Smart Pointers Library</a></td></tr>
+          <tr><th>14.3</th><td><a href="#14.3">Containers Library</a></td></tr>
+          <tr>
+	    <th>14.4</th><td><a href="#14.4">Date Time Library</a>
+	      <table class="toc">
+	        <tr><th>14.4.1</th><td><a href="#14.4.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>14.4.2</th><td><a href="#14.4.2">SQLite Database Type Mapping</a></td></tr>
+	      </table>
+	    </td>
+	  </tr>
+        </table>
+      </td>
+    </tr>
+
   </table>
   </div>
 
@@ -6534,7 +6559,7 @@ aCC +W2161 ...
   <table id="mapping" border="1">
     <tr>
       <th>C++ Type</th>
-      <th>MySQL type</th>
+      <th>MySQL Type</th>
     </tr>
 
     <tr>
@@ -6617,7 +6642,7 @@ aCC +W2161 ...
      differently depending on whether the member of this type
      is an object id or not. If the member is an object id,
      then for this member <code>std::string</code> is mapped
-     to <code>VARCHAR(255) NOT NULL</code> MySQL type. Otherwise,
+     to the <code>VARCHAR(255) NOT NULL</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT NOT NULL</code>.</p>
 
   <p>Additionally, by default, C++ enumerations are automatically
@@ -7029,7 +7054,7 @@ namespace odb
   <table id="mapping" border="1">
     <tr>
       <th>C++ Type</th>
-      <th>SQLite type</th>
+      <th>SQLite Type</th>
     </tr>
 
     <tr>
@@ -7545,6 +7570,7 @@ class person
   <table class="toc">
     <tr><th>12</th><td><a href="#12">Profiles Introduction</a></td></tr>
     <tr><th>13</th><td><a href="#13">Boost Profile</a></td></tr>
+    <tr><th>14</th><td><a href="#14">Qt Profile</a></td></tr>
   </table>
 
 
@@ -7654,6 +7680,8 @@ odb --profile boost/date-time ...
      smart pointers to establish a relationship between persistent objects.</p>
 
 <pre class="c++">
+class employee;
+
 #pragma db object
 class position
 {
@@ -7701,7 +7729,7 @@ class employee
 
 <pre class="c++">
 #pragma db object
-class employee
+class person
 {
   ...
   boost::unordered_set&lt;std::string&gt; emails_;
@@ -7790,8 +7818,8 @@ namespace odb
   <!-- border="1" is necessary for html2ps -->
   <table id="mapping" border="1">
     <tr>
-      <th>Boost <code>date_time</code> type</th>
-      <th>MySQL type</th>
+      <th>Boost <code>date_time</code> Type</th>
+      <th>MySQL Type</th>
     </tr>
 
     <tr>
@@ -7822,11 +7850,11 @@ namespace odb
 
 <pre class="c++">
 #pragma db object
-class employee
+class person
 {
   ...
   #pragma db type("TIMESTAMP")
-  boost::posix_time::ptime employment_date_;
+  boost::posix_time::ptime updated_;
 };
 </pre>
 
@@ -7847,8 +7875,8 @@ class employee
   <!-- border="1" is necessary for html2ps -->
   <table id="mapping" border="1">
     <tr>
-      <th>Boost <code>date_time</code> type</th>
-      <th>SQLite type</th>
+      <th>Boost <code>date_time</code> Type</th>
+      <th>SQLite Type</th>
     </tr>
 
     <tr>
@@ -7882,7 +7910,7 @@ class employee
 
 <pre class="c++">
 #pragma db object
-class employee
+class person
 {
   ...
   #pragma db type("INTEGER")
@@ -7911,9 +7939,366 @@ class employee
      <code>posix_time::time_duration</code> value as SQLite <code>TEXT</code>
      will result in the <code>out_of_range</code> exception.</p>
 
+
+  <!-- CHAPTER -->
+
+
+  <hr class="page-break"/>
+  <h1><a name="14">14 Qt Profile</a></h1>
+
+  <p>The ODB profile implementation for Qt is provided by the
+     <code>libodb-qt</code> library and consists of multiple sub-profiles
+     corresponding to the common type groups within Qt. Currently,
+     only types from the <code>QtCore</code> module are supported. To
+     enable all the available Qt sub-profiles, pass <code>qt</code> as the
+     profile name to the <code>--profile</code> ODB compiler  option.
+     Alternatively, you can enable only specific sub-profiles by passing
+     individual sub-profile names to <code>--profile</code>. The following
+     sections in this chapter discuss each Qt sub-profile in detail. The
+     <code>qt</code> example in the <code>odb-examples</code>
+     package shows how to enable and use the Qt profile.</p>
+
+  <p>Some sub-profiles may throw exceptions to indicate error conditions,
+     such as the inability to store a specific value in a particular database
+     system. All such exceptions derive from the
+     <code>odb::qt::exception</code> class which in turn derives from
+     the root of the ODB exception hierarchy, class <code>odb::exception</code>
+     (<a href="#3.11">Section 3.11, "ODB Exceptions"</a>). The
+     <code>odb::qt::exception</code> class is defined in the
+     <code>&lt;odb/qt/exception.hxx></code> header file and has the
+     same interface as <code>odb::exception</code>. The concrete exceptions
+     that can be thrown by the Qt sub-profiles are described in the
+     following sections.</p>
+
+  <h2><a name="14.1">14.1 Basic Types</a></h2>
+
+  <p>The <code>basic</code> sub-profile provides persistence support for basic
+     types defined by Qt. To enable only this profile, pass
+     <code>qt/basic</code> to the <code>--profile</code> ODB compiler
+     option.</p>
+
+  <p>The currently supported basic types are <code>QString</code> and
+    <code>QByteArray</code>. The manner in which these types
+     are persisted is database system dependent and is discussed in the
+     sub-sections that follow. The example below shows how
+     <code>QString</code> may be used within a persistent object.</p>
+
+<pre class="c++">
+#pragma db object
+class Person
+{
+  ...
+  QString name_;
+};
+</pre>
+
+  <h3><a name="14.1.1">14.1.1 MySQL Database Type Mapping</a></h3>
+
+  <p>The following table summarizes the default mapping between the currently
+     supported basic Qt types and the MySQL database types.</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>Qt Type</th>
+      <th>MySQL Type</th>
+    </tr>
+
+    <tr>
+      <td><code>QString</code></td>
+      <td><code>TEXT</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QByteArray</code></td>
+      <td><code>BLOB</code></td>
+    </tr>
+  </table>
+
+  <p>Instances of the <code>QString</code> and <code>QByteArray</code> types
+     are stored as a NULL value if their <code>isNull()</code> member
+     function returns <code>true</code>.</p>
+
+  <p>Note also that the <code>QString</code> type is mapped
+     differently depending on whether the member of this type
+     is an object id or not. If the member is an object id,
+     then for this member <code>QString</code> is mapped
+     to the <code>VARCHAR(255) NOT NULL</code> MySQL type. Otherwise,
+     it is mapped to <code>TEXT</code>.</p>
+
+
+  <h3><a name="14.1.2">14.1.2 SQLite Database Type Mapping</a></h3>
+
+  <p>The following table summarizes the default mapping between the currently
+     supported basic Qt types and the SQLite database types.</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>Qt Type</th>
+      <th>SQLite Type</th>
+    </tr>
+
+    <tr>
+      <td><code>QString</code></td>
+      <td><code>TEXT</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QByteArray</code></td>
+      <td><code>BLOB</code></td>
+    </tr>
+  </table>
+
+  <p>Instances of the <code>QString</code> and <code>QByteArray</code> types
+     are stored as a NULL value if their <code>isNull()</code> member
+     function returns <code>true</code>.</p>
+
+  <h2><a name="14.2">14.2 Smart Pointers</a></h2>
+
+  <p>The <code>smart-ptr</code> sub-profile provides persistence support the
+     Qt smart pointers. To enable only this profile, pass
+     <code>qt/smart-ptr</code> to the <code>--profile</code> ODB compiler
+     option.</p>
+
+  <p>The currently supported smart pointers are
+     <code>QSharedPointer</code> and <code>QWeakPointer</code>. For
+     more information on using smart pointers with ODB refer to
+     <a href="#3.2">Section 3.2, "Object Pointers"</a> and
+     <a href="#6">Chapter 6, "Relationships"</a>. The <code>smart-ptr</code>
+     sub-profile also provides the lazy counterparts for the above
+     pointers: <code>QLazySharedPointer</code>
+     and <code>QLazyWeakPointer</code>. You will need to include the
+     <code>&lt;odb/qt/lazy-ptr.hxx></code> header file to make the lazy
+     variants available in your application. For the description of the lazy
+     pointer interface and semantics refer to <a href="#6.3">Section 6.3,
+     "Lazy Pointers"</a>. The following example shows how we can use these
+     smart pointers to establish a relationship between persistent objects.</p>
+
+<pre class="c++">
+class Employee;
+
+#pragma db object
+class Position
+{
+  ...
+
+  #pragma db inverse(position_)
+  QLazyWeakPointer&lt;Employee> employee_;
+};
+
+#pragma db object
+class Employee
+{
+  ...
+
+  #pragma db not_null
+  QSharedPointer&lt;Position> position_;
+};
+</pre>
+
+  <p>Besides providing persistence support for the above smart pointers,
+     the <code>smart-ptr</code> sub-profile also changes the default object
+     pointer (<a href="#3.2">Section 3.2, "Object Pointers"</a>)
+     to <code>QSharedPointer</code>.  In particular, this means that
+     database functions that return dynamically allocated objects will return
+     them as <code>QSharedPointer</code> pointers.  To override this
+     behavior, add the <code>--default-pointer</code> option specifying the
+     alternative object pointer after the <code>--profile</code> option.</p>
+
+  <h2><a name="14.3">14.3 Containers Library</a></h2>
+
+  <p>The <code>container</code> sub-profile provides persistence support for
+     Qt containers. To enable only this profile, pass
+     <code>qt/containers</code> to the <code>--profile</code> ODB compiler
+     option.</p>
+
+  <p>The currently supported ordered containers are <code>QVector</code>,
+     <code>QList</code>, and <code>QLinkedList</code>. Supported map
+     containers are <code>QMap</code>, <code>QMultiMap</code>,
+     <code>QHash</code>, and <code>QMultiHash</code>. The supported set
+     container is <code>QSet</code>. For more information on using
+     containers with ODB refer to <a href="#5">Chapter 5, "Containers"</a>.
+     The following example shows how the <code>QSet</code> container may
+     be used within a persistent object.</p>
+
+<pre class="c++">
+#pragma db object
+class Person
+{
+  ...
+  QSet&lt;QString> emails_;
+};
+</pre>
+
+  <h2><a name="14.4">14.4 Date Time Types</a></h2>
+
+  <p>The <code>date-time</code> sub-profile provides persistence support for
+     the Qt date-time types. To enable only this profile, pass
+     <code>qt/date-time</code> to the <code>--profile</code> ODB compiler
+     option.</p>
+
+  <p>The currently supported date-time types are <code>QDate</code>,
+     <code>QTime</code>, and <code>QDateTime</code>. The manner in which
+     these types are persisted is database system dependent and is
+     discussed in the sub-sections that follow. The example below shows how
+     <code>QDate</code> may be used within a persistent object.</p>
+
+<pre class="c++">
+#pragma db object
+class Person
+{
+  ...
+  QDate dateOfBirth_;
+};
+</pre>
+
+  <p>The single concrete exception that can be thrown by the
+     <code>date-time</code> sub-profile implementation is presented below.</p>
+
+
+<pre class="c++">
+namespace odb
+{
+  namespace qt
+  {
+    namespace date_time
+    {
+      struct value_out_of_range: odb::qt::exception
+      {
+        virtual const char*
+        what () const throw ();
+      };
+    }
+  }
+}
+</pre>
+
+  <p>You will need to include the
+     <code>&lt;odb/qt/date-time/exceptions.hxx&gt;</code> header file to
+     make this exception available in your application.</p>
+
+  <p>The <code>value_out_of_range</code> exception is thrown if an attempt
+     is made to store a date-time value that is out of the target database
+     range. The specific conditions under which it is thrown is database
+     system dependent and is discussed in more detail in the
+     following sub-sections.</p>
+
+  <h3><a name="14.4.1">14.4.1 MySQL Database Type Mapping</a></h3>
+
+  <p>The following table summarizes the default mapping between the currently
+     supported Qt date-time types and the MySQL database types.</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>Qt Date Time Type</th>
+      <th>MySQL Type</th>
+    </tr>
+
+    <tr>
+      <td><code>QDate</code></td>
+      <td><code>DATE</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QTime</code></td>
+      <td><code>TIME</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QDateTime</code></td>
+      <td><code>DATETIME</code></td>
+    </tr>
+  </table>
+
+  <p>Instances of the <code>QDate</code>, <code>QTime</code>, and
+     <code>QDateTime</code> types are stored as a NULL value if their
+     <code>isNull()</code> member function returns true.</p>
+
+  <p>The <code>date-time</code> sub-profile implementation also provides
+     support for mapping <code>QDateTime</code> to the <code>TIMESTAMP</code>
+     MySQL type. However, this mapping has to be explicitly requested using
+     the <code>db&nbsp;type</code> pragma
+     (<a href="#9.3.3">Section 9.3.3, "<code>type</code>"</a>), as shown in
+     the following example:</p>
+
+<pre class="c++">
+#pragma db object
+class Person
+{
+  ...
+  #pragma db type("TIMESTAMP")
+  QDateTime updated_;
+};
+</pre>
+
+  <p>Some valid Qt date-time values cannot be stored in a MySQL database.  An
+     attempt to persist a Qt date-time value that is out of the MySQL type
+     range will result in the <code>out_of_range</code> exception.  Refer to
+     the MySQL documentation for more information on the MySQL data type
+     ranges.</p>
+
+  <h3><a name="14.4.2">14.4.2 SQLite Database Type Mapping</a></h3>
+
+  <p>The following table summarizes the default mapping between the currently
+     supported Qt date-time types and the SQLite database types.</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>Qt Date Time Type</th>
+      <th>SQLite Type</th>
+    </tr>
+
+    <tr>
+      <td><code>QDate</code></td>
+      <td><code>TEXT</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QTime</code></td>
+      <td><code>TEXT</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QDateTime</code></td>
+      <td><code>TEXT</code></td>
+    </tr>
+  </table>
+
+  <p>Instances of the <code>QDate</code>, <code>QTime</code>, and
+     <code>QDateTime</code> types are stored as a NULL value if their
+     <code>isNull()</code> member function returns true.</p>
+
+  <p>The <code>date-time</code> sub-profile implementation also provides
+     support for mapping <code>QDate</code> and <code>QDateTime</code> to the
+     SQLite <code>INTEGER</code> type, with the integer value representing the
+     UNIX time. Similarly, an alternative mapping for <code>QTime</code> to
+     the <code>INTEGER</code> type represents a clock time as the number of
+     seconds since midnight. These mappings have to be explicitly requested
+     using the <code>db&nbsp;type</code> pragma
+     (<a href="#9.3.3">Section 9.3.3,value "<code>type</code>"</a>), as shown
+     in the following example:</p>
+
+<pre class="c++">
+#pragma db object
+class Person
+{
+  ...
+  #pragma db type("INTEGER")
+  QDate born_;
+};
+</pre>
+
+  <p>Some valid Qt date-time values cannot be stored in an SQLite database.
+     An attempt to persist any Qt date-time value representing a negative UNIX
+     time (any point in time prior to the 1970-01-01&nbsp;00:00:00 UNIX time
+     epoch) as an SQLite <code>INTEGER</code> will result in the
+     <code>out_of_range</code> exception.</p>
+
   </div>
 </div>
-
 
 </body>
 </html>
