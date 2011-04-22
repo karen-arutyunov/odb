@@ -615,6 +615,9 @@ main (int argc, char* argv[])
 
         // Add custom prologue if any.
         //
+        // NOTE: if you change the format, you also need to update code
+        // in include.cxx
+        //
         strings const& pro (ops.odb_prologue ());
         for (size_t i (0); i < pro.size (); ++i)
         {
@@ -639,6 +642,9 @@ main (int argc, char* argv[])
         os << endl;
 
         // Add custom epilogue if any.
+        //
+        // NOTE: if you change the format, you also need to update code
+        // in include.cxx
         //
         strings const& epi (ops.odb_epilogue ());
         for (size_t i (0); i < epi.size (); ++i)

@@ -10,6 +10,7 @@
 #include <locale>
 #include <cassert>
 #include <fstream>
+#include <sstream>
 
 #include <odb/common.hxx>
 #include <odb/context.hxx>
@@ -37,7 +38,7 @@ namespace
   // that we are interested in.
   //
   typedef std::map<size_t, include_directive*> include_lines;
-  typedef std::map<path, include_lines> file_map;
+  typedef std::map<string, include_lines> file_map;
 
   // Set of include directives sorted in the preference order.
   //
@@ -114,16 +115,54 @@ namespace
   class include_parser
   {
   public:
-    include_parser ()
-        : loc_ ("C")
+    include_parser (options const& options)
+        : loc_ ("C"), options_ (options)
     {
     }
 
     void
-    parse_file (path const& f, include_lines& lines)
+    parse_file (string const& f, include_lines& lines)
     {
-      size_t lmax (lines.rbegin ()->first);
-      ifstream is (f.string ().c_str ());
+      size_t n (f.size ());
+
+      // Check if we have a synthesized prologue/epilogue fragment.
+      //
+      if (n != 0 && f[0] == '<' && f[n - 1] == '>')
+      {
+        size_t p (f.rfind ('-'));
+
+        if (p != string::npos)
+        {
+          string name (f, 1, p - 1);
+
+          if (name == "odb-prologue" || name == "odb-epilogue")
+          {
+            // Extract the fragment number.
+            //
+            {
+              istringstream istr (string (f, p + 1));
+              istr >> n;
+            }
+
+            stringstream ss;
+
+            // We don't need the #line part.
+            //
+            if (name == "odb-prologue")
+              ss << options_.odb_prologue ()[n - 1];
+            else
+              ss << options_.odb_epilogue ()[n - 1];
+
+            ss << endl;
+
+            parse_stream (ss, f, lines);
+            return;
+          }
+        }
+      }
+
+
+      ifstream is (f.c_str ());
 
       if (!is.is_open ())
       {
@@ -131,7 +170,15 @@ namespace
         throw generation_failed ();
       }
 
+      parse_stream (is, f, lines);
+    }
+
+    void
+    parse_stream (istream& is, string const& name, include_lines& lines)
+    {
       typedef char_traits<char>::int_type int_type;
+
+      size_t lmax (lines.rbegin ()->first);
 
       string line;
       bool bslash (false);
@@ -160,7 +207,7 @@ namespace
               {
                 if (!parse_line (line, *li->second))
                 {
-                  cerr << f << ":" << lb << ":1: error: "
+                  cerr << name << ":" << lb << ":1: error: "
                        << "unable to parse #include directive" << endl;
                   throw generation_failed ();
                 }
@@ -194,7 +241,7 @@ namespace
 
       if (is.bad () || (is.fail () && !is.eof ()))
       {
-        cerr << "error: input error while reading '" << f << "'" << endl;
+        cerr << "error: input error while reading '" << name << "'" << endl;
         throw generation_failed ();
       }
     }
@@ -354,6 +401,7 @@ namespace
 
   private:
     std::locale loc_;
+    options const& options_;
   };
 }
 
@@ -444,9 +492,18 @@ namespace include
 
       if (main_lm != 0)
       {
-        path f (main_lm->to_file);
-        f.complete ();
-        f.normalize ();
+        string f (main_lm->to_file);
+        size_t n (f.size ());
+
+        // Check if this is a synthesized fragment.
+        //
+        if (!(n != 0 && f[0] == '<' && f[n - 1] == '>'))
+        {
+          path p (f);
+          p.complete ();
+          p.normalize ();
+          f = p.string ();
+        }
 
         fmap[f][LAST_SOURCE_LINE (main_lm)] = main_inc;
         continue;
@@ -459,9 +516,18 @@ namespace include
       {
         line_map const* lm (j->first);
 
-        path f (lm->to_file);
-        f.complete ();
-        f.normalize ();
+        string f (lm->to_file);
+        size_t n (f.size ());
+
+        // Check if this is a synthesized fragment.
+        //
+        if (!(n != 0 && f[0] == '<' && f[n - 1] == '>'))
+        {
+          path p (f);
+          p.complete ();
+          p.normalize ();
+          f = p.string ();
+        }
 
         fmap[f][LAST_SOURCE_LINE (lm)] = &j->second;
       }
@@ -469,7 +535,7 @@ namespace include
 
     //
     //
-    include_parser ip;
+    include_parser ip (ctx.options);
 
     for (file_map::iterator i (fmap.begin ()), e (fmap.end ()); i != e; ++i)
     {
