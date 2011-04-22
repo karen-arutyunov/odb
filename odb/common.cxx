@@ -53,15 +53,26 @@ traverse (semantics::class_& c)
 
   if (obj && build_table_prefix_)
   {
-    table_prefix_.prefix = table_name (c);
-    table_prefix_.prefix += '_';
-    table_prefix_.level = 1;
+    // Don't reset the table prefix if we are traversing a base.
+    //
+    bool tb (false);
+
+    if (table_prefix_.level == 0)
+    {
+      table_prefix_.prefix = table_name (c);
+      table_prefix_.prefix += '_';
+      table_prefix_.level = 1;
+      tb = true;
+    }
 
     inherits (c);
     names (c);
 
-    table_prefix_.level = 0;
-    table_prefix_.prefix.clear ();
+    if (tb)
+    {
+      table_prefix_.level = 0;
+      table_prefix_.prefix.clear ();
+    }
   }
   else
   {
@@ -154,7 +165,14 @@ flush ()
 }
 
 void object_columns_base::
-composite (semantics::data_member&, semantics::class_& c)
+composite (semantics::data_member*, semantics::class_& c)
+{
+  inherits (c);
+  names (c);
+}
+
+void object_columns_base::
+object (semantics::class_& c)
 {
   inherits (c);
   names (c);
@@ -182,7 +200,7 @@ traverse_composite (semantics::data_member& m,
       member_.prefix_ += '_';
   }
 
-  composite (m, c);
+  composite (&m, c);
 
   if (!member_.first_)
     flush ();
@@ -206,15 +224,17 @@ traverse (semantics::class_& c)
   semantics::class_* prev;
   if (obj)
   {
-    prev = object;
-    object = &c;
+    prev = context::object;
+    context::object = &c;
   }
 
-  inherits (c);
-  names (c);
+  if (obj)
+    object (c);
+  else
+    composite (0, c);
 
   if (obj)
-    object = prev;
+    context::object = prev;
 
   if (f && !member_.first_)
     flush ();
@@ -248,7 +268,7 @@ traverse (semantics::data_member& m)
         prefix_ += '_';
     }
 
-    oc_.composite (m, *comp);
+    oc_.composite (&m, *comp);
 
     prefix_ = old_prefix;
   }

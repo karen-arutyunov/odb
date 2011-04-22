@@ -40,29 +40,83 @@ namespace
 
         valid_ = false;
       }
-
-      if (m.count ("id"))
-      {
-        if (id_ != 0)
-        {
-          cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-               << " error: multiple object id members" << endl;
-
-          cerr << id_->file () << ":" << id_->line () << ":" << id_->column ()
-               << ": info: previous id member declared here" << endl;
-
-          valid_ = false;
-        }
-
-        id_ = &m;
-      }
     }
 
     bool& valid_;
     size_t count_;
-    semantics::data_member* id_;
   };
 
+  // Find id member.
+  //
+  struct id_member: traversal::class_
+  {
+    id_member (bool object, bool& valid, semantics::data_member*& m)
+        : object_ (object), member_ (valid, m)
+    {
+      *this >> inherits_ >> *this;
+      *this >> names_ >> member_;
+    }
+
+    virtual void
+    traverse (semantics::class_& c)
+    {
+      // Skip transient bases.
+      //
+      if (object_)
+      {
+        if (!c.count ("object"))
+          return;
+      }
+      else
+      {
+        if (!context::comp_value (c))
+          return;
+      }
+
+      inherits (c);
+      names (c);
+    }
+
+  private:
+    struct member: traversal::data_member
+    {
+      member (bool& valid, semantics::data_member*& m)
+          : valid_ (valid), m_ (m)
+      {
+      }
+
+      virtual void
+      traverse (semantics::data_member& m)
+      {
+        if (m.count ("id"))
+        {
+          if (m_ != 0)
+          {
+            cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
+                 << " error: multiple object id members" << endl;
+
+            cerr << m_->file () << ":" << m_->line () << ":" << m_->column ()
+                 << ": info: previous id member declared here" << endl;
+
+            valid_ = false;
+          }
+          else
+            m_ = &m;
+        }
+      }
+
+      bool& valid_;
+      semantics::data_member*& m_;
+    };
+
+    bool object_;
+    member member_;
+    traversal::names names_;
+    traversal::inherits inherits_;
+  };
+
+  //
+  //
   struct class_: traversal::class_
   {
     class_ (bool& valid, semantics::unit& unit)
@@ -84,6 +138,8 @@ namespace
     virtual void
     traverse_object (type& c)
     {
+      bool base (false);
+
       for (type::inherits_iterator i (c.inherits_begin ());
            i != c.inherits_end ();
            ++i)
@@ -91,13 +147,8 @@ namespace
         type& b (i->base ());
 
         if (b.count ("object"))
-        {
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: object inheritance is not yet supported" << endl;
-
-          valid_ = false;
-        }
-        else if (context::comp_value (b))
+          base = true;
+        if (context::comp_value (b))
         {
           // @@ Should we use hint here?
           //
@@ -117,24 +168,37 @@ namespace
         }
       }
 
-      member_.count_ = 0;
-      member_.id_ = 0;
-
-      names (c);
-
-      if (member_.id_ == 0)
+      // Check id.
+      //
+      semantics::data_member* id (0);
       {
-        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-             << " error: no data member designated as object id" << endl;
-
-        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-             << " info: use '#pragma db id' to specify object id member"
-             << endl;
-
-        valid_ = false;
+        id_member t (true, valid_, id);
+        t.traverse (c);
       }
 
-      if (member_.count_ == 0)
+      if (id == 0)
+      {
+        if (!context::abstract (c))
+        {
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " error: no data member designated as object id" << endl;
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " info: use '#pragma db id' to specify object id member"
+               << endl;
+
+          valid_ = false;
+        }
+      }
+      else
+        c.set ("id-member", id);
+
+      // Check members.
+      //
+      member_.count_ = 0;
+      names (c);
+
+      if (member_.count_ == 0 && !base)
       {
         cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
              << " error: no persistent data members in the class" << endl;
@@ -146,13 +210,17 @@ namespace
     virtual void
     traverse_value (type& c)
     {
+      bool base (false);
+
       for (type::inherits_iterator i (c.inherits_begin ());
            i != c.inherits_end ();
            ++i)
       {
         type& b (i->base ());
 
-        if (b.count ("object"))
+        if (context::comp_value (b))
+          base = true;
+        else if (b.count ("object"))
         {
           // @@ Should we use hint here?
           //
@@ -173,21 +241,29 @@ namespace
         }
       }
 
-      member_.count_ = 0;
-      member_.id_ = 0;
-
-      names (c);
-
-      if (member_.id_ != 0)
+      // Check id.
+      //
+      semantics::data_member* id (0);
       {
-        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-             << " error: value type data member cannot be designated as "
+        id_member t (false, valid_, id);
+        t.traverse (c);
+      }
+
+      if (id != 0)
+      {
+        cerr << id->file () << ":" << id->line () << ":" << id->column ()
+             << ": error: value type data member cannot be designated as "
              << "object id" << endl;
 
         valid_ = false;
       }
 
-      if (member_.count_ == 0)
+      // Check members.
+      //
+      member_.count_ = 0;
+      names (c);
+
+      if (member_.count_ == 0 && !base)
       {
         cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
              << " error: no persistent data members in the class" << endl;

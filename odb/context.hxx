@@ -102,6 +102,12 @@ public:
     return t.get<semantics::class_*> ("element-type", 0);
   }
 
+  static bool
+  abstract (semantics::class_& c)
+  {
+    return c.count ("abstract");
+  }
+
   // Database names and types.
   //
 public:
@@ -112,7 +118,7 @@ public:
   //
   struct table_prefix
   {
-    table_prefix () {}
+    table_prefix (): level (0) {}
     table_prefix (string const& p, size_t l): prefix (p), level (l) {}
 
     string prefix;
@@ -174,7 +180,12 @@ public:
   out_column_count (semantics::class_&);
 
   static semantics::data_member&
-  id_member (semantics::class_&);
+  id_member (semantics::class_& c)
+  {
+    // Set by the validator.
+    //
+    return *c.get<semantics::data_member*> ("id-member");
+  }
 
   // Object pointer information.
   //

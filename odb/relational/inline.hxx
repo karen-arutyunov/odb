@@ -34,7 +34,9 @@ namespace relational
       {
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
+
         semantics::data_member& id (id_member (c));
+        bool base_id (&id.scope () != &c); // Id comes from a base class.
 
         os << "// " << c.name () << endl
            << "//" << endl
@@ -65,15 +67,59 @@ namespace relational
              << "}";
         }
 
-        // id ()
+        // id (object_type)
         //
         os << "inline" << endl
            << traits << "::id_type" << endl
            << traits << "::" << endl
            << "id (const object_type& obj)"
-           << "{"
-           << "return obj." << id.name () << ";" << endl
-           << "}";
+           << "{";
+
+        if (base_id)
+          os << "return object_traits< " << id.scope ().fq_name () <<
+            " >::id (obj);";
+        else
+          os << "return obj." << id.name () << ";";
+
+        os << "}";
+
+        // id (image_type)
+        //
+        if (options.generate_query () && base_id)
+        {
+          os << "inline" << endl
+             << traits << "::id_type" << endl
+             << traits << "::" << endl
+             << "id (const image_type& i)"
+             << "{"
+             << "return object_traits< " << id.scope ().fq_name () <<
+            " >::id (i);"
+             << "}";
+        }
+
+        // bind (id_image_type)
+        //
+        if (base_id)
+        {
+          os << "inline" << endl
+             << "void " << traits << "::" << endl
+             << "bind (" << bind_vector << " b, id_image_type& i)"
+             << "{"
+             << "object_traits< " << id.scope ().fq_name () <<
+            " >::bind (b, i);"
+             << "}";
+        }
+
+        if (base_id)
+        {
+          os << "inline" << endl
+             << "void " << traits << "::" << endl
+             << "init (id_image_type& i, const id_type& id)"
+             << "{"
+             << "object_traits< " << id.scope ().fq_name () <<
+            " >::init (i, id);"
+             << "}";
+        }
 
         // load_()
         //

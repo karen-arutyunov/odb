@@ -629,55 +629,6 @@ out_column_count (semantics::class_& c)
 
 namespace
 {
-  // Find id member.
-  //
-  struct id_member_impl: traversal::class_
-  {
-    id_member_impl ()
-    {
-      *this >> names_ >> member_;
-    }
-
-    virtual void
-    traverse (semantics::class_& c)
-    {
-      member_.m_ = 0;
-      names (c);
-      c.set ("id-member", member_.m_);
-    }
-
-  private:
-    struct member: traversal::data_member
-    {
-      virtual void
-      traverse (semantics::data_member& m)
-      {
-        if (m.count ("id"))
-          m_ = &m;
-      }
-
-      semantics::data_member* m_;
-    };
-
-    member member_;
-    traversal::names names_;
-  };
-}
-
-semantics::data_member& context::
-id_member (semantics::class_& c)
-{
-  if (!c.count ("id-member"))
-  {
-    id_member_impl t;
-    t.traverse (c);
-  }
-
-  return *c.get<semantics::data_member*> ("id-member");
-}
-
-namespace
-{
   struct has_a_impl: object_members_base
   {
     has_a_impl (unsigned short flags)

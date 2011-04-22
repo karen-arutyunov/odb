@@ -13,6 +13,10 @@ namespace relational
 {
   namespace header
   {
+    //
+    // image_type
+    //
+
     struct image_member: virtual member_base
     {
       typedef image_member base;
@@ -40,9 +44,11 @@ namespace relational
       virtual void
       traverse (type& c)
       {
+        bool obj (c.count ("object"));
+
         // Ignore transient bases.
         //
-        if (!(c.count ("object") || comp_value (c)))
+        if (!(obj || comp_value (c)))
           return;
 
         if (first_)
@@ -56,7 +62,10 @@ namespace relational
              << "  ";
         }
 
-        os << "composite_value_traits< " << c.fq_name () << " >::image_type";
+        if (obj)
+          os << "object_traits< " << c.fq_name () << " >::image_type";
+        else
+          os << "composite_value_traits< " << c.fq_name () << " >::image_type";
       }
 
     private:
@@ -102,6 +111,68 @@ namespace relational
     private:
       instance<image_member> member_;
       traversal::names names_member_;
+    };
+
+    //
+    // query_type
+    //
+
+    struct query_base: traversal::class_, virtual context
+    {
+      typedef query_base base;
+
+      query_base (): first_ (true) {}
+
+      virtual void
+      traverse (type& c)
+      {
+        // Ignore transient bases.
+        //
+        if (!c.count ("object"))
+          return;
+
+        if (first_)
+        {
+          os << ": ";
+          first_ = false;
+        }
+        else
+        {
+          os << "," << endl
+             << "  ";
+        }
+
+        os << "object_traits< " << c.fq_name () << " >::query_columns";
+      }
+
+    private:
+      bool first_;
+    };
+
+    struct query_type: traversal::class_, virtual context
+    {
+      typedef query_type base;
+
+      virtual void
+      traverse (type& c)
+      {
+        os << "struct query_columns";
+
+        {
+          instance<query_base> b;
+          traversal::inherits i (*b);
+          inherits (c, i);
+        }
+
+        os << "{";
+
+        {
+          instance<query_columns> t;
+          t->traverse (c);
+        }
+
+        os << "};";
+      }
     };
 
     // Member-specific traits types for container members.
@@ -611,6 +682,7 @@ namespace relational
 
         semantics::data_member& id (id_member (c));
         bool auto_id (id.count ("auto"));
+        bool base_id (&id.scope () != &c); // Id comes from a base class.
 
         os << "// " << c.name () << endl
            << "//" << endl;
@@ -625,30 +697,45 @@ namespace relational
         os << "typedef " << type << " object_type;"
            << "typedef " << c.get<string> ("object-pointer") << " pointer_type;";
 
-        // id_type
+        // id_type & id_image_type
         //
-        os << "typedef " << id.type ().fq_name (id.belongs ().hint ()) <<
-          " id_type;"
-           << endl;
+        if (base_id)
+        {
+          string const& base (id.scope ().fq_name ());
+
+          os << "typedef object_traits< " << base << " >::id_type id_type;"
+             << endl
+             << "typedef object_traits< " << base << " >::id_image_type " <<
+            "id_image_type;"
+             << endl;
+        }
+        else
+        {
+          os << "typedef " << id.type ().fq_name (id.belongs ().hint ()) <<
+            " id_type;"
+             << endl;
+
+          os << "struct id_image_type"
+             << "{";
+
+          id_image_member_->traverse (id);
+
+          os << "std::size_t version;"
+             << "};";
+        }
 
         // image_type
         //
         image_type_->traverse (c);
 
-        // id_image_type
-        //
-        os << "struct id_image_type"
-           << "{";
-
-        id_image_member_->traverse (id);
-
-        os << "std::size_t version;"
-           << "};";
-
-        // query_type & query_base_type
+        // query types
         //
         if (options.generate_query ())
         {
+          // query_columns
+          //
+          query_type_->traverse (c);
+
           // query_base_type
           //
           os << "typedef " << db << "::query query_base_type;"
@@ -656,15 +743,9 @@ namespace relational
 
           // query_type
           //
-          os << "struct query_type: query_base_type"
-             << "{";
-
-          {
-            instance<query_columns> t;
-            t->traverse (c);
-          }
-
-          os << "query_type ();"
+          os << "struct query_type: query_base_type, query_columns"
+             << "{"
+             << "query_type ();"
              << "query_type (const std::string&);"
              << "query_type (const query_base_type&);"
              << "};";
@@ -723,7 +804,7 @@ namespace relational
 
         // grow ()
         //
-        os << "static void" << endl
+        os << "static bool" << endl
            << "grow (image_type&, " << truncated_vector << ");"
            << endl;
 
@@ -741,7 +822,7 @@ namespace relational
 
         // init (image, object)
         //
-        os << "static void" << endl
+        os << "static bool" << endl
            << "init (image_type&, const object_type&);"
            << endl;
 
@@ -886,6 +967,7 @@ namespace relational
 
     private:
       instance<image_type> image_type_;
+      instance<query_type> query_type_;
       instance<image_member> id_image_member_;
     };
 

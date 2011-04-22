@@ -132,7 +132,9 @@ namespace relational
       {
         if (!table.empty ())
         {
-          line_ += table;
+          // Use alias for the main table.
+          //
+          line_ += table == table_name_ ? "_" : table;
           line_ += '.';
         }
 
@@ -155,9 +157,9 @@ namespace relational
       bool out_;
       string suffix_;
       string line_;
+      string table_name_;
 
     private:
-      string table_name_;
       bool last_;
     };
 
@@ -228,8 +230,7 @@ namespace relational
             t = table_qname (*im, tp);
             string const& val (column_qname (*im, "value", "value"));
 
-            cond << t << '.' << val << " = " << table_ << '.' <<
-              column_qname (id_);
+            cond << t << '.' << val << " = _." << column_qname (id_);
 
             // Add the join for the object itself so that we are able to
             // use it in the WHERE clause.
@@ -247,8 +248,8 @@ namespace relational
           {
             t = table_qname (*c);
 
-            cond << t << '.' << column_qname (*im) << " = " <<
-              table_ << '.' << column_qname (id_);
+            cond << t << '.' << column_qname (*im) << " = _." <<
+              column_qname (id_);
           }
         }
         else if (query_)
@@ -258,8 +259,8 @@ namespace relational
           //
           t = table_qname (*c);
 
-          cond << t << '.' << column_qname (id_member (*c)) << " = " <<
-            table_ << '.' << quote_id (col_name);
+          cond << t << '.' << column_qname (id_member (*c)) << " = _." <<
+            quote_id (col_name);
         }
 
         if (!t.empty ())
@@ -311,7 +312,7 @@ namespace relational
 
     private:
       bool query_;
-      string table_;
+      string table_; //@@ No longer used because of the _ alias.
       semantics::data_member& id_;
 
       typedef std::set<string> conditions;
@@ -372,16 +373,24 @@ namespace relational
       virtual void
       traverse (type& c)
       {
+        bool obj (c.count ("object"));
+
         // Ignore transient bases.
         //
-        if (!(c.count ("object") || comp_value (c)))
+        if (!(obj || comp_value (c)))
           return;
 
         os << "// " << c.name () << " base" << endl
-           << "//" << endl
-           << "composite_value_traits< " << c.fq_name () <<
-          " >::bind (b + n, i);"
-           << "n += " << in_column_count (c) << "UL;"
+           << "//" << endl;
+
+        if (obj)
+          os << "object_traits< " << c.fq_name () <<
+            " >::bind (b + n, i, out);";
+        else
+          os << "composite_value_traits< " << c.fq_name () <<
+            " >::bind (b + n, i);";
+
+        os << "n += " << in_column_count (c) << "UL;"
            << endl;
       }
     };
@@ -421,18 +430,20 @@ namespace relational
       virtual void
       traverse (type& c)
       {
+        bool obj (c.count ("object"));
+
         // Ignore transient bases.
         //
-        if (!(c.count ("object") || comp_value (c)))
+        if (!(obj || comp_value (c)))
           return;
 
         os << "// " << c.name () << " base" << endl
-           << "//" << endl
-           << "if (composite_value_traits< " << c.fq_name () <<
-          " >::grow (i, t + " << index_ << "UL))"
-           << "{"
+           << "//" << endl;
+
+        os << "if (" << (obj ? "object" : "composite_value") << "_traits< " <<
+          c.fq_name () << " >::grow (i, t + " << index_ << "UL))" << endl
            << "grew = true;"
-           << "}";
+           << endl;
 
         index_ += in_column_count (c);
       }
@@ -477,18 +488,19 @@ namespace relational
       virtual void
       traverse (type& c)
       {
+        bool obj (c.count ("object"));
+
         // Ignore transient bases.
         //
-        if (!(c.count ("object") || comp_value (c)))
+        if (!(obj || comp_value (c)))
           return;
 
         os << "// " << c.name () << " base" << endl
            << "//" << endl
-           << "if (composite_value_traits< " << c.fq_name () <<
-          " >::init (i, o))"
-           << "{"
+           << "if (" << (obj ? "object" : "composite_value") << "_traits< " <<
+          c.fq_name () << " >::init (i, o))" << endl
            << "grew = true;"
-           << "}";
+           << endl;
       }
     };
 
@@ -527,15 +539,17 @@ namespace relational
       virtual void
       traverse (type& c)
       {
+        bool obj (c.count ("object"));
+
         // Ignore transient bases.
         //
-        if (!(c.count ("object") || comp_value (c)))
+        if (!(obj || comp_value (c)))
           return;
 
         os << "// " << c.name () << " base" << endl
            << "//" << endl
-           << "composite_value_traits< " << c.fq_name () <<
-          " >::init (o, i, db);"
+           << (obj ? "object" : "composite_value") << "_traits< " <<
+          c.fq_name () << " >::init (o, i, db);"
            << endl;
       }
     };
@@ -660,17 +674,17 @@ namespace relational
           }
 
           os << strlit ("SELECT ") << endl
-             << strlit (inv_table + '.' + inv_fid + ',') << endl
-             << strlit (inv_table + '.' + inv_id) << endl
-             << strlit (" FROM " + inv_table +
-                        " WHERE " + inv_table + '.' + inv_fid + " = ?");
+             << strlit ("_." + inv_fid + ',') << endl
+             << strlit ("_." + inv_id) << endl
+             << strlit (" FROM " + inv_table + " AS _"
+                        " WHERE _." + inv_fid + " = ?");
         }
         else
         {
           string const& id_col (column_qname (m, "id", "object_id"));
 
           os << strlit ("SELECT ") << endl
-             << strlit (table + '.' + id_col + ',') << endl;
+             << strlit ("_." + id_col + ',') << endl;
 
           switch (ck)
           {
@@ -718,13 +732,15 @@ namespace relational
             t->flush ();
           }
 
-          os << strlit (" FROM " + table +
-                        " WHERE " + table + '.' + id_col + " = ?") << endl;
+          os << strlit (" FROM " + table + " AS _"
+                        " WHERE _." + id_col + " = ?");
 
           if (ordered)
           {
             string const& col (column_qname (m, "index", "index"));
-            os << strlit (" ORDER BY " + table + '.' + col) << endl;
+
+            os << endl
+               << strlit (" ORDER BY _." + col) << endl;
           }
         }
 
@@ -1747,6 +1763,7 @@ namespace relational
         semantics::data_member& id (id_member (c));
         bool auto_id (id.count ("auto"));
         bool grow_id (context::grow (id));
+        bool base_id (&id.scope () != &c); // Id comes from a base class.
 
         os << "// " << c.name () << endl
            << "//" << endl
@@ -1825,7 +1842,7 @@ namespace relational
           t->traverse (c);
         }
 
-        os << strlit (" FROM " + table) << endl;
+        os << strlit (" FROM " + table + " AS _") << endl;
 
         {
           bool f (false);
@@ -1834,7 +1851,7 @@ namespace relational
           t->write ();
         }
 
-        os << strlit (" WHERE " + table + '.' + id_col + " = ?") << ";"
+        os << strlit (" WHERE _." + id_col + " = ?") << ";"
            << endl;
 
         // update_statement
@@ -1847,14 +1864,14 @@ namespace relational
           t->traverse (c);
         }
 
-        os << strlit (" WHERE " + table + '.' + id_col + " = ?") << ";"
+        os << strlit (" WHERE " + id_col + " = ?") << ";"
            << endl;
 
         // erase_statement
         //
         os << "const char* const " << traits << "::erase_statement =" << endl
            << strlit ("DELETE FROM " + table) << endl
-           << strlit (" WHERE " + table + '.' + id_col + " = ?") << ";"
+           << strlit (" WHERE " + id_col + " = ?") << ";"
            << endl;
 
         // query_clause
@@ -1876,15 +1893,15 @@ namespace relational
             oc->traverse (c);
           }
 
-          os << strlit (" FROM " + table) << endl;
+          os << strlit (" FROM " + table + " AS _") << endl;
           oj->write ();
           os << strlit (" ") << ";"
              << endl;
         }
 
-        // id
+        // id (image_type)
         //
-        if (options.generate_query ())
+        if (options.generate_query () && !base_id)
         {
           os << traits << "::id_type" << endl
              << traits << "::" << endl
@@ -1898,9 +1915,12 @@ namespace relational
 
         // grow ()
         //
-        os << "void " << traits << "::" << endl
+        os << "bool " << traits << "::" << endl
            << "grow (image_type& i, " << truncated_vector << " t)"
            << "{"
+           << "ODB_POTENTIALLY_UNUSED (i);"
+           << "ODB_POTENTIALLY_UNUSED (t);"
+           << endl
            << "bool grew (false);"
            << endl;
 
@@ -1908,8 +1928,7 @@ namespace relational
         inherits (c, grow_base_inherits_);
         names (c, grow_member_names_);
 
-        os << "if (grew)" << endl
-           << "i.version++;" << endl
+        os << "return grew;"
            << "}";
 
         // bind (image_type)
@@ -1929,26 +1948,31 @@ namespace relational
 
         // bind (id_image_type)
         //
-        os << "void " << traits << "::" << endl
-           << "bind (" << bind_vector << " b, id_image_type& i)"
-           << "{"
-           << "std::size_t n (0);";
-        bind_id_member_->traverse (id);
-        os << "}";
+        if (!base_id)
+        {
+          os << "void " << traits << "::" << endl
+             << "bind (" << bind_vector << " b, id_image_type& i)"
+             << "{"
+             << "std::size_t n (0);";
+          bind_id_member_->traverse (id);
+          os << "}";
+        }
 
         // init (image, object)
         //
-        os << "void " << traits << "::" << endl
+        os << "bool " << traits << "::" << endl
            << "init (image_type& i, const object_type& o)"
            << "{"
+           << "ODB_POTENTIALLY_UNUSED (i);"
+           << "ODB_POTENTIALLY_UNUSED (o);"
+           << endl
            << "bool grew (false);"
            << endl;
 
         inherits (c, init_image_base_inherits_);
         names (c, init_image_member_names_);
 
-        os << "if (grew)" << endl
-           << "i.version++;" << endl
+        os << "return grew;"
            << "}";
 
         // init (object, image)
@@ -1956,6 +1980,8 @@ namespace relational
         os << "void " << traits << "::" << endl
            << "init (object_type& o, const image_type& i, database& db)"
            << "{"
+           << "ODB_POTENTIALLY_UNUSED (o);"
+           << "ODB_POTENTIALLY_UNUSED (i);"
            << "ODB_POTENTIALLY_UNUSED (db);"
            << endl;
 
@@ -1966,21 +1992,24 @@ namespace relational
 
         // init (id_image, id)
         //
-        os << "void " << traits << "::" << endl
-           << "init (id_image_type& i, const id_type& id)"
-           << "{";
+        if (!base_id)
+        {
+          os << "void " << traits << "::" << endl
+             << "init (id_image_type& i, const id_type& id)"
+             << "{";
 
-        if (grow_id)
-          os << "bool grew (false);";
+          if (grow_id)
+            os << "bool grew (false);";
 
-        init_id_image_member_->traverse (id);
+          init_id_image_member_->traverse (id);
 
-        if (grow_id)
-          os << endl
-             << "if (grew)" << endl
-             << "i.version++;";
+          if (grow_id)
+            os << endl
+               << "if (grew)" << endl
+               << "i.version++;";
 
-        os << "}";
+          os << "}";
+        }
 
         // persist ()
         //
@@ -1997,17 +2026,19 @@ namespace relational
            << "image_type& im (sts.image ());"
            << "binding& imb (sts.in_image_binding ());"
            << endl
-           << "init (im, obj);";
+           << "if (init (im, obj))" << endl
+           << "im.version++;"
+           << endl;
 
         if (auto_id)
         {
           string const& n (id.name ());
           string var ("im." + n + (n[n.size () - 1] == '_' ? "" : "_"));
           init_auto_id (id, var);
+          os << endl;
         }
 
-        os << endl
-           << "if (im.version != sts.in_image_version () || imb.version == 0)"
+        os << "if (im.version != sts.in_image_version () || imb.version == 0)"
            << "{"
            << "bind (imb.bind, im, false);"
            << "sts.in_image_version (im.version);"
@@ -2067,7 +2098,9 @@ namespace relational
         //
         os << "image_type& im (sts.image ());"
            << "binding& imb (sts.in_image_binding ());"
-           << "init (im, obj);"
+           << endl
+           << "if (init (im, obj))" << endl
+           << "im.version++;"
            << endl
            << "if (im.version != sts.in_image_version () || imb.version == 0)"
            << "{"
@@ -2245,7 +2278,8 @@ namespace relational
           os << endl
              << "if (r == select_statement::truncated)"
              << "{"
-             << "grow (im, sts.out_image_truncated ());"
+             << "if (grow (im, sts.out_image_truncated ()))" << endl
+             << "im.version++;"
              << endl
              << "if (im.version != sts.out_image_version ())"
              << "{"

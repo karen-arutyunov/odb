@@ -93,7 +93,8 @@ private:
   traversal::inherits inherits_;
 };
 
-// Traverse object columns recursively by going into composite members.
+// Traverse object columns recursively by going into composite members
+// and bases.
 //
 struct object_columns_base: traversal::class_, virtual context
 {
@@ -103,12 +104,20 @@ struct object_columns_base: traversal::class_, virtual context
   virtual bool
   column (semantics::data_member&, std::string const& name, bool first) = 0;
 
-  // If you override this function, always call the base. The second argument
-  // is the actual composite type, which is not necessarily the same as
-  // m.type ().
+  // If you override this function, you can call the base to traverse
+  // bases and members. The first argument is the data member and can
+  // be NULL if we are traversing the root type or a base. The second
+  // argument is the actual composite type, which is not necessarily
+  // the same as m.type ().
   //
   virtual void
-  composite (semantics::data_member&, semantics::class_&);
+  composite (semantics::data_member*, semantics::class_&);
+
+  // If you override this function, you can call the base to traverse
+  // bases and members.
+  //
+  virtual void
+  object (semantics::class_&);
 
   // Called after the last column, provided at least one column hasn't
   // been ignored.
@@ -139,7 +148,6 @@ public:
                       semantics::class_&,
                       std::string const& key_prefix,
                       std::string const& default_name);
-
 private:
   void
   init ()

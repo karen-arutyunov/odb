@@ -25,17 +25,37 @@ namespace relational
   }
 
   query_columns::
-  query_columns (semantics::class_& cl) //@@ context::object
+  query_columns (semantics::class_& c) //@@ context::object
       : ptr_ (true), decl_ (false)
   {
-    scope_ = "access::object_traits< " + cl.fq_name () + " >::query_type";
-    table_ = table_qname (cl);
+    scope_ = "access::object_traits< " + c.fq_name () + " >::query_columns";
+    table_ = table_qname (c);
   }
 
   void query_columns::
-  composite (semantics::data_member& m, semantics::class_& c)
+  object (semantics::class_& c)
   {
-    string name (public_name (m));
+    // We only want members for objects unless we are traversing a
+    // pointer, in which case we need the whole thing.
+    //
+    if (!ptr_)
+      inherits (c);
+
+    names (c);
+  }
+
+  void query_columns::
+  composite (semantics::data_member* m, semantics::class_& c)
+  {
+    // Base type.
+    //
+    if (m == 0)
+    {
+      object_columns_base::composite (m, c);
+      return;
+    }
+
+    string name (public_name (*m));
 
     if (decl_)
     {
@@ -73,6 +93,16 @@ namespace relational
       // in queries). So we will have to duplicate the columns (sans
       // the pointers).
       //
+      // There are a number of problems with this approach: Regarding (1),
+      // the class have to be defined during ODB compilation in which
+      // case the ODB compiler will hunt down the #include statement
+      // and add it to the generated code. Regarding (2), things get
+      // complicated really quickly once we bring inheritance into
+      // the picture (name conflicts, etc). Plus, it is nice to reuse
+      // things. So the long-term solution is probably to make it a
+      // template with the table name as an argument.
+      //
+
       if (ptr_)
       {
         ptr_ = false;
@@ -123,7 +153,18 @@ namespace relational
       }
       else
       {
-        string column (table_ + '.' + quote_id (col_name));
+        // Use the default table alias unless we are generating members
+        // for a referenced object.
+        //
+        string column;
+
+        if (!ptr_)
+          column = table_;
+        else
+          column = "_";
+
+        column += '.';
+        column += quote_id (col_name);
 
         os << "const " << db << "::query_column<" << endl
            << "  " << type << "," << endl
