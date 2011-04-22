@@ -639,6 +639,24 @@ namespace relational
           }
         }
 
+        // Make sure the pointed-to class is complete.
+        //
+        if (!COMPLETE_TYPE_P (c->tree_node ()))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "error: pointed-to class '" << c->fq_name () << "' "
+             << "is incomplete" << endl;
+
+          os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+             << "info: class '" << c->name () << "' is declared here" << endl;
+
+          os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+             << "info: consider including its definition with the "
+             << "--odb-prologue option" << endl;
+
+          throw generation_failed ();
+        }
+
         if (m.count ("not-null") && !kp.empty ())
         {
           m.remove ("not-null");
