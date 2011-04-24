@@ -578,7 +578,7 @@ main (int argc, char* argv[])
 
       if (!ifs.is_open ())
       {
-        cerr << input << ": error: unable to open in read mode" << endl;
+        e << input << ": error: unable to open in read mode" << endl;
         return 1;
       }
 
@@ -626,6 +626,33 @@ main (int argc, char* argv[])
              << endl;
         }
 
+        strings const& prof (ops.odb_prologue_file ());
+        for (size_t i (0); i < prof.size (); ++i)
+        {
+          os << "#line 1 \"<odb-prologue-" << pro.size () + i + 1 << ">\""
+             << endl;
+
+          ifstream ifs (prof[i].c_str (), ios_base::in | ios_base::binary);
+
+          if (!ifs.is_open ())
+          {
+            e << prof[i] << ": error: unable to open in read mode" << endl;
+            fb.close ();
+            wait_process (pi, argv[0]);
+            return 1;
+          }
+
+          if (!(os << ifs.rdbuf ()))
+          {
+            e << prof[i] << ": error: io failure" << endl;
+            fb.close ();
+            wait_process (pi, argv[0]);
+            return 1;
+          }
+
+          os << endl;
+        }
+
         // Write the synthesized translation unit to stdout.
         //
         os << "#line 1 \"" << escape_path (input) << "\"" << endl;
@@ -633,6 +660,7 @@ main (int argc, char* argv[])
         if (!(os << ifs.rdbuf ()))
         {
           e << input << ": error: io failure" << endl;
+          fb.close ();
           wait_process (pi, argv[0]);
           return 1;
         }
@@ -652,6 +680,33 @@ main (int argc, char* argv[])
           os << "#line 1 \"<odb-epilogue-" << i + 1 << ">\"" << endl
              << epi[i]
              << endl;
+        }
+
+        strings const& epif (ops.odb_epilogue_file ());
+        for (size_t i (0); i < epif.size (); ++i)
+        {
+          os << "#line 1 \"<odb-epilogue-" << epi.size () + i + 1 << ">\""
+             << endl;
+
+          ifstream ifs (epif[i].c_str (), ios_base::in | ios_base::binary);
+
+          if (!ifs.is_open ())
+          {
+            e << epif[i] << ": error: unable to open in read mode" << endl;
+            fb.close ();
+            wait_process (pi, argv[0]);
+            return 1;
+          }
+
+          if (!(os << ifs.rdbuf ()))
+          {
+            e << epif[i] << ": error: io failure" << endl;
+            fb.close ();
+            wait_process (pi, argv[0]);
+            return 1;
+          }
+
+          os << endl;
         }
 
         // Add the standard epilogue at the end so that we see all

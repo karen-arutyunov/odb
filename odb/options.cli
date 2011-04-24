@@ -305,12 +305,28 @@ class options
      to the ODB compilation process."
   };
 
+  std::vector<std::string> --odb-prologue-file
+  {
+    "<file>",
+    "Compile <file> contents before the input header file. Prologue files
+     are compiled after all the prologue text fragments (\cb{--odb-prologue}
+     option)."
+  };
+
   std::vector<std::string> --odb-epilogue
   {
     "<text>",
     "Compile <text> after the input header file. This option allows you
      to add additional declarations, such as custom traits specializations,
      to the ODB compilation process."
+  };
+
+  std::vector<std::string> --odb-epilogue-file
+  {
+    "<file>",
+    "Compile <file> contents after the input header file. Epilogue files
+     are compiled after all the epilogue text fragments (\cb{--odb-epilogue}
+     option)."
   };
 
   // Include options.

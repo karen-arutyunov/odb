@@ -6,6 +6,9 @@ Version 1.4.0
     type differently depending on whether it is used in an ordinary member
     or an object id.
 
+  * New options, --odb-prologue-file and --odb-epilogue-file, allow the
+    inclusion of file contents into the ODB compilation.
+
 Version 1.3.0
 
   * Support for the SQLite database. Provided connection factories include

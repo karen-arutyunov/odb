@@ -121,8 +121,9 @@ namespace
     }
 
     void
-    parse_file (string const& f, include_lines& lines)
+    parse_file (string const& file, include_lines& lines)
     {
+      string f (file);
       size_t n (f.size ());
 
       // Check if we have a synthesized prologue/epilogue fragment.
@@ -144,23 +145,41 @@ namespace
               istr >> n;
             }
 
+            n--; // Prologues/epilogues are counted from 1.
+
             stringstream ss;
+            f.clear ();
 
             // We don't need the #line part.
             //
             if (name == "odb-prologue")
-              ss << options_.odb_prologue ()[n - 1];
+            {
+              size_t size (options_.odb_prologue ().size ());
+
+              if (n < size)
+                ss << options_.odb_prologue ()[n];
+              else
+                f = options_.odb_prologue_file ()[n - size];
+            }
             else
-              ss << options_.odb_epilogue ()[n - 1];
+            {
+              size_t size (options_.odb_epilogue ().size ());
 
-            ss << endl;
+              if (n < size)
+                ss << options_.odb_epilogue ()[n];
+              else
+                f = options_.odb_epilogue_file ()[n - size];
+            }
 
-            parse_stream (ss, f, lines);
-            return;
+            if (f.empty ())
+            {
+              parse_stream (ss, file, lines);
+              return;
+            }
+            // Otherwise use the code below to parse the file.
           }
         }
       }
-
 
       ifstream is (f.c_str ());
 
@@ -183,9 +202,23 @@ namespace
       string line;
       bool bslash (false);
       size_t lb (1), le (1);
+      bool eof (false);
 
-      for (int_type c (is.get ()); is.good (); c = is.get ())
+      for (int_type c (is.get ()); !eof; c = is.get ())
       {
+        if (is.fail ())
+        {
+          if (is.eof ())
+          {
+            // If we are still in the range, treat this as the last newline.
+            //
+            c = '\n';
+            eof = true;
+          }
+          else
+            break; // Some other failure -- bail out.
+        }
+
         if (c == '\n')
         {
           le++;
