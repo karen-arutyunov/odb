@@ -190,6 +190,7 @@ comp_value_ (semantics::class_& c)
   r = r && c.count ("value");
   r = r && !c.count ("table");
   r = r && !c.count ("type");
+  r = r && !c.count ("id-type");
   r = r && !c.count ("value-type");
   r = r && !c.count ("index-type");
   r = r && !c.count ("key-type");

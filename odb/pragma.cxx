@@ -158,6 +158,17 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       return false;
     }
   }
+  else if (p == "id_type")
+  {
+    // Id type can only be used for types.
+    //
+    if (!TYPE_P (d))
+    {
+      error_at (l, "name %qs in db pragma %qs does not refer to a type",
+                name.c_str (), pc);
+      return false;
+    }
+  }
   else if (p == "type" ||
            p == "value_type" ||
            p == "index_type" ||
@@ -421,11 +432,13 @@ handle_pragma (cpp_reader* reader,
     tt = pragma_lex (&t);
   }
   else if (p == "type" ||
+           p == "id_type" ||
            p == "value_type" ||
            p == "index_type" ||
            p == "key_type")
   {
     // type ("<type>")
+    // id_type ("<type>")
     // value_type ("<type>")
     // index_type ("<type>")
     // key_type ("<type>")
@@ -812,6 +825,12 @@ handle_pragma_db_type (cpp_reader* reader)
 }
 
 extern "C" void
+handle_pragma_db_id_type (cpp_reader* reader)
+{
+  handle_pragma_qualifier (reader, "id_type");
+}
+
+extern "C" void
 handle_pragma_db_vtype (cpp_reader* reader)
 {
   handle_pragma_qualifier (reader, "value_type");
@@ -873,6 +892,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "key_column", handle_pragma_db_kcolumn);
   c_register_pragma_with_expansion ("db", "id_column", handle_pragma_db_idcolumn);
   c_register_pragma_with_expansion ("db", "type", handle_pragma_db_type);
+  c_register_pragma_with_expansion ("db", "id_type", handle_pragma_db_id_type);
   c_register_pragma_with_expansion ("db", "value_type", handle_pragma_db_vtype);
   c_register_pragma_with_expansion ("db", "index_type", handle_pragma_db_itype);
   c_register_pragma_with_expansion ("db", "key_type", handle_pragma_db_ktype);

@@ -411,15 +411,16 @@ for consistency.
             <th>9.2</th><td><a href="#9.2">Value Type Pragmas</a>
               <table class="toc">
                 <tr><th>9.2.1</th><td><a href="#9.2.1"><code>type</code></a></td></tr>
-		<tr><th>9.2.2</th><td><a href="#9.2.2"><code>not_null</code></a></td></tr>
-		<tr><th>9.2.3</th><td><a href="#9.2.3"><code>unordered</code></a></td></tr>
-		<tr><th>9.2.4</th><td><a href="#9.2.4"><code>index_type</code></a></td></tr>
-		<tr><th>9.2.5</th><td><a href="#9.2.5"><code>key_type</code></a></td></tr>
-		<tr><th>9.2.6</th><td><a href="#9.2.6"><code>value_type</code></a></td></tr>
-		<tr><th>9.2.7</th><td><a href="#9.2.7"><code>id_column</code></a></td></tr>
-		<tr><th>9.2.8</th><td><a href="#9.2.8"><code>index_column</code></a></td></tr>
-		<tr><th>9.2.9</th><td><a href="#9.2.9"><code>key_column</code></a></td></tr>
-		<tr><th>9.2.10</th><td><a href="#9.2.10"><code>value_column</code></a></td></tr>
+		<tr><th>9.2.2</th><td><a href="#9.2.2"><code>id_type</code></a></td></tr>
+		<tr><th>9.2.3</th><td><a href="#9.2.3"><code>not_null</code></a></td></tr>
+		<tr><th>9.2.4</th><td><a href="#9.2.4"><code>unordered</code></a></td></tr>
+		<tr><th>9.2.5</th><td><a href="#9.2.5"><code>index_type</code></a></td></tr>
+		<tr><th>9.2.6</th><td><a href="#9.2.6"><code>key_type</code></a></td></tr>
+		<tr><th>9.2.7</th><td><a href="#9.2.7"><code>value_type</code></a></td></tr>
+		<tr><th>9.2.8</th><td><a href="#9.2.8"><code>id_column</code></a></td></tr>
+		<tr><th>9.2.9</th><td><a href="#9.2.9"><code>index_column</code></a></td></tr>
+		<tr><th>9.2.10</th><td><a href="#9.2.10"><code>key_column</code></a></td></tr>
+		<tr><th>9.2.11</th><td><a href="#9.2.11"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -3594,7 +3595,7 @@ private:
      the order information. In the example above, for instance, the order
      of person's nicknames is probably not important. To instruct the ODB
      compiler to ignore the order in ordered containers we can use the
-     <code>db&nbsp;unordered</code> pragma (<a href="#9.2.3">Section 9.2.3,
+     <code>db&nbsp;unordered</code> pragma (<a href="#9.2.4">Section 9.2.4,
      "<code>unordered</code>"</a>, <a href="#9.3.8">Section 9.3.8,
      "<code>unordered</code>"</a>). For example:</p>
 
@@ -5583,57 +5584,63 @@ class person
     </tr>
 
     <tr>
+      <td><code>id_type</code></td>
+      <td>database type for a value type when used as an object id</td>
+      <td><a href="#9.2.2">9.2.2</a></td>
+    </tr>
+
+    <tr>
       <td><code>not_null</code></td>
       <td>object pointer cannot be <code>NULL</code></td>
-      <td><a href="#9.2.2">9.2.2</a></td>
+      <td><a href="#9.2.3">9.2.3</a></td>
     </tr>
 
     <tr>
       <td><code>unordered</code></td>
       <td>ordered container should be stored unordered</td>
-      <td><a href="#9.2.3">9.2.3</a></td>
+      <td><a href="#9.2.4">9.2.4</a></td>
     </tr>
 
     <tr>
       <td><code>index_type</code></td>
       <td>database type for a container's index type</td>
-      <td><a href="#9.2.4">9.2.4</a></td>
+      <td><a href="#9.2.5">9.2.5</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
       <td>database type for a container's key type</td>
-      <td><a href="#9.2.5">9.2.5</a></td>
+      <td><a href="#9.2.6">9.2.6</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
       <td>database type for a container's value type</td>
-      <td><a href="#9.2.6">9.2.6</a></td>
+      <td><a href="#9.2.7">9.2.7</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
       <td>column name for a container's table object id</td>
-      <td><a href="#9.2.7">9.2.7</a></td>
+      <td><a href="#9.2.8">9.2.8</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>column name for a container's table index</td>
-      <td><a href="#9.2.8">9.2.8</a></td>
+      <td><a href="#9.2.9">9.2.9</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>column name for a container's table key</td>
-      <td><a href="#9.2.9">9.2.9</a></td>
+      <td><a href="#9.2.10">9.2.10</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>column name for a container's table value</td>
-      <td><a href="#9.2.10">9.2.10</a></td>
+      <td><a href="#9.2.11">9.2.11</a></td>
     </tr>
 
   </table>
@@ -5696,7 +5703,50 @@ private:
      <code>mapping</code> example in the <code>odb-examples</code>
      package shows how to do this for all the supported database systems.</p>
 
-  <h3><a name="9.2.2">9.2.2 <code>not_null</code></a></h3>
+  <h3><a name="9.2.2">9.2.2 <code>id_type</code></a></h3>
+
+  <p>The <code>id_type</code> specifier specifies the native database type
+     that should be used for data members of this type that are designated as
+     object identifiers (<a href="#9.3.1">Section 9.3.1,
+     "<code>id</code>"</a>). In combination with the <code>type</code>
+     specifier (<a href="#9.2.1">Section 9.2.1, "<code>type</code>"</a>)
+     <code>id_type</code> allows you to map a C++ type differently depending
+     on whether it is used in an ordinary member or an object id. For
+     example:</p>
+
+  <pre class="c++">
+#pragma db value(std::string) type("TEXT NOT NULL") \
+                              id_type("VARCHAR(128) NOT NULL")
+
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id
+  std::string email_; // Mapped to VARCHAR(128) NOT NULL.
+
+  std::string name_;  // Mapped to TEXT NOT NULL.
+};
+  </pre>
+
+  <p>Note that there is no corresponding member type specifier for
+     <code>id_type</code> since the desired result can be achieved
+     with just the <code>type</code> specifier, for example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+private:
+  #pragma db id type("VARCHAR(128) NOT NULL")
+  std::string email_;
+  ...
+};
+  </pre>
+
+  <h3><a name="9.2.3">9.2.3 <code>not_null</code></a></h3>
 
   <p>The <code>not_null</code> specifier specifies that an object pointer
      or a container of object pointers cannot have or contain the
@@ -5727,7 +5777,7 @@ typedef std::vector&lt;shared_ptr&lt;account> > accounts;
   <p>For a more detailed discussion of the <code>NULL</code> object pointer
      semantics, refer to <a href="#6">Chapter 6, "Relationships"</a>.</p>
 
-  <h3><a name="9.2.3">9.2.3 <code>unordered</code></a></h3>
+  <h3><a name="9.2.4">9.2.4 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that the ordered
      container should be stored unordered in the database. The database
@@ -5744,7 +5794,7 @@ typedef std::vector&lt;std::string> names;
      storage in the database, refer to <a href="#5.1">Section 5.1,
      "Ordered Containers"</a>.</p>
 
-  <h3><a name="9.2.4">9.2.4 <code>index_type</code></a></h3>
+  <h3><a name="9.2.5">9.2.5 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
      database type that should be used for an ordered container's
@@ -5758,7 +5808,7 @@ typedef std::vector&lt;std::string> names;
 #pragma db value(names) index_type("SMALLINT UNSIGNED NOT NULL")
   </pre>
 
-  <h3><a name="9.2.5">9.2.5 <code>key_type</code></a></h3>
+  <h3><a name="9.2.6">9.2.6 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
      database type that should be used for a map container's
@@ -5772,7 +5822,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 #pragma db value(age_weight_map) key_type("INT UNSIGNED NOT NULL")
   </pre>
 
-  <h3><a name="9.2.6">9.2.6 <code>value_type</code></a></h3>
+  <h3><a name="9.2.7">9.2.7 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
      database type that should be used for a container's
@@ -5786,7 +5836,7 @@ typedef std::vector&lt;std::string> names;
 #pragma db value(names) value_type("VARCHAR(255) NOT NULL")
   </pre>
 
-  <h3><a name="9.2.7">9.2.7 <code>id_column</code></a></h3>
+  <h3><a name="9.2.8">9.2.8 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in a
@@ -5800,7 +5850,7 @@ typedef std::vector&lt;std::string> names;
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="9.2.8">9.2.8 <code>index_column</code></a></h3>
+  <h3><a name="9.2.9">9.2.9 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in an
@@ -5814,7 +5864,7 @@ typedef std::vector&lt;std::string> names;
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="9.2.9">9.2.9 <code>key_column</code></a></h3>
+  <h3><a name="9.2.10">9.2.10 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in a map
@@ -5828,7 +5878,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="9.2.10">9.2.10 <code>value_column</code></a></h3>
+  <h3><a name="9.2.11">9.2.11 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in a

@@ -31,7 +31,7 @@ namespace relational
     {
       context& c (context::current ());
       semantics::data_member& id (context::id_member (*c.object));
-      return id.get<string> ("ref-column-type");
+      return id.get<string> ("column-type");
     }
 
     struct data_member: traversal::data_member, context
@@ -113,9 +113,6 @@ namespace relational
         if (m.count ("type"))
           type = m.get<string> ("type");
 
-        if (type.empty () && t.count ("type"))
-          type = t.get<string> ("type");
-
         if (semantics::class_* c = process_object_pointer (m, t))
         {
           // This is an object pointer. The column type is the pointed-to
@@ -126,6 +123,9 @@ namespace relational
 
           if (type.empty () && id.count ("type"))
             type = id.get<string> ("type");
+
+          if (type.empty () && idt.count ("id-type"))
+            type = idt.get<string> ("id-type");
 
           if (type.empty () && idt.count ("type"))
             type = idt.get<string> ("type");
@@ -139,20 +139,18 @@ namespace relational
         }
         else
         {
-          string orig (type);
-          type = database_type (t, orig, m, ctf_none);
+          if (type.empty () && m.count ("id") && t.count ("id-type"))
+            type = t.get<string> ("id-type");
 
-          if (m.count ("id"))
-            ref_type = database_type (t, orig, m, ctf_none);
+          if (type.empty () && t.count ("type"))
+            type = t.get<string> ("type");
+
+          type = database_type (t, type, m, ctf_none);
         }
 
         if (!type.empty ())
         {
           m.set ("column-type", type);
-
-          if (!ref_type.empty ())
-            m.set ("ref-column-type", ref_type);
-
           return;
         }
 
@@ -199,9 +197,6 @@ namespace relational
         if (type.empty () && ct.count (prefix + "-type"))
           type = ct.get<string> (prefix + "-type");
 
-        if (type.empty () && t.count ("type"))
-          type = t.get<string> ("type");
-
         semantics::class_* c;
         if (obj_ptr && (c = process_object_pointer (m, t, prefix)))
         {
@@ -214,6 +209,9 @@ namespace relational
           if (type.empty () && id.count ("type"))
             type = id.get<string> ("type");
 
+          if (type.empty () && idt.count ("id-type"))
+            type = idt.get<string> ("id-type");
+
           if (type.empty () && idt.count ("type"))
             type = idt.get<string> ("type");
 
@@ -225,7 +223,12 @@ namespace relational
           type = database_type (idt, type, id, f);
         }
         else
+        {
+          if (type.empty () && t.count ("type"))
+            type = t.get<string> ("type");
+
           type = database_type (t, type, m, ctf_none);
+        }
 
         if (!type.empty ())
         {
