@@ -3,8 +3,9 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <odb/cxx-lexer.hxx>
+#include <odb/error.hxx>
 #include <odb/pragma.hxx>
+#include <odb/cxx-lexer.hxx>
 
 using namespace std;
 
@@ -37,7 +38,7 @@ parse_scoped_name (tree& t,
   {
     if (tt != CPP_NAME)
     {
-      error ("invalid name in db pragma %qs", prag.c_str ());
+      error () << "invalid name in db pragma '" << prag << "'" << endl;
       return 0;
     }
 
@@ -66,15 +67,13 @@ parse_scoped_name (tree& t,
     {
       if (last)
       {
-        error ((is_type
-                ? "unable to resolve type name %qs in db pragma %qs"
-                : "unable to resolve name %qs in db pragma %qs"),
-               name.c_str (), prag.c_str ());
+        error () << "unable to resolve " << (is_type ? "type " : "") << "name "
+                 << "'" << name << "' in db pragma '" << prag << "'" << endl;
       }
       else
       {
-        error ("unable to resolve name %qs in db pragma %qs",
-               name.c_str (), prag.c_str ());
+        error () << "unable to resolve name '" << name << "' in db pragma '"
+                 << prag << "'" << endl;
       }
 
       return 0;
@@ -111,7 +110,6 @@ bool
 check_decl_type (tree d, string const& name, string const& p, location_t l)
 {
   int tc (TREE_CODE (d));
-  char const* pc (p.c_str ());
 
   if (p == "member" ||
       p == "id" ||
@@ -122,8 +120,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
   {
     if (tc != FIELD_DECL)
     {
-      error_at (l, "name %qs in db pragma %qs does not refer to "
-                "a data member", name.c_str (), pc);
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a data member" << endl;
       return false;
     }
   }
@@ -133,8 +131,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
   {
     if (tc != RECORD_TYPE)
     {
-      error_at (l, "name %qs in db pragma %qs does not refer to a class",
-                name.c_str (), pc);
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a class" << endl;
       return false;
     }
   }
@@ -145,8 +143,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
     //
     if (tc != FIELD_DECL && !TYPE_P (d))
     {
-      error_at (l, "name %qs in db pragma %qs does not refer to a type "
-                "or data member", name.c_str (), pc);
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a type or data member" << endl;
       return false;
     }
   }
@@ -154,8 +152,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
   {
     if (!TYPE_P (d))
     {
-      error_at (l, "name %qs in db pragma %qs does not refer to a type",
-                name.c_str (), pc);
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a type" << endl;
       return false;
     }
   }
@@ -165,8 +163,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
     //
     if (!TYPE_P (d))
     {
-      error_at (l, "name %qs in db pragma %qs does not refer to a type",
-                name.c_str (), pc);
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a type" << endl;
       return false;
     }
   }
@@ -179,8 +177,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
     //
     if (tc != FIELD_DECL && !TYPE_P (d))
     {
-      error_at (l, "name %qs in db pragma %qs does not refer to "
-                "a type or data member", name.c_str (), pc);
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a type or data member" << endl;
       return false;
     }
   }
@@ -194,8 +192,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
     //
     if (tc != FIELD_DECL && !TYPE_P (d))
     {
-      error_at (l, "name %qs in db pragma %qs does not refer to a type "
-                "or data member", name.c_str (), pc);
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a type or data member" << endl;
       return false;
     }
   }
@@ -205,8 +203,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
     //
     if (tc != FIELD_DECL && !TYPE_P (d))
     {
-      error_at (l, "name %qs in db pragma %qs does not refer to a type "
-                "or data member", name.c_str (), pc);
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a type or data member" << endl;
       return false;
     }
   }
@@ -217,14 +215,14 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
     //
     if (tc != FIELD_DECL && !TYPE_P (d))
     {
-      error_at (l, "name %qs in db pragma %qs does not refer to a type "
-                "or data member", name.c_str (), pc);
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a type or data member" << endl;
       return false;
     }
   }
   else
   {
-    error ("unknown db pragma %qs", pc);
+    error () << "unknown db pragma '" << p << "'" << endl;
     return false;
   }
 
@@ -239,7 +237,6 @@ handle_pragma (cpp_reader* reader,
 {
   tree t;
   cpp_ttype tt;
-  char const* pc (p.c_str ());
 
   string val;
   location_t loc (input_location);
@@ -256,7 +253,7 @@ handle_pragma (cpp_reader* reader,
 
     if (pragma_lex (&t) != CPP_OPEN_PAREN)
     {
-      error ("%qs expected after db pragma %qs", "(", pc);
+      error () << "'(' expected after db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -264,7 +261,7 @@ handle_pragma (cpp_reader* reader,
 
     if (tt != CPP_STRING)
     {
-      error ("table name expected in db pragma %qs", pc);
+      error () << "table name expected in db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -272,7 +269,7 @@ handle_pragma (cpp_reader* reader,
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
-      error ("%qs expected at the end of db pragma %qs", ")", pc);
+      error () << "')' expected at the end of db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -290,7 +287,7 @@ handle_pragma (cpp_reader* reader,
 
     if (pragma_lex (&t) != CPP_OPEN_PAREN)
     {
-      error ("%qs expected after db pragma %qs", "(", pc);
+      error () << "'(' expected after db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -342,9 +339,8 @@ handle_pragma (cpp_reader* reader,
             val += cxx_lexer::token_spelling[tt];
           else
           {
-            error ("unexpected token %qs in db pragma %qs",
-                   cxx_lexer::token_spelling[tt],
-                   pc);
+            error () << "unexpected token '" << cxx_lexer::token_spelling[tt]
+                     << "' in db pragma '" << p << "'" << endl;
             return;
           }
           break;
@@ -354,13 +350,13 @@ handle_pragma (cpp_reader* reader,
 
     if (tt != CPP_CLOSE_PAREN)
     {
-      error ("%qs expected at the end of db pragma %qs", ")", pc);
+      error () << "')' expected at the end of db pragma '" << p << "'" << endl;
       return;
     }
 
     if (val.empty ())
     {
-      error ("expected pointer name in db pragma %qs", pc);
+      error () << "expected pointer name in db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -422,7 +418,7 @@ handle_pragma (cpp_reader* reader,
 
     if (pragma_lex (&t) != CPP_OPEN_PAREN)
     {
-      error ("%qs expected after db pragma %qs", "(", pc);
+      error () << "'(' expected after db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -430,7 +426,7 @@ handle_pragma (cpp_reader* reader,
 
     if (tt != CPP_STRING)
     {
-      error ("column name expected in db pragma %qs", pc);
+      error () << "column name expected in db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -438,7 +434,7 @@ handle_pragma (cpp_reader* reader,
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
-      error ("%qs expected at the end of db pragma %qs", ")", pc);
+      error () << "')' expected at the end of db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -464,7 +460,7 @@ handle_pragma (cpp_reader* reader,
 
     if (pragma_lex (&t) != CPP_OPEN_PAREN)
     {
-      error ("%qs expected after db pragma %qs", "(", pc);
+      error () << "'(' expected after db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -472,7 +468,7 @@ handle_pragma (cpp_reader* reader,
 
     if (tt != CPP_STRING)
     {
-      error ("type name expected in db pragma %qs", pc);
+      error () << "type name expected in db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -480,7 +476,7 @@ handle_pragma (cpp_reader* reader,
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
-      error ("%qs expected at the end of db pragma %qs", ")", pc);
+      error () << "')' expected at the end of db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -510,7 +506,7 @@ handle_pragma (cpp_reader* reader,
 
     if (pragma_lex (&t) != CPP_OPEN_PAREN)
     {
-      error ("%qs expected after db pragma %qs", "(", pc);
+      error () << "'(' expected after db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -518,7 +514,7 @@ handle_pragma (cpp_reader* reader,
 
     if (tt != CPP_NAME)
     {
-      error ("member name expected in db pragma %qs", pc);
+      error () << "member name expected in db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -526,7 +522,7 @@ handle_pragma (cpp_reader* reader,
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
-      error ("%qs expected at the end of db pragma %qs", ")", pc);
+      error () << "')' expected at the end of db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -558,7 +554,7 @@ handle_pragma (cpp_reader* reader,
   }
   else
   {
-    error ("unknown db pragma %qs", pc);
+    error () << "unknown db pragma '" << p << "'" << endl;
     return;
   }
 
@@ -585,7 +581,7 @@ handle_pragma (cpp_reader* reader,
     handle_pragma (reader, IDENTIFIER_POINTER (t), decl, decl_name);
   }
   else if (tt != CPP_EOF)
-    error ("unexpected text after %qs in db pragma", p.c_str ());
+    error () << "unexpected text after '" << p << "' in db pragma" << endl;
 }
 
 static void
@@ -593,7 +589,6 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 {
   tree t;
   cpp_ttype tt;
-  char const* pc (p.c_str ());
 
   tree decl (0);
   string decl_name;
@@ -626,7 +621,8 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
         if (tt != CPP_CLOSE_PAREN)
         {
-          error ("%qs expected at the end of db pragma %qs", ")", pc);
+          error () << "')' expected at the end of db pragma '" << p << "'"
+                   << endl;
           return;
         }
 
@@ -634,7 +630,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
       }
       else
       {
-        error ("type name expected in db pragma %qs", pc);
+        error () << "type name expected in db pragma '" << p << "'" << endl;
         return;
       }
     }
@@ -664,7 +660,8 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
         if (tt != CPP_CLOSE_PAREN)
         {
-          error ("%qs expected at the end of db pragma %qs", ")", pc);
+          error () << "')' expected at the end of db pragma '" << p << "'"
+                   << endl;
           return;
         }
 
@@ -672,7 +669,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
       }
       else
       {
-        error ("type name expected in db pragma %qs", pc);
+        error () << "type name expected in db pragma '" << p << "'" << endl;
         return;
       }
     }
@@ -702,7 +699,8 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
         if (tt != CPP_CLOSE_PAREN)
         {
-          error ("%qs expected at the end of db pragma %qs", ")", pc);
+          error () << "')' expected at the end of db pragma '" << p << "'"
+                   << endl;
           return;
         }
 
@@ -710,7 +708,8 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
       }
       else
       {
-        error ("data member name expected in db pragma %qs", pc);
+        error () << "data member name expected in db pragma '" << p << "'"
+                 << endl;
         return;
       }
     }
@@ -741,7 +740,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
   }
   else
   {
-    error ("unknown db pragma %qs", pc);
+    error () << "unknown db pragma '" << p << "'" << endl;
     return;
   }
 
@@ -768,7 +767,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
     handle_pragma (reader, IDENTIFIER_POINTER (t), decl, decl_name);
   }
   else if (tt != CPP_EOF)
-    error ("unexpected text after %qs in db pragma", p.c_str ());
+    error () << "unexpected text after " << p << " in db pragma" << endl;
 }
 
 extern "C" void

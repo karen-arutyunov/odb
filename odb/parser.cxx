@@ -12,6 +12,7 @@
 #include <sstream>
 #include <iostream>
 
+#include <odb/error.hxx>
 #include <odb/parser.hxx>
 #include <odb/semantics.hxx>
 
@@ -1541,9 +1542,9 @@ create_type (tree t,
         }
         else
         {
-          cerr << file << ':' << line << ':' << clmn << ": error: "
-               << " non-integer array index "
-               << tree_code_name[TREE_CODE (max)];
+          error (file, line, clmn)
+            << "non-integer array index " << tree_code_name[TREE_CODE (max)]
+            << endl;
 
           throw failed ();
         }
@@ -1907,8 +1908,9 @@ diagnose_unassoc_pragmas (decl_set const& decls)
     if (i->prag && !i->assoc)
     {
       pragma const& p (*i->prag);
-      error_at (p.loc, "odb pragma %qs is not associated with a declaration",
-                p.name.c_str ());
+      error (p.loc)
+        << "odb pragma '" << p.name << "' is not associated with a "
+        << "declaration" << endl;
       error_++;
     }
   }

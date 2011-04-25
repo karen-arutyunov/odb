@@ -14,6 +14,7 @@ sql-lexer.cxx                  \
 context.cxx                    \
 common.cxx                     \
 emitter.cxx                    \
+error.cxx                      \
 include.cxx                    \
 header.cxx                     \
 inline.cxx                     \
