@@ -51,7 +51,6 @@ private:
   };
 
   typedef multiset<tree_decl> decl_set;
-  typedef map<tree, names*> name_hint_map;
 
 private:
   void
@@ -168,7 +167,6 @@ private:
   size_t error_;
 
   decl_set decls_;
-  name_hint_map name_hints_;
 };
 
 bool parser::impl::tree_decl::
@@ -428,10 +426,8 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
 
         // See if there is a name hint for this type.
         //
-        name_hint_map::const_iterator it (name_hints_.find (t));
-
-        if (it != name_hints_.end ())
-          edge.hint (*it->second);
+        if (names* hint = unit_->find_hint (t))
+          edge.hint (*hint);
 
         if (trace)
         {
@@ -582,10 +578,8 @@ emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
 
         // See if there is a name hint for this type.
         //
-        name_hint_map::const_iterator it (name_hints_.find (t));
-
-        if (it != name_hints_.end ())
-          edge.hint (*it->second);
+        if (names* hint = unit_->find_hint (t))
+          edge.hint (*hint);
 
         if (trace)
         {
@@ -959,15 +953,22 @@ emit_type_decl (tree decl)
     type& node (emit_type (t, decl_access (decl), f, l, c));
     typedefs& edge (unit_->new_edge<typedefs> (*scope_, node, name));
 
-    if (name_hints_.find (t) != name_hints_.end ())
+    // Find our hint.
+    //
+    if (tree ot = DECL_ORIGINAL_TYPE (decl))
     {
-      cerr << f << ':' << l << ':' << c << ": ice: "
-           << " name hint already exist for tree node";
-
-      throw failed ();
+      if (names* hint = unit_->find_hint (ot))
+        edge.hint (*hint);
     }
 
-    name_hints_[t] = &edge;
+    // Add this edge to the hint map. It may already be there if we
+    // are handling something like this:
+    //
+    // typedef foo bar;
+    // typedef bar foo;
+    //
+    if (unit_->find_hint (t) == 0)
+      unit_->insert_hint (t, edge);
 
     if (trace)
     {

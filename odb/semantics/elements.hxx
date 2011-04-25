@@ -223,9 +223,24 @@ namespace semantics
       return access_;
     }
 
+    // Names edge in terms of which this edge was defined. Can be NULL.
+    //
+  public:
+    void
+    hint (names& hint)
+    {
+      hint_ = &hint;
+    }
+
+    names*
+    hint () const
+    {
+      return hint_;
+    }
+
   public:
     names (string const& name, access_type access = access_type::public_)
-        : name_ (name), access_ (access)
+        : name_ (name), access_ (access), hint_ (0)
     {
     }
 
@@ -246,6 +261,7 @@ namespace semantics
     nameable* named_;
     string name_;
     access_type access_;
+    names* hint_;
   };
 
   //

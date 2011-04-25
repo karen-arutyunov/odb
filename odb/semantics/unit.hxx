@@ -38,6 +38,22 @@ namespace semantics
       tree_node_map_[key] = &value;
     }
 
+    // Mapping from tree nodes to name hints.
+    //
+  public:
+    names*
+    find_hint (tree key) const
+    {
+      name_hint_map::const_iterator i (name_hint_map_.find (key));
+      return i != name_hint_map_.end () ? i->second : 0;
+    }
+
+    void
+    insert_hint (tree key, names& name)
+    {
+      name_hint_map_[key] = &name;
+    }
+
   public:
     template <class T>
     T&
@@ -158,6 +174,9 @@ namespace semantics
 
     typedef std::map<tree, node*> tree_node_map;
     tree_node_map tree_node_map_;
+
+    typedef std::map<tree, names*> name_hint_map;
+    name_hint_map name_hint_map_;
   };
 }
 
