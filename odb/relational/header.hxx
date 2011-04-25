@@ -181,13 +181,20 @@ namespace relational
     {
       typedef container_traits base;
 
-      container_traits (): object_members_base (true, false) {}
+      container_traits (semantics::class_& obj)
+          : object_members_base (true, false), object_ (obj)
+      {
+      }
 
       virtual void
       container (semantics::data_member& m)
       {
         using semantics::type;
         using semantics::class_;
+
+        // Figure out if this member is from a base object.
+        //
+        bool base (context::object != &object_);
 
         type& t (m.type ());
         container_kind_type ck (container_kind (t));
@@ -293,8 +300,34 @@ namespace relational
 
         os << "// " << m.name () << endl
            << "//" << endl
-           << "struct " << name
-           << "{";
+           << "struct " << name;
+
+        if (base)
+          os << ": access::object_traits< " << context::object->fq_name () <<
+            " >::" << name;
+
+        os << "{";
+
+        // column_count
+        //
+        os << "static const std::size_t cond_column_count = " <<
+          cond_columns << "UL;"
+           << "static const std::size_t data_column_count = " <<
+          data_columns << "UL;"
+           << endl;
+
+        // Statements.
+        //
+        os << "static const char* const insert_one_statement;"
+           << "static const char* const select_all_statement;"
+           << "static const char* const delete_all_statement;"
+           << endl;
+
+        if (base)
+        {
+          os << "};";
+          return;
+        }
 
         // container_type
         // container_traits
@@ -302,7 +335,6 @@ namespace relational
         // key_type
         // value_type
         //
-
         os << "typedef " << t.fq_name (m.belongs ().hint ()) <<
           " container_type;";
         os << "typedef odb::access::container_traits< container_type > " <<
@@ -357,14 +389,6 @@ namespace relational
 
         os << "typedef " << db << "::container_statements< " << name <<
           " > statements_type;"
-           << endl;
-
-        // column_count
-        //
-        os << "static const std::size_t cond_column_count = " <<
-          cond_columns << "UL;"
-           << "static const std::size_t data_column_count = " <<
-          data_columns << "UL;"
            << endl;
 
         // cond_image_type (object id is taken from the object image)
@@ -449,13 +473,6 @@ namespace relational
 
         os << "std::size_t version;"
            << "};";
-
-        // Statements.
-        //
-        os << "static const char* const insert_one_statement;"
-           << "static const char* const select_all_statement;"
-           << "static const char* const delete_all_statement;"
-           << endl;
 
         // bind (cond_image)
         //
@@ -640,6 +657,9 @@ namespace relational
 
         os << "};";
       }
+
+    private:
+      semantics::class_& object_;
     };
 
     //
@@ -772,7 +792,7 @@ namespace relational
         // Traits types.
         //
         {
-          instance<container_traits> t;
+          instance<container_traits> t (c);
           t->traverse (c);
         }
 

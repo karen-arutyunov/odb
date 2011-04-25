@@ -582,6 +582,10 @@ namespace relational
       {
         using semantics::type;
 
+        // Figure out if this member is from a base object.
+        //
+        bool base (context::object != &object_);
+
         type& t (m.type ());
         container_kind_type ck (container_kind (t));
 
@@ -827,6 +831,9 @@ namespace relational
                         " = ?") << ";"
              << endl;
         }
+
+        if (base)
+          return;
 
         //
         // Functions.
@@ -1213,8 +1220,7 @@ namespace relational
           {
             os << "using namespace " << db << ";"
                << endl
-               << "typedef container_statements< " << name << " > statements;"
-               << "statements& sts (*static_cast< statements* > (d));"
+               << "statements_type& sts (*static_cast< statements_type* > (d));"
                << "binding& b (sts.data_image_binding ());"
                << "data_image_type& di (sts.data_image ());"
                << endl;
@@ -1284,8 +1290,7 @@ namespace relational
         os << "{"
            << "using namespace " << db << ";"
            << endl
-           << "typedef container_statements< " << name << " > statements;"
-           << "statements& sts (*static_cast< statements* > (d));"
+           << "statements_type& sts (*static_cast< statements_type* > (d));"
            << "data_image_type& di (sts.data_image ());";
 
         // Extract current element.
@@ -1372,8 +1377,7 @@ namespace relational
         if (!inverse)
           os << "using namespace " << db << ";"
              << endl
-             << "typedef container_statements< " << name << " > statements;"
-             << "statements& sts (*static_cast< statements* > (d));"
+             << "statements_type& sts (*static_cast< statements_type* > (d));"
              << "sts.delete_all_statement ().execute ();";
 
         os << "}";
@@ -1562,7 +1566,7 @@ namespace relational
       container (semantics::data_member& m)
       {
         string traits (prefix_ + public_name (m) + "_traits");
-        os << db << "::container_statements< " << traits << " > " <<
+        os << db << "::container_statements_impl< " << traits << " > " <<
           prefix_ << m.name () << ";";
       }
     };
