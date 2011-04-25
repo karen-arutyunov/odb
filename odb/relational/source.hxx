@@ -840,8 +840,10 @@ namespace relational
           // bind (cond_image_type)
           //
           os << "void " << scope << "::" << endl
-             << "bind (" << bind_vector << " b, id_image_type* p, " <<
-            "cond_image_type& c)"
+             << "bind (" << bind_vector << " b," << endl
+             << "const " << bind_vector << " id," << endl
+             << "std::size_t id_size," << endl
+             << "cond_image_type& c)"
              << "{"
              << "ODB_POTENTIALLY_UNUSED (c);"
              << endl
@@ -850,12 +852,9 @@ namespace relational
 
           os << "// object_id" << endl
              << "//" << endl
-             << "if (p != 0)"
-             << "{"
-             << "id_image_type& id (*p);";
-          bind_id->traverse (id_member_);
-          os << "}"
-             << "n++;"
+             << "if (id != 0)" << endl
+             << "std::memcpy (&b[n], id, id_size * sizeof (id[0]));"
+             << "n += id_size;"
              << endl;
 
           // We don't need to update the bind index since this is the
@@ -905,20 +904,19 @@ namespace relational
           // bind (data_image_type)
           //
           os << "void " << scope << "::" << endl
-             << "bind (" << bind_vector << " b, id_image_type* p, " <<
-            "data_image_type& d)"
+             << "bind (" << bind_vector << " b," << endl
+             << "const " << bind_vector << " id," << endl
+             << "std::size_t id_size," << endl
+             << "data_image_type& d)"
              << "{"
              << "size_t n (0);"
              << endl;
 
           os << "// object_id" << endl
              << "//" << endl
-             << "if (p != 0)"
-             << "{"
-             << "id_image_type& id (*p);";
-          bind_id->traverse (id_member_);
-          os << "}"
-             << "n++;"
+             << "if (id != 0)" << endl
+             << "std::memcpy (&b[n], id, id_size * sizeof (id[0]));"
+             << "n += id_size;"
              << endl;
 
           switch (ck)
@@ -1243,10 +1241,9 @@ namespace relational
             }
 
             os << endl
-               << "if (di.version != sts.data_image_version () || " <<
-              "b.version == 0)"
+               << "if (di.version != sts.data_image_version ())"
                << "{"
-               << "bind (b.bind, 0, di);"
+               << "bind (b.bind, 0, sts.id_binding ().count, di);"
                << "sts.data_image_version (di.version);"
                << "b.version++;"
                << "}"
@@ -1324,15 +1321,15 @@ namespace relational
         //
         if (eager_ptr)
         {
-          os << "id_image_type& ii (sts.id_image ());"
+          os << "const binding& idb (sts.id_binding ());"
              << endl
              << "if (di.version != sts.data_image_version () ||" << endl
-             << "ii.version != sts.data_id_image_version ())"
+             << "idb.version != sts.data_id_binding_version ())"
              << "{"
              << "binding& b (sts.data_image_binding ());"
-             << "bind (b.bind, &ii, di);"
+             << "bind (b.bind, idb.bind, idb.count, di);"
              << "sts.data_image_version (di.version);"
-             << "sts.data_id_image_version (ii.version);"
+             << "sts.data_id_binding_version (idb.version);"
              << "b.version++;"
              << "}";
         }
@@ -1351,7 +1348,7 @@ namespace relational
              << "if (di.version != sts.data_image_version ())"
              << "{"
              << "binding& b (sts.data_image_binding ());"
-             << "bind (b.bind, 0, di);"
+             << "bind (b.bind, 0, sts.id_binding ().count, di);"
              << "sts.data_image_version (di.version);"
              << "b.version++;"
              << "st.refetch ();"
@@ -1387,20 +1384,20 @@ namespace relational
         {
           os << "void " << scope << "::" << endl
              << "persist (const container_type& c," << endl
-             << "id_image_type& id," << endl
+             << "const " << db << "::binding& id," << endl
              << "statements_type& sts)"
              << "{"
              << "using namespace " << db << ";"
              << endl
              << "binding& b (sts.data_image_binding ());"
-             << "if (id.version != sts.data_id_image_version () || " <<
+             << "if (id.version != sts.data_id_binding_version () || " <<
             "b.version == 0)"
              << "{"
-             << "bind (b.bind, &id, sts.data_image ());"
-             << "sts.data_id_image_version (id.version);"
+             << "bind (b.bind, id.bind, id.count, sts.data_image ());"
+             << "sts.data_id_binding_version (id.version);"
              << "b.version++;"
              << "}"
-             << "sts.id_image (id);"
+             << "sts.id_binding (id);"
              << "functions_type& fs (sts.functions ());";
 
           if (ck == ck_ordered)
@@ -1414,23 +1411,25 @@ namespace relational
         //
         os << "void " << scope << "::" << endl
            << "load (container_type& c," << endl
-           << "id_image_type& id," << endl
+           << "const " << db << "::binding& id," << endl
            << "statements_type& sts)"
            << "{"
            << "using namespace " << db << ";"
            << endl
            << "binding& db (sts.data_image_binding ());"
-           << "if (id.version != sts.data_id_image_version () || db.version == 0)"
+           << "if (id.version != sts.data_id_binding_version () || " <<
+          "db.version == 0)"
            << "{"
-           << "bind (db.bind, &id, sts.data_image ());"
-           << "sts.data_id_image_version (id.version);"
+           << "bind (db.bind, id.bind, id.count, sts.data_image ());"
+           << "sts.data_id_binding_version (id.version);"
            << "db.version++;"
            << "}"
            << "binding& cb (sts.cond_image_binding ());"
-           << "if (id.version != sts.cond_id_image_version () || cb.version == 0)"
+           << "if (id.version != sts.cond_id_binding_version () || " <<
+          "cb.version == 0)"
            << "{"
-           << "bind (cb.bind, &id, sts.cond_image ());"
-           << "sts.cond_id_image_version (id.version);"
+           << "bind (cb.bind, id.bind, id.count, sts.cond_image ());"
+           << "sts.cond_id_binding_version (id.version);"
            << "cb.version++;"
            << "}"
            << "select_statement& st (sts.select_all_statement ());"
@@ -1453,7 +1452,7 @@ namespace relational
              << endl
              << "if (di.version != sts.data_image_version ())"
              << "{"
-             << "bind (db.bind, 0, sts.data_image ());"
+             << "bind (db.bind, 0, id.count, sts.data_image ());"
              << "sts.data_image_version (di.version);"
              << "db.version++;"
              << "st.refetch ();"
@@ -1465,7 +1464,7 @@ namespace relational
            << "if (!more)" << endl
            << "st.free_result ();"
            << endl
-           << "sts.id_image (id);"
+           << "sts.id_binding (id);"
            << "functions_type& fs (sts.functions ());";
 
         if (ck == ck_ordered)
@@ -1480,31 +1479,31 @@ namespace relational
         {
           os << "void " << scope << "::" << endl
              << "update (const container_type& c," << endl
-             << "id_image_type& id," << endl
+             << "const " << db << "::binding& id," << endl
              << "statements_type& sts)"
              << "{"
              << "using namespace " << db << ";"
              << endl
              << "binding& db (sts.data_image_binding ());"
-             << "if (id.version != sts.data_id_image_version () || " <<
+             << "if (id.version != sts.data_id_binding_version () || " <<
             "db.version == 0)"
              << "{"
-             << "bind (db.bind, &id, sts.data_image ());"
-             << "sts.data_id_image_version (id.version);"
+             << "bind (db.bind, id.bind, id.count, sts.data_image ());"
+             << "sts.data_id_binding_version (id.version);"
              << "db.version++;"
              << "}"
             //
             // We may need cond if the specialization calls delete_all.
             //
              << "binding& cb (sts.cond_image_binding ());"
-             << "if (id.version != sts.cond_id_image_version () || " <<
+             << "if (id.version != sts.cond_id_binding_version () || " <<
             "cb.version == 0)"
              << "{"
-             << "bind (cb.bind, &id, sts.cond_image ());"
-             << "sts.cond_id_image_version (id.version);"
+             << "bind (cb.bind, id.bind, id.count, sts.cond_image ());"
+             << "sts.cond_id_binding_version (id.version);"
              << "cb.version++;"
              << "}"
-             << "sts.id_image (id);"
+             << "sts.id_binding (id);"
              << "functions_type& fs (sts.functions ());";
 
           if (ck == ck_ordered)
@@ -1519,18 +1518,19 @@ namespace relational
         if (!inverse)
         {
           os << "void " << scope << "::" << endl
-             << "erase (id_image_type& id, statements_type& sts)"
+             << "erase (const " << db << "::binding& id, statements_type& sts)"
              << "{"
              << "using namespace " << db << ";"
              << endl
              << "binding& b (sts.cond_image_binding ());"
-             << "if (id.version != sts.cond_id_image_version () || b.version == 0)"
+             << "if (id.version != sts.cond_id_binding_version () || " <<
+            "b.version == 0)"
              << "{"
-             << "bind (b.bind, &id, sts.cond_image ());"
-             << "sts.cond_id_image_version (id.version);"
+             << "bind (b.bind, id.bind, id.count, sts.cond_image ());"
+             << "sts.cond_id_binding_version (id.version);"
              << "b.version++;"
              << "}"
-             << "sts.id_image (id);"
+             << "sts.id_binding (id);"
              << "functions_type& fs (sts.functions ());";
 
           if (ck == ck_ordered)
@@ -1644,7 +1644,7 @@ namespace relational
             if (!inverse)
               os << traits << "::persist (" << endl
                  << "obj." << obj_name << "," << endl
-                 << "i," << endl
+                 << "idb," << endl
                  << "sts.container_statment_cache ()." << sts_name << ");"
                  << endl;
             break;
@@ -1653,7 +1653,7 @@ namespace relational
           {
             os << traits << "::load (" << endl
                << "obj." << obj_name << "," << endl
-               << "i," << endl
+               << "idb," << endl
                << "sts.container_statment_cache ()." << sts_name << ");"
                << endl;
             break;
@@ -1663,7 +1663,7 @@ namespace relational
             if (!inverse)
               os << traits << "::update (" << endl
                  << "obj." << obj_name << "," << endl
-                 << "i," << endl
+                 << "idb," << endl
                  << "sts.container_statment_cache ()." << sts_name << ");"
                  << endl;
             break;
@@ -1672,7 +1672,7 @@ namespace relational
           {
             if (!inverse)
               os << traits << "::erase (" << endl
-                 << "i," << endl
+                 << "idb," << endl
                  << "sts.container_statment_cache ()." << sts_name << ");"
                  << endl;
             break;
@@ -2055,11 +2055,18 @@ namespace relational
 
         if (straight_containers)
         {
-          // Initialize id_image.
+          // Initialize id_image and binding.
           //
           os << "id_image_type& i (sts.id_image ());"
              << "init (i, obj." << id.name () << ");"
-             << endl;
+             << endl
+             << "binding& idb (sts.id_image_binding ());"
+             << "if (i.version != sts.id_image_version () || idb.version == 0)"
+             << "{"
+             << "bind (idb.bind, i);"
+             << "sts.id_image_version (i.version);"
+             << "idb.version++;"
+             << "}";
 
           instance<container_calls> t (container_calls::persist_call);
           t->traverse (c);
@@ -2302,7 +2309,7 @@ namespace relational
              << "load_ (" << db << "::object_statements< object_type >& " <<
             "sts, object_type& obj)"
              << "{"
-             << "id_image_type& i (sts.id_image ());"
+             << db << "::binding& idb (sts.id_image_binding ());"
              << endl;
           instance<container_calls> t (container_calls::load_call);
           t->traverse (c);
@@ -2529,6 +2536,9 @@ namespace relational
       generate ()
       {
         extra_pre ();
+
+        os << "#include <cstring> // std::memcpy" << endl
+           << endl;
 
         os << "#include <odb/cache-traits.hxx>" << endl;
 

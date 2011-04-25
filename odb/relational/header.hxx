@@ -181,11 +181,7 @@ namespace relational
     {
       typedef container_traits base;
 
-      container_traits (semantics::class_& obj) //@@ context::object
-          : object_members_base (true, false)
-      {
-        scope_ = "object_traits< " + obj.fq_name () + " >";
-      }
+      container_traits (): object_members_base (true, false) {}
 
       virtual void
       container (semantics::data_member& m)
@@ -371,11 +367,6 @@ namespace relational
           data_columns << "UL;"
            << endl;
 
-        // id_image_type
-        //
-        os << "typedef " << scope_ << "::id_image_type id_image_type;"
-           << endl;
-
         // cond_image_type (object id is taken from the object image)
         //
         os << "struct cond_image_type"
@@ -469,13 +460,19 @@ namespace relational
         // bind (cond_image)
         //
         os << "static void" << endl
-           << "bind (" << bind_vector << ", id_image_type*, cond_image_type&);"
+           << "bind (" << bind_vector << "," << endl
+           << "const " << bind_vector << " id," << endl
+           << "std::size_t id_size," << endl
+           << "cond_image_type&);"
            << endl;
 
         // bind (data_image)
         //
         os << "static void" << endl
-           << "bind (" << bind_vector << ", id_image_type*, data_image_type&);"
+           << "bind (" << bind_vector << "," << endl
+           << "const " << bind_vector << " id," << endl
+           << "std::size_t id_size," << endl
+           << "data_image_type&);"
            << endl;
 
         // grow ()
@@ -613,7 +610,7 @@ namespace relational
         if (!inverse)
           os << "static void" << endl
              << "persist (const container_type&," << endl
-             << "id_image_type&," << endl
+             << "const " << db << "::binding& id," << endl
              << "statements_type&);"
              << endl;
 
@@ -621,7 +618,7 @@ namespace relational
         //
         os << "static void" << endl
            << "load (container_type&," << endl
-           << "id_image_type&," << endl
+           << "const " << db << "::binding& id," << endl
            << "statements_type&);"
            << endl;
 
@@ -630,7 +627,7 @@ namespace relational
         if (!inverse)
           os << "static void" << endl
              << "update (const container_type&," << endl
-             << "id_image_type&," << endl
+             << "const " << db << "::binding& id," << endl
              << "statements_type&);"
              << endl;
 
@@ -638,14 +635,11 @@ namespace relational
         //
         if (!inverse)
           os << "static void" << endl
-             << "erase (id_image_type&, statements_type&);"
+             << "erase (const " << db << "::binding& id, statements_type&);"
              << endl;
 
         os << "};";
       }
-
-    private:
-      string scope_;
     };
 
     //
@@ -778,7 +772,7 @@ namespace relational
         // Traits types.
         //
         {
-          instance<container_traits> t (c);
+          instance<container_traits> t;
           t->traverse (c);
         }
 
