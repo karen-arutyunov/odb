@@ -105,7 +105,10 @@ public:
   static bool
   abstract (semantics::class_& c)
   {
-    return c.count ("abstract");
+    // If a class is abstract in the C++ sense then it is also abstract in
+    // the database sense.
+    //
+    return c.abstract () || c.count ("abstract");
   }
 
   // Database names and types.
@@ -179,12 +182,12 @@ public:
   static size_t
   out_column_count (semantics::class_&);
 
-  static semantics::data_member&
+  static semantics::data_member*
   id_member (semantics::class_& c)
   {
-    // Set by the validator.
+    // Set by the validator. May not be there for abstract objects.
     //
-    return *c.get<semantics::data_member*> ("id-member");
+    return c.get<semantics::data_member*> ("id-member", 0);
   }
 
   // Object pointer information.
@@ -363,7 +366,14 @@ public:
 
   bool embedded_schema;
 
-  semantics::class_*& object; // Object currently being traversed.
+  // Outermost object currently being traversed.
+  //
+  semantics::class_*& top_object;
+
+  // Object currently being traversed. It can be the same as top_object
+  // or it can a base of top_object.
+  //
+  semantics::class_*& object;
 
   struct db_type_type
   {
@@ -416,12 +426,16 @@ protected:
   {
     virtual
     ~data () {}
-    data (std::ostream& os): os_ (os.rdbuf ()), object_ (0) {}
+    data (std::ostream& os)
+        : os_ (os.rdbuf ()), top_object_ (0), object_ (0)
+    {
+    }
 
   public:
     std::ostream os_;
     std::stack<std::streambuf*> os_stack_;
 
+    semantics::class_* top_object_;
     semantics::class_* object_;
 
     keyword_set_type keyword_set_;

@@ -730,11 +730,12 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
+        bool abst (abstract (c));
         string const& type (c.fq_name ());
 
-        semantics::data_member& id (id_member (c));
-        bool auto_id (id.count ("auto"));
-        bool base_id (&id.scope () != &c); // Id comes from a base class.
+        semantics::data_member* id (id_member (c));
+        bool auto_id (id ? id->count ("auto") : false);
+        bool base_id (id ? &id->scope () != &c : false); // Comes from base.
 
         os << "// " << c.name () << endl
            << "//" << endl;
@@ -751,43 +752,133 @@ namespace relational
 
         // id_type & id_image_type
         //
-        if (base_id)
+        if (id != 0)
         {
-          string const& base (id.scope ().fq_name ());
+          if (base_id)
+          {
+            string const& base (id->scope ().fq_name ());
 
-          os << "typedef object_traits< " << base << " >::id_type id_type;"
-             << endl
-             << "typedef object_traits< " << base << " >::id_image_type " <<
-            "id_image_type;"
-             << endl;
-        }
-        else
-        {
-          os << "typedef " << id.type ().fq_name (id.belongs ().hint ()) <<
-            " id_type;"
-             << endl;
+            os << "typedef object_traits< " << base << " >::id_type id_type;"
+               << endl
+               << "typedef object_traits< " << base << " >::id_image_type " <<
+              "id_image_type;"
+               << endl;
+          }
+          else
+          {
+            os << "typedef " << id->type ().fq_name (id->belongs ().hint ()) <<
+              " id_type;"
+               << endl;
 
-          os << "struct id_image_type"
-             << "{";
+            os << "struct id_image_type"
+               << "{";
 
-          id_image_member_->traverse (id);
+            id_image_member_->traverse (*id);
 
-          os << "std::size_t version;"
-             << "};";
+            os << "std::size_t version;"
+               << "};";
+          }
         }
 
         // image_type
         //
         image_type_->traverse (c);
 
-        // query types
         //
+        // Query (abstract and concrete).
+        //
+
         if (options.generate_query ())
         {
           // query_columns
           //
           query_type_->traverse (c);
+        }
 
+        //
+        // Containers (abstract and concrete).
+        //
+
+        {
+          instance<container_traits> t (c);
+          t->traverse (c);
+        }
+
+        //
+        // Functions (abstract and concrete).
+        //
+
+        // id ()
+        //
+        if (id != 0)
+        {
+          os << "static id_type" << endl
+             << "id (const object_type&);"
+             << endl;
+
+          if (options.generate_query ())
+            os << "static id_type" << endl
+               << "id (const image_type&);"
+               << endl;
+        }
+
+        // grow ()
+        //
+        os << "static bool" << endl
+           << "grow (image_type&, " << truncated_vector << ");"
+           << endl;
+
+        // bind (image_type)
+        //
+        os << "static void" << endl
+           << "bind (" << bind_vector << ", image_type&, bool);"
+           << endl;
+
+        // bind (id_image_type)
+        //
+        if (id != 0)
+        {
+          os << "static void" << endl
+             << "bind (" << bind_vector << ", id_image_type&);"
+             << endl;
+        }
+
+        // init (image, object)
+        //
+        os << "static bool" << endl
+           << "init (image_type&, const object_type&);"
+           << endl;
+
+        // init (object, image)
+        //
+        os << "static void" << endl
+           << "init (object_type&, const image_type&, database&);"
+           << endl;
+
+        // init (id_image, id)
+        //
+        if (id != 0)
+        {
+          os << "static void" << endl
+             << "init (id_image_type&, const id_type&);"
+             << endl;
+        }
+
+        //
+        // The rest only applies to concrete objects.
+        //
+        if (abst)
+        {
+          os << "};";
+          return;
+        }
+
+        //
+        // Query (concrete).
+        //
+
+        if (options.generate_query ())
+        {
           // query_base_type
           //
           os << "typedef " << db << "::query query_base_type;"
@@ -802,6 +893,15 @@ namespace relational
              << "query_type (const query_base_type&);"
              << "};";
         }
+
+        //
+        // Containers (concrete).
+        //
+
+        // Statement cache (forward declaration).
+        //
+        os << "struct container_statement_cache_type;"
+           << endl;
 
         // column_count
         //
@@ -824,71 +924,8 @@ namespace relational
         os << endl;
 
         //
-        // Containers.
+        // Functions (concrete).
         //
-
-        // Traits types.
-        //
-        {
-          instance<container_traits> t (c);
-          t->traverse (c);
-        }
-
-        // Statement cache (forward declaration).
-        //
-        os << "struct container_statement_cache_type;"
-           << endl;
-
-        //
-        // Functions.
-        //
-
-        // id ()
-        //
-        os << "static id_type" << endl
-           << "id (const object_type&);"
-           << endl;
-
-        if (options.generate_query ())
-          os << "static id_type" << endl
-             << "id (const image_type&);"
-             << endl;
-
-        // grow ()
-        //
-        os << "static bool" << endl
-           << "grow (image_type&, " << truncated_vector << ");"
-           << endl;
-
-        // bind (image_type)
-        //
-        os << "static void" << endl
-           << "bind (" << bind_vector << ", image_type&, bool);"
-           << endl;
-
-        // bind (id_image_type)
-        //
-        os << "static void" << endl
-           << "bind (" << bind_vector << ", id_image_type&);"
-           << endl;
-
-        // init (image, object)
-        //
-        os << "static bool" << endl
-           << "init (image_type&, const object_type&);"
-           << endl;
-
-        // init (object, image)
-        //
-        os << "static void" << endl
-           << "init (object_type&, const image_type&, database&);"
-           << endl;
-
-        // init (id_image, id)
-        //
-        os << "static void" << endl
-           << "init (id_image_type&, const id_type&);"
-           << endl;
 
         // persist ()
         //

@@ -56,6 +56,9 @@ traverse (semantics::class_& c)
   {
     prev = context::object;
     context::object = &c;
+
+    if (context::top_object == 0)
+      context::top_object = &c;
   }
 
   if (obj && build_table_prefix_)
@@ -89,7 +92,12 @@ traverse (semantics::class_& c)
   }
 
   if (obj)
+  {
+    if (prev == 0)
+      context::top_object = 0;
+
     context::object = prev;
+  }
 }
 
 void object_members_base::member::
@@ -234,6 +242,9 @@ traverse (semantics::class_& c)
   {
     prev = context::object;
     context::object = &c;
+
+    if (context::top_object == 0)
+      context::top_object = &c;
   }
 
   if (obj)
@@ -242,7 +253,12 @@ traverse (semantics::class_& c)
     composite (0, c);
 
   if (obj)
+  {
+    if (prev == 0)
+      context::top_object = 0;
+
     context::object = prev;
+  }
 
   if (f && !member_.first_)
     flush ();

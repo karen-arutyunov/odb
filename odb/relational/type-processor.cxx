@@ -22,7 +22,7 @@ namespace relational
     id_tree_type ()
     {
       context& c (context::current ());
-      semantics::data_member& id (context::id_member (*c.object));
+      semantics::data_member& id (*context::id_member (*c.top_object));
       return &id.type ();
     }
 
@@ -30,7 +30,7 @@ namespace relational
     id_column_type ()
     {
       context& c (context::current ());
-      semantics::data_member& id (context::id_member (*c.object));
+      semantics::data_member& id (*context::id_member (*c.top_object));
       return id.get<string> ("column-type");
     }
 
@@ -118,7 +118,7 @@ namespace relational
           // This is an object pointer. The column type is the pointed-to
           // object id type. Except by default it can be NULL.
           //
-          semantics::data_member& id (id_member (*c));
+          semantics::data_member& id (*id_member (*c));
           semantics::type& idt (id.type ());
 
           if (type.empty () && id.count ("type"))
@@ -203,7 +203,7 @@ namespace relational
           // This is an object pointer. The column type is the pointed-to
           // object id type. Except by default it can be NULL.
           //
-          semantics::data_member& id (id_member (*c));
+          semantics::data_member& id (*id_member (*c));
           semantics::type& idt (id.type ());
 
           if (type.empty () && id.count ("type"))
@@ -656,6 +656,20 @@ namespace relational
           os << c->file () << ":" << c->line () << ":" << c->column () << ": "
              << "info: consider including its definition with the "
              << "--odb-prologue option" << endl;
+
+          throw generation_failed ();
+        }
+
+        // Make sure the pointed-to class is not abstract.
+        //
+        if (context::abstract (*c))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "error: pointed-to class '" << c->fq_name () << "' "
+             << "is abstract" << endl;
+
+          os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+             << "info: class '" << c->name () << "' is defined here" << endl;
 
           throw generation_failed ();
         }

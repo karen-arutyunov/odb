@@ -59,7 +59,7 @@ namespace relational
 
         if (semantics::class_* c = object_pointer (t))
         {
-          member_info mi (m, id_member (*c).type (), var, fq_type_override_);
+          member_info mi (m, id_member (*c)->type (), var, fq_type_override_);
           mi.st = &st;
           if (pre (mi))
           {

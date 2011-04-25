@@ -113,6 +113,7 @@ context (ostream& os_,
       keyword_set (data_->keyword_set_),
       embedded_schema (ops.generate_schema () &&
                        ops.schema_format ().count (schema_format::embedded)),
+      top_object (data_->top_object_),
       object (data_->object_)
 {
   assert (current_ == 0);
@@ -131,6 +132,7 @@ context ()
     db (current ().db),
     keyword_set (current ().keyword_set),
     embedded_schema (current ().embedded_schema),
+    top_object (current ().top_object),
     object (current ().object)
 {
 }

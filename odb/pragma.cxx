@@ -128,7 +128,8 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
     }
   }
   else if (p == "object" ||
-           p == "pointer")
+           p == "pointer" ||
+           p == "abstract")
   {
     if (tc != RECORD_TYPE)
     {
@@ -362,6 +363,18 @@ handle_pragma (cpp_reader* reader,
       error ("expected pointer name in db pragma %qs", pc);
       return;
     }
+
+    tt = pragma_lex (&t);
+  }
+  else if (p == "abstract")
+  {
+    // abstract
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_decl_type (decl, decl_name, p, loc))
+      return;
 
     tt = pragma_lex (&t);
   }

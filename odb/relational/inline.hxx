@@ -32,15 +32,79 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
+        bool abst (abstract (c));
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
 
-        semantics::data_member& id (id_member (c));
-        bool base_id (&id.scope () != &c); // Id comes from a base class.
+        semantics::data_member* id (id_member (c));
+        bool base_id (id ? &id->scope () != &c : false); // Comes from base.
 
         os << "// " << c.name () << endl
            << "//" << endl
            << endl;
+
+        if (id != 0)
+        {
+          // id (object_type)
+          //
+          os << "inline" << endl
+             << traits << "::id_type" << endl
+             << traits << "::" << endl
+             << "id (const object_type& obj)"
+             << "{";
+
+          if (base_id)
+            os << "return object_traits< " << id->scope ().fq_name () <<
+              " >::id (obj);";
+          else
+            os << "return obj." << id->name () << ";";
+
+          os << "}";
+
+          // id (image_type)
+          //
+          if (options.generate_query () && base_id)
+          {
+            os << "inline" << endl
+               << traits << "::id_type" << endl
+               << traits << "::" << endl
+               << "id (const image_type& i)"
+               << "{"
+               << "return object_traits< " << id->scope ().fq_name () <<
+              " >::id (i);"
+               << "}";
+          }
+
+          // bind (id_image_type)
+          //
+          if (base_id)
+          {
+            os << "inline" << endl
+               << "void " << traits << "::" << endl
+               << "bind (" << bind_vector << " b, id_image_type& i)"
+               << "{"
+               << "object_traits< " << id->scope ().fq_name () <<
+              " >::bind (b, i);"
+               << "}";
+          }
+
+          if (base_id)
+          {
+            os << "inline" << endl
+               << "void " << traits << "::" << endl
+               << "init (id_image_type& i, const id_type& id)"
+               << "{"
+               << "object_traits< " << id->scope ().fq_name () <<
+              " >::init (i, id);"
+               << "}";
+          }
+        }
+
+        //
+        // The rest only applies to concrete objects.
+        //
+        if (abst)
+          return;
 
         // query_type
         //
@@ -64,60 +128,6 @@ namespace relational
              << "query_type (const query_base_type& q)" << endl
              << "  : query_base_type (q)"
              << "{"
-             << "}";
-        }
-
-        // id (object_type)
-        //
-        os << "inline" << endl
-           << traits << "::id_type" << endl
-           << traits << "::" << endl
-           << "id (const object_type& obj)"
-           << "{";
-
-        if (base_id)
-          os << "return object_traits< " << id.scope ().fq_name () <<
-            " >::id (obj);";
-        else
-          os << "return obj." << id.name () << ";";
-
-        os << "}";
-
-        // id (image_type)
-        //
-        if (options.generate_query () && base_id)
-        {
-          os << "inline" << endl
-             << traits << "::id_type" << endl
-             << traits << "::" << endl
-             << "id (const image_type& i)"
-             << "{"
-             << "return object_traits< " << id.scope ().fq_name () <<
-            " >::id (i);"
-             << "}";
-        }
-
-        // bind (id_image_type)
-        //
-        if (base_id)
-        {
-          os << "inline" << endl
-             << "void " << traits << "::" << endl
-             << "bind (" << bind_vector << " b, id_image_type& i)"
-             << "{"
-             << "object_traits< " << id.scope ().fq_name () <<
-            " >::bind (b, i);"
-             << "}";
-        }
-
-        if (base_id)
-        {
-          os << "inline" << endl
-             << "void " << traits << "::" << endl
-             << "init (id_image_type& i, const id_type& id)"
-             << "{"
-             << "object_traits< " << id.scope ().fq_name () <<
-            " >::init (i, id);"
              << "}";
         }
 

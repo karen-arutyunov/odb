@@ -136,7 +136,7 @@ namespace relational
         if (c.file () != unit.file ())
           return;
 
-        if (!c.count ("object"))
+        if (!c.count ("object") || abstract (c))
           return;
 
         string const& name (table_name (c));
@@ -192,7 +192,7 @@ namespace relational
         if (semantics::class_* c = object_pointer (member_type (m, prefix_)))
         {
           os << " REFERENCES " << quote_id (table_name (*c)) << " (" <<
-            quote_id (column_name (id_member (*c))) << ")";
+            quote_id (column_name (*id_member (*c))) << ")";
         }
 
         return true;
@@ -369,7 +369,7 @@ namespace relational
         if (c.file () != unit.file ())
           return;
 
-        if (!c.count ("object"))
+        if (!c.count ("object") || abstract (c))
           return;
 
         string const& name (table_name (c));

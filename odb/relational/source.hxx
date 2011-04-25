@@ -111,7 +111,7 @@ namespace relational
           }
           else
           {
-            semantics::data_member& id (id_member (*c));
+            semantics::data_member& id (*id_member (*c));
             column (id, "",
                     table_name_.empty () ? table_name_ : table_qname (*c),
                     column_qname (id));
@@ -172,7 +172,7 @@ namespace relational
       object_joins (semantics::class_& scope, bool query)
           : query_ (query),
             table_ (table_qname (scope)),
-            id_ (id_member (scope))
+            id_ (*id_member (scope))
       {
       }
 
@@ -240,7 +240,7 @@ namespace relational
               dt = ct;
               string const& id (column_qname (*im, "id", "object_id"));
 
-              dcond << dt << '.' << column_qname (id_member (*c)) << " = " <<
+              dcond << dt << '.' << column_qname (*id_member (*c)) << " = " <<
                 t << '.' << id;
             }
           }
@@ -259,7 +259,7 @@ namespace relational
           //
           t = table_qname (*c);
 
-          cond << t << '.' << column_qname (id_member (*c)) << " = _." <<
+          cond << t << '.' << column_qname (*id_member (*c)) << " = _." <<
             quote_id (col_name);
         }
 
@@ -703,7 +703,7 @@ namespace relational
               // many(i)-to-one
               //
               inv_table = table_qname (*c);
-              inv_id = column_qname (id_member (*c));
+              inv_id = column_qname (*id_member (*c));
               inv_fid = column_qname (*im);
             }
 
@@ -873,8 +873,6 @@ namespace relational
         // bind()
         //
         {
-          instance<bind_member> bind_id ("id_", "id");
-
           // bind (cond_image_type)
           //
           os << "void " << scope << "::" << endl
@@ -1795,25 +1793,168 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
+        bool abst (abstract (c));
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
 
         bool grow (context::grow (c));
 
-        semantics::data_member& id (id_member (c));
-        bool auto_id (id.count ("auto"));
-        bool grow_id (context::grow (id));
-        bool base_id (&id.scope () != &c); // Id comes from a base class.
+        semantics::data_member* id (id_member (c));
+        bool auto_id (id ? id->count ("auto") : false);
+        bool grow_id (id ? context::grow (*id) : false);
+        bool base_id (id ? &id->scope () != &c : false); // Comes from base.
 
         os << "// " << c.name () << endl
            << "//" << endl
            << endl;
 
         //
-        // Containers.
+        // Query.
+        //
+
+        if (options.generate_query ())
+        {
+          instance<query_columns> t (c);
+          t->traverse (c);
+        }
+
+        //
+        // Containers (abstract and concrete).
         //
         bool straight_containers (has_a (c, test_straight_container));
         bool containers (straight_containers || has_a (c, test_container));
+
+        if (containers)
+        {
+          instance<container_traits> t (c);
+          t->traverse (c);
+        }
+
+        //
+        // Functions (abstract and concrete).
+        //
+
+        // id (image_type)
+        //
+        if (id != 0 && options.generate_query () && !base_id)
+        {
+          os << traits << "::id_type" << endl
+             << traits << "::" << endl
+             << "id (const image_type& i)"
+             << "{"
+             << "id_type id;";
+          init_id_value_member_->traverse (*id);
+          os << "return id;"
+             << "}";
+        }
+
+        // grow ()
+        //
+        os << "bool " << traits << "::" << endl
+           << "grow (image_type& i, " << truncated_vector << " t)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (i);"
+           << "ODB_POTENTIALLY_UNUSED (t);"
+           << endl
+           << "bool grew (false);"
+           << endl;
+
+        index_ = 0;
+        inherits (c, grow_base_inherits_);
+        names (c, grow_member_names_);
+
+        os << "return grew;"
+           << "}";
+
+        // bind (image_type)
+        //
+        os << "void " << traits << "::" << endl
+           << "bind (" << bind_vector << " b, image_type& i, bool out)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (out);"
+           << endl
+           << "std::size_t n (0);"
+           << endl;
+
+        inherits (c, bind_base_inherits_);
+        names (c, bind_member_names_);
+
+        os << "}";
+
+        // bind (id_image_type)
+        //
+        if (id != 0 && !base_id)
+        {
+          os << "void " << traits << "::" << endl
+             << "bind (" << bind_vector << " b, id_image_type& i)"
+             << "{"
+             << "std::size_t n (0);";
+          bind_id_member_->traverse (*id);
+          os << "}";
+        }
+
+        // init (image, object)
+        //
+        os << "bool " << traits << "::" << endl
+           << "init (image_type& i, const object_type& o)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (i);"
+           << "ODB_POTENTIALLY_UNUSED (o);"
+           << endl
+           << "bool grew (false);"
+           << endl;
+
+        inherits (c, init_image_base_inherits_);
+        names (c, init_image_member_names_);
+
+        os << "return grew;"
+           << "}";
+
+        // init (object, image)
+        //
+        os << "void " << traits << "::" << endl
+           << "init (object_type& o, const image_type& i, database& db)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (o);"
+           << "ODB_POTENTIALLY_UNUSED (i);"
+           << "ODB_POTENTIALLY_UNUSED (db);"
+           << endl;
+
+        inherits (c, init_value_base_inherits_);
+        names (c, init_value_member_names_);
+
+        os << "}";
+
+        // init (id_image, id)
+        //
+        if (id != 0 && !base_id)
+        {
+          os << "void " << traits << "::" << endl
+             << "init (id_image_type& i, const id_type& id)"
+             << "{";
+
+          if (grow_id)
+            os << "bool grew (false);";
+
+          init_id_image_member_->traverse (*id);
+
+          if (grow_id)
+            os << endl
+               << "if (grew)" << endl
+               << "i.version++;";
+
+          os << "}";
+        }
+
+        //
+        // The rest only applies to concrete objects.
+        //
+        if (abst)
+          return;
+
+        //
+        // Containers (concrete).
+        //
 
         // Statement cache (definition).
         //
@@ -1836,24 +1977,12 @@ namespace relational
              << "};";
         }
 
-        // Traits types.
         //
-        if (containers)
-        {
-          instance<container_traits> t (c);
-          t->traverse (c);
-        }
-
-        // query columns
+        // Statements.
         //
-        if (options.generate_query ())
-        {
-          instance<query_columns> t (c);
-          t->traverse (c);
-        }
 
         string const& table (table_qname (c));
-        string const& id_col (column_qname (id));
+        string const& id_col (column_qname (*id));
 
         // persist_statement
         //
@@ -1939,118 +2068,6 @@ namespace relational
              << endl;
         }
 
-        // id (image_type)
-        //
-        if (options.generate_query () && !base_id)
-        {
-          os << traits << "::id_type" << endl
-             << traits << "::" << endl
-             << "id (const image_type& i)"
-             << "{"
-             << "id_type id;";
-          init_id_value_member_->traverse (id);
-          os << "return id;"
-             << "}";
-        }
-
-        // grow ()
-        //
-        os << "bool " << traits << "::" << endl
-           << "grow (image_type& i, " << truncated_vector << " t)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (t);"
-           << endl
-           << "bool grew (false);"
-           << endl;
-
-        index_ = 0;
-        inherits (c, grow_base_inherits_);
-        names (c, grow_member_names_);
-
-        os << "return grew;"
-           << "}";
-
-        // bind (image_type)
-        //
-        os << "void " << traits << "::" << endl
-           << "bind (" << bind_vector << " b, image_type& i, bool out)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (out);"
-           << endl
-           << "std::size_t n (0);"
-           << endl;
-
-        inherits (c, bind_base_inherits_);
-        names (c, bind_member_names_);
-
-        os << "}";
-
-        // bind (id_image_type)
-        //
-        if (!base_id)
-        {
-          os << "void " << traits << "::" << endl
-             << "bind (" << bind_vector << " b, id_image_type& i)"
-             << "{"
-             << "std::size_t n (0);";
-          bind_id_member_->traverse (id);
-          os << "}";
-        }
-
-        // init (image, object)
-        //
-        os << "bool " << traits << "::" << endl
-           << "init (image_type& i, const object_type& o)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (o);"
-           << endl
-           << "bool grew (false);"
-           << endl;
-
-        inherits (c, init_image_base_inherits_);
-        names (c, init_image_member_names_);
-
-        os << "return grew;"
-           << "}";
-
-        // init (object, image)
-        //
-        os << "void " << traits << "::" << endl
-           << "init (object_type& o, const image_type& i, database& db)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (o);"
-           << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (db);"
-           << endl;
-
-        inherits (c, init_value_base_inherits_);
-        names (c, init_value_member_names_);
-
-        os << "}";
-
-        // init (id_image, id)
-        //
-        if (!base_id)
-        {
-          os << "void " << traits << "::" << endl
-             << "init (id_image_type& i, const id_type& id)"
-             << "{";
-
-          if (grow_id)
-            os << "bool grew (false);";
-
-          init_id_image_member_->traverse (id);
-
-          if (grow_id)
-            os << endl
-               << "if (grew)" << endl
-               << "i.version++;";
-
-          os << "}";
-        }
-
         // persist ()
         //
         os << "void " << traits << "::" << endl
@@ -2072,9 +2089,9 @@ namespace relational
 
         if (auto_id)
         {
-          string const& n (id.name ());
+          string const& n (id->name ());
           string var ("im." + n + (n[n.size () - 1] == '_' ? "" : "_"));
-          init_auto_id (id, var);
+          init_auto_id (*id, var);
           os << endl;
         }
 
@@ -2090,7 +2107,7 @@ namespace relational
            << endl;
 
         if (auto_id)
-          os << "obj." << id.name () << " = static_cast<id_type> (st.id ());"
+          os << "obj." << id->name () << " = static_cast<id_type> (st.id ());"
              << endl;
 
         if (straight_containers)
@@ -2098,7 +2115,7 @@ namespace relational
           // Initialize id_image and binding.
           //
           os << "id_image_type& i (sts.id_image ());"
-             << "init (i, obj." << id.name () << ");"
+             << "init (i, obj." << id->name () << ");"
              << endl
              << "binding& idb (sts.id_image_binding ());"
              << "if (i.version != sts.id_image_version () || idb.version == 0)"
@@ -2130,7 +2147,7 @@ namespace relational
         // Initialize id image.
         //
         os << "id_image_type& i (sts.id_image ());"
-           << "init (i, obj." << id.name () << ");"
+           << "init (i, obj." << id->name () << ");"
            << endl;
 
         os << "binding& idb (sts.id_image_binding ());"
