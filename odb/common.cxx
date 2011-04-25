@@ -17,21 +17,28 @@ simple (semantics::data_member&)
 }
 
 void object_members_base::
-composite (semantics::data_member&, semantics::class_& c)
+container (semantics::data_member&)
+{
+}
+
+void object_members_base::
+composite (semantics::data_member*, semantics::class_& c)
 {
   inherits (c);
   names (c);
 }
 
 void object_members_base::
-container (semantics::data_member&)
+object (semantics::class_& c)
 {
+  inherits (c);
+  names (c);
 }
 
 void object_members_base::
 traverse_composite (semantics::data_member& m, semantics::class_& c)
 {
-  composite (m, c);
+  composite (&m, c);
 }
 
 void object_members_base::
@@ -47,8 +54,8 @@ traverse (semantics::class_& c)
   semantics::class_* prev;
   if (obj)
   {
-    prev = object;
-    object = &c;
+    prev = context::object;
+    context::object = &c;
   }
 
   if (obj && build_table_prefix_)
@@ -65,8 +72,7 @@ traverse (semantics::class_& c)
       tb = true;
     }
 
-    inherits (c);
-    names (c);
+    object (c);
 
     if (tb)
     {
@@ -76,12 +82,14 @@ traverse (semantics::class_& c)
   }
   else
   {
-    inherits (c);
-    names (c);
+    if (obj)
+      object (c);
+    else
+      composite (0, c);
   }
 
   if (obj)
-    object = prev;
+    context::object = prev;
 }
 
 void object_members_base::member::
@@ -134,7 +142,7 @@ traverse (semantics::data_member& m)
       om_.table_prefix_.level++;
     }
 
-    om_.composite (m, *comp);
+    om_.composite (&m, *comp);
 
     if (om_.build_table_prefix_)
     {

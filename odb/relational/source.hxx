@@ -560,12 +560,13 @@ namespace relational
     {
       typedef container_traits base;
 
-      container_traits (semantics::class_& obj) // @@ context::object
-          : object_members_base (true, true),
-            object_ (obj),
-            id_member_ (id_member (obj))
+      container_traits (semantics::class_& c)
+          : object_members_base (true, true), c_ (c)
       {
-        obj_scope_ = "access::object_traits< " + obj.fq_name () + " >";
+        if (c.count ("object"))
+          scope_ = "access::object_traits< " + c.fq_name () + " >";
+        else
+          scope_ = "access::composite_value_traits< " + c.fq_name () + " >";
       }
 
       // Unless the database system can execute several interleaving
@@ -578,13 +579,40 @@ namespace relational
       }
 
       virtual void
+      composite (semantics::data_member* m, semantics::class_& c)
+      {
+        if (c_.count ("object"))
+          object_members_base::composite (m, c);
+        else
+        {
+          // If we are generating traits for a composite value type, then
+          // we don't want to go into its bases or it composite members.
+          //
+          if (m == 0 && &c == &c_)
+            names (c);
+        }
+      }
+
+      virtual void
       container (semantics::data_member& m)
       {
         using semantics::type;
 
-        // Figure out if this member is from a base object.
+        // Figure out if this member is from a base object or composite
+        // value and whether it is abstract.
         //
-        bool base (context::object != &object_);
+        bool base, abst;
+
+        if (c_.count ("object"))
+        {
+          base = context::object != &c_ || !m.scope ().count ("object");
+          abst = abstract (c_);
+        }
+        else
+        {
+          base = false; // We don't go into bases.
+          abst = true;  // Always abstract.
+        }
 
         type& t (m.type ());
         container_kind_type ck (container_kind (t));
@@ -631,7 +659,7 @@ namespace relational
                         has_a (vt, test_eager_pointer));
 
         string name (prefix_ + public_name (m) + "_traits");
-        string scope (obj_scope_ + "::" + name);
+        string scope (scope_ + "::" + name);
 
         os << "// " << m.name () << endl
            << "//" << endl
@@ -640,196 +668,199 @@ namespace relational
         //
         // Statements.
         //
-        string table (table_qname (m, table_prefix_));
-
-        // select_all_statement
-        //
-        os << "const char* const " << scope <<
-          "::select_all_statement =" << endl;
-
-        if (inverse)
+        if (!abst)
         {
-          semantics::class_* c (object_pointer (vt));
+          string table (table_qname (m, table_prefix_));
 
-          string inv_table; // Other table name.
-          string inv_id;    // Other id column.
-          string inv_fid;   // Other foreign id column (ref to us).
+          // select_all_statement
+          //
+          os << "const char* const " << scope <<
+            "::select_all_statement =" << endl;
 
-          if (context::container (im->type ()))
+          if (inverse)
           {
-            // many(i)-to-many
-            //
+            semantics::class_* c (object_pointer (vt));
 
-            // This other container is a direct member of the class so the
-            // table prefix is just the class table name.
-            //
-            table_prefix tp (table_name (*c) + "_", 1);
-            inv_table = table_qname (*im, tp);
-            inv_id = column_qname (*im, "id", "object_id");
-            inv_fid = column_qname (*im, "value", "value");
+            string inv_table; // Other table name.
+            string inv_id;    // Other id column.
+            string inv_fid;   // Other foreign id column (ref to us).
+
+            if (context::container (im->type ()))
+            {
+              // many(i)-to-many
+              //
+
+              // This other container is a direct member of the class so the
+              // table prefix is just the class table name.
+              //
+              table_prefix tp (table_name (*c) + "_", 1);
+              inv_table = table_qname (*im, tp);
+              inv_id = column_qname (*im, "id", "object_id");
+              inv_fid = column_qname (*im, "value", "value");
+            }
+            else
+            {
+              // many(i)-to-one
+              //
+              inv_table = table_qname (*c);
+              inv_id = column_qname (id_member (*c));
+              inv_fid = column_qname (*im);
+            }
+
+            os << strlit ("SELECT ") << endl
+               << strlit ("_." + inv_fid + ',') << endl
+               << strlit ("_." + inv_id) << endl
+               << strlit (" FROM " + inv_table + " AS _"
+                          " WHERE _." + inv_fid + " = ?");
           }
           else
           {
-            // many(i)-to-one
-            //
-            inv_table = table_qname (*c);
-            inv_id = column_qname (id_member (*c));
-            inv_fid = column_qname (*im);
-          }
+            string const& id_col (column_qname (m, "id", "object_id"));
 
-          os << strlit ("SELECT ") << endl
-             << strlit ("_." + inv_fid + ',') << endl
-             << strlit ("_." + inv_id) << endl
-             << strlit (" FROM " + inv_table + " AS _"
-                        " WHERE _." + inv_fid + " = ?");
-        }
-        else
-        {
-          string const& id_col (column_qname (m, "id", "object_id"));
+            os << strlit ("SELECT ") << endl
+               << strlit ("_." + id_col + ',') << endl;
 
-          os << strlit ("SELECT ") << endl
-             << strlit ("_." + id_col + ',') << endl;
-
-          switch (ck)
-          {
-          case ck_ordered:
+            switch (ck)
             {
-              if (ordered)
+            case ck_ordered:
+              {
+                if (ordered)
+                {
+                  instance<object_columns> t (table, false, false);
+                  string const& col (column_qname (m, "index", "index"));
+                  t->column (m, "index", table, col);
+                  t->flush ();
+                }
+                break;
+              }
+            case ck_map:
+            case ck_multimap:
               {
                 instance<object_columns> t (table, false, false);
-                string const& col (column_qname (m, "index", "index"));
-                t->column (m, "index", table, col);
-                t->flush ();
-              }
-              break;
-            }
-          case ck_map:
-          case ck_multimap:
-            {
-              instance<object_columns> t (table, false, false);
 
-              if (semantics::class_* ckt = comp_value (*kt))
-                t->traverse_composite (m, *ckt, "key", "key");
-              else
-              {
-                string const& col (column_qname (m, "key", "key"));
-                t->column (m, "key", table, col);
-                t->flush ();
+                if (semantics::class_* ckt = comp_value (*kt))
+                  t->traverse_composite (m, *ckt, "key", "key");
+                else
+                {
+                  string const& col (column_qname (m, "key", "key"));
+                  t->column (m, "key", table, col);
+                  t->flush ();
+                }
+                break;
               }
-              break;
+            case ck_set:
+            case ck_multiset:
+              {
+                break;
+              }
             }
-          case ck_set:
-          case ck_multiset:
+
+            instance<object_columns> t (table, false);
+
+            if (semantics::class_* cvt = comp_value (vt))
+              t->traverse_composite (m, *cvt, "value", "value");
+            else
             {
-              break;
+              string const& col (column_qname (m, "value", "value"));
+              t->column (m, "value", table, col);
+              t->flush ();
+            }
+
+            os << strlit (" FROM " + table + " AS _"
+                          " WHERE _." + id_col + " = ?");
+
+            if (ordered)
+            {
+              string const& col (column_qname (m, "index", "index"));
+
+              os << endl
+                 << strlit (" ORDER BY _." + col) << endl;
             }
           }
 
-          instance<object_columns> t (table, false);
+          os << ";"
+             << endl;
 
-          if (semantics::class_* cvt = comp_value (vt))
-            t->traverse_composite (m, *cvt, "value", "value");
+          // insert_one_statement
+          //
+          os << "const char* const " << scope <<
+            "::insert_one_statement =" << endl;
+
+          if (inverse)
+            os << strlit ("") << ";"
+               << endl;
           else
           {
-            string const& col (column_qname (m, "value", "value"));
-            t->column (m, "value", table, col);
-            t->flush ();
-          }
+            os << strlit ("INSERT INTO " + table + " (") << endl
+               << strlit (column_qname (m, "id", "object_id") + ',') << endl;
 
-          os << strlit (" FROM " + table + " AS _"
-                        " WHERE _." + id_col + " = ?");
-
-          if (ordered)
-          {
-            string const& col (column_qname (m, "index", "index"));
-
-            os << endl
-               << strlit (" ORDER BY _." + col) << endl;
-          }
-        }
-
-        os << ";"
-           << endl;
-
-        // insert_one_statement
-        //
-        os << "const char* const " << scope <<
-          "::insert_one_statement =" << endl;
-
-        if (inverse)
-          os << strlit ("") << ";"
-             << endl;
-        else
-        {
-          os << strlit ("INSERT INTO " + table + " (") << endl
-             << strlit (column_qname (m, "id", "object_id") + ',') << endl;
-
-          switch (ck)
-          {
-          case ck_ordered:
+            switch (ck)
             {
-              if (ordered)
+            case ck_ordered:
+              {
+                if (ordered)
+                {
+                  instance<object_columns> t (false, false);
+                  t->column (m, "index", "", column_qname (m, "index", "index"));
+                  t->flush ();
+                }
+                break;
+              }
+            case ck_map:
+            case ck_multimap:
               {
                 instance<object_columns> t (false, false);
-                t->column (m, "index", "", column_qname (m, "index", "index"));
-                t->flush ();
-              }
-              break;
-            }
-          case ck_map:
-          case ck_multimap:
-            {
-              instance<object_columns> t (false, false);
 
-              if (semantics::class_* ckt = comp_value (*kt))
-                t->traverse_composite (m, *ckt, "key", "key");
-              else
-              {
-                t->column (m, "key", "", column_qname (m, "key", "key"));
-                t->flush ();
+                if (semantics::class_* ckt = comp_value (*kt))
+                  t->traverse_composite (m, *ckt, "key", "key");
+                else
+                {
+                  t->column (m, "key", "", column_qname (m, "key", "key"));
+                  t->flush ();
+                }
+                break;
               }
-              break;
+            case ck_set:
+            case ck_multiset:
+              {
+                break;
+              }
             }
-          case ck_set:
-          case ck_multiset:
+
+            instance<object_columns> t (false);
+
+            if (semantics::class_* cvt = comp_value (vt))
+              t->traverse_composite (m, *cvt, "value", "value");
+            else
             {
-              break;
+              t->column (m, "value", "", column_qname (m, "value", "value"));
+              t->flush ();
             }
+
+            string values;
+            for (size_t i (0), n (m.get<size_t> ("data-column-count"));
+                 i < n; ++i)
+              values += i != 0 ? ",?" : "?";
+
+            os << strlit (") VALUES (" + values + ")") << ";"
+               << endl;
           }
 
-          instance<object_columns> t (false);
+          // delete_all_statement
+          //
+          os << "const char* const " << scope <<
+            "::delete_all_statement =" << endl;
 
-          if (semantics::class_* cvt = comp_value (vt))
-            t->traverse_composite (m, *cvt, "value", "value");
+          if (inverse)
+            os << strlit ("") << ";"
+               << endl;
           else
           {
-            t->column (m, "value", "", column_qname (m, "value", "value"));
-            t->flush ();
+            os << strlit ("DELETE FROM " + table) << endl
+               << strlit (" WHERE " + column_qname (m, "id", "object_id") +
+                          " = ?") << ";"
+               << endl;
           }
-
-          string values;
-          for (size_t i (0), n (m.get<size_t> ("data-column-count"));
-               i < n; ++i)
-            values += i != 0 ? ",?" : "?";
-
-          os << strlit (") VALUES (" + values + ")") << ";"
-             << endl;
-        }
-
-        // delete_all_statement
-        //
-        os << "const char* const " << scope <<
-          "::delete_all_statement =" << endl;
-
-        if (inverse)
-          os << strlit ("") << ";"
-             << endl;
-        else
-        {
-          os << strlit ("DELETE FROM " + table) << endl
-             << strlit (" WHERE " + column_qname (m, "id", "object_id") +
-                        " = ?") << ";"
-             << endl;
         }
 
         if (base)
@@ -1546,9 +1577,8 @@ namespace relational
       }
 
     protected:
-      string obj_scope_;
-      semantics::class_& object_;
-      semantics::data_member& id_member_;
+      string scope_;
+      semantics::class_& c_;
     };
 
     // Container statement cache members.
@@ -1620,10 +1650,16 @@ namespace relational
       }
 
       virtual void
-      composite (semantics::data_member& m, semantics::class_& c)
+      composite (semantics::data_member* m, semantics::class_& c)
       {
+        if (m == 0)
+        {
+          object_members_base::composite (m, c);
+          return;
+        }
+
         string old (obj_prefix_);
-        obj_prefix_ += m.name ();
+        obj_prefix_ += m->name ();
         obj_prefix_ += '.';
         object_members_base::composite (m, c);
         obj_prefix_ = old;
@@ -2430,6 +2466,13 @@ namespace relational
         os << "// " << c.name () << endl
            << "//" << endl
            << endl;
+
+        // Containers.
+        //
+        {
+          instance<container_traits> t (c);
+          t->traverse (c);
+        }
 
         // grow ()
         //

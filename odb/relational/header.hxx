@@ -181,9 +181,24 @@ namespace relational
     {
       typedef container_traits base;
 
-      container_traits (semantics::class_& obj)
-          : object_members_base (true, false), object_ (obj)
+      container_traits (semantics::class_& c)
+          : object_members_base (true, false), c_ (c)
       {
+      }
+
+      virtual void
+      composite (semantics::data_member* m, semantics::class_& c)
+      {
+        if (c_.count ("object"))
+          object_members_base::composite (m, c);
+        else
+        {
+          // If we are generating traits for a composite value type, then
+          // we don't want to go into its bases or it composite members.
+          //
+          if (m == 0 && &c == &c_)
+            names (c);
+        }
       }
 
       virtual void
@@ -192,9 +207,21 @@ namespace relational
         using semantics::type;
         using semantics::class_;
 
-        // Figure out if this member is from a base object.
+        // Figure out if this member is from a base object or composite
+        // value and whether it is abstract.
         //
-        bool base (context::object != &object_);
+        bool base, abst;
+
+        if (c_.count ("object"))
+        {
+          base = context::object != &c_ || !m.scope ().count ("object");
+          abst = abstract (c_);
+        }
+        else
+        {
+          base = false; // We don't go into bases.
+          abst = true;  // Always abstract.
+        }
 
         type& t (m.type ());
         container_kind_type ck (container_kind (t));
@@ -303,25 +330,36 @@ namespace relational
            << "struct " << name;
 
         if (base)
-          os << ": access::object_traits< " << context::object->fq_name () <<
-            " >::" << name;
+        {
+          semantics::class_& b (dynamic_cast<semantics::class_&> (m.scope ()));
+
+          if (b.count ("object"))
+            os << ": access::object_traits< " << b.fq_name () << " >::" <<
+              name;
+          else
+            os << ": access::composite_value_traits< " << b.fq_name () <<
+              " >::" << public_name (m) << "_traits"; // No prefix_.
+        }
 
         os << "{";
 
-        // column_count
-        //
-        os << "static const std::size_t cond_column_count = " <<
-          cond_columns << "UL;"
-           << "static const std::size_t data_column_count = " <<
-          data_columns << "UL;"
-           << endl;
+        if (!abst)
+        {
+          // column_count
+          //
+          os << "static const std::size_t cond_column_count = " <<
+            cond_columns << "UL;"
+             << "static const std::size_t data_column_count = " <<
+            data_columns << "UL;"
+             << endl;
 
-        // Statements.
-        //
-        os << "static const char* const insert_one_statement;"
-           << "static const char* const select_all_statement;"
-           << "static const char* const delete_all_statement;"
-           << endl;
+          // Statements.
+          //
+          os << "static const char* const insert_one_statement;"
+             << "static const char* const select_all_statement;"
+             << "static const char* const delete_all_statement;"
+             << endl;
+        }
 
         if (base)
         {
@@ -659,7 +697,7 @@ namespace relational
       }
 
     private:
-      semantics::class_& object_;
+      semantics::class_& c_;
     };
 
     //
@@ -951,6 +989,13 @@ namespace relational
         // image_type
         //
         image_type_->traverse (c);
+
+        // Containers.
+        //
+        {
+          instance<container_traits> t (c);
+          t->traverse (c);
+        }
 
         // grow ()
         //

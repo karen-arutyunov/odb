@@ -18,16 +18,23 @@ struct object_members_base: traversal::class_, virtual context
   virtual void
   simple (semantics::data_member&);
 
-  // If you override this function, call the base if you want the composite
-  // to be recursively traversed. The second argument is the actual composite
-  // type, which is not necessarily the same as m.type() in case of
-  // traverse_composite().
-  //
-  virtual void
-  composite (semantics::data_member&, semantics::class_&);
-
   virtual void
   container (semantics::data_member&);
+
+  // If you override this function, you can call the base to traverse
+  // bases and members. The first argument is the data member and can
+  // be NULL if we are traversing the root type or a base. The second
+  // argument is the actual composite type, which is not necessarily
+  // the same as m.type ().
+  //
+  virtual void
+  composite (semantics::data_member*, semantics::class_&);
+
+  // If you override this function, you can call the base to traverse
+  // bases and members.
+  //
+  virtual void
+  object (semantics::class_&);
 
 public:
   object_members_base ()
