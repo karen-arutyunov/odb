@@ -264,23 +264,29 @@ column_type (semantics::data_member& m, string const& kp)
 
 string context::
 database_type_impl (semantics::type& t,
-                    string const& type,
+                    semantics::names* hint,
                     semantics::context& ctx,
                     column_type_flags f)
 {
-  // @@ If I handle additional qualifiers (e.g., NOT NULL, AUTO_INCREMENT)
-  // separately, then I won't need to pass custom type anymore.
-  //
-  if (!type.empty ())
-    return type;
+  type_map_type::const_iterator end (data_->type_map_.end ()), i (end);
 
-  // Don't use the name hint here so that we get the primary name (e.g.,
+  // First check the hinted name. This allows us to handle things like
+  // size_t which is nice to map to the same type irrespective of the
+  // actual type. Since this type can be an alias for the one we are
+  // interested in, go into nested hints.
+  //
+  for (; hint != 0 && i == end; hint = hint->hint ())
+  {
+    i = data_->type_map_.find (t.fq_name (hint));
+  }
+
+  // If the hinted name didn't work, try the primary name (e.g.,
   // ::std::string) instead of a user typedef (e.g., my_string).
   //
-  string const& name (t.fq_name ());
-  type_map_type::const_iterator i (data_->type_map_.find (name));
+  if (i == end)
+    i = data_->type_map_.find (t.fq_name ());
 
-  if (i != data_->type_map_.end ())
+  if (i != end)
   {
     string r (ctx.count ("id") ? i->second.id_type : i->second.type);
 

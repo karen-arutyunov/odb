@@ -198,11 +198,11 @@ namespace relational
 
     string context::
     database_type_impl (semantics::type& t,
-                        string const& type,
+                        semantics::names* hint,
                         semantics::context& ctx,
                         column_type_flags f)
     {
-      string r (base_context::database_type_impl (t, type, ctx, f));
+      string r (base_context::database_type_impl (t, hint, ctx, f));
 
       if (!r.empty ())
         return r;

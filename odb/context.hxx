@@ -400,16 +400,15 @@ protected:
   //
   static column_type_flags const ctf_default_null = 0x01;
 
-  // Return empty string if there is no mapping. The second argument
-  // is the custom type or empty string if it is not specified.
+  // Return empty string if there is no mapping.
   //
   string
   database_type (semantics::type& t,
-                 string const& type,
+                 semantics::names* hint,
                  semantics::context& c,
                  column_type_flags f)
   {
-    return current ().database_type_impl (t, type, c, f);
+    return current ().database_type_impl (t, hint, c, f);
   }
 
   // The default implementation uses the type map (populated by the database-
@@ -417,7 +416,7 @@ protected:
   //
   virtual string
   database_type_impl (semantics::type&,
-                      string const& type,
+                      semantics::names*,
                       semantics::context&,
                       column_type_flags);
 

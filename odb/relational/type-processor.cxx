@@ -130,12 +130,15 @@ namespace relational
           if (type.empty () && idt.count ("type"))
             type = idt.get<string> ("type");
 
-          column_type_flags f (ctf_none);
+          if (type.empty ())
+          {
+            column_type_flags f (ctf_none);
 
-          if (null_pointer (m))
-            f |= ctf_default_null;
+            if (null_pointer (m))
+              f |= ctf_default_null;
 
-          type = database_type (idt, type, id, f);
+            type = database_type (idt, id.belongs ().hint (), id, f);
+          }
         }
         else
         {
@@ -145,7 +148,8 @@ namespace relational
           if (type.empty () && t.count ("type"))
             type = t.get<string> ("type");
 
-          type = database_type (t, type, m, ctf_none);
+          if (type.empty ())
+            type = database_type (t, m.belongs ().hint (), m, ctf_none);
         }
 
         if (!type.empty ())
@@ -176,6 +180,7 @@ namespace relational
 
       void
       process_container_value (semantics::type& t,
+                               semantics::names* hint,
                                semantics::data_member& m,
                                string const& prefix,
                                bool obj_ptr)
@@ -215,19 +220,23 @@ namespace relational
           if (type.empty () && idt.count ("type"))
             type = idt.get<string> ("type");
 
-          column_type_flags f (ctf_none);
+          if (type.empty ())
+          {
+            column_type_flags f (ctf_none);
 
-          if (null_pointer (m, prefix))
-            f |= ctf_default_null;
+            if (null_pointer (m, prefix))
+              f |= ctf_default_null;
 
-          type = database_type (idt, type, id, f);
+            type = database_type (idt, id.belongs ().hint (), id, f);
+          }
         }
         else
         {
           if (type.empty () && t.count ("type"))
             type = t.get<string> ("type");
 
-          type = database_type (t, type, m, ctf_none);
+          if (type.empty ())
+            type = database_type (t, hint, m, ctf_none);
         }
 
         if (!type.empty ())
@@ -270,16 +279,27 @@ namespace relational
         semantics::type* it (0);
         semantics::type* kt (0);
 
+        semantics::names* vh (0);
+        semantics::names* ih (0);
+        semantics::names* kh (0);
+
         if (t.count ("container"))
         {
           ck = t.get<container_kind_type> ("container-kind");
           vt = t.get<semantics::type*> ("value-tree-type");
+          vh = t.get<semantics::names*> ("value-tree-hint");
 
           if (ck == ck_ordered)
+          {
             it = t.get<semantics::type*> ("index-tree-type");
+            ih = t.get<semantics::names*> ("index-tree-hint");
+          }
 
           if (ck == ck_map || ck == ck_multimap)
+          {
             kt = t.get<semantics::type*> ("key-tree-type");
+            kh = t.get<semantics::names*> ("key-tree-hint");
+          }
         }
         else
         {
@@ -358,8 +378,19 @@ namespace relational
               throw generation_failed ();
 
             tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
-
             vt = &dynamic_cast<semantics::type&> (*unit.find (type));
+
+            // Find the hint.
+            //
+            for (tree ot (DECL_ORIGINAL_TYPE (decl));
+                 ot != 0;
+                 ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
+            {
+              if ((vh = unit.find_hint (ot)))
+                break;
+
+              decl = TYPE_NAME (ot);
+            }
           }
           catch (generation_failed const&)
           {
@@ -371,7 +402,7 @@ namespace relational
           }
 
           t.set ("value-tree-type", vt);
-
+          t.set ("value-tree-hint", vh);
 
           // Get the index type for ordered containers.
           //
@@ -387,8 +418,19 @@ namespace relational
                 throw generation_failed ();
 
               tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
-
               it = &dynamic_cast<semantics::type&> (*unit.find (type));
+
+              // Find the hint.
+              //
+              for (tree ot (DECL_ORIGINAL_TYPE (decl));
+                   ot != 0;
+                   ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
+              {
+                if ((ih = unit.find_hint (ot)))
+                  break;
+
+                decl = TYPE_NAME (ot);
+              }
             }
             catch (generation_failed const&)
             {
@@ -400,6 +442,7 @@ namespace relational
             }
 
             t.set ("index-tree-type", it);
+            t.set ("index-tree-hint", ih);
           }
 
           // Get the key type for maps.
@@ -416,8 +459,19 @@ namespace relational
                 throw generation_failed ();
 
               tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
-
               kt = &dynamic_cast<semantics::type&> (*unit.find (type));
+
+              // Find the hint.
+              //
+              for (tree ot (DECL_ORIGINAL_TYPE (decl));
+                   ot != 0;
+                   ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
+              {
+                if ((kh = unit.find_hint (ot)))
+                  break;
+
+                decl = TYPE_NAME (ot);
+              }
             }
             catch (generation_failed const&)
             {
@@ -429,6 +483,7 @@ namespace relational
             }
 
             t.set ("key-tree-type", kt);
+            t.set ("key-tree-hint", kh);
           }
         }
 
@@ -437,13 +492,13 @@ namespace relational
         m.set ("id-tree-type", &id_tree_type);
         m.set ("id-column-type", &id_column_type);
 
-        process_container_value (*vt, m, "value", true);
+        process_container_value (*vt, vh, m, "value", true);
 
         if (it != 0)
-          process_container_value (*it, m, "index", false);
+          process_container_value (*it, ih, m, "index", false);
 
         if (kt != 0)
-          process_container_value (*kt, m, "key", false);
+          process_container_value (*kt, kh, m, "key", false);
 
         // If this is an inverse side of a bidirectional object relationship
         // and it is an ordered container, mark it as unordred since there is

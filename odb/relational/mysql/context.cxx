@@ -50,7 +50,10 @@ namespace relational
         {"float", "FLOAT", 0},
         {"double", "DOUBLE", 0},
 
-        {"::std::string", "TEXT", "VARCHAR (255)"}
+        {"::std::string", "TEXT", "VARCHAR (255)"},
+
+        {"::size_t", "BIGINT UNSIGNED", 0},
+        {"::std::size_t", "BIGINT UNSIGNED", 0}
       };
     }
 
@@ -232,11 +235,11 @@ namespace relational
 
     string context::
     database_type_impl (semantics::type& t,
-                        string const& type,
+                        semantics::names* hint,
                         semantics::context& ctx,
                         column_type_flags f)
     {
-      string r (base_context::database_type_impl (t, type, ctx, f));
+      string r (base_context::database_type_impl (t, hint, ctx, f));
 
       if (!r.empty ())
         return r;
