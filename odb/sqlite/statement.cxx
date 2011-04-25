@@ -121,7 +121,8 @@ namespace odb
         if (truncated && !*b.truncated)
           continue;
 
-        *b.truncated = false;
+        if (b.truncated)
+          *b.truncated = false;
 
         // Check for NULL unless we are reloading a truncated result.
         //
@@ -154,7 +155,9 @@ namespace odb
 
             if (*b.size > b.capacity)
             {
-              *b.truncated = true;
+              if (b.truncated)
+                *b.truncated = true;
+
               r = false;
               continue;
             }
