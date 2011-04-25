@@ -21,17 +21,17 @@ namespace odb
                       &traits::insert_one,
                       &traits::load_all,
                       &traits::delete_all),
-          id_image_ (0),
+          id_binding_ (0),
           cond_image_binding_ (cond_image_bind_, traits::cond_column_count),
           data_image_binding_ (data_image_bind_, traits::data_column_count)
     {
       cond_image_.version = 0;
       cond_image_version_ = 0;
-      cond_id_image_version_ = 0;
+      cond_id_binding_version_ = 0;
 
       data_image_.version = 0;
       data_image_version_ = 0;
-      data_id_image_version_ = 0;
+      data_id_binding_version_ = 0;
 
       std::memset (cond_image_bind_, 0, sizeof (cond_image_bind_));
       std::memset (data_image_bind_, 0, sizeof (data_image_bind_));

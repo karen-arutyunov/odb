@@ -32,7 +32,6 @@ namespace odb
     public:
       typedef T traits;
 
-      typedef typename traits::id_image_type id_image_type;
       typedef typename traits::data_image_type data_image_type;
       typedef typename traits::cond_image_type cond_image_type;
 
@@ -60,18 +59,18 @@ namespace odb
         return functions_;
       }
 
-      // Id image (external).
+      // Id image binding (external).
       //
-      id_image_type&
-      id_image ()
+      const binding&
+      id_binding ()
       {
-        return *id_image_;
+        return *id_binding_;
       }
 
       void
-      id_image (id_image_type& i)
+      id_binding (const binding& b)
       {
-        id_image_ = &i;
+        id_binding_ = &b;
       }
 
       // Condition image.
@@ -82,7 +81,7 @@ namespace odb
         return cond_image_;
       }
 
-            std::size_t
+      std::size_t
       cond_image_version () const
       {
         return cond_image_version_;
@@ -95,15 +94,15 @@ namespace odb
       }
 
       std::size_t
-      cond_id_image_version () const
+      cond_id_binding_version () const
       {
-        return cond_id_image_version_;
+        return cond_id_binding_version_;
       }
 
       void
-      cond_id_image_version (std::size_t v)
+      cond_id_binding_version (std::size_t v)
       {
-        cond_id_image_version_ = v;
+        cond_id_binding_version_ = v;
       }
 
       binding&
@@ -133,15 +132,15 @@ namespace odb
       }
 
       std::size_t
-      data_id_image_version () const
+      data_id_binding_version () const
       {
-        return data_id_image_version_;
+        return data_id_binding_version_;
       }
 
       void
-      data_id_image_version (std::size_t v)
+      data_id_binding_version (std::size_t v)
       {
-        data_id_image_version_ = v;
+        data_id_binding_version_ = v;
       }
 
       binding&
@@ -216,17 +215,17 @@ namespace odb
       connection_type& conn_;
       functions_type functions_;
 
-      id_image_type* id_image_;
+      const binding* id_binding_;
 
       cond_image_type cond_image_;
       std::size_t cond_image_version_;
-      std::size_t cond_id_image_version_;
+      std::size_t cond_id_binding_version_;
       binding cond_image_binding_;
       bind cond_image_bind_[traits::cond_column_count];
 
       data_image_type data_image_;
       std::size_t data_image_version_;
-      std::size_t data_id_image_version_;
+      std::size_t data_id_binding_version_;
       binding data_image_binding_;
       bind data_image_bind_[traits::data_column_count];
       bool data_image_truncated_[traits::data_column_count];

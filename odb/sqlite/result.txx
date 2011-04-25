@@ -37,13 +37,23 @@ namespace odb
       assert (!statements_.locked ());
       typename object_statements<object_type>::auto_lock l (statements_);
 
-      typename object_traits::image_type& im (statements_.image ());
-      object_traits::init (obj, im, this->database ());
+      typename object_traits::image_type& i (statements_.image ());
+      object_traits::init (obj, i, this->database ());
 
-      // Initialize the id image and load the rest of the object
+      // Initialize the id image and binding and load the rest of the object
       // (containers, etc).
       //
-      object_traits::init (statements_.id_image (), object_traits::id (im));
+      typename object_traits::id_image_type& idi (statements_.id_image ());
+      object_traits::init (idi, object_traits::id (i));
+
+      binding& idb (statements_.id_image_binding ());
+      if (idi.version != statements_.id_image_version () || idb.version == 0)
+      {
+        object_traits::bind (idb.bind, idi);
+        statements_.id_image_version (idi.version);
+        idb.version++;
+      }
+
       object_traits::load_ (statements_, obj);
 
       statements_.load_delayed ();
