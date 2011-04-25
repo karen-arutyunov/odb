@@ -644,7 +644,7 @@ namespace relational
 
         // Make sure the pointed-to class is complete.
         //
-        if (!COMPLETE_TYPE_P (c->tree_node ()))
+        if (!c->complete ())
         {
           os << m.file () << ":" << m.line () << ":" << m.column () << ": "
              << "error: pointed-to class '" << c->fq_name () << "' "

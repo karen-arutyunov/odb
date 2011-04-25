@@ -91,6 +91,12 @@ namespace semantics
     bool
     default_ctor () const;
 
+    bool
+    complete () const;
+
+    bool
+    abstract () const;
+
   public:
     class_ (path const&, size_t line, size_t column, tree);
 

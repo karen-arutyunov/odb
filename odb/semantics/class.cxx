@@ -28,6 +28,18 @@ namespace semantics
     return TYPE_HAS_DEFAULT_CONSTRUCTOR (tree_node ());
   }
 
+  bool class_::
+  complete () const
+  {
+    return COMPLETE_TYPE_P (tree_node ());
+  }
+
+  bool class_::
+  abstract () const
+  {
+    return CLASSTYPE_PURE_VIRTUALS (tree_node ());
+  }
+
   // type info
   //
   namespace
