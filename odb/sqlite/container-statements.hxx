@@ -24,7 +24,8 @@ namespace odb
   {
     class connection;
 
-    // Template argument is the generated container traits type.
+    // Template argument is the generated abstract container traits type.
+    // That is, it doesn't need to provide column counts and statements.
     //
     template <typename T>
     class container_statements
@@ -166,7 +167,7 @@ namespace odb
         {
           insert_one_.reset (
             new (details::shared) insert_statement_type (
-              conn_, traits::insert_one_statement, data_image_binding_));
+              conn_, insert_one_text_, data_image_binding_));
 
           insert_one_->cached (true);
         }
@@ -182,7 +183,7 @@ namespace odb
           select_all_.reset (
             new (details::shared) select_statement_type (
               conn_,
-              traits::select_all_statement,
+              select_all_text_,
               cond_image_binding_,
               data_image_binding_));
 
@@ -199,7 +200,7 @@ namespace odb
         {
           delete_all_.reset (
             new (details::shared) delete_statement_type (
-              conn_, traits::delete_all_statement, cond_image_binding_));
+              conn_, delete_all_text_, cond_image_binding_));
 
           delete_all_->cached (true);
         }
@@ -211,7 +212,7 @@ namespace odb
       container_statements (const container_statements&);
       container_statements& operator= (const container_statements&);
 
-    private:
+    protected:
       connection_type& conn_;
       functions_type functions_;
 
@@ -221,18 +222,43 @@ namespace odb
       std::size_t cond_image_version_;
       std::size_t cond_id_binding_version_;
       binding cond_image_binding_;
-      bind cond_image_bind_[traits::cond_column_count];
+      bind* cond_image_bind_;
 
       data_image_type data_image_;
       std::size_t data_image_version_;
       std::size_t data_id_binding_version_;
       binding data_image_binding_;
-      bind data_image_bind_[traits::data_column_count];
-      bool data_image_truncated_[traits::data_column_count];
+      bind* data_image_bind_;
+      bool* data_image_truncated_;
+
+      const char* insert_one_text_;
+      const char* select_all_text_;
+      const char* delete_all_text_;
 
       details::shared_ptr<insert_statement_type> insert_one_;
       details::shared_ptr<select_statement_type> select_all_;
       details::shared_ptr<delete_statement_type> delete_all_;
+    };
+
+    // Template argument is the generated concrete container traits type.
+    //
+    template <typename T>
+    class container_statements_impl: public T::statements_type
+    {
+    public:
+      typedef T traits;
+      typedef typename T::statements_type base;
+
+      container_statements_impl (connection&);
+
+    private:
+      container_statements_impl (const container_statements_impl&);
+      container_statements_impl& operator= (const container_statements_impl&);
+
+    private:
+      bind cond_image_bind_array_[traits::cond_column_count];
+      bind data_image_bind_array_[traits::data_column_count];
+      bool data_image_truncated_array_[traits::data_column_count];
     };
   }
 }
