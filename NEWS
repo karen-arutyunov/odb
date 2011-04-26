@@ -1,13 +1,35 @@
 Version 1.4.0
 
-  * New pragma, id_type, allows the specification of the native database
-    type that should be used for data members designated as object ids.
-    In combination with the type pragma, id_type allows you to map a C++
-    type differently depending on whether it is used in an ordinary member
-    or an object id.
+  * New profile, qt, provides persistence support for the Qt framework. This
+    version covers the most commonly used basic types, date-time types, smart
+    pointers, and containers. The qt profile implementation is provided by the
+    libodb-qt library. For more information refer to Chapter 13, "Profiles
+    Introduction" and Chapter 15, "Qt Profile" in the ODB manual as well as
+    the 'qt' example in the odb-examples package.
+
+  * Support for non-polymorphic object inheritance, including the new abstract
+    pragma. For more information refer to Chapter 8, "Inheritance" in the ODB
+    manual as well as the 'inheritance' example in the odb-examples package.
+
+  * Automatic mapping of C++ enumerations to suitable database types. In
+    database systems that support enumeration types (such as MySQL), a C++
+    enum is mapped to such a type (for example, ENUM('red', 'green', 'blue')
+    in MySQL). Otherwise, it is mapped to a suitable integer type. Refer to
+    Part II, "Database Systems" in the ODB manual for more details on the
+    provided mappings.
+
+  * New pragma, id_type, allows the specification of the native database type
+    that should be used for data members designated as object identifiers. In
+    combination with the type pragma, id_type allows you to map a C++ type
+    differently depending on whether it is used in an ordinary member or an
+    object id.
 
   * New options, --odb-prologue-file and --odb-epilogue-file, allow the
     inclusion of file contents into the ODB compilation.
+
+  * Default mapping of the size_t and std::size_t types to a 64-bit integer
+    database type irrespective of the platform width. This can be overridden
+    with the type pragma.
 
 Version 1.3.0
 
