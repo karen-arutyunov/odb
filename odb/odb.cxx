@@ -331,6 +331,21 @@ main (int argc, char* argv[])
           args.push_back (argv[i]);
         }
       }
+      // -framework (Mac OS X)
+      //
+      else if (a == "-framework")
+      {
+        args.push_back (a);
+
+        if (++i == argc || argv[i][0] == '\0')
+        {
+          e << argv[0] << ": error: expected argument for the -framework "
+            << "option" << endl;
+          return 1;
+        }
+
+        args.push_back (argv[i]);
+      }
       // -D
       //
       else if (n > 1 && a[0] == '-' && a[1] == 'D')
