@@ -36,7 +36,7 @@ namespace odb
 
     template <typename T>
     container_statements_impl<T>::
-    container_statements_impl (connection& conn)
+    container_statements_impl (connection_type& conn)
         : base (conn)
     {
       this->cond_image_bind_ = cond_image_bind_array_;
