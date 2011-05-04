@@ -272,6 +272,12 @@ namespace relational
       return *x_;
     }
 
+    B*
+    get () const
+    {
+      return x_;
+    }
+
   private:
     instance& operator= (instance const&);
 
