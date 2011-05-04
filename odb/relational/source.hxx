@@ -54,21 +54,34 @@ namespace relational
       bool first_;
     };
 
+    // Query parameter generator. A new instance is created for each
+    // query, so the customized version can have a counter to implement,
+    // for example, numbered parameters (e.g., $1, $2, etc).
+    //
+    struct query_parameters: virtual context
+    {
+      virtual string
+      next ()
+      {
+        return "?";
+      }
+    };
+
     struct object_columns: object_columns_base, virtual context
     {
       typedef object_columns base;
 
       object_columns (bool out,
                       bool last = true,
-                      char const* suffix = "")
-          : out_ (out), suffix_ (suffix), last_ (last)
+                      query_parameters* param = 0)
+          : out_ (out), param_ (param), last_ (last)
       {
       }
 
       object_columns (std::string const& table_qname,
                       bool out,
                       bool last = true)
-          : out_ (out), table_name_ (table_qname), last_ (last)
+          : out_ (out), param_ (0), table_name_ (table_qname), last_ (last)
       {
       }
 
@@ -120,7 +133,12 @@ namespace relational
         else
           column (m, "", table_name_, quote_id (name));
 
-        line_ += suffix_;
+        if (param_ != 0)
+        {
+          line_ += '=';
+          line_ += param_->next ();
+        }
+
         return true;
       }
 
@@ -155,7 +173,7 @@ namespace relational
 
     protected:
       bool out_;
-      string suffix_;
+      query_parameters* param_;
       string line_;
       string table_name_;
 
@@ -707,11 +725,13 @@ namespace relational
               inv_fid = column_qname (*im);
             }
 
+            instance<query_parameters> qp;
+
             os << strlit ("SELECT ") << endl
                << strlit ("_." + inv_fid + ',') << endl
                << strlit ("_." + inv_id) << endl
                << strlit (" FROM " + inv_table + " AS _"
-                          " WHERE _." + inv_fid + " = ?");
+                          " WHERE _." + inv_fid + "=" + qp->next ());
           }
           else
           {
@@ -766,8 +786,10 @@ namespace relational
               t->flush ();
             }
 
+            instance<query_parameters> qp;
+
             os << strlit (" FROM " + table + " AS _"
-                          " WHERE _." + id_col + " = ?");
+                          " WHERE _." + id_col + "=" + qp->next ());
 
             if (ordered)
             {
@@ -838,9 +860,15 @@ namespace relational
             }
 
             string values;
+            instance<query_parameters> qp;
             for (size_t i (0), n (m.get<size_t> ("data-column-count"));
                  i < n; ++i)
-              values += i != 0 ? ",?" : "?";
+            {
+              if (i != 0)
+                values += ',';
+
+              values += qp->next ();
+            }
 
             os << strlit (") VALUES (" + values + ")") << ";"
                << endl;
@@ -856,9 +884,11 @@ namespace relational
                << endl;
           else
           {
+            instance<query_parameters> qp;
+
             os << strlit ("DELETE FROM " + table) << endl
                << strlit (" WHERE " + column_qname (m, "id", "object_id") +
-                          " = ?") << ";"
+                          "=" + qp->next ()) << ";"
                << endl;
           }
         }
@@ -1986,62 +2016,73 @@ namespace relational
 
         // persist_statement
         //
-        os << "const char* const " << traits << "::persist_statement =" << endl
-           << strlit ("INSERT INTO " + table + " (") << endl;
-
         {
+          os << "const char* const " << traits << "::persist_statement " <<
+            "=" << endl
+             << strlit ("INSERT INTO " + table + " (") << endl;
+
           instance<object_columns> t (false);
           t->traverse (c);
+
+          string values;
+          instance<query_parameters> qp;
+          for (size_t i (0), n (in_column_count (c)); i < n; ++i)
+          {
+            if (i != 0)
+              values += ',';
+
+            values += qp->next ();
+          }
+
+          os << strlit (") VALUES (" + values + ")") << ";"
+             << endl;
         }
-
-        string values;
-        for (size_t i (0), n (in_column_count (c)); i < n; ++i)
-          values += i != 0 ? ",?" : "?";
-
-        os << strlit (") VALUES (" + values + ")") << ";"
-           << endl;
 
         // find_statement
         //
-        os << "const char* const " << traits << "::find_statement =" << endl
-           << strlit ("SELECT ") << endl;
-
         {
+          os << "const char* const " << traits << "::find_statement =" << endl
+             << strlit ("SELECT ") << endl;
+
           instance<object_columns> t (table, true);
           t->traverse (c);
-        }
 
-        os << strlit (" FROM " + table + " AS _") << endl;
+          os << strlit (" FROM " + table + " AS _") << endl;
 
-        {
           bool f (false);
-          instance<object_joins> t (c, f); // @@ (im)perfect forwarding
-          t->traverse (c);
-          t->write ();
-        }
+          instance<object_joins> j (c, f); // @@ (im)perfect forwarding
+          j->traverse (c);
+          j->write ();
 
-        os << strlit (" WHERE _." + id_col + " = ?") << ";"
-           << endl;
+          instance<query_parameters> qp;
+          os << strlit (" WHERE _." + id_col + "=" + qp->next ()) << ";"
+             << endl;
+        }
 
         // update_statement
         //
-        os << "const char* const " << traits << "::update_statement =" << endl
-           << strlit ("UPDATE " + table + " SET ") << endl;
-
         {
-          instance<object_columns> t (false, true, " = ?");
-          t->traverse (c);
-        }
+          os << "const char* const " << traits << "::update_statement " <<
+            "=" << endl
+             << strlit ("UPDATE " + table + " SET ") << endl;
 
-        os << strlit (" WHERE " + id_col + " = ?") << ";"
-           << endl;
+          instance<query_parameters> qp;
+          instance<object_columns> t (false, true, qp.get ());
+          t->traverse (c);
+
+          os << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
+             << endl;
+        }
 
         // erase_statement
         //
-        os << "const char* const " << traits << "::erase_statement =" << endl
-           << strlit ("DELETE FROM " + table) << endl
-           << strlit (" WHERE " + id_col + " = ?") << ";"
-           << endl;
+        {
+          instance<query_parameters> qp;
+          os << "const char* const " << traits << "::erase_statement =" << endl
+             << strlit ("DELETE FROM " + table) << endl
+             << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
+             << endl;
+        }
 
         // query_clause
         //
