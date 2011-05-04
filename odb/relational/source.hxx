@@ -30,7 +30,7 @@ namespace relational
       }
 
       virtual void
-      line (const std::string& l)
+      line (const string& l)
       {
         if (first_)
         {
