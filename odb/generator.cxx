@@ -24,6 +24,7 @@
 #include <odb/relational/type-processor.hxx>
 
 #include <odb/relational/mysql/context.hxx>
+#include <odb/relational/pgsql/context.hxx>
 #include <odb/relational/sqlite/context.hxx>
 
 using namespace std;
@@ -107,6 +108,11 @@ create_context (ostream& os, semantics::unit& unit, options const& ops)
   case database::mysql:
     {
       r.reset (new relational::mysql::context (os, unit, ops));
+      break;
+    }
+  case database::pgsql:
+    {
+      //r.reset (new relational::pgsql::context (os, unit, ops));
       break;
     }
   case database::sqlite:
@@ -278,6 +284,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       switch (ops.database ())
       {
       case database::mysql:
+      case database::pgsql:
       case database::sqlite:
         {
           relational::header::generate ();
@@ -328,6 +335,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       switch (ops.database ())
       {
       case database::mysql:
+      case database::pgsql:
       case database::sqlite:
         {
           relational::inline_::generate ();
@@ -373,6 +381,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       switch (ops.database ())
       {
       case database::mysql:
+      case database::pgsql:
       case database::sqlite:
         {
           relational::source::generate ();
@@ -410,6 +419,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       switch (ops.database ())
       {
       case database::mysql:
+      case database::pgsql:
       case database::sqlite:
         {
           relational::schema::generate ();
