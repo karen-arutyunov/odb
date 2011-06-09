@@ -50,7 +50,7 @@ namespace relational
         {"float", "REAL", 0},
         {"double", "DOUBLE PRECISION", 0},
 
-        {"::std::string", "TEXT", "TEXT"},
+        {"::std::string", "TEXT", 0},
 
         {"::size_t", "BIGINT", 0},
         {"::std::size_t", "BIGINT", 0}
