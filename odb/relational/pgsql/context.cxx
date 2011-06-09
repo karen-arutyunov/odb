@@ -431,7 +431,11 @@ namespace relational
                 }
                 else if (id == "TIMETZ")
                 {
-                  r.type = sql_type::TIMETZ;
+                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
+                       << ": error: PostgreSQL time zones are not currently "
+                       << "supported" << endl;
+
+                  throw generation_failed ();
                 }
                 else if (id == "TIMESTAMP")
                 {
@@ -439,7 +443,11 @@ namespace relational
                 }
                 else if (id == "TIMESTAMPTZ")
                 {
-                  r.type = sql_type::TIMESTAMPTZ;
+                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
+                       << ": error: PostgreSQL time zones are not currently "
+                       << "supported" << endl;
+
+                  throw generation_failed ();
                 }
                 //
                 // String and binary types.

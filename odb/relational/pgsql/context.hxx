@@ -36,9 +36,7 @@ namespace relational
         //
         DATE,
         TIME,
-        TIMETZ,
         TIMESTAMP,
-        TIMESTAMPTZ,
 
         // String and binary types.
         //
