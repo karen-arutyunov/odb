@@ -49,7 +49,7 @@ class options
   {
     "<db>",
     "Generate code for the <db> database. Valid values are \cb{mysql},
-     \cb{sqlite}, and \cb{tracer}."
+     \cb{pgsql}, \cb{sqlite}, and \cb{tracer}."
   };
 
   bool --generate-query | -q
@@ -69,9 +69,9 @@ class options
      Depending on the database being used (\cb{--database} option), the
      schema is generated either as a standalone SQL file or embedded into
      the generated C++ code. By default the SQL file is generated for
-     the MySQL database and the schema is embedded into the C++ code for
-     the SQLite database. Use the \cb{--schema-format} option to alter
-     the default schema format."
+     the MySQL and PostgreSQL database and the schema is embedded into the
+     C++ code for the SQLite database. Use the \cb{--schema-format} option
+     to alter the default schema format."
   };
 
   std::set< ::schema_format> --schema-format
