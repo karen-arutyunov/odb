@@ -27,7 +27,6 @@ namespace relational
 
         // Float types.
         //
-        FLOAT,
         REAL,
         DOUBLE,
         DECIMAL,
@@ -83,10 +82,6 @@ namespace relational
 
     //   virtual bool
     //   grow_impl (semantics::data_member&, semantics::type&, string const&);
-
-    // protected:
-    //   virtual string
-    //   quote_id_impl (string const&) const;
 
     // protected:
     //   virtual string

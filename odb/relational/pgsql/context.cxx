@@ -339,11 +339,13 @@ namespace relational
           parse_prefix,
           parse_name,
           parse_range,
+          parse_suffix,
           parse_done
         };
 
         state s (parse_prefix);
         string prefix;
+        bool flt (false);
 
         for (sql_token t (l.next ());
              s != parse_done && t.type () != sql_token::t_eos;
@@ -412,7 +414,10 @@ namespace relational
                 }
                 else if (id == "FLOAT")
                 {
-                  r.type = sql_type::DOUBLE;
+                  // Assign a type only once we know the precision of the
+                  // float.
+                  //
+                  flt_ = true;
                 }
                 else if (id == "DECIMAL" || id == "NUMERIC")
                 {
@@ -569,6 +574,51 @@ namespace relational
 
                   throw generation_failed ();
                 }
+
+                s = parse_suffix;
+                continue;
+              }
+
+              // Fall through.
+              //
+              s = parse_suffix;
+            }
+          case parse_suffix:
+            {
+              if (r.type == sql_type::TIME || r.type == sql_type::TIMESTAMP)
+              {
+                string const& id1 (context::upcase (t.identifier ()));
+
+                if (id1 == "WITH")
+                {
+                  t = l.next ();
+                  tt = t.type ();
+
+                  if (tt == sql_token::t_identifier)
+                  {
+                    string const& id2 (context::upcase (t.identifier ()));
+
+                    if (id2 == "TIME")
+                    {
+                      t = l.next ();
+                      tt = t.type ();
+
+                      if (tt == sql_token::t_identifier)
+                      {
+                        string const& id3 (context::upcase (t.identifier ()));
+
+                        if (id3 == "ZONE")
+                        {
+                          cerr << m.file () << ":" << m.line () << ":"
+                               << m.column ()<< ": error: PostgreSQL time "
+                               << "zones are not currently supported" << endl;
+
+                          throw generation_failed ();
+                        }
+                      }
+                    }
+                  }
+                }
               }
 
               s = parse_done;
@@ -595,6 +645,13 @@ namespace relational
           {
             r.type = sql_type::CHAR;
           }
+        }
+
+        if (flt)
+        {
+          r.type = r.range && r.range_value < 25 ?
+            sql_type::REAL :
+            sql_type::DOUBLE;
         }
 
         if (r.type == sql_type::invalid)
