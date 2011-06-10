@@ -29,7 +29,7 @@ namespace relational
         //
         REAL,
         DOUBLE,
-        DECIMAL,
+        NUMERIC,
 
         // Data-time types.
         //
@@ -68,35 +68,37 @@ namespace relational
 
     class context: public virtual relational::context
     {
-    // public:
-    //   sql_type const&
-    //   column_sql_type (semantics::data_member&,
-    //                    string const& key_prefix = string ());
+    public:
+      sql_type const&
+      column_sql_type (semantics::data_member&,
+                       string const& key_prefix = string ());
 
-    // protected:
-    //   virtual bool
-    //   grow_impl (semantics::class_&);
+    protected:
+      virtual bool
+      grow_impl (semantics::class_&);
 
-    //   virtual bool
-    //   grow_impl (semantics::data_member&);
+      virtual bool
+      grow_impl (semantics::data_member&);
 
-    //   virtual bool
-    //   grow_impl (semantics::data_member&, semantics::type&, string const&);
+      virtual bool
+      grow_impl (semantics::data_member&, semantics::type&, string const&);
 
-    // protected:
-    //   virtual string
-    //   database_type_impl (semantics::type&,
-    //                       semantics::names*,
-    //                       semantics::context&,
-    //                       column_type_flags);
+    protected:
+      virtual string
+      database_type_impl (semantics::type& t,
+                          semantics::names* hint,
+                          semantics::context& ctx,
+                          column_type_flags f)
+      {
+        return base_context::database_type_impl (t, hint, ctx, f);
+      }
 
     public:
       virtual
       ~context ();
 
       context ();
-
-      // context (std::ostream&, semantics::unit&, options_type const&);
+      context (std::ostream&, semantics::unit&, options_type const&);
 
       static context&
       current ()
