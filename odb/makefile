@@ -54,7 +54,10 @@ relational/mysql/schema.cxx
 # Relational/PostgreSQL
 #
 cxx_ptun +=                    \
-relational/pgsql/context.cxx
+relational/pgsql/common.cxx    \
+relational/pgsql/context.cxx   \
+relational/pgsql/header.cxx    \
+relational/pgsql/schema.cxx
 
 # Relational/SQLite
 #
