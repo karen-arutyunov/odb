@@ -185,8 +185,9 @@ namespace relational
         if (!first)
           os << "," << endl;
 
-        os << "  " << quote_id (name) << " " << column_type (m, prefix_);
+        os << "  " << quote_id (name);
 
+        type (m);
         constraints (m);
 
         if (semantics::class_* c = object_pointer (member_type (m, prefix_)))
@@ -196,6 +197,12 @@ namespace relational
         }
 
         return true;
+      }
+
+      virtual void
+      type (semantics::data_member& m)
+      {
+        os << " " << column_type (m, prefix_);
       }
 
       virtual void
