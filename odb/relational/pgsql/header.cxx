@@ -73,17 +73,8 @@ namespace relational
           // '-' and '.'.
           //
 
-          /*
-            @@ Disabled.
-            os << "char " << mi.var << "value[" <<
-            (t.range ? t.range_value : 10) + 3 << "];"
-          */
-
-          // @@ Why use unsigned long when length can only be 1002 bytes?
-          //
-
           os << image_type << " " << mi.var << "value;"
-             << "unsigned long " << mi.var << "size;"
+             << "std::size_t " << mi.var << "size;"
              << "bool " << mi.var << "null;"
              << endl;
         }
@@ -99,11 +90,8 @@ namespace relational
         virtual void
         traverse_string (member_info& mi)
         {
-          // @@ Why not use std::size_t instead of unsigned long?
-          //
-
           os << image_type << " " << mi.var << "value;"
-             << "unsigned long " << mi.var << "size;"
+             << "std::size_t " << mi.var << "size;"
              << "bool " << mi.var << "null;"
              << endl;
         }
@@ -111,16 +99,10 @@ namespace relational
         virtual void
         traverse_bit (member_info& mi)
         {
-          // @@ Range is unlimited. Problematic for stack allocated
-          // array?
-          //
-          // Why not use std::size_t instead of unsigned long?
-          //
-
           unsigned int n (mi.st->range / 8 + (mi.st->range % 8 ? 1 : 0));
 
           os << "unsigned char " << mi.var << "value[" << n << "];"
-             << "unsigned long " << mi.var << "size;"
+             << "std::size_t " << mi.var << "size;"
              << "bool " << mi.var << "null;"
              << endl;
         }
@@ -128,11 +110,8 @@ namespace relational
         virtual void
         traverse_varbit (member_info& mi)
         {
-          // @@ Why not use std::size_t instead of unsigned long?
-          //
-
           os << image_type << " " << mi.var << "value;"
-             << "unsigned long " << mi.var << "size;"
+             << "std::size_t " << mi.var << "size;"
              << "bool " << mi.var << "null;"
              << endl;
         }
