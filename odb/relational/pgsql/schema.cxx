@@ -20,7 +20,7 @@ namespace relational
       // Create.
       //
 
-      struct object_columns: relational::object_columns
+      struct object_columns: relational::object_columns, context
       {
         object_columns (base const& x): base (x) {}
 
@@ -29,23 +29,24 @@ namespace relational
         {
           if (m.count ("auto"))
           {
-            // @@ Is this even vaguely correct?
-            //
-
-            const sql_type& t (pgsql::context::current ().column_sql_type (m));
+            const sql_type& t (column_sql_type (m));
 
             if (t.type == sql_type::INTEGER)
-              os << " SERIAL";
+              os << "SERIAL";
             else if (t.type == sql_type::BIGINT)
-              os << " BIGSERIAL";
+              os << "BIGSERIAL";
             else
             {
               cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                   << ": error: auto increment columns must be either of "
-                   << "PostgreSQL type INTEGER or BIGINT" << endl;
+                   << ": error: automatically assigned object ID must map "
+                   << "to PostgreSQL INTEGER or BIGINT" << endl;
 
               throw generation_failed ();
             }
+          }
+          else
+          {
+            base::type (m);
           }
         }
       };
