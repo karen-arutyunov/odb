@@ -57,7 +57,8 @@ cxx_ptun +=                    \
 relational/pgsql/common.cxx    \
 relational/pgsql/context.cxx   \
 relational/pgsql/header.cxx    \
-relational/pgsql/schema.cxx
+relational/pgsql/schema.cxx    \
+relational/pgsql/source.cxx
 
 # Relational/SQLite
 #
