@@ -728,6 +728,16 @@ namespace relational
       }
 
       virtual void
+      object_public_extra_pre (type&)
+      {
+      }
+
+      virtual void
+      object_public_extra_post (type&)
+      {
+      }
+
+      virtual void
       traverse_object (type& c)
       {
         bool abst (abstract (c));
@@ -744,6 +754,8 @@ namespace relational
            << "class access::object_traits< " << type << " >"
            << "{"
            << "public:" << endl;
+
+        object_public_extra_pre (c);
 
         // object_type & pointer_type
         //
@@ -869,6 +881,7 @@ namespace relational
         //
         if (abst)
         {
+          object_public_extra_post (c);
           os << "};";
           return;
         }
@@ -973,6 +986,8 @@ namespace relational
              << "create_schema (database&);"
              << endl;
         }
+
+        object_public_extra_post (c);
 
         // Implementation details.
         //

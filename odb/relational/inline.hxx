@@ -30,6 +30,11 @@ namespace relational
       }
 
       virtual void
+      object_extra (type&)
+      {
+      }
+
+      virtual void
       traverse_object (type& c)
       {
         bool abst (abstract (c));
@@ -42,6 +47,8 @@ namespace relational
         os << "// " << c.name () << endl
            << "//" << endl
            << endl;
+
+        object_extra (c);
 
         if (id != 0)
         {
