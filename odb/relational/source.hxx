@@ -56,7 +56,9 @@ namespace relational
 
     // Query parameter generator. A new instance is created for each
     // query, so the customized version can have a counter to implement,
-    // for example, numbered parameters (e.g., $1, $2, etc).
+    // for example, numbered parameters (e.g., $1, $2, etc). The auto_id()
+    // function is called instead of next() for the automatically-assigned
+    // object id member when generating the persist statement.
     //
     struct query_parameters: virtual context
     {
@@ -64,6 +66,12 @@ namespace relational
       next ()
       {
         return "?";
+      }
+
+      virtual string
+      auto_id ()
+      {
+        return next ();
       }
     };
 
@@ -1753,6 +1761,36 @@ namespace relational
       string obj_prefix_;
     };
 
+    // Output a list of parameters for the persist statement.
+    //
+    struct persist_statement_params: object_members_base, virtual context
+    {
+      persist_statement_params (string& params)
+          : params_ (params), count_ (0)
+      {
+      }
+
+      virtual void
+      simple (semantics::data_member& m)
+      {
+        if (!inverse (m))
+        {
+          if (count_++ != 0)
+            params_ += ',';
+
+          if (m.count ("id") && m.count ("auto"))
+            params_ += qp->auto_id ();
+          else
+            params_ += qp->next ();
+        }
+      }
+
+    private:
+      string& params_;
+      size_t count_;
+      instance<query_parameters> qp;
+    };
+
     //
     //
     struct class_: traversal::class_, virtual context
@@ -2028,18 +2066,12 @@ namespace relational
             "=" << endl
              << strlit ("INSERT INTO " + table + " (") << endl;
 
-          instance<object_columns> t (false);
-          t->traverse (c);
+          instance<object_columns> ct (false);
+          ct->traverse (c);
 
           string values;
-          instance<query_parameters> qp;
-          for (size_t i (0), n (in_column_count (c)); i < n; ++i)
-          {
-            if (i != 0)
-              values += ',';
-
-            values += qp->next ();
-          }
+          instance<persist_statement_params> pt (values);
+          pt->traverse (c);
 
           os << strlit (") VALUES (" + values + ")") << ";"
              << endl;
