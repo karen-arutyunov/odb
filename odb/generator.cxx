@@ -112,10 +112,7 @@ create_context (ostream& os, semantics::unit& unit, options const& ops)
     }
   case database::pgsql:
     {
-      // @@ Activate once PostgreSQL context has been implemented.
-      //
-      // r.reset (new relational::pgsql::context (os, unit, ops));
-
+      r.reset (new relational::pgsql::context (os, unit, ops));
       break;
     }
   case database::sqlite:
