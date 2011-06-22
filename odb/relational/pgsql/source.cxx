@@ -435,7 +435,7 @@ namespace relational
                  << "bool is_null;";
             }
 
-            traits = "mysql::value_traits<\n    "
+            traits = "pgsql::value_traits<\n    "
               + type + ",\n    "
               + db_type_id + " >";
           }
@@ -644,7 +644,7 @@ namespace relational
               db_type_id = member_database_type_id_.database_type_id (mi.m);
             }
 
-            traits = "mysql::value_traits<\n    "
+            traits = "pgsql::value_traits<\n    "
               + type + ",\n    "
               + db_type_id + " >";
           }
