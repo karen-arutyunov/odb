@@ -56,12 +56,6 @@ namespace relational
           "pgsql::bind::double_",
         };
 
-        // @@ Complete once date-time format is known.
-        //
-        // const char* date_time_buffer_types[] =
-        // {
-        // };
-
         const char* char_bin_buffer_types[] =
         {
           "pgsql::bind::text",  // CHAR
@@ -69,7 +63,74 @@ namespace relational
           "pgsql::bind::text",  // TEXT
           "pgsql::bind::bytea", // BYTEA
         };
+
+        const char* oids[] =
+        {
+          "pgsql::bool_oid",      // BOOLEAN
+          "pgsql::int2_oid",      // SMALLINT
+          "pgsql::int4_oid",      // INTEGER
+          "pgsql::int8_oid",      // BIGINT
+          "pgsql::float4_oid",    // REAL
+          "pgsql::float8_oid",    // DOUBLE
+          "pgsql::numeric_oid",   // NUMERIC
+          "pgsql::date_oid",      // DATE
+          "pgsql::time_oid",      // TIME
+          "pgsql::timestamp_oid", // TIMESTAMP
+          "pgsql::text_oid",      // CHAR
+          "pgsql::text_oid",      // VARCHAR
+          "pgsql::text_oid",      // TEXT
+          "pgsql::bytea_oid",     // BYTEA
+          "pgsql::bit_oid",       // BIT
+          "pgsql::varbit_oid",    // VARBIT
+          "pgsql::uuid_oid"       // UUID
+        };
+
+        // @@ Complete once date-time format is known.
+        //
+
+        // const char* date_time_buffer_types[] =
+        // {
+        // };
       }
+
+      //
+      // statement oids
+      //
+
+      struct statement_oids: object_columns_base, context
+      {
+        statement_oids (ostringstream& os)
+            : column_oids (os)
+        {
+        }
+
+        virtual bool
+        column (semantics::data_member& m, std::string const&, bool first)
+        {
+          semantics::data_member* im (inverse (m));
+
+          if (im != 0)
+            return false;
+
+          const sql_type& t (column_sql_type (m));
+
+          if (!first)
+            column_oids << ',' << endl;
+
+          column_oids << oids[t.type - sql_type::BOOLEAN];
+
+          if (m.count ("id"))
+            id_oid = oids[t.type - sql_type::BOOLEAN];
+
+          return true;
+        }
+
+      public:
+        string id_oid;
+
+      private:
+        ostringstream& column_oids;
+      };
 
       //
       // bind
@@ -793,9 +854,63 @@ namespace relational
         {
           os << im << "value = 0;";
         }
+
+        virtual void
+        object_extra (type& t)
+        {
+          if (abstract (t))
+            return;
+
+          string const& type (t.fq_name ());
+          string traits ("access::object_traits< " + type + " >::");
+
+          //
+          // Statement names.
+          //
+
+          string fn (flat_name (type));
+          string name_decl ("const char* const " + traits);
+
+          os << name_decl << "persist_statement_name =" << endl
+             << strlit ( fn + "_persist" ) << ";"
+             << name_decl << "find_statement_name =" << endl
+             << strlit ( fn + "_find" ) << ";"
+             << name_decl << "update_statement_name =" << endl
+             << strlit ( fn + "_update" ) << ";"
+             << name_decl << "erase_statement_name =" << endl
+             << strlit ( fn + "_erase" ) << ";"
+             << endl;
+
+          //
+          // Statement types.
+          //
+
+          ostringstream ss;
+          instance<statement_oids> st (ss);
+          st->traverse (t);
+
+          string oid_decl ("const Oid " + traits);
+
+          os << oid_decl << endl
+             << "persist_statement_types[] ="
+             << "{" << ss.str () << "};"
+             << endl;
+
+          os << oid_decl << "find_statement_types[] ="
+             << "{" << st->id_oid << "};"
+             << endl;
+
+          os << oid_decl << "update_statement_types[] ="
+             << "{" << ss.str () << "," << endl
+             << st->id_oid << "};"
+             << endl;
+
+          os << oid_decl << "erase_statement_types[] ="
+             << "{" << st->id_oid << "};"
+             << endl;
+        }
       };
       entry<class_> class_entry_;
-
     }
   }
 }

@@ -16,6 +16,35 @@ namespace relational
     {
       namespace relational = relational::header;
 
+      struct class_: relational::class_
+      {
+        class_ (base const& x): base (x) {}
+
+        virtual void
+        object_public_extra_post (type& t)
+        {
+          if (!abstract (t))
+          {
+            // Statement names.
+            //
+            os << "static const char* const persist_statement_name;"
+               << "static const char* const find_statement_name;"
+               << "static const char* const update_statement_name;"
+               << "static const char* const erase_statement_name;"
+               << endl;
+
+            // Statement oids.
+            //
+            os << "static const Oid persist_statement_types[];"
+               << "static const Oid find_statement_types[];"
+               << "static const Oid update_statement_types[];"
+               << "static const Oid erase_statement_types[];"
+               << endl;
+          }
+        }
+      };
+      entry<class_> class_entry_;
+
       struct image_member: relational::image_member, member_base
       {
         image_member (base const& x)
