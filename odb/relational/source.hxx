@@ -62,6 +62,8 @@ namespace relational
     //
     struct query_parameters: virtual context
     {
+      typedef query_parameters base;
+
       virtual string
       next ()
       {
