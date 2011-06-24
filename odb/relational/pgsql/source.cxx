@@ -20,25 +20,38 @@ namespace relational
     {
       namespace relational = relational::source;
 
-      struct query_parameters: context
+      //
+      // query parameters
+      //
+
+      struct query_parameters: relational::query_parameters
       {
-        query_parameters ()
-            : i_ (0)
+        query_parameters (base const& x)
+            : base (x),
+              i_ (0)
         {
         }
 
         virtual string
         next ()
         {
-          ostringstream ss ("$");
-          ss << ++i_;
+          ostringstream ss;
+          ss << "$" << ++i_;
 
           return ss.str ();
+        }
+
+        virtual string
+        auto_id ()
+        {
+          ++i_;
+          return "DEFAULT";
         }
 
       private:
         size_t i_;
       };
+      entry<query_parameters> query_parameters_;
 
       namespace
       {
