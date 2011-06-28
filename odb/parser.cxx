@@ -559,6 +559,25 @@ emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
       }
     case FIELD_DECL:
       {
+        // We can have NULL name in case of anonymous struct or union
+        // extension, for example:
+        //
+        // union s
+        // {
+        //   struct
+        //   {
+        //     int a;
+        //     int b;
+        //   };
+        //   int c;
+        // };
+        //
+        // GCC appears to create a fake member for such a struct/union
+        // without any name. Ignore such members for now.
+        //
+        if (DECL_NAME (d) == 0)
+          break;
+
         tree t (TREE_TYPE (d));
         char const* name (IDENTIFIER_POINTER (DECL_NAME (d)));
 
