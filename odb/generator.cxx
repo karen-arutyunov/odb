@@ -232,13 +232,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
     // Include settings.
     //
-    bool br (ops.include_with_brackets ());
-    string ip (ops.include_prefix ());
     string gp (ops.guard_prefix ());
-
-    if (!ip.empty () && ip[ip.size () - 1] != '/')
-      ip.append ("/");
-
     if (!gp.empty () && gp[gp.size () - 1] != '_')
       gp.append ("_");
 
@@ -275,8 +269,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << "// End prologue." << endl
           << endl;
 
-      hxx << "#include " << (br ? '<' : '"') << ip << file <<
-        (br ? '>' : '"') << endl
+      hxx << "#include " << ctx->process_include_path (file.string ()) << endl
           << endl;
 
       include::generate ();
@@ -297,8 +290,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         }
       }
 
-      hxx << "#include " << (br ? '<' : '"') << ip << ixx_name <<
-        (br ? '>' : '"') << endl
+      hxx << "#include " << ctx->process_include_path (ixx_name) << endl
           << endl;
 
       // Copy epilogue.
@@ -375,8 +367,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << "// End prologue." << endl
           << endl;
 
-      cxx << "#include " << (br ? '<' : '"') << ip << hxx_name <<
-        (br ? '>' : '"') << endl
+      cxx << "#include " << ctx->process_include_path (hxx_name) << endl
           << endl;
 
       switch (ops.database ())
@@ -442,6 +433,12 @@ generate (options const& ops, semantics::unit& unit, path const& p)
   {
     // Code generation failed. Diagnostics has already been issued.
     //
+    throw failed ();
+  }
+  catch (const re::format& e)
+  {
+    cerr << "error: invalid regex: '" << e.regex () << "': " <<
+      e.description () << endl;
     throw failed ();
   }
   catch (semantics::invalid_path const& e)

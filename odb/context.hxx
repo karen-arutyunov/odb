@@ -9,11 +9,13 @@
 #include <map>
 #include <set>
 #include <stack>
+#include <vector>
 #include <string>
 #include <ostream>
 #include <cstddef> // std::size_t
 #include <iostream>
 
+#include <cutl/re.hxx>
 #include <cutl/shared-ptr.hxx>
 
 #include <odb/options.hxx>
@@ -23,6 +25,15 @@
 using std::endl;
 using std::cerr;
 
+// Regex.
+//
+using cutl::re::regex;
+using cutl::re::regexsub;
+
+typedef std::vector<regexsub> regex_mapping;
+
+//
+//
 class generation_failed {};
 
 // Keep this enum synchronized with the one in libodb/odb/pointer-traits.hxx.
@@ -51,6 +62,7 @@ class context
 public:
   typedef std::size_t size_t;
   typedef std::string string;
+  typedef std::vector<string> strings;
   typedef std::ostream ostream;
 
   typedef ::options options_type;
@@ -316,6 +328,19 @@ public:
   bool
   has_a (semantics::type&, unsigned short flags);
 
+public:
+  // Process include path by adding the prefix, putting it through
+  // the include regex list, and adding opening and closing include
+  // characters ("" or <>) if necessary. The prefix argument indicates
+  // whether the include prefix specified with the --include-prefix
+  // option should be added. The open argument can be used to specify
+  // the opening character. It can have three values: ", <, or \0. In
+  // case of \0, the character is determined based on the value of the
+  // --include-with-bracket option.
+  //
+  string
+  process_include_path (string const&, bool prefix = true, char open = '\0');
+
   // Diverge output.
   //
 public:
@@ -350,30 +375,8 @@ private:
       return c.get<X> (key);
   }
 
-protected:
-  struct data;
-  typedef cutl::shared_ptr<data> data_ptr;
-  data_ptr data_;
-
 public:
-  std::ostream& os;
-  semantics::unit& unit;
-  options_type const& options;
-  database const db;
-
   typedef std::set<string> keyword_set_type;
-  keyword_set_type const& keyword_set;
-
-  bool embedded_schema;
-
-  // Outermost object currently being traversed.
-  //
-  semantics::class_*& top_object;
-
-  // Object currently being traversed. It can be the same as top_object
-  // or it can a base of top_object.
-  //
-  semantics::class_*& object;
 
   struct db_type_type
   {
@@ -386,8 +389,54 @@ public:
     string type;
     string id_type;
   };
-
   typedef std::map<string, db_type_type> type_map_type;
+
+protected:
+  struct data
+  {
+    virtual
+    ~data () {}
+    data (std::ostream& os)
+        : os_ (os.rdbuf ()), top_object_ (0), object_ (0)
+    {
+    }
+
+  public:
+    std::ostream os_;
+    std::stack<std::streambuf*> os_stack_;
+
+    semantics::class_* top_object_;
+    semantics::class_* object_;
+
+    keyword_set_type keyword_set_;
+    type_map_type type_map_;
+
+    regex_mapping include_regex_;
+  };
+
+  typedef cutl::shared_ptr<data> data_ptr;
+  data_ptr data_;
+
+public:
+  std::ostream& os;
+  semantics::unit& unit;
+  options_type const& options;
+  database const db;
+
+  keyword_set_type const& keyword_set;
+
+  regex_mapping const& include_regex;
+
+  bool embedded_schema;
+
+  // Outermost object currently being traversed.
+  //
+  semantics::class_*& top_object;
+
+  // Object currently being traversed. It can be the same as top_object
+  // or it can a base of top_object.
+  //
+  semantics::class_*& object;
 
   // Per-database customizable functionality.
   //
@@ -419,27 +468,6 @@ protected:
                       semantics::names*,
                       semantics::context&,
                       column_type_flags);
-
-protected:
-  struct data
-  {
-    virtual
-    ~data () {}
-    data (std::ostream& os)
-        : os_ (os.rdbuf ()), top_object_ (0), object_ (0)
-    {
-    }
-
-  public:
-    std::ostream os_;
-    std::stack<std::streambuf*> os_stack_;
-
-    semantics::class_* top_object_;
-    semantics::class_* object_;
-
-    keyword_set_type keyword_set_;
-    type_map_type type_map_;
-  };
 
 public:
   typedef context root_context;

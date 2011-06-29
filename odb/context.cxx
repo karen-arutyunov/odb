@@ -111,6 +111,7 @@ context (ostream& os_,
       options (ops),
       db (options.database ()),
       keyword_set (data_->keyword_set_),
+      include_regex (data_->include_regex_),
       embedded_schema (ops.generate_schema () &&
                        ops.schema_format ().count (schema_format::embedded)),
       top_object (data_->top_object_),
@@ -121,6 +122,10 @@ context (ostream& os_,
 
   for (size_t i (0); i < sizeof (keywords) / sizeof (char*); ++i)
     data_->keyword_set_.insert (keywords[i]);
+
+  for (strings::const_iterator i (ops.include_regex ().begin ());
+       i != ops.include_regex ().end (); ++i)
+    data_->include_regex_.push_back (regexsub (*i));
 }
 
 context::
@@ -131,6 +136,7 @@ context ()
     options (current ().options),
     db (current ().db),
     keyword_set (current ().keyword_set),
+    include_regex (current ().include_regex),
     embedded_schema (current ().embedded_schema),
     top_object (current ().top_object),
     object (current ().object)
@@ -726,6 +732,58 @@ has_a (semantics::type& t, unsigned short flags)
   return impl.result ();
 }
 
+string context::
+process_include_path (string const& ip, bool prefix, char open)
+{
+  bool t (options.include_regex_trace ());
+  string p (prefix ? options.include_prefix () : string ());
+
+  if (!p.empty () && p[p.size () - 1] != '/')
+    p.append ("/");
+
+  string path (p + ip), r;
+
+  if (t)
+    cerr << "include: '" << path << "'" << endl;
+
+  bool found (false);
+
+  for (regex_mapping::const_iterator i (include_regex.begin ());
+       i != include_regex.end (); ++i)
+  {
+    if (t)
+      cerr << "try: '" << i->regex () << "' : ";
+
+    if (i->match (path))
+    {
+      r = i->replace (path);
+      found = true;
+
+      if (t)
+        cerr << "'" << r << "' : ";
+    }
+
+    if (t)
+      cerr << (found ? '+' : '-') << endl;
+
+    if (found)
+      break;
+  }
+
+  if (!found)
+    r = path;
+
+  // Add brackets or quotes unless the path already has them.
+  //
+  if (!r.empty () && r[0] != '"' && r[0] != '<')
+  {
+    bool b (open == '<' || (open == '\0' && options.include_with_brackets ()));
+    char op (b ? '<' : '"'), cl (b ? '>' : '"');
+    r = op + r + cl;
+  }
+
+  return r;
+}
 
 // namespace
 //

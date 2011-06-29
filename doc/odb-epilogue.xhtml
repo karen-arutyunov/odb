@@ -1,3 +1,31 @@
+  <h1>REGEX AND SHELL QUOTING</h1>
+
+  <p>When entering a regular expression argument in the shell
+     command line it is often necessary to use quoting (enclosing
+     the argument in <code><b>"&nbsp;"</b></code> or
+     <code><b>'&nbsp;'</b></code>) in order to prevent the shell
+     from interpreting certain characters, for example, spaces as
+     argument separators and <code><b>$</b></code> as variable
+     expansions.</p>
+
+  <p>Unfortunately it is hard to achieve this in a manner that is
+     portable across POSIX shells, such as those found on
+     GNU/Linux and UNIX, and Windows shell. For example, if you
+     use <code><b>"&nbsp;"</b></code> for quoting you will get a
+     wrong result with POSIX shells if your expression contains
+     <code><b>$</b></code>. The standard way of dealing with this
+     on POSIX systems is to use <code><b>'&nbsp;'</b></code> instead.
+     Unfortunately, Windows shell does not remove <code><b>'&nbsp;'</b></code>
+     from arguments when they are passed to applications. As a result you
+     may have to use <code><b>'&nbsp;'</b></code> for POSIX and
+     <code><b>"&nbsp;"</b></code> for Windows (<code><b>$</b></code> is
+     not treated as a special character on Windows).</p>
+
+  <p>Alternatively, you can save regular expression options into
+     a file, one option per line, and use this file with the
+     <code><b>--options-file</b></code> option. With this approach
+     you don't need to worry about shell quoting.</p>
+
   <h1>DIAGNOSTICS</h1>
 
   <p>If the input file is not valid C++, <code><b>odb</b></code>

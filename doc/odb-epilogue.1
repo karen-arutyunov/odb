@@ -1,4 +1,28 @@
 .\"
+.\" REGEX AND SHELL QUOTING
+.\"
+.SH REGEX AND SHELL QUOTING
+When entering a regular expression argument in the shell command line
+it is often necessary to use quoting (enclosing the argument in " "
+or ' ') in order to prevent the shell from interpreting certain
+characters, for example, spaces as argument separators and $ as
+variable expansions.
+
+Unfortunately it is hard to achieve this in a manner that is portable
+across POSIX shells, such as those found on GNU/Linux and UNIX, and
+Windows shell. For example, if you use " " for quoting you will get
+a wrong result with POSIX shells if your expression contains $. The
+standard way of dealing with this on POSIX systems is to use ' '
+instead. Unfortunately, Windows shell does not remove ' '  from
+arguments when they are passed to applications. As a result you may
+have to use ' ' for POSIX and " " for Windows ($ is not treated as
+a special character on Windows).
+
+Alternatively, you can save regular expression options into a file,
+one option per line, and use this file with the
+.B --options-file
+option. With this approach you don't need to worry about shell quoting.
+.\"
 .\" DIAGNOSTICS
 .\"
 .SH DIAGNOSTICS

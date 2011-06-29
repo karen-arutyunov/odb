@@ -343,6 +343,35 @@ class options
     "Add <prefix> to the generated \cb{#include} directive paths."
   };
 
+  std::vector<std::string> --include-regex
+  {
+    "<regex>",
+    "Add <regex> to the list of regular expressions used to transform
+     generated \cb{#include} directive paths. The argument to this option
+     is a Perl-like regular expression in the form
+     \c{\b{/}\i{pattern}\b{/}\i{replacement}\b{/}}. Any character can be
+     used as a delimiter instead of \cb{/} and the delimiter can be escaped
+     inside \ci{pattern} and \ci{replacement} with a backslash (\cb{\\}).
+     You can specify multiple regular expressions by repeating this option.
+     All the regular expressions are tried in the order specified and the
+     first expression that matches is used.
+
+     As an example, the following expression transforms include paths in
+     the form \cb{foo/bar-odb.h} to paths in the form
+     \cb{foo/generated/bar-odb.h}:
+
+     \cb{%foo/(.+)-odb.h%foo/generated/$1-odb.h%}
+
+     See also the REGEX AND SHELL QUOTING section below."
+  };
+
+  bool --include-regex-trace
+  {
+    "Trace the process of applying regular expressions specified with the
+     \cb{--include-regex} option. Use this option to find out why your
+     regular expressions don't do what you expected them to do."
+  };
+
   std::string --guard-prefix
   {
     "<prefix>",

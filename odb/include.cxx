@@ -606,9 +606,9 @@ namespace include
       f += ctx.options.odb_file_suffix ();
       f += ctx.options.hxx_suffix ();
 
-      ctx.os << "#include " <<
-        (inc->type_ == include_directive::quote ? '"' : '<') << f <<
-        (inc->type_ == include_directive::quote ? '"' : '>') << endl
+      char o (inc->type_ == include_directive::quote ? '"' : '<');
+      ctx.os << "#include " << ctx.process_include_path (
+        f.string (), false, o) << endl
              << endl;
     }
   }
