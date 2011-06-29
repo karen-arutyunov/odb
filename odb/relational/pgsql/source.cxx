@@ -112,37 +112,38 @@ namespace relational
 
       struct statement_oids: object_columns_base, context
       {
-        statement_oids (ostringstream& os)
-            : column_oids (os)
+        statement_oids (): first_ (true) {}
+
+        bool
+        container_column (semantics::data_member& m,
+                          std::string const& key_prefix,
+                          bool)
         {
-        }
-
-        virtual bool
-        column (semantics::data_member& m, std::string const&, bool first)
-        {
-          semantics::data_member* im (inverse (m));
-
-          if (im != 0)
-            return false;
-
-          const sql_type& t (column_sql_type (m));
-
-          if (!first)
-            column_oids << ',' << endl;
-
-          column_oids << oids[t.type - sql_type::BOOLEAN];
-
-          if (m.count ("id"))
-            id_oid = oids[t.type - sql_type::BOOLEAN];
-
+          write_oid_ (column_sql_type (m, key_prefix));
           return true;
         }
 
-      public:
-        string id_oid;
+        virtual bool
+        column (semantics::data_member& m, std::string const&, bool)
+        {
+          write_oid_ (column_sql_type (m));
+          return true;
+        }
 
       private:
-        ostringstream& column_oids;
+        void
+        write_oid_ (sql_type const& t)
+        {
+          if (!first_)
+            os << ',' << endl;
+
+          os << oids[t.type];
+
+          first_ = false;
+        }
+
+      private:
+        bool first_;
       };
 
       //
@@ -874,56 +875,246 @@ namespace relational
           if (abstract (t))
             return;
 
-          string const& type (t.fq_name ());
-          string traits ("access::object_traits< " + type + " >::");
-
-          //
-          // Statement names.
-          //
-
-          string fn (flat_name (type));
+          string const& tn (t.fq_name ());
+          string traits ("access::object_traits< " + tn + " >::");
+          string const& fn (flat_name (tn));
           string name_decl ("const char* const " + traits);
 
-          os << name_decl << "persist_statement_name =" << endl
-             << strlit ( fn + "_persist" ) << ";"
-             << name_decl << "find_statement_name =" << endl
-             << strlit ( fn + "_find" ) << ";"
-             << name_decl << "update_statement_name =" << endl
-             << strlit ( fn + "_update" ) << ";"
-             << name_decl << "erase_statement_name =" << endl
-             << strlit ( fn + "_erase" ) << ";"
+          os << name_decl << endl
+             << "persist_statement_name =" << strlit (fn + "_persist") << ";"
+             << endl
+             << name_decl << endl
+             << "find_statement_name =" << strlit (fn + "_find") << ";"
+             << endl
+             << name_decl << endl
+             << "update_statement_name =" << strlit (fn + "_update") << ";"
+             << endl
+             << name_decl << endl
+             << "erase_statement_name =" << strlit (fn + "_erase") << ";"
              << endl;
+
+          string oid_decl ("const Oid " + traits);
+
+          // persist_statement_types.
+          //
+          {
+            os << oid_decl << endl
+               << "persist_statement_types[] ={";
+
+            instance<statement_oids> st;
+            st->traverse (t);
+
+            os << "};";
+          }
+
+          // find_statement_types.
+          //
+          {
+            os << oid_decl << endl
+               << "find_statement_types[] ={";
+
+            instance<statement_oids> st;
+            st->column (*id_member (t), "", true);
+
+            os << "};";
+          }
+
+          // update_statement_types.
+          //
+          {
+            os << oid_decl << endl
+             << "update_statement_types[] ={";
+
+            instance<statement_oids> st;
+            st->traverse (t);
+            st->column (*id_member (t), "", false);
+
+            os << "};";
+          }
+
+          // erase_statement_types.
+          //
+          {
+            os << oid_decl << endl
+               << "erase_statement_types[] ={";
+
+            instance<statement_oids> st;
+            st->column (*id_member (t), "", true);
+
+            os << "};";
+          }
+        }
+      };
+      entry<class_> class_entry_;
+
+      //
+      // container traits
+      //
+
+      struct container_traits : relational::container_traits, context
+      {
+        container_traits (base const& x): base (x) {}
+
+        virtual void
+        container_extra (semantics::data_member& m)
+        {
+          if (!c_.count ("object") || abstract (c_))
+            return;
+
+          string scope (scope_ + "::" + prefix_ + public_name (m) + "_traits");
+
+          //
+          // Statment names.
+          //
+
+          string stmt_decl ("const char* const " + scope + "::");
+          string stmt_prefix (flat_name ( m.fq_name ()));
+
+          os << stmt_decl << endl
+             << "insert_one_name = "
+             << strlit (stmt_prefix + "_select_all") << ";" << endl
+             << stmt_decl << endl
+             << "select_all_name = "
+             << strlit (stmt_prefix + "_insert_one") << ";" << endl
+             << stmt_decl << endl
+             << "delete_all_name = "
+             << strlit (stmt_prefix + "_delete_all") << ";" << endl;
 
           //
           // Statement types.
           //
 
-          ostringstream ss;
-          instance<statement_oids> st (ss);
-          st->traverse (t);
+          string type_decl ("const Oid " + scope + "::");
 
-          string oid_decl ("const Oid " + traits);
+          semantics::data_member* inv_m (inverse (m, "value"));
+          bool inv (inv_m != 0);
 
-          os << oid_decl << endl
-             << "persist_statement_types[] ="
-             << "{" << ss.str () << "};"
-             << endl;
+          semantics::type& mt (m.type ());
+          semantics::type& vt (container_vt (mt));
+          semantics::type* kt (0), *it (0);
 
-          os << oid_decl << "find_statement_types[] ="
-             << "{" << st->id_oid << "};"
-             << endl;
+          container_kind_type ck (container_kind (mt));
+          bool ordered (false);
 
-          os << oid_decl << "update_statement_types[] ="
-             << "{" << ss.str () << "," << endl
-             << st->id_oid << "};"
-             << endl;
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              if (!unordered (m))
+              {
+                it = &container_it (mt);
+                ordered = true;
+              }
 
-          os << oid_decl << "erase_statement_types[] ="
-             << "{" << st->id_oid << "};"
-             << endl;
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              kt = &container_kt (mt);
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              break;
+            }
+          }
+
+          //
+          // select_all statement types.
+          //
+          {
+            instance<statement_oids> st;
+            os << type_decl << endl
+               << "select_all_types[] ={";
+
+            if (inv)
+            {
+              semantics::class_* c (object_pointer (vt));
+
+              // many(i)-to-many
+              //
+              if (context::container (inv_m->type ()))
+                st->container_column (*inv_m, "id", true);
+              // many(i)-to-one
+              //
+              else
+                st->column (*id_member (*c), "", true);
+            }
+            else
+            {
+              st->container_column (m, "id", true);
+            }
+
+            os << "};";
+          }
+
+          //
+          // insert_one statement types.
+          //
+          {
+            instance<statement_oids> st;
+            os << type_decl << endl
+               << "insert_one_types[] ={";
+
+            if (!inv)
+            {
+              st->container_column (m, "id", true);
+
+              switch (ck)
+              {
+              case ck_ordered:
+                {
+                  if (ordered)
+                    st->container_column (m, "index", false);
+
+                  break;
+                }
+              case ck_map:
+              case ck_multimap:
+                {
+                  if (semantics::class_* ktc = comp_value (*kt))
+                    st->traverse_composite (m, *ktc, "key", "key");
+                  else
+                    st->container_column (m, "key", false);
+
+                  break;
+                }
+              case ck_set:
+              case ck_multiset:
+                {
+                  break;
+                }
+              }
+
+              if (semantics::class_* vtc = comp_value (vt))
+                st->traverse_composite (m, *vtc, "value", "value");
+              else
+                st->container_column (m, "value", false);
+            }
+
+            os << "};";
+          }
+
+          //
+          // delete_all statement types.
+          //
+          {
+            os << type_decl << endl
+               << "delete_all_types[] ={";
+
+            if (!inv)
+            {
+              instance<statement_oids> st;
+              st->container_column (m, "id", true);
+            }
+
+            os << "};";
+          }
         }
       };
-      entry<class_> class_entry_;
+      entry<container_traits> container_traits_;
     }
   }
 }

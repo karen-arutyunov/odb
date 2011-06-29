@@ -23,27 +23,54 @@ namespace relational
         virtual void
         object_public_extra_post (type& t)
         {
-          if (!abstract (t))
-          {
-            // Statement names.
-            //
-            os << "static const char* const persist_statement_name;"
-               << "static const char* const find_statement_name;"
-               << "static const char* const update_statement_name;"
-               << "static const char* const erase_statement_name;"
-               << endl;
+          if (abstract (t))
+            return;
 
-            // Statement oids.
-            //
-            os << "static const Oid persist_statement_types[];"
-               << "static const Oid find_statement_types[];"
-               << "static const Oid update_statement_types[];"
-               << "static const Oid erase_statement_types[];"
-               << endl;
-          }
+          // Statement names.
+          //
+          os << "static const char* const persist_statement_name;"
+             << "static const char* const find_statement_name;"
+             << "static const char* const update_statement_name;"
+             << "static const char* const erase_statement_name;"
+             << endl;
+
+          // Statement types.
+          //
+          os << "static const Oid persist_statement_types[];"
+             << "static const Oid find_statement_types[];"
+             << "static const Oid update_statement_types[];"
+             << "static const Oid erase_statement_types[];"
+             << endl;
         }
       };
       entry<class_> class_entry_;
+
+      struct container_traits: relational::container_traits, context
+      {
+        container_traits (base const& x): base (x) {}
+
+        virtual void
+        container_public_extra_pre (semantics::data_member&)
+        {
+          if (abstract (c_))
+            return;
+
+          // Container statement names.
+          //
+          os << "static const char* const select_all_name;"
+             << "static const char* const insert_one_name;"
+             << "static const char* const delete_all_name;"
+             << endl;
+
+          // Container statement types.
+          //
+          os << "static const Oid select_all_types[];"
+             << "static const Oid insert_one_types[];"
+             << "static const Oid delete_all_types[];"
+             << endl;
+        }
+      };
+      entry<container_traits> container_traits_;
 
       struct image_member: relational::image_member, member_base
       {
