@@ -202,6 +202,16 @@ namespace relational
       }
 
       virtual void
+      container_public_extra_pre (semantics::data_member&)
+      {
+      }
+
+      virtual void
+      container_public_extra_post (semantics::data_member&)
+      {
+      }
+
+      virtual void
       container (semantics::data_member& m)
       {
         using semantics::type;
@@ -343,6 +353,8 @@ namespace relational
 
         os << "{";
 
+        container_public_extra_pre (m);
+
         if (!abst)
         {
           // column_count
@@ -363,7 +375,9 @@ namespace relational
 
         if (base)
         {
+          container_public_extra_post (m);
           os << "};";
+
           return;
         }
 
@@ -693,10 +707,12 @@ namespace relational
              << "erase (const " << db << "::binding& id, statements_type&);"
              << endl;
 
+        container_public_extra_post (m);
+
         os << "};";
       }
 
-    private:
+    protected:
       semantics::class_& c_;
     };
 

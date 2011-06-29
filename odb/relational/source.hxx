@@ -622,6 +622,11 @@ namespace relational
       }
 
       virtual void
+      container_extra (semantics::data_member&)
+      {
+      }
+
+      virtual void
       container (semantics::data_member& m)
       {
         using semantics::type;
@@ -692,6 +697,8 @@ namespace relational
         os << "// " << m.name () << endl
            << "//" << endl
            << endl;
+
+        container_extra (m);
 
         //
         // Statements.
