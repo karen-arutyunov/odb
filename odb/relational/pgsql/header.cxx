@@ -36,10 +36,10 @@ namespace relational
 
           // Statement types.
           //
-          os << "static const Oid persist_statement_types[];"
-             << "static const Oid find_statement_types[];"
-             << "static const Oid update_statement_types[];"
-             << "static const Oid erase_statement_types[];"
+          os << "static const unsigned int persist_statement_types[];"
+             << "static const unsigned int find_statement_types[];"
+             << "static const unsigned int update_statement_types[];"
+             << "static const unsigned int erase_statement_types[];"
              << endl;
         }
       };
@@ -52,7 +52,7 @@ namespace relational
         virtual void
         container_public_extra_pre (semantics::data_member&)
         {
-          if (abstract (c_))
+          if (!c_.count ("object") || abstract (c_))
             return;
 
           // Container statement names.
@@ -64,9 +64,9 @@ namespace relational
 
           // Container statement types.
           //
-          os << "static const Oid select_all_types[];"
-             << "static const Oid insert_one_types[];"
-             << "static const Oid delete_all_types[];"
+          os << "static const unsigned int select_all_types[];"
+             << "static const unsigned int insert_one_types[];"
+             << "static const unsigned int delete_all_types[];"
              << endl;
         }
       };
