@@ -635,6 +635,14 @@ namespace relational
                   {
                     // We have the second range value. Skip it.
                     //
+                    // In FLOAT the two-value range means something
+                    // completely different than the single-value.
+                    // Pretend we don't have the range in the former
+                    // case.
+                    //
+                    if (flt)
+                      r.range = false;
+
                     l.next ();
                     t = l.next ();
                   }
