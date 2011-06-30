@@ -118,10 +118,10 @@ namespace odb
         const bind& b (p[i]);
         int j (static_cast<int> (i));
 
-        if (truncated && !*b.truncated)
+        if (truncated && (b.truncated == 0 || !*b.truncated))
           continue;
 
-        if (b.truncated)
+        if (b.truncated != 0)
           *b.truncated = false;
 
         // Check for NULL unless we are reloading a truncated result.
@@ -155,7 +155,7 @@ namespace odb
 
             if (*b.size > b.capacity)
             {
-              if (b.truncated)
+              if (b.truncated != 0)
                 *b.truncated = true;
 
               r = false;
