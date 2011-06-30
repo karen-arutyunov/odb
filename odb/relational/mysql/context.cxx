@@ -347,6 +347,7 @@ namespace relational
 
         state s (parse_prefix);
         string prefix;
+        bool flt (false);
 
         for (sql_token t (l.next ());
              s != parse_done && t.type () != sql_token::t_eos;
@@ -423,7 +424,14 @@ namespace relational
                   r.type = sql_type::BIGINT;
                   r.unsign = true;
                 }
-                else if (id == "FLOAT" || id == "FLOAT4")
+                else if (id == "FLOAT")
+                {
+                  // Assign a type only once we know the precision of the
+                  // float; it can be either 4 or 8 byte.
+                  //
+                  flt = true;
+                }
+                else if (id == "FLOAT4")
                 {
                   r.type = sql_type::FLOAT;
                 }
@@ -681,6 +689,13 @@ namespace relational
           {
             r.type = sql_type::MEDIUMTEXT;
           }
+        }
+
+        if (flt)
+        {
+          r.type = !r.range || r.range_value < 24
+            ? sql_type::FLOAT
+            : sql_type::DOUBLE;
         }
 
         if (r.type == sql_type::invalid)
