@@ -1873,6 +1873,21 @@ namespace relational
       }
 
       virtual void
+      query_statement_ctor (type&)
+      {
+        os << "select_statement (" << endl
+           << "sts.connection ()," << endl
+           << "query_clause + q.clause ()," << endl
+           << "q.parameters_binding ()," << endl
+           << "imb)";
+      }
+
+      virtual void
+      post_query_ (type&)
+      {
+      }
+
+      virtual void
       traverse_object (type& c)
       {
         bool abst (abstract (c));
@@ -2535,13 +2550,16 @@ namespace relational
              << "sts.out_image_version (im.version);"
              << "imb.version++;"
              << "}"
-             << "st.reset (new (odb::details::shared) select_statement(" << endl
-             << "sts.connection ()," << endl
-             << "query_clause + q.clause ()," << endl
-             << "q.parameters_binding ()," << endl
-             << "imb));"
-             << "st->execute ();"
-             << "}";
+             << "st.reset (new (odb::details::shared) ";
+
+          query_statement_ctor (c);
+
+          os << ");" << endl
+             << "st->execute ();";
+
+          post_query_ (c);
+
+          os << "}";
         }
 
         // create_schema ()
