@@ -5524,11 +5524,11 @@ t.commit ();
      a pre-allocated instance, the object is only cached if its object
      pointer is a raw pointer.</p>
 
-  <p>Finally, the session caches both constant and non-constant objects,
+  <p>Finally, the session caches both constant and unrestricted objects,
      depending on whether a constant reference or constant pointer was
      passed to the <code>database::persist()</code> function (in contrast,
-     when loaded, objects are always created and cached as non-constant).
-     If we try to load an object as non-constant that was previously
+     when loaded, objects are always created and cached as unrestricted).
+     If we try to load an object as unrestricted that was previously
      persisted and cached as constant, the <code>odb::const_object</code>
      exception is thrown. The following transaction shows the
      situation where this would happen:</p>
