@@ -2484,12 +2484,12 @@ namespace relational
              << endl
              << "object_statements< object_type >& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
-             << "details::shared_ptr<select_statement> st;"
+             << "odb::details::shared_ptr<select_statement> st;"
              << endl
              << "query_ (db, q, sts, st);"
              << endl
-             << "details::shared_ptr<odb::result_impl<object_type> > r (" << endl
-             << "new (details::shared) " << db <<
+             << "odb::details::shared_ptr<odb::result_impl<object_type> > r (" << endl
+             << "new (odb::details::shared) " << db <<
             "::result_impl<object_type> (q, st, sts));"
              << "return result<object_type> (r);"
              << "}";
@@ -2508,12 +2508,12 @@ namespace relational
              << endl
              << "object_statements< object_type >& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
-             << "details::shared_ptr<select_statement> st;"
+             << "odb::details::shared_ptr<select_statement> st;"
              << endl
              << "query_ (db, q, sts, st);"
              << endl
-             << "details::shared_ptr<odb::result_impl<const object_type> > r (" << endl
-             << "new (details::shared) " << db <<
+             << "odb::details::shared_ptr<odb::result_impl<const object_type> > r (" << endl
+             << "new (odb::details::shared) " << db <<
             "::result_impl<const object_type> (q, st, sts));"
              << "return result<const object_type> (r);"
              << "}";
@@ -2522,7 +2522,7 @@ namespace relational
              << "query_ (database&," << endl
              << "const query_type& q," << endl
              << db << "::object_statements< object_type >& sts," << endl
-             << "details::shared_ptr<" << db << "::select_statement>& st)"
+             << "odb::details::shared_ptr<" << db << "::select_statement>& st)"
              << "{"
              << "using namespace " << db << ";"
              << endl
@@ -2535,7 +2535,7 @@ namespace relational
              << "sts.out_image_version (im.version);"
              << "imb.version++;"
              << "}"
-             << "st.reset (new (details::shared) select_statement (" << endl
+             << "st.reset (new (odb::details::shared) select_statement(" << endl
              << "sts.connection ()," << endl
              << "query_clause + q.clause ()," << endl
              << "q.parameters_binding ()," << endl
