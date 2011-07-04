@@ -863,6 +863,8 @@ namespace relational
              << "erase_statement_name = " << strlit (fn + "_erase") << ";"
              << endl;
 
+          // Statement types.
+          //
           string oid_decl ("const unsigned int " + traits);
           semantics::data_member* id_m (id_member (t));
 
@@ -918,6 +920,12 @@ namespace relational
 
             os << "};";
           }
+
+          // Query statement name.
+          //
+          os << name_decl << endl
+             << "query_statement_name = " << strlit (fn + "_query") << ";"
+             << endl;
         }
       };
       entry<class_> class_entry_;

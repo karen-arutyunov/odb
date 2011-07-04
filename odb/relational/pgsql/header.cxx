@@ -41,6 +41,11 @@ namespace relational
              << "static const unsigned int update_statement_types[];"
              << "static const unsigned int erase_statement_types[];"
              << endl;
+
+          // Query statement name.
+          //
+          os << "static const char* const query_statement_name;"
+             << endl;
         }
       };
       entry<class_> class_entry_;
