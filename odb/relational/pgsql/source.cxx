@@ -927,6 +927,29 @@ namespace relational
              << "query_statement_name = " << strlit (fn + "_query") << ";"
              << endl;
         }
+
+        virtual void
+        query_statement_ctor (type& c)
+        {
+          string const& type (c.fq_name ());
+          string traits ("access::object_traits< " + type + " >");
+
+          os << "select_statement (" << endl
+             << "sts.connection ()," << endl
+             << "query_statement_name," << endl
+             << "query_clause + q.clause ()," << endl
+             << "q.parameter_types ()," << endl
+             << "q.parameter_count ()," << endl
+             << "q.parameters_binding ()," << endl
+             << "q.native_parameters_binding ()," << endl
+             << "imb)";
+        }
+
+        virtual void
+        post_query_ (type&)
+        {
+          os << "st->deallocate ();";
+        }
       };
       entry<class_> class_entry_;
 
