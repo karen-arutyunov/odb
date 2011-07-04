@@ -88,6 +88,16 @@ namespace tracer
         os << "static bool" << endl
            << "find (database&, const id_type&, object_type&);";
 
+        // callback ()
+        //
+        os << "static void" << endl
+           << "callback (database&, object_type&, callback_event);"
+           <<  endl;
+
+        os << "static void" << endl
+           << "callback (database&, const object_type&, callback_event);"
+           <<  endl;
+
         os << "};";
       }
     };

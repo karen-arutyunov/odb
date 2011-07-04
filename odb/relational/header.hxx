@@ -940,6 +940,16 @@ namespace relational
         // Functions (concrete).
         //
 
+        // callback ()
+        //
+        os << "static void" << endl
+           << "callback (database&, object_type&, callback_event);"
+           <<  endl;
+
+        os << "static void" << endl
+           << "callback (database&, const object_type&, callback_event);"
+           <<  endl;
+
         // persist ()
         //
         os << "static void" << endl
@@ -1090,6 +1100,7 @@ namespace relational
       generate ()
       {
         os << "#include <odb/details/buffer.hxx>" << endl
+           << "#include <odb/details/unused.hxx>" << endl
            << endl;
 
         os << "#include <odb/" << db << "/version.hxx>" << endl

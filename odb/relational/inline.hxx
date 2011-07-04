@@ -13,6 +13,67 @@ namespace relational
 {
   namespace inline_
   {
+    //
+    //
+    struct callback_calls: traversal::class_, virtual context
+    {
+      typedef callback_calls base;
+
+      callback_calls ()
+      {
+        *this >> inherits_ >> *this;
+      }
+
+      callback_calls (callback_calls const&)
+          : root_context (), //@@ -Wextra
+            context ()
+      {
+        *this >> inherits_ >> *this;
+      }
+
+      virtual void
+      traverse (type& c, bool constant)
+      {
+        const_ = constant;
+        traverse (c);
+      }
+
+      virtual void
+      traverse (type& c)
+      {
+        // Ignore transient bases.
+        //
+        if (!c.count ("object"))
+          return;
+
+        if (c.count ("callback"))
+        {
+          string name (c.get<string> ("callback"));
+
+          // In case of the const object, we only generate the call if
+          // there is a const callback.
+          //
+          if (const_)
+          {
+            if (c.count ("callback-const"))
+              os << "static_cast< const " << c.fq_name () << "& > (obj)." <<
+                name << " (e, db);";
+          }
+          else
+            os << "static_cast< " << c.fq_name () << "& > (obj)." <<
+              name << " (e, db);";
+        }
+        else
+          inherits (c);
+      }
+
+    protected:
+      bool const_;
+      traversal::inherits inherits_;
+    };
+
+    //
+    //
     struct class_: traversal::class_, virtual context
     {
       typedef class_ base;
@@ -113,6 +174,32 @@ namespace relational
         if (abst)
           return;
 
+        // callback ()
+        //
+        os << "inline" << endl
+           << "void " << traits << "::" << endl
+           << "callback (database& db, object_type& obj, callback_event e)"
+           <<  endl
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (db);"
+           << "ODB_POTENTIALLY_UNUSED (obj);"
+           << "ODB_POTENTIALLY_UNUSED (e);"
+           << endl;
+        callback_calls_->traverse (c, false);
+        os << "}";
+
+        os << "inline" << endl
+           << "void " << traits << "::" << endl
+           << "callback (database& db, const object_type& obj, " <<
+          "callback_event e)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (db);"
+           << "ODB_POTENTIALLY_UNUSED (obj);"
+           << "ODB_POTENTIALLY_UNUSED (e);"
+           << endl;
+        callback_calls_->traverse (c, true);
+        os << "}";
+
         // query_type
         //
         if (options.generate_query ())
@@ -164,6 +251,9 @@ namespace relational
 
         */
       }
+
+    private:
+      instance<callback_calls> callback_calls_;
     };
   }
 }

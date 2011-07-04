@@ -2331,9 +2331,11 @@ namespace relational
              << endl
              << "if (l.locked ())"
              << "{"
+             << "callback (db, obj, callback_event::pre_load);"
              << "init (obj, sts.image (), db);"
              << "load_ (sts, obj);"
              << "sts.load_delayed ();"
+             << "callback (db, obj, callback_event::post_load);"
              << "l.unlock ();"
              << "}"
              << "else" << endl
@@ -2367,9 +2369,11 @@ namespace relational
            << endl
            << "if (l.locked ())"
            << "{"
+           << "callback (db, obj, callback_event::pre_load);"
            << "init (obj, sts.image (), db);"
            << "load_ (sts, obj);"
            << "sts.load_delayed ();"
+           << "callback (db, obj, callback_event::post_load);"
            << "l.unlock ();"
            << "}"
            << "else" << endl
@@ -2688,8 +2692,6 @@ namespace relational
 
         if (embedded_schema)
           os << "#include <odb/schema-catalog-impl.hxx>" << endl;
-
-        os << "#include <odb/details/unused.hxx>" << endl;
 
         if (options.generate_query ())
           os << "#include <odb/details/shared-ptr.hxx>" << endl;

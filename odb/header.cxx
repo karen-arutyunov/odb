@@ -88,6 +88,7 @@ namespace header
 
     os << "#include <odb/core.hxx>" << endl
        << "#include <odb/traits.hxx>" << endl
+       << "#include <odb/callback.hxx>" << endl
        << "#include <odb/pointer-traits.hxx>" << endl;
 
     // In case of a boost TR1 implementation, we cannot distinguish

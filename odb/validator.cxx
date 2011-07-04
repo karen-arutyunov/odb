@@ -3,6 +3,8 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <odb/gcc.hxx>
+
 #include <iostream>
 
 #include <odb/traversal.hxx>
@@ -138,6 +140,47 @@ namespace
     virtual void
     traverse_object (type& c)
     {
+      // Check that the callback function exist.
+      //
+      if (c.count ("callback"))
+      {
+        string name (c.get<string> ("callback"));
+        tree decl (
+          lookup_qualified_name (
+            c.tree_node (), get_identifier (name.c_str ()), false, false));
+
+        if (decl == error_mark_node || TREE_CODE (decl) != BASELINK)
+        {
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ": "
+               << "error: unable to resolve member function '" << name << "' "
+               << "specified with '#pragma db callback' for class '"
+               << c.name () << "'" << endl;
+
+          valid_ = false;
+        }
+
+        // Figure out if we have a const version of the callback. OVL_*
+        // macros work for both FUNCTION_DECL and OVERLOAD.
+        //
+        for (tree o (BASELINK_FUNCTIONS (decl)); o != 0; o = OVL_NEXT (o))
+        {
+          tree f (OVL_CURRENT (o));
+          if (DECL_CONST_MEMFUNC_P (f))
+          {
+            c.set ("callback-const", true);
+            break;
+          }
+        }
+
+        //@@ Would be nice to check the signature of the function(s)
+        //   instead of postponing it until the C++ compilation. Though
+        //   we may still get C++ compilation errors because of const
+        //   mismatch.
+        //
+      }
+
+      // Check bases.
+      //
       bool base (false);
 
       for (type::inherits_iterator i (c.inherits_begin ());

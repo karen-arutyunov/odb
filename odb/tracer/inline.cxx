@@ -42,6 +42,20 @@ namespace tracer
            << "{"
            << "return obj." << id.name () << ";" << endl
            << "}";
+
+        // callback ()
+        //
+        os << "inline" << endl
+           << "void " << traits << "::" << endl
+           << "callback (database&, object_type&, callback_event)"
+           << "{"
+           << "}";
+
+        os << "inline" << endl
+           << "void " << traits << "::" << endl
+           << "callback (database&, const object_type&, callback_event)"
+           << "{"
+           << "}";
       }
     };
   }

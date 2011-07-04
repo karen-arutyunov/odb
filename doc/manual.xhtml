@@ -414,6 +414,7 @@ for consistency.
                 <tr><th>10.1.1</th><td><a href="#10.1.1"><code>table</code></a></td></tr>
 		<tr><th>10.1.2</th><td><a href="#10.1.2"><code>pointer</code></a></td></tr>
 		<tr><th>10.1.3</th><td><a href="#10.1.3"><code>abstract</code></a></td></tr>
+		<tr><th>10.1.4</th><td><a href="#10.1.4"><code>callback</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -5749,8 +5750,13 @@ class person
       <td><a href="#10.1.3">10.1.3</a></td>
     </tr>
 
-  </table>
+    <tr>
+      <td><code>callback</code></td>
+      <td>database operations callback</td>
+      <td><a href="#10.1.4">10.1.4</a></td>
+    </tr>
 
+  </table>
 
   <h3><a name="10.1.1">10.1.1 <code>table</code></a></h3>
 
@@ -5850,6 +5856,124 @@ class contractor: public person
      treated as abstract by the ODB compiler. For a more detailed
      discussion of persistent class inheritance, refer to
      <a href="#8">Chapter 8, "Inheritance"</a>.</p>
+
+  <h3><a name="10.1.4">10.1.4 <code>callback</code></a></h3>
+
+  <p>The <code>callback</code> specifier specifies the persist class
+     member function that should be called before and after a
+     database operation is performed on an object of this class.
+     For example:</p>
+
+  <pre class="c++">
+#include &lt;odb/callback.hxx>
+
+#pragma db object callback(init)
+class person
+{
+  ...
+
+  void
+  init (odb::callback_event, odb::database&amp;);
+};
+ </pre>
+
+  <p>The callback function has the following signature and can be
+     overloaded for constant objects:</p>
+
+  <pre class="c++">
+void
+name (odb::callback_event, odb::database&amp;);
+
+void
+name (odb::callback_event, odb::database&amp;) const;
+  </pre>
+
+  <p>The first argument to the callback function is the event that
+     triggered this call. The <code>odb::callback_event</code>
+     enum-like type is defined in the <code>&lt;odb/callback.hxx></code>
+     header file and has the following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  struct callback_event
+  {
+    enum value
+    {
+      pre_persist,
+      post_persist,
+      pre_load,
+      post_load,
+      pre_update,
+      post_update,
+      pre_erase,
+      post_erase
+    };
+
+    callback_event (value v);
+    operator value () const;
+  };
+}
+  </pre>
+
+  <p>The second argument to the callback function is the database
+     on which the operation is about to be performed or has just
+     been performed.</p>
+
+  <p>If only the non-<code>const</code> version of the callback function
+     is provided, then only database operations that are performed on
+     unrestricted objects will trigger callback calls. If only the
+     <code>const</code> version is provided, then the database
+     operations on both constant and unrestricted objects will trigger
+     callback calls but the object will always be passed as constant.
+     Finally, if both versions are provided, then the <code>const</code>
+     overload will be called for constant objects and the non-<code>const</code>
+     overload for unrestricted objects. These rules are modeled after
+     the standard C++ overload resolution rules. A callback function can
+     be inline or virtual.</p>
+
+  <p>A database operations callback can be used to implement object-specific
+     pre and post initializations, registrations, and cleanups. As an example,
+     the following code fragment outlines an implementation of a
+     <code>person</code> class that maintains the transient <code>age</code>
+     data member in addition to the persistent date of birth. A callback
+     is used to calculate the value of the former from the latter every
+     time a <code>person</code> object is loaded from the database.</p>
+
+  <pre class="c++">
+#include &lt;odb/core.hxx>
+#include &lt;odb/callback.hxx>
+
+#pragma db object callback(init)
+class person
+{
+  ...
+
+private:
+  friend class odb::access;
+
+  date born_;
+
+  #pragma db transient
+  unsigned short age_;
+
+  void
+  init (odb::callback_event e, odb::database&amp;)
+  {
+    switch (e)
+    {
+    case odb::callback_event::post_load:
+    {
+      // Calculate age from the date of birth.
+      ...
+      break;
+    }
+    default:
+      break;
+    }
+  }
+};
+ </pre>
 
   <h2><a name="10.2">10.2 Value Type Pragmas</a></h2>
 
