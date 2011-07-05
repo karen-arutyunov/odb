@@ -971,7 +971,11 @@ namespace relational
           // Statment names.
           //
           string stmt_decl ("const char* const " + scope + "::");
-          string stmt_prefix (flat_name (m.fq_name ()));
+
+          // Prefix top-object name to avoid conflicts with inherited
+          // member statement names.
+          //
+          string stmt_prefix (top_object->fq_name () +  m.fq_name ());
 
           os << stmt_decl << endl
              << "insert_one_name = " <<
