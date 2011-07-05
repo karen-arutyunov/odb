@@ -88,10 +88,7 @@ namespace relational
       database_type_impl (semantics::type& t,
                           semantics::names* hint,
                           semantics::context& ctx,
-                          column_type_flags f)
-      {
-        return base_context::database_type_impl (t, hint, ctx, f);
-      }
+                          column_type_flags f);
 
     public:
       virtual

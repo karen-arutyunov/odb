@@ -210,6 +210,30 @@ namespace relational
       return r;
     }
 
+    string context::
+    database_type_impl (semantics::type& t,
+                        semantics::names* hint,
+                        semantics::context& ctx,
+                        column_type_flags f)
+    {
+      string r (base_context::database_type_impl (t, hint, ctx, f));
+
+      if (!r.empty ())
+        return r;
+
+      using semantics::enum_;
+
+      if (t.is_a<semantics::enum_> ())
+      {
+        r = "INTEGER";
+
+        if ((f & ctf_default_null) == 0)
+          r += " NOT NULL";
+      }
+
+      return r;
+    }
+
     //
     // SQL type parsing.
     //
