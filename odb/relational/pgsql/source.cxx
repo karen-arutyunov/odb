@@ -944,7 +944,6 @@ namespace relational
              << "q.parameter_types ()," << endl
              << "q.parameter_count ()," << endl
              << "q.parameters_binding ()," << endl
-             << "q.native_parameters_binding ()," << endl
              << "imb)";
         }
 
