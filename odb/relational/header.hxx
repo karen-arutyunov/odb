@@ -1008,8 +1008,8 @@ namespace relational
         //
         if (embedded_schema)
         {
-          os << "static void" << endl
-             << "create_schema (database&);"
+          os << "static bool" << endl
+             << "create_schema (database&, unsigned short pass);"
              << endl;
         }
 

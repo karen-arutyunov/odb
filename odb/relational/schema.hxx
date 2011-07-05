@@ -243,8 +243,14 @@ namespace relational
     {
       typedef member_create base;
 
-      member_create (emitter& e, ostream& os, tables& t)
-          : object_members_base (false, true), common (e, os), tables_ (t)
+      member_create (emitter& e,
+                     ostream& os,
+                     tables& t,
+                     unsigned short const& pass)
+          : object_members_base (false, true),
+            common (e, os),
+            tables_ (t),
+            pass_ (pass)
       {
       }
 
@@ -352,27 +358,40 @@ namespace relational
 
     protected:
       tables& tables_;
+      unsigned short const& pass_;
     };
 
     struct class_create: traversal::class_, common, virtual create_common
     {
       typedef class_create base;
 
-      class_create (emitter& e)
-          : common (e, os_), os_ (e), member_create_ (e, os_, tables_)
+      class_create (emitter& e, unsigned short const& pass)
+          : common (e, os_),
+            os_ (e),
+            pass_ (pass),
+            member_create_ (e, os_, tables_, pass_)
       {
       }
 
       class_create (class_create const& x)
           : root_context (), //@@ -Wextra
             context (),
-            common (x.e_, os_), os_ (x.e_), member_create_ (x.e_, os_, tables_)
+            common (x.e_, os_),
+            os_ (x.e_),
+            pass_ (x.pass_),
+            member_create_ (x.e_, os_, tables_, pass_)
       {
       }
 
       virtual void
       traverse (type& c)
       {
+        // By default we do everything in a single pass. But some
+        // databases may require the second pass.
+        //
+        if (pass_ > 1)
+          return;
+
         if (c.file () != unit.file ())
           return;
 
@@ -408,6 +427,7 @@ namespace relational
     protected:
       tables tables_;
       emitter_ostream os_;
+      unsigned short const& pass_;
       instance<member_create> member_create_;
     };
   }

@@ -21,39 +21,6 @@ namespace relational
 {
   namespace source
   {
-    struct schema_emitter: emitter, virtual context
-    {
-      virtual void
-      pre ()
-      {
-        first_ = true;
-      }
-
-      virtual void
-      line (const string& l)
-      {
-        if (first_)
-        {
-          first_ = false;
-          os << "db.execute (";
-        }
-        else
-          os << endl;
-
-        os << strlit (l);
-      }
-
-      virtual void
-      post ()
-      {
-        if (!first_) // Ignore empty statements.
-          os << ");" << endl;
-      }
-
-    private:
-      bool first_;
-    };
-
     // Query parameter generator. A new instance is created for each
     // query, so the customized version can have a counter to implement,
     // for example, numbered parameters (e.g., $1, $2, etc). The auto_id()
@@ -1813,7 +1780,7 @@ namespace relational
             init_id_image_member_ ("id_", "id"),
             init_id_value_member_ ("id"),
             schema_drop_ (schema_emitter_),
-            schema_create_ (schema_emitter_)
+            schema_create_ (schema_emitter_, pass_)
       {
         init ();
       }
@@ -1827,7 +1794,7 @@ namespace relational
             init_id_image_member_ ("id_", "id"),
             init_id_value_member_ ("id"),
             schema_drop_ (schema_emitter_),
-            schema_create_ (schema_emitter_)
+            schema_create_ (schema_emitter_, pass_)
       {
         init ();
       }
@@ -2562,27 +2529,138 @@ namespace relational
           os << "}";
         }
 
+        if (embedded_schema)
+          schema (c);
+      }
+
+      struct schema_emitter: emitter, virtual context
+      {
+        void
+        pass (unsigned short p)
+        {
+          empty_ = true;
+          pass_ = p;
+          new_pass_ = true;
+        }
+
+        // Did this pass produce anything?
+        //
+        bool
+        empty () const
+        {
+          return empty_;
+        }
+
+        virtual void
+        pre ()
+        {
+          first_ = true;
+        }
+
+        virtual void
+        line (const string& l)
+        {
+          if (first_)
+          {
+            first_ = false;
+
+            // If this line starts a new pass, then output the
+            // switch/case blocks.
+            //
+            if (new_pass_)
+            {
+              new_pass_ = false;
+              empty_ = false;
+
+              if (pass_ == 0)
+              {
+                os << "switch (pass)"
+                   << "{"
+                   << "case 0:" << endl
+                   << "{";
+              }
+              else
+              {
+                os << "return true;" // One more pass.
+                   << "}"
+                   << "case " << pass_ << ":" << endl
+                   << "{";
+              }
+            }
+
+            os << "db.execute (";
+          }
+          else
+            os << endl;
+
+          os << strlit (l);
+        }
+
+        virtual void
+        post ()
+        {
+          if (!first_) // Ignore empty statements.
+            os << ");" << endl;
+        }
+
+      private:
+        bool first_;
+        bool empty_;
+        bool new_pass_;
+        unsigned short pass_;
+      };
+
+      virtual void
+      schema (type& c)
+      {
+        string const& type (c.fq_name ());
+        string traits ("access::object_traits< " + type + " >");
+
         // create_schema ()
         //
-        if (embedded_schema)
-        {
-          os << "void " << traits << "::" << endl
-             << "create_schema (database& db)"
-             << "{"
-             << "ODB_POTENTIALLY_UNUSED (db);"
-             << endl;
+        os << "bool " << traits << "::" << endl
+           << "create_schema (database& db, unsigned short pass)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (db);"
+           << "ODB_POTENTIALLY_UNUSED (pass);"
+           << endl;
 
-          schema_drop_->traverse (c);
-          schema_create_->traverse (c);
+        bool close (false);
 
-          os << "}";
+        // Pass 0.
+        //
+        pass_ = 0;
+        schema_emitter_.pass (pass_);
+        schema_drop_->traverse (c);
+        close = close || !schema_emitter_.empty ();
 
-          os << "static const schema_catalog_entry" << endl
-             << "schema_catalog_entry_" << flat_name (type) << "_ (" << endl
-             << strlit (options.default_schema ()) << "," << endl
-             << "&" << traits << "::create_schema);"
-             << endl;
-        }
+        // Pass 1.
+        //
+        pass_ = 1;
+        schema_emitter_.pass (pass_);
+        schema_create_->traverse (c);
+        close = close || !schema_emitter_.empty ();
+
+        // Pass 2.
+        //
+        pass_ = 2;
+        schema_emitter_.pass (pass_);
+        schema_create_->traverse (c);
+        close = close || !schema_emitter_.empty ();
+
+        if (close) // Close the last case and the switch block.
+          os << "return false;"
+             << "}"  // case
+             << "}"; // switch
+
+        os << "return false;"
+           << "}";
+
+        os << "static const schema_catalog_entry" << endl
+           << "schema_catalog_entry_" << flat_name (type) << "_ (" << endl
+           << strlit (options.default_schema ()) << "," << endl
+           << "&" << traits << "::create_schema);"
+           << endl;
       }
 
       virtual void
@@ -2698,6 +2776,7 @@ namespace relational
       traversal::names init_value_member_names_;
       instance<init_value_member> init_id_value_member_;
 
+      unsigned short pass_;
       schema_emitter schema_emitter_;
       instance<schema::class_drop> schema_drop_;
       instance<schema::class_create> schema_create_;
