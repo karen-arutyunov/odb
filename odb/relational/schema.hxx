@@ -189,12 +189,7 @@ namespace relational
 
         type (m);
         constraints (m);
-
-        if (semantics::class_* c = object_pointer (member_type (m, prefix_)))
-        {
-          os << " REFERENCES " << quote_id (table_name (*c)) << " (" <<
-            quote_id (column_name (*id_member (*c))) << ")";
-        }
+        reference (m);
 
         return true;
       }
@@ -210,6 +205,16 @@ namespace relational
       {
         if (m.count ("id"))
           os << " PRIMARY KEY";
+      }
+
+      virtual void
+      reference (semantics::data_member& m)
+      {
+        if (semantics::class_* c = object_pointer (member_type (m, prefix_)))
+        {
+          os << " REFERENCES " << quote_id (table_name (*c)) << " (" <<
+            quote_id (column_name (*id_member (*c))) << ")";
+        }
       }
 
     protected:
