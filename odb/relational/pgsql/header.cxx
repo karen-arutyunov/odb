@@ -31,8 +31,14 @@ namespace relational
           os << "static const char* const persist_statement_name;"
              << "static const char* const find_statement_name;"
              << "static const char* const update_statement_name;"
-             << "static const char* const erase_statement_name;"
-             << endl;
+             << "static const char* const erase_statement_name;";
+
+          // Query statement name.
+          //
+          if (options.generate_query ())
+            os << "static const char* const query_statement_name;";
+
+          os << endl;
 
           // Statement types.
           //
@@ -42,10 +48,6 @@ namespace relational
              << "static const unsigned int erase_statement_types[];"
              << endl;
 
-          // Query statement name.
-          //
-          os << "static const char* const query_statement_name;"
-             << endl;
         }
       };
       entry<class_> class_entry_;

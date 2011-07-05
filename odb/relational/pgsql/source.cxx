@@ -863,6 +863,15 @@ namespace relational
              << "erase_statement_name = " << strlit (fn + "_erase") << ";"
              << endl;
 
+          // Query statement name.
+          //
+          if (options.generate_query ())
+          {
+            os << name_decl << endl
+               << "query_statement_name = " << strlit (fn + "_query") << ";"
+               << endl;
+          }
+
           // Statement types.
           //
           string oid_decl ("const unsigned int " + traits);
@@ -920,12 +929,6 @@ namespace relational
 
             os << "};";
           }
-
-          // Query statement name.
-          //
-          os << name_decl << endl
-             << "query_statement_name = " << strlit (fn + "_query") << ";"
-             << endl;
         }
 
         virtual void
@@ -999,7 +1002,8 @@ namespace relational
           //
           {
             os << type_decl << endl
-               << "select_all_types[] ={";
+               << "select_all_types[] ="
+               << "{";
 
             if (inv)
             {
@@ -1025,7 +1029,8 @@ namespace relational
           //
           {
             os << type_decl << endl
-               << "insert_one_types[] ={";
+               << "insert_one_types[] ="
+               << "{";
 
             if (!inv)
             {
