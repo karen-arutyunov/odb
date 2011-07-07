@@ -1010,17 +1010,15 @@ namespace relational
 
             if (inv)
             {
-              semantics::class_* c (object_pointer (vt));
-
               // many(i)-to-many
               //
               if (context::container (inv_m->type ()))
-                os << oids[column_sql_type (*inv_m, "id").type];
+                os << oids[column_sql_type (*inv_m, "value").type];
 
               // many(i)-to-one
               //
               else
-                os << oids[column_sql_type (*id_member (*c)).type];
+                os << oids[column_sql_type (*inv_m).type];
             }
             else
               os << id_oid;
