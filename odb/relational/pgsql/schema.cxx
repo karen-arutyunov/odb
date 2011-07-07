@@ -17,6 +17,32 @@ namespace relational
       namespace relational = relational::schema;
 
       //
+      // Drop.
+      //
+
+      struct drop_common: virtual relational::drop_common
+      {
+        virtual void
+        drop_table (string const& table)
+        {
+          os << "DROP TABLE IF EXISTS " << quote_id (table) << " CASCADE"
+             << endl;
+        }
+      };
+
+      struct member_drop: relational::member_drop, drop_common
+      {
+        member_drop (base const& x): base (x) {}
+      };
+      entry<member_drop> member_drop_;
+
+      struct class_drop: relational::class_drop, drop_common
+      {
+        class_drop (base const& x): base (x) {}
+      };
+      entry<class_drop> class_drop_;
+
+      //
       // Create.
       //
 
