@@ -86,9 +86,7 @@ namespace relational
         traversal::unit unit;
         traversal::defines unit_defines;
         traversal::namespace_ ns;
-
-        unsigned short pass (1);
-        instance<class_create> c (emitter, pass);
+        instance<class_create> c (emitter);
 
         unit >> unit_defines >> ns;
         unit_defines >> c;
@@ -98,14 +96,13 @@ namespace relational
         ns >> ns_defines >> ns;
         ns_defines >> c;
 
-        // Pass 1.
+        // Pass 1 and 2.
         //
-        unit.dispatch (ctx.unit);
-
-        // Pass 2.
-        //
-        pass = 2;
-        unit.dispatch (ctx.unit);
+        for (unsigned short pass (1); pass < 3; ++pass)
+        {
+          c->pass (pass);
+          unit.dispatch (ctx.unit);
+        }
       }
     }
   }

@@ -1780,7 +1780,7 @@ namespace relational
             init_id_image_member_ ("id_", "id"),
             init_id_value_member_ ("id"),
             schema_drop_ (schema_emitter_),
-            schema_create_ (schema_emitter_, pass_)
+            schema_create_ (schema_emitter_)
       {
         init ();
       }
@@ -1794,7 +1794,7 @@ namespace relational
             init_id_image_member_ ("id_", "id"),
             init_id_value_member_ ("id"),
             schema_drop_ (schema_emitter_),
-            schema_create_ (schema_emitter_, pass_)
+            schema_create_ (schema_emitter_)
       {
         init ();
       }
@@ -2629,24 +2629,19 @@ namespace relational
 
         // Pass 0.
         //
-        pass_ = 0;
-        schema_emitter_.pass (pass_);
+        schema_emitter_.pass (0);
         schema_drop_->traverse (c);
         close = close || !schema_emitter_.empty ();
 
-        // Pass 1.
+        // Pass 1 and 2.
         //
-        pass_ = 1;
-        schema_emitter_.pass (pass_);
-        schema_create_->traverse (c);
-        close = close || !schema_emitter_.empty ();
-
-        // Pass 2.
-        //
-        pass_ = 2;
-        schema_emitter_.pass (pass_);
-        schema_create_->traverse (c);
-        close = close || !schema_emitter_.empty ();
+        for (unsigned short pass (1); pass < 3; ++pass)
+        {
+          schema_emitter_.pass (pass);
+          schema_create_->pass (pass);
+          schema_create_->traverse (c);
+          close = close || !schema_emitter_.empty ();
+        }
 
         if (close) // Close the last case and the switch block.
           os << "return false;"
@@ -2776,7 +2771,6 @@ namespace relational
       traversal::names init_value_member_names_;
       instance<init_value_member> init_id_value_member_;
 
-      unsigned short pass_;
       schema_emitter schema_emitter_;
       instance<schema::class_drop> schema_drop_;
       instance<schema::class_create> schema_create_;

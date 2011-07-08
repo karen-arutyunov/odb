@@ -7,6 +7,7 @@
 #define ODB_RELATIONAL_SCHEMA_HXX
 
 #include <set>
+#include <vector>
 #include <cassert>
 
 #include <odb/emitter.hxx>
@@ -248,15 +249,15 @@ namespace relational
     {
       typedef member_create base;
 
-      member_create (emitter& e,
-                     ostream& os,
-                     tables& t,
-                     unsigned short const& pass)
-          : object_members_base (false, true),
-            common (e, os),
-            tables_ (t),
-            pass_ (pass)
+      member_create (emitter& e, ostream& os, std::vector<tables>& t)
+          : object_members_base (false, true), common (e, os), tables_ (t)
       {
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
       }
 
       virtual void
@@ -276,7 +277,7 @@ namespace relational
 
         string const& name (table_name (m, table_prefix_));
 
-        if (tables_.count (name))
+        if (tables_[pass_].count (name))
           return;
 
         pre_statement ();
@@ -345,7 +346,7 @@ namespace relational
         create_table_post ();
         post_statement ();
 
-        tables_.insert (name);
+        tables_[pass_].insert (name);
 
         // Create indexes.
         //
@@ -362,20 +363,18 @@ namespace relational
       }
 
     protected:
-      tables& tables_;
-      unsigned short const& pass_;
+      std::vector<tables>& tables_;
+      unsigned short pass_;
     };
 
     struct class_create: traversal::class_, common, virtual create_common
     {
       typedef class_create base;
 
-      class_create (emitter& e, unsigned short const& pass)
-          : common (e, os_),
-            os_ (e),
-            pass_ (pass),
-            member_create_ (e, os_, tables_, pass_)
+      class_create (emitter& e)
+          : common (e, os_), os_ (e), member_create_ (e, os_, tables_)
       {
+        tables_.push_back (tables ()); // Dummy entry.
       }
 
       class_create (class_create const& x)
@@ -383,9 +382,20 @@ namespace relational
             context (),
             common (x.e_, os_),
             os_ (x.e_),
-            pass_ (x.pass_),
-            member_create_ (x.e_, os_, tables_, pass_)
+            member_create_ (x.e_, os_, tables_)
       {
+        tables_.push_back (tables ()); // Dummy entry.
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+
+        if (tables_.size () == pass_)
+          tables_.push_back (tables ());
+
+        member_create_->pass (p);
       }
 
       virtual void
@@ -408,7 +418,7 @@ namespace relational
         // If the table with this name was already created, assume the
         // user knows what they are doing and skip it.
         //
-        if (tables_.count (name))
+        if (tables_[pass_].count (name))
           return;
 
         pre_statement ();
@@ -422,7 +432,7 @@ namespace relational
         create_table_post ();
         post_statement ();
 
-        tables_.insert (name);
+        tables_[pass_].insert (name);
 
         // Create tables for members.
         //
@@ -430,9 +440,9 @@ namespace relational
       }
 
     protected:
-      tables tables_;
       emitter_ostream os_;
-      unsigned short const& pass_;
+      unsigned short pass_;
+      std::vector<tables> tables_; // Seperate table for each pass.
       instance<member_create> member_create_;
     };
   }
