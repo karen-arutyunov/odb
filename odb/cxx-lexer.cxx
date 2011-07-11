@@ -153,6 +153,12 @@ next (string& token)
       token = name;
       break;
     }
+  case CPP_NUMBER:
+    {
+      cpp_string const& s (t->val.str);
+      token.assign (reinterpret_cast<char const*> (s.text), s.len);
+      break;
+    }
   default:
     {
       if (tt <= CPP_LAST_PUNCTUATOR)
