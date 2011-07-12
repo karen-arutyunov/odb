@@ -162,7 +162,11 @@ namespace relational
         virtual void
         traverse_bit (member_info& mi)
         {
-          unsigned int n (mi.st->range / 8 + (mi.st->range % 8 ? 1 : 0));
+          // @@ Additional 4 bytes at the beginning of the array specify
+          // the number of significant bits in the image. This number
+          // is stored in network byte order.
+          //
+          unsigned int n (4 + mi.st->range / 8 + (mi.st->range % 8 ? 1 : 0));
 
           os << "unsigned char " << mi.var << "value[" << n << "];"
              << "std::size_t " << mi.var << "size;"
