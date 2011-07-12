@@ -237,7 +237,7 @@ namespace relational
     void member_image_type::
     traverse_varbit (member_info&)
     {
-      type_ = "details::buffer";
+      type_ = "details::ubuffer";
     }
 
     void member_image_type::
