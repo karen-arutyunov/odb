@@ -395,6 +395,10 @@ namespace relational
                 //
                 // String and binary types.
                 //
+                else if (id == "CHAR")
+                {
+                  r.type = sql_type::CHAR;
+                }
                 else if (id == "VARCHAR")
                 {
                   r.type = sql_type::VARCHAR;
@@ -413,6 +417,10 @@ namespace relational
                 else if (id == "BYTEA")
                 {
                   r.type = sql_type::BYTEA;
+                }
+                else if (id == "VARBIT")
+                {
+                  r.type = sql_type::VARBIT;
                 }
                 //
                 // Other types.
@@ -440,7 +448,7 @@ namespace relational
                 {
                   r.type = sql_type::BIT;
                 }
-                else if (prefix == "CHAR" || prefix == "CHARACTER")
+                else if (prefix == "CHARACTER")
                 {
                   r.type = sql_type::CHAR;
                 }
@@ -579,7 +587,7 @@ namespace relational
           {
             r.type = sql_type::BIT;
           }
-          else if (prefix == "CHAR" || prefix == "CHARACTER")
+          else if (prefix == "CHARACTER")
           {
             r.type = sql_type::CHAR;
           }
