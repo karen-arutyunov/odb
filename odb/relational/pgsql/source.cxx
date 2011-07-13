@@ -73,6 +73,13 @@ namespace relational
           "pgsql::bind::bytea", // BYTEA
         };
 
+        const char* date_time_buffer_types[] =
+        {
+          "pgsql::bind::date",
+          "pgsql::bind::time",
+          "pgsql::bind::timestamp"
+        };
+
         const char* oids[] =
         {
           "pgsql::bool_oid",      // BOOLEAN
@@ -93,13 +100,6 @@ namespace relational
           "pgsql::varbit_oid",    // VARBIT
           "pgsql::uuid_oid"       // UUID
         };
-
-        // @@ Complete once date-time format is known.
-        //
-
-        // const char* date_time_buffer_types[] =
-        // {
-        // };
       }
 
       struct statement_oids: object_columns_base, context
@@ -208,10 +208,12 @@ namespace relational
         }
 
         virtual void
-        traverse_date_time (member_info&)
+        traverse_date_time (member_info& mi)
         {
-          // @@ Complete once date-time format is known.
-          //
+          os << b << ".type = " <<
+            date_time_buffer_types[mi.st->type - sql_type::DATE] << ";"
+             << b << ".buffer = &" << arg << "." << mi.var << "value;"
+             << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
 
         virtual void
@@ -339,8 +341,8 @@ namespace relational
         virtual void
         traverse_date_time (member_info&)
         {
-          // @@ Complete once date-time format is known.
-          //
+          os << e << " = 0;"
+             << endl;
         }
 
         virtual void
@@ -551,10 +553,10 @@ namespace relational
         }
 
         virtual void
-        traverse_date_time (member_info&)
+        traverse_date_time (member_info& mi)
         {
-          // @@ Complete once date-time format is known.
-          //
+          os << traits << "::set_image (" << endl
+             << "i." << mi.var << "value, is_null, " << member << ");";
         }
 
         virtual void
@@ -767,10 +769,12 @@ namespace relational
         }
 
         virtual void
-        traverse_date_time (member_info&)
+        traverse_date_time (member_info& mi)
         {
-          // @@ Complete once date-time format is known.
-          //
+          os << traits << "::set_value (" << endl
+             << member << ", i." << mi.var << "value, " <<
+            "i." << mi.var << "null);"
+             << endl;
         }
 
         virtual void

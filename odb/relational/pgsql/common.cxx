@@ -174,6 +174,13 @@ namespace relational
         "float",
         "double"
       };
+
+      const char* date_time_types[] =
+      {
+        "int",
+        "long long",
+        "long long"
+      };
     }
 
     member_image_type::
@@ -217,9 +224,9 @@ namespace relational
     }
 
     void member_image_type::
-    traverse_date_time (member_info&)
+    traverse_date_time (member_info& mi)
     {
-      type_ = "details::buffer";
+      type_ = date_time_types[mi.st->type - sql_type::DATE];
     }
 
     void member_image_type::
