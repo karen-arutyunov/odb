@@ -56,13 +56,13 @@ namespace relational
           "pgsql::bind::boolean",
           "pgsql::bind::smallint",
           "pgsql::bind::integer",
-          "pgsql::bind::bigint",
+          "pgsql::bind::bigint"
         };
 
         const char* float_buffer_types[] =
         {
           "pgsql::bind::real",
-          "pgsql::bind::double_",
+          "pgsql::bind::double_"
         };
 
         const char* char_bin_buffer_types[] =
@@ -70,7 +70,7 @@ namespace relational
           "pgsql::bind::text",  // CHAR
           "pgsql::bind::text",  // VARCHAR
           "pgsql::bind::text",  // TEXT
-          "pgsql::bind::bytea", // BYTEA
+          "pgsql::bind::bytea"  // BYTEA
         };
 
         const char* date_time_buffer_types[] =
