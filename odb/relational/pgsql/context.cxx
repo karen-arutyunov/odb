@@ -36,10 +36,10 @@ namespace relational
         {"unsigned char", "SMALLINT", 0},
 
         {"short int", "SMALLINT", 0},
-        {"short unsigned int", "INTEGER", 0},
+        {"short unsigned int", "SMALLINT", 0},
 
         {"int", "INTEGER", 0},
-        {"unsigned int", "BIGINT", 0},
+        {"unsigned int", "INTEGER", 0},
 
         {"long int", "BIGINT", 0},
         {"long unsigned int", "BIGINT", 0},
