@@ -509,6 +509,28 @@ for consistency.
     </tr>
 
     <tr>
+      <th>13</th><td><a href="#13">PostgreSQL Database</a>
+        <table class="toc">
+          <tr><th>13.1</th><td><a href="#13.1">PostgreSQL Type Mapping</a></td></tr>
+          <tr><th>13.2</th><td><a href="#13.2">PostgreSQL Database Class</a></td></tr>
+          <tr><th>13.3</th><td><a href="#13.3">PostgreSQL Connection Factory</a></td></tr>
+	  <tr><th>13.4</th><td><a href="#13.4">PostgreSQL Exceptions</a></td></tr>
+          <tr>
+            <th>13.5</th><td><a href="#13.5">PostgreSQL Limitations</a>
+              <table class="toc">
+                <tr><th>13.5.1</th><td><a href="#13.5.1">Query Result Caching</a></td></tr>
+                <tr><th>13.5.2</th><td><a href="#13.5.2">Foreign Key Constraints</a></td></tr>
+		<tr><th>13.5.3</th><td><a href="#13.5.3">Date-Time Format</a></td></tr>
+		<tr><th>13.5.4</th><td><a href="#13.5.4">Timezones</a></td></tr>
+		<tr><th>13.5.5</th><td><a href="#13.5.5"><code>NUMERIC</code> Type Support</a></td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
       <th colspan="2"><a href="#III">PART III PROFILES</a></th>
     </tr>
 
@@ -8018,6 +8040,571 @@ class person
      functionality. Future versions of the library will remove this
      limitation.</p>
 
+
+  <!-- CHAPTER -->
+
+
+  <hr class="page-break"/>
+  <h1><a name="13">13 PostgreSQL Database</a></h1>
+
+  <p>To generate support code for the PostgreSQL database you will need
+     to pass the "<code>--database&nbsp;pgsql</code>"
+     (or "<code>-d&nbsp;pgsql</code>") option to the ODB compiler.
+     Your application will also need to link to the PostgreSQL ODB runtime
+     library (<code>libodb-pgsql</code>). All PostgreSQL-specific ODB
+     classes are defined in the <code>odb::pgsql</code> namespace.</p>
+
+  <p>ODB utilizes prepared statements extensively. PostgreSQL support for
+     prepared statements begins with version 7.4 with the introduction
+     of version 3.0 of the PostgreSQL messaging protocol. For this reason,
+     ODB supports only PostgreSQL versions 7.4 and later.</p>
+
+  <h2><a name="13.1">13.1 PostgreSQL Type Mapping</a></h2>
+
+  <p>The following table summarizes the default mapping between basic
+     C++ value types and PostgreSQL database types. This mapping can be
+     customized on the per-type and per-member basis using the ODB
+     Pragmas Language (<a href="#10">Chapter 10, "ODB Pragma
+     Language"</a>).</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>C++ Type</th>
+      <th>PostgreSQL Type</th>
+    </tr>
+
+    <tr>
+      <td><code>bool</code></td>
+      <td><code>BOOLEAN NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>char</code></td>
+      <td><code>SMALLINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>signed char</code></td>
+      <td><code>SMALLINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>unsigned char</code></td>
+      <td><code>SMALLINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>short</code></td>
+      <td><code>SMALLINT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>unsigned short</code></td>
+      <td><code>SMALLINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>int</code></td>
+      <td><code>INTEGER NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>unsigned int</code></td>
+      <td><code>INTEGER NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>long</code></td>
+      <td><code>BIGINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>unsigned long</code></td>
+      <td><code>BIGINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>long long</code></td>
+      <td><code>BIGINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>unsigned long long</code></td>
+      <td><code>BIGINT NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>float</code></td>
+      <td><code>REAL NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>double</code></td>
+      <td><code>DOUBLE PRECISION NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>std::string</code></td>
+      <td><code>TEXT NOT NULL</code></td>
+    </tr>
+  </table>
+
+  <p>Note that <code>unsigned short</code>, <code>unsigned int</code>, and
+     <code>unsigned long long</code> are mapped to <code>SMALLINT</code>,
+     <code>INTEGER</code>, and <code>BIGINT</code> respectively. The sign bit
+     of the value stored by the database for these types will contain the most
+     significant bit of the actual unsigned value being persisted.</p>
+
+  <p>Additionally, by default, C++ enumerations are automatically
+     mapped to <code>INT NOT NULL</code>.</p>
+
+  <h2><a name="13.2">13.2 PostgreSQL Database Class</a></h2>
+
+  <p>The PostgreSQL <code>database</code> class has the following
+     interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace pgsql
+  {
+    class database: public odb::database
+    {
+    public:
+      database (const std::string&amp; db,
+                const std::string&amp; user,
+                const std::string&amp; password,
+                const std::string&amp; host = "",
+                unsigned int port = 0,
+                const std::string&amp; extra_conninfo = "",
+                std::auto_ptr&lt;connection_factory> = 0);
+
+      database (const std::string&amp; db,
+                const std::string&amp; user,
+                const std::string&amp; password,
+                const std::string&amp; host = "",
+                const std::string&amp; socket_ext = "",
+                const std::string&amp; extra_conninfo = "",
+                std::auto_ptr&lt;connection_factory> = 0);
+
+      database (const std::string&amp; conninfo,
+                std::auto_ptr&lt;connection_factory> = 0);
+
+      database (int&amp; argc,
+                char* argv[],
+                bool erase = false,
+                const std::string&amp; extra_conninfo = "",
+                std::auto_ptr&lt;connection_factory> = 0);
+
+      static void
+      print_usage (std::ostream&amp;);
+
+
+    public:
+      const std::string&amp;
+      host () const;
+
+      const std::string&amp;
+      db () const;
+
+      const std::string&amp;
+      user () const;
+
+      const std::string&amp;
+      password () const;
+
+      unsigned int
+      port () const;
+
+      const std::string&amp;
+      socket_ext () const;
+
+      const std::string&amp;
+      extra_conninfo () const;
+
+      const std::string&amp;
+      conninfo () const;
+
+    public:
+      details::shared_ptr&lt;pgsql::connection>
+      connection ();
+    };
+  }
+}
+  </pre>
+
+  <p>You will need to include the <code>&lt;odb/pgsql/database.hxx></code>
+     header file to make this class available in your application.</p>
+
+  <p>The overloaded <code>database</code> constructors allow us to specify
+     the PostgreSQL database parameters that should be used when connecting
+     to the database. Both the first and second constructors have explicit
+     arguments for <code>db</code>, <code>user</code>, <code>password</code>,
+     and <code>host</code>. These arguments correspond to the
+     <code>dbname</code>, <code>user</code>, <code>password</code>, and
+     <code>host</code> keywords, respectively, of the <code>conninfo</code>
+     argument of the <code>libpq</code> function <code>PQconnectdb</code>.
+     For more information regarding the format of the <code>conninfo</code>
+     string, refer to the description of the <code>libpq</code> function
+     <code>PQconnectdb</code> in the PostgreSQL documentation.</p>
+
+  <p>The <code>port</code> argument of the first constructor takes an
+     integer value specifying the port number to connect to at the server host
+     when utilizing TCP/IP sockets. It corresponds to the <code>port</code>
+     keyword of the <code>conninfo</code> string. Zero specifies the default
+     port and is equivalent to omitting the <code>port</code> option from the
+     <code>conninfo</code> string.</p>
+
+  <p>The <code>socket_ext</code> argument of the second constructor takes a
+     string value specifying the socket file name extension for Unix-domain
+     socket connections when utilizing Unix-domain connections.</p>
+
+  <p>The third constructor allows us to specify all database parameters
+     via a single <code>conninfo</code> string.</p>
+
+  <p>The last constructor extracts the database parameters
+     from the command line. The following options are recognized:</p>
+
+  <pre class="terminal">
+  --user &lt;login> | --username &lt;login>
+  --password &lt;password>
+  --database &lt;name> | --dbname &lt;name>
+  --host &lt;host>
+  --port &lt;integer>
+  --options-file &lt;file>
+  </pre>
+
+  <p>The <code>--options-file</code> option allows us to specify some
+  or all of the database options in a file with each option appearing
+  on a separate line followed by space and an option value.</p>
+
+  <p>If the <code>erase</code> argument to this constructor is true,
+     then the above options are removed from the <code>argv</code>
+     array and the <code>argc</code> count is updated accordingly.
+     This is primarily useful if your application accepts other
+     options or arguments and you would like to get the PostgreSQL
+     options out of the <code>argv</code> array.</p>
+
+  <p>This constructor throws the <code>odb::pgsql::cli_exception</code>
+     exception if the PostgreSQL option values are missing or invalid.
+     See section <a href="#13.4">Section 13.4, "PostgreSQL Exceptions"</a>
+     for more information on this exception.</p>
+
+  <p>The static <code>print_usage()</code> function prints the list of options
+     with short descriptions that are recognized by this constructor.</p>
+
+  <p>All the constructors accept additional database connection parameters
+     via the <code>conninfo</code> or <code>extra_conninfo</code> argument.
+     The format of this string follows that of the <code>conninfo</code>
+     argument to the <code>libpq</code> function <code>PQconnectdb</code>.
+     All database parameters provided via this argument will take preference
+     over those explicitly specified by a constructor argument.</p>
+
+  <p>The last argument to all of the constructors is a pointer to the
+     connection factory. If we pass a non-<code>NULL</code> value, the
+     database instance assumes ownership of the factory instance. The
+     connection factory interface as well as the available implementations
+     are described in the next section.</p>
+
+  <p>The set of accessor functions following the constructors allows us
+     to query the parameters of the <code>database</code> instance. Note that
+     the <code>conninfo()</code> accessor returns a reference to a string
+     containing the full conninfo string passed to the database, including
+     explicitly specified constructor arguments, as well as extra parameters
+     specified by the <code>extra_conninfo</code> argument (if provided). The
+     <code>extra_conninfo()</code> accessor will return a reference to a copy
+     of the string passed as the <code>extra_conninfo</code> constructor
+     argument if it was provided. Otherwise, it will return a reference to
+     an empty string.</p>
+
+  <p>The <code>connection()</code> function returns the PostgreSQL database
+     connection encapsulated by the <code>odb::pgsql::connection</code>
+     class. Normally, we wouldn't call this function directly and
+     instead let the ODB runtime manage the database connections. However,
+     if for some reason you need to access the underlying PostgreSQL connection
+     handle, refer to the PostgreSQL ODB runtime source code for the interface
+     of the <code>connection</code> class.</p>
+
+  <h2><a name="13.3">13.3 PostgreSQL Connection Factory</a></h2>
+
+  <p>The <code>connection_factory</code> abstract class has the
+     following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace pgsql
+  {
+    class connection_factory
+    {
+    public:
+      virtual void
+      database (pgsql::database&amp;) = 0;
+
+      virtual details::shared_ptr&lt;pgsql::connection>
+      connect () = 0;
+    };
+  }
+}
+  </pre>
+
+  <p>The <code>database()</code> function is called when a connection
+     factory is associated with a database instance. This happens in
+     the <code>odb::pgsql::database</code> class constructors. The
+     <code>connect()</code> function is called whenever a database
+     connection is requested.</p>
+
+  <p>The two implementations of the <code>connection_factory</code>
+     interface provided by the PostgreSQL ODB runtime are
+     <code>new_connection_factory</code> and
+     <code>connection_pool_factory</code>. You will need to include
+     the <code>&lt;odb/pgsql/connection-factory.hxx></code>
+     header file to make the <code>connection_factory</code> interface
+     and these implementation classes available in your application.</p>
+
+  <p>The <code>new_connection_factory</code> class creates a new
+     connection whenever one is requested. When a connection is no
+     longer needed, it is released and closed. The
+     <code>new_connection_factory</code> class has the following
+     interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace pgsql
+  {
+    class new_connection_factory: public connection_factory
+    {
+    public:
+      new_connection_factory ();
+    };
+};
+  </pre>
+
+  <p>The <code>connection_pool_factory</code> class implements a
+     connection pool. It has the following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace pgsql
+  {
+    class connection_pool_factory: public connection_factory
+    {
+    public:
+      connection_pool_factory (std::size_t max_connections = 0,
+                               std::size_t min_connections = 0)
+    };
+};
+  </pre>
+
+  <p>The <code>max_connections</code> argument specifies the maximum
+     number of concurrent connections that this pool factory will
+     maintain. Similarly, the <code>min_connections</code> argument
+     specifies the minimum number of available connections that
+     should be kept open.</p>
+
+  <p>Whenever a connection is requested, the pool factory first
+     checks if there is an unused connection that can be returned.
+     If there is none, the pool factory checks the
+     <code>max_connections</code> value to see if a new connection
+     can be created. If the total number of connections maintained
+     by the pool is less than this value, then a new connection is
+     created and returned. Otherwise, the caller is blocked until
+     a connection becomes available.</p>
+
+  <p>When a connection is released, the pool factory first checks
+     if there are blocked callers waiting for a connection. If so, then
+     one of them is unblocked and is given the connection. Otherwise,
+     the pool factory checks whether the total number of connections
+     maintained by the pool is greater than the <code>min_connections</code>
+     value. If that's the case, the connection is closed. Otherwise, the
+     connection is added to the pool of available connections to be
+     returned on the next request. In other words, if the number of
+     connections maintained by the pool exceeds <code>min_connections</code>
+     and there are no callers waiting for a new connection,
+     the pool will close the excess connections.</p>
+
+  <p>If the <code>max_connections</code> value is 0, then the pool will
+     create a new connection whenever all of the existing connections
+     are in use. If the <code>min_connections</code> value is 0, then
+     the pool will never close a connection and instead maintain all
+     the connections that were ever created.</p>
+
+  <p>If you pass <code>NULL</code> as the connection factory to one of the
+     <code>database</code> constructors, then the
+     <code>connection_pool_factory</code> instance will be created by default
+     with the min and max connections values set to <code>0</code>. The
+     following code fragment shows how we can pass our own connection factory
+     instance:</p>
+
+  <pre class="c++">
+#include &lt;odb/database.hxx>
+
+#include &lt;odb/pgsql/database.hxx>
+#include &lt;odb/pgsql/connection-factory.hxx>
+
+int
+main (int argc, char* argv[])
+{
+  auto_ptr&lt;odb::pgsql::connection_factory> f (
+    new odb::pgsql::connection_pool_factory (20));
+
+  auto_ptr&lt;odb::database> db (
+    new pgsql::database (argc, argv, false, "", f));
+}
+  </pre>
+
+  <h2><a name="13.4">13.4 PostgreSQL Exceptions</a></h2>
+
+  <p>The PostgreSQL ODB runtime library defines the following
+     PostgreSQL-specific exceptions:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace pgsql
+  {
+    class database_exception: odb::database_exception
+    {
+    public:
+      unsigned int
+      error () const;
+
+      const std::string&amp;
+      message () const;
+
+      const std::string&amp;
+      sqlstate () const;
+
+      virtual const char*
+      what () const throw ();
+    };
+
+    class cli_exception: odb::exception
+    {
+    public:
+      virtual const char*
+      what () const throw ();
+    };
+  }
+}
+  </pre>
+
+  <p>You will need to include the <code>&lt;odb/pgsql/exceptions.hxx></code>
+     header file to make these exceptions available in your application.</p>
+
+  <p>The <code>odb::pgsql::database_exception</code> is thrown if
+     a PostgreSQL database operation fails. The PostgreSQL-specific error
+     information is accessible via the <code>error()</code>,
+     <code>message()</code> and <code>sqlstate()</code> functions. All this
+     information is also combined and returned in a human-readable form by
+     the <code>what()</code> function.</p>
+
+  <p>The <code>odb::pgsql::cli_exception</code> is thrown by the
+     command line parsing constructor of the <code>odb::pgsql::database</code>
+     class if the PostgreSQL option values are missing or invalid. The
+     <code>what()</code> function returns a human-readable description
+     of an error.</p>
+
+  <h2><a name="13.5">13.5 PostgreSQL Limitations</a></h2>
+
+  <p>The following sections describe PostgreSQL-specific limitations imposed
+     by the current PostgreSQL and ODB runtime versions.</p>
+
+  <h3><a name="13.5.1">13.5.1 Query Result Caching</a></h3>
+
+  <p>The PostgreSQL ODB runtime implementation will always perform query result
+     caching (<a href="#4.4">Section 4.4, "Query Result"</a>) even when
+     explicitly requested not to. This is a result of <code>libpq</code>
+     behaviour, specifically that control is only returned to the client
+     once all the results of a query are cached.</p>
+
+  <h3><a name="13.5.2">13.5.2 Foreign Key Constraints</a></h3>
+
+  <p>ODB relies on deferred checking of foreign key constraints. That is to
+     say, ODB requires that foreign key constraints be checked when the
+     containing transaction is committed. Default PostgreSQL behaviour is
+     to check constraints immediately. Any schema that defines a foreign
+     key constraint must specify the constraint as
+     <code>INITIALLY DEFERRED</code> in order for ODB to behave correctly,
+     as shown in the following example:</p>
+
+<pre class="c++">
+CREATE TABLE employee (
+  name TEXT,
+  employer BIGINT REFERENCES employer INITIALLY DEFERRED);
+</pre>
+
+  <h3><a name="13.5.3">13.5.3 Date-Time Format</a></h3>
+
+  <p>ODB is only compatible with PostgreSQL servers that represent date-time
+     types using 64-bit integers. On creation of every connection, ODB
+     examines the server parameter <code>integer_datetimes</code>. If it is
+     not set to <code>on</code>, the
+     <code>odb::pgsql::database_exception</code> is thrown. You may check the
+     parameter value for your server by executing the SQL statement
+     <code>SHOW integer_datetimes</code>.</p>
+
+  <h3><a name="13.5.4">13.5.4 Timezones</a></h3>
+
+  <p>ODB does not currently support date-time types with timezone
+     information.</p>
+
+  <h3><a name="13.5.5">13.5.5 <code>NUMERIC</code> Type Support</a></h3>
+
+  <p>Support provided for the PostgreSQL <code>NUMERIC</code> type is limited
+     to provision of the raw binary data, as received from the PostgreSQL
+    server, to the user. The binary data may be accessed as shown in the
+     following example:</p>
+
+  <pre class="c++">
+#include &lt;odb/pgsql/traits.hxx>
+
+struct numeric
+{
+  std::size_t len;
+  char* data;
+};
+
+template &lt;>
+struct value_traits&lt;numeric, odb::pgsql::id_numeric>
+{
+  static void
+  set_value (numeric&amp; v,
+             const odb::details::buffer&amp; b,
+             std::size_t n,
+             bool is_null)
+  {
+    if (!is_null)
+    {
+      v.len = n;
+      v.data = new char[n];
+      std::memcpy (v.data, b.data (), n);
+    }
+  }
+
+  static void
+  set_image (odb::details::buffer&amp; b,
+             std::size_t&amp; n,
+             bool&amp; is_null
+             numeric v)
+  {
+    is_null = false;
+    n = v.len;
+
+    if (n > b.capacity ())
+      b.capacity (n);
+
+    if (n != 0)
+      std::memcpy (b.data (), v.data, n);
+  }
+};
+</pre>
+
+  <p>Refer to the PostgreSQL documentation for more information regarding
+     the binary format used to represent the <code>NUMERIC</code> type.</p>
 
   <!-- PART -->
 
