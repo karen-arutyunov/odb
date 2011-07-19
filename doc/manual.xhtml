@@ -535,19 +535,19 @@ for consistency.
     </tr>
 
     <tr>
-      <th>13</th><td><a href="#13">Profiles Introduction</a></td>
+      <th>14</th><td><a href="#14">Profiles Introduction</a></td>
     </tr>
 
     <tr>
-      <th>14</th><td><a href="#14">Boost Profile</a>
+      <th>15</th><td><a href="#15">Boost Profile</a>
         <table class="toc">
-          <tr><th>14.1</th><td><a href="#14.1">Smart Pointers Library</a></td></tr>
-          <tr><th>14.2</th><td><a href="#14.2">Unordered Containers Library</a></td></tr>
+          <tr><th>15.1</th><td><a href="#15.1">Smart Pointers Library</a></td></tr>
+          <tr><th>15.2</th><td><a href="#15.2">Unordered Containers Library</a></td></tr>
           <tr>
-	    <th>14.3</th><td><a href="#14.3">Date Time Library</a>
+	    <th>15.3</th><td><a href="#15.3">Date Time Library</a>
 	      <table class="toc">
-	        <tr><th>14.3.1</th><td><a href="#14.3.1">MySQL Database Type Mapping</a></td></tr>
-		<tr><th>14.3.2</th><td><a href="#14.3.2">SQLite Database Type Mapping</a></td></tr>
+	        <tr><th>15.3.1</th><td><a href="#15.3.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>15.3.2</th><td><a href="#15.3.2">SQLite Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -556,23 +556,23 @@ for consistency.
     </tr>
 
     <tr>
-      <th>15</th><td><a href="#15">Qt Profile</a>
+      <th>16</th><td><a href="#16">Qt Profile</a>
         <table class="toc">
           <tr>
-	    <th>15.1</th><td><a href="#15.1">Basic Types Library</a>
+	    <th>16.1</th><td><a href="#16.1">Basic Types Library</a>
 	      <table class="toc">
-	        <tr><th>15.1.1</th><td><a href="#15.1.1">MySQL Database Type Mapping</a></td></tr>
-		<tr><th>15.1.2</th><td><a href="#15.1.2">SQLite Database Type Mapping</a></td></tr>
+	        <tr><th>16.1.1</th><td><a href="#16.1.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>16.1.2</th><td><a href="#16.1.2">SQLite Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
-          <tr><th>15.2</th><td><a href="#15.2">Smart Pointers Library</a></td></tr>
-          <tr><th>15.3</th><td><a href="#15.3">Containers Library</a></td></tr>
+          <tr><th>16.2</th><td><a href="#16.2">Smart Pointers Library</a></td></tr>
+          <tr><th>16.3</th><td><a href="#16.3">Containers Library</a></td></tr>
           <tr>
-	    <th>15.4</th><td><a href="#15.4">Date Time Library</a>
+	    <th>16.4</th><td><a href="#16.4">Date Time Library</a>
 	      <table class="toc">
-	        <tr><th>15.4.1</th><td><a href="#15.4.1">MySQL Database Type Mapping</a></td></tr>
-		<tr><th>15.4.2</th><td><a href="#15.4.2">SQLite Database Type Mapping</a></td></tr>
+	        <tr><th>16.4.1</th><td><a href="#16.4.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>16.4.2</th><td><a href="#16.4.2">SQLite Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -7015,6 +7015,7 @@ aCC +W2161 ...
   <table class="toc">
     <tr><th>11</th><td><a href="#11">MySQL Database</a></td></tr>
     <tr><th>12</th><td><a href="#12">SQLite Database</a></td></tr>
+    <tr><th>13</th><td><a href="#13">PostgreSQL Database</a></td></tr>
   </table>
 
 
@@ -7036,7 +7037,7 @@ aCC +W2161 ...
   <p>The following table summarizes the default mapping between basic
      C++ value types and MySQL database types. This mapping can be
      customized on the per-type and per-member basis using the ODB
-     Pragmas Language (<a href="#10">Chapter 10, "ODB Pragma
+     Pragma Language (<a href="#10">Chapter 10, "ODB Pragma
      Language"</a>).</p>
 
   <!-- border="1" is necessary for html2ps -->
@@ -7283,7 +7284,7 @@ namespace odb
 
   <p>The <code>--options-file</code> option allows us to specify some
   or all of the database options in a file with each option appearing
-  on a separate line followed by space and an option value.</p>
+  on a separate line followed by a space and an option value.</p>
 
   <p>If the <code>erase</code> argument to this constructor is true,
      then the above options are removed from the <code>argv</code>
@@ -7419,7 +7420,7 @@ namespace odb
      connection is added to the pool of available connections to be
      returned on the next request. In other words, if the number of
      connections maintained by the pool exceeds <code>min_connections</code>
-     and there are no caller waiting for a new connection,
+     and there are no callers waiting for a new connection,
      then the pool will close the excess connections.</p>
 
   <p>If the <code>max_connections</code> value is 0, then the pool will
@@ -7531,7 +7532,7 @@ namespace odb
   <p>The following table summarizes the default mapping between basic
      C++ value types and SQLite database types. This mapping can be
      customized on the per-type and per-member basis using the ODB
-     Pragmas Language (<a href="#10">Chapter 10, "ODB Pragma
+     Pragma Language (<a href="#10">Chapter 10, "ODB Pragma
      Language"</a>).</p>
 
   <!-- border="1" is necessary for html2ps -->
@@ -7715,7 +7716,7 @@ auto_ptr&lt;odb::database> db (
      flag instead of <code>SQLITE_OPEN_READWRITE</code>). The
      <code>--options-file</code> option allows us to specify some
      or all of the database options in a file with each option appearing
-     on a separate line followed by space and an option value.</p>
+     on a separate line followed by a space and an option value.</p>
 
   <p>If the <code>erase</code> argument to this constructor is true,
      then the above options are removed from the <code>argv</code>
@@ -8054,17 +8055,17 @@ class person
      library (<code>libodb-pgsql</code>). All PostgreSQL-specific ODB
      classes are defined in the <code>odb::pgsql</code> namespace.</p>
 
-  <p>ODB utilizes prepared statements extensively. PostgreSQL support for
-     prepared statements begins with version 7.4 with the introduction
-     of version 3.0 of the PostgreSQL messaging protocol. For this reason,
-     ODB supports only PostgreSQL versions 7.4 and later.</p>
+  <p>ODB utilizes prepared statements extensively. Support for prepared
+     statements was added in PostgreSQL version 7.4 with the introduction
+     of the messaging protocol version 3.0. For this reason, ODB supports
+     only PostgreSQL version 7.4 and later.</p>
 
   <h2><a name="13.1">13.1 PostgreSQL Type Mapping</a></h2>
 
   <p>The following table summarizes the default mapping between basic
      C++ value types and PostgreSQL database types. This mapping can be
      customized on the per-type and per-member basis using the ODB
-     Pragmas Language (<a href="#10">Chapter 10, "ODB Pragma
+     Pragma Language (<a href="#10">Chapter 10, "ODB Pragma
      Language"</a>).</p>
 
   <!-- border="1" is necessary for html2ps -->
@@ -8150,14 +8151,17 @@ class person
     </tr>
   </table>
 
-  <p>Note that <code>unsigned short</code>, <code>unsigned int</code>, and
-     <code>unsigned long long</code> are mapped to <code>SMALLINT</code>,
-     <code>INTEGER</code>, and <code>BIGINT</code> respectively. The sign bit
-     of the value stored by the database for these types will contain the most
-     significant bit of the actual unsigned value being persisted.</p>
-
   <p>Additionally, by default, C++ enumerations are automatically
-     mapped to <code>INT NOT NULL</code>.</p>
+     mapped to <code>INTEGER NOT NULL</code>.</p>
+
+  <p>Note also that because PostgreSQL does not support unsigned integers,
+     the <code>unsigned short</code>, <code>unsigned int</code>, and
+     <code>unsigned long long</code> C++ types are by default mapped
+     to the <code>SMALLINT</code>, <code>INTEGER</code>, and
+     <code>BIGINT</code> PostgreSQL types, respectively. The sign bit
+     of the value stored by the database for these types will contain
+     the most significant bit of the actual unsigned value being
+     persisted.</p>
 
   <h2><a name="13.2">13.2 PostgreSQL Database Class</a></h2>
 
@@ -8172,17 +8176,17 @@ namespace odb
     class database: public odb::database
     {
     public:
-      database (const std::string&amp; db,
-                const std::string&amp; user,
+      database (const std::string&amp; user,
                 const std::string&amp; password,
+                const std::string&amp; db,
                 const std::string&amp; host = "",
                 unsigned int port = 0,
                 const std::string&amp; extra_conninfo = "",
                 std::auto_ptr&lt;connection_factory> = 0);
 
-      database (const std::string&amp; db,
-                const std::string&amp; user,
+      database (const std::string&amp; user,
                 const std::string&amp; password,
+                const std::string&amp; db,
                 const std::string&amp; host = "",
                 const std::string&amp; socket_ext = "",
                 const std::string&amp; extra_conninfo = "",
@@ -8203,16 +8207,16 @@ namespace odb
 
     public:
       const std::string&amp;
-      host () const;
+      user () const;
+
+      const std::string&amp;
+      password () const;
 
       const std::string&amp;
       db () const;
 
       const std::string&amp;
-      user () const;
-
-      const std::string&amp;
-      password () const;
+      host () const;
 
       unsigned int
       port () const;
@@ -8239,29 +8243,21 @@ namespace odb
 
   <p>The overloaded <code>database</code> constructors allow us to specify
      the PostgreSQL database parameters that should be used when connecting
-     to the database. Both the first and second constructors have explicit
-     arguments for <code>db</code>, <code>user</code>, <code>password</code>,
-     and <code>host</code>. These arguments correspond to the
-     <code>dbname</code>, <code>user</code>, <code>password</code>, and
-     <code>host</code> keywords, respectively, of the <code>conninfo</code>
-     argument of the <code>libpq</code> function <code>PQconnectdb</code>.
-     For more information regarding the format of the <code>conninfo</code>
-     string, refer to the description of the <code>libpq</code> function
-     <code>PQconnectdb</code> in the PostgreSQL documentation.</p>
-
-  <p>The <code>port</code> argument of the first constructor takes an
-     integer value specifying the port number to connect to at the server host
-     when utilizing TCP/IP sockets. It corresponds to the <code>port</code>
-     keyword of the <code>conninfo</code> string. Zero specifies the default
-     port and is equivalent to omitting the <code>port</code> option from the
-     <code>conninfo</code> string.</p>
-
-  <p>The <code>socket_ext</code> argument of the second constructor takes a
-     string value specifying the socket file name extension for Unix-domain
-     socket connections when utilizing Unix-domain connections.</p>
+     to the database. The <code>port</code> argument in the first constructor
+     is an integer value specifying the TCP/IP port number to connect to. A
+     zero port number indicates that the default port should be used.
+     The <code>socket_ext</code> argument in the second constructor is a
+     string value specifying the UNIX-domain socket file name extension.</p>
 
   <p>The third constructor allows us to specify all database parameters
-     via a single <code>conninfo</code> string.</p>
+     as a single <code>conninfo</code> string. All other constructors
+     accept additional database connection parameters as the
+     <code>extra_conninfo</code> argument. For more information
+     about the format of the <code>conninfo</code> string, refer to
+     the <code>PQconnectdb()</code> function description in the PostgreSQL
+     documentation. In the case of <code>extra_conninfo</code>, all the
+     database parameters provided in this string will take precedence
+     over those explicitly specified with other constructor arguments.</p>
 
   <p>The last constructor extracts the database parameters
      from the command line. The following options are recognized:</p>
@@ -8276,8 +8272,8 @@ namespace odb
   </pre>
 
   <p>The <code>--options-file</code> option allows us to specify some
-  or all of the database options in a file with each option appearing
-  on a separate line followed by space and an option value.</p>
+     or all of the database options in a file with each option appearing
+     on a separate line followed by a space and an option value.</p>
 
   <p>If the <code>erase</code> argument to this constructor is true,
      then the above options are removed from the <code>argv</code>
@@ -8294,13 +8290,6 @@ namespace odb
   <p>The static <code>print_usage()</code> function prints the list of options
      with short descriptions that are recognized by this constructor.</p>
 
-  <p>All the constructors accept additional database connection parameters
-     via the <code>conninfo</code> or <code>extra_conninfo</code> argument.
-     The format of this string follows that of the <code>conninfo</code>
-     argument to the <code>libpq</code> function <code>PQconnectdb</code>.
-     All database parameters provided via this argument will take preference
-     over those explicitly specified by a constructor argument.</p>
-
   <p>The last argument to all of the constructors is a pointer to the
      connection factory. If we pass a non-<code>NULL</code> value, the
      database instance assumes ownership of the factory instance. The
@@ -8309,14 +8298,13 @@ namespace odb
 
   <p>The set of accessor functions following the constructors allows us
      to query the parameters of the <code>database</code> instance. Note that
-     the <code>conninfo()</code> accessor returns a reference to a string
-     containing the full conninfo string passed to the database, including
-     explicitly specified constructor arguments, as well as extra parameters
-     specified by the <code>extra_conninfo</code> argument (if provided). The
-     <code>extra_conninfo()</code> accessor will return a reference to a copy
-     of the string passed as the <code>extra_conninfo</code> constructor
-     argument if it was provided. Otherwise, it will return a reference to
-     an empty string.</p>
+     the <code>conninfo()</code> accessor returns a complete
+     <code>conninfo</code> string which includes parameters that were
+     explicitly specified with the various constructor arguments, as well as
+     the extra parameters passed in the <code>extra_conninfo</code> argument.
+     The <code>extra_conninfo()</code> accessor will return the
+     <code>conninfo</code> string as passed in the <code>extra_conninfo</code>
+     argument.</p>
 
   <p>The <code>connection()</code> function returns the PostgreSQL database
      connection encapsulated by the <code>odb::pgsql::connection</code>
@@ -8469,9 +8457,6 @@ namespace odb
     class database_exception: odb::database_exception
     {
     public:
-      unsigned int
-      error () const;
-
       const std::string&amp;
       message () const;
 
@@ -8497,10 +8482,10 @@ namespace odb
 
   <p>The <code>odb::pgsql::database_exception</code> is thrown if
      a PostgreSQL database operation fails. The PostgreSQL-specific error
-     information is accessible via the <code>error()</code>,
-     <code>message()</code> and <code>sqlstate()</code> functions. All this
-     information is also combined and returned in a human-readable form by
-     the <code>what()</code> function.</p>
+     information is accessible via the <code>message()</code> and
+     <code>sqlstate()</code> functions. All this information is also
+     combined and returned in a human-readable form by the <code>what()</code>
+     function.</p>
 
   <p>The <code>odb::pgsql::cli_exception</code> is thrown by the
      command line parsing constructor of the <code>odb::pgsql::database</code>
@@ -8515,96 +8500,57 @@ namespace odb
 
   <h3><a name="13.5.1">13.5.1 Query Result Caching</a></h3>
 
-  <p>The PostgreSQL ODB runtime implementation will always perform query result
-     caching (<a href="#4.4">Section 4.4, "Query Result"</a>) even when
-     explicitly requested not to. This is a result of <code>libpq</code>
-     behaviour, specifically that control is only returned to the client
-     once all the results of a query are cached.</p>
+  <p>The PostgreSQL ODB runtime implementation will always return a
+     cached query result (<a href="#4.4">Section 4.4, "Query Result"</a>)
+     even when explicitly requested not to. This is a limitation of the
+     PostgreSQL client library (<code>libpq</code>) which does not
+     support uncached (streaming) query results.</p>
 
   <h3><a name="13.5.2">13.5.2 Foreign Key Constraints</a></h3>
 
-  <p>ODB relies on deferred checking of foreign key constraints. That is to
-     say, ODB requires that foreign key constraints be checked when the
-     containing transaction is committed. Default PostgreSQL behaviour is
-     to check constraints immediately. Any schema that defines a foreign
-     key constraint must specify the constraint as
-     <code>INITIALLY DEFERRED</code> in order for ODB to behave correctly,
-     as shown in the following example:</p>
+  <p>ODB relies on the standard SQL behavior which requires that
+     the foreign key constraints checking is deferred until the
+     transaction is committed. Default PostgreSQL behavior is
+     to check such constraints immediately. As a result, when
+     used with ODB, a custom database schema that defines foreign
+     key constraints must declare such constraints as
+     <code>INITIALLY DEFERRED</code>, as shown in the following example.
+     Schemas generated by the ODB compiler meet this requirement
+     automatically.</p>
 
-<pre class="c++">
-CREATE TABLE employee (
-  name TEXT,
-  employer BIGINT REFERENCES employer INITIALLY DEFERRED);
-</pre>
+  <pre class="sql">
+CREATE TABLE Employee (
+  ...
+  employer BIGINT REFERENCES Employer (name) INITIALLY DEFERRED);
+  </pre>
 
   <h3><a name="13.5.3">13.5.3 Date-Time Format</a></h3>
 
-  <p>ODB is only compatible with PostgreSQL servers that represent date-time
-     types using 64-bit integers. On creation of every connection, ODB
-     examines the server parameter <code>integer_datetimes</code>. If it is
-     not set to <code>on</code>, the
-     <code>odb::pgsql::database_exception</code> is thrown. You may check the
-     parameter value for your server by executing the SQL statement
-     <code>SHOW integer_datetimes</code>.</p>
+  <p>ODB expects the PostgreSQL server to use integers as a binary
+     format for the date-time types, which is the default for most
+     PostgreSQL configurations. When creating a connection, ODB
+     examines the <code>integer_datetimes</code> PostgreSQL server
+     parameter and if it is <code>false</code>,
+     <code>odb::pgsql::database_exception</code> is thrown. You may
+     check the value of this parameter for your server by executing
+     the following SQL query:</p>
+
+  <pre class="sql">
+SHOW integer_datetimes
+  </pre>
 
   <h3><a name="13.5.4">13.5.4 Timezones</a></h3>
 
-  <p>ODB does not currently support date-time types with timezone
-     information.</p>
+  <p>ODB does not currently support the PostgreSQL date-time types
+     with timezone information.</p>
 
   <h3><a name="13.5.5">13.5.5 <code>NUMERIC</code> Type Support</a></h3>
 
-  <p>Support provided for the PostgreSQL <code>NUMERIC</code> type is limited
-     to provision of the raw binary data, as received from the PostgreSQL
-    server, to the user. The binary data may be accessed as shown in the
-     following example:</p>
-
-  <pre class="c++">
-#include &lt;odb/pgsql/traits.hxx>
-
-struct numeric
-{
-  std::size_t len;
-  char* data;
-};
-
-template &lt;>
-struct value_traits&lt;numeric, odb::pgsql::id_numeric>
-{
-  static void
-  set_value (numeric&amp; v,
-             const odb::details::buffer&amp; b,
-             std::size_t n,
-             bool is_null)
-  {
-    if (!is_null)
-    {
-      v.len = n;
-      v.data = new char[n];
-      std::memcpy (v.data, b.data (), n);
-    }
-  }
-
-  static void
-  set_image (odb::details::buffer&amp; b,
-             std::size_t&amp; n,
-             bool&amp; is_null
-             numeric v)
-  {
-    is_null = false;
-    n = v.len;
-
-    if (n > b.capacity ())
-      b.capacity (n);
-
-    if (n != 0)
-      std::memcpy (b.data (), v.data, n);
-  }
-};
-</pre>
-
-  <p>Refer to the PostgreSQL documentation for more information regarding
-     the binary format used to represent the <code>NUMERIC</code> type.</p>
+  <p>Support for the PostgreSQL <code>NUMERIC</code> type is limited
+     to providing a binary buffer containing the binary representation
+     of the value. For more information on the binary format used to
+     store <code>NUMERIC</code> values refer to the PostgreSQL
+     documentation.</p>
 
   <!-- PART -->
 
@@ -8617,9 +8563,9 @@ struct value_traits&lt;numeric, odb::pgsql::id_numeric>
      and libraries. It consists of the following chapters.</p>
 
   <table class="toc">
-    <tr><th>13</th><td><a href="#13">Profiles Introduction</a></td></tr>
-    <tr><th>14</th><td><a href="#14">Boost Profile</a></td></tr>
-    <tr><th>15</th><td><a href="#15">Qt Profile</a></td></tr>
+    <tr><th>14</th><td><a href="#14">Profiles Introduction</a></td></tr>
+    <tr><th>15</th><td><a href="#15">Boost Profile</a></td></tr>
+    <tr><th>16</th><td><a href="#16">Qt Profile</a></td></tr>
   </table>
 
 
@@ -8627,7 +8573,7 @@ struct value_traits&lt;numeric, odb::pgsql::id_numeric>
 
 
   <hr class="page-break"/>
-  <h1><a name="13">13 Profiles Introduction</a></h1>
+  <h1><a name="14">14 Profiles Introduction</a></h1>
 
   <p>ODB profiles are a generic mechanism for integrating ODB with
      widely-used C++ frameworks and libraries. A profile provides glue
@@ -8681,7 +8627,7 @@ odb --profile boost/date-time ...
 
 
   <hr class="page-break"/>
-  <h1><a name="14">14 Boost Profile</a></h1>
+  <h1><a name="15">15 Boost Profile</a></h1>
 
   <p>The ODB profile implementation for Boost is provided by the
      <code>libodb-boost</code> library and consists of multiple sub-profiles
@@ -8706,7 +8652,7 @@ odb --profile boost/date-time ...
      that can be thrown by the Boost sub-profiles are described in the
      following sections.</p>
 
-  <h2><a name="14.1">14.1 Smart Pointers Library</a></h2>
+  <h2><a name="15.1">15.1 Smart Pointers Library</a></h2>
 
   <p>The <code>smart-ptr</code> sub-profile provides persistence
      support for a subset of smart pointers from the Boost
@@ -8759,7 +8705,7 @@ class employee
      behavior, add the <code>--default-pointer</code> option specifying the
      alternative object pointer after the <code>--profile</code> option.</p>
 
-  <h2><a name="14.2">14.2 Unordered Containers Library</a></h2>
+  <h2><a name="15.2">15.2 Unordered Containers Library</a></h2>
 
   <p>The <code>unordered</code> sub-profile provides persistence support for
      the containers from the Boost <code>unordered</code> library. To enable
@@ -8785,7 +8731,7 @@ class person
 };
 </pre>
 
-  <h2><a name="14.3">14.3 Date Time Library</a></h2>
+  <h2><a name="15.3">15.3 Date Time Library</a></h2>
 
   <p>The <code>date-time</code> sub-profile provides persistence support for a
      subset of types from the Boost <code>date_time</code> library. It is
@@ -8858,7 +8804,7 @@ namespace odb
      exceptions are thrown are database system dependent and are discussed in
      more detail in the following sub-sections.</p>
 
-  <h3><a name="14.3.1">14.3.1 MySQL Database Type Mapping</a></h3>
+  <h3><a name="15.3.1">15.3.1 MySQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the MySQL database
@@ -8915,7 +8861,7 @@ class person
      the <code>out_of_range</code> exception.  Refer to the MySQL
      documentation for more information on the MySQL data type ranges.</p>
 
-  <h3><a name="14.3.2">14.3.2 SQLite Database Type Mapping</a></h3>
+  <h3><a name="15.3.2">15.3.2 SQLite Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the SQLite database
@@ -8993,7 +8939,7 @@ class person
 
 
   <hr class="page-break"/>
-  <h1><a name="15">15 Qt Profile</a></h1>
+  <h1><a name="16">16 Qt Profile</a></h1>
 
   <p>The ODB profile implementation for Qt is provided by the
      <code>libodb-qt</code> library and consists of multiple sub-profiles
@@ -9019,7 +8965,7 @@ class person
      that can be thrown by the Qt sub-profiles are described in the
      following sections.</p>
 
-  <h2><a name="15.1">15.1 Basic Types</a></h2>
+  <h2><a name="16.1">16.1 Basic Types</a></h2>
 
   <p>The <code>basic</code> sub-profile provides persistence support for basic
      types defined by Qt. To enable only this profile, pass
@@ -9041,7 +8987,7 @@ class Person
 };
 </pre>
 
-  <h3><a name="15.1.1">15.1.1 MySQL Database Type Mapping</a></h3>
+  <h3><a name="16.1.1">16.1.1 MySQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported basic Qt types and the MySQL database types.</p>
@@ -9076,7 +9022,7 @@ class Person
      it is mapped to <code>TEXT</code>.</p>
 
 
-  <h3><a name="15.1.2">15.1.2 SQLite Database Type Mapping</a></h3>
+  <h3><a name="16.1.2">16.1.2 SQLite Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported basic Qt types and the SQLite database types.</p>
@@ -9103,7 +9049,7 @@ class Person
      are stored as a NULL value if their <code>isNull()</code> member
      function returns <code>true</code>.</p>
 
-  <h2><a name="15.2">15.2 Smart Pointers</a></h2>
+  <h2><a name="16.2">16.2 Smart Pointers</a></h2>
 
   <p>The <code>smart-ptr</code> sub-profile provides persistence support the
      Qt smart pointers. To enable only this profile, pass
@@ -9155,7 +9101,7 @@ class Employee
      behavior, add the <code>--default-pointer</code> option specifying the
      alternative object pointer after the <code>--profile</code> option.</p>
 
-  <h2><a name="15.3">15.3 Containers Library</a></h2>
+  <h2><a name="16.3">16.3 Containers Library</a></h2>
 
   <p>The <code>container</code> sub-profile provides persistence support for
      Qt containers. To enable only this profile, pass
@@ -9180,7 +9126,7 @@ class Person
 };
 </pre>
 
-  <h2><a name="15.4">15.4 Date Time Types</a></h2>
+  <h2><a name="16.4">16.4 Date Time Types</a></h2>
 
   <p>The <code>date-time</code> sub-profile provides persistence support for
      the Qt date-time types. To enable only this profile, pass
@@ -9233,7 +9179,7 @@ namespace odb
      system dependent and is discussed in more detail in the
      following sub-sections.</p>
 
-  <h3><a name="15.4.1">15.4.1 MySQL Database Type Mapping</a></h3>
+  <h3><a name="16.4.1">16.4.1 MySQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Qt date-time types and the MySQL database types.</p>
@@ -9288,7 +9234,7 @@ class Person
      the MySQL documentation for more information on the MySQL data type
      ranges.</p>
 
-  <h3><a name="15.4.2">15.4.2 SQLite Database Type Mapping</a></h3>
+  <h3><a name="16.4.2">16.4.2 SQLite Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Qt date-time types and the SQLite database types.</p>
