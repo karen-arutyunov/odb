@@ -1886,6 +1886,7 @@ process_pragmas (tree t,
         tmp[j] = '-';
 
     node.set (tmp, i->value);
+    node.set (tmp + "-loc", i->loc);
   }
 }
 
@@ -1916,6 +1917,7 @@ process_named_pragmas (tree t, node& node)
         tmp[j] = '-';
 
     node.set (tmp, i->value);
+    node.set (tmp + "-loc", i->loc);
   }
 }
 
