@@ -64,7 +64,7 @@ namespace relational
             else
             {
               cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                   << ": error: automatically assigned object ID must map "
+                   << ": error: automatically assigned object id must map "
                    << "to PostgreSQL INTEGER or BIGINT" << endl;
 
               throw generation_failed ();
