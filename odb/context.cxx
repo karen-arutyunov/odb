@@ -145,6 +145,47 @@ context ()
 
 context* context::current_;
 
+bool context::
+null (semantics::data_member& m)
+{
+  semantics::type& t (m.type ());
+
+  // By default pointers can be null.
+  //
+  if (object_pointer (t))
+    return m.count ("null") ||
+      (!m.count ("not-null") &&
+       (t.count ("null") || !t.count ("not-null")));
+  else
+    // Everything else by default is not null.
+    //
+    return m.count ("null") ||
+      (!m.count ("not-null") && t.count ("null"));
+}
+
+bool context::
+null (semantics::data_member& m, string const& kp)
+{
+  if (kp.empty ())
+    return null (m);
+
+  semantics::type& c (m.type ());
+  semantics::type& t (member_type (m, kp));
+
+  if (object_pointer (t))
+    return m.count (kp + "-null") ||
+      (!m.count (kp + "-not-null") &&
+       (c.count (kp + "-null") ||
+        (!c.count (kp + "-not-null") &&
+         (t.count ("null") || !t.count ("not-null")))));
+  else
+    return m.count (kp + "-null") ||
+      (!m.count (kp + "-not-null") &&
+       (c.count (kp + "-null") ||
+        (!c.count (kp + "-not-null") &&
+         t.count ("null"))));
+}
+
 string context::
 upcase (string const& s)
 {
@@ -192,7 +233,7 @@ comp_value_ (semantics::class_& c)
 {
   bool r (true);
 
-  //@@ This is bad. Did I add new value pragmas and forgot to
+  //@@ This is bad. Did we add new value pragmas and forgot to
   //   account for them here?
   //
   r = r && c.count ("value");
@@ -206,7 +247,10 @@ comp_value_ (semantics::class_& c)
   r = r && !c.count ("index-column");
   r = r && !c.count ("key-column");
   r = r && !c.count ("id-column");
+  r = r && !c.count ("null");
   r = r && !c.count ("not-null");
+  r = r && !c.count ("value-null");
+  r = r && !c.count ("value-not-null");
   r = r && !c.count ("unordered");
 
   c.set ("composite-value", r);
@@ -269,10 +313,7 @@ column_type (semantics::data_member& m, string const& kp)
 }
 
 string context::
-database_type_impl (semantics::type& t,
-                    semantics::names* hint,
-                    semantics::context& ctx,
-                    column_type_flags f)
+database_type_impl (semantics::type& t, semantics::names* hint, bool id)
 {
   type_map_type::const_iterator end (data_->type_map_.end ()), i (end);
 
@@ -293,16 +334,9 @@ database_type_impl (semantics::type& t,
     i = data_->type_map_.find (t.fq_name ());
 
   if (i != end)
-  {
-    string r (ctx.count ("id") ? i->second.id_type : i->second.type);
-
-    if ((f & ctf_default_null) == 0)
-      r += " NOT NULL";
-
-    return r;
-  }
-
-  return string ();
+    return id ? i->second.id_type : i->second.type;
+  else
+    return string ();
 }
 
 static string

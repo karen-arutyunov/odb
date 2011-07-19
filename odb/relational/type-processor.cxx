@@ -131,14 +131,7 @@ namespace relational
             type = idt.get<string> ("type");
 
           if (type.empty ())
-          {
-            column_type_flags f (ctf_none);
-
-            if (null_pointer (m))
-              f |= ctf_default_null;
-
-            type = database_type (idt, id.belongs ().hint (), id, f);
-          }
+            type = database_type (idt, id.belongs ().hint (), true);
         }
         else
         {
@@ -149,12 +142,22 @@ namespace relational
             type = t.get<string> ("type");
 
           if (type.empty ())
-            type = database_type (t, m.belongs ().hint (), m, ctf_none);
+            type = database_type (t, m.belongs ().hint (), m.count ("id"));
         }
 
         if (!type.empty ())
         {
           m.set ("column-type", type);
+
+          // Issue a warning if we are relaxing null-ness.
+          //
+          if (m.count ("null") && m.type ().count ("not-null"))
+          {
+            os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+               << " warning: data member declared null while its type is "
+               << "declared not null" << endl;
+          }
+
           return;
         }
 
@@ -221,14 +224,7 @@ namespace relational
             type = idt.get<string> ("type");
 
           if (type.empty ())
-          {
-            column_type_flags f (ctf_none);
-
-            if (null_pointer (m, prefix))
-              f |= ctf_default_null;
-
-            type = database_type (idt, id.belongs ().hint (), id, f);
-          }
+            type = database_type (idt, id.belongs ().hint (), true);
         }
         else
         {
@@ -236,7 +232,7 @@ namespace relational
             type = t.get<string> ("type");
 
           if (type.empty ())
-            type = database_type (t, hint, m, ctf_none);
+            type = database_type (t, hint, false);
         }
 
         if (!type.empty ())
@@ -366,6 +362,10 @@ namespace relational
 
           t.set ("container-kind", ck);
 
+          // Mark id column as not null.
+          //
+          t.set ("id-not-null", string ());
+
           // Get the value type.
           //
           try
@@ -403,6 +403,33 @@ namespace relational
 
           t.set ("value-tree-type", vt);
           t.set ("value-tree-hint", vh);
+
+          // If we have a set container, automatically mark the value
+          // column as not null. If we already have an explicit null for
+          // this column, issue an error.
+          //
+          if (ck == ck_set)
+          {
+            if (t.count ("value-null"))
+            {
+              os << t.file () << ":" << t.line () << ":" << t.column () << ":"
+                 << " error: set container cannot contain null values" << endl;
+
+              throw generation_failed ();
+            }
+            else
+              t.set ("value-not-null", string ());
+          }
+
+          // Issue a warning if we are relaxing null-ness in the
+          // container type.
+          //
+          if (t.count ("value-null") && vt->count ("not-null"))
+          {
+            os << t.file () << ":" << t.line () << ":" << t.column () << ":"
+               << " warning: container value declared null while its type "
+               << "is declared not null" << endl;
+          }
 
           // Get the index type for ordered containers.
           //
@@ -443,6 +470,7 @@ namespace relational
 
             t.set ("index-tree-type", it);
             t.set ("index-tree-hint", ih);
+            t.set ("index-not-null", string ());
           }
 
           // Get the key type for maps.
@@ -484,6 +512,7 @@ namespace relational
 
             t.set ("key-tree-type", kt);
             t.set ("key-tree-hint", kh);
+            t.set ("key-not-null", string ());
           }
         }
 
@@ -506,6 +535,28 @@ namespace relational
         //
         if (ck == ck_ordered && m.count ("value-inverse"))
           m.set ("unordered", string ()); // Keep compatible with pragma.
+
+        // Issue an error if we have a null column in a set container.
+        // This can only happen if the value is declared as null in
+        // the member.
+        //
+        if (ck == ck_set && m.count ("value-null"))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+             << " error: set container cannot contain null values" << endl;
+
+          throw generation_failed ();
+        }
+
+        // Issue a warning if we are relaxing null-ness in the member.
+        //
+        if (m.count ("value-null") &&
+            (t.count ("value-not-null") || vt->count ("not-null")))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+             << " warning: container value declared null while the container "
+             << "type or value type declares it as not null" << endl;
+        }
 
         return true;
       }
@@ -727,12 +778,6 @@ namespace relational
              << "info: class '" << c->name () << "' is defined here" << endl;
 
           throw generation_failed ();
-        }
-
-        if (m.count ("not-null") && !kp.empty ())
-        {
-          m.remove ("not-null");
-          m.set (kp + "-not-null", string ()); // Keep compatible with pragma.
         }
 
         // See if this is the inverse side of a bidirectional relationship.

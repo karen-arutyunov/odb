@@ -198,9 +198,13 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       return false;
     }
   }
-  else if (p == "not_null")
+  else if (p == "null" ||
+           p == "not_null" ||
+           p == "value_null" ||
+           p == "value_not_null")
   {
-    // Not_null can be used for both members and types (container or pointer).
+    // Null pragmas can be used for both members and types (values,
+    // containers, and pointers).
     //
     if (tc != FIELD_DECL && !TYPE_P (d))
     {
@@ -518,9 +522,15 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
   }
-  else if (p == "not_null")
+  else if (p == "null" ||
+           p == "not_null" ||
+           p == "value_null" ||
+           p == "value_not_null")
   {
+    // null
     // not_null
+    // value_null
+    // value_not_null
     //
 
     // Make sure we've got the correct declaration type.
@@ -766,7 +776,10 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "index_type" ||
            p == "key_type" ||
            p == "table" ||
+           p == "null" ||
            p == "not_null" ||
+           p == "value_null" ||
+           p == "value_not_null" ||
            p == "inverse" ||
            p == "unordered" ||
            p == "transient")
@@ -903,9 +916,27 @@ handle_pragma_db_table (cpp_reader* reader)
 }
 
 extern "C" void
+handle_pragma_db_null (cpp_reader* reader)
+{
+  handle_pragma_qualifier (reader, "null");
+}
+
+extern "C" void
 handle_pragma_db_not_null (cpp_reader* reader)
 {
   handle_pragma_qualifier (reader, "not_null");
+}
+
+extern "C" void
+handle_pragma_db_value_null (cpp_reader* reader)
+{
+  handle_pragma_qualifier (reader, "value_null");
+}
+
+extern "C" void
+handle_pragma_db_value_not_null (cpp_reader* reader)
+{
+  handle_pragma_qualifier (reader, "value_not_null");
 }
 
 extern "C" void
@@ -945,7 +976,10 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "index_type", handle_pragma_db_itype);
   c_register_pragma_with_expansion ("db", "key_type", handle_pragma_db_ktype);
   c_register_pragma_with_expansion ("db", "table", handle_pragma_db_table);
+  c_register_pragma_with_expansion ("db", "null", handle_pragma_db_null);
   c_register_pragma_with_expansion ("db", "not_null", handle_pragma_db_not_null);
+  c_register_pragma_with_expansion ("db", "value_null", handle_pragma_db_value_null);
+  c_register_pragma_with_expansion ("db", "value_not_null", handle_pragma_db_value_not_null);
   c_register_pragma_with_expansion ("db", "inverse", handle_pragma_db_inverse);
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);

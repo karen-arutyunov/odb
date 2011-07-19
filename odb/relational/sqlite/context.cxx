@@ -197,12 +197,9 @@ namespace relational
     }
 
     string context::
-    database_type_impl (semantics::type& t,
-                        semantics::names* hint,
-                        semantics::context& ctx,
-                        column_type_flags f)
+    database_type_impl (semantics::type& t, semantics::names* hint, bool id)
     {
-      string r (base_context::database_type_impl (t, hint, ctx, f));
+      string r (base_context::database_type_impl (t, hint, id));
 
       if (!r.empty ())
         return r;
@@ -210,12 +207,7 @@ namespace relational
       using semantics::enum_;
 
       if (t.is_a<semantics::enum_> ())
-      {
         r = "INTEGER";
-
-        if ((f & ctf_default_null) == 0)
-          r += " NOT NULL";
-      }
 
       return r;
     }

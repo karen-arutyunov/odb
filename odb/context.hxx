@@ -123,6 +123,12 @@ public:
     return c.abstract () || c.count ("abstract");
   }
 
+  bool
+  null (semantics::data_member&);
+
+  bool
+  null (semantics::data_member&, string const& key_prefix);
+
   // Database names and types.
   //
 public:
@@ -223,23 +229,6 @@ public:
   weak_pointer (semantics::type& p)
   {
     return pointer_kind (p) == pk_weak;
-  }
-
-  bool
-  null_pointer (semantics::data_member& m)
-  {
-    return !(m.count ("not-null") || m.type ().count ("not-null"));
-  }
-
-  bool
-  null_pointer (semantics::data_member& m, string const& key_prefix)
-  {
-    if (key_prefix.empty ())
-      return null_pointer (m);
-
-    return !(m.count (key_prefix + "-not-null") ||
-             m.type ().count ("not-null") ||
-             member_type (m, key_prefix).count ("not-null"));
   }
 
   semantics::data_member*
@@ -441,33 +430,19 @@ public:
   // Per-database customizable functionality.
   //
 protected:
-  typedef unsigned short column_type_flags;
-
-  static column_type_flags const ctf_none = 0;
-
-  // Default type should be NULL-able.
-  //
-  static column_type_flags const ctf_default_null = 0x01;
-
   // Return empty string if there is no mapping.
   //
   string
-  database_type (semantics::type& t,
-                 semantics::names* hint,
-                 semantics::context& c,
-                 column_type_flags f)
+  database_type (semantics::type& t, semantics::names* hint, bool id)
   {
-    return current ().database_type_impl (t, hint, c, f);
+    return current ().database_type_impl (t, hint, id);
   }
 
   // The default implementation uses the type map (populated by the database-
   // specific context implementation) to come up with a mapping.
   //
   virtual string
-  database_type_impl (semantics::type&,
-                      semantics::names*,
-                      semantics::context&,
-                      column_type_flags);
+  database_type_impl (semantics::type&, semantics::names*, bool);
 
 public:
   typedef context root_context;

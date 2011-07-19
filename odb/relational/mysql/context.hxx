@@ -97,10 +97,7 @@ namespace relational
 
     protected:
       virtual string
-      database_type_impl (semantics::type&,
-                          semantics::names*,
-                          semantics::context&,
-                          column_type_flags);
+      database_type_impl (semantics::type&, semantics::names*, bool);
 
     public:
       virtual

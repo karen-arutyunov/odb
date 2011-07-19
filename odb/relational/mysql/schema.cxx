@@ -37,9 +37,25 @@ namespace relational
         }
       };
 
-      struct object_columns: relational::object_columns
+      struct object_columns: relational::object_columns, context
       {
         object_columns (base const& x): base (x) {}
+
+        virtual void
+        null (semantics::data_member& m)
+        {
+          if (!context::null (m, prefix_))
+            os << " NOT NULL";
+          else
+          {
+            // MySQL TIMESTAMP is by default NOT NULL. If we want it
+            // to contain NULL values, we need to explicitly declare
+            // the column as NULL.
+            //
+            if (column_sql_type (m, prefix_).type == sql_type::TIMESTAMP)
+              os << " NULL";
+          }
+        }
 
         virtual void
         constraints (semantics::data_member& m)

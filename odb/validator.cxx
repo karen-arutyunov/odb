@@ -15,6 +15,29 @@ using namespace std;
 
 namespace
 {
+  // Resolve null overrides.
+  //
+  static void
+  override_null (semantics::node& n, string const& prefix = "")
+  {
+    string p (prefix.empty () ? prefix : prefix + '-');
+
+    if (n.count (p + "null") && n.count (p + "not-null"))
+    {
+      if (n.get<location_t> (p + "null-loc") <
+          n.get<location_t> (p + "not-null-loc"))
+      {
+        n.remove (p + "null");
+        n.remove (p + "null-loc");
+      }
+      else
+      {
+        n.remove (p + "not-null");
+        n.remove (p + "not-null-loc");
+      }
+    }
+  }
+
   struct data_member: traversal::data_member
   {
     data_member (bool& valid)
@@ -42,6 +65,11 @@ namespace
 
         valid_ = false;
       }
+
+      // Resolve null overrides.
+      //
+      override_null (m);
+      override_null (m, "value");
     }
 
     bool& valid_;
@@ -119,22 +147,44 @@ namespace
 
   //
   //
+  struct value_type: traversal::type
+  {
+    value_type (bool& valid): valid_ (valid) {}
+
+    virtual void
+    traverse (semantics::type& t)
+    {
+      // Resolve null overrides.
+      //
+      override_null (t);
+      override_null (t, "value");
+    }
+
+    bool& valid_;
+  };
+
+  //
+  //
   struct class_: traversal::class_
   {
-    class_ (bool& valid, semantics::unit& unit)
-        : valid_ (valid), unit_ (unit), member_ (valid)
+    class_ (bool& valid, semantics::unit& unit, value_type& vt)
+        : valid_ (valid), unit_ (unit), vt_ (vt), member_ (valid)
     {
       *this >> names_ >> member_;
     }
-
 
     virtual void
     traverse (type& c)
     {
       if (c.count ("object"))
         traverse_object (c);
-      else if (context::comp_value (c))
-        traverse_value (c);
+      else
+      {
+        if (context::comp_value (c))
+          traverse_value (c);
+
+        vt_.dispatch (c);
+      }
     }
 
     virtual void
@@ -234,7 +284,22 @@ namespace
         }
       }
       else
+      {
         c.set ("id-member", id);
+
+        // Automatically mark the id member as not null. If we already have
+        // an explicit null pragma for this member, issue an error.
+        //
+        if (id->count ("null"))
+        {
+          cerr << id->file () << ":" << id->line () << ":" << id->column ()
+               << ": error: object id member cannot be null" << endl;
+
+          valid_ = false;
+        }
+        else
+          id->set ("not-null", string ());
+      }
 
       // Check members.
       //
@@ -317,6 +382,7 @@ namespace
 
     bool& valid_;
     semantics::unit& unit_;
+    value_type& vt_;
 
     data_member member_;
     traversal::names names_;
@@ -332,16 +398,21 @@ validate (options const&,
 
   traversal::unit unit;
   traversal::defines unit_defines;
+  traversal::declares unit_declares;
   traversal::namespace_ ns;
-  class_ c (valid, u);
+  value_type vt (valid);
+  class_ c (valid, u, vt);
 
   unit >> unit_defines >> ns;
   unit_defines >> c;
+  unit >> unit_declares >> vt;
 
   traversal::defines ns_defines;
+  traversal::declares ns_declares;
 
   ns >> ns_defines >> ns;
   ns_defines >> c;
+  ns >> ns_declares >> vt;
 
   unit.dispatch (u);
 

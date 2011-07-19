@@ -189,6 +189,7 @@ namespace relational
         os << "  " << quote_id (name) << " ";
 
         type (m);
+        null (m);
         constraints (m);
         reference (m);
 
@@ -199,6 +200,13 @@ namespace relational
       type (semantics::data_member& m)
       {
         os << column_type (m, prefix_);
+      }
+
+      virtual void
+      null (semantics::data_member& m)
+      {
+        if (!context::null (m, prefix_))
+          os << " NOT NULL";
       }
 
       virtual void

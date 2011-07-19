@@ -588,7 +588,7 @@ namespace relational
             {
               os << "}";
 
-              if (!null_pointer (mi.m, key_prefix_))
+              if (!null (mi.m, key_prefix_))
                 os << "else" << endl
                    << "throw null_pointer ();";
             }
@@ -786,7 +786,7 @@ namespace relational
                  << endl
                  << "if (i." << mi.var << "null)" << endl;
 
-              if (null_pointer (mi.m, key_prefix_))
+              if (null (mi.m, key_prefix_))
                 os << member << " = ptr_traits::pointer_type ();";
               else
                 os << "throw null_pointer ();";
