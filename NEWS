@@ -1,5 +1,31 @@
 Version 1.5.0
 
+  * New handling of the NULL semantics. Now, instead of being specified as
+    part of the SQL type with the type pragma, there are separate null and
+    not_null pragmas. The not_null pragma was used to control the NULL
+    semantics of object pointers. Now the two pragmas are used consistently
+    for object pointers and simple values (and, in the future, they will work
+    for composite values and containers). To control the NULL semantics of
+    container's element values, the value_null and value_not_null pragmas
+    have been added, similar to the value_type, value_column, etc., pragmas.
+    For more information about the new mechanism, refer to Sections 10.2.3,
+    10.2.8, 10.3.6, and 10.3.13 in the ODB manual.
+
+    This is a backwards-incompatible change. Existing use cases that will
+    require manual changes are listed below.
+
+    For pragmas that apply to simple value types and data members of
+    such types:
+
+    #pragma type("TEXT NOT NULL") => #pragma type("TEXT")
+    #pragma type("TEXT NULL")     => #pragma type("TEXT") null
+    #pragma type("TEXT")          => #pragma type("TEXT") null
+
+    For pragmas that apply to containers of pointers types and data
+    members of such types:
+
+    #pragma not_null              => #pragma value_not_null
+
   * Support for database operations callbacks. Now a persistent class can
     register a callback function that will be called before and after every
     database operation, such as persist, load, update, or erase, is performed
