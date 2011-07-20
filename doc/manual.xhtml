@@ -423,15 +423,16 @@ for consistency.
               <table class="toc">
                 <tr><th>10.2.1</th><td><a href="#10.2.1"><code>type</code></a></td></tr>
 		<tr><th>10.2.2</th><td><a href="#10.2.2"><code>id_type</code></a></td></tr>
-		<tr><th>10.2.3</th><td><a href="#10.2.3"><code>not_null</code></a></td></tr>
+		<tr><th>10.2.3</th><td><a href="#10.2.3"><code>null</code>/<code>not_null</code></a></td></tr>
 		<tr><th>10.2.4</th><td><a href="#10.2.4"><code>unordered</code></a></td></tr>
 		<tr><th>10.2.5</th><td><a href="#10.2.5"><code>index_type</code></a></td></tr>
 		<tr><th>10.2.6</th><td><a href="#10.2.6"><code>key_type</code></a></td></tr>
 		<tr><th>10.2.7</th><td><a href="#10.2.7"><code>value_type</code></a></td></tr>
-		<tr><th>10.2.8</th><td><a href="#10.2.8"><code>id_column</code></a></td></tr>
-		<tr><th>10.2.9</th><td><a href="#10.2.9"><code>index_column</code></a></td></tr>
-		<tr><th>10.2.10</th><td><a href="#10.2.10"><code>key_column</code></a></td></tr>
-		<tr><th>10.2.11</th><td><a href="#10.2.11"><code>value_column</code></a></td></tr>
+		<tr><th>10.2.8</th><td><a href="#10.2.8"><code>value_null</code>/<code>value_not_null</code></a></td></tr>
+		<tr><th>10.2.9</th><td><a href="#10.2.9"><code>id_column</code></a></td></tr>
+		<tr><th>10.2.10</th><td><a href="#10.2.10"><code>index_column</code></a></td></tr>
+		<tr><th>10.2.11</th><td><a href="#10.2.11"><code>key_column</code></a></td></tr>
+		<tr><th>10.2.12</th><td><a href="#10.2.12"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -443,17 +444,18 @@ for consistency.
                 <tr><th>10.3.3</th><td><a href="#10.3.3"><code>type</code></a></td></tr>
 		<tr><th>10.3.4</th><td><a href="#10.3.4"><code>column</code></a></td></tr>
 		<tr><th>10.3.5</th><td><a href="#10.3.5"><code>transient</code></a></td></tr>
-		<tr><th>10.3.6</th><td><a href="#10.3.6"><code>not_null</code></a></td></tr>
+		<tr><th>10.3.6</th><td><a href="#10.3.6"><code>null</code>/<code>not_null</code></a></td></tr>
 		<tr><th>10.3.7</th><td><a href="#10.3.7"><code>inverse</code></a></td></tr>
 		<tr><th>10.3.8</th><td><a href="#10.3.8"><code>unordered</code></a></td></tr>
 		<tr><th>10.3.9</th><td><a href="#10.3.9"><code>table</code></a></td></tr>
 		<tr><th>10.3.10</th><td><a href="#10.3.10"><code>index_type</code></a></td></tr>
 		<tr><th>10.3.11</th><td><a href="#10.3.11"><code>key_type</code></a></td></tr>
 		<tr><th>10.3.12</th><td><a href="#10.3.12"><code>value_type</code></a></td></tr>
-		<tr><th>10.3.13</th><td><a href="#10.3.13"><code>id_column</code></a></td></tr>
-		<tr><th>10.3.14</th><td><a href="#10.3.14"><code>index_column</code></a></td></tr>
-		<tr><th>10.3.15</th><td><a href="#10.3.15"><code>key_column</code></a></td></tr>
-		<tr><th>10.3.16</th><td><a href="#10.3.16"><code>value_column</code></a></td></tr>
+		<tr><th>10.3.13</th><td><a href="#10.3.13"><code>value_null</code>/<code>value_not_null</code></a></td></tr>
+		<tr><th>10.3.14</th><td><a href="#10.3.14"><code>id_column</code></a></td></tr>
+		<tr><th>10.3.15</th><td><a href="#10.3.15"><code>index_column</code></a></td></tr>
+		<tr><th>10.3.16</th><td><a href="#10.3.16"><code>key_column</code></a></td></tr>
+		<tr><th>10.3.17</th><td><a href="#10.3.17"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -2860,7 +2862,8 @@ namespace odb
 
   <p>The <code>null_pointer</code> exception is thrown when a
      pointer to a persistent object declared non-<code>NULL</code>
-     with the <code>db&nbsp;not_null</code> pragma has the <code>NULL</code>
+     with the <code>db&nbsp;not_null</code> or
+     <code>db&nbsp;value_not_null</code> pragma has the <code>NULL</code>
      value. See <a href="#6">Chapter 6, "Relationships"</a> for details.</p>
 
   <p>The next three exceptions (<code>already_in_transaction</code>,
@@ -3613,12 +3616,12 @@ class person
 {
   ...
 private:
-  #pragma db table("nicknames")                        \
-             id_column ("person_id")                   \
-             index_type ("SMALLINT UNSIGNED NOT NULL") \
-             index_column ("nickname_number")          \
-             value_type ("VARCHAR(255) NOT NULL")      \
-             value_column ("nickname")
+  #pragma db table("nicknames")              \
+             id_column("person_id")          \
+             index_type("SMALLINT UNSIGNED") \
+             index_column("nickname_number") \
+             value_type("VARCHAR(255)")      \
+             value_column("nickname")
   std::vector&lt;std::string> nicknames_;
   ...
 };
@@ -3701,10 +3704,10 @@ class person
 {
   ...
 private:
-  #pragma db table("emails")                      \
-             id_column ("person_id")              \
-             value_type ("VARCHAR(255) NOT NULL") \
-             value_column ("email")
+  #pragma db table("emails")            \
+             id_column("person_id")     \
+             value_type("VARCHAR(255)") \
+             value_column("email")
   std::set&lt;std::string> emails_;
   ...
 };
@@ -3763,12 +3766,12 @@ class person
 {
   ...
 private:
-  #pragma db table("weight_map")                \
-             id_column ("person_id")            \
-             key_type ("INT UNSIGNED NOT NULL") \
-             key_column ("age")                 \
-             value_type ("DOUBLE NOT NULL")     \
-             value_column ("weight")
+  #pragma db table("weight_map")      \
+             id_column("person_id")   \
+             key_type("INT UNSIGNED") \
+             key_column("age")        \
+             value_type("DOUBLE")     \
+             value_column("weight")
   std::map&lt;unsigned short, float> age_weight_map_;
   ...
 };
@@ -3879,8 +3882,13 @@ class employee
   </pre>
 
   <p>By default, an object pointer can be <code>NULL</code>. To
-     specify that a pointer always point to a valid object we can
-     use the <code>not_null</code> pragma, for example:</p>
+     specify that a pointer always points to a valid object we can
+     use the <code>not_null</code> pragma (<a href="#10.3.6">Section
+     10.3.6, "<code>null</code>/<code>not_null</code>"</a>) for
+     single object pointers and the <code>value_not_null</code> pragma
+     (<a href="#10.3.13">Section
+     10.3.13, "<code>value_null</code>/<code>value_not_null</code>"</a>)
+     for containers of object pointers. For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -3889,14 +3897,18 @@ class employee
   ...
 
   #pragma db not_null
-  shared_ptr&lt;employer> employer_;
+  shared_ptr&lt;employer> current_employer_;
+
+  #pragma db value_not_null
+  std::vector&lt;shared_ptr&lt;employer> > previous_employers_;
 };
   </pre>
 
   <p>In this case, if we perform a database operation on the
-     <code>employee</code> object and the <code>employer_</code>
-     pointer is <code>NULL</code>, then the <code>odb::null_pointer</code>
-     exception will be thrown.</p>
+     <code>employee</code> object and the <code>current_employer_</code>
+     pointer or one of the pointers stored in the
+     <code>previous_employers_</code> container is <code>NULL</code>,
+     then the <code>odb::null_pointer</code> exception will be thrown.</p>
 
   <p>We don't need to do anything special to establish or navigate a
      relationship between two persistent objects, as shown in the
@@ -4088,7 +4100,7 @@ class employee
   #pragma db id
   unsigned long id_;
 
-  #pragma db not_null unordered
+  #pragma db value_not_null unordered
   std::vector&lt;shared_ptr&lt;project> > projects_;
 };
   </pre>
@@ -4117,7 +4129,7 @@ class employee
 {
   ...
 
-  #pragma db not_null unordered \
+  #pragma db value_not_null unordered \
              id_column("employee_id") value_column("project_name")
   std::vector&lt;shared_ptr&lt;project> > projects_;
 };
@@ -4365,7 +4377,7 @@ class employer
   #pragma db id
   std::string name_;
 
-  #pragma db not_null inverse(employer_)
+  #pragma db value_not_null inverse(employer_)
   std::vector&lt;weak_ptr&lt;employee> > employees_
 };
 
@@ -4430,7 +4442,7 @@ class project
   #pragma db id
   std::string name_;
 
-  #pragma db not_null inverse(projects_)
+  #pragma db value_not_null inverse(projects_)
   std::vector&lt;weak_ptr&lt;employee> > employees_;
 };
 
@@ -4442,7 +4454,7 @@ class employee
   #pragma db id
   unsigned long id_;
 
-  #pragma db not_null unordered
+  #pragma db value_not_null unordered
   std::vector&lt;shared_ptr&lt;project> > projects_;
 };
   </pre>
@@ -4492,7 +4504,7 @@ class employer
   #pragma db id
   std::string name_;
 
-  #pragma db not_null inverse(employer_)
+  #pragma db value_not_null inverse(employer_)
   std::vector&lt;weak_ptr&lt;employee> > employees_;
 };
 
@@ -4573,7 +4585,7 @@ class employer
 {
   ...
 
-  #pragma db not_null inverse(employer_)
+  #pragma db value_not_null inverse(employer_)
   std::vector&lt;lazy_weak_ptr&lt;employee> > employees_;
 };
 
@@ -5060,9 +5072,9 @@ CREATE TABLE person (
   <p>The same principle applies when a composite value type is used
      as an element of a container, except that instead of
      <code>db&nbsp;column</code>, either the <code>db&nbsp;value_column</code>
-     (<a href="#10.3.16">Section 10.3.16, "<code>value_column</code>"</a>) or
+     (<a href="#10.3.17">Section 10.3.17, "<code>value_column</code>"</a>) or
      <code>db&nbsp;key_column</code>
-     (<a href="#10.3.15">Section 10.3.15, "<code>key_column</code>"</a>)
+     (<a href="#10.3.16">Section 10.3.16, "<code>key_column</code>"</a>)
      pragmas are used to specify the column prefix.</p>
 
   <p>When a composite value type contains a container, an extra table
@@ -5094,10 +5106,10 @@ class person
   <p>The corresponding database schema will look like this:</p>
 
   <pre class="sql">
-CREATE TABLE `person_name_nicknames` (
-  `object_id` BIGINT UNSIGNED NOT NULL,
-  `index` BIGINT UNSIGNED NOT NULL,
-  `value` TEXT NOT NULL)
+CREATE TABLE person_name_nicknames (
+  object_id BIGINT UNSIGNED NOT NULL,
+  index BIGINT UNSIGNED NOT NULL,
+  value TEXT NOT NULL)
 
 CREATE TABLE person (
   id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
@@ -5132,10 +5144,10 @@ class person
   <p>This will result in the following schema changes:</p>
 
   <pre class="sql">
-CREATE TABLE `person_nickname` (
-  `object_id` BIGINT UNSIGNED NOT NULL,
-  `index` BIGINT UNSIGNED NOT NULL,
-  `value` TEXT NOT NULL)
+CREATE TABLE person_nickname (
+  object_id BIGINT UNSIGNED NOT NULL,
+  index BIGINT UNSIGNED NOT NULL,
+  value TEXT NOT NULL)
   </pre>
 
   <p>Similar to columns, we can make the table prefix empty.</p>
@@ -5361,7 +5373,7 @@ CREATE TABLE permanent_employee (
 
 CREATE TABLE temporary_employee (
   first TEXT NOT NULL,
-  last` TEXT NOT NULL,
+  last TEXT NOT NULL,
   id BIGINT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
   duration BIGINT UNSIGNED NOT NULL);
 
@@ -5688,7 +5700,7 @@ namespace db
      named value type pragma to map a C++ type to a native database type:</p>
 
   <pre class="c++">
-#pragma db value(bool) type("INT NOT NULL")
+#pragma db value(bool) type("INT")
 
 #pragma db object
 class person
@@ -6024,8 +6036,8 @@ private:
     </tr>
 
     <tr>
-      <td><code>not_null</code></td>
-      <td>object pointer cannot be <code>NULL</code></td>
+      <td><code>null</code>/<code>not_null</code></td>
+      <td>type can/cannot be <code>NULL</code></td>
       <td><a href="#10.2.3">10.2.3</a></td>
     </tr>
 
@@ -6054,27 +6066,33 @@ private:
     </tr>
 
     <tr>
+      <td><code>value_null</code>/<code>value_not_null</code></td>
+      <td>container's value can/cannot be <code>NULL</code></td>
+      <td><a href="#10.2.8">10.2.8</a></td>
+    </tr>
+
+    <tr>
       <td><code>id_column</code></td>
       <td>column name for a container's table object id</td>
-      <td><a href="#10.2.8">10.2.8</a></td>
+      <td><a href="#10.2.9">10.2.9</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>column name for a container's table index</td>
-      <td><a href="#10.2.9">10.2.9</a></td>
+      <td><a href="#10.2.10">10.2.10</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>column name for a container's table key</td>
-      <td><a href="#10.2.10">10.2.10</a></td>
+      <td><a href="#10.2.11">10.2.11</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>column name for a container's table value</td>
-      <td><a href="#10.2.11">10.2.11</a></td>
+      <td><a href="#10.2.12">10.2.12</a></td>
     </tr>
 
   </table>
@@ -6095,15 +6113,14 @@ private:
      that should be used for data members of this type. For example:</p>
 
   <pre class="c++">
-#pragma db value(bool) type("INT NOT NULL")
+#pragma db value(bool) type("INT")
 
 #pragma db object
 class person
 {
   ...
-private:
+
   bool married_; // Mapped to INT NOT NULL database type.
-  ...
 };
   </pre>
 
@@ -6111,7 +6128,10 @@ private:
      types, such as <code>bool</code>, <code>int</code>, and
      <code>std::string</code> and the database types for each supported
      database system. For more information on the default mapping,
-     refer to <a href="#II">Part II, "Database Systems"</a>.</p>
+     refer to <a href="#II">Part II, "Database Systems"</a>. The
+     <code>null</code> and <code>not_null</code> (<a href="#10.2.3">Section
+     10.2.3, "<code>null</code>/<code>not_null</code>"</a>) specifiers
+     can be used to control the NULL semantics of a type.</p>
 
   <p>In the above example we changed the mapping for the <code>bool</code>
      type which is now mapped to the <code>INT</code> database type. In
@@ -6124,7 +6144,7 @@ private:
      boolean value is stored in the database as a string:</p>
 
   <pre class="c++">
-#pragma db value(bool) type("VARCHAR(5) NOT NULL")
+#pragma db value(bool) type("VARCHAR(5)")
   </pre>
 
   <p>The possible database values for the C++ <code>true</code> value could
@@ -6149,14 +6169,13 @@ private:
      example:</p>
 
   <pre class="c++">
-#pragma db value(std::string) type("TEXT NOT NULL") \
-                              id_type("VARCHAR(128) NOT NULL")
+#pragma db value(std::string) type("TEXT") id_type("VARCHAR(128)")
 
 #pragma db object
 class person
 {
   ...
-private:
+
   #pragma db id
   std::string email_; // Mapped to VARCHAR(128) NOT NULL.
 
@@ -6173,43 +6192,72 @@ private:
 class person
 {
   ...
-private:
-  #pragma db id type("VARCHAR(128) NOT NULL")
+
+  #pragma db id type("VARCHAR(128)")
   std::string email_;
-  ...
 };
   </pre>
 
-  <h3><a name="10.2.3">10.2.3 <code>not_null</code></a></h3>
+  <h3><a name="10.2.3">10.2.3 <code>null</code>/<code>not_null</code></a></h3>
 
-  <p>The <code>not_null</code> specifier specifies that an object pointer
-     or a container of object pointers cannot have or contain the
-     <code>NULL</code> value. For example:</p>
+  <p>The <code>null</code> and <code>not_null</code> specifiers specify that
+     a value type or object pointer can or cannot be <code>NULL</code>,
+     respectively. By default, value types are assumed not to allow
+     <code>NULL</code> values while object pointers are assumed to
+     allow <code>NULL</code> values. Data members of types that allow
+     <code>NULL</code> values are mapped in a relational database to
+     columns that allow <code>NULL</code> values. For example:</p>
 
   <pre class="c++">
 using std::tr1::shared_ptr;
+
+typedef shared_ptr&lt;std::string> string_ptr;
+#pragma db value(string_ptr) type("TEXT") null
 
 #pragma db object
 class person
 {
   ...
+
+  string_ptr name_; // Mapped to TEXT NULL.
 };
 
 typedef shared_ptr&lt;person> person_ptr;
 #pragma db value(person_ptr) not_null
+  </pre>
 
-#pragma db object
-class account
-{
-  ...
-};
+  <p>The <code>NULL</code> semantics can also be specified on the
+     per-member basis (<a href="#10.3.6">Section 10.3.6,
+     "<code>null</code>/<code>not_null</code>"</a>). If both a type and
+     a member have <code>null</code>/<code>not_null</code> specifiers,
+     then the member specifier takes precedence. If a member specifier
+     relaxes the <code>NULL</code> semantics (that is, if a member has
+     the <code>null</code> specifier and the type has the explicit
+     <code>not_null</code> specifier), then a warning is issued.</p>
 
-typedef std::vector&lt;shared_ptr&lt;account> > accounts;
-#pragma db value(accounts) not_null
-</pre>
+  <p>It is also possible to override a previously specified
+     <code>null</code>/<code>not_null</code> specifier. This is
+     primarily useful if a third-party type, for example,
+     one provided by a profile library (<a href="#III">Part III,
+     "Profiles"</a>), allows <code>NULL</code> values but in your
+     object model data members of this type should never be
+     <code>NULL</code>. In this case you can use the <code>not_null</code>
+     specifier to disable <code>NULL</code> values for this type for the
+     entire translation unit. For example:</p>
 
-  <p>For a more detailed discussion of the <code>NULL</code> object pointer
-     semantics, refer to <a href="#6">Chapter 6, "Relationships"</a>.</p>
+  <pre class="c++">
+// By default, null_string allows NULL values.
+//
+#include &lt;null-string.hxx>
+
+// Disable NULL values for all the null_string data members.
+//
+#pragma db value(null_string) not_null
+  </pre>
+
+  <p>For a more detailed discussion of the <code>NULL</code> semantics
+     for the object pointers, refer to <a href="#6">Chapter 6,
+     "Relationships"</a>.</p>
 
   <h3><a name="10.2.4">10.2.4 <code>unordered</code></a></h3>
 
@@ -6239,7 +6287,7 @@ typedef std::vector&lt;std::string> names;
 
   <pre class="c++">
 typedef std::vector&lt;std::string> names;
-#pragma db value(names) index_type("SMALLINT UNSIGNED NOT NULL")
+#pragma db value(names) index_type("SMALLINT UNSIGNED")
   </pre>
 
   <h3><a name="10.2.6">10.2.6 <code>key_type</code></a></h3>
@@ -6253,7 +6301,7 @@ typedef std::vector&lt;std::string> names;
 
   <pre class="c++">
 typedef std::map&lt;unsigned short, float> age_weight_map;
-#pragma db value(age_weight_map) key_type("INT UNSIGNED NOT NULL")
+#pragma db value(age_weight_map) key_type("INT UNSIGNED")
   </pre>
 
   <h3><a name="10.2.7">10.2.7 <code>value_type</code></a></h3>
@@ -6267,10 +6315,42 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 
   <pre class="c++">
 typedef std::vector&lt;std::string> names;
-#pragma db value(names) value_type("VARCHAR(255) NOT NULL")
+#pragma db value(names) value_type("VARCHAR(255)")
   </pre>
 
-  <h3><a name="10.2.8">10.2.8 <code>id_column</code></a></h3>
+  <p>The <code>value_null</code> and <code>value_not_null</code>
+     (<a href="#10.2.8">Section 10.2.8,
+     "<code>value_null</code>/<code>value_not_null</code>"</a>) specifiers
+     can be used to control the NULL semantics of a value column.</p>
+
+  <h3><a name="10.2.8">10.2.8 <code>value_null</code>/<code>value_not_null</code></a></h3>
+
+  <p>The <code>value_null</code> and <code>value_not_null</code> specifiers
+     specify that a container type's element value can or cannot be
+     <code>NULL</code>, respectively. The semantics of <code>value_null</code>
+     and <code>value_not_null</code> are similar to that of the
+     <code>null</code> and <code>not_null</code> specifiers
+     (<a href="#10.2.3">Section 10.2.3, "<code>null</code>/<code>not_null</code>"</a>).
+     For example:</p>
+
+  <pre class="c++">
+using std::tr1::shared_ptr;
+
+#pragma db object
+class account
+{
+  ...
+};
+
+typedef std::vector&lt;shared_ptr&lt;account> > accounts;
+#pragma db value(accounts) value_not_null
+  </pre>
+
+  <p>For set and multiset containers (<a href="#5.2">Section 5.2, "Set and
+     Multiset Containers"</a>) the element value is automatically treated
+     as not alowing a <code>NULL</code> value.</p>
+
+  <h3><a name="10.2.9">10.2.9 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in a
@@ -6284,7 +6364,7 @@ typedef std::vector&lt;std::string> names;
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="10.2.9">10.2.9 <code>index_column</code></a></h3>
+  <h3><a name="10.2.10">10.2.10 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in an
@@ -6298,7 +6378,7 @@ typedef std::vector&lt;std::string> names;
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="10.2.10">10.2.10 <code>key_column</code></a></h3>
+  <h3><a name="10.2.11">10.2.11 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in a map
@@ -6312,7 +6392,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="10.2.11">10.2.11 <code>value_column</code></a></h3>
+  <h3><a name="10.2.12">10.2.12 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in a
@@ -6375,8 +6455,8 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
     </tr>
 
     <tr>
-      <td><code>not_null</code></td>
-      <td>object pointer cannot be NULL</td>
+      <td><code>null</code>/<code>not_null</code></td>
+      <td>member can/cannot be NULL</td>
       <td><a href="#10.3.6">10.3.6</a></td>
     </tr>
 
@@ -6418,27 +6498,33 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
     </tr>
 
     <tr>
+      <td><code>value_null</code>/<code>value_not_null</code></td>
+      <td>container's value can/cannot be NULL</td>
+      <td><a href="#10.3.13">10.3.13</a></td>
+    </tr>
+
+    <tr>
       <td><code>id_column</code></td>
       <td>column name for a container's object id</td>
-      <td><a href="#10.3.13">10.3.13</a></td>
+      <td><a href="#10.3.14">10.3.14</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>column name for a container's index</td>
-      <td><a href="#10.3.14">10.3.14</a></td>
+      <td><a href="#10.3.15">10.3.15</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>column name for a container's key</td>
-      <td><a href="#10.3.15">10.3.15</a></td>
+      <td><a href="#10.3.16">10.3.16</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>column name for a container's value</td>
-      <td><a href="#10.3.16">10.3.16</a></td>
+      <td><a href="#10.3.17">10.3.17</a></td>
     </tr>
 
   </table>
@@ -6464,10 +6550,9 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 class person
 {
   ...
-private:
+
   #pragma db id
   std::string email_;
-  ...
 };
   </pre>
 
@@ -6485,10 +6570,9 @@ private:
 class person
 {
   ...
-private:
+
   #pragma db id auto
   unsigned long id_;
-  ...
 };
   </pre>
 
@@ -6512,12 +6596,15 @@ private:
 class person
 {
   ...
-private:
-  #pragma db type("INT NOT NULL")
+
+  #pragma db type("INT")
   bool married_;
-  ...
 };
   </pre>
+
+  <p>The <code>null</code> and <code>not_null</code> (<a href="#10.3.6">Section
+     10.3.6, "<code>null</code>/<code>not_null</code>"</a>) specifiers
+     can be used to control the NULL semantics of a data member.</p>
 
   <h3><a name="10.3.4">10.3.4 <code>column</code></a></h3>
 
@@ -6530,10 +6617,9 @@ private:
 class person
 {
   ...
-private:
+
   #pragma db id column("person_id")
   unsigned long id_;
-  ...
 };
   </pre>
 
@@ -6555,12 +6641,11 @@ private:
 class person
 {
   ...
-private:
+
   date born_;
 
   #pragma db transient
   unsigned short age_; // Computed from born_.
-  ...
 };
   </pre>
 
@@ -6568,11 +6653,23 @@ private:
      references that are only meaningful in the application's
      memory, as well as utility members such as mutexes, etc.</p>
 
-  <h3><a name="10.3.6">10.3.6 <code>not_null</code></a></h3>
+  <h3><a name="10.3.6">10.3.6 <code>null</code>/<code>not_null</code></a></h3>
 
-  <p>The <code>not_null</code> specifier specifies that a data member of
-     an object pointer or a container of object pointers type cannot
-     have or contain the <code>NULL</code> value. For example:</p>
+  <p>The <code>null</code> and <code>not_null</code> specifiers specify that
+     a data member can or cannot be <code>NULL</code>, respectively.
+     By default, data members of basic value types for which database
+     mapping is provided by the ODB compiler do not allow <code>NULL</code>
+     values while data members of object pointers allow <code>NULL</code>
+     values. Other value types, such as those provided by the profile
+     libraries (<a href="#III">Part III, "Profiles"</a>), may or may
+     not allow <code>NULL</code> values, depending on the semantics
+     of each value type. Consult the relevant documentation to find
+     out more about the <code>NULL</code> semantics for such value
+     types. A data member containing the object id (<a href="#10.3.1">Section
+     10.3.1, "<code>id</code>"</a> ) is automatically treated as not
+     allowing a <code>NULL</code> value. Data members that
+     allow <code>NULL</code> values are mapped in a relational database
+     to columns that allow <code>NULL</code> values. For example:</p>
 
   <pre class="c++">
 using std::tr1::shared_ptr;
@@ -6581,24 +6678,33 @@ using std::tr1::shared_ptr;
 class person
 {
   ...
+
+  #pragma db null
+  std::string name_;
 };
 
 #pragma db object
 class account
 {
   ...
-private:
-  #pragma db not_null
-  shared_ptr&lt;person> primary_holder_;
 
   #pragma db not_null
-  std::vector&lt;shared_ptr&lt;person> > secondary_holders_;
-  ...
+  shared_ptr&lt;person> holder_;
 };
 </pre>
 
-  <p>For a more detailed discussion of the <code>NULL</code> object pointer
-     semantics, refer to <a href="#6">Chapter 6, "Relationships"</a>.</p>
+  <p>The <code>NULL</code> semantics can also be specified on the
+     per-type basis (<a href="#10.2.3">Section 10.2.3,
+     "<code>null</code>/<code>not_null</code>"</a>). If both a type and
+     a member have <code>null</code>/<code>not_null</code> specifiers,
+     then the member specifier takes precedence. If a member specifier
+     relaxes the <code>NULL</code> semantics (that is, if a member has
+     the <code>null</code> specifier and the type has the explicit
+     <code>not_null</code> specifier), then a warning is issued.</p>
+
+  <p>For a more detailed discussion of the <code>NULL</code> semantics
+     for the object pointers, refer to <a href="#6">Chapter 6,
+     "Relationships"</a>.</p>
 
   <h3><a name="10.3.7">10.3.7 <code>inverse</code></a></h3>
 
@@ -6618,19 +6724,17 @@ class person;
 class employer
 {
   ...
-private:
+
   std::vector&lt;shared_ptr&lt;person> > employees_;
-  ...
 };
 
 #pragma db object pointer(shared_ptr)
 class person
 {
   ...
-private:
+
   #pragma db inverse(employee_)
   weak_ptr&lt;employer> employer_;
-  ...
 };
   </pre>
 
@@ -6658,10 +6762,9 @@ private:
 class person
 {
   ...
-private:
+
   #pragma db unordered
   std::vector&lt;std::string> nicknames_;
-  ...
 };
   </pre>
 
@@ -6679,10 +6782,9 @@ private:
 class person
 {
   ...
-private:
+
   #pragma db table("nicknames")
   std::vector&lt;std::string> nicknames_;
-  ...
 };
   </pre>
 
@@ -6714,10 +6816,9 @@ private:
 class person
 {
   ...
-private:
-  #pragma db index_type("SMALLINT UNSIGNED NOT NULL")
+
+  #pragma db index_type("SMALLINT UNSIGNED")
   std::vector&lt;std::string> nicknames_;
-  ...
 };
   </pre>
 
@@ -6735,10 +6836,9 @@ private:
 class person
 {
   ...
-private:
-  #pragma db key_type("INT UNSIGNED NOT NULL")
+
+  #pragma db key_type("INT UNSIGNED")
   std::map&lt;unsigned short, float> age_weight_map_;
-  ...
 };
   </pre>
 
@@ -6756,14 +6856,51 @@ private:
 class person
 {
   ...
-private:
-  #pragma db value_type("VARCHAR(255) NOT NULL")
+
+  #pragma db value_type("VARCHAR(255)")
   std::vector&lt;std::string> nicknames_;
-  ...
 };
   </pre>
 
-  <h3><a name="10.3.13">10.3.13 <code>id_column</code></a></h3>
+  <p>The <code>value_null</code> and <code>value_not_null</code>
+     (<a href="#10.3.13">Section 10.3.13,
+     "<code>value_null</code>/<code>value_not_null</code>"</a>) specifiers
+     can be used to control the NULL semantics of a value column.</p>
+
+  <h3><a name="10.3.13">10.3.13 <code>value_null</code>/<code>value_not_null</code></a></h3>
+
+  <p>The <code>value_null</code> and <code>value_not_null</code> specifiers
+     specify that a container's element value for a data member can or
+     cannot be <code>NULL</code>, respectively. The semantics of
+     <code>value_null</code> and <code>value_not_null</code> are similar
+     to that of the <code>null</code> and <code>not_null</code> specifiers
+     (<a href="#10.3.6">Section 10.3.6, "<code>null</code>/<code>not_null</code>"</a>).
+     For example:</p>
+
+  <pre class="c++">
+using std::tr1::shared_ptr;
+
+#pragma db object
+class person
+{
+  ...
+};
+
+#pragma db object
+class account
+{
+  ...
+
+  #pragma db value_not_null
+  std::vector&lt;shared_ptr&lt;person> > holders_;
+};
+  </pre>
+
+  <p>For set and multiset containers (<a href="#5.2">Section 5.2, "Set and
+     Multiset Containers"</a>) the element value is automatically treated
+     as not allowing a <code>NULL</code> value.</p>
+
+  <h3><a name="10.3.14">10.3.14 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in a
@@ -6778,17 +6915,16 @@ private:
 class person
 {
   ...
-private:
+
   #pragma db id_column("person_id")
   std::vector&lt;std::string> nicknames_;
-  ...
 };
   </pre>
 
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="10.3.14">10.3.14 <code>index_column</code></a></h3>
+  <h3><a name="10.3.15">10.3.15 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in an
@@ -6803,17 +6939,16 @@ private:
 class person
 {
   ...
-private:
+
   #pragma db index_column("nickname_number")
   std::vector&lt;std::string> nicknames_;
-  ...
 };
   </pre>
 
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="10.3.15">10.3.15 <code>key_column</code></a></h3>
+  <h3><a name="10.3.16">10.3.16 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in a map
@@ -6828,17 +6963,16 @@ private:
 class person
 {
   ...
-private:
+
   #pragma db key_column("age")
   std::map&lt;unsigned short, float> age_weight_map_;
-  ...
 };
   </pre>
 
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="10.3.16">10.3.16 <code>value_column</code></a></h3>
+  <h3><a name="10.3.17">10.3.17 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in a
@@ -6853,10 +6987,9 @@ private:
 class person
 {
   ...
-private:
+
   #pragma db value_column("weight")
   std::map&lt;unsigned short, float> age_weight_map_;
-  ...
 };
   </pre>
 
@@ -6888,10 +7021,9 @@ PRAGMA_DB(object)
 class person
 {
   ...
-private:
+
   PRAGMA_DB(id)
   unsigned long id_;
-  ...
 };
   </pre>
 
@@ -6904,9 +7036,8 @@ private:
 class person
 {
   ...
-private:
+
   unsigned long id_;
-  ...
 };
 
 #ifdef ODB_COMPILER
@@ -6956,10 +7087,9 @@ g++ -Wall -Wno-unknown-pragmas ...
 class person
 {
   ...
-private:
+
   #pragma db id
   unsigned long id_;
-  ...
 };
 
 #pragma warning (pop)
@@ -7045,81 +7175,97 @@ aCC +W2161 ...
     <tr>
       <th>C++ Type</th>
       <th>MySQL Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
     </tr>
 
     <tr>
       <td><code>bool</code></td>
-      <td><code>TINYINT(1) NOT NULL</code></td>
+      <td><code>TINYINT(1)</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>char</code></td>
-      <td><code>TINYINT NOT NULL</code></td>
+      <td><code>TINYINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>signed char</code></td>
-      <td><code>TINYINT NOT NULL</code></td>
+      <td><code>TINYINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned char</code></td>
-      <td><code>TINYINT UNSIGNED NOT NULL</code></td>
+      <td><code>TINYINT UNSIGNED</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>short</code></td>
-      <td><code>SMALLINT NOT NULL</code></td>
+      <td><code>SMALLINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned short</code></td>
-      <td><code>SMALLINT UNSIGNED NOT NULL</code></td>
+      <td><code>SMALLINT UNSIGNED</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>int</code></td>
-      <td><code>INT NOT NULL</code></td>
+      <td><code>INT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned int</code></td>
-      <td><code>INT UNSIGNED NOT NULL</code></td>
+      <td><code>INT UNSIGNED</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>long</code></td>
-      <td><code>BIGINT NOT NULL</code></td>
+      <td><code>BIGINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned long</code></td>
-      <td><code>BIGINT UNSIGNED NOT NULL</code></td>
+      <td><code>BIGINT UNSIGNED</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>long long</code></td>
-      <td><code>BIGINT NOT NULL</code></td>
+      <td><code>BIGINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned long long</code></td>
-      <td><code>BIGINT UNSIGNED NOT NULL</code></td>
+      <td><code>BIGINT UNSIGNED</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>float</code></td>
-      <td><code>FLOAT NOT NULL</code></td>
+      <td><code>FLOAT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>double</code></td>
-      <td><code>DOUBLE NOT NULL</code></td>
+      <td><code>DOUBLE</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>std::string</code></td>
-      <td><code>TEXT NOT NULL/VARCHAR(255) NOT NULL</code></td>
+      <td><code>TEXT/VARCHAR(255)</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
   </table>
 
@@ -7127,14 +7273,15 @@ aCC +W2161 ...
      differently depending on whether the member of this type
      is an object id or not. If the member is an object id,
      then for this member <code>std::string</code> is mapped
-     to the <code>VARCHAR(255) NOT NULL</code> MySQL type. Otherwise,
-     it is mapped to <code>TEXT NOT NULL</code>.</p>
+     to the <code>VARCHAR(255)</code> MySQL type. Otherwise,
+     it is mapped to <code>TEXT</code>.</p>
 
   <p>Additionally, by default, C++ enumerations are automatically
      mapped to a suitable MySQL type. Contiguous enumerations with
-     the zero first enumerator are mapped to the MySQL <code>ENUM NOT
-     NULL</code> type. All other enumerations are mapped to <code>INT
-     NOT NULL</code> or <code>INT UNSIGNED NOT NULL</code>. For example:</p>
+     the zero first enumerator are mapped to the MySQL <code>ENUM</code>
+     type. All other enumerations are mapped to <code>INT</code> or
+     <code>INT UNSIGNED</code>. In both cases the default <code>NULL</code>
+     semantics is <code>NOT NULL</code>. For example:</p>
 
   <pre class="c++">
 enum color {red, green, blue};
@@ -7540,86 +7687,103 @@ namespace odb
     <tr>
       <th>C++ Type</th>
       <th>SQLite Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
     </tr>
 
     <tr>
       <td><code>bool</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>char</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>signed char</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned char</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>short</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned short</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>int</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned int</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>long</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned long</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>long long</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned long long</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>float</code></td>
-      <td><code>REAL NOT NULL</code></td>
+      <td><code>REAL</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>double</code></td>
-      <td><code>REAL NOT NULL</code></td>
+      <td><code>REAL</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>std::string</code></td>
-      <td><code>TEXT NOT NULL</code></td>
+      <td><code>TEXT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
   </table>
 
   <p>Additionally, by default, C++ enumerations are automatically mapped to
-     the SQLite <code>INTEGER NOT NULL</code> type.</p>
+     the SQLite <code>INTEGER</code> type with the default <code>NULL</code>
+     semantics being <code>NOT NULL</code>.</p>
 
   <p>Note also that SQLite only operates with signed integers and the largest
      value that an SQLite database can store is a signed 64-bit integer. As
@@ -8073,86 +8237,103 @@ class person
     <tr>
       <th>C++ Type</th>
       <th>PostgreSQL Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
     </tr>
 
     <tr>
       <td><code>bool</code></td>
-      <td><code>BOOLEAN NOT NULL</code></td>
+      <td><code>BOOLEAN</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>char</code></td>
-      <td><code>SMALLINT NOT NULL</code></td>
+      <td><code>SMALLINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>signed char</code></td>
-      <td><code>SMALLINT NOT NULL</code></td>
+      <td><code>SMALLINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned char</code></td>
-      <td><code>SMALLINT NOT NULL</code></td>
+      <td><code>SMALLINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>short</code></td>
       <td><code>SMALLINT NULL</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned short</code></td>
-      <td><code>SMALLINT NOT NULL</code></td>
+      <td><code>SMALLINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>int</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned int</code></td>
-      <td><code>INTEGER NOT NULL</code></td>
+      <td><code>INTEGER</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>long</code></td>
-      <td><code>BIGINT NOT NULL</code></td>
+      <td><code>BIGINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned long</code></td>
-      <td><code>BIGINT NOT NULL</code></td>
+      <td><code>BIGINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>long long</code></td>
-      <td><code>BIGINT NOT NULL</code></td>
+      <td><code>BIGINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>unsigned long long</code></td>
-      <td><code>BIGINT NOT NULL</code></td>
+      <td><code>BIGINT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>float</code></td>
-      <td><code>REAL NOT NULL</code></td>
+      <td><code>REAL</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>double</code></td>
-      <td><code>DOUBLE PRECISION NOT NULL</code></td>
+      <td><code>DOUBLE PRECISION</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
 
     <tr>
       <td><code>std::string</code></td>
-      <td><code>TEXT NOT NULL</code></td>
+      <td><code>TEXT</code></td>
+      <td><code>NOT NULL</code></td>
     </tr>
   </table>
 
   <p>Additionally, by default, C++ enumerations are automatically
-     mapped to <code>INTEGER NOT NULL</code>.</p>
+     mapped to <code>INTEGER</code> with the default <code>NULL</code>
+     semantics being <code>NOT NULL</code>.</p>
 
   <p>Note also that because PostgreSQL does not support unsigned integers,
      the <code>unsigned short</code>, <code>unsigned int</code>, and
@@ -8815,21 +8996,25 @@ namespace odb
     <tr>
       <th>Boost <code>date_time</code> Type</th>
       <th>MySQL Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
     </tr>
 
     <tr>
       <td><code>gregorian::date</code></td>
       <td><code>DATE</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>posix_time::ptime</code></td>
       <td><code>DATETIME</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>posix_time::time_duration</code></td>
       <td><code>TIME</code></td>
+      <td><code>NULL</code></td>
     </tr>
   </table>
 
@@ -8848,7 +9033,7 @@ namespace odb
 class person
 {
   ...
-  #pragma db type("TIMESTAMP")
+  #pragma db type("TIMESTAMP") not_null
   boost::posix_time::ptime updated_;
 };
 </pre>
@@ -8872,21 +9057,25 @@ class person
     <tr>
       <th>Boost <code>date_time</code> Type</th>
       <th>SQLite Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
     </tr>
 
     <tr>
       <td><code>gregorian::date</code></td>
       <td><code>TEXT</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>posix_time::ptime</code></td>
       <td><code>TEXT</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>posix_time::time_duration</code></td>
       <td><code>TEXT</code></td>
+      <td><code>NULL</code></td>
     </tr>
   </table>
 
@@ -8997,16 +9186,19 @@ class Person
     <tr>
       <th>Qt Type</th>
       <th>MySQL Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
     </tr>
 
     <tr>
       <td><code>QString</code></td>
-      <td><code>TEXT</code></td>
+      <td><code>TEXT/VARCHAR(255)</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>QByteArray</code></td>
       <td><code>BLOB</code></td>
+      <td><code>NULL</code></td>
     </tr>
   </table>
 
@@ -9018,7 +9210,7 @@ class Person
      differently depending on whether the member of this type
      is an object id or not. If the member is an object id,
      then for this member <code>QString</code> is mapped
-     to the <code>VARCHAR(255) NOT NULL</code> MySQL type. Otherwise,
+     to the <code>VARCHAR(255)</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT</code>.</p>
 
 
@@ -9032,16 +9224,19 @@ class Person
     <tr>
       <th>Qt Type</th>
       <th>SQLite Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
     </tr>
 
     <tr>
       <td><code>QString</code></td>
       <td><code>TEXT</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>QByteArray</code></td>
       <td><code>BLOB</code></td>
+      <td><code>NULL</code></td>
     </tr>
   </table>
 
@@ -9189,21 +9384,25 @@ namespace odb
     <tr>
       <th>Qt Date Time Type</th>
       <th>MySQL Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
     </tr>
 
     <tr>
       <td><code>QDate</code></td>
       <td><code>DATE</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>QTime</code></td>
       <td><code>TIME</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>QDateTime</code></td>
       <td><code>DATETIME</code></td>
+      <td><code>NULL</code></td>
     </tr>
   </table>
 
@@ -9223,7 +9422,7 @@ namespace odb
 class Person
 {
   ...
-  #pragma db type("TIMESTAMP")
+  #pragma db type("TIMESTAMP") not_null
   QDateTime updated_;
 };
 </pre>
@@ -9244,21 +9443,25 @@ class Person
     <tr>
       <th>Qt Date Time Type</th>
       <th>SQLite Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
     </tr>
 
     <tr>
       <td><code>QDate</code></td>
       <td><code>TEXT</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>QTime</code></td>
       <td><code>TEXT</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>QDateTime</code></td>
       <td><code>TEXT</code></td>
+      <td><code>NULL</code></td>
     </tr>
   </table>
 
