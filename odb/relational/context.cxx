@@ -59,6 +59,25 @@ namespace relational
   }
 
   string context::
+  quote_string_impl (string const& s) const
+  {
+    string r;
+    r.reserve (s.size ());
+    r += '\'';
+
+    for (string::size_type i (0), n (s.size ()); i < n; ++i)
+    {
+      if (s[i] == '\'')
+        r += "''";
+      else
+        r += s[i];
+    }
+
+    r += '\'';
+    return r;
+  }
+
+  string context::
   quote_id_impl (string const& id) const
   {
     string r;

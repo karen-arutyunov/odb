@@ -28,6 +28,11 @@ namespace relational
     grow (semantics::data_member&, semantics::type&, string const& key_prefix);
 
   public:
+    // Quote SQL string.
+    //
+    string
+    quote_string (string const&) const;
+
     // Quote SQL identifier.
     //
     string
@@ -74,6 +79,15 @@ namespace relational
     grow_impl (semantics::data_member&,
                semantics::type&,
                string const&);
+
+    // The default implementation uses the ISO quoting ('') and
+    // escapes singe quotes inside the string by double-quoting
+    // (' -> ''). Some (most?) database systems support escape
+    // sequences. We may want to provide utilize that to support
+    // things like \n, \t, etc.
+    //
+    virtual string
+    quote_string_impl (string const&) const;
 
     // The default implementation uses the ISO quoting ("").
     //
