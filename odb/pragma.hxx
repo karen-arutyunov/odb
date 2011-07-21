@@ -15,8 +15,8 @@
 
 struct pragma
 {
-  pragma (std::string const& n, std::string const& v, location_t l)
-      : name (n), value (v), loc (l)
+  pragma (std::string const& n, std::string const& v, tree tn, location_t l)
+      : name (n), value (v), node (tn), loc (l)
   {
   }
 
@@ -28,6 +28,7 @@ struct pragma
 
   std::string name;
   std::string value;
+  tree node;
   location_t loc;
 };
 

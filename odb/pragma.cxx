@@ -259,6 +259,7 @@ handle_pragma (cpp_reader* reader,
   cpp_ttype tt;
 
   string val;
+  tree node (0);
   location_t loc (input_location);
 
   if (p == "table")
@@ -663,7 +664,7 @@ handle_pragma (cpp_reader* reader,
 
   // Record this pragma.
   //
-  pragma prag (p, val, loc);
+  pragma prag (p, val, node, loc);
 
   if (decl)
     decl_pragmas_[decl].insert (prag);
@@ -857,7 +858,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
   // Record this pragma.
   //
-  pragma prag (p, "", loc);
+  pragma prag (p, "", 0, loc);
 
   if (decl)
     decl_pragmas_[decl].insert (prag);
