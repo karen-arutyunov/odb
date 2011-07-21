@@ -981,11 +981,11 @@ namespace relational
           string stmt_prefix (top_object->fq_name () +  m.fq_name ());
 
           os << stmt_decl << endl
-             << "insert_one_name = " <<
+             << "select_all_name = " <<
              strlit (stmt_prefix + "_select_all") << ";"
              << endl
              << stmt_decl << endl
-             << "select_all_name = " <<
+             << "insert_one_name = " <<
              strlit (stmt_prefix + "_insert_one") << ";"
              << endl
              << stmt_decl << endl
