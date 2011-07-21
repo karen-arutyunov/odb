@@ -9,7 +9,7 @@ Version 1.5.0
     container's element values, the value_null and value_not_null pragmas
     have been added, similar to the value_type, value_column, etc., pragmas.
     For more information about the new mechanism, refer to Sections 10.2.3,
-    10.2.8, 10.3.6, and 10.3.13 in the ODB manual.
+    10.2.8, 10.3.4, and 10.3.13 in the ODB manual.
 
     This is a backwards-incompatible change. Existing use cases that will
     require manual changes are listed below.
