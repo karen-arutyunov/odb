@@ -193,6 +193,13 @@ namespace relational
         constraints (m);
         reference (m);
 
+        // If we have options, add them.
+        //
+        string const& o (column_options (m, prefix_));
+
+        if (!o.empty ())
+          os << " " << o;
+
         return true;
       }
 

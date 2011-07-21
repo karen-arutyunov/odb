@@ -160,6 +160,12 @@ public:
   string
   column_type (semantics::data_member&, string const& key_prefix = string ());
 
+  string
+  column_options (semantics::data_member&);
+
+  string
+  column_options (semantics::data_member&, string const& key_prefix);
+
   // Cleaned-up member name that can be used for database names.
   //
   string

@@ -198,6 +198,21 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       return false;
     }
   }
+  else if (p == "options" ||
+           p == "value_options" ||
+           p == "index_options" ||
+           p == "key_options" ||
+           p == "id_options")
+  {
+    // Options can be used for both members and types.
+    //
+    if (tc != FIELD_DECL && !TYPE_P (d))
+    {
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a type or data member" << endl;
+      return false;
+    }
+  }
   else if (p == "null" ||
            p == "not_null" ||
            p == "value_null" ||
@@ -467,6 +482,48 @@ handle_pragma (cpp_reader* reader,
     if (tt != CPP_STRING)
     {
       error () << "column name expected in db pragma '" << p << "'" << endl;
+      return;
+    }
+
+    val = TREE_STRING_POINTER (t);
+
+    if (pragma_lex (&t) != CPP_CLOSE_PAREN)
+    {
+      error () << "')' expected at the end of db pragma '" << p << "'" << endl;
+      return;
+    }
+
+    tt = pragma_lex (&t);
+  }
+  else if (p == "options" ||
+           p == "value_options" ||
+           p == "index_options" ||
+           p == "key_options" ||
+           p == "id_options")
+  {
+    // options ("<name>")
+    // value_options ("<name>")
+    // index_options ("<name>")
+    // key_options ("<name>")
+    // id_options ("<name>")
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (pragma_lex (&t) != CPP_OPEN_PAREN)
+    {
+      error () << "'(' expected after db pragma '" << p << "'" << endl;
+      return;
+    }
+
+    tt = pragma_lex (&t);
+
+    if (tt != CPP_STRING)
+    {
+      error () << "options string expected in db pragma '" << p << "'" << endl;
       return;
     }
 
@@ -771,6 +828,11 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "index_column" ||
            p == "key_column" ||
            p == "id_column" ||
+           p == "options" ||
+           p == "value_options" ||
+           p == "index_options" ||
+           p == "key_options" ||
+           p == "id_options" ||
            p == "type" ||
            p == "value_type" ||
            p == "index_type" ||
@@ -820,146 +882,205 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 }
 
 extern "C" void
-handle_pragma_db_object (cpp_reader* reader)
+handle_pragma_db_object (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "object");
+  handle_pragma_qualifier (r, "object");
 }
 
 extern "C" void
-handle_pragma_db_value (cpp_reader* reader)
+handle_pragma_db_value (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "value");
+  handle_pragma_qualifier (r, "value");
 }
 
 extern "C" void
-handle_pragma_db_member (cpp_reader* reader)
+handle_pragma_db_member (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "member");
+  handle_pragma_qualifier (r, "member");
 }
 
 extern "C" void
-handle_pragma_db_id (cpp_reader* reader)
+handle_pragma_db_id (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "id");
+  handle_pragma_qualifier (r, "id");
 }
 
 extern "C" void
-handle_pragma_db_auto (cpp_reader* reader)
+handle_pragma_db_auto (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "auto");
+  handle_pragma_qualifier (r, "auto");
 }
 
 extern "C" void
-handle_pragma_db_column (cpp_reader* reader)
+handle_pragma_db_column (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "column");
+  handle_pragma_qualifier (r, "column");
 }
 
 extern "C" void
-handle_pragma_db_vcolumn (cpp_reader* reader)
+handle_pragma_db_vcolumn (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "value_column");
+  handle_pragma_qualifier (r, "value_column");
 }
 
 extern "C" void
-handle_pragma_db_icolumn (cpp_reader* reader)
+handle_pragma_db_icolumn (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "index_column");
+  handle_pragma_qualifier (r, "index_column");
 }
 
 extern "C" void
-handle_pragma_db_kcolumn (cpp_reader* reader)
+handle_pragma_db_kcolumn (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "key_column");
+  handle_pragma_qualifier (r, "key_column");
 }
 
 extern "C" void
-handle_pragma_db_idcolumn (cpp_reader* reader)
+handle_pragma_db_idcolumn (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "id_column");
+  handle_pragma_qualifier (r, "id_column");
 }
 
 extern "C" void
-handle_pragma_db_type (cpp_reader* reader)
+handle_pragma_db_options (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "type");
+  handle_pragma_qualifier (r, "options");
 }
 
 extern "C" void
-handle_pragma_db_id_type (cpp_reader* reader)
+handle_pragma_db_voptions (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "id_type");
+  handle_pragma_qualifier (r, "value_options");
 }
 
 extern "C" void
-handle_pragma_db_vtype (cpp_reader* reader)
+handle_pragma_db_ioptions (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "value_type");
+  handle_pragma_qualifier (r, "index_options");
 }
 
 extern "C" void
-handle_pragma_db_itype (cpp_reader* reader)
+handle_pragma_db_koptions (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "index_type");
+  handle_pragma_qualifier (r, "key_options");
 }
 
 extern "C" void
-handle_pragma_db_ktype (cpp_reader* reader)
+handle_pragma_db_idoptions (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "key_type");
+  handle_pragma_qualifier (r, "id_options");
 }
 
 extern "C" void
-handle_pragma_db_table (cpp_reader* reader)
+handle_pragma_db_type (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "table");
+  handle_pragma_qualifier (r, "type");
 }
 
 extern "C" void
-handle_pragma_db_null (cpp_reader* reader)
+handle_pragma_db_id_type (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "null");
+  handle_pragma_qualifier (r, "id_type");
 }
 
 extern "C" void
-handle_pragma_db_not_null (cpp_reader* reader)
+handle_pragma_db_vtype (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "not_null");
+  handle_pragma_qualifier (r, "value_type");
 }
 
 extern "C" void
-handle_pragma_db_value_null (cpp_reader* reader)
+handle_pragma_db_itype (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "value_null");
+  handle_pragma_qualifier (r, "index_type");
 }
 
 extern "C" void
-handle_pragma_db_value_not_null (cpp_reader* reader)
+handle_pragma_db_ktype (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "value_not_null");
+  handle_pragma_qualifier (r, "key_type");
 }
 
 extern "C" void
-handle_pragma_db_inverse (cpp_reader* reader)
+handle_pragma_db_table (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "inverse");
+  handle_pragma_qualifier (r, "table");
 }
 
 extern "C" void
-handle_pragma_db_unordered (cpp_reader* reader)
+handle_pragma_db_null (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "unordered");
+  handle_pragma_qualifier (r, "null");
 }
 
 extern "C" void
-handle_pragma_db_transient (cpp_reader* reader)
+handle_pragma_db_not_null (cpp_reader* r)
 {
-  handle_pragma_qualifier (reader, "transient");
+  handle_pragma_qualifier (r, "not_null");
+}
+
+extern "C" void
+handle_pragma_db_value_null (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "value_null");
+}
+
+extern "C" void
+handle_pragma_db_value_not_null (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "value_not_null");
+}
+
+extern "C" void
+handle_pragma_db_inverse (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "inverse");
+}
+
+extern "C" void
+handle_pragma_db_unordered (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "unordered");
+}
+
+extern "C" void
+handle_pragma_db_transient (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "transient");
+}
+
+extern "C" void
+handle_pragma_db (cpp_reader* r)
+{
+  tree t;
+  cpp_ttype tt (pragma_lex (&t));
+
+  if (tt != CPP_NAME)
+  {
+    if (tt == CPP_EOF)
+      error () << "expected specifier after db pragma" << endl;
+    else
+      error () << "unexpected token after db pragma" << endl;
+    return;
+  }
+
+  handle_pragma_qualifier (r, IDENTIFIER_POINTER (t));
 }
 
 extern "C" void
 register_odb_pragmas (void*, void*)
 {
+  // GCC has a limited number of pragma slots and we have exhausted them.
+  // A workaround is to make 'db' a pragma rather than a namespace. This
+  // way we only have one pragma but the drawback of this approach is the
+  // fact that the specifier or qualifier name will now be macro-expanded
+  // (though this happens anyway if we have multiple specifiers in a single
+  // pragma). Once the GCC folks fix this, we can go back to the namespace
+  // approach.
+  //
+  c_register_pragma_with_expansion (0, "db", handle_pragma_db);
+
+  /*
   c_register_pragma_with_expansion ("db", "object", handle_pragma_db_object);
   c_register_pragma_with_expansion ("db", "value", handle_pragma_db_value);
   c_register_pragma_with_expansion ("db", "member", handle_pragma_db_member);
@@ -970,6 +1091,11 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "index_column", handle_pragma_db_icolumn);
   c_register_pragma_with_expansion ("db", "key_column", handle_pragma_db_kcolumn);
   c_register_pragma_with_expansion ("db", "id_column", handle_pragma_db_idcolumn);
+  c_register_pragma_with_expansion ("db", "options", handle_pragma_db_options);
+  c_register_pragma_with_expansion ("db", "value_options", handle_pragma_db_voptions);
+  c_register_pragma_with_expansion ("db", "index_options", handle_pragma_db_ioptions);
+  c_register_pragma_with_expansion ("db", "key_options", handle_pragma_db_koptions);
+  c_register_pragma_with_expansion ("db", "id_options", handle_pragma_db_idoptions);
   c_register_pragma_with_expansion ("db", "type", handle_pragma_db_type);
   c_register_pragma_with_expansion ("db", "id_type", handle_pragma_db_id_type);
   c_register_pragma_with_expansion ("db", "value_type", handle_pragma_db_vtype);
@@ -983,4 +1109,5 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "inverse", handle_pragma_db_inverse);
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
+  */
 }

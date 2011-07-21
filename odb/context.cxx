@@ -247,6 +247,11 @@ comp_value_ (semantics::class_& c)
   r = r && !c.count ("index-column");
   r = r && !c.count ("key-column");
   r = r && !c.count ("id-column");
+  r = r && !c.count ("options");
+  r = r && !c.count ("value-options");
+  r = r && !c.count ("index-options");
+  r = r && !c.count ("key-options");
+  r = r && !c.count ("id-options");
   r = r && !c.count ("null");
   r = r && !c.count ("not-null");
   r = r && !c.count ("value-null");
@@ -310,6 +315,55 @@ column_type (semantics::data_member& m, string const& kp)
   return kp.empty ()
     ? m.get<string> ("column-type")
     : indirect_value<string> (m, kp + "-column-type");
+}
+
+string context::
+column_options (semantics::data_member& m)
+{
+  // Accumulate options from both type and member.
+  //
+  semantics::type& t (m.type ());
+
+  string mo (m.get<string> ("options", string ()));
+  string to (t.get<string> ("options", string ()));
+
+  return to + (mo.empty () || to.empty () ? "" : " ") + mo;
+}
+
+string context::
+column_options (semantics::data_member& m, string const& kp)
+{
+  if (kp.empty ())
+    return column_options (m);
+
+  string k (kp + "-options");
+
+  // Accumulate options from type, container, and member.
+  //
+  semantics::type& c (m.type ());
+  semantics::type& t (member_type (m, kp));
+
+  string r (t.get<string> ("options", string ()));
+
+  string o (c.get<string> (k, string ()));
+  if (!o.empty ())
+  {
+    if (!r.empty ())
+      r += ' ';
+
+    r += o;
+  }
+
+  o = m.get<string> (k, string ());
+  if (!o.empty ())
+  {
+    if (!r.empty ())
+      r += ' ';
+
+    r += o;
+  }
+
+  return r;
 }
 
 string context::
