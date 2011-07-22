@@ -98,7 +98,7 @@ namespace relational
           // However, this complicates the code generator quite a bit: we
           // either have to move to std::string storage for all the
           // statements and all the databases, which is kind of a waste,
-          // or do some deep per-database customizations, which is hairy).
+          // or do some deep per-database customizations, which is hairy.
           // So, instead, we are going to use another hack (hey, what the
           // hell, right?) by loading both the index and enumerator
           // combined into a string:
