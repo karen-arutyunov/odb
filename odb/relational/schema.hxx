@@ -190,8 +190,11 @@ namespace relational
 
         type (m);
         null (m);
-        constraints (m);
-        reference (m);
+
+        // An id member cannot have a default value.
+        //
+        if (!m.count ("id"))
+          default_ (m);
 
         // If we have options, add them.
         //
@@ -199,6 +202,9 @@ namespace relational
 
         if (!o.empty ())
           os << " " << o;
+
+        constraints (m);
+        reference (m);
 
         return true;
       }
@@ -217,6 +223,49 @@ namespace relational
       }
 
       virtual void
+      default_null (semantics::data_member&)
+      {
+        os << " DEFAULT NULL";
+      }
+
+      virtual void
+      default_bool (semantics::data_member&, bool v)
+      {
+        // Most databases do not support boolean literals. Those that
+        // do should override this.
+        //
+        os << " DEFAULT " << (v ? "1" : "0");
+      }
+
+      virtual void
+      default_integer (semantics::data_member&, unsigned long long v, bool neg)
+      {
+        os << " DEFAULT " << (neg ? "-" : "") << v;
+      }
+
+      virtual void
+      default_float (semantics::data_member&, double v)
+      {
+        os << " DEFAULT " << v;
+      }
+
+      virtual void
+      default_string (semantics::data_member&, string const& v)
+      {
+        os << " DEFAULT " << quote_string (v);
+      }
+
+      virtual void
+      default_enum (semantics::data_member&,
+                    tree /*enumerator*/,
+                    string const& /*name*/)
+      {
+        // Has to be implemented by the database-specific override.
+        //
+        assert (false);
+      }
+
+      virtual void
       constraints (semantics::data_member& m)
       {
         if (m.count ("id"))
@@ -232,6 +281,10 @@ namespace relational
             quote_id (column_name (*id_member (*c))) << ")";
         }
       }
+
+    protected:
+      void
+      default_ (semantics::data_member&);
 
     protected:
       string prefix_;

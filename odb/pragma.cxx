@@ -183,6 +183,17 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
       return false;
     }
   }
+  else if (p == "default")
+  {
+    // Default can be used for both members and types.
+    //
+    if (tc != FIELD_DECL && !TYPE_P (d))
+    {
+      error (l) << "name '" << name << "' in db pragma '" << p << "' does "
+                << "not refer to a type or data member" << endl;
+      return false;
+    }
+  }
   else if (p == "value_column" ||
            p == "index_column" ||
            p == "key_column" ||
@@ -598,6 +609,125 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
   }
+  else if (p == "default")
+  {
+    // default ()                  (<empty>)
+    // default (null)              (n)
+    // default (true|false)        (t|f)
+    // default ([+|-]<number>)     (-|+)
+    // default ("string")          (s)
+    // default (<enumerator>)      (e)
+    //
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (pragma_lex (&t) != CPP_OPEN_PAREN)
+    {
+      error () << "'(' expected after db pragma '" << p << "'" << endl;
+      return;
+    }
+
+    tt = pragma_lex (&t);
+
+    // Encode the kind of value we have in the first letter of
+    // the string.
+    //
+    switch (tt)
+    {
+    case CPP_CLOSE_PAREN:
+      {
+        // Default value override.
+        //
+        break;
+      }
+    case CPP_STRING:
+      {
+        val = "s";
+        val += TREE_STRING_POINTER (t);
+        tt = pragma_lex (&t);
+        break;
+      }
+    case CPP_NAME:
+      {
+        // This can be the null, true, or false keyword or a enumerator
+        // name.
+        //
+        string n (IDENTIFIER_POINTER (t));
+
+        if (n == "null" || n == "true" || n == "false")
+        {
+          val = n[0];
+          tt = pragma_lex (&t);
+          break;
+        }
+        // Fall throught.
+      }
+    case CPP_SCOPE:
+      {
+        // We have a potentially scopped enumerator name.
+        //
+        string n;
+        tree decl = parse_scoped_name (t, tt, n, false, p);
+
+        if (decl == 0)
+          return;
+
+        node = decl;
+        val = "e" + n;
+        break;
+      }
+    case CPP_MINUS:
+    case CPP_PLUS:
+      {
+        val = (tt == CPP_MINUS ? "-" : "+");
+        tt = pragma_lex (&t);
+
+        if (tt != CPP_NUMBER)
+        {
+          error () << "expected numeric constant after '" << val
+                   << "' in db pragma '" << p << "'" << endl;
+          return;
+        }
+
+        // Fall through.
+      }
+    case CPP_NUMBER:
+      {
+        int tc (TREE_CODE (t));
+
+        if (tc != INTEGER_CST && tc != REAL_CST)
+        {
+          error () << "unexpected numeric constant in db pragma '" << p
+                   << "'" << endl;
+          return;
+        }
+
+        if (val.empty ())
+          val = "+";
+
+        node = t;
+        tt = pragma_lex (&t);
+        break;
+      }
+    default:
+      {
+        error () << "unexpected expression in db pragma '" << p << "'" << endl;
+        return;
+      }
+    }
+
+    if (tt != CPP_CLOSE_PAREN)
+    {
+      error () << "')' expected at the end of db pragma '" << p << "'" << endl;
+      return;
+    }
+
+    tt = pragma_lex (&t);
+  }
   else if (p == "inverse")
   {
     // inverse (name)
@@ -843,6 +973,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "not_null" ||
            p == "value_null" ||
            p == "value_not_null" ||
+           p == "default" ||
            p == "inverse" ||
            p == "unordered" ||
            p == "transient")
@@ -1033,6 +1164,12 @@ handle_pragma_db_value_not_null (cpp_reader* r)
 }
 
 extern "C" void
+handle_pragma_db_default (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "default");
+}
+
+extern "C" void
 handle_pragma_db_inverse (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "inverse");
@@ -1107,6 +1244,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "not_null", handle_pragma_db_not_null);
   c_register_pragma_with_expansion ("db", "value_null", handle_pragma_db_value_null);
   c_register_pragma_with_expansion ("db", "value_not_null", handle_pragma_db_value_not_null);
+  c_register_pragma_with_expansion ("db", "default", handle_pragma_db_default);
   c_register_pragma_with_expansion ("db", "inverse", handle_pragma_db_inverse);
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);

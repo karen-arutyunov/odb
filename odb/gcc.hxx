@@ -27,6 +27,7 @@ extern "C"
 #include <coretypes.h>
 #include <tree.h>
 #include <intl.h>
+#include <real.h>
 
 #include <tm.h>
 

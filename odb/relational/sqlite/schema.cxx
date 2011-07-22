@@ -19,9 +19,33 @@ namespace relational
       //
       // Create.
       //
-      struct object_columns: relational::object_columns
+      struct object_columns: relational::object_columns, context
       {
         object_columns (base const& x): base (x) {}
+
+        virtual void
+        default_enum (semantics::data_member& m, tree en, string const&)
+        {
+          // Make sure the column is mapped to INTEGER.
+          //
+          if (column_sql_type (m).type != sql_type::INTEGER)
+          {
+            cerr << m.file () << ":" << m.line () << ":" << m.column ()
+                 << ": error: column with default value specified as C++ "
+                 << "enumerator must map to SQLite INTEGER" << endl;
+
+            throw generation_failed ();
+          }
+
+          using semantics::enumerator;
+
+          enumerator& e (dynamic_cast<enumerator&> (*unit.find (en)));
+
+          if (e.enum_ ().unsigned_ ())
+            os << " DEFAULT " << e.value ();
+          else
+            os << " DEFAULT " << static_cast<long long> (e.value ());
+        }
 
         virtual void
         constraints (semantics::data_member& m)

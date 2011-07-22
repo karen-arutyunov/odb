@@ -3,6 +3,12 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <odb/gcc.hxx>
+
+#include <cassert>
+#include <limits>
+#include <sstream>
+
 #include <odb/emitter.hxx>
 
 #include <odb/relational/schema.hxx>
@@ -14,6 +20,122 @@ namespace relational
 {
   namespace schema
   {
+    // object_columns
+    //
+    void object_columns::
+    default_ (semantics::data_member& m)
+    {
+      string s;
+      tree n (0);
+
+      semantics::type& t (m.type ());
+
+      if (m.count ("default"))
+      {
+        s = m.get<string> ("default");
+
+        // Empty string is a default value override which means
+        // there is no default value.
+        //
+        if (s.empty ())
+          return;
+
+        if (m.count ("default-node"))
+          n = m.get<tree> ("default-node");
+      }
+      else if (t.count ("default"))
+      {
+        s = t.get<string> ("default");
+
+        if (s.empty ())
+          return;
+
+        if (t.count ("default-node"))
+          n = t.get<tree> ("default-node");
+      }
+      else
+        return; // No default value for this column.
+
+      // The first letter in the default value string identifies
+      // the type of the value. See pragma.cxx for details.
+      //
+      switch (s[0])
+      {
+      case 'n':
+        {
+          default_null (m);
+          break;
+        }
+      case 't':
+      case 'f':
+        {
+          default_bool (m, s[0] == 't');
+          break;
+        }
+      case '+':
+      case '-':
+        {
+          switch (TREE_CODE (n))
+          {
+          case INTEGER_CST:
+            {
+              HOST_WIDE_INT hwl (TREE_INT_CST_LOW (n));
+              HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (n));
+
+              unsigned long long l (hwl);
+              unsigned long long h (hwh);
+              unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+              unsigned long long v ((h << width) + l);
+
+              default_integer (m, v, s[0] == '-');
+              break;
+            }
+          case REAL_CST:
+            {
+              double v;
+
+              REAL_VALUE_TYPE d (TREE_REAL_CST (n));
+
+              if (REAL_VALUE_ISINF (d))
+                v = numeric_limits<double>::infinity ();
+              else if (REAL_VALUE_ISNAN (d))
+                v = numeric_limits<double>::quiet_NaN ();
+              else
+              {
+                char tmp[256];
+                real_to_decimal (tmp, &d, sizeof (tmp), 0, true);
+                istringstream is (tmp);
+                is >> v;
+              }
+
+              if (s[0] == '-')
+                v = -v;
+
+              default_float (m, v);
+              break;
+            }
+          default:
+            assert (false);
+          }
+          break;
+        }
+
+      case 's':
+        {
+          default_string (m, string (s, 1, string::npos));
+          break;
+        }
+      case 'e':
+        {
+          default_enum (m, n, string (s, 1, string::npos));
+          break;
+        }
+      default:
+        assert (false);
+      }
+    }
+
     struct schema_emitter: emitter, context
     {
       virtual void

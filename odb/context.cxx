@@ -247,15 +247,16 @@ comp_value_ (semantics::class_& c)
   r = r && !c.count ("index-column");
   r = r && !c.count ("key-column");
   r = r && !c.count ("id-column");
+  r = r && !c.count ("default");
+  r = r && !c.count ("null");
+  r = r && !c.count ("not-null");
+  r = r && !c.count ("value-null");
+  r = r && !c.count ("value-not-null");
   r = r && !c.count ("options");
   r = r && !c.count ("value-options");
   r = r && !c.count ("index-options");
   r = r && !c.count ("key-options");
   r = r && !c.count ("id-options");
-  r = r && !c.count ("null");
-  r = r && !c.count ("not-null");
-  r = r && !c.count ("value-null");
-  r = r && !c.count ("value-not-null");
   r = r && !c.count ("unordered");
 
   c.set ("composite-value", r);

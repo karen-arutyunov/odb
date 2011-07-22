@@ -287,6 +287,18 @@ namespace
       {
         c.set ("id-member", id);
 
+        // Complain if an id member has a default value (default value
+        // for the id's type is ok -- we will ignore it).
+        //
+        if (id->count ("default"))
+        {
+          cerr << id->file () << ":" << id->line () << ":" << id->column ()
+               << ": error: object id member cannot have default value"
+               << endl;
+
+          valid_ = false;
+        }
+
         // Automatically mark the id member as not null. If we already have
         // an explicit null pragma for this member, issue an error.
         //

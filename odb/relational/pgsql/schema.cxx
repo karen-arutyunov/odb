@@ -77,6 +77,43 @@ namespace relational
         }
 
         virtual void
+        default_bool (semantics::data_member&, bool v)
+        {
+          os << " DEFAULT " << (v ? "TRUE" : "FALSE");
+        }
+
+        virtual void
+        default_enum (semantics::data_member& m, tree en, string const&)
+        {
+          // Make sure the column is mapped to an integer type.
+          //
+          switch (column_sql_type (m).type)
+          {
+          case sql_type::SMALLINT:
+          case sql_type::INTEGER:
+          case sql_type::BIGINT:
+            break;
+          default:
+            {
+              cerr << m.file () << ":" << m.line () << ":" << m.column ()
+                   << ": error: column with default value specified as C++ "
+                   << "enumerator must map to PostgreSQL integer type" << endl;
+
+              throw generation_failed ();
+            }
+          }
+
+          using semantics::enumerator;
+
+          enumerator& e (dynamic_cast<enumerator&> (*unit.find (en)));
+
+          if (e.enum_ ().unsigned_ ())
+            os << " DEFAULT " << e.value ();
+          else
+            os << " DEFAULT " << static_cast<long long> (e.value ());
+        }
+
+        virtual void
         reference (semantics::data_member&)
         {
         }
