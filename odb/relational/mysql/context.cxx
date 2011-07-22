@@ -268,9 +268,7 @@ namespace relational
               if (j != 0)
                 r += ", ";
 
-              r += '\'';
-              r += er.name ();
-              r += '\'';
+              r += quote_string (er.name ());
             }
 
             if (i == end)
