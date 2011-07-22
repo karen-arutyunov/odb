@@ -6,6 +6,8 @@
 #ifndef ODB_RELATIONAL_MYSQL_CONTEXT_HXX
 #define ODB_RELATIONAL_MYSQL_CONTEXT_HXX
 
+#include <vector>
+
 #include <odb/relational/context.hxx>
 
 namespace relational
@@ -72,6 +74,7 @@ namespace relational
       bool unsign;
       bool range;
       unsigned int range_value; // MySQL max value is 2^32 - 1 (LONGBLOG/TEXT).
+      std::vector<std::string> enumerators; // Enumerator strings for ENUM.
     };
 
     class context: public virtual relational::context

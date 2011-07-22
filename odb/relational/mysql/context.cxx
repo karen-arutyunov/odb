@@ -589,11 +589,35 @@ namespace relational
                 //
                 if (r.type == sql_type::ENUM || r.type == sql_type::SET)
                 {
-                  // Skip tokens until we get the closing paren.
-                  //
-                  while (t.type () != sql_token::t_eos &&
-                         t.punctuation () != sql_token::p_rparen)
+                  while (true)
+                  {
+                    if (t.type () != sql_token::t_string_lit)
+                    {
+                      cerr << m.file () << ":" << m.line () << ":" << m.column ()
+                           << ": error: string literal expected in MySQL ENUM "
+                           << "or SET declaration" << endl;
+
+                      throw generation_failed ();
+                    }
+
+                    if (r.type == sql_type::ENUM)
+                      r.enumerators.push_back (t.literal ());
+
                     t = l.next ();
+
+                    if (t.punctuation () == sql_token::p_rparen)
+                      break;
+                    else if (t.punctuation () != sql_token::p_comma)
+                    {
+                      cerr << m.file () << ":" << m.line () << ":" << m.column ()
+                           << ": error: comma expected in MySQL ENUM or "
+                           << "SET declaration" << endl;
+
+                      throw generation_failed ();
+                    }
+
+                    t = l.next ();
+                  }
                 }
                 else
                 {
