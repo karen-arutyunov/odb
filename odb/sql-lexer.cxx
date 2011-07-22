@@ -209,7 +209,7 @@ sql_token sql_lexer::
 string_literal (xchar c)
 {
   //size_t ln (c.line ()), cl (c.column ());
-  char q (c), p ('\0');
+  char q (c);
   string lexeme;
   lexeme += c;
 
@@ -223,16 +223,16 @@ string_literal (xchar c)
 
     lexeme += c;
 
-    if (c == q && p != '\\')
-      break;
-
-    // We need to keep track of \\ escapings so we don't confuse
-    // them with \", as in "\\".
+    // In SQL, double-quote is used to encode a single quote inside
+    // a string.
     //
-    if (c == '\\' && p == '\\')
-      p = '\0';
-    else
-      p = c;
+    if (c == q)
+    {
+      if (peek () == q)
+        get ();
+      else
+        break;
+    }
   }
 
   return sql_token (sql_token::t_string_lit, lexeme);
