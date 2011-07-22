@@ -9164,19 +9164,17 @@ class person
      <code>posix_time::ptime</code> values representing the special values
      <code>date_time::pos_infin</code> and <code>date_time::neg_infin</code>
      are stored as the special PostgreSQL TIMESTAMP values
-     <code>infinity</code> and <code>-infinity</code> respectively.</p>
+     <code>infinity</code> and <code>-infinity</code>, respectively.</p>
 
   <p>Some valid Boost date-time values cannot be stored in a PostgreSQL
      database. The PostgreSQL TIME type represents a clock time, and can
-     therefore  only store positive durations with a total length of time less
+     therefore only store positive durations with a total length of time less
      than 24 hours. An attempt to persist a
-     <code>posix_time::time_duration</code> value outside of this range as
-     PostgreSQL <code>TIME</code> will result in the
-     <code>value_out_of_range</code> exception. An attempt to persist a
-     <code>posix_time::time_duration</code> value representing any special
-     value other than <code>date_time::not_a_date_time</code> as PostgreSQL
-     <code>TIME</code> will result in the <code>special_value</code>
-     exception.</p>
+     <code>posix_time::time_duration</code> value outside of this range will
+     result in the <code>value_out_of_range</code> exception. An attempt to
+     persist a <code>posix_time::time_duration</code> value representing any
+     special value other than <code>date_time::not_a_date_time</code>  will
+     result in the <code>special_value</code> exception.</p>
 
 
   <!-- CHAPTER -->
@@ -9620,7 +9618,7 @@ class Person
      An attempt to persist a <code>QDateTime</code> value representing a
      negative UNIX time (any point in time prior to the
      1970-01-01&nbsp;00:00:00 UNIX time epoch) as a PostgreSQL
-     <code>TIMESTAMP</code> result in the <code>out_of_range</code>
+     <code>TIMESTAMP</code> will result in the <code>out_of_range</code>
      exception.</p>
 
   </div>
