@@ -55,7 +55,7 @@ namespace relational
         {
           if (m.count ("auto"))
           {
-            const sql_type& t (column_sql_type (m));
+            sql_type const& t (column_sql_type (m));
 
             if (t.type == sql_type::INTEGER)
               os << "SERIAL";
