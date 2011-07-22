@@ -50,7 +50,7 @@ namespace relational
         {"float", "FLOAT", 0},
         {"double", "DOUBLE", 0},
 
-        {"::std::string", "TEXT", "VARCHAR (255)"},
+        {"::std::string", "TEXT", "VARCHAR(255)"},
 
         {"::size_t", "BIGINT UNSIGNED", 0},
         {"::std::size_t", "BIGINT UNSIGNED", 0}
@@ -256,7 +256,7 @@ namespace relational
 
           if (i != end)
           {
-            r += "ENUM (";
+            r += "ENUM(";
 
             for (unsigned long long j (0); i != end; ++i, ++j)
             {
