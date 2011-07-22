@@ -550,6 +550,7 @@ for consistency.
 	      <table class="toc">
 	        <tr><th>15.3.1</th><td><a href="#15.3.1">MySQL Database Type Mapping</a></td></tr>
 		<tr><th>15.3.2</th><td><a href="#15.3.2">SQLite Database Type Mapping</a></td></tr>
+		<tr><th>15.3.3</th><td><a href="#15.3.3">PostgreSQL Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -565,7 +566,7 @@ for consistency.
 	      <table class="toc">
 	        <tr><th>16.1.1</th><td><a href="#16.1.1">MySQL Database Type Mapping</a></td></tr>
 		<tr><th>16.1.2</th><td><a href="#16.1.2">SQLite Database Type Mapping</a></td></tr>
-	      </table>
+		<tr><th>16.1.3</th><td><a href="#16.1.3">PostgreSQL Database Type Mapping</a></td></tr>	      </table>
 	    </td>
 	  </tr>
           <tr><th>16.2</th><td><a href="#16.2">Smart Pointers Library</a></td></tr>
@@ -575,6 +576,7 @@ for consistency.
 	      <table class="toc">
 	        <tr><th>16.4.1</th><td><a href="#16.4.1">MySQL Database Type Mapping</a></td></tr>
 		<tr><th>16.4.2</th><td><a href="#16.4.2">SQLite Database Type Mapping</a></td></tr>
+		<tr><th>16.4.3</th><td><a href="#16.4.3">PostgreSQL Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -9124,6 +9126,59 @@ class person
      will result in the <code>out_of_range</code> exception.</p>
 
 
+  <h3><a name="15.3.3">15.3.3 PostgreSQL Database Type Mapping</a></h3>
+
+  <p>The following table summarizes the default mapping between the currently
+     supported Boost <code>date_time</code> types and the PostgreSQL database
+     types.</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>Boost <code>date_time</code> Type</th>
+      <th>PostgreSQL Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
+    </tr>
+
+    <tr>
+      <td><code>gregorian::date</code></td>
+      <td><code>DATE</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>posix_time::ptime</code></td>
+      <td><code>TIMESTAMP</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>posix_time::time_duration</code></td>
+      <td><code>TIME</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+  </table>
+
+  <p>The Boost special value <code>date_time::not_a_date_time</code> is stored
+     as a <code>NULL</code> value in a PostgreSQL database.
+     <code>posix_time::ptime</code> values representing the special values
+     <code>date_time::pos_infin</code> and <code>date_time::neg_infin</code>
+     are stored as the special PostgreSQL TIMESTAMP values
+     <code>infinity</code> and <code>-infinity</code> respectively.</p>
+
+  <p>Some valid Boost date-time values cannot be stored in a PostgreSQL
+     database. The PostgreSQL TIME type represents a clock time, and can
+     therefore  only store positive durations with a total length of time less
+     than 24 hours. An attempt to persist a
+     <code>posix_time::time_duration</code> value outside of this range as
+     PostgreSQL <code>TIME</code> will result in the
+     <code>value_out_of_range</code> exception. An attempt to persist a
+     <code>posix_time::time_duration</code> value representing any special
+     value other than <code>date_time::not_a_date_time</code> as PostgreSQL
+     <code>TIME</code> will result in the <code>special_value</code>
+     exception.</p>
+
+
   <!-- CHAPTER -->
 
 
@@ -9236,6 +9291,36 @@ class Person
     <tr>
       <td><code>QByteArray</code></td>
       <td><code>BLOB</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+  </table>
+
+  <p>Instances of the <code>QString</code> and <code>QByteArray</code> types
+     are stored as a NULL value if their <code>isNull()</code> member
+     function returns <code>true</code>.</p>
+
+  <h3><a name="16.1.3">16.1.3 PostgreSQL Database Type Mapping</a></h3>
+
+  <p>The following table summarizes the default mapping between the currently
+     supported basic Qt types and the PostgreSQL database types.</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>Qt Type</th>
+      <th>PostgreSQL Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
+    </tr>
+
+    <tr>
+      <td><code>QString</code></td>
+      <td><code>TEXT</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QByteArray</code></td>
+      <td><code>BYTEA</code></td>
       <td><code>NULL</code></td>
     </tr>
   </table>
@@ -9494,6 +9579,49 @@ class Person
      time (any point in time prior to the 1970-01-01&nbsp;00:00:00 UNIX time
      epoch) as an SQLite <code>INTEGER</code> will result in the
      <code>out_of_range</code> exception.</p>
+
+  <h3><a name="16.4.3">16.4.3 PostgreSQL Database Type Mapping</a></h3>
+
+  <p>The following table summarizes the default mapping between the currently
+     supported Qt date-time types and the PostgreSQL database types.</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table id="mapping" border="1">
+    <tr>
+      <th>Qt Date Time Type</th>
+      <th>PostgreSQL Type</th>
+      <th>Default <code>NULL</code> Semantics</th>
+    </tr>
+
+    <tr>
+      <td><code>QDate</code></td>
+      <td><code>DATE</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QTime</code></td>
+      <td><code>TIME</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QDateTime</code></td>
+      <td><code>TIMESTAMP</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+  </table>
+
+  <p>Instances of the <code>QDate</code>, <code>QTime</code>, and
+     <code>QDateTime</code> types are stored as a NULL value if their
+     <code>isNull()</code> member function returns true.</p>
+
+  <p>Some valid Qt date-time values cannot be stored in a PostgreSQL database.
+     An attempt to persist a <code>QDateTime</code> value representing a
+     negative UNIX time (any point in time prior to the
+     1970-01-01&nbsp;00:00:00 UNIX time epoch) as a PostgreSQL
+     <code>TIMESTAMP</code> result in the <code>out_of_range</code>
+     exception.</p>
 
   </div>
 </div>
