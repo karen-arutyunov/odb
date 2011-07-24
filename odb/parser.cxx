@@ -7,6 +7,7 @@
 
 #include <set>
 #include <map>
+#include <vector>
 #include <string>
 #include <cassert>
 #include <sstream>
@@ -110,6 +111,8 @@ private:
   //
   // Pragma handling.
   //
+  void
+  add_pragma (node&, pragma const&);
 
   // Process positioned and named pragmas.
   //
@@ -1876,26 +1879,7 @@ process_pragmas (tree t,
   // Finally, copy the resulting pragma set to context.
   //
   for (pragma_set::iterator i (prags.begin ()); i != prags.end (); ++i)
-  {
-    if (trace)
-      ts << "\t\t pragma " << i->name << " (" << i->value << ")"
-         << endl;
-
-    // Convert '_' to '-' in the pragma name so we get foo-bar instead
-    // of foo_bar (that's the convention used).
-    //
-    string tmp (i->name);
-    for (size_t j (0); j < tmp.size (); ++j)
-      if (tmp[j] == '_')
-        tmp[j] = '-';
-
-    node.set (tmp, i->value);
-
-    if (i->node != 0)
-      node.set (tmp + "-node", i->node);
-
-    node.set (tmp + "-loc", i->loc);
-  }
+    add_pragma (node, *i);
 }
 
 void parser::impl::
@@ -1911,25 +1895,55 @@ process_named_pragmas (tree t, node& node)
   // Copy the resulting pragma set to context.
   //
   for (pragma_set::iterator i (prags.begin ()); i != prags.end (); ++i)
+    add_pragma (node, *i);
+}
+
+void parser::impl::
+add_pragma (node& n, pragma const& p)
+{
+  if (trace)
+    ts << "\t\t pragma " << p.name << " (" << p.value << ")" << endl;
+
+  // Convert '_' to '-' in the pragma name so we get foo-bar instead
+  // of foo_bar (that's the convention used).
+  //
+  string kv (p.name);
+  for (size_t i (0); i < kv.size (); ++i)
+    if (kv[i] == '_')
+      kv[i] = '-';
+
+  string kl (kv + "-loc");
+  string kn (kv + "-node");
+
+  if (p.mode == pragma::override)
   {
-    if (trace)
-      ts << "\t\t pragma " << i->name << " (" << i->value << ")"
-         << endl;
-
-    // Convert '_' to '-' in the pragma name so we get foo-bar instead
-    // of foo_bar (that's the convention used).
+    n.set (kv, p.value);
+    n.set (kn, p.node);
+    n.set (kl, p.loc);
+  }
+  else
+  {
+    // Having three parallel vectors is not the most efficient
+    // way to store this, but it is quite simple.
     //
-    string tmp (i->name);
-    for (size_t j (0); j < tmp.size (); ++j)
-      if (tmp[j] == '_')
-        tmp[j] = '-';
+    typedef vector<string> values;
+    typedef vector<tree> nodes;
+    typedef vector<location_t> locations;
 
-    node.set (tmp, i->value);
+    if (!n.count (kv))
+    {
+      n.set (kv, values ());
+      n.set (kn, nodes ());
+      n.set (kl, locations ());
+    }
 
-    if (i->node != 0)
-      node.set (tmp + "-node", i->node);
+    values& vs (n.get<values> (kv));
+    nodes& ns (n.get<nodes> (kn));
+    locations& ls (n.get<locations> (kl));
 
-    node.set (tmp + "-loc", i->loc);
+    vs.push_back (p.value);
+    ns.push_back (p.node);
+    ls.push_back (p.loc);
   }
 }
 

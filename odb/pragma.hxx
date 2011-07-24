@@ -15,17 +15,27 @@
 
 struct pragma
 {
-  pragma (std::string const& n, std::string const& v, tree tn, location_t l)
-      : name (n), value (v), node (tn), loc (l)
+  enum mode_type {override, accumulate};
+
+  pragma (mode_type m,
+          std::string const& n,
+          std::string const& v,
+          tree tn,
+          location_t l)
+      : mode (m), name (n), value (v), node (tn), loc (l)
   {
   }
 
   bool
   operator< (pragma const& y) const
   {
-    return name < y.name;
+    if (mode == override)
+      return name < y.name;
+    else
+      return name < y.name || (name == y.name && loc < y.loc);
   }
 
+  mode_type mode;
   std::string name;
   std::string value;
   tree node;
@@ -34,8 +44,8 @@ struct pragma
 
 typedef std::vector<pragma> pragma_list;
 
-// A set of pragmas. Insertion of a pragma with the same name
-// overrides the old value.
+// A set of pragmas. Insertion of a pragma with the same name and override
+// mode overrides the old value.
 //
 struct pragma_set: std::set<pragma>
 {
