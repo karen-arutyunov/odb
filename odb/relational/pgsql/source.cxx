@@ -1078,7 +1078,13 @@ namespace relational
               }
               else
                 os << oids[column_sql_type (m, "value").type];
+
             }
+            else
+              // MSVC does not allow zero length arrays or uninitialized
+              // non-extern const values.
+              //
+              os << "0";
 
             os << "};";
           }
@@ -1092,6 +1098,8 @@ namespace relational
 
             if (!inv)
               os << id_oid;
+            else
+              os << "0";
 
             os << "};";
           }
