@@ -514,11 +514,11 @@ handle_pragma (cpp_reader* reader,
            p == "key_options" ||
            p == "id_options")
   {
-    // options ("<name>")
-    // value_options ("<name>")
-    // index_options ("<name>")
-    // key_options ("<name>")
-    // id_options ("<name>")
+    // options (["<name>"])
+    // value_options (["<name>"])
+    // index_options (["<name>"])
+    // key_options (["<name>"])
+    // id_options (["<name>"])
     //
 
     // Make sure we've got the correct declaration type.
@@ -534,20 +534,28 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
 
-    if (tt != CPP_STRING)
+    // An empty options specifier signals options reset.
+    //
+    if (tt == CPP_STRING)
+    {
+      val = TREE_STRING_POINTER (t);
+      tt = pragma_lex (&t);
+    }
+    // Empty options specifier signals options reset.
+    //
+    else if (tt != CPP_CLOSE_PAREN)
     {
       error () << "options string expected in db pragma '" << p << "'" << endl;
       return;
     }
 
-    val = TREE_STRING_POINTER (t);
-
-    if (pragma_lex (&t) != CPP_CLOSE_PAREN)
+    if (tt != CPP_CLOSE_PAREN)
     {
       error () << "')' expected at the end of db pragma '" << p << "'" << endl;
       return;
     }
 
+    mode = pragma::accumulate;
     tt = pragma_lex (&t);
   }
   else if (p == "type" ||

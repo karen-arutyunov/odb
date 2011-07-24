@@ -325,10 +325,45 @@ column_options (semantics::data_member& m)
   //
   semantics::type& t (m.type ());
 
-  string mo (m.get<string> ("options", string ()));
-  string to (t.get<string> ("options", string ()));
+  string r;
 
-  return to + (mo.empty () || to.empty () ? "" : " ") + mo;
+  if (t.count ("options"))
+  {
+    strings const& o (t.get<strings> ("options"));
+
+    for (strings::const_iterator i (o.begin ()); i != o.end (); ++i)
+    {
+      if (i->empty ())
+        r.clear ();
+      else
+      {
+        if (!r.empty ())
+          r += ' ';
+
+        r += *i;
+      }
+    }
+  }
+
+  if (m.count ("options"))
+  {
+    strings const& o (m.get<strings> ("options"));
+
+    for (strings::const_iterator i (o.begin ()); i != o.end (); ++i)
+    {
+      if (i->empty ())
+        r.clear ();
+      else
+      {
+        if (!r.empty ())
+          r += ' ';
+
+        r += *i;
+      }
+    }
+  }
+
+  return r;
 }
 
 string context::
@@ -344,24 +379,60 @@ column_options (semantics::data_member& m, string const& kp)
   semantics::type& c (m.type ());
   semantics::type& t (member_type (m, kp));
 
-  string r (t.get<string> ("options", string ()));
+  string r;
 
-  string o (c.get<string> (k, string ()));
-  if (!o.empty ())
+  if (t.count ("options"))
   {
-    if (!r.empty ())
-      r += ' ';
+    strings const& o (t.get<strings> ("options"));
 
-    r += o;
+    for (strings::const_iterator i (o.begin ()); i != o.end (); ++i)
+    {
+      if (i->empty ())
+        r.clear ();
+      else
+      {
+        if (!r.empty ())
+          r += ' ';
+
+        r += *i;
+      }
+    }
   }
 
-  o = m.get<string> (k, string ());
-  if (!o.empty ())
+  if (c.count (k))
   {
-    if (!r.empty ())
-      r += ' ';
+    strings const& o (c.get<strings> (k));
 
-    r += o;
+    for (strings::const_iterator i (o.begin ()); i != o.end (); ++i)
+    {
+      if (i->empty ())
+        r.clear ();
+      else
+      {
+        if (!r.empty ())
+          r += ' ';
+
+        r += *i;
+      }
+    }
+  }
+
+  if (m.count (k))
+  {
+    strings const& o (m.get<strings> (k));
+
+    for (strings::const_iterator i (o.begin ()); i != o.end (); ++i)
+    {
+      if (i->empty ())
+        r.clear ();
+      else
+      {
+        if (!r.empty ())
+          r += ' ';
+
+        r += *i;
+      }
+    }
   }
 
   return r;
