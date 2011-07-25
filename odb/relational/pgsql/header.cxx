@@ -162,7 +162,7 @@ namespace relational
         virtual void
         traverse_bit (member_info& mi)
         {
-          // @@ Additional 4 bytes at the beginning of the array specify
+          // Additional 4 bytes at the beginning of the array specify
           // the number of significant bits in the image. This number
           // is stored in network byte order.
           //

@@ -133,8 +133,6 @@ next (string& token)
 
   cpp_ttype tt (t->type);
 
-  // @@ Need to handle literals, at least integer.
-  //
   switch (tt)
   {
   case CPP_NAME:
