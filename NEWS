@@ -1,5 +1,11 @@
 Version 1.5.0
 
+  * Support for the PostgreSQL database. Provided connection factories include
+    'new' (new connection is created every time one is requested) and 'pool'
+    (a pool of connections is maintained). The Boost and Qt profiles have been
+    updated to support this database. For more information, refer to Chapter
+    13, "PostgreSQL Database" in the ODB manual.
+
   * New handling of the NULL semantics. Now, instead of being specified as
     part of the SQL type with the type pragma, there are separate null and
     not_null pragmas. The not_null pragma was used to control the NULL
