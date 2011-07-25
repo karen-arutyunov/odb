@@ -185,9 +185,15 @@ main (int argc, char* argv[])
     //
 #ifndef _WIN32
     {
+#ifdef __APPLE__
+      char const name[] = "DYLD_LIBRARY_PATH";
+#else
+      char const name[] = "LD_LIBRARY_PATH";
+#endif
+
       string ld_paths;
 
-      if (char const* s = getenv ("LD_LIBRARY_PATH"))
+      if (char const* s = getenv (name))
         ld_paths = s;
 
       path d (gxx.directory ());
@@ -202,7 +208,7 @@ main (int argc, char* argv[])
         else
           ld_paths = d.string () + path::traits::path_separator + ld_paths;
 
-        if (setenv ("LD_LIBRARY_PATH", ld_paths.c_str (), 1) != 0)
+        if (setenv (name, ld_paths.c_str (), 1) != 0)
         {
           e << argv[0] << ": error: unable to update environment" << endl;
           return 1;
