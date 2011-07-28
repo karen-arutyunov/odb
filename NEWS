@@ -1,3 +1,9 @@
+Version 1.6.0
+
+  * Support for mapping std::vector<char> to the BLOB (or equivalent)
+    types. For more information, refer to chapters 11 (for MySQL), 12
+    (for SQLite) and 13 (for PostgreSQL) in the ODB manual.
+
 Version 1.5.0
 
   * Support for the PostgreSQL database. The provided connection factories

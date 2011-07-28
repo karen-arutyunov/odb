@@ -7725,6 +7725,41 @@ aCC +W2161 ...
      to the <code>VARCHAR(255)</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT</code>.</p>
 
+  <p>The MySQL ODB runtime library also provides support for mapping the
+     <code>std::vector&lt;char></code> type to the MySQL BLOB types.
+     However, this mapping is not enabled by default (by default,
+     <code>std::vector&lt;char></code> will be treated as a container).
+     To enable the BLOB mapping for this type we need to specify
+     the database type explicitly using the <code>db&nbsp;type</code>
+     pragma (<a href="#10.3.3">Section 10.3.3, "<code>type</code>"</a>),
+     for example:</p>
+
+  <pre class="c++">
+#pragma db object
+class object
+{
+  ...
+
+  #pragma db type("BLOB")
+  std::vector&lt;char> buf_;
+};
+  </pre>
+
+  <p>Alternatively, this can be done on the per-type basis, for example:</p>
+
+  <pre class="c++">
+typedef std::vector&lt;char> buffer;
+#pragma db value(buffer) type("BLOB")
+
+#pragma db object
+class object
+{
+  ...
+
+  buffer buf_; // Mapped to BLOB.
+};
+  </pre>
+
   <p>Additionally, by default, C++ enumerations are automatically
      mapped to a suitable MySQL type. Contiguous enumerations with
      the zero first enumerator are mapped to the MySQL <code>ENUM</code>
@@ -8229,6 +8264,41 @@ namespace odb
       <td><code>NOT NULL</code></td>
     </tr>
   </table>
+
+  <p>The SQLite ODB runtime library also provides support for mapping the
+     <code>std::vector&lt;char></code> type to the SQLite BLOB type.
+     However, this mapping is not enabled by default (by default,
+     <code>std::vector&lt;char></code> will be treated as a container).
+     To enable the BLOB mapping for this type we need to specify
+     the database type explicitly using the <code>db&nbsp;type</code>
+     pragma (<a href="#10.3.3">Section 10.3.3, "<code>type</code>"</a>),
+     for example:</p>
+
+  <pre class="c++">
+#pragma db object
+class object
+{
+  ...
+
+  #pragma db type("BLOB")
+  std::vector&lt;char> buf_;
+};
+  </pre>
+
+  <p>Alternatively, this can be done on the per-type basis, for example:</p>
+
+  <pre class="c++">
+typedef std::vector&lt;char> buffer;
+#pragma db value(buffer) type("BLOB")
+
+#pragma db object
+class object
+{
+  ...
+
+  buffer buf_; // Mapped to BLOB.
+};
+  </pre>
 
   <p>Additionally, by default, C++ enumerations are automatically mapped to
      the SQLite <code>INTEGER</code> type with the default <code>NULL</code>
@@ -8779,6 +8849,41 @@ class person
       <td><code>NOT NULL</code></td>
     </tr>
   </table>
+
+  <p>The PostgreSQL ODB runtime library also provides support for mapping the
+     <code>std::vector&lt;char></code> type to the PostgreSQL BYTEA type.
+     However, this mapping is not enabled by default (by default,
+     <code>std::vector&lt;char></code> will be treated as a container).
+     To enable the BYTEA mapping for this type we need to specify
+     the database type explicitly using the <code>db&nbsp;type</code>
+     pragma (<a href="#10.3.3">Section 10.3.3, "<code>type</code>"</a>),
+     for example:</p>
+
+  <pre class="c++">
+#pragma db object
+class object
+{
+  ...
+
+  #pragma db type("BYTEA")
+  std::vector&lt;char> buf_;
+};
+  </pre>
+
+  <p>Alternatively, this can be done on the per-type basis, for example:</p>
+
+  <pre class="c++">
+typedef std::vector&lt;char> buffer;
+#pragma db value(buffer) type("BYTEA")
+
+#pragma db object
+class object
+{
+  ...
+
+  buffer buf_; // Mapped to BYTEA.
+};
+  </pre>
 
   <p>Additionally, by default, C++ enumerations are automatically
      mapped to <code>INTEGER</code> with the default <code>NULL</code>
