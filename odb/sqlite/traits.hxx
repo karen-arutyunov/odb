@@ -9,6 +9,7 @@
 #include <odb/pre.hxx>
 
 #include <string>
+#include <vector>
 #include <cstddef> // std::size_t
 
 #include <odb/traits.hxx>
@@ -130,6 +131,35 @@ namespace odb
                  std::size_t& n,
                  bool& is_null,
                  const char*);
+    };
+
+    // std::vector<char> (buffer) specialization.
+    //
+    template <>
+    struct LIBODB_SQLITE_EXPORT default_value_traits<std::vector<char>, id_blob>
+    {
+    public:
+      typedef std::vector<char> value_type;
+      typedef std::vector<char> query_type;
+      typedef details::buffer image_type;
+
+      static void
+      set_value (value_type& v,
+                 const details::buffer& b,
+                 std::size_t n,
+                 bool is_null)
+      {
+        if (!is_null)
+          v.assign (b.data (), b.data () + n);
+        else
+          v.clear ();
+      }
+
+      static void
+      set_image (details::buffer&,
+                 std::size_t& n,
+                 bool& is_null,
+                 const value_type&);
     };
 
     //
