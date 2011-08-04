@@ -381,9 +381,17 @@ for consistency.
     </tr>
 
     <tr>
-      <th>7</th><td><a href="#7">Composite Value Types</a>
+      <th>7</th><td><a href="#7">Value Types</a>
         <table class="toc">
-          <tr><th>7.1</th><td><a href="#7.1">Composite Value Column and Table Names</a></td></tr>
+	  <tr><th>7.1</th><td><a href="#7.1">Simple Value Types</a></td></tr>
+	  <tr>
+            <th>7.2</th><td><a href="#7.2">Composite Value Types</a>
+              <table class="toc">
+                <tr><th>7.2.1</th><td><a href="#7.2.1">Composite Value Column and Table Names</a></td></tr>
+              </table>
+            </td>
+          </tr>
+	  <tr><th>7.3</th><td><a href="#7.3"><code>NULL</code> Value Semantics</a></td></tr>
         </table>
       </td>
     </tr>
@@ -557,12 +565,13 @@ for consistency.
         <table class="toc">
           <tr><th>15.1</th><td><a href="#15.1">Smart Pointers Library</a></td></tr>
           <tr><th>15.2</th><td><a href="#15.2">Unordered Containers Library</a></td></tr>
+	  <tr><th>15.3</th><td><a href="#15.3">Optional Library</a></td></tr>
           <tr>
-	    <th>15.3</th><td><a href="#15.3">Date Time Library</a>
+	    <th>15.4</th><td><a href="#15.4">Date Time Library</a>
 	      <table class="toc">
-	        <tr><th>15.3.1</th><td><a href="#15.3.1">MySQL Database Type Mapping</a></td></tr>
-		<tr><th>15.3.2</th><td><a href="#15.3.2">SQLite Database Type Mapping</a></td></tr>
-		<tr><th>15.3.3</th><td><a href="#15.3.3">PostgreSQL Database Type Mapping</a></td></tr>
+	        <tr><th>15.4.1</th><td><a href="#15.4.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>15.4.2</th><td><a href="#15.4.2">SQLite Database Type Mapping</a></td></tr>
+		<tr><th>15.4.3</th><td><a href="#15.4.3">PostgreSQL Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -707,7 +716,7 @@ for consistency.
     <tr><th>4</th><td><a href="#4">Querying the Database</a></td></tr>
     <tr><th>5</th><td><a href="#5">Containers</a></td></tr>
     <tr><th>6</th><td><a href="#6">Relationships</a></td></tr>
-    <tr><th>7</th><td><a href="#7">Composite Value Types</a></td></tr>
+    <tr><th>7</th><td><a href="#7">Value Types</a></td></tr>
     <tr><th>8</th><td><a href="#8">Inheritance</a></td></tr>
     <tr><th>9</th><td><a href="#9">Session</a></td></tr>
     <tr><th>10</th><td><a href="#10">ODB Pragma Language</a></td></tr>
@@ -1790,7 +1799,8 @@ Hello, Joe!
      contrast, a value can only be stored in the database as part of an
      object and doesn't have its own unique identifier.</p>
 
-  <p>An object consists of data members which are either values, pointers
+  <p>An object consists of data members which are either values
+     (<a href="#7">Chapter 7, "Value Types"</a>), pointers
      to other objects (<a href="#6">Chapter 6, "Relationships"</a>), or
      containers of values or pointers to other objects (<a href="#5">Chapter
      5, "Containers")</a>. Pointers to other objects and containers can
@@ -1804,9 +1814,11 @@ Hello, Joe!
      <code>int</code> or a class type, such as <code>std::string</code>.
      If a value consists of other values, then it is called a
      <em>composite value</em> and its type &mdash; a
-     <em>composite value type</em>. Otherwise, the value is
+     <em>composite value type</em> (<a href="#7.2">Section 7.2,
+     "Composite Value Types"</a>). Otherwise, the value is
      called <em>simple value</em> and its type &mdash; a
-     <em>simple value type</em>. Note that the distinction between
+     <em>simple value type</em> (<a href="#7.1">Section 7.1,
+     "Simple Value Types"</a>). Note that the distinction between
      simple and composite values is conceptual rather than
      representational. For example, <code>std::string</code>
      is a simple value type because conceptually string is a
@@ -1937,7 +1949,7 @@ class name
   </pre>
 
   <p>Composite value types are discussed in more detail in
-     <a href="#7">Chapter 7, "Composite Value Types"</a>.</p>
+     <a href="#7.2">Section 7.2, "Composite Value Types"</a>.</p>
 
   <p>Normally, you would use object types to model real-world entities,
      things that have their own identity. For example, in the
@@ -3537,8 +3549,9 @@ private:
      contents of the tables to which they are mapped are discussed
      in detail in the following sections.</p>
 
-  <p>Containers in ODB can contain simple value types, composite value
-     types (<a href="#7">Chapter 7, "Composite Value Types"</a>), and pointers
+  <p>Containers in ODB can contain simple value types (<a href="#7.1">Section
+     7.1, "Simple Value Types"</a>), composite value types
+     (<a href="#7.2">Section 7.2, "Composite Value Types"</a>), and pointers
      to objects (<a href="#6">Chapter 6, "Relationships"</a>). Containers of
      containers, either directly or indirectly via a composite value
      type, are not allowed. A key in a map or multimap container can
@@ -4847,9 +4860,28 @@ t.commit ();
 
   <!-- CHAPTER -->
 
-
   <hr class="page-break"/>
-  <h1><a name="7">7 Composite Value Types</a></h1>
+  <h1><a name="7">7 Value Types</a></h1>
+
+  <p>In <a href="#3.1">Section 3.1, "Concepts and Terminology"</a> we have
+     already discussed the notion of values and value types as well as the
+     distinction between simple and composite values. This chapter covers
+     simple and composite value types in more detail.</p>
+
+  <h2><a name="7.1">7.1 Simple Value Types</a></h2>
+
+  <p>A simple value type is a fundamental C++ type or a class type that
+     is mapped to a single database column. For each supported database
+     system the ODB compiler provides a default mapping to suitable
+     database types for most fundamental C++ types, such as <code>int</code>
+     or <code>float</code> as well as some class types, such as
+     <code>std::string</code>. For more information about the default
+     mapping for each database system refer to <a href="#II">Part II,
+     Database Systems</a>. We can also provide a custom mapping for
+     these or our own value types using the <code>db&nbsp;type</code>
+     pragma (<a href="#10.2.1">Section 10.2.1, "<code>type</code>"</a>).</p>
+
+  <h2><a name="7.2">7.2 Composite Value Types</a></h2>
 
   <p>A composite value type is a <code>class</code> or <code>struct</code>
      type that is mapped to more than one database column. To declare
@@ -4980,7 +5012,7 @@ result r (db->query&lt;person> (
 t.commit ();
   </pre>
 
-  <h2><a name="7.1">7.1 Composite Value Column and Table Names</a></h2>
+  <h3><a name="7.2.1">7.2.1 Composite Value Column and Table Names</a></h3>
 
   <p>Customizing a column name for a data member of a simple value
      type is straightforward: we simply specify the desired name with
@@ -5166,6 +5198,169 @@ CREATE TABLE person_nickname (
 
   <p>Similar to columns, we can make the table prefix empty.</p>
 
+
+  <h2><a name="7.3">7.3 <code>NULL</code> Value Semantics</a></h2>
+
+  <p>Relational database systems have a notion of the special
+     <code>NULL</code> value that is used to indicate the absence
+     of a valid value in a column. While by default ODB maps
+     values to columns that do not allow <code>NULL</code> values,
+     it is possible to change that with the <code>db&nbsp;null</code>
+     pragma (<a href="#10.3.4">Section 10.3.4,
+     "<code>null</code>/<code>not_null</code>"</a>).</p>
+
+  <p>To properly support the <code>NULL</code> semantics, the
+     C++ value type must have a notion or a <code>NULL</code>
+     value or a similar special state concept. Most basic
+     C++ types, such as <code>int</code> or <code>std::string</code>,
+     do not have this notion and therefore cannot be used directly
+     for <code>NULL</code>-enabled data members (in the case of a
+     <code>NULL</code> value being loaded from the database,
+     such data members will be default-initialized).</p>
+
+  <p>To allow the easy conversion of value types that do not support
+     the <code>NULL</code> semantics into the ones that do, ODB
+     provides the <code>odb::nullable</code> class template. It
+     allows us to wrap an existing C++ type into a container-like
+     class that can either be <code>NULL</code> or contain a
+     value of the wrapped type. ODB also automatically enables
+     the <code>NULL</code> values for data members of the
+     <code>odb::nullable</code> type. For example:</p>
+
+  <pre class="c++">
+#include &lt;odb/nullable.hxx>
+
+#pragma db object
+class person
+{
+  ...
+
+  std::string first_;                    // TEXT NOT NULL
+  odb::nullable&lt;std::string> middle_;    // TEXT NULL
+  std::string last_;                     // TEXT NOT NULL
+};
+  </pre>
+
+  <p>The <code>odb::nullable</code> class template is defined
+     in the <code>&lt;odb/nullable.hxx></code> header file and
+     has the following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  template &lt;typename T>
+  class nullable
+  {
+  public:
+    typedef T value_type;
+
+    nullable ();
+    nullable (const T&amp;);
+    nullable (const nullable&amp;);
+    template &lt;typename Y> explicit nullable (const nullable&lt;Y>&amp;);
+
+    nullable&amp; operator= (const T&amp;);
+    nullable&amp; operator= (const nullable&amp;);
+    template &lt;typename Y> nullable&amp; operator= (const nullable&lt;Y>&amp;);
+
+    void swap (nullable&amp;);
+
+    // Accessor interface.
+    //
+    bool null () const;
+
+    T&amp;       get ();
+    const T&amp; get () const;
+
+    // Pointer interface.
+    //
+    operator bool_convertible () const;
+
+    T*       operator-> ();
+    const T* operator-> () const;
+
+    T&amp;       operator* ();
+    const T&amp; operator* () const;
+
+    void reset ();
+  };
+}
+  </pre>
+
+  <p>The following example shows how we can use this interface:</p>
+
+  <pre class="c++">
+  nullable&lt;string> ns;
+
+  // Using the accessor interface.
+  //
+  if (ns.null ())
+  {
+    s = "abc";
+  }
+  else
+  {
+    string s (ns.get ());
+    ns.reset ();
+  }
+
+  // The same using the pointer interface.
+  //
+  if (ns)
+  {
+    s = "abc";
+  }
+  else
+  {
+    string s (*ns);
+    ns.reset ();
+  }
+  </pre>
+
+
+  <p>The <code>odb::nullable</code> class template requires the wrapped
+     type to have public default and copy constructors as well as the
+     copy assignment operator. Note also that the <code>odb::nullable</code>
+     implementation is not the most efficient in that it always contains
+     a fully constructed value of the wrapped type. This is normally
+     not a concern for simple types such as the C++ fundamental
+     types or <code>std::string</code>. However, it may become
+     an issue for more complex types. In such cases you may want to
+     consider using a more efficient implementation of the
+     <em>optional value</em> concept such as the
+     <code>optional</code> class template from Boost
+     (<a href="#15.3">Section 15.3, "Optional Library"</a>).</p>
+
+  <p>Another common C++ representation of a value that can be
+     <code>NULL</code> is a pointer. ODB will automatically
+     handle data members that are pointers to values, however,
+     it will not automatically enable <code>NULL</code> values
+     for such data members, as is the case for <code>odb::nullable</code>.
+     Instead, if the <code>NULL</code> value is desired, we will
+     need to enable it explicitly using the <code>db&nbsp;null</code>
+     pragma. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+
+  std::string first_;
+
+  #pragma db null
+  std::auto_ptr&lt;std::string> middle_;
+
+  std::string last_;
+};
+  </pre>
+
+  <p>The ODB compiler includes built-in support for using
+     <code>std::auto_ptr</code> and <code>std::tr1::shared_ptr</code>
+     as pointers to values. Plus, ODB profile libraries, that are
+     available for commonly used frameworks and libraries (such as Boost and
+     Qt), provide support for smart pointers found in these frameworks
+     and libraries (<a href="#III">Part III, "Profiles"</a>).</p>
 
   <!-- CHAPTER -->
 
@@ -6307,8 +6502,10 @@ typedef shared_ptr&lt;person> person_ptr;
   </pre>
 
   <p>For a more detailed discussion of the <code>NULL</code> semantics
-     for the object pointers, refer to <a href="#6">Chapter 6,
-     "Relationships"</a>.</p>
+     for values, refer to <a href="#7.3">Section 7.3, "<code>NULL</code>
+     Value Semantics"</a>. For a more detailed discussion of the
+     <code>NULL</code> semantics for object pointers, refer to
+     <a href="#6">Chapter 6, "Relationships"</a>.</p>
 
   <h3><a name="10.2.4">10.2.4 <code>default</code></a></h3>
 
@@ -6857,8 +7054,10 @@ class account
      <code>not_null</code> specifier), then a warning is issued.</p>
 
   <p>For a more detailed discussion of the <code>NULL</code> semantics
-     for the object pointers, refer to <a href="#6">Chapter 6,
-     "Relationships"</a>.</p>
+     for values, refer to <a href="#7.3">Section 7.3, "<code>NULL</code>
+     Value Semantics"</a>. For a more detailed discussion of the
+     <code>NULL</code> semantics for object pointers, refer to
+     <a href="#6">Chapter 6, "Relationships"</a>.</p>
 
   <h3><a name="10.3.5">10.3.5 <code>default</code></a></h3>
 
@@ -6893,22 +7092,22 @@ class person
   ...
 
   #pragma db default(null)
-  nullable&lt;std::string> middle_;    // DEFAULT NULL
+  odb::nullable&lt;std::string> middle_; // DEFAULT NULL
 
   #pragma db default(false)
-  bool married_;                    // DEFAULT 0/FALSE
+  bool married_;                      // DEFAULT 0/FALSE
 
   #pragma db default(0.0)
-  float weight_;                    // DEFAULT 0.0
+  float weight_;                      // DEFAULT 0.0
 
   #pragma db default("Mr")
-  string title_;                    // DEFAULT 'Mr'
+  string title_;                      // DEFAULT 'Mr'
 
   #pragma db default(undisclosed)
-  gender gender_;                   // DEFAULT 2/'undisclosed'
+  gender gender_;                     // DEFAULT 2/'undisclosed'
 
   #pragma db options("DEFAULT CURRENT_TIMESTAMP()")
-  date timestamp_;                  // DEFAULT CURRENT_TIMESTAMP()
+  date timestamp_;                    // DEFAULT CURRENT_TIMESTAMP()
 };
   </pre>
 
@@ -7039,7 +7238,7 @@ class person
   </pre>
 
   <p>For a member of a composite value type, the <code>column</code> specifier
-     specifies the column name prefix. Refer to <a href="#7.1">Section 7.1,
+     specifies the column name prefix. Refer to <a href="#7.2.1">Section 7.2.1,
      "Composite Value Column and Table Names"</a> for details.</p>
 
   <p>If the column name is not specified, it is derived from the member
@@ -7161,7 +7360,7 @@ class person
   <p>The <code>table</code> specifier can also be used for members of
      composite value types. In this case it specifies the table name
      prefix for container members inside the composite value type. Refer
-     to <a href="#7.1">Section 7.1, "Composite Value Column and Table
+     to <a href="#7.2.1">Section 7.2.1, "Composite Value Column and Table
      Names"</a> for details.</p>
 
   <h3><a name="10.3.12">10.3.12 <code>index_type</code></a></h3>
@@ -9396,12 +9595,29 @@ odb --profile boost/date-time ...
      ODB compiler option.</p>
 
   <p>The currently supported smart pointers are
-     <code>boost::shared_ptr</code> and <code>boost::weak_ptr</code>.  For
-     more information on using smart pointers with ODB refer to
-     <a href="#3.2">Section 3.2, "Object Pointers"</a> and
-     <a href="#6">Chapter 6, "Relationships"</a>. The <code>smart-ptr</code>
-     sub-profile also provides the lazy counterparts for the above
-     pointers: <code>odb::boost::lazy_shared_ptr</code> and
+     <code>boost::shared_ptr</code> and <code>boost::weak_ptr</code>. For
+     more information on using smart pointers as pointers to objects,
+     refer to <a href="#3.2">Section 3.2, "Object Pointers"</a> and
+     <a href="#6">Chapter 6, "Relationships"</a>. For more information
+     on using smart pointers as pointers to values, refer to
+     <a href="#7.3">Section 7.3, "<code>NULL</code> Value Semantics"</a>.
+     When used as a pointer to a value, only <code>boost::shared_ptr</code>
+     is supported. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db null
+  boost::shared_ptr&lt;std::string> middle_name_;
+};
+  </pre>
+
+  <p>To provide finer grained control over object relationship loading,
+     the <code>smart-ptr</code> sub-profile also provides the lazy
+     counterparts for the above  pointers: <code>odb::boost::lazy_shared_ptr</code> and
      <code>odb::boost::lazy_weak_ptr</code>. You will need to include the
      <code>&lt;odb/boost/lazy-ptr.hxx></code> header file to make the lazy
      variants available in your application. For the description of the lazy
@@ -9466,7 +9682,39 @@ class person
 };
 </pre>
 
-  <h2><a name="15.3">15.3 Date Time Library</a></h2>
+  <h2><a name="15.3">15.3 Optional Library</a></h2>
+
+  <p>The <code>optional</code> sub-profile provides persistence support for
+     the <code>boost::optional</code> container from the Boost
+     <code>optional</code> library. To enable only this profile, pass
+     <code>boost/optional</code> to the <code>--profile</code> ODB compiler
+     option.</p>
+
+  <p>In a relational database <code>boost::optional</code> is mapped to
+     a column that can have a <code>NULL</code> value. Similar to
+     <code>odb::nullable</code> (<a href="#7.3">Section 7.3,
+     "<code>NULL</code> Value Semantics"</a>), it can be used to add the
+     <code>NULL</code> semantics to existing C++ types. For example:</p>
+
+  <pre class="c++">
+#include &lt;boost/optional.hpp>
+
+#pragma db object
+class person
+{
+  ...
+
+  std::string first_;                    // TEXT NOT NULL
+  boost::optional&lt;std::string> middle_;  // TEXT NULL
+  std::string last_;                     // TEXT NOT NULL
+};
+  </pre>
+
+  <p>Note also that similar to <code>odb::nullable</code>, when
+     this profile is used, the <code>NULL</code> values are automatically
+     enabled for data members of the  <code>boost::optional</code> type.</p>
+
+  <h2><a name="15.4">15.4 Date Time Library</a></h2>
 
   <p>The <code>date-time</code> sub-profile provides persistence support for a
      subset of types from the Boost <code>date_time</code> library. It is
@@ -9539,7 +9787,7 @@ namespace odb
      exceptions are thrown are database system dependent and are discussed in
      more detail in the following sub-sections.</p>
 
-  <h3><a name="15.3.1">15.3.1 MySQL Database Type Mapping</a></h3>
+  <h3><a name="15.4.1">15.4.1 MySQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the MySQL database
@@ -9600,7 +9848,7 @@ class person
      the <code>out_of_range</code> exception.  Refer to the MySQL
      documentation for more information on the MySQL data type ranges.</p>
 
-  <h3><a name="15.3.2">15.3.2 SQLite Database Type Mapping</a></h3>
+  <h3><a name="15.4.2">15.4.2 SQLite Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the SQLite database
@@ -9678,7 +9926,7 @@ class person
      will result in the <code>out_of_range</code> exception.</p>
 
 
-  <h3><a name="15.3.3">15.3.3 PostgreSQL Database Type Mapping</a></h3>
+  <h3><a name="15.4.3">15.4.3 PostgreSQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the PostgreSQL database
@@ -9887,12 +10135,29 @@ class Person
      option.</p>
 
   <p>The currently supported smart pointers are
-     <code>QSharedPointer</code> and <code>QWeakPointer</code>. For
-     more information on using smart pointers with ODB refer to
-     <a href="#3.2">Section 3.2, "Object Pointers"</a> and
-     <a href="#6">Chapter 6, "Relationships"</a>. The <code>smart-ptr</code>
-     sub-profile also provides the lazy counterparts for the above
-     pointers: <code>QLazySharedPointer</code>
+     <code>QSharedPointer</code> and <code>QWeakPointer</code>.
+     For more information on using smart pointers as pointers to objects,
+     refer to <a href="#3.2">Section 3.2, "Object Pointers"</a> and
+     <a href="#6">Chapter 6, "Relationships"</a>. For more information
+     on using smart pointers as pointers to values, refer to
+     <a href="#7.3">Section 7.3, "<code>NULL</code> Value Semantics"</a>.
+     When used as a pointer to a value, only <code>QSharedPointer</code>
+     is supported. For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db null
+  QSharedPointer&lt;QString> middle_name_;
+};
+  </pre>
+
+  <p>To provide finer grained control over object relationship loading,
+     the <code>smart-ptr</code> sub-profile also provides the lazy
+     counterparts for the above pointers: <code>QLazySharedPointer</code>
      and <code>QLazyWeakPointer</code>. You will need to include the
      <code>&lt;odb/qt/lazy-ptr.hxx></code> header file to make the lazy
      variants available in your application. For the description of the lazy
