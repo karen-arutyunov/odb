@@ -51,12 +51,26 @@ namespace relational
           throw generation_failed ();
         }
 
+        // Find wrapper traits.
+        //
+        wrapper_traits_ = lookup_qualified_name (
+          odb, get_identifier ("wrapper_traits"), true, false);
+
+        if (wrapper_traits_ == error_mark_node ||
+            !DECL_CLASS_TEMPLATE_P (wrapper_traits_))
+        {
+          os << unit.file () << ": error: unable to resolve wrapper_traits "
+             << "in the odb namespace" << endl;
+
+          throw generation_failed ();
+        }
+
         // Find pointer traits.
         //
         pointer_traits_ = lookup_qualified_name (
           odb, get_identifier ("pointer_traits"), true, false);
 
-        if (container_traits_ == error_mark_node ||
+        if (pointer_traits_ == error_mark_node ||
             !DECL_CLASS_TEMPLATE_P (pointer_traits_))
         {
           os << unit.file () << ": error: unable to resolve pointer_traits "
@@ -103,6 +117,14 @@ namespace relational
 
         semantics::type& t (m.type ());
 
+        semantics::type* wt (0);
+        semantics::names* wh (0);
+        if (process_wrapper (t))
+        {
+          wt = t.get<semantics::type*> ("wrapper-type");
+          wh = t.get<semantics::names*> ("wrapper-hint");
+        }
+
         // Nothing to do if this is a composite value type.
         //
         if (comp_value (t))
@@ -138,11 +160,21 @@ namespace relational
           if (type.empty () && m.count ("id") && t.count ("id-type"))
             type = t.get<string> ("id-type");
 
+          if (type.empty () && wt != 0 && m.count ("id") &&
+              wt->count ("id-type"))
+            type = wt->get<string> ("id-type");
+
           if (type.empty () && t.count ("type"))
             type = t.get<string> ("type");
 
+          if (type.empty () && wt != 0 && wt->count ("type"))
+            type = wt->get<string> ("type");
+
           if (type.empty ())
             type = database_type (t, m.belongs ().hint (), m.count ("id"));
+
+          if (type.empty () && wt != 0)
+            type = database_type (*wt, wh, m.count ("id"));
         }
 
         if (!type.empty ())
@@ -188,6 +220,14 @@ namespace relational
                                string const& prefix,
                                bool obj_ptr)
       {
+        semantics::type* wt (0);
+        semantics::names* wh (0);
+        if (process_wrapper (t))
+        {
+          wt = t.get<semantics::type*> ("wrapper-type");
+          wh = t.get<semantics::names*> ("wrapper-hint");
+        }
+
         if (comp_value (t))
           return;
 
@@ -231,8 +271,14 @@ namespace relational
           if (type.empty () && t.count ("type"))
             type = t.get<string> ("type");
 
+          if (type.empty () && wt != 0 && wt->count ("type"))
+            type = wt->get<string> ("type");
+
           if (type.empty ())
             type = database_type (t, hint, false);
+
+          if (type.empty () && wt != 0)
+            type = database_type (*wt, wh, false);
         }
 
         if (!type.empty ())
@@ -821,6 +867,175 @@ namespace relational
         return c;
       }
 
+      bool
+      process_wrapper (semantics::type& t)
+      {
+        if (t.count ("wrapper"))
+          return t.get<bool> ("wrapper");
+
+        // Check this type with wrapper_traits.
+        //
+        tree inst (instantiate_template (wrapper_traits_, t.tree_node ()));
+
+        if (inst == 0)
+        {
+          t.set ("wrapper", false);
+          return false;
+        }
+
+        // @@ This points to the primary template, not the specialization.
+        //
+        tree decl (TYPE_NAME (inst));
+
+        string f (DECL_SOURCE_FILE (decl));
+        size_t l (DECL_SOURCE_LINE (decl));
+        size_t c (DECL_SOURCE_COLUMN (decl));
+
+        // Get the wrapped type.
+        //
+        try
+        {
+          tree decl (
+            lookup_qualified_name (
+              inst, get_identifier ("wrapped_type"), true, false));
+
+          if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
+            throw generation_failed ();
+
+          tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
+          semantics::type& wt (
+            dynamic_cast<semantics::type&> (*unit.find (type)));
+
+          // Find the hint.
+          //
+          semantics::names* wh (0);
+
+          for (tree ot (DECL_ORIGINAL_TYPE (decl));
+               ot != 0;
+               ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
+          {
+            if ((wh = unit.find_hint (ot)))
+              break;
+
+            decl = TYPE_NAME (ot);
+          }
+
+          t.set ("wrapper-type", &wt);
+          t.set ("wrapper-hint", wh);
+        }
+        catch (generation_failed const&)
+        {
+          os << f << ":" << l << ":" << c << ": error: "
+             << "wrapper_traits specialization does not define the "
+             << "wrapped_type type" << endl;
+
+          throw;
+        }
+
+        // Get the null_handler flag.
+        //
+        bool null_handler (false);
+
+        try
+        {
+          tree nh (
+            lookup_qualified_name (
+              inst, get_identifier ("null_handler"), false, false));
+
+          if (nh == error_mark_node || TREE_CODE (nh) != VAR_DECL)
+            throw generation_failed ();
+
+          // Instantiate this decalaration so that we can get its value.
+          //
+          if (DECL_TEMPLATE_INSTANTIATION (nh) &&
+              !DECL_TEMPLATE_INSTANTIATED (nh) &&
+              !DECL_EXPLICIT_INSTANTIATION (nh))
+            instantiate_decl (nh, false, false);
+
+          tree init (DECL_INITIAL (nh));
+
+          if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
+            throw generation_failed ();
+
+          unsigned long long e;
+
+          {
+            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
+            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
+
+            unsigned long long l (hwl);
+            unsigned long long h (hwh);
+            unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+            e = (h << width) + l;
+          }
+
+          null_handler = static_cast<bool> (e);
+          t.set ("wrapper-null-handler", null_handler);
+        }
+        catch (generation_failed const&)
+        {
+          os << f << ":" << l << ":" << c << ": error: "
+             << "wrapper_traits specialization does not define the "
+             << "null_handler constant" << endl;
+
+          throw;
+        }
+
+        // Get the null_default flag.
+        //
+        if (null_handler)
+        {
+          try
+          {
+            tree nh (
+              lookup_qualified_name (
+                inst, get_identifier ("null_default"), false, false));
+
+            if (nh == error_mark_node || TREE_CODE (nh) != VAR_DECL)
+              throw generation_failed ();
+
+            // Instantiate this decalaration so that we can get its value.
+            //
+            if (DECL_TEMPLATE_INSTANTIATION (nh) &&
+                !DECL_TEMPLATE_INSTANTIATED (nh) &&
+                !DECL_EXPLICIT_INSTANTIATION (nh))
+              instantiate_decl (nh, false, false);
+
+            tree init (DECL_INITIAL (nh));
+
+            if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
+              throw generation_failed ();
+
+            unsigned long long e;
+
+            {
+              HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
+              HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
+
+              unsigned long long l (hwl);
+              unsigned long long h (hwh);
+              unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+              e = (h << width) + l;
+            }
+
+            t.set ("wrapper-null-default", static_cast<bool> (e));
+          }
+          catch (generation_failed const&)
+          {
+            os << f << ":" << l << ":" << c << ": error: "
+               << "wrapper_traits specialization does not define the "
+               << "null_default constant" << endl;
+
+            throw;
+          }
+        }
+
+        t.set ("wrapper", true);
+        return true;
+      }
+
       tree
       instantiate_template (tree t, tree arg)
       {
@@ -858,6 +1073,7 @@ namespace relational
       }
 
     private:
+      tree wrapper_traits_;
       tree pointer_traits_;
       tree container_traits_;
     };

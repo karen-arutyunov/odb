@@ -746,6 +746,11 @@ main (int argc, char* argv[])
            << "#  include <tr1/memory>" << endl
            << "#endif" << endl;
 
+        // Standard wrapper traits.
+        //
+        os << "#include <odb/wrapper-traits.hxx>" << endl
+           << "#include <odb/tr1/wrapper-traits.hxx>" << endl;
+
         // Standard pointer traits.
         //
         os << "#include <odb/pointer-traits.hxx>" << endl

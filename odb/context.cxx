@@ -150,17 +150,60 @@ null (semantics::data_member& m)
 {
   semantics::type& t (m.type ());
 
-  // By default pointers can be null.
-  //
   if (object_pointer (t))
-    return m.count ("null") ||
-      (!m.count ("not-null") &&
-       (t.count ("null") || !t.count ("not-null")));
+  {
+    // By default pointers can be null.
+    //
+    if (m.count ("null"))
+      return true;
+
+    if (!m.count ("not-null"))
+    {
+      if (t.count ("null"))
+        return true;
+
+      if (!t.count ("not-null"))
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
   else
+  {
     // Everything else by default is not null.
     //
-    return m.count ("null") ||
-      (!m.count ("not-null") && t.count ("null"));
+    if (m.count ("null"))
+      return true;
+
+    if (!m.count ("not-null"))
+    {
+      if (t.count ("null"))
+        return true;
+
+      if (!t.count ("not-null"))
+      {
+        // Check if this type is a wrapper.
+        //
+        if (t.get<bool> ("wrapper"))
+        {
+          // First see if it is null by default.
+          //
+          if (t.get<bool> ("wrapper-null-handler") &&
+              t.get<bool> ("wrapper-null-default"))
+            return true;
+
+          // Otherwise, check the wrapped type.
+          //
+          if (t.get<semantics::type*> ("wrapper-type")->count ("null"))
+            return true;
+        }
+      }
+    }
+
+    return false;
+  }
 }
 
 bool context::
@@ -173,17 +216,67 @@ null (semantics::data_member& m, string const& kp)
   semantics::type& t (member_type (m, kp));
 
   if (object_pointer (t))
-    return m.count (kp + "-null") ||
-      (!m.count (kp + "-not-null") &&
-       (c.count (kp + "-null") ||
-        (!c.count (kp + "-not-null") &&
-         (t.count ("null") || !t.count ("not-null")))));
+  {
+    if (m.count (kp + "-null"))
+      return true;
+
+    if (!m.count (kp + "-not-null"))
+    {
+      if (c.count (kp + "-null"))
+        return true;
+
+      if (!c.count (kp + "-not-null"))
+      {
+        if (t.count ("null"))
+          return true;
+
+        if (!t.count ("not-null"))
+        {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
   else
-    return m.count (kp + "-null") ||
-      (!m.count (kp + "-not-null") &&
-       (c.count (kp + "-null") ||
-        (!c.count (kp + "-not-null") &&
-         t.count ("null"))));
+  {
+    if (m.count (kp + "-null"))
+      return true;
+
+    if (!m.count (kp + "-not-null"))
+    {
+      if (c.count (kp + "-null"))
+        return true;
+
+      if (!c.count (kp + "-not-null"))
+      {
+        if (t.count ("null"))
+          return true;
+
+        if (!t.count ("not-null"))
+        {
+          // Check if this type is a wrapper.
+          //
+          if (t.get<bool> ("wrapper"))
+          {
+            // First see if it is null by default.
+            //
+            if (t.get<bool> ("wrapper-null-handler") &&
+                t.get<bool> ("wrapper-null-default"))
+              return true;
+
+            // Otherwise, check the wrapped type.
+            //
+            if (t.get<semantics::type*> ("wrapper-type")->count ("null"))
+              return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
 }
 
 string context::

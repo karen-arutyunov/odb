@@ -89,6 +89,7 @@ namespace header
     os << "#include <odb/core.hxx>" << endl
        << "#include <odb/traits.hxx>" << endl
        << "#include <odb/callback.hxx>" << endl
+       << "#include <odb/wrapper-traits.hxx>" << endl
        << "#include <odb/pointer-traits.hxx>" << endl;
 
     // In case of a boost TR1 implementation, we cannot distinguish
@@ -99,12 +100,14 @@ namespace header
     if (ctx.unit.count ("tr1-pointer-used") &&
         ctx.unit.get<bool> ("tr1-pointer-used"))
     {
-      os << "#include <odb/tr1/pointer-traits.hxx>" << endl;
+      os << "#include <odb/tr1/wrapper-traits.hxx>" << endl
+         << "#include <odb/tr1/pointer-traits.hxx>" << endl;
     }
     else if (ctx.unit.count ("boost-pointer-used") &&
              ctx.unit.get<bool> ("boost-pointer-used"))
     {
       os << "#ifdef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
+         << "#  include <odb/tr1/wrapper-traits.hxx>" << endl
          << "#  include <odb/tr1/pointer-traits.hxx>" << endl
          << "#endif" << endl;
     }
