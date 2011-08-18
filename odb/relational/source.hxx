@@ -2326,8 +2326,8 @@ namespace relational
              << "init (obj, sts.image (), db);"
              << "load_ (sts, obj);"
              << "sts.load_delayed ();"
-             << "callback (db, obj, callback_event::post_load);"
              << "l.unlock ();"
+             << "callback (db, obj, callback_event::post_load);"
              << "}"
              << "else" << endl
              << "sts.delay_load (id, obj, ig.position ());"
@@ -2364,8 +2364,8 @@ namespace relational
            << "init (obj, sts.image (), db);"
            << "load_ (sts, obj);"
            << "sts.load_delayed ();"
-           << "callback (db, obj, callback_event::post_load);"
            << "l.unlock ();"
+           << "callback (db, obj, callback_event::post_load);"
            << "}"
            << "else" << endl
            << "sts.delay_load (id, obj, ig.position ());"
