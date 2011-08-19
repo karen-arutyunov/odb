@@ -2279,16 +2279,22 @@ namespace relational
            << "bind (idb.bind, i);"
            << "sts.id_image_version (i.version);"
            << "idb.version++;"
-           << "}"
-           << "if (sts.erase_statement ().execute () != 1)" << endl
-           << "throw object_not_persistent ();";
+           << "}";
 
+        // Erase containers first so that there are no reference
+        // violations (we don't want to reply on ON DELETE CASCADE
+        // here since in case of a custom schema, it might not be
+        // there).
+        //
         if (straight_containers)
         {
-          os << endl;
           instance<container_calls> t (container_calls::erase_call);
           t->traverse (c);
+          os << endl;
         }
+
+        os << "if (sts.erase_statement ().execute () != 1)" << endl
+           << "throw object_not_persistent ();";
 
         os << "}";
 

@@ -136,17 +136,33 @@ namespace relational
         virtual bool
         column (semantics::data_member& m, string const& name, bool)
         {
-          semantics::class_* c (object_pointer (member_type (m, prefix_)));
+          if (inverse (m))
+            return false;
 
-          if (c != 0 && !inverse (m))
+          if (semantics::class_* c = object_pointer (member_type (m, prefix_)))
           {
             pre_statement ();
 
             os << "ALTER TABLE " << quote_id (table_) << endl
-               << "  ADD FOREIGN KEY (" << quote_id (name) << ")" <<
-              endl
-               << "  REFERENCES " << quote_id (table_name (*c)) << endl
+               << "  ADD FOREIGN KEY (" << quote_id (name) << ")" << endl
+               << "  REFERENCES " << table_qname (*c) << endl
                << "  INITIALLY DEFERRED" << endl;
+
+            post_statement ();
+          }
+          else if (prefix_ == "id")
+          {
+            semantics::class_& c (*context::top_object);
+
+            pre_statement ();
+
+            // We don't need INITIALLY DEFERRED here since the object row
+            // must exist before any container row.
+            //
+            os << "ALTER TABLE " << quote_id (table_) << endl
+               << "  ADD FOREIGN KEY (" << quote_id (name) << ")" << endl
+               << "  REFERENCES " << table_qname (c) << endl
+               << "  ON DELETE CASCADE" << endl;
 
             post_statement ();
           }
@@ -188,6 +204,16 @@ namespace relational
           type& t (m.type ());
           type& vt (container_vt (t));
 
+          // object_id
+          //
+          {
+            object_columns_references ocr (e_, os_, name, "id");
+            string id_name (column_name (m, "id", "object_id"));
+            ocr.column (m, id_name, true);
+          }
+
+          // value
+          //
           if (semantics::class_* cvt = comp_value (vt))
           {
             object_columns_references ocr (e_, os_, name);
@@ -196,8 +222,8 @@ namespace relational
           else
           {
             object_columns_references ocr (e_, os_, name, "value");
-            string const& name (column_name (m, "value", "value"));
-            ocr.column (m, name, true);
+            string const& value_name (column_name (m, "value", "value"));
+            ocr.column (m, value_name, true);
           }
 
           tables_.insert (name);

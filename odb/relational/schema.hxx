@@ -277,8 +277,19 @@ namespace relational
       {
         if (semantics::class_* c = object_pointer (member_type (m, prefix_)))
         {
-          os << " REFERENCES " << quote_id (table_name (*c)) << " (" <<
-            quote_id (column_name (*id_member (*c))) << ")";
+          os << " REFERENCES " << table_qname (*c) << " (" <<
+            column_qname (*id_member (*c)) << ")";
+        }
+        else if (prefix_ == "id")
+        {
+          // Container id column references the object table. It also
+          // cascades on delete so that we can delete the object with
+          // a single delete statement (needed for query_erase()).
+          //
+          semantics::class_& c (*context::top_object);
+
+          os << " REFERENCES " << table_qname (c) << " (" <<
+            column_qname (*id_member (c)) << ") ON DELETE CASCADE";
         }
       }
 
