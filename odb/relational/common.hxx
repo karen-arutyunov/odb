@@ -82,6 +82,7 @@ namespace relational
 
     string scope_;
     string table_;
+    string default_table_;
   };
 
   //

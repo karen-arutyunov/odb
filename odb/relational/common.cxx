@@ -29,7 +29,7 @@ namespace relational
       : ptr_ (true), decl_ (false)
   {
     scope_ = "access::object_traits< " + c.fq_name () + " >::query_columns";
-    table_ = table_qname (c);
+    table_ = default_table_ = table_qname (c);
   }
 
   void query_columns::
@@ -153,15 +153,20 @@ namespace relational
       }
       else
       {
-        // Use the default table alias unless we are generating members
+        // Leave the default table name unless we are generating members
         // for a referenced object.
         //
         string column;
 
         if (!ptr_)
-          column = table_;
-        else
-          column = "_";
+        {
+          // If this is a self-reference, use the special '_' alias.
+          //
+          if (table_ != default_table_)
+            column = table_;
+          else
+            column = "_";
+        }
 
         column += '.';
         column += quote_id (col_name);

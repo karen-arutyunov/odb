@@ -122,7 +122,7 @@ namespace relational
 
           if (!table.empty ())
           {
-            line_ += table == table_name_ ? "_" : table;
+            line_ += table;
             line_ += '.';
           }
 
@@ -131,7 +131,7 @@ namespace relational
 
           if (!table.empty ())
           {
-            line_ += table == table_name_ ? "_" : table;
+            line_ += table;
             line_ += '.';
           }
 

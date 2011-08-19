@@ -127,9 +127,7 @@ namespace relational
       {
         if (!table.empty ())
         {
-          // Use alias for the main table.
-          //
-          line_ += table == table_name_ ? "_" : table;
+          line_ += table;
           line_ += '.';
         }
 
@@ -187,6 +185,13 @@ namespace relational
 
           string line (" LEFT JOIN ");
           line += i->table;
+
+          // If this is a self-join, alias it as '_' to resolve any
+          // ambiguities.
+          //
+          if (i->table == table_)
+            line += " AS _";
+
           line += " ON ";
 
           for (conditions::iterator b (i->cond.begin ()), j (b);
@@ -225,17 +230,26 @@ namespace relational
             t = table_qname (*im, tp);
             string const& val (column_qname (*im, "value", "value"));
 
-            cond << t << '.' << val << " = _." << column_qname (id_);
+            cond << t << '.' << val << " = " <<
+              table_ << "." << column_qname (id_);
 
             // Add the join for the object itself so that we are able to
             // use it in the WHERE clause.
             //
             if (query_)
             {
-              dt = ct;
+              dt = quote_id (ct);
               string const& id (column_qname (*im, "id", "object_id"));
 
-              dcond << dt << '.' << column_qname (*id_member (*c)) << " = " <<
+              // If this is a self-join, use the '_' alias instead of the
+              // table name.
+              //
+              if (dt == table_)
+                dcond << "_";
+              else
+                dcond << dt;
+
+              dcond << '.' << column_qname (*id_member (*c)) << " = " <<
                 t << '.' << id;
             }
           }
@@ -243,8 +257,16 @@ namespace relational
           {
             t = table_qname (*c);
 
-            cond << t << '.' << column_qname (*im) << " = _." <<
-              column_qname (id_);
+            // If this is a self-join, use the '_' alias instead of the
+            // table name.
+            //
+            if (t == table_)
+              cond << "_";
+            else
+              cond << t;
+
+            cond << '.' << column_qname (*im) << " = " <<
+              table_ << "." << column_qname (id_);
           }
         }
         else if (query_)
@@ -254,8 +276,16 @@ namespace relational
           //
           t = table_qname (*c);
 
-          cond << t << '.' << column_qname (*id_member (*c)) << " = _." <<
-            quote_id (col_name);
+          // If this is a self-join, use the '_' alias instead of the
+          // table name.
+          //
+          if (t == table_)
+            cond << "_";
+          else
+            cond << t;
+
+          cond << '.' << column_qname (*id_member (*c)) << " = " <<
+            table_ << "." << quote_id (col_name);
         }
 
         if (!t.empty ())
@@ -712,17 +742,18 @@ namespace relational
             instance<query_parameters> qp;
 
             os << strlit ("SELECT ") << endl
-               << strlit ("_." + inv_fid + ',') << endl
-               << strlit ("_." + inv_id) << endl
-               << strlit (" FROM " + inv_table + " AS _"
-                          " WHERE _." + inv_fid + "=" + qp->next ());
+               << strlit (inv_table + "." + inv_fid + ',') << endl
+               << strlit (inv_table + "." + inv_id) << endl
+               << strlit (" FROM " + inv_table +
+                          " WHERE " + inv_table + "." + inv_fid + "=" +
+                          qp->next ());
           }
           else
           {
             string const& id_col (column_qname (m, "id", "object_id"));
 
             os << strlit ("SELECT ") << endl
-               << strlit ("_." + id_col + ',') << endl;
+               << strlit (table + "." + id_col + ',') << endl;
 
             switch (ck)
             {
@@ -772,15 +803,16 @@ namespace relational
 
             instance<query_parameters> qp;
 
-            os << strlit (" FROM " + table + " AS _"
-                          " WHERE _." + id_col + "=" + qp->next ());
+            os << strlit (" FROM " + table +
+                          " WHERE " + table + "." + id_col + "=" +
+                          qp->next ());
 
             if (ordered)
             {
               string const& col (column_qname (m, "index", "index"));
 
               os << endl
-                 << strlit (" ORDER BY _." + col) << endl;
+                 << strlit (" ORDER BY " + table + "." + col) << endl;
             }
           }
 
@@ -2077,7 +2109,7 @@ namespace relational
           instance<object_columns> t (table, true);
           t->traverse (c);
 
-          os << strlit (" FROM " + table + " AS _") << endl;
+          os << strlit (" FROM " + table) << endl;
 
           bool f (false);
           instance<object_joins> j (c, f); // @@ (im)perfect forwarding
@@ -2085,7 +2117,8 @@ namespace relational
           j->write ();
 
           instance<query_parameters> qp;
-          os << strlit (" WHERE _." + id_col + "=" + qp->next ()) << ";"
+          os << strlit (" WHERE " + table + "." + id_col + "=" +
+                        qp->next ()) << ";"
              << endl;
         }
 
@@ -2133,7 +2166,7 @@ namespace relational
             oc->traverse (c);
           }
 
-          os << strlit (" FROM " + table + " AS _") << endl;
+          os << strlit (" FROM " + table) << endl;
           oj->write ();
           os << strlit (" ") << ";"
              << endl;
