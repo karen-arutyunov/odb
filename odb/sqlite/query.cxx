@@ -150,41 +150,100 @@ namespace odb
     query& query::
     operator+= (const query& q)
     {
-      size_t n (clause_.size ());
-
-      if (n != 0 && clause_[n - 1] != ' ' &&
-          !q.clause_.empty () && q.clause_[0] != ' ')
-        clause_ += ' ';
-
-      clause_ += q.clause_;
+      clause_.insert (clause_.end (), q.clause_.begin (), q.clause_.end ());
       *parameters_ += *q.parameters_;
-
       return *this;
+    }
+
+    void query::
+    append (const string& q, clause_part::kind_type k)
+    {
+      if (k == clause_part::native &&
+          !clause_.empty () &&
+          clause_.back ().kind == clause_part::native)
+      {
+        string& s (clause_.back ().part);
+
+        char first (!q.empty () ? q[0] : ' ');
+        char last (!s.empty () ? s[s.size () - 1] : ' ');
+
+        // We don't want extra spaces after '(' as well as before ','
+        // and ')'.
+        //
+        if (last != ' ' && last != '(' &&
+            first != ' ' && first != ',' && first != ')')
+          s += ' ';
+
+        s += q;
+      }
+      else
+        clause_.push_back (clause_part (k, q));
     }
 
     void query::
     add (details::shared_ptr<query_param> p)
     {
-      size_t n (clause_.size ());
-
-      if (n != 0 && clause_[n - 1] != ' ')
-        clause_ += ' ';
-
-      clause_ += '?';
+      clause_.push_back (clause_part (clause_part::param));
       parameters_->add (p);
     }
 
-    std::string query::
-    clause () const
+    string query::
+    clause (string const& table) const
     {
-      if (clause_.empty () ||
-          clause_.compare (0, 6, "WHERE ") == 0 ||
-          clause_.compare (0, 9, "ORDER BY ") == 0 ||
-          clause_.compare (0, 9, "GROUP BY ") == 0 ||
-          clause_.compare (0, 7, "HAVING ") == 0)
-        return clause_;
+      string r;
+
+      for (clause_type::const_iterator i (clause_.begin ()),
+             end (clause_.end ()); i != end; ++i)
+      {
+        char last (!r.empty () ? r[r.size () - 1] : ' ');
+
+        switch (i->kind)
+        {
+        case clause_part::column:
+          {
+            if (last != ' ' && last != '(')
+              r += ' ';
+
+            if (i->part[0] == '.')
+              r += table;
+
+            r += i->part;
+            break;
+          }
+        case clause_part::param:
+          {
+            if (last != ' ' && last != '(')
+              r += ' ';
+
+            r += '?';
+            break;
+          }
+        case clause_part::native:
+          {
+            // We don't want extra spaces after '(' as well as before ','
+            // and ')'.
+            //
+            const string& p (i->part);
+            char first (!p.empty () ? p[0] : ' ');
+
+            if (last != ' ' && last != '(' &&
+                first != ' ' && first != ',' && first != ')')
+              r += ' ';
+
+            r += p;
+            break;
+          }
+        }
+      }
+
+      if (r.empty () ||
+          r.compare (0, 6, "WHERE ") == 0 ||
+          r.compare (0, 9, "ORDER BY ") == 0 ||
+          r.compare (0, 9, "GROUP BY ") == 0 ||
+          r.compare (0, 7, "HAVING ") == 0)
+        return r;
       else
-        return "WHERE " + clause_;
+        return "WHERE " + r;
     }
   }
 }
