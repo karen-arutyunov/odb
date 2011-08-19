@@ -284,7 +284,7 @@ namespace relational
         {
           // Container id column references the object table. It also
           // cascades on delete so that we can delete the object with
-          // a single delete statement (needed for query_erase()).
+          // a single delete statement (needed for erase_query()).
           //
           semantics::class_& c (*context::top_object);
 
