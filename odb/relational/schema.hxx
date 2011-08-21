@@ -71,9 +71,15 @@ namespace relational
     {
       typedef member_drop base;
 
-      member_drop (emitter& e, ostream& os, tables& t)
+      member_drop (emitter& e, ostream& os, std::vector<tables>& t)
           : object_members_base (false, true), common (e, os), tables_ (t)
       {
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
       }
 
       virtual void
@@ -86,7 +92,7 @@ namespace relational
 
         string const& name (table_name (m, table_prefix_));
 
-        if (tables_.count (name))
+        if (tables_[pass_].count (name))
           return;
 
         // Drop table.
@@ -95,7 +101,7 @@ namespace relational
         drop_table (name);
         post_statement ();
 
-        tables_.insert (name);
+        tables_[pass_].insert (name);
 
         // Drop indexes.
         //
@@ -112,7 +118,8 @@ namespace relational
       }
 
     protected:
-      tables& tables_;
+      std::vector<tables>& tables_;
+      unsigned short pass_;
     };
 
     struct class_drop: traversal::class_, common, virtual drop_common
@@ -122,6 +129,7 @@ namespace relational
       class_drop (emitter& e)
           : common (e, os_), os_ (e), member_drop_ (e, os_, tables_)
       {
+        tables_.push_back (tables ()); // Dummy entry.
       }
 
       class_drop (class_drop const& x)
@@ -129,10 +137,32 @@ namespace relational
             context (),
             common (x.e_, os_), os_ (x.e_), member_drop_ (x.e_, os_, tables_)
       {
+        tables_.push_back (tables ()); // Dummy entry.
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+
+        if (tables_.size () == pass_)
+          tables_.push_back (tables ());
+
+        member_drop_->pass (p);
       }
 
       virtual void
       traverse (type& c)
+      {
+        // By default we do everything in a single pass. But some
+        // databases may require the second pass.
+        //
+        if (pass_ == 1)
+          drop (c);
+      }
+
+      virtual void
+      drop (type& c)
       {
         if (c.file () != unit.file ())
           return;
@@ -142,23 +172,25 @@ namespace relational
 
         string const& name (table_name (c));
 
-        if (tables_.count (name))
+        if (tables_[pass_].count (name))
           return;
+
+        // Drop tables for members. Do it before dropping the primary
+        // table -- some databases may prefer it that way.
+        //
+        member_drop_->traverse (c);
 
         pre_statement ();
         drop_table (name);
         post_statement ();
 
-        tables_.insert (name);
-
-        // Drop tables for members.
-        //
-        member_drop_->traverse (c);
+        tables_[pass_].insert (name);
       }
 
     protected:
-      tables tables_;
       emitter_ostream os_;
+      unsigned short pass_;
+      std::vector<tables> tables_; // Seperate table for each pass.
       instance<member_drop> member_drop_;
     };
 

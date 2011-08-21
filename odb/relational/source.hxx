@@ -2611,11 +2611,11 @@ namespace relational
               new_pass_ = false;
               empty_ = false;
 
-              if (pass_ == 0)
+              if (pass_ == 1)
               {
                 os << "switch (pass)"
                    << "{"
-                   << "case 0:" << endl
+                   << "case 1:" << endl
                    << "{";
               }
               else
@@ -2658,34 +2658,59 @@ namespace relational
         // create_schema ()
         //
         os << "bool " << traits << "::" << endl
-           << "create_schema (database& db, unsigned short pass)"
+           << "create_schema (database& db, unsigned short pass, bool drop)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (db);"
            << "ODB_POTENTIALLY_UNUSED (pass);"
            << endl;
 
-        bool close (false);
-
-        // Pass 0.
+        // Drop.
         //
-        schema_emitter_.pass (0);
-        schema_drop_->traverse (c);
-        close = close || !schema_emitter_.empty ();
-
-        // Pass 1 and 2.
-        //
-        for (unsigned short pass (1); pass < 3; ++pass)
         {
-          schema_emitter_.pass (pass);
-          schema_create_->pass (pass);
-          schema_create_->traverse (c);
-          close = close || !schema_emitter_.empty ();
+          bool close (false);
+
+          os << "if (drop)"
+             << "{";
+
+          for (unsigned short pass (1); pass < 3; ++pass)
+          {
+            schema_emitter_.pass (pass);
+            schema_drop_->pass (pass);
+            schema_drop_->traverse (c);
+            close = close || !schema_emitter_.empty ();
+          }
+
+          if (close) // Close the last case and the switch block.
+            os << "return false;"
+               << "}"  // case
+               << "}";  // switch
+
+          os << "}";
         }
 
-        if (close) // Close the last case and the switch block.
-          os << "return false;"
-             << "}"  // case
-             << "}"; // switch
+        // Create.
+        //
+        {
+          bool close (false);
+
+          os << "else"
+             << "{";
+
+          for (unsigned short pass (1); pass < 3; ++pass)
+          {
+            schema_emitter_.pass (pass);
+            schema_create_->pass (pass);
+            schema_create_->traverse (c);
+            close = close || !schema_emitter_.empty ();
+          }
+
+          if (close) // Close the last case and the switch block.
+            os << "return false;"
+               << "}"  // case
+               << "}"; // switch
+
+          os << "}";
+        }
 
         os << "return false;"
            << "}";

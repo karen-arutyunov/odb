@@ -182,7 +182,7 @@ namespace relational
 
       schema_emitter emitter;
 
-      // Drop. It is essentially pass 0.
+      // Drop.
       //
       {
         traversal::unit unit;
@@ -197,7 +197,14 @@ namespace relational
 
         ns >> ns_defines >> ns;
         ns_defines >> c;
-        unit.dispatch (ctx.unit);
+
+        // Pass 1 and 2.
+        //
+        for (unsigned short pass (1); pass < 3; ++pass)
+        {
+          c->pass (pass);
+          unit.dispatch (ctx.unit);
+        }
       }
 
       os << endl;
