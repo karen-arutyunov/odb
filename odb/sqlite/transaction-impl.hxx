@@ -22,7 +22,7 @@ namespace odb
     class LIBODB_SQLITE_EXPORT transaction_impl: public odb::transaction_impl
     {
     protected:
-      friend class database;
+      friend class connection;
       friend class transaction;
 
       typedef sqlite::database database_type;
@@ -35,7 +35,7 @@ namespace odb
         exclusive
       };
 
-      transaction_impl (database_type&, lock);
+      transaction_impl (connection_ptr, lock);
 
       virtual
       ~transaction_impl ();
@@ -50,7 +50,7 @@ namespace odb
       connection ();
 
     private:
-      details::shared_ptr<connection_type> connection_;
+      connection_ptr connection_;
     };
   }
 }

@@ -28,11 +28,10 @@ namespace odb
 {
   namespace sqlite
   {
+    class transaction_impl;
+
     class LIBODB_SQLITE_EXPORT database: public odb::database
     {
-    public:
-      typedef sqlite::connection connection_type;
-
     public:
       database (const std::string& name,
                 int flags = SQLITE_OPEN_READWRITE,
@@ -77,14 +76,10 @@ namespace odb
         return flags_;
       }
 
+      // Transactions.
+      //
     public:
-      using odb::database::execute;
-
-      virtual unsigned long long
-      execute (const char* statement, std::size_t length);
-
-    public:
-      virtual transaction_impl*
+      transaction_impl*
       begin ();
 
       transaction_impl*
@@ -94,12 +89,16 @@ namespace odb
       begin_exclusive ();
 
     public:
-      details::shared_ptr<connection_type>
+      connection_ptr
       connection ();
 
     public:
       virtual
       ~database ();
+
+    protected:
+      virtual odb::connection*
+      connection_ ();
 
     private:
       std::string name_;

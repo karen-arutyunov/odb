@@ -16,6 +16,7 @@ namespace odb
   {
     class database;
     class connection;
+    typedef details::shared_ptr<connection> connection_ptr;
     class connection_factory;
     class transaction;
     class query;
@@ -36,6 +37,12 @@ namespace odb
 
   namespace details
   {
+    template <>
+    struct counter_type<sqlite::connection>
+    {
+      typedef shared_base counter;
+    };
+
     template <>
     struct counter_type<sqlite::query_params>
     {

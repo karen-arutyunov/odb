@@ -27,7 +27,7 @@ namespace odb
     class LIBODB_SQLITE_EXPORT connection_factory
     {
     public:
-      virtual details::shared_ptr<connection>
+      virtual connection_ptr
       connect () = 0;
 
     public:
@@ -48,7 +48,7 @@ namespace odb
     public:
       single_connection_factory (): db_ (0) {}
 
-      virtual details::shared_ptr<connection>
+      virtual connection_ptr
       connect ();
 
       virtual void
@@ -104,7 +104,7 @@ namespace odb
     public:
       new_connection_factory (): db_ (0), extra_flags_ (0) {}
 
-      virtual details::shared_ptr<connection>
+      virtual connection_ptr
       connect ();
 
       virtual void
@@ -154,7 +154,7 @@ namespace odb
         // @@ check min_ <= max_
       }
 
-      virtual details::shared_ptr<connection>
+      virtual connection_ptr
       connect ();
 
       virtual void

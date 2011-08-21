@@ -11,6 +11,7 @@
 
 #include <odb/sqlite/database.hxx>
 #include <odb/sqlite/connection.hxx>
+#include <odb/sqlite/transaction.hxx>
 #include <odb/sqlite/statement.hxx>
 #include <odb/sqlite/statement-cache.hxx>
 #include <odb/sqlite/error.hxx>
@@ -38,7 +39,10 @@ namespace odb
 
     connection::
     connection (database_type& db, int extra_flags)
-        : db_ (db), unlock_cond_ (unlock_mutex_), statements_ (0)
+        : odb::connection (db),
+          db_ (db),
+          unlock_cond_ (unlock_mutex_),
+          statements_ (0)
     {
       int f (db.flags () | extra_flags);
       const string& n (db.name ());
@@ -63,6 +67,43 @@ namespace odb
       }
 
       statement_cache_.reset (new statement_cache_type (*this));
+    }
+
+    transaction_impl* connection::
+    begin ()
+    {
+      if (transaction::has_current ())
+        throw already_in_transaction ();
+
+      return new transaction_impl (
+        connection_ptr (inc_ref (this)), transaction_impl::deferred);
+    }
+
+    transaction_impl* connection::
+    begin_immediate ()
+    {
+      if (transaction::has_current ())
+        throw already_in_transaction ();
+
+      return new transaction_impl (
+        connection_ptr (inc_ref (this)), transaction_impl::immediate);
+    }
+
+    transaction_impl* connection::
+    begin_exclusive ()
+    {
+      if (transaction::has_current ())
+        throw already_in_transaction ();
+
+      return new transaction_impl (
+        connection_ptr (inc_ref (this)), transaction_impl::exclusive);
+    }
+
+    unsigned long long connection::
+    execute (const char* s, std::size_t n)
+    {
+      simple_statement st (*this, s, n);
+      return st.execute ();
     }
 
     inline void

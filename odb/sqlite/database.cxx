@@ -6,10 +6,8 @@
 #include <sstream>
 
 #include <odb/sqlite/database.hxx>
-#include <odb/sqlite/transaction.hxx>
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/connection-factory.hxx>
-#include <odb/sqlite/statement.hxx>
 #include <odb/sqlite/error.hxx>
 #include <odb/sqlite/exceptions.hxx>
 
@@ -80,42 +78,11 @@ namespace odb
       details::options::print_usage (os);
     }
 
-    unsigned long long database::
-    execute (const char* s, std::size_t n)
+    odb::connection* database::
+    connection_ ()
     {
-      if (!transaction::has_current ())
-        throw not_in_transaction ();
-
-      connection_type& c (transaction::current ().connection ());
-      simple_statement st (c, s, n);
-      return st.execute ();
-    }
-
-    transaction_impl* database::
-    begin ()
-    {
-      if (transaction::has_current ())
-        throw already_in_transaction ();
-
-      return new transaction_impl (*this, transaction_impl::deferred);
-    }
-
-    transaction_impl* database::
-    begin_immediate ()
-    {
-      if (transaction::has_current ())
-        throw already_in_transaction ();
-
-      return new transaction_impl (*this, transaction_impl::immediate);
-    }
-
-    transaction_impl* database::
-    begin_exclusive ()
-    {
-      if (transaction::has_current ())
-        throw already_in_transaction ();
-
-      return new transaction_impl (*this, transaction_impl::exclusive);
+      connection_ptr c (factory_->connect ());
+      return c.release ();
     }
   }
 }

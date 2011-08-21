@@ -7,10 +7,32 @@ namespace odb
 {
   namespace sqlite
   {
-    inline details::shared_ptr<database::connection_type> database::
+    inline connection_ptr database::
     connection ()
     {
-      return factory_->connect ();
+      // Go through the virtual connection_() function instead of
+      // directly to allow overriding.
+      //
+      return connection_ptr (
+        static_cast<sqlite::connection*> (connection_ ()));
+    }
+
+    inline transaction_impl* database::
+    begin ()
+    {
+      return connection ()->begin ();
+    }
+
+    inline transaction_impl* database::
+    begin_immediate ()
+    {
+      return connection ()->begin_immediate ();
+    }
+
+    inline transaction_impl* database::
+    begin_exclusive ()
+    {
+      return connection ()->begin_exclusive ();
     }
   }
 }
