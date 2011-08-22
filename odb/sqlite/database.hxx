@@ -35,6 +35,7 @@ namespace odb
     public:
       database (const std::string& name,
                 int flags = SQLITE_OPEN_READWRITE,
+                bool foreign_keys = true,
                 std::auto_ptr<connection_factory> =
                   std::auto_ptr<connection_factory> (0));
 
@@ -56,6 +57,7 @@ namespace odb
                 char* argv[],
                 bool erase = false,
                 int flags = SQLITE_OPEN_READWRITE,
+                bool foreign_keys = true,
                 std::auto_ptr<connection_factory> =
                   std::auto_ptr<connection_factory> (0));
 
@@ -74,6 +76,12 @@ namespace odb
       flags () const
       {
         return flags_;
+      }
+
+      bool
+      foreign_keys () const
+      {
+        return foreign_keys_;
       }
 
       // Transactions.
@@ -103,6 +111,7 @@ namespace odb
     private:
       std::string name_;
       int flags_;
+      bool foreign_keys_;
       std::auto_ptr<connection_factory> factory_;
     };
   }

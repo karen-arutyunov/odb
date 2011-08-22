@@ -27,8 +27,12 @@ namespace odb
     database::
     database (const string& name,
               int flags,
+              bool foreign_keys,
               auto_ptr<connection_factory> factory)
-        : name_ (name), flags_ (flags), factory_ (factory)
+        : name_ (name),
+          flags_ (flags),
+          foreign_keys_ (foreign_keys),
+          factory_ (factory)
     {
       if (factory_.get () == 0)
         factory_.reset (new connection_pool_factory ());
@@ -41,8 +45,9 @@ namespace odb
               char* argv[],
               bool erase,
               int flags,
+              bool foreign_keys,
               std::auto_ptr<connection_factory> factory)
-        : flags_ (flags), factory_ (factory)
+        : flags_ (flags), foreign_keys_ (foreign_keys), factory_ (factory)
     {
       using namespace details;
 

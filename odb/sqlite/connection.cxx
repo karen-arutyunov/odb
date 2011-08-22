@@ -66,6 +66,16 @@ namespace odb
         translate_error (e, *this);
       }
 
+      // Enable/disable foreign key constraints.
+      //
+      simple_statement st (
+        *this,
+        db.foreign_keys ()
+        ? "PRAGMA foreign_keys=ON"
+        : "PRAGMA foreign_keys=OFF",
+        db.foreign_keys () ? 22 : 23);
+      st.execute ();
+
       statement_cache_.reset (new statement_cache_type (*this));
     }
 
