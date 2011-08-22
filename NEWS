@@ -12,7 +12,7 @@ Version 1.6.0
   * New function, database::erase_query(), allows the deletion of the
     database state of multiple objects matching certain criteria. It uses
     the same query expression as the database::query() function. For more
-    information, refer to Section 3.9, "Deleting Persistent Objects" in
+    information, refer to Section 3.10, "Deleting Persistent Objects" in
     the ODB manual.
 
   * Support for value wrappers. An ODB value wrapper is a class template
@@ -39,6 +39,11 @@ Version 1.6.0
   * New option, --table-prefix, allows the specification of a prefix that
     is added to table and index names. For more information, refer to the
     ODB compiler command line interface documentation (man pages).
+
+  * New ODB runtime interface, odb::connection, represents a connection
+    to the database. The primary use case for a connection is to execute
+    native statements outside of a transaction. For more information, refer
+    to Section 3.5, "Connections" in the ODB manual.
 
 Version 1.5.0
 

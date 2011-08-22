@@ -321,13 +321,14 @@ for consistency.
 	  <tr><th>3.2</th><td><a href="#3.2">Object Pointers</a></td></tr>
           <tr><th>3.3</th><td><a href="#3.3">Database</a></td></tr>
           <tr><th>3.4</th><td><a href="#3.4">Transactions</a></td></tr>
-	  <tr><th>3.5</th><td><a href="#3.5">Error Handling and Recovery</a></td></tr>
-          <tr><th>3.6</th><td><a href="#3.6">Making Objects Persistent</a></td></tr>
-          <tr><th>3.7</th><td><a href="#3.7">Loading Persistent Objects</a></td></tr>
-          <tr><th>3.8</th><td><a href="#3.8">Updating Persistent Objects</a></td></tr>
-          <tr><th>3.9</th><td><a href="#3.9">Deleting Persistent Objects</a></td></tr>
-	  <tr><th>3.10</th><td><a href="#3.10">Executing Native SQL Statements</a></td></tr>
-          <tr><th>3.11</th><td><a href="#3.11">ODB Exceptions</a></td></tr>
+	  <tr><th>3.5</th><td><a href="#3.5">Connections</a></td></tr>
+	  <tr><th>3.6</th><td><a href="#3.6">Error Handling and Recovery</a></td></tr>
+          <tr><th>3.7</th><td><a href="#3.7">Making Objects Persistent</a></td></tr>
+          <tr><th>3.8</th><td><a href="#3.8">Loading Persistent Objects</a></td></tr>
+          <tr><th>3.9</th><td><a href="#3.9">Updating Persistent Objects</a></td></tr>
+          <tr><th>3.10</th><td><a href="#3.10">Deleting Persistent Objects</a></td></tr>
+	  <tr><th>3.11</th><td><a href="#3.11">Executing Native SQL Statements</a></td></tr>
+          <tr><th>3.12</th><td><a href="#3.12">ODB Exceptions</a></td></tr>
         </table>
       </td>
     </tr>
@@ -503,7 +504,7 @@ for consistency.
         <table class="toc">
           <tr><th>11.1</th><td><a href="#11.1">MySQL Type Mapping</a></td></tr>
           <tr><th>11.2</th><td><a href="#11.2">MySQL Database Class</a></td></tr>
-          <tr><th>11.3</th><td><a href="#11.3">MySQL Connection Factory</a></td></tr>
+          <tr><th>11.3</th><td><a href="#11.3">MySQL Connection and Connection Factory</a></td></tr>
 	  <tr><th>11.4</th><td><a href="#11.4">MySQL Exceptions</a></td></tr>
         </table>
       </td>
@@ -514,7 +515,7 @@ for consistency.
         <table class="toc">
           <tr><th>12.1</th><td><a href="#12.1">SQLite Type Mapping</a></td></tr>
           <tr><th>12.2</th><td><a href="#12.2">SQLite Database Class</a></td></tr>
-          <tr><th>12.3</th><td><a href="#12.3">SQLite Connection Factory</a></td></tr>
+          <tr><th>12.3</th><td><a href="#12.3">SQLite Connection and Connection Factory</a></td></tr>
 	  <tr><th>12.4</th><td><a href="#12.4">SQLite Exceptions</a></td></tr>
           <tr>
             <th>12.5</th><td><a href="#12.5">SQLite Limitations</a>
@@ -536,7 +537,7 @@ for consistency.
         <table class="toc">
           <tr><th>13.1</th><td><a href="#13.1">PostgreSQL Type Mapping</a></td></tr>
           <tr><th>13.2</th><td><a href="#13.2">PostgreSQL Database Class</a></td></tr>
-          <tr><th>13.3</th><td><a href="#13.3">PostgreSQL Connection Factory</a></td></tr>
+          <tr><th>13.3</th><td><a href="#13.3">PostgreSQL Connection and Connection Factory</a></td></tr>
 	  <tr><th>13.4</th><td><a href="#13.4">PostgreSQL Exceptions</a></td></tr>
           <tr>
             <th>13.5</th><td><a href="#13.5">PostgreSQL Limitations</a>
@@ -1384,7 +1385,7 @@ main (int argc, char* argv[])
 
   <p>The final bit of code in our example is the <code>catch</code>
      block that handles the database exceptions. We do this by catching
-     the base ODB exception (<a href="#3.11">Section 3.11, "ODB
+     the base ODB exception (<a href="#3.12">Section 3.12, "ODB
      Exceptions"</a>) and printing the diagnostics.</p>
 
   <p>Let's now compile (<a href="#2.3">Section 2.3, "Compiling and
@@ -1897,7 +1898,7 @@ class person
      can make it private. It is also possible to have an object type
      without the default constructor. However, in this case, the database
      operations can only load the persistent state into an existing instance
-     (<a href="#3.7">Section 3.7, "Loading Persistent Objects"</a>,
+     (<a href="#3.8">Section 3.8, "Loading Persistent Objects"</a>,
      <a href="#4.4">Section 4.4, "Query Result"</a>). <p>The object id type
      should be default-constructible.</p></p>
 
@@ -2084,7 +2085,7 @@ auto_ptr&lt;odb::database> db (
   </pre>
 
   <p>The <code>odb::database</code> class is a common interface for
-     all database system-specific classes provided by ODB. You
+     all the database system-specific classes provided by ODB. You
      would normally work with the database
      instance via this interface unless there is a specific
      functionality that your application depends on and which is
@@ -2229,6 +2230,7 @@ namespace odb
   {
   public:
     typedef odb::database database_type;
+    typedef odb::connection connection_type;
 
     void
     commit ();
@@ -2238,6 +2240,9 @@ namespace odb
 
     database_type&amp;
     database ();
+
+    connection_type&amp;
+    connection ();
 
     static transaction&amp;
     current ();
@@ -2257,11 +2262,13 @@ namespace odb
      transaction, the <code>odb::transaction_already_finalized</code>
      exception is thrown.</p>
 
-  <p>The <code>database()</code> function returns the database this
-     transaction is working on. The <code>current()</code> static
-     function returns the currently active transaction for this
-     thread. If there is no active transaction, this function
-     throws the <code>odb::not_in_transaction</code> exception.
+  <p>The <code>database()</code> accessor returns the database this
+     transaction is working on. Similarly, the <code>connection()</code>
+     accessor returns the database connection this transaction is on
+     (<a href="#3.5">Section 3.5, "Connections"</a>). The
+     <code>current()</code> static function returns the currently active
+     transaction for this thread. If there is no active transaction, this
+     function throws the <code>odb::not_in_transaction</code> exception.
      We can check whether there is a transaction in effect in
      this thread using the <code>has_current()</code> static function.</p>
 
@@ -2342,8 +2349,107 @@ update_age (database&amp; db, person&amp; p)
 }
   </pre>
 
+  <h2><a name="3.5">3.5 Connections</a></h2>
 
-  <h2><a name="3.5">3.5 Error Handling and Recovery</a></h2>
+  <p>The <code>odb::connection</code> class represents a connection
+     to the database. Normally, you wouldn't work with connections
+     directly but rather let the ODB runtime obtain and release
+     connections as needed. However, certain use cases may require
+     obtaining a connection manually. For completeness, this section
+     describes the <code>connection</code> class and discusses some
+     of its use cases. You may want to skip this section if you are
+     reading through the manual for the first time.</p>
+
+  <p>Similar to <code>odb::database</code>, the <code>odb::connection</code>
+     class is a common interface for all the database system-specific
+     classes provided by ODB. For details on the system-specific
+     <code>connection</code> classes, refer to <a href="#II">Part II,
+     "Database Systems"</a>.</p>
+
+  <p>To make the <code>odb::connection</code> class available in your
+     application you will need to include the <code>&lt;odb/connection.hxx></code>
+     header file. The <code>odb::connection</code> class has the
+     following interface:</p>
+
+  <pre>
+namespace odb
+{
+  class connection
+  {
+  public:
+    typedef odb::database database_type;
+
+    transaction
+    begin () = 0;
+
+    unsigned long long
+    execute (const char* statement);
+
+    unsigned long long
+    execute (const std::string&amp; statement);
+
+    unsigned long long
+    execute (const char* statement, std::size_t length);
+
+    database_type&amp;
+    database ();
+  };
+
+  typedef details::shared_ptr&lt;connection> connection_ptr;
+}
+  </pre>
+
+  <p>The <code>begin()</code> function is used to start a transaction
+     on the connection. The <code>execute()</code> functions allow
+     us to execute native database statements on the connection.
+     Their semantics are equivalent to the <code>database::execute()</code>
+     functions (<a href="#3.11">Section 3.11, "Executing Native SQL
+     Statements"</a>) except that they can be legally called outside
+     a transaction. Finally, the <code>database()</code> accessor
+     returns a reference to the <code>odb::database</code> instance
+     to which this connection corresponds.</p>
+
+  <p>To obtain a connection we call the <code>database::connection()</code>
+     function. The connection is returned as <code>odb::connection_ptr</code>,
+     which is an implementation-specific smart pointer with the shared
+     pointer semantics. This, in particular, means that the connection
+     pointer can be copied and returned from functions. Once the last
+     instance of <code>connection_ptr</code> pointing to the same
+     connection is destroyed, the connection is returned to the
+     <code>database</code> instance. The following code fragment
+     shows how we can obtain, use, and release a connection:</p>
+
+  <pre>
+using namespace odb::core;
+
+database&amp; db = ...
+connection_ptr c (db.connection ());
+
+// Temporarily disable foreign key constraints.
+//
+c->execute ("SET FOREIGN_KEY_CHECKS = 0");
+
+// Start a transaction on this connection.
+//
+transaction t (c->begin ());
+...
+t.commit ();
+
+// Restore foreign key constraints.
+//
+c->execute ("SET FOREIGN_KEY_CHECKS = 1");
+
+// When 'c' goes out of scope, the connection is returned to 'db'.
+  </pre>
+
+  <p>Some of the use cases which may require direct manipulation of
+     connections include out-of-transaction statement execution,
+     such as execution of connection configuration statements,
+     implementation of a connection-per-thread policy, and making
+     sure that a set of transactions is executed on the same
+     connection.</p>
+
+  <h2><a name="3.6">3.6 Error Handling and Recovery</a></h2>
 
   <p>ODB uses C++ exceptions to report database operation errors. Most
      ODB exceptions signify <em>hard</em> errors or errors that cannot
@@ -2354,7 +2460,7 @@ update_age (database&amp; db, person&amp; p)
      instance, by obtaining a valid object id and trying again.
      The hard errors and corresponding ODB exceptions that can be
      thrown by each database function are described in the remainder
-     of this chapter with <a href="#3.11">Section 3.11, "ODB Exceptions"</a>
+     of this chapter with <a href="#3.12">Section 3.12, "ODB Exceptions"</a>
      providing a quick reference for all the ODB exceptions.</p>
 
   <p>The second group of ODB exceptions signify <em>soft</em> or
@@ -2421,7 +2527,7 @@ for (unsigned short retry_count (0); ; retry_count++)
 }
   </pre>
 
-  <h2><a name="3.6">3.6 Making Objects Persistent</a></h2>
+  <h2><a name="3.7">3.7 Making Objects Persistent</a></h2>
 
   <p>A newly created instance of a persistent class is transient.
      We use the <code>database::persist()</code> function template
@@ -2507,7 +2613,7 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
      threads in your application and to other applications as soon as
      possible.</p>
 
-  <h2><a name="3.7">3.7 Loading Persistent Objects</a></h2>
+  <h2><a name="3.8">3.8 Loading Persistent Objects</a></h2>
 
   <p>Once an object is made persistent, and you know its object id, it
      can be loaded by the application using the <code>database::load()</code>
@@ -2572,7 +2678,7 @@ t.commit ();
      identifier can be significantly faster than executing a query.</p>
 
 
-  <h2><a name="3.8">3.8 Updating Persistent Objects</a></h2>
+  <h2><a name="3.9">3.9 Updating Persistent Objects</a></h2>
 
   <p>If a persistent object has been modified, we can store the updated
      state in the database using the <code>database::update()</code>
@@ -2636,25 +2742,25 @@ transfer (database&amp; db,
      for example:</p>
 
   <pre class="c++">
-  transaction t (db.begin ());
+transaction t (db.begin ());
 
-  shared_ptr&lt;bank_account> from (db.load&lt;bank_account> (from_acc));
+shared_ptr&lt;bank_account> from (db.load&lt;bank_account> (from_acc));
 
-  if (from->balance () &lt; amount)
-    throw insufficient_funds ();
+if (from->balance () &lt; amount)
+  throw insufficient_funds ();
 
-  shared_ptr&lt;bank_account> to (db.load&lt;bank_account> (to_acc));
+shared_ptr&lt;bank_account> to (db.load&lt;bank_account> (to_acc));
 
-  to->balance (to->balance () + amount);
-  from->balance (from->balance () - amount);
+to->balance (to->balance () + amount);
+from->balance (from->balance () - amount);
 
-  db.update (to);
-  db.update (from);
+db.update (to);
+db.update (from);
 
-  t.commit ();
+t.commit ();
   </pre>
 
-  <h2><a name="3.9">3.9 Deleting Persistent Objects</a></h2>
+  <h2><a name="3.10">3.10 Deleting Persistent Objects</a></h2>
 
   <p>To delete a persistent object's state from the database we use the
      <code>database::erase()</code> or <code>database::erase_query()</code>
@@ -2746,7 +2852,7 @@ db.erase_query&lt;person> (query::last == "Doe" &amp;&amp; query::are &lt; 30);
 t.commit ();
   </pre>
 
-  <h2><a name="3.10">3.10 Executing Native SQL Statements</a></h2>
+  <h2><a name="3.11">3.11 Executing Native SQL Statements</a></h2>
 
   <p>In some situations we may need to execute native SQL statements
      instead of using the object-oriented database API described above.
@@ -2784,7 +2890,13 @@ db.execute ("CREATE TABLE test (n INT PRIMARY KEY)");
 t.commit ();
   </pre>
 
-  <h2><a name="3.11">3.11 ODB Exceptions</a></h2>
+  <p>While these functions must always be called within a transaction,
+     it may be necessary to execute a native statement outside any
+     transaction. This can be done using the
+     <code>connection::execute()</code> functions as described in
+     <a href="#3.5">Section 3.5, "Connections"</a>.</p>
+
+  <h2><a name="3.12">3.12 ODB Exceptions</a></h2>
 
   <p>In the previous sections we have already mentioned some of the
      exceptions that can be thrown by the database functions. In this
@@ -2951,19 +3063,19 @@ namespace odb
      has timed out. The <code>deadlock</code> exception is thrown when a
      transaction deadlock is detected by the database system. These
      exceptions can be thrown by any database function. See
-     <a href="#3.5">Section 3.5, "Error Handling and Recovery"</a>
+     <a href="#3.6">Section 3.6, "Error Handling and Recovery"</a>
      for details.</p>
 
   <p>The <code>object_already_persistent</code> exception is thrown
      by the <code>persist()</code> database function. See
-     <a href="#3.6">Section 3.6, "Making Objects Persistent"</a>
+     <a href="#3.7">Section 3.7, "Making Objects Persistent"</a>
      for details.</p>
 
   <p>The <code>object_not_persistent</code> exception is thrown
      by the <code>load()</code>  and <code>update()</code>
      database functions. Refer to
-     <a href="#3.7">Section 3.7, "Loading Persistent Objects"</a> and
-     <a href="#3.8">Section 3.8, "Updating Persistent Objects"</a> for
+     <a href="#3.8">Section 3.8, "Loading Persistent Objects"</a> and
+     <a href="#3.9">Section 3.9, "Updating Persistent Objects"</a> for
      more information.</p>
 
   <p>The <code>result_not_cached</code> exception is thrown by
@@ -5769,9 +5881,9 @@ namespace odb
 
   <p>A session is an object cache. Every time an object is made persistent
      by calling the <code>database::persist()</code> function
-     (<a href="#3.6">Section 3.6, "Making Objects Persistent"</a>), loaded
+     (<a href="#3.7">Section 3.7, "Making Objects Persistent"</a>), loaded
      by calling the <code>database::load()</code> or <code>database::find()</code>
-     function (<a href="#3.7">Section 3.7, "Loading Persistent Objects"</a>),
+     function (<a href="#3.8">Section 3.8, "Loading Persistent Objects"</a>),
      or loaded by iterating over a query result (<a href="#4.4">Section 4.4,
      "Query Result"</a>), the pointer to the persistent object, in the form
      of the canonical object pointer (<a href="#3.2">Section 3.2, "Object
@@ -5779,7 +5891,7 @@ namespace odb
      session is in effect, any subsequent calls to load the same object will
      return the cached instance. When an object's state is deleted from the
      database with the <code>database::erase()</code> function
-     (<a href="#3.9">Section 3.9, "Deleting Persistent Objects"</a>), the
+     (<a href="#3.10">Section 3.10, "Deleting Persistent Objects"</a>), the
      cached object pointer is removed from the session. For example:</p>
 
   <pre class="c++">
@@ -7020,7 +7132,7 @@ class person
      choice.</p>
 
   <p>For additional information on the automatic identifier assignment,
-     refer to <a href="#3.6">Section 3.6, "Making Objects Persistent"</a>.</p>
+     refer to <a href="#3.7">Section 3.7, "Making Objects Persistent"</a>.</p>
 
   <h3><a name="10.3.3">10.3.3 <code>type</code></a></h3>
 
@@ -8115,7 +8227,7 @@ namespace odb
       client_flags () const;
 
     public:
-      details::shared_ptr&lt;mysql::connection>
+      connection_ptr
       connection ();
     };
   }
@@ -8179,17 +8291,39 @@ namespace odb
   <p>The set of accessor functions following the constructors allows us
      to query the parameters of the <code>database</code> instance.</p>
 
-  <p>The <code>connection()</code> function returns the MySQL database
-     connection encapsulated by the <code>odb::mysql::connection</code>
-     class. Normally, we wouldn't call this function directly and
-     instead let the ODB runtime manage the database connections. However,
-     if for some reason you need to access the underlying MySQL connection
-     handle, refer to the MySQL ODB runtime source code for the interface
-     of the <code>connection</code> class.</p>
+  <p>The <code>connection()</code> function returns a pointer to the
+     MySQL database connection encapsulated by the
+     <code>odb::mysql::connection</code> class. For more information
+     on <code>mysql::connection</code>, refer to <a href="#11.3">Section
+     11.3, "MySQL Connection and Connection Factory"</a>.</p>
 
-  <h2><a name="11.3">11.3 MySQL Connection Factory</a></h2>
+  <h2><a name="11.3">11.3 MySQL Connection and Connection Factory</a></h2>
 
-  <p>The <code>connection_factory</code> abstract class has the
+  <p>The <code>mysql::connection</code> class has the following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace mysql
+  {
+    class connection: public odb::connection
+    {
+    public:
+      MYSQL*
+      handle ();
+    };
+
+    typedef details::shared_ptr&lt;connection> connection_ptr;
+  }
+}
+  </pre>
+
+  <p>For more information on the <code>odb::connection</code> interface,
+     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The
+     <code>handle()</code> accessor returns the native MySQL handle
+     corresponding to the connection.</p>
+
+  <p>The <code>mysql::connection_factory</code> abstract class has the
      following interface:</p>
 
   <pre class="c++">
@@ -8201,9 +8335,9 @@ namespace odb
     {
     public:
       virtual void
-      database (mysql::database&amp;) = 0;
+      database (database&amp;) = 0;
 
-      virtual details::shared_ptr&lt;mysql::connection>
+      virtual connection_ptr
       connect () = 0;
     };
   }
@@ -8223,7 +8357,6 @@ namespace odb
      the <code>&lt;odb/mysql/connection-factory.hxx></code>
      header file to make the <code>connection_factory</code> interface
      and these implementation classes available in your application.</p>
-
 
   <p>The <code>new_connection_factory</code> class creates a new
      connection whenever one is requested. When a connection is no
@@ -8582,14 +8715,14 @@ namespace odb
       flags () const;
 
     public:
-      transaction_impl*
+      transaction
       begin_immediate ();
 
-      transaction_impl*
+      transaction
       begin_exclusive ();
 
     public:
-      details::shared_ptr&amp;lt;sqlite::connection>
+      connection_ptr
       connection ();
     };
   }
@@ -8682,17 +8815,50 @@ auto_ptr&lt;odb::database> db (
      transactions, refer to the <code>BEGIN</code> statement description
      in the SQLite documentation.</p>
 
-  <p>The <code>connection()</code> function returns the SQLite database
-     connection encapsulated by the <code>odb::sqlite::connection</code>
-     class. Normally, we wouldn't call this function directly and
-     instead let the ODB runtime manage the database connections. However,
-     if for some reason you need to access the underlying SQLite connection
-     handle, refer to the SQLite ODB runtime source code for the interface
-     of the <code>connection</code> class.</p>
+  <p>The <code>connection()</code> function returns a pointer to the
+     SQLite database connection encapsulated by the
+     <code>odb::sqlite::connection</code> class. For more information
+     on <code>sqlite::connection</code>, refer to <a href="#12.3">Section
+     12.3, "SQLite Connection and Connection Factory"</a>.</p>
 
-  <h2><a name="12.3">12.3 SQLite Connection Factory</a></h2>
+  <h2><a name="12.3">12.3 SQLite Connection and Connection Factory</a></h2>
 
-  <p>The <code>connection_factory</code> abstract class has the
+  <p>The <code>sqlite::connection</code> class has the following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace sqlite
+  {
+    class connection: public odb::connection
+    {
+    public:
+      transaction
+      begin_immediate ();
+
+      transaction
+      begin_exclusive ();
+
+      sqlite3*
+      handle ();
+    };
+
+    typedef details::shared_ptr&lt;connection> connection_ptr;
+  }
+}
+  </pre>
+
+  <p>For more information on the <code>odb::connection</code> interface,
+     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The
+     <code>begin_immediate()</code> and <code>begin_exclusive()</code>
+     functions allow us to start an immediate and an exclusive SQLite
+     transaction on the connection, respectively. Their semantics are
+     equivalent to the corresponding functions defined in the
+     <code>sqlite::database</code> class (<a href="#12.2">Section 12.2,
+     "SQLite Database Class"</a>). The <code>handle()</code> accessor
+     returns the native SQLite handle corresponding to the connection.</p>
+
+  <p>The <code>sqlite::connection_factory</code> abstract class has the
      following interface:</p>
 
   <pre class="c++">
@@ -8704,9 +8870,9 @@ namespace odb
     {
     public:
       virtual void
-      database (sqlite::database&amp;) = 0;
+      database (database&amp;) = 0;
 
-      virtual details::shared_ptr&lt;sqlite::connection>
+      virtual connection_ptr
       connect () = 0;
     };
   }
@@ -8919,7 +9085,7 @@ namespace odb
      SQLite results is the unavailability of the <code>result::size()</code>
      function. If you call this function on an SQLite query result, then
      the <code>odb::result_not_cached</code> exception
-     (<a href="#3.11">Section 3.11, "ODB Exceptions"</a>) is always
+     (<a href="#3.12">Section 3.12, "ODB Exceptions"</a>) is always
      thrown. Future versions of the SQLite ODB runtime library may add support
      for result caching.</p>
 
@@ -8964,7 +9130,7 @@ class person
   <p>If foreign key constraints checking is disabled or not available,
      then inconsistencies in object relationships will not be detected.
      Furthermore, using the <code>erase_query()</code> function
-     (<a href="#3.9">Section 3.9, "Deleting Persistent Objects"</a>)
+     (<a href="#3.10">Section 3.10, "Deleting Persistent Objects"</a>)
      to delete persistent objects that contain containers will not work
      correctly. Container data for such objects will not be deleted.</p>
 
@@ -9018,8 +9184,8 @@ CREATE TABLE Employee (
      to distinguish between the duplicate primary key and other constraint
      violations. As a result, when making an object persistent, The SQLite
      ODB runtime will translate all constraint violation errors to the
-     <code>object_not_persistent</code> exception (<a href="#3.11">Section
-     3.11, "ODB Exceptions"</a>).</p>
+     <code>object_not_persistent</code> exception (<a href="#3.12">Section
+     3.12, "ODB Exceptions"</a>).</p>
 
   <h3><a name="12.5.5">12.5.5 Sharing of Queries</a></h3>
 
@@ -9272,7 +9438,7 @@ namespace odb
       conninfo () const;
 
     public:
-      details::shared_ptr&lt;pgsql::connection>
+      connection_ptr
       connection ();
     };
   }
@@ -9290,7 +9456,7 @@ namespace odb
      The <code>socket_ext</code> argument in the second constructor is a
      string value specifying the UNIX-domain socket file name extension.</p>
 
-  <p>The third constructor allows us to specify all database parameters
+  <p>The third constructor allows us to specify all the database parameters
      as a single <code>conninfo</code> string. All other constructors
      accept additional database connection parameters as the
      <code>extra_conninfo</code> argument. For more information
@@ -9347,17 +9513,39 @@ namespace odb
      <code>conninfo</code> string as passed in the <code>extra_conninfo</code>
      argument.</p>
 
-  <p>The <code>connection()</code> function returns the PostgreSQL database
-     connection encapsulated by the <code>odb::pgsql::connection</code>
-     class. Normally, we wouldn't call this function directly and
-     instead let the ODB runtime manage the database connections. However,
-     if for some reason you need to access the underlying PostgreSQL connection
-     handle, refer to the PostgreSQL ODB runtime source code for the interface
-     of the <code>connection</code> class.</p>
+  <p>The <code>connection()</code> function returns a pointer to the
+     PostgreSQL database connection encapsulated by the
+     <code>odb::pgsql::connection</code> class. For more information
+     on <code>pgsql::connection</code>, refer to <a href="#13.3">Section
+     13.3, "PostgreSQL Connection and Connection Factory"</a>.</p>
 
-  <h2><a name="13.3">13.3 PostgreSQL Connection Factory</a></h2>
+  <h2><a name="13.3">13.3 PostgreSQL Connection and Connection Factory</a></h2>
 
-  <p>The <code>connection_factory</code> abstract class has the
+  <p>The <code>pgsql::connection</code> class has the following interface:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  namespace pgsql
+  {
+    class connection: public odb::connection
+    {
+    public:
+      PGconn*
+      handle ();
+    };
+
+    typedef details::shared_ptr&lt;connection> connection_ptr;
+  }
+}
+  </pre>
+
+  <p>For more information on the <code>odb::connection</code> interface,
+     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The
+     <code>handle()</code> accessor returns the native PostgreSQL handle
+     corresponding to the connection.</p>
+
+  <p>The <code>pgsql::connection_factory</code> abstract class has the
      following interface:</p>
 
   <pre class="c++">
@@ -9369,9 +9557,9 @@ namespace odb
     {
     public:
       virtual void
-      database (pgsql::database&amp;) = 0;
+      database (database&amp;) = 0;
 
-      virtual details::shared_ptr&lt;pgsql::connection>
+      virtual connection_ptr
       connect () = 0;
     };
   }
@@ -9686,7 +9874,7 @@ odb --profile boost/date-time ...
      system. All such exceptions derive from the
      <code>odb::boost::exception</code> class which in turn derives from
      the root of the ODB exception hierarchy, class <code>odb::exception</code>
-     (<a href="#3.11">Section 3.11, "ODB Exceptions"</a>). The
+     (<a href="#3.12">Section 3.12, "ODB Exceptions"</a>). The
      <code>odb::boost::exception</code> class is defined in the
      <code>&lt;odb/boost/exception.hxx></code> header file and has the
      same interface as <code>odb::exception</code>. The concrete exceptions
@@ -10107,7 +10295,7 @@ class person
      system. All such exceptions derive from the
      <code>odb::qt::exception</code> class which in turn derives from
      the root of the ODB exception hierarchy, class <code>odb::exception</code>
-     (<a href="#3.11">Section 3.11, "ODB Exceptions"</a>). The
+     (<a href="#3.12">Section 3.12, "ODB Exceptions"</a>). The
      <code>odb::qt::exception</code> class is defined in the
      <code>&lt;odb/qt/exception.hxx></code> header file and has the
      same interface as <code>odb::exception</code>. The concrete exceptions
