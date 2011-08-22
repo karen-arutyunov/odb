@@ -21,6 +21,10 @@ Version 1.6.0
     For more information, refer to chapters 11 (for MySQL), 12 (for SQLite)
     and 13 (for PostgreSQL) in the ODB manual.
 
+  * New option, --table-prefix, allows the specification of a prefix that
+    is added to table and index names. For more information, refer to the
+    ODB compiler command line interface documentation (man pages).
+
 Version 1.5.0
 
   * Support for the PostgreSQL database. The provided connection factories

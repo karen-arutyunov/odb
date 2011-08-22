@@ -359,25 +359,38 @@ comp_value_ (semantics::class_& c)
 string context::
 table_name (semantics::class_& t) const
 {
+  string name (options.table_prefix ());
+
   if (t.count ("table"))
-    return t.get<string> ("table");
+    name += t.get<string> ("table");
   else
-    return t.name ();
+    name += t.name ();
+
+  return name;
 }
 
 string context::
 table_name (semantics::data_member& m, table_prefix const& p) const
 {
+  string name (options.table_prefix ());
+
   // If a custom table name was specified, then ignore the top-level
   // table prefix.
   //
   if (m.count ("table"))
   {
-    string const& name (m.get<string> ("table"));
-    return p.level == 1 ? name : p.prefix + name;
+    if (p.level != 1)
+      name += p.prefix;
+
+    name += m.get<string> ("table");
+  }
+  else
+  {
+    name += p.prefix;
+    name += public_name_db (m);
   }
 
-  return p.prefix + public_name_db (m);
+  return name;
 }
 
 string context::

@@ -142,6 +142,16 @@ class options
      profile."
   };
 
+  std::string --table-prefix
+  {
+    "<prefix>",
+    "Add <prefix> to table and index names. The prefix is added to both
+     names that were specified with the \cb{db table} pragma and those
+     that were automatically derived from class names. If you require a
+     separator, such as an underscore, between the prefix and the name,
+     then you should include it into the prefix value."
+  };
+
   std::string --output-dir | -o
   {
     "<dir>",
