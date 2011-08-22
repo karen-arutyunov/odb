@@ -1,5 +1,14 @@
 Version 1.6.0
 
+  * SQLite ODB runtime now enabled foreign key constraints checking by
+    default. While this should not affect correct applications, due to
+    bugs in SQLite DDL foreign keys support, you may need to temporarily
+    disable foreign key constraints checking when re-creating the database
+    schema (the sign that you may need to do so is the "foreign key
+    constraint failed" exception thrown by the commit() function after the
+    call to schema_catalog::create_schema()). For more information, refer
+    to Section 12.5.3, "Foreign Key Constraints" in the ODB manual.
+
   * Support for value wrappers. An ODB value wrapper is a class template
     that wraps a value type. Common examples of wrappers are smart pointers,
     holders, and "optional value" containers such as boost::optional. A

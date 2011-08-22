@@ -521,8 +521,9 @@ for consistency.
               <table class="toc">
                 <tr><th>12.5.1</th><td><a href="#12.5.1">Query Result Caching</a></td></tr>
 		<tr><th>12.5.2</th><td><a href="#12.5.2">Automatic Assignment of Object Ids</a></td></tr>
-		<tr><th>12.5.3</th><td><a href="#12.5.3">Constraint Violations</a></td></tr>
-		<tr><th>12.5.4</th><td><a href="#12.5.4">Sharing of Queries</a></td></tr>
+		<tr><th>12.5.3</th><td><a href="#12.5.3">Foreign Key Constraints</a></td></tr>
+		<tr><th>12.5.4</th><td><a href="#12.5.4">Constraint Violations</a></td></tr>
+		<tr><th>12.5.5</th><td><a href="#12.5.5">Sharing of Queries</a></td></tr>
               </table>
             </td>
           </tr>
@@ -8523,12 +8524,14 @@ namespace odb
     public:
       database (const std::string&amp; name,
                 int flags = SQLITE_OPEN_READWRITE,
+                bool foreign_keys = true,
                 std::auto_ptr&lt;connection_factory> = 0);
 
       database (int&amp; argc,
                 char* argv[],
                 bool erase = false,
                 int flags = SQLITE_OPEN_READWRITE,
+                bool foreign_keys = true,
                 std::auto_ptr&lt;connection_factory> = 0);
 
       static void
@@ -8566,11 +8569,15 @@ namespace odb
      <code>:memory:</code> special value, then a temporary, in-memory
      database is created. The <code>flags</code> argument allows us to
      specify SQLite opening flags. For more information on the possible
-     values, refer to the <code>sqlite3_open_v2</code> function description
-     in the SQLite C API documentation. The following example shows how
-     we can open the <code>test.db</code> database in the read-write
-     mode and create it if it does not exist:
-  </p>
+     values, refer to the <code>sqlite3_open_v2()</code> function description
+     in the SQLite C API documentation. The <code>foreign_keys</code>
+     argument specifies whether foreign key constraints checking
+     should be enabled. See <a href="#12.5.3">Section 12.5.3,
+     "Foreign Key Constraints"</a> for more information on foreign
+     keys.</p>
+
+  <p>The following example shows how we can open the <code>test.db</code>
+     database in the read-write mode and create it if it does not exist:</p>
 
   <pre class="c++">
 auto_ptr&lt;odb::database> db (
@@ -8613,7 +8620,7 @@ auto_ptr&lt;odb::database> db (
 
   <p>The second constructor throws the <code>odb::sqlite::cli_exception</code>
      exception if the SQLite option values are missing or invalid.
-     See section <a href="#12.4">Section 12.4, "SQLite Exceptions"</a>
+     See <a href="#12.4">Section 12.4, "SQLite Exceptions"</a>
      for more information on this exception.</p>
 
   <p>The static <code>print_usage()</code> function prints the list of options
@@ -8905,7 +8912,69 @@ class person
 };
 </pre>
 
-  <h3><a name="12.5.3">12.5.3 Constraint Violations</a></h3>
+  <h3><a name="12.5.3">12.5.3 Foreign Key Constraints</a></h3>
+
+  <p>By default the SQLite ODB runtime enables foreign key constraints
+     checking (<code>PRAGMA foreign_keys=ON</code>). You can disable foreign
+     keys by passing <code>false</code> as the <code>foreign_keys</code>
+     argument to one of the <code>odb::sqlite::database</code> constructors.
+     Foreign keys will also be disabled if the SQLite library is built without
+     support for foreign keys (<code>SQLITE_OMIT_FOREIGN_KEY</code> and
+     <code>SQLITE_OMIT_TRIGGER</code> macros) or if you are using
+     an SQLite version prior to 3.6.19, which does not support foreign
+     key constraints checking.</p>
+
+  <p>If foreign key constraints checking is disabled or not available,
+     then inconsistencies in object relationships will not be detected.
+     Furthermore, using the <code>erase_query()</code> function (@@ ref)
+     to delete persistent objects that contain containers will not work
+     correctly. Container data for such objects will not be deleted.</p>
+
+  <p>When foreign key constraints checking is enabled, then you may
+     get the "foreign key constraint failed" error while re-creating the
+     database schema. This error is due to bugs in the SQLite DDL foreign
+     keys support. The recommended work-around for this problem is to
+     temporarily disable foreign key constraints checking while
+     re-creating the schema. The following code fragment shows how
+     this can be done:</p>
+
+<pre>
+#include &lt;odb/connection.hxx>
+#include &lt;odb/transaction.hxx>
+#include &lt;odb/schema-catalog.hxx>
+
+odb::database&amp; db = ...
+
+{
+  odb::connection_ptr c (db.connection ());
+
+  c->execute ("PRAGMA foreign_keys=OFF");
+
+  odb::transaction t (c->begin ());
+  odb::schema_catalog::create_schema (db);
+  t.commit ();
+
+  c->execute ("PRAGMA foreign_keys=ON");
+}
+</pre>
+
+  <p>Finally, ODB relies on standard SQL behavior which requires
+     that foreign key constraints checking is deferred until the
+     transaction is committed. Default SQLite behavior is to check such
+     constraints immediately. As a result, when used with ODB, a custom
+     database schema that defines foreign key constraints must declare
+     such constraints as <code>DEFERRABLE INITIALLY DEFERRED</code>, as
+     shown in the following example. Schemas generated by the ODB compiler
+     meet this requirement automatically.</p>
+
+  <pre class="sql">
+CREATE TABLE Employee (
+  ...
+  employer BIGINT REFERENCES Employer (name) DEFERRABLE INITIALLY DEFERRED);
+  </pre>
+
+
+  <h3><a name="12.5.4">12.5.4 Constraint Violations</a></h3>
 
   <p>Due to the granularity of the SQLite error codes, it is impossible
      to distinguish between the duplicate primary key and other constraint
@@ -8914,7 +8983,7 @@ class person
      <code>object_not_persistent</code> exception (<a href="#3.11">Section
      3.11, "ODB Exceptions"</a>).</p>
 
-  <h3><a name="12.5.4">12.5.4 Sharing of Queries</a></h3>
+  <h3><a name="12.5.5">12.5.5 Sharing of Queries</a></h3>
 
   <p>As discussed in <a href="#4.3">Section 4.3, "Executing a Query"</a>, a
      query instance that does not have any by-reference parameters is
@@ -9442,8 +9511,8 @@ namespace odb
 
   <h3><a name="13.5.2">13.5.2 Foreign Key Constraints</a></h3>
 
-  <p>ODB relies on the standard SQL behavior which requires that
-     the foreign key constraints checking is deferred until the
+  <p>ODB relies on standard SQL behavior which requires that
+     foreign key constraints checking is deferred until the
      transaction is committed. Default PostgreSQL behavior is
      to check such constraints immediately. As a result, when
      used with ODB, a custom database schema that defines foreign

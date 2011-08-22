@@ -19,6 +19,7 @@ namespace relational
       //
       // Create.
       //
+
       struct object_columns: relational::object_columns, context
       {
         object_columns (base const& x): base (x) {}
@@ -59,6 +60,21 @@ namespace relational
             else
               os << " AUTOINCREMENT";
           }
+        }
+
+        virtual void
+        reference (semantics::data_member& m)
+        {
+          // In SQLite, by default, constraints are immediate.
+          //
+          if (semantics::class_* c = object_pointer (member_type (m, prefix_)))
+          {
+            os << " REFERENCES " << table_qname (*c) << " (" <<
+              column_qname (*id_member (*c)) << ") " <<
+              "DEFERRABLE INITIALLY DEFERRED";
+          }
+          else
+            base::reference (m);
         }
 
       };
