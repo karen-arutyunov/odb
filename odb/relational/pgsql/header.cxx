@@ -36,7 +36,8 @@ namespace relational
           // Query statement name.
           //
           if (options.generate_query ())
-            os << "static const char* const query_statement_name;";
+            os << "static const char* const query_statement_name;"
+               << "static const char* const erase_query_statement_name;";
 
           os << endl;
 

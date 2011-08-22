@@ -873,6 +873,10 @@ namespace relational
           {
             os << name_decl << endl
                << "query_statement_name = " << strlit (fn + "_query") << ";"
+               << endl
+               << name_decl << endl
+               << "erase_query_statement_name = " <<
+              strlit (fn + "_erase_query") << ";"
                << endl;
           }
 
@@ -936,20 +940,28 @@ namespace relational
         }
 
         virtual void
-        query_statement_ctor (type& c)
+        query_statement_ctor_args (type&)
         {
-          string const& type (c.fq_name ());
-          string traits ("access::object_traits< " + type + " >");
-
-          os << "select_statement (" << endl
-             << "sts.connection ()," << endl
+          os << "sts.connection ()," << endl
              << "query_statement_name," << endl
-             << "query_clause + q.clause ()," << endl
+             << "query_clause + q.clause (table_name)," << endl
              << "q.parameter_types ()," << endl
              << "q.parameter_count ()," << endl
              << "q.parameters_binding ()," << endl
-             << "imb)";
+             << "imb";
         }
+
+        virtual void
+        erase_query_statement_ctor_args (type&)
+        {
+          os << "conn," << endl
+             << "erase_query_statement_name," << endl
+             << "erase_query_clause + q.clause (table_name)," << endl
+             << "q.parameter_types ()," << endl
+             << "q.parameter_count ()," << endl
+             << "q.parameters_binding ()";
+        }
+
 
         virtual void
         post_query_ (type&)

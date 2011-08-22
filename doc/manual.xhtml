@@ -2657,10 +2657,10 @@ transfer (database&amp; db,
   <h2><a name="3.9">3.9 Deleting Persistent Objects</a></h2>
 
   <p>To delete a persistent object's state from the database we use the
-     <code>database::erase()</code> function template. If the application
-     still has an instance of the erased object, this instance becomes
-     transient. The <code>erase()</code> function has the following
-     overloaded versions:</p>
+     <code>database::erase()</code> or <code>database::erase_query()</code>
+     function templates. If the application still has an instance of the
+     erased object, this instance becomes transient. The <code>erase()</code>
+     function has the following overloaded versions:</p>
 
   <pre class="c++">
   template &lt;typename T>
@@ -2705,6 +2705,43 @@ transaction t (db.begin ());
 db.erase (john);
 db.erase (jane);
 db.erase&lt;person> (joe_id);
+
+t.commit ();
+  </pre>
+
+  <p>The <code>erase_query()</code> function allows us to delete
+     the state of multiple objects matching certain criteria. It uses
+     the query expression of the <code>database::query()</code> function
+     (<a href="#4">Chapter 4, "Querying the Database"</a>) and,
+     because the ODB query facility is optional, it is only available
+     if the <code>--generate-query</code> ODB compiler option was
+     specified. The <code>erase_query()</code> function has the
+     following overloaded versions:</p>
+
+  <pre class="c++">
+  template &lt;typename T>
+  unsigned long long
+  erase_query ();
+
+  template &lt;typename T>
+  unsigned long long
+  erase_query (const odb::query&lt;T>&amp;);
+  </pre>
+
+  <p>The first <code>erase_query()</code> function is used to delete
+     the state of all the persistent objects of a given type stored
+     in the database. The second function uses the passed query instance
+     to only delete the state of objects matching the query criteria.
+     Both functions return the number of objects erased. When calling
+     the <code>erase_query()</code> function, we have to explicitly
+     specify the object type we are erasing. For example:</p>
+
+  <pre class="c++">
+typedef odb::query&lt;person> query;
+
+transaction t (db.begin ());
+
+db.erase_query&lt;person> (query::last == "Doe" &amp;&amp; query::are &lt; 30);
 
 t.commit ();
   </pre>
@@ -8926,7 +8963,8 @@ class person
 
   <p>If foreign key constraints checking is disabled or not available,
      then inconsistencies in object relationships will not be detected.
-     Furthermore, using the <code>erase_query()</code> function (@@ ref)
+     Furthermore, using the <code>erase_query()</code> function
+     (<a href="#3.9">Section 3.9, "Deleting Persistent Objects"</a>)
      to delete persistent objects that contain containers will not work
      correctly. Container data for such objects will not be deleted.</p>
 

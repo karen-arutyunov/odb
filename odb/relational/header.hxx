@@ -948,7 +948,12 @@ namespace relational
            << "static const char* const erase_statement;";
 
         if (options.generate_query ())
-          os << "static const char* const query_clause;";
+        {
+          os << "static const char* const query_clause;"
+             << "static const char* const erase_query_clause;"
+             << endl
+             << "static const char* const table_name;";
+        }
 
         os << endl;
 
@@ -999,10 +1004,16 @@ namespace relational
         // query ()
         //
         if (options.generate_query ())
+        {
           os << "template<typename T>" << endl
              << "static result<T>" << endl
              << "query (database&, const query_type&);"
              << endl;
+
+          os << "static unsigned long long" << endl
+             << "erase_query (database&, const query_type&);"
+             << endl;
+        }
 
         // create_schema ()
         //

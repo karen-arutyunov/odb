@@ -9,6 +9,12 @@ Version 1.6.0
     call to schema_catalog::create_schema()). For more information, refer
     to Section 12.5.3, "Foreign Key Constraints" in the ODB manual.
 
+  * New function, database::erase_query(), allows the deletion of the
+    database state of multiple objects matching certain criteria. It uses
+    the same query expression as the database::query() function. For more
+    information, refer to Section 3.9, "Deleting Persistent Objects" in
+    the ODB manual.
+
   * Support for value wrappers. An ODB value wrapper is a class template
     that wraps a value type. Common examples of wrappers are smart pointers,
     holders, and "optional value" containers such as boost::optional. A

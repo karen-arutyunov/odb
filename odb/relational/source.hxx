@@ -1872,13 +1872,20 @@ namespace relational
       }
 
       virtual void
-      query_statement_ctor (type&)
+      query_statement_ctor_args (type&)
       {
-        os << "select_statement (" << endl
-           << "sts.connection ()," << endl
-           << "query_clause + q.clause ()," << endl
+        os << "sts.connection ()," << endl
+           << "query_clause + q.clause (table_name)," << endl
            << "q.parameters_binding ()," << endl
-           << "imb)";
+           << "imb";
+      }
+
+      virtual void
+      erase_query_statement_ctor_args (type&)
+      {
+        os << "conn," << endl
+           << "erase_query_clause + q.clause (table_name)," << endl
+           << "q.parameters_binding ()";
       }
 
       virtual void
@@ -2147,10 +2154,10 @@ namespace relational
              << endl;
         }
 
-        // query_clause
-        //
         if (options.generate_query ())
         {
+          // query_clause
+          //
           bool t (true);
           instance<object_joins> oj (c, t); //@@ (im)perfect forwarding
           oj->traverse (c);
@@ -2170,6 +2177,18 @@ namespace relational
           oj->write ();
           os << strlit (" ") << ";"
              << endl;
+
+          // erase_query_clause
+          //
+          os << "const char* const " << traits << "::erase_query_clause =" << endl
+             << strlit ("DELETE FROM " + table + " ") << ";"
+             << endl;
+
+          // table_name
+          //
+          os << "const char* const " << traits << "::table_name =" << endl
+             << strlit (table) << ";"
+             << endl;
         }
 
         // persist ()
@@ -2180,7 +2199,7 @@ namespace relational
            << "{"
            << "using namespace " << db << ";"
            << endl
-           << "connection& conn (" << db <<
+           << db << "::connection& conn (" << db <<
           "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
@@ -2242,7 +2261,7 @@ namespace relational
            << "{"
            << "using namespace " << db << ";"
            << endl
-           << "connection& conn (" << db <<
+           << db << "::connection& conn (" << db <<
           "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
@@ -2294,7 +2313,7 @@ namespace relational
            << "{"
            << "using namespace " << db << ";"
            << endl
-           << "connection& conn (" << db <<
+           << db << "::connection& conn (" << db <<
           "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
@@ -2341,7 +2360,7 @@ namespace relational
              << "{"
              << "using namespace " << db << ";"
              << endl
-             << "connection& conn (" << db <<
+             << db << "::connection& conn (" << db <<
             "::transaction::current ().connection ());"
              << "object_statements< object_type >& sts (" << endl
              << "conn.statement_cache ().find<object_type> ());"
@@ -2383,7 +2402,7 @@ namespace relational
            << "{"
            << "using namespace " << db << ";"
            << endl
-           << "connection& conn (" << db <<
+           << db << "::connection& conn (" << db <<
           "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find<object_type> ());"
@@ -2487,10 +2506,10 @@ namespace relational
           os << "}";
         }
 
-        // query ()
-        //
         if (options.generate_query ())
         {
+          // query ()
+          //
           os << "template<>" << endl
              << "result< " << traits << "::object_type >" << endl
              << traits << "::" << endl
@@ -2500,7 +2519,7 @@ namespace relational
              << "{"
              << "using namespace " << db << ";"
              << endl
-             << "connection& conn (" << db <<
+             << db << "::connection& conn (" << db <<
             "::transaction::current ().connection ());"
              << endl
              << "object_statements< object_type >& sts (" << endl
@@ -2524,7 +2543,7 @@ namespace relational
              << "{"
              << "using namespace " << db << ";"
              << endl
-             << "connection& conn (" << db <<
+             << db << "::connection& conn (" << db <<
             "::transaction::current ().connection ());"
              << endl
              << "object_statements< object_type >& sts (" << endl
@@ -2556,16 +2575,36 @@ namespace relational
              << "sts.out_image_version (im.version);"
              << "imb.version++;"
              << "}"
-             << "st.reset (new (odb::details::shared) ";
+             << "st.reset (new (odb::details::shared) select_statement ("
+             << endl;
 
-          query_statement_ctor (c);
+          query_statement_ctor_args (c);
 
-          os << ");" << endl
+          os << "));" << endl
              << "st->execute ();";
 
           post_query_ (c);
 
           os << "}";
+
+          // erase_query
+          //
+          os << "unsigned long long " << traits << "::" << endl
+             << "erase_query (database&, const query_type& q)"
+             << "{"
+             << "using namespace " << db << ";"
+             << endl
+             << db << "::connection& conn (" << db <<
+            "::transaction::current ().connection ());"
+             << endl
+             << "delete_statement st (" << endl;
+
+          erase_query_statement_ctor_args (c);
+
+          os << ");"
+             << endl
+             << "return st.execute ();"
+             << "}";
         }
 
         if (embedded_schema)
