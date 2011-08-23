@@ -2444,8 +2444,8 @@ c->execute ("SET FOREIGN_KEY_CHECKS = 1");
 
   <p>Some of the use cases which may require direct manipulation of
      connections include out-of-transaction statement execution,
-     such as execution of connection configuration statements,
-     implementation of a connection-per-thread policy, and making
+     such as the execution of connection configuration statements,
+     the implementation of a connection-per-thread policy, and making
      sure that a set of transactions is executed on the same
      connection.</p>
 
@@ -2891,7 +2891,7 @@ t.commit ();
   </pre>
 
   <p>While these functions must always be called within a transaction,
-     it may be necessary to execute a native statement outside any
+     it may be necessary to execute a native statement outside a
      transaction. This can be done using the
      <code>connection::execute()</code> functions as described in
      <a href="#3.5">Section 3.5, "Connections"</a>.</p>
