@@ -1,6 +1,6 @@
 Version 1.6.0
 
-  * SQLite ODB runtime now enabled foreign key constraints checking by
+  * SQLite ODB runtime now enables foreign key constraints checking by
     default. While this should not affect correct applications, due to
     bugs in SQLite DDL foreign keys support, you may need to temporarily
     disable foreign key constraints checking when re-creating the database
