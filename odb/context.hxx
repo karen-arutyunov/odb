@@ -135,7 +135,9 @@ public:
   string
   table_name (semantics::class_&) const;
 
-  // Table name for the container member.
+  // Table name for the container member. The table prefix passed as the
+  // second argument must include the table prefix specified with the
+  // --table-prefix option.
   //
   struct table_prefix
   {

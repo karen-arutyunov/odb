@@ -372,7 +372,13 @@ table_name (semantics::class_& t) const
 string context::
 table_name (semantics::data_member& m, table_prefix const& p) const
 {
-  string name (options.table_prefix ());
+  // The table prefix passed as the second argument must include
+  // the table prefix specified with the --table-prefix option.
+  //
+  string const& gp (options.table_prefix ());
+  assert (p.prefix.compare (0, gp.size (), gp) == 0);
+
+  string name;
 
   // If a custom table name was specified, then ignore the top-level
   // table prefix.
@@ -380,13 +386,15 @@ table_name (semantics::data_member& m, table_prefix const& p) const
   if (m.count ("table"))
   {
     if (p.level != 1)
-      name += p.prefix;
+      name = p.prefix;
+    else
+      name = gp;
 
     name += m.get<string> ("table");
   }
   else
   {
-    name += p.prefix;
+    name = p.prefix;
     name += public_name_db (m);
   }
 

@@ -128,8 +128,8 @@ traverse (semantics::data_member& m)
       //
       if (m.count ("table"))
       {
-        if (om_.table_prefix_.level == 1)
-          om_.table_prefix_.prefix.clear ();
+        if (om_.table_prefix_.level <= 1)
+          om_.table_prefix_.prefix = om_.options.table_prefix ();
 
         om_.table_prefix_.prefix += m.get<string> ("table");
       }
@@ -140,6 +140,9 @@ traverse (semantics::data_member& m)
       {
         string name (om_.public_name_db (m));
         size_t n (name.size ());
+
+        if (om_.table_prefix_.prefix.empty ())
+          om_.table_prefix_.prefix = om_.options.table_prefix ();
 
         om_.table_prefix_.prefix += name;
 
