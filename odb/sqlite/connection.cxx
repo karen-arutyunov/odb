@@ -82,9 +82,6 @@ namespace odb
     transaction_impl* connection::
     begin ()
     {
-      if (transaction::has_current ())
-        throw already_in_transaction ();
-
       return new transaction_impl (
         connection_ptr (inc_ref (this)), transaction_impl::deferred);
     }
@@ -92,9 +89,6 @@ namespace odb
     transaction_impl* connection::
     begin_immediate ()
     {
-      if (transaction::has_current ())
-        throw already_in_transaction ();
-
       return new transaction_impl (
         connection_ptr (inc_ref (this)), transaction_impl::immediate);
     }
@@ -102,9 +96,6 @@ namespace odb
     transaction_impl* connection::
     begin_exclusive ()
     {
-      if (transaction::has_current ())
-        throw already_in_transaction ();
-
       return new transaction_impl (
         connection_ptr (inc_ref (this)), transaction_impl::exclusive);
     }

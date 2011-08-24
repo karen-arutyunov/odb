@@ -83,6 +83,24 @@ namespace odb
       details::options::print_usage (os);
     }
 
+    transaction_impl* database::
+    begin ()
+    {
+      return new transaction_impl (*this, transaction_impl::deferred);
+    }
+
+    transaction_impl* database::
+    begin_immediate ()
+    {
+      return new transaction_impl (*this, transaction_impl::immediate);
+    }
+
+    transaction_impl* database::
+    begin_exclusive ()
+    {
+      return new transaction_impl (*this, transaction_impl::exclusive);
+    }
+
     odb::connection* database::
     connection_ ()
     {

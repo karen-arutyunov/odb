@@ -14,12 +14,38 @@ namespace odb
   namespace sqlite
   {
     transaction_impl::
-    transaction_impl (connection_ptr c, lock l)
-        : odb::transaction_impl (c->database (), *c), connection_ (c)
+    transaction_impl (database_type& db, lock l)
+        : odb::transaction_impl (db), lock_ (l)
     {
+    }
+
+    transaction_impl::
+    transaction_impl (connection_ptr c, lock l)
+        : odb::transaction_impl (c->database (), *c),
+          connection_ (c),
+          lock_ (l)
+    {
+    }
+
+    transaction_impl::
+    ~transaction_impl ()
+    {
+    }
+
+    void transaction_impl::
+    start ()
+    {
+      // Grab a connection if we don't already have one.
+      //
+      if (connection_ == 0)
+      {
+        connection_ = static_cast<database_type&> (database_).connection ();
+        odb::transaction_impl::connection_ = connection_.get ();
+      }
+
       statement_cache& sc (connection_->statement_cache ());
 
-      switch (l)
+      switch (lock_)
       {
       case deferred:
         {
@@ -37,11 +63,6 @@ namespace odb
           break;
         }
       }
-    }
-
-    transaction_impl::
-    ~transaction_impl ()
-    {
     }
 
     void transaction_impl::

@@ -45,6 +45,11 @@ namespace odb
       static transaction&
       current ();
 
+      // Set the current thread's transaction.
+      //
+      static void
+      current (transaction&);
+
     public:
       transaction_impl&
       implementation ();

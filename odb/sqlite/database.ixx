@@ -16,23 +16,5 @@ namespace odb
       return connection_ptr (
         static_cast<sqlite::connection*> (connection_ ()));
     }
-
-    inline transaction_impl* database::
-    begin ()
-    {
-      return connection ()->begin ();
-    }
-
-    inline transaction_impl* database::
-    begin_immediate ()
-    {
-      return connection ()->begin_immediate ();
-    }
-
-    inline transaction_impl* database::
-    begin_exclusive ()
-    {
-      return connection ()->begin_exclusive ();
-    }
   }
 }
