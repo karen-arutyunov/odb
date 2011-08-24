@@ -2214,13 +2214,25 @@ namespace odb
      now on the only way to alter this state is to execute and commit
      another transaction.</p>
 
-  <p>A transaction is started by calling the
-     <code>database::begin()</code>
+  <p>A transaction is started by calling either the
+     <code>database::begin()</code> or <code>connection::begin()</code>
      function. The returned transaction handle is stored in
      an instance of the <code>odb::transaction</code> class.
      You will need to include the <code>&lt;odb/transaction.hxx></code>
      header file to make this class available in your application.
-     The <code>odb::transaction</code> class has the following
+     For example:</p>
+
+  <pre class="c++">
+#include &lt;odb/transaction.hxx>
+
+transaction t (db.begin ())
+
+// Perform database operations.
+
+t.commit ();
+  </pre>
+
+  <p>The <code>odb::transaction</code> class has the following
      interface:</p>
 
   <pre class="c++">
@@ -2231,6 +2243,8 @@ namespace odb
   public:
     typedef odb::database database_type;
     typedef odb::connection connection_type;
+
+    transaction (transaction_impl*, bool make_current = true)
 
     void
     commit ();
@@ -2244,11 +2258,17 @@ namespace odb
     connection_type&amp;
     connection ();
 
+    static bool
+    has_current ();
+
     static transaction&amp;
     current ();
 
+    static void
+    current (transaction&amp;);
+
     static bool
-    has_current ();
+    reset_current ();
   };
 }
   </pre>
@@ -2265,12 +2285,50 @@ namespace odb
   <p>The <code>database()</code> accessor returns the database this
      transaction is working on. Similarly, the <code>connection()</code>
      accessor returns the database connection this transaction is on
-     (<a href="#3.5">Section 3.5, "Connections"</a>). The
-     <code>current()</code> static function returns the currently active
-     transaction for this thread. If there is no active transaction, this
-     function throws the <code>odb::not_in_transaction</code> exception.
-     We can check whether there is a transaction in effect in
+     (<a href="#3.5">Section 3.5, "Connections"</a>).</p>
+
+  <p>The static <code>current()</code> accessor returns the
+     currently active transaction for this thread. If there is no active
+     transaction, this function throws the <code>odb::not_in_transaction</code>
+     exception. We can check whether there is a transaction in effect in
      this thread using the <code>has_current()</code> static function.</p>
+
+  <p>The <code>make_current</code> argument in the <code>transaction</code>
+     constructor as well as the static <code>current()</code> modifier and
+     <code>reset_current()</code> function give us additional
+     control over the nomination of the currently active transaction.
+     If we pass <code>false</code> as the <code>make_current</code>
+     argument, then the newly created transaction will not
+     automatically be made the active transaction for this
+     thread. Later, we can use the static <code>current()</code> modifier
+     to set this transaction as the active transaction.
+     The <code>reset_current()</code> static function clears the
+     currently active transaction. Together, these mechanisms
+     allow for more advanced use cases, such as multiplexing
+     two or more transactions on the same thread. For example:</p>
+
+  <pre class="c++">
+transaction t1 (db1.begin ());        // Active transaction.
+transaction t2 (db2.begin (), false); // Not active.
+
+// Perform database operations on db1.
+
+transaction::current (t2);            // Deactivate t1, activate t2.
+
+// Perform database operations on db2.
+
+transaction::current (t1);            // Switch back to t1.
+
+// Perform some more database operations on db1.
+
+t1.commit ();
+
+transaction::current (t2);            // Switch to t2.
+
+// Perform some more database operations on db2.
+
+t2.commit ();
+  </pre>
 
   <p>Note that in the above discussion of atomicity, consistency,
      isolation, and durability, all of those guarantees only apply
@@ -5871,7 +5929,7 @@ namespace odb
      current session for this thread. The <code>reset_current()</code>
      static function clears the current session. These two functions
      allow for more advanced use cases, such as multiplexing
-     between two or more sessions in the same thread.</p>
+     two or more sessions on the same thread.</p>
 
   <p>We normally don't use the object cache interface directly. However,
      it could be useful in some cases, for example, to find out whether

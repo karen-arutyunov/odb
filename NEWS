@@ -45,6 +45,10 @@ Version 1.6.0
     native statements outside of a transaction. For more information, refer
     to Section 3.5, "Connections" in the ODB manual.
 
+  * Support for multiplexing several transaction on the same thread. For
+    more information, refer to Section 3.4, "Transactions" in the ODB
+    manual.
+
 Version 1.5.0
 
   * Support for the PostgreSQL database. The provided connection factories
