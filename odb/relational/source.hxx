@@ -2181,7 +2181,17 @@ namespace relational
           // erase_query_clause
           //
           os << "const char* const " << traits << "::erase_query_clause =" << endl
-             << strlit ("DELETE FROM " + table + " ") << ";"
+            << strlit ("DELETE FROM " + table) << endl;
+
+          // DELETE JOIN:
+          //
+          // MySQL:
+          // << strlit ("DELETE FROM " + table + " USING " + table) << endl;
+          // << strlit ("DELETE " + table + " FROM " + table) << endl;
+          // oj->write ();
+          //
+
+          os << strlit (" ") << ";"
              << endl;
 
           // table_name
