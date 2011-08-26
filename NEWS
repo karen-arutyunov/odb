@@ -49,6 +49,10 @@ Version 1.6.0
     more information, refer to Section 3.4, "Transactions" in the ODB
     manual.
 
+  * Support for specifying the client character set for the MySQL database.
+    For more information, refer to Section 11.2, "MySQL Database Class" in
+    the ODB manual.
+
 Version 1.5.0
 
   * Support for the PostgreSQL database. The provided connection factories

@@ -8213,6 +8213,7 @@ namespace odb
                 const char* host = 0,
                 unsigned int port = 0,
                 const char* socket = 0,
+                const char* charset = 0,
                 unsigned long client_flags = 0,
                 std::auto_ptr&lt;connection_factory> = 0);
 
@@ -8222,6 +8223,7 @@ namespace odb
                 const std::string&amp; host = "",
                 unsigned int port = 0,
                 const std::string* socket = 0,
+                const std::string&amp; charset = "",
                 unsigned long client_flags = 0,
                 std::auto_ptr&lt;connection_factory> = 0);
 
@@ -8231,6 +8233,7 @@ namespace odb
                 const std::string&amp; host = "",
                 unsigned int port = 0,
                 const std::string* socket = 0,
+                const std::string&amp; charset = "",
                 unsigned long client_flags = 0,
                 std::auto_ptr&lt;connection_factory> = 0);
 
@@ -8240,6 +8243,7 @@ namespace odb
                 const std::string&amp; host,
                 unsigned int port,
                 const std::string&amp; socket,
+                const std::string&amp; charset = "",
                 unsigned long client_flags = 0,
                 std::auto_ptr&lt;connection_factory> = 0);
 
@@ -8249,12 +8253,14 @@ namespace odb
                 const std::string&amp; host,
                 unsigned int port,
                 const std::string&amp; socket,
+                const std::string&amp; charset = "",
                 unsigned long client_flags = 0,
                 std::auto_ptr&lt;connection_factory> = 0);
 
       database (int&amp; argc,
                 char* argv[],
                 bool erase = false,
+                const std::string&amp; charset = "",
                 unsigned long client_flags = 0,
                 std::auto_ptr&lt;connection_factory> = 0);
 
@@ -8281,6 +8287,9 @@ namespace odb
       const char*
       socket () const;
 
+      const char*
+      charset () const;
+
       unsigned long
       client_flags () const;
 
@@ -8300,11 +8309,24 @@ namespace odb
      connecting to the database. In MySQL <code>NULL</code> and an
      empty string are treated as the same values for all the
      string parameters except <code>password</code> and
-     <code>socket</code>. The <code>client_flags</code> argument
-     allows us to specify various MySQL client library flags. For more
-     information on the possible values, refer to the MySQL C API
-     documentation. The <code>CLIENT_FOUND_ROWS</code> flag is always set
-     by the MySQL ODB runtime regardless of whether it was passed in the
+     <code>socket</code>.</p>
+
+  <p>The <code>charset</code> argument allows us to specify the client
+     character set, that is, the character set in which the application
+     will encode its text data. Note that this can be different from
+     the MySQL server character set. If this argument is not specified or
+     is empty, then the default MySQL client character set is used, normally
+     <code>latin1</code>. Commonly used values for this argument are
+     <code>latin1</code> (equivalent to Windows cp1252 and similar to
+     ISO-8859-1) and <code>utf8</code>. For other possible values
+     as well as more information on character set support in MySQL,
+     refer to the MySQL documentation.</p>
+
+  <p>The <code>client_flags</code> argument allows us to specify various
+     MySQL client library flags. For more information on the possible
+     values, refer to the MySQL C API documentation. The
+     <code>CLIENT_FOUND_ROWS</code> flag is always set by the MySQL ODB
+     runtime regardless of whether it was passed in the
      <code>client_flags</code> argument.</p>
 
   <p>The last constructor extracts the database parameters
@@ -8321,8 +8343,8 @@ namespace odb
   </pre>
 
   <p>The <code>--options-file</code> option allows us to specify some
-  or all of the database options in a file with each option appearing
-  on a separate line followed by a space and an option value.</p>
+     or all of the database options in a file with each option appearing
+     on a separate line followed by a space and an option value.</p>
 
   <p>If the <code>erase</code> argument to this constructor is true,
      then the above options are removed from the <code>argv</code>
