@@ -78,6 +78,17 @@ public:
   //
 public:
 
+  // Check whether the type is a wrapper. Return the wrapped type if
+  // it is a wrapper and NULL otherwise.
+  //
+  static semantics::type*
+  wrapper (semantics::type& t)
+  {
+    return t.count ("wrapper") && t.get<bool> ("wrapper")
+      ? t.get<semantics::type*> ("wrapper-type")
+      : 0;
+  }
+
   // Composite value type is a class type that was explicitly marked
   // as value type and there was no database type mapping provided for
   // it by the user (specifying the database type makes the value type
@@ -100,6 +111,19 @@ public:
   {
     semantics::class_* c (dynamic_cast<semantics::class_*> (&t));
     return c != 0 && comp_value (*c) ? c : 0;
+  }
+
+  // As above but also "sees through" wrappers.
+  //
+  static semantics::class_*
+  comp_value_wrapper (semantics::type& t)
+  {
+    if (semantics::class_* c = comp_value (t))
+      return c;
+    else if (semantics::type* wt = wrapper (t))
+      return comp_value (*wt);
+    else
+      return 0;
   }
 
   static bool

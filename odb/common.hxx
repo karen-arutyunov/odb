@@ -30,6 +30,17 @@ struct object_members_base: traversal::class_, virtual context
   virtual void
   composite (semantics::data_member*, semantics::class_&);
 
+  // More general version of the above function that allows detection
+  // of wrapped composite value. By default this function calls
+  // composite (m, comp) ignoring the wrapper type. Note that this
+  // function is called for all composite value (wrapped or not).
+  // If it is not wrapped, the wrapper argument will be NULL.
+  //
+  virtual void
+  composite_wrapper (semantics::data_member*,
+                     semantics::class_& comp,
+                     semantics::type* wrapper);
+
   // If you override this function, you can call the base to traverse
   // bases and members.
   //

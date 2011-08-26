@@ -296,7 +296,7 @@ namespace relational
             //
             size_t n;
 
-            if (class_* kc = comp_value (*kt))
+            if (class_* kc = comp_value_wrapper (*kt))
               n = in_column_count (*kc);
             else
               n = 1;
@@ -316,7 +316,7 @@ namespace relational
             //
             // Value is also a key.
             //
-            //if (class_* vc = comp_value (vt))
+            //if (class_* vc = comp_value_wrapper (vt))
             //  cond_columns += in_column_count (*vc);
             //else
             //  cond_columns++;
@@ -325,7 +325,7 @@ namespace relational
           }
         }
 
-        if (class_* vc = comp_value (vt))
+        if (class_* vc = comp_value_wrapper (vt))
           data_columns += in_column_count (*vc);
         else
           data_columns++;

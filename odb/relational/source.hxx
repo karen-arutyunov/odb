@@ -773,7 +773,7 @@ namespace relational
               {
                 instance<object_columns> t (table, false, false);
 
-                if (semantics::class_* ckt = comp_value (*kt))
+                if (semantics::class_* ckt = comp_value_wrapper (*kt))
                   t->traverse_composite (m, *ckt, "key", "key");
                 else
                 {
@@ -792,7 +792,7 @@ namespace relational
 
             instance<object_columns> t (table, false);
 
-            if (semantics::class_* cvt = comp_value (vt))
+            if (semantics::class_* cvt = comp_value_wrapper (vt))
               t->traverse_composite (m, *cvt, "value", "value");
             else
             {
@@ -849,7 +849,7 @@ namespace relational
               {
                 instance<object_columns> t (false, false);
 
-                if (semantics::class_* ckt = comp_value (*kt))
+                if (semantics::class_* ckt = comp_value_wrapper (*kt))
                   t->traverse_composite (m, *ckt, "key", "key");
                 else
                 {
@@ -867,7 +867,7 @@ namespace relational
 
             instance<object_columns> t (false);
 
-            if (semantics::class_* cvt = comp_value (vt))
+            if (semantics::class_* cvt = comp_value_wrapper (vt))
               t->traverse_composite (m, *cvt, "value", "value");
             else
             {
@@ -1025,7 +1025,7 @@ namespace relational
               instance<bind_member> bm ("key_", "d", *kt, "key_type", "key");
               bm->traverse (m);
 
-              if (semantics::class_* c = comp_value (*kt))
+              if (semantics::class_* c = comp_value_wrapper (*kt))
                 os << "n += " << in_column_count (*c) << "UL;"
                    << endl;
               else
@@ -1689,12 +1689,16 @@ namespace relational
       };
 
       container_calls (call_type call)
-          : object_members_base (true, false), call_ (call)
+          : object_members_base (true, false),
+            call_ (call),
+            obj_prefix_ ("obj.")
       {
       }
 
       virtual void
-      composite (semantics::data_member* m, semantics::class_& c)
+      composite_wrapper (semantics::data_member* m,
+                         semantics::class_& c,
+                         semantics::type* w)
       {
         if (m == 0)
         {
@@ -1704,7 +1708,25 @@ namespace relational
 
         string old (obj_prefix_);
         obj_prefix_ += m->name ();
+
+        // If this is a wrapped composite value, then we need to
+        // "unwrap" it.
+        //
+        if (w != 0)
+        {
+          // Because we cannot have nested containers, m.type () should
+          // be the same as w.
+          //
+          assert (m != 0 && &m->type () == w);
+          string const& type (m->type ().fq_name (m->belongs ().hint ()));
+
+          obj_prefix_ = "wrapper_traits< " + type + " >::" +
+            (call_ == load_call ? "set_ref" : "get_ref") +
+            " (" + obj_prefix_ + ")";
+        }
+
         obj_prefix_ += '.';
+
         object_members_base::composite (m, c);
         obj_prefix_ = old;
       }
@@ -1727,7 +1749,7 @@ namespace relational
           {
             if (!inverse)
               os << traits << "::persist (" << endl
-                 << "obj." << obj_name << "," << endl
+                 << obj_name << "," << endl
                  << "idb," << endl
                  << "sts.container_statment_cache ()." << sts_name << ");"
                  << endl;
@@ -1736,7 +1758,7 @@ namespace relational
         case load_call:
           {
             os << traits << "::load (" << endl
-               << "obj." << obj_name << "," << endl
+               << obj_name << "," << endl
                << "idb," << endl
                << "sts.container_statment_cache ()." << sts_name << ");"
                << endl;
@@ -1746,7 +1768,7 @@ namespace relational
           {
             if (!inverse)
               os << traits << "::update (" << endl
-                 << "obj." << obj_name << "," << endl
+                 << obj_name << "," << endl
                  << "idb," << endl
                  << "sts.container_statment_cache ()." << sts_name << ");"
                  << endl;

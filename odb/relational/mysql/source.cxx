@@ -506,6 +506,18 @@ namespace relational
                << "//" << endl;
           }
 
+          // If this is a wrapped composite value, then we need to
+          // "unwrap" it. For simple values this is taken care of
+          // by the value_traits specializations.
+          //
+          if (mi.wrapper != 0 && comp_value (mi.t))
+          {
+            // Here we need the wrapper type, not the wrapped type.
+            //
+            member = "wrapper_traits< " + mi.fq_type (false) + " >::" +
+              "get_ref (" + member + ")";
+          }
+
           if (comp_value (mi.t))
             traits = "composite_value_traits< " + mi.fq_type () + " >";
           else
@@ -601,8 +613,9 @@ namespace relational
         virtual void
         traverse_composite (member_info& mi)
         {
-          os << "if (" << traits << "::init (i." << mi.var << "value, " <<
-            member << "))"
+          os << "if (" << traits << "::init (" << endl
+             << "i." << mi.var << "value," << endl
+             << member << "))"
              << "{"
              << "grew = true;"
              << "}";
@@ -762,6 +775,18 @@ namespace relational
                << "//" << endl;
           }
 
+          // If this is a wrapped composite value, then we need to
+          // "unwrap" it. For simple values this is taken care of
+          // by the value_traits specializations.
+          //
+          if (mi.wrapper != 0 && comp_value (mi.t))
+          {
+            // Here we need the wrapper type, not the wrapped type.
+            //
+            member = "wrapper_traits< " + mi.fq_type (false) + " >::" +
+              "set_ref (" + member + ")";
+          }
+
           if (comp_value (mi.t))
             traits = "composite_value_traits< " + mi.fq_type () + " >";
           else
@@ -846,8 +871,10 @@ namespace relational
         virtual void
         traverse_composite (member_info& mi)
         {
-          os << traits << "::init (" << member << ", i." <<
-            mi.var << "value, db);"
+          os << traits << "::init (" << endl
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "db);"
              << endl;
         }
 

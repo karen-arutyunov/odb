@@ -35,9 +35,13 @@ namespace relational
 
       semantics::type& t (type_override_ != 0 ? *type_override_ : m.type ());
 
-      if (comp_value (t))
+      if (semantics::class_* comp = comp_value_wrapper (t))
       {
-        member_info mi (m, t, var, fq_type_override_);
+        // If t is a wrapper, pass the wrapped type. Also pass the
+        // original, wrapper type.
+        //
+        member_info mi (
+          m, *comp, (wrapper (t) ? &t : 0), var, fq_type_override_);
         if (pre (mi))
         {
           traverse_composite (mi);
@@ -46,7 +50,7 @@ namespace relational
       }
       else if (container (t))
       {
-        member_info mi (m, t, var, fq_type_override_);
+        member_info mi (m, t, 0, var, fq_type_override_);
         if (pre (mi))
         {
           traverse_container (mi);
@@ -59,7 +63,8 @@ namespace relational
 
         if (semantics::class_* c = object_pointer (t))
         {
-          member_info mi (m, id_member (*c)->type (), var, fq_type_override_);
+          member_info mi (
+            m, id_member (*c)->type (), 0, var, fq_type_override_);
           mi.st = &st;
           if (pre (mi))
           {
@@ -69,7 +74,7 @@ namespace relational
         }
         else
         {
-          member_info mi (m, t, var, fq_type_override_);
+          member_info mi (m, t, 0, var, fq_type_override_);
           mi.st = &st;
           if (pre (mi))
           {

@@ -29,6 +29,14 @@ composite (semantics::data_member*, semantics::class_& c)
 }
 
 void object_members_base::
+composite_wrapper (semantics::data_member* m,
+                   semantics::class_& c,
+                   semantics::type*)
+{
+  composite (m, c);
+}
+
+void object_members_base::
 object (semantics::class_& c)
 {
   inherits (c);
@@ -38,7 +46,7 @@ object (semantics::class_& c)
 void object_members_base::
 traverse_composite (semantics::data_member& m, semantics::class_& c)
 {
-  composite (&m, c);
+  composite_wrapper (&m, c, 0);
 }
 
 void object_members_base::
@@ -88,7 +96,7 @@ traverse (semantics::class_& c)
     if (obj)
       object (c);
     else
-      composite (0, c);
+      composite_wrapper (0, c, 0);
   }
 
   if (obj)
@@ -108,7 +116,7 @@ traverse (semantics::data_member& m)
 
   semantics::type& t (m.type ());
 
-  if (semantics::class_* comp = context::comp_value (t))
+  if (semantics::class_* comp = context::comp_value_wrapper (t))
   {
     string old_prefix, old_table_prefix;
 
@@ -153,7 +161,7 @@ traverse (semantics::data_member& m)
       om_.table_prefix_.level++;
     }
 
-    om_.composite (&m, *comp);
+    om_.composite_wrapper (&m, *comp, (wrapper (t) ? &t : 0));
 
     if (om_.build_table_prefix_)
     {
@@ -275,7 +283,7 @@ traverse (semantics::data_member& m)
 
   semantics::type& t (m.type ());
 
-  if (semantics::class_* comp = comp_value (t))
+  if (semantics::class_* comp = comp_value_wrapper (t))
   {
     string old_prefix (prefix_);
 

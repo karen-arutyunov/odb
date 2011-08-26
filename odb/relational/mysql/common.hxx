@@ -30,14 +30,21 @@ namespace relational
       {
         semantics::data_member& m; // Member.
         semantics::type& t;        // Member C++ type (m.type () may != t).
+        semantics::type* wrapper;  // Wrapper type if member is a wrapper.
+                                   // In this case t is the wrapped type.
         sql_type const* st;        // Member SQL type (only simple values).
         string& var;               // Member variable name with trailing '_'.
 
         // C++ type fq-name.
         //
         string
-        fq_type () const
+        fq_type (bool unwrap = true) const
         {
+          // At the moment a wrapped type can only be a composite value.
+          //
+          if (wrapper != 0 && unwrap)
+            return t.fq_name ();
+
           // Use the original type from 'm' instead of 't' since the hint
           // may be invalid for a different type. Plus, if a type is
           // overriden, then the fq_type must be as well.
@@ -51,9 +58,15 @@ namespace relational
 
         member_info (semantics::data_member& m_,
                      semantics::type& t_,
+                     semantics::type* wrapper_,
                      string& var_,
                      string const& fq_type)
-            : m (m_), t (t_), st (0), var (var_), fq_type_ (fq_type)
+            : m (m_),
+              t (t_),
+              wrapper (wrapper_),
+              st (0),
+              var (var_),
+              fq_type_ (fq_type)
         {
         }
       };
