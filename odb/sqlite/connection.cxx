@@ -66,16 +66,35 @@ namespace odb
         translate_error (e, *this);
       }
 
+      init ();
+    }
+
+    connection::
+    connection (database_type& db, sqlite3* handle)
+        : odb::connection (db),
+          db_ (db),
+          handle_ (handle),
+          unlock_cond_ (unlock_mutex_),
+          statements_ (0)
+    {
+      init ();
+    }
+
+    void connection::
+    init ()
+    {
       // Enable/disable foreign key constraints.
       //
       simple_statement st (
         *this,
-        db.foreign_keys ()
+        db_.foreign_keys ()
         ? "PRAGMA foreign_keys=ON"
         : "PRAGMA foreign_keys=OFF",
-        db.foreign_keys () ? 22 : 23);
+        db_.foreign_keys () ? 22 : 23);
       st.execute ();
 
+      // Create statement cache.
+      //
       statement_cache_.reset (new statement_cache_type (*this));
     }
 

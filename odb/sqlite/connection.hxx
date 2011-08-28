@@ -43,6 +43,7 @@ namespace odb
       ~connection ();
 
       connection (database_type&, int extra_flags = 0);
+      connection (database_type&, sqlite3* handle);
 
       database_type&
       database ()
@@ -94,6 +95,10 @@ namespace odb
     private:
       connection (const connection&);
       connection& operator= (const connection&);
+
+    private:
+      void
+      init ();
 
     private:
       database_type& db_;
