@@ -83,7 +83,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m)
+      container (semantics::data_member& m, semantics::type& c)
       {
         // Ignore inverse containers of object pointers.
         //
@@ -109,7 +109,7 @@ namespace relational
         drop_index (name, column_name (m, "id", "object_id"));
         post_statement ();
 
-        if (container_kind (m.type ()) == ck_ordered && !unordered (m))
+        if (container_kind (c) == ck_ordered && !unordered (m))
         {
           pre_statement ();
           drop_index (name, column_name (m, "index", "index"));
@@ -372,7 +372,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m)
+      container (semantics::data_member& m, semantics::type& t)
       {
         using semantics::type;
         using semantics::data_member;
@@ -382,7 +382,6 @@ namespace relational
         if (inverse (m, "value"))
           return;
 
-        type& t (m.type ());
         container_kind_type ck (container_kind (t));
         type& vt (container_vt (t));
 

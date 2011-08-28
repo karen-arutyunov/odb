@@ -40,10 +40,13 @@ namespace relational
         string
         fq_type (bool unwrap = true) const
         {
-          // At the moment a wrapped type can only be a composite value.
-          //
           if (wrapper != 0 && unwrap)
-            return t.fq_name ();
+          {
+            // Use the hint from the wrapper.
+            //
+            return t.fq_name (
+              wrapper->get<semantics::names*> ("wrapper-hint"));
+          }
 
           // Use the original type from 'm' instead of 't' since the hint
           // may be invalid for a different type. Plus, if a type is

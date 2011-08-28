@@ -186,7 +186,7 @@ namespace relational
         }
 
         virtual void
-        container (semantics::data_member& m)
+        container (semantics::data_member& m, semantics::type& t)
         {
           using semantics::type;
           using semantics::data_member;
@@ -201,7 +201,6 @@ namespace relational
           if (tables_.count (name))
             return;
 
-          type& t (m.type ());
           type& vt (container_vt (t));
 
           // object_id

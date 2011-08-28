@@ -86,7 +86,7 @@ namespace relational
         {
           semantics::class_* c (object_pointer (m.type ()));
 
-          if (container (im->type ()))
+          if (container_wrapper (im->type ()))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
@@ -220,7 +220,7 @@ namespace relational
 
         if (semantics::data_member* im = inverse (m))
         {
-          if (container (im->type ()))
+          if (container_wrapper (im->type ()))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
@@ -619,12 +619,12 @@ namespace relational
       }
 
       virtual void
-      container_extra (semantics::data_member&)
+      container_extra (semantics::data_member&, semantics::type&)
       {
       }
 
       virtual void
-      container (semantics::data_member& m)
+      container (semantics::data_member& m, semantics::type& t)
       {
         using semantics::type;
 
@@ -644,7 +644,6 @@ namespace relational
           abst = true;  // Always abstract.
         }
 
-        type& t (m.type ());
         container_kind_type ck (container_kind (t));
 
         type& vt (container_vt (t));
@@ -695,7 +694,7 @@ namespace relational
            << "//" << endl
            << endl;
 
-        container_extra (m);
+        container_extra (m, t);
 
         //
         // Statements.
@@ -717,7 +716,7 @@ namespace relational
             string inv_id;    // Other id column.
             string inv_fid;   // Other foreign id column (ref to us).
 
-            if (context::container (im->type ()))
+            if (container_wrapper (im->type ()))
             {
               // many(i)-to-many
               //
@@ -1637,7 +1636,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m)
+      container (semantics::data_member& m, semantics::type&)
       {
         string traits (prefix_ + public_name (m) + "_traits");
         os << db << "::container_statements_impl< " << traits << " > " <<
@@ -1655,7 +1654,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m)
+      container (semantics::data_member& m, semantics::type&)
       {
         if (first_)
         {
@@ -1732,7 +1731,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m)
+      container (semantics::data_member& m, semantics::type&)
       {
         using semantics::type;
 
@@ -1742,6 +1741,20 @@ namespace relational
         string obj_name (obj_prefix_ + name);
         string sts_name (prefix_ + name);
         string traits (prefix_ + public_name (m) + "_traits");
+
+        // If this is a wrapped container, then we need to "unwrap" it.
+        //
+        {
+          semantics::type& t (m.type ());
+          if (wrapper (t))
+          {
+            string const& type (t.fq_name (m.belongs ().hint ()));
+
+            obj_name = "wrapper_traits< " + type + " >::" +
+              (call_ == load_call ? "set_ref" : "get_ref") +
+              " (" + obj_name + ")";
+          }
+        }
 
         switch (call_)
         {

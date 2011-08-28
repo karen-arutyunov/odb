@@ -195,7 +195,8 @@ namespace relational
 
         // See if this is a container type.
         //
-        if (process_container (m))
+        if (process_container (m, t) ||
+            (wt != 0 && process_container (m, *wt)))
           return;
 
         // If it is none of the above then we have an error.
@@ -306,15 +307,13 @@ namespace relational
       }
 
       bool
-      process_container (semantics::data_member& m)
+      process_container (semantics::data_member& m, semantics::type& t)
       {
         // The overall idea is as follows: try to instantiate the container
         // traits class template. If we are successeful, then this is a
         // container type and we can extract the various information from
         // the instantiation. Otherwise, this is not a container.
         //
-
-        semantics::type& t (m.type ());
 
         container_kind_type ck;
         semantics::type* vt (0);

@@ -132,6 +132,19 @@ public:
     return t.count ("container-kind");
   }
 
+  // As above but also "sees through" wrappers. Returns the actual
+  // container type or NULL if not a container.
+  //
+  static semantics::type*
+  container_wrapper (semantics::type& t)
+  {
+    if (container (t))
+      return &t;
+    else if (semantics::type* wt = wrapper (t))
+      return container (*wt) ? wt : 0;
+    else return 0;
+  }
+
   static semantics::class_*
   object_pointer (semantics::type& t)
   {
@@ -320,7 +333,13 @@ public:
   static bool
   unordered (semantics::data_member& m)
   {
-    return m.count ("unordered") || m.type ().count ("unordered");
+    if (m.count ("unordered"))
+      return true;
+
+    if (semantics::type* c = container_wrapper (m.type ()))
+      return c->count ("unordered");
+
+    return false;
   }
 
   // The 'is a' and 'has a' tests. The has_a test currently does not

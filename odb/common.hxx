@@ -18,8 +18,11 @@ struct object_members_base: traversal::class_, virtual context
   virtual void
   simple (semantics::data_member&);
 
+  // The second argument is the actual container type in case m.type ()
+  // is a wrapper.
+  //
   virtual void
-  container (semantics::data_member&);
+  container (semantics::data_member&, semantics::type&);
 
   // If you override this function, you can call the base to traverse
   // bases and members. The first argument is the data member and can

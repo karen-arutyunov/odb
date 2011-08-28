@@ -318,7 +318,14 @@ member_type (semantics::data_member& m, string const& key_prefix)
   if (m.count (key))
     return *indirect_value<semantics::type*> (m, key);
 
-  return *indirect_value<semantics::type*> (m.type (), key);
+  // "See throught" wrappers.
+  //
+  semantics::type& t (m.type ());
+
+  if (semantics::type* wt = wrapper (t))
+    return *indirect_value<semantics::type*> (*wt, key);
+  else
+    return *indirect_value<semantics::type*> (t, key);
 }
 
 bool context::
@@ -938,7 +945,7 @@ namespace
     }
 
     virtual void
-    container (semantics::data_member& m)
+    container (semantics::data_member& m, semantics::type& c)
     {
       // We don't cross the container boundaries (separate table).
       //
@@ -947,7 +954,7 @@ namespace
         flags_ & (context::test_container |
                   context::test_straight_container |
                   context::test_inverse_container),
-        context::container_vt (m.type ()),
+        context::container_vt (c),
         "value");
     }
 
@@ -982,17 +989,17 @@ is_a (semantics::data_member& m,
 
   if (f & test_container)
   {
-    r = r || container (m.type ());
+    r = r || container_wrapper (m.type ());
   }
 
   if (f & test_straight_container)
   {
-    r = r || (container (m.type ()) && !inverse (m, kp));
+    r = r || (container_wrapper (m.type ()) && !inverse (m, kp));
   }
 
   if (f & test_inverse_container)
   {
-    r = r || (container (m.type ()) && inverse (m, kp));
+    r = r || (container_wrapper (m.type ()) && inverse (m, kp));
   }
 
   return r;

@@ -17,7 +17,7 @@ simple (semantics::data_member&)
 }
 
 void object_members_base::
-container (semantics::data_member&)
+container (semantics::data_member&, semantics::type&)
 {
 }
 
@@ -172,9 +172,9 @@ traverse (semantics::data_member& m)
     if (om_.build_prefix_)
       om_.prefix_ = old_prefix;
   }
-  else if (context::container (t))
+  else if (semantics::type* c = context::container_wrapper (t))
   {
-    om_.container (m);
+    om_.container (m, *c);
   }
   else
   {
@@ -307,7 +307,7 @@ traverse (semantics::data_member& m)
 
     prefix_ = old_prefix;
   }
-  else if (container (t))
+  else if (container_wrapper (t))
   {
     // Container gets its own table, so nothing to do here.
     //

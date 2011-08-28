@@ -1003,7 +1003,7 @@ namespace relational
         container_traits (base const& x): base (x) {}
 
         virtual void
-        container_extra (semantics::data_member& m)
+        container_extra (semantics::data_member& m, semantics::type& t)
         {
           if (!c_.count ("object") || abstract (c_))
             return;
@@ -1039,8 +1039,7 @@ namespace relational
           semantics::data_member* inv_m (inverse (m, "value"));
           bool inv (inv_m != 0);
 
-          semantics::type& mt (m.type ());
-          semantics::type& vt (container_vt (mt));
+          semantics::type& vt (container_vt (t));
 
           string id_oid (oids[column_sql_type (m, "id").type]);
 
@@ -1055,7 +1054,7 @@ namespace relational
             {
               // many(i)-to-many
               //
-              if (context::container (inv_m->type ()))
+              if (container_wrapper (inv_m->type ()))
                 os << oids[column_sql_type (*inv_m, "value").type];
 
               // many(i)-to-one
@@ -1080,7 +1079,7 @@ namespace relational
             {
               os << id_oid << ",";
 
-              switch (container_kind (mt))
+              switch (container_kind (t))
               {
               case ck_ordered:
                 {
@@ -1093,7 +1092,7 @@ namespace relational
               case ck_multimap:
                 {
                   if (semantics::class_* ktc =
-                      comp_value_wrapper (container_kt (mt)))
+                      comp_value_wrapper (container_kt (t)))
                   {
                     instance<statement_oids> st;
                     st->traverse_composite (m, *ktc, "key", "key");

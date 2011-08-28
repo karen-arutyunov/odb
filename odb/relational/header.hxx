@@ -212,7 +212,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m)
+      container (semantics::data_member& m, semantics::type& c)
       {
         using semantics::type;
         using semantics::class_;
@@ -233,10 +233,9 @@ namespace relational
           abst = true;  // Always abstract.
         }
 
-        type& t (m.type ());
-        container_kind_type ck (container_kind (t));
+        container_kind_type ck (container_kind (c));
 
-        type& vt (container_vt (t));
+        type& vt (container_vt (c));
         type* it (0);
         type* kt (0);
 
@@ -249,7 +248,7 @@ namespace relational
           {
             if (!unordered (m))
             {
-              it = &container_it (t);
+              it = &container_it (c);
               ordered = true;
             }
             break;
@@ -257,7 +256,7 @@ namespace relational
         case ck_map:
         case ck_multimap:
           {
-            kt = &container_kt (t);
+            kt = &container_kt (c);
             break;
           }
         case ck_set:
@@ -387,8 +386,23 @@ namespace relational
         // key_type
         // value_type
         //
-        os << "typedef " << t.fq_name (m.belongs ().hint ()) <<
-          " container_type;";
+        os << "typedef ";
+
+        {
+          semantics::type& t (m.type ());
+
+          if (wrapper (t))
+            // Use the hint from the wrapper.
+            //
+            os << c.fq_name (t.get<semantics::names*> ("wrapper-hint"));
+          else
+            // t and c are the same.
+            //
+            os << c.fq_name (m.belongs ().hint ());
+        }
+
+        os << " container_type;";
+
         os << "typedef odb::access::container_traits< container_type > " <<
           "container_traits;";
 
