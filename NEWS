@@ -16,16 +16,18 @@ Version 1.6.0
     the ODB manual.
 
   * Support for value wrappers. An ODB value wrapper is a class template
-    that wraps a value type. Common examples of wrappers are smart pointers,
-    holders, and "optional value" containers such as boost::optional. A
-    wrapper can be transparent or it can handle the NULL semantics. To
-    allow the easy conversion of value types that do not support the NULL
-    semantics into the ones that do, the odb::nullable class template has
-    been added. ODB also now includes built-in support for std::auto_ptr
-    and std::tr1::shared_ptr smart pointers as value wrappers as well as
-    for boost::shared_ptr and QSharedPointer via the Boost and Qt profiles.
-    For more information, refer to Section 7.3, "NULL Value Semantics" in
-    the ODB manual.
+    that wraps a value type or a container. Common examples of wrappers
+    are smart pointers, holders, and "optional value" containers such as
+    boost::optional. A wrapper can be transparent or it can handle the
+    NULL semantics. To allow the easy conversion of value types that do
+    not support the NULL semantics into the ones that do, the odb::nullable
+    class template has been added. ODB also now includes built-in support for
+    std::auto_ptr and std::tr1::shared_ptr smart pointers as value wrappers
+    as well as for boost::shared_ptr and QSharedPointer via the Boost and Qt
+    profiles. Currently, the NULL semantics is only supported for simple
+    values but smart pointers can still be used with composite values and
+    containers. For more information, refer to Section 7.3, "NULL Value
+    Semantics" in the ODB manual.
 
   * Support for the boost::optional container in the Boost profile. A data
     member of the boost::optional type is mapped to a column that can have

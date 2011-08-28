@@ -392,7 +392,7 @@ for consistency.
               </table>
             </td>
           </tr>
-	  <tr><th>7.3</th><td><a href="#7.3"><code>NULL</code> Value Semantics</a></td></tr>
+	  <tr><th>7.3</th><td><a href="#7.3">Pointers and <code>NULL</code> Value Semantics</a></td></tr>
         </table>
       </td>
     </tr>
@@ -2002,8 +2002,9 @@ class name
      create dynamically allocated instances of persistent classes and
      return pointers to these instances. As we will see in later chapters,
      pointers are also used to establish relationships between objects
-     (<a href="#6">Chapter 6, Relationships</a>) as well as to cache
-     persistent objects in a session (<a href="#9">Chapter 9, Session</a>).</p>
+     (<a href="#6">Chapter 6, "Relationships"</a>) as well as to cache
+     persistent objects in a session (<a href="#9">Chapter 9,
+     "Session"</a>).</p>
 
   <p>By default, all these mechanisms use raw pointers to return,
      pass, and cache objects. This is normally sufficient for applications
@@ -3747,7 +3748,10 @@ private:
      behaves like a value type. That is, when an object is made persistent,
      the elements of the container are stored in the database. Similarly,
      when a persistent object is loaded from the database, the contents
-     of the container are automatically loaded as well.</p>
+     of the container are automatically loaded as well. A data member
+     of a container type can also use a smart pointer, as discussed
+     in <a href="#7.3">Section 7.3, "Pointers and <code>NULL</code>
+     Value Semantics"</a>.</p>
 
   <p>While an ordinary member is mapped to one or more columns in the
      object's table, a member of a container type is mapped to a separate
@@ -5407,7 +5411,7 @@ CREATE TABLE person_nickname (
   <p>Similar to columns, we can make the table prefix empty.</p>
 
 
-  <h2><a name="7.3">7.3 <code>NULL</code> Value Semantics</a></h2>
+  <h2><a name="7.3">7.3 Pointers and <code>NULL</code> Value Semantics</a></h2>
 
   <p>Relational database systems have a notion of the special
      <code>NULL</code> value that is used to indicate the absence
@@ -5569,6 +5573,31 @@ class person
      available for commonly used frameworks and libraries (such as Boost and
      Qt), provide support for smart pointers found in these frameworks
      and libraries (<a href="#III">Part III, "Profiles"</a>).</p>
+
+  <p>Currently, ODB supports the <code>NULL</code> semantics only
+     for simple values. In future versions this support will be extended
+     to composite values and containers. With this limitation in mind,
+     we can still use smart pointers in data members of composite value
+     and container types. The only restriction is that these pointers
+     must not be <code>NULL</code>. For example:</p>
+
+  <pre class="c++">
+#pragma db value
+struct name
+{
+  std::string first_;
+  std::string last_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  std::auto_ptr&lt;name> name_;
+  std::auto_ptr&lt;std::vector&lt;name> > aliases_;
+};
+  </pre>
 
   <!-- CHAPTER -->
 
@@ -6710,10 +6739,10 @@ typedef shared_ptr&lt;person> person_ptr;
   </pre>
 
   <p>For a more detailed discussion of the <code>NULL</code> semantics
-     for values, refer to <a href="#7.3">Section 7.3, "<code>NULL</code>
-     Value Semantics"</a>. For a more detailed discussion of the
-     <code>NULL</code> semantics for object pointers, refer to
-     <a href="#6">Chapter 6, "Relationships"</a>.</p>
+     for values, refer to <a href="#7.3">Section 7.3, "Pointers and
+     <code>NULL</code> Value Semantics"</a>. For a more detailed
+     discussion of the <code>NULL</code> semantics for object pointers,
+     refer to <a href="#6">Chapter 6, "Relationships"</a>.</p>
 
   <h3><a name="10.2.4">10.2.4 <code>default</code></a></h3>
 
@@ -7262,10 +7291,10 @@ class account
      <code>not_null</code> specifier), then a warning is issued.</p>
 
   <p>For a more detailed discussion of the <code>NULL</code> semantics
-     for values, refer to <a href="#7.3">Section 7.3, "<code>NULL</code>
-     Value Semantics"</a>. For a more detailed discussion of the
-     <code>NULL</code> semantics for object pointers, refer to
-     <a href="#6">Chapter 6, "Relationships"</a>.</p>
+     for values, refer to <a href="#7.3">Section 7.3, "Pointers and
+     <code>NULL</code> Value Semantics"</a>. For a more detailed
+     discussion of the <code>NULL</code> semantics for object pointers,
+     refer to <a href="#6">Chapter 6, "Relationships"</a>.</p>
 
   <h3><a name="10.3.5">10.3.5 <code>default</code></a></h3>
 
@@ -9975,9 +10004,9 @@ odb --profile boost/date-time ...
      refer to <a href="#3.2">Section 3.2, "Object Pointers"</a> and
      <a href="#6">Chapter 6, "Relationships"</a>. For more information
      on using smart pointers as pointers to values, refer to
-     <a href="#7.3">Section 7.3, "<code>NULL</code> Value Semantics"</a>.
-     When used as a pointer to a value, only <code>boost::shared_ptr</code>
-     is supported. For example:</p>
+     <a href="#7.3">Section 7.3, "Pointers and <code>NULL</code> Value
+     Semantics"</a>. When used as a pointer to a value, only
+     <code>boost::shared_ptr</code> is supported. For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -10067,8 +10096,8 @@ class person
 
   <p>In a relational database <code>boost::optional</code> is mapped to
      a column that can have a <code>NULL</code> value. Similar to
-     <code>odb::nullable</code> (<a href="#7.3">Section 7.3,
-     "<code>NULL</code> Value Semantics"</a>), it can be used to add the
+     <code>odb::nullable</code> (<a href="#7.3">Section 7.3, "Pointers and
+     <code>NULL</code> Value Semantics"</a>), it can be used to add the
      <code>NULL</code> semantics to existing C++ types. For example:</p>
 
   <pre class="c++">
@@ -10515,9 +10544,9 @@ class Person
      refer to <a href="#3.2">Section 3.2, "Object Pointers"</a> and
      <a href="#6">Chapter 6, "Relationships"</a>. For more information
      on using smart pointers as pointers to values, refer to
-     <a href="#7.3">Section 7.3, "<code>NULL</code> Value Semantics"</a>.
-     When used as a pointer to a value, only <code>QSharedPointer</code>
-     is supported. For example:</p>
+     <a href="#7.3">Section 7.3, "Pointers and <code>NULL</code> Value
+     Semantics"</a>. When used as a pointer to a value, only
+     <code>QSharedPointer</code> is supported. For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -10751,7 +10780,7 @@ class Person
      the <code>INTEGER</code> type represents a clock time as the number of
      seconds since midnight. These mappings have to be explicitly requested
      using the <code>db&nbsp;type</code> pragma
-     (<a href="#10.3.3">Section 10.3.3,value "<code>type</code>"</a>), as shown
+     (<a href="#10.3.3">Section 10.3.3, "<code>type</code>"</a>), as shown
      in the following example:</p>
 
 <pre class="c++">
