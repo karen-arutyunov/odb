@@ -21,6 +21,8 @@
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx>
 #include <odb/sqlite/transaction-impl.hxx>
+#include <odb/sqlite/auto-handle.hxx>
+
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
@@ -102,7 +104,12 @@ namespace odb
 
     private:
       database_type& db_;
-      sqlite3* handle_;
+      auto_handle<sqlite3> handle_;
+
+      // Keep statement_cache_ after handle_ so that it is destroyed before
+      // the connection is closed.
+      //
+      std::auto_ptr<statement_cache_type> statement_cache_;
 
       // Unlock notification machinery.
       //
@@ -120,8 +127,6 @@ namespace odb
     private:
       friend class statement;
       statement* statements_;
-
-      std::auto_ptr<statement_cache_type> statement_cache_;
     };
   }
 }

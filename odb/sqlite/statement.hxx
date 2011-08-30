@@ -20,6 +20,8 @@
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/binding.hxx>
 #include <odb/sqlite/connection.hxx>
+#include <odb/sqlite/auto-handle.hxx>
+
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
@@ -131,19 +133,14 @@ namespace odb
       finilize ()
       {
         list_remove ();
-
-        if (stmt_ != 0)
-        {
-          sqlite3_finalize (stmt_);
-          stmt_ = 0;
-        }
+        stmt_.reset ();
       }
 
     protected:
       friend class connection;
 
       connection& conn_;
-      sqlite3_stmt* stmt_;
+      auto_handle<sqlite3_stmt> stmt_;
 
       bool active_;
       bool cached_;

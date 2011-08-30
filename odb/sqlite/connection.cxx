@@ -29,15 +29,6 @@ namespace odb
   namespace sqlite
   {
     connection::
-    ~connection ()
-    {
-      statement_cache_.reset (); // Free prepared statements.
-
-      if (sqlite3_close (handle_) == SQLITE_BUSY)
-        assert (false); // Connection has outstanding prepared statements.
-    }
-
-    connection::
     connection (database_type& db, int extra_flags)
         : odb::connection (db),
           db_ (db),
@@ -58,7 +49,11 @@ namespace odb
       if ((f & SQLITE_OPEN_FULLMUTEX) == 0)
         f |= SQLITE_OPEN_NOMUTEX;
 
-      if (int e = sqlite3_open_v2 (n.c_str (), &handle_, f, 0))
+      sqlite3* h (0);
+      int e (sqlite3_open_v2 (n.c_str (), &h, f, 0));
+      handle_.reset (h);
+
+      if (e != SQLITE_OK)
       {
         if (handle_ == 0)
           throw bad_alloc ();
@@ -96,6 +91,11 @@ namespace odb
       // Create statement cache.
       //
       statement_cache_.reset (new statement_cache_type (*this));
+    }
+
+    connection::
+    ~connection ()
+    {
     }
 
     transaction_impl* connection::

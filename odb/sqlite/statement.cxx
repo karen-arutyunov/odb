@@ -31,10 +31,11 @@ namespace odb
     init (const char* s, std::size_t n)
     {
       int e;
+      sqlite3_stmt* stmt (0);
       while ((e = sqlite3_prepare_v2 (conn_.handle (),
                                       s,
                                       static_cast<int> (n),
-                                      &stmt_,
+                                      &stmt,
                                       0)) == SQLITE_LOCKED)
       {
         conn_.wait ();
@@ -42,6 +43,8 @@ namespace odb
 
       if (e != SQLITE_OK)
         translate_error (e, conn_);
+
+      stmt_.reset (stmt);
 
       active_ = false;
       cached_ = false;
