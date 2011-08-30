@@ -51,6 +51,13 @@ Version 1.6.0
     more information, refer to Section 3.4, "Transactions" in the ODB
     manual.
 
+  * All the concrete connection classes now have a second constructor which
+    allows the creation of a connection instance from an already established
+    underlying connection handle. The connection_pool_factory and, in case of
+    SQLite, single_connection_factory now have a virtual create() function
+    that can be overridden to implement custom connection establishment and
+    configuration.
+
   * Support for specifying the client character set for the MySQL database.
     For more information, refer to Section 11.2, "MySQL Database Class" in
     the ODB manual.

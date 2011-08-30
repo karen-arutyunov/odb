@@ -8420,6 +8420,9 @@ namespace odb
     class connection: public odb::connection
     {
     public:
+      connection (database&amp;);
+      connection (database&amp;, MYSQL*);
+
       MYSQL*
       handle ();
     };
@@ -8430,9 +8433,13 @@ namespace odb
   </pre>
 
   <p>For more information on the <code>odb::connection</code> interface,
-     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The
-     <code>handle()</code> accessor returns the native MySQL handle
-     corresponding to the connection.</p>
+     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The first
+     overloaded <code>mysql::connection</code> constructor establishes a
+     new MySQL connection. The second constructor allows us to create
+     a <code>connection</code> instance by providing an already connected
+     native MySQL handle. Note that the <code>connection</code>
+     instance assumes ownership of this handle. The <code>handle()</code>
+     accessor returns the MySQL handle corresponding to the connection.</p>
 
   <p>The <code>mysql::connection_factory</code> abstract class has the
      following interface:</p>
@@ -8501,12 +8508,26 @@ namespace odb
     public:
       connection_pool_factory (std::size_t max_connections = 0,
                                std::size_t min_connections = 0,
-                               bool ping = true)
+                               bool ping = true);
+
+    protected:
+      class pooled_connection: public connection
+      {
+      public:
+        pooled_connection (database_type&amp;);
+        pooled_connection (database_type&amp;, MYSQL*);
+      };
+
+      typedef details::shared_ptr&lt;pooled_connection> pooled_connection_ptr;
+
+      virtual pooled_connection_ptr
+      create ();
     };
 };
   </pre>
 
-  <p>The <code>max_connections</code> argument specifies the maximum
+  <p>The <code>max_connections</code> argument in the
+     <code>connection_pool_factory</code> constructor specifies the maximum
      number of concurrent connections that this pool factory will
      maintain. Similarly, the <code>min_connections</code> argument
      specifies the minimum number of available connections that
@@ -8547,6 +8568,12 @@ namespace odb
      been inactive for too long. If during connection validation the pool
      factory detects that the connection has been terminated, it silently
      closes it and tries to find or create another connection instead.</p>
+
+  <p>The <code>create()</code> virtual function is called whenever the
+     pool needs to create a new connection. By deriving from the
+     <code>connection_pool_factory</code> class and overriding this
+     function we can implement custom connection establishment
+     and configuration.</p>
 
   <p>If you pass <code>NULL</code> as the connection factory to
      one of the <code>database</code> constructors, then the
@@ -8944,6 +8971,9 @@ namespace odb
     class connection: public odb::connection
     {
     public:
+      connection (database&amp;, int extra_flags = 0);
+      connection (database&amp;, sqlite3*);
+
       transaction
       begin_immediate ();
 
@@ -8960,14 +8990,23 @@ namespace odb
   </pre>
 
   <p>For more information on the <code>odb::connection</code> interface,
-     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The
-     <code>begin_immediate()</code> and <code>begin_exclusive()</code>
+     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The first
+     overloaded <code>sqlite::connection</code> constructor opens
+     a new SQLite connection. The <code>extra_flags</code> argument can
+     be used to specify extra <code>sqlite3_open_v2()</code> flags
+     that are combined with the flags specified in the
+     <code>sqlite::database</code> constructor. The second constructor
+     allows us to create a <code>connection</code> instance by providing
+     an already open native SQLite handle. Note that the
+     <code>connection</code> instance assumes ownership of this handle.</p>
+
+  <p>The <code>begin_immediate()</code> and <code>begin_exclusive()</code>
      functions allow us to start an immediate and an exclusive SQLite
      transaction on the connection, respectively. Their semantics are
      equivalent to the corresponding functions defined in the
      <code>sqlite::database</code> class (<a href="#12.2">Section 12.2,
      "SQLite Database Class"</a>). The <code>handle()</code> accessor
-     returns the native SQLite handle corresponding to the connection.</p>
+     returns the SQLite handle corresponding to the connection.</p>
 
   <p>The <code>sqlite::connection_factory</code> abstract class has the
      following interface:</p>
@@ -9022,10 +9061,28 @@ namespace odb
     {
     public:
       single_connection_factory ();
+
+    protected:
+      class single_connection: public connection
+      {
+      public:
+        single_connection (database_type&amp;);
+        single_connection (database_type&amp;, MYSQL*);
+      };
+
+      typedef details::shared_ptr&lt;single_connection> single_connection_ptr;
+
+      virtual single_connection_ptr
+      create ();
     };
 };
   </pre>
 
+  <p>The <code>create()</code> virtual function is called when the
+     factory needs to create the connection. By deriving from the
+     <code>single_connection_factory</code> class and overriding this
+     function we can implement custom connection establishment
+     and configuration.</p>
 
   <p>The <code>new_connection_factory</code> class creates a new
      connection whenever one is requested. When a connection is no
@@ -9058,12 +9115,26 @@ namespace odb
     {
     public:
       connection_pool_factory (std::size_t max_connections = 0,
-                               std::size_t min_connections = 0)
+                               std::size_t min_connections = 0);
+
+    protected:
+      class pooled_connection: public connection
+      {
+      public:
+        pooled_connection (database_type&amp;, int extra_flags = 0);
+        pooled_connection (database_type&amp;, sqlite3*);
+      };
+
+      typedef details::shared_ptr&lt;pooled_connection> pooled_connection_ptr;
+
+      virtual pooled_connection_ptr
+      create ();
     };
 };
   </pre>
 
-  <p>The <code>max_connections</code> argument specifies the maximum
+  <p>The <code>max_connections</code> argument in the
+     <code>connection_pool_factory</code> constructor specifies the maximum
      number of concurrent connections that this pool factory will
      maintain. Similarly, the <code>min_connections</code> argument
      specifies the minimum number of available connections that
@@ -9095,6 +9166,12 @@ namespace odb
      are in use. If the <code>min_connections</code> value is 0, then
      the pool will never close a connection and instead maintain all
      the connections that were ever created.</p>
+
+  <p>The <code>create()</code> virtual function is called whenever the
+     pool needs to create a new connection. By deriving from the
+     <code>connection_pool_factory</code> class and overriding this
+     function we can implement custom connection establishment
+     and configuration.</p>
 
   <p>By default, connections created by <code>new_connection_factory</code>
      and <code>connection_pool_factory</code> enable the SQLite shared cache
@@ -9642,6 +9719,9 @@ namespace odb
     class connection: public odb::connection
     {
     public:
+      connection (database&amp;);
+      connection (database&amp;, PGconn*);
+
       PGconn*
       handle ();
     };
@@ -9652,9 +9732,13 @@ namespace odb
   </pre>
 
   <p>For more information on the <code>odb::connection</code> interface,
-     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The
-     <code>handle()</code> accessor returns the native PostgreSQL handle
-     corresponding to the connection.</p>
+     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The first
+     overloaded <code>pgsql::connection</code> constructor establishes a
+     new PostgreSQL connection. The second constructor allows us to create
+     a <code>connection</code> instance by providing an already connected
+     native PostgreSQL handle. Note that the <code>connection</code>
+     instance assumes ownership of this handle. The <code>handle()</code>
+     accessor returns the PostgreSQL handle corresponding to the connection.</p>
 
   <p>The <code>pgsql::connection_factory</code> abstract class has the
      following interface:</p>
@@ -9722,12 +9806,26 @@ namespace odb
     {
     public:
       connection_pool_factory (std::size_t max_connections = 0,
-                               std::size_t min_connections = 0)
+                               std::size_t min_connections = 0);
+
+    protected:
+      class pooled_connection: public connection
+      {
+      public:
+        pooled_connection (database_type&amp;);
+        pooled_connection (database_type&amp;, PGconn*);
+      };
+
+      typedef details::shared_ptr&lt;pooled_connection> pooled_connection_ptr;
+
+      virtual pooled_connection_ptr
+      create ();
     };
 };
   </pre>
 
-  <p>The <code>max_connections</code> argument specifies the maximum
+  <p>The <code>max_connections</code> argument in the
+     <code>connection_pool_factory</code> constructor specifies the maximum
      number of concurrent connections that this pool factory will
      maintain. Similarly, the <code>min_connections</code> argument
      specifies the minimum number of available connections that
@@ -9759,6 +9857,12 @@ namespace odb
      are in use. If the <code>min_connections</code> value is 0, then
      the pool will never close a connection and instead maintain all
      the connections that were ever created.</p>
+
+  <p>The <code>create()</code> virtual function is called whenever the
+     pool needs to create a new connection. By deriving from the
+     <code>connection_pool_factory</code> class and overriding this
+     function we can implement custom connection establishment
+     and configuration.</p>
 
   <p>If you pass <code>NULL</code> as the connection factory to one of the
      <code>database</code> constructors, then the
