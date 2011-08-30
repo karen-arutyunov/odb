@@ -42,7 +42,7 @@ namespace odb
     single_connection_factory::
     create ()
     {
-      return single_connection_ptr (new (shared) single_connection (*db_, 0));
+      return single_connection_ptr (new (shared) single_connection (*db_));
     }
 
     connection_ptr single_connection_factory::

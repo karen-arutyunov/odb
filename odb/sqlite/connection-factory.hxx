@@ -65,7 +65,7 @@ namespace odb
       class single_connection: public connection
       {
       public:
-        single_connection (database_type&, int extra_flags);
+        single_connection (database_type&, int extra_flags = 0);
         single_connection (database_type&, sqlite3*);
 
       private:
@@ -179,7 +179,7 @@ namespace odb
       class pooled_connection: public connection
       {
       public:
-        pooled_connection (database_type&, int extra_flags);
+        pooled_connection (database_type&, int extra_flags = 0);
         pooled_connection (database_type&, sqlite3*);
 
       private:
