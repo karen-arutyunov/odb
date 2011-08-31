@@ -56,7 +56,7 @@ traverse (semantics::class_& c)
 
   // Ignore transient bases.
   //
-  if (!(obj || context::comp_value (c)))
+  if (!(obj || context::composite (c)))
     return;
 
   semantics::class_* prev;
@@ -116,7 +116,7 @@ traverse (semantics::data_member& m)
 
   semantics::type& t (m.type ());
 
-  if (semantics::class_* comp = context::comp_value_wrapper (t))
+  if (semantics::class_* comp = context::composite_wrapper (t))
   {
     string old_prefix, old_table_prefix;
 
@@ -240,7 +240,7 @@ traverse (semantics::class_& c)
 
   // Ignore transient bases.
   //
-  if (!(obj || context::comp_value (c)))
+  if (!(obj || context::composite (c)))
     return;
 
   bool f (top_level_);
@@ -283,7 +283,7 @@ traverse (semantics::data_member& m)
 
   semantics::type& t (m.type ());
 
-  if (semantics::class_* comp = comp_value_wrapper (t))
+  if (semantics::class_* comp = composite_wrapper (t))
   {
     string old_prefix (prefix_);
 

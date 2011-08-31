@@ -35,7 +35,7 @@ namespace relational
 
       semantics::type& t (type_override_ != 0 ? *type_override_ : m.type ());
 
-      if (semantics::class_* c = comp_value_wrapper (t))
+      if (semantics::class_* c = composite_wrapper (t))
       {
         // If t is a wrapper, pass the wrapped type. Also pass the
         // original, wrapper type.

@@ -111,7 +111,7 @@ namespace relational
         {
           // Ignore transient bases.
           //
-          if (!(context::object (c) || context::comp_value (c)))
+          if (!(context::object (c) || context::composite (c)))
             return;
 
           if (c.count ("sqlite-grow"))

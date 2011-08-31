@@ -127,7 +127,7 @@ namespace relational
 
         // Nothing to do if this is a composite value type.
         //
-        if (comp_value_wrapper (t))
+        if (composite_wrapper (t))
           return;
 
         string type, ref_type;
@@ -229,7 +229,7 @@ namespace relational
           wh = t.get<semantics::names*> ("wrapper-hint");
         }
 
-        if (comp_value_wrapper (t))
+        if (composite_wrapper (t))
           return;
 
         string type;
@@ -1089,7 +1089,7 @@ namespace relational
       {
         bool obj (object (c));
 
-        if (!(obj || comp_value (c)))
+        if (!(obj || composite (c)))
           return;
 
         names (c);

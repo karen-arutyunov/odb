@@ -48,7 +48,7 @@ namespace relational
 
         // Ignore transient bases.
         //
-        if (!(obj || comp_value (c)))
+        if (!(obj || composite (c)))
           return;
 
         if (first_)
@@ -102,7 +102,7 @@ namespace relational
 
         names (c);
 
-        if (!comp_value (c))
+        if (!composite (c))
           os << "std::size_t version;";
 
         os << "};";
@@ -296,7 +296,7 @@ namespace relational
             //
             size_t n;
 
-            if (class_* kc = comp_value_wrapper (*kt))
+            if (class_* kc = composite_wrapper (*kt))
               n = in_column_count (*kc);
             else
               n = 1;
@@ -316,7 +316,7 @@ namespace relational
             //
             // Value is also a key.
             //
-            //if (class_* vc = comp_value_wrapper (vt))
+            //if (class_* vc = composite_wrapper (vt))
             //  cond_columns += in_column_count (*vc);
             //else
             //  cond_columns++;
@@ -325,7 +325,7 @@ namespace relational
           }
         }
 
-        if (class_* vc = comp_value_wrapper (vt))
+        if (class_* vc = composite_wrapper (vt))
           data_columns += in_column_count (*vc);
         else
           data_columns++;
@@ -754,7 +754,7 @@ namespace relational
 
         if (object (c))
           traverse_object (c);
-        else if (comp_value (c))
+        else if (composite (c))
           traverse_composite (c);
       }
 

@@ -424,7 +424,7 @@ namespace relational
 
           os << "," << endl;
 
-          if (semantics::class_* ckt = comp_value_wrapper (kt))
+          if (semantics::class_* ckt = composite_wrapper (kt))
           {
             instance<object_columns> oc;
             oc->traverse (m, *ckt, "key", "key");
@@ -442,7 +442,7 @@ namespace relational
         {
           os << "," << endl;
 
-          if (semantics::class_* cvt = comp_value_wrapper (vt))
+          if (semantics::class_* cvt = composite_wrapper (vt))
           {
             instance<object_columns> oc;
             oc->traverse (m, *cvt, "value", "value");

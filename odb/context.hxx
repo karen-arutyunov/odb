@@ -106,33 +106,33 @@ public:
   // simple).
   //
   static bool
-  comp_value (semantics::class_& c)
+  composite (semantics::class_& c)
   {
     if (c.count ("composite-value"))
       return c.get<bool> ("composite-value");
     else
-      return comp_value_ (c);
+      return composite_ (c);
   }
 
   // Return the class object if this type is a composite value type
   // and NULL otherwise.
   //
   static semantics::class_*
-  comp_value (semantics::type& t)
+  composite (semantics::type& t)
   {
     semantics::class_* c (dynamic_cast<semantics::class_*> (&t));
-    return c != 0 && comp_value (*c) ? c : 0;
+    return c != 0 && composite (*c) ? c : 0;
   }
 
   // As above but also "sees through" wrappers.
   //
   static semantics::class_*
-  comp_value_wrapper (semantics::type& t)
+  composite_wrapper (semantics::type& t)
   {
-    if (semantics::class_* c = comp_value (t))
+    if (semantics::class_* c = composite (t))
       return c;
     else if (semantics::type* wt = wrapper (t))
-      return comp_value (*wt);
+      return composite (*wt);
     else
       return 0;
   }
@@ -411,7 +411,7 @@ public:
   //
 private:
   static bool
-  comp_value_ (semantics::class_&);
+  composite_ (semantics::class_&);
 
   template <typename X>
   X

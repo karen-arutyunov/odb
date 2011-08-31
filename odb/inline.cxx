@@ -54,7 +54,7 @@ namespace
       if (c.file () != unit.file ())
         return;
 
-      if (!comp_value (c))
+      if (!composite (c))
         return;
 
       os << "// " << c.name () << endl

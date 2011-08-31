@@ -213,7 +213,7 @@ namespace relational
 
           // value
           //
-          if (semantics::class_* cvt = comp_value_wrapper (vt))
+          if (semantics::class_* cvt = composite_wrapper (vt))
           {
             object_columns_references ocr (e_, os_, name);
             ocr.traverse (m, *cvt, "value", "value");

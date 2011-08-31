@@ -406,7 +406,7 @@ namespace relational
 
         // Ignore transient bases.
         //
-        if (!(obj || comp_value (c)))
+        if (!(obj || composite (c)))
           return;
 
         os << "// " << c.name () << " base" << endl
@@ -463,7 +463,7 @@ namespace relational
 
         // Ignore transient bases.
         //
-        if (!(obj || comp_value (c)))
+        if (!(obj || composite (c)))
           return;
 
         os << "// " << c.name () << " base" << endl
@@ -521,7 +521,7 @@ namespace relational
 
         // Ignore transient bases.
         //
-        if (!(obj || comp_value (c)))
+        if (!(obj || composite (c)))
           return;
 
         os << "// " << c.name () << " base" << endl
@@ -572,7 +572,7 @@ namespace relational
 
         // Ignore transient bases.
         //
-        if (!(obj || comp_value (c)))
+        if (!(obj || composite (c)))
           return;
 
         os << "// " << c.name () << " base" << endl
@@ -777,7 +777,7 @@ namespace relational
               {
                 instance<object_columns> t (table, false, false);
 
-                if (semantics::class_* ckt = comp_value_wrapper (*kt))
+                if (semantics::class_* ckt = composite_wrapper (*kt))
                   t->traverse (m, *ckt, "key", "key");
                 else
                 {
@@ -796,7 +796,7 @@ namespace relational
 
             instance<object_columns> t (table, false);
 
-            if (semantics::class_* cvt = comp_value_wrapper (vt))
+            if (semantics::class_* cvt = composite_wrapper (vt))
               t->traverse (m, *cvt, "value", "value");
             else
             {
@@ -853,7 +853,7 @@ namespace relational
               {
                 instance<object_columns> t (false, false);
 
-                if (semantics::class_* ckt = comp_value_wrapper (*kt))
+                if (semantics::class_* ckt = composite_wrapper (*kt))
                   t->traverse (m, *ckt, "key", "key");
                 else
                 {
@@ -871,7 +871,7 @@ namespace relational
 
             instance<object_columns> t (false);
 
-            if (semantics::class_* cvt = comp_value_wrapper (vt))
+            if (semantics::class_* cvt = composite_wrapper (vt))
               t->traverse (m, *cvt, "value", "value");
             else
             {
@@ -1029,7 +1029,7 @@ namespace relational
               instance<bind_member> bm ("key_", "d", *kt, "key_type", "key");
               bm->traverse (m);
 
-              if (semantics::class_* c = comp_value_wrapper (*kt))
+              if (semantics::class_* c = composite_wrapper (*kt))
                 os << "n += " << in_column_count (*c) << "UL;"
                    << endl;
               else
@@ -1902,7 +1902,7 @@ namespace relational
 
         if (object (c))
           traverse_object (c);
-        else if (comp_value (c))
+        else if (composite (c))
           traverse_composite (c);
       }
 

@@ -99,7 +99,7 @@ namespace
       }
       else
       {
-        if (!context::comp_value (c))
+        if (!context::composite (c))
           return;
       }
 
@@ -180,7 +180,7 @@ namespace
         traverse_object (c);
       else
       {
-        if (context::comp_value (c))
+        if (context::composite (c))
           traverse_composite (c);
 
         vt_.dispatch (c);
@@ -241,7 +241,7 @@ namespace
 
         if (context::object (b))
           base = true;
-        if (context::comp_value (b))
+        if (context::composite (b))
         {
           // @@ Should we use hint here?
           //
@@ -338,7 +338,7 @@ namespace
       {
         type& b (i->base ());
 
-        if (context::comp_value (b))
+        if (context::composite (b))
           base = true;
         else if (context::object (b))
         {

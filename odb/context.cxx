@@ -329,7 +329,7 @@ member_type (semantics::data_member& m, string const& key_prefix)
 }
 
 bool context::
-comp_value_ (semantics::class_& c)
+composite_ (semantics::class_& c)
 {
   bool r (true);
 

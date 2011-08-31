@@ -86,7 +86,7 @@ namespace relational
 
         if (object (c))
           traverse_object (c);
-        else if (comp_value (c))
+        else if (composite (c))
           traverse_composite (c);
       }
 

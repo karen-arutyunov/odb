@@ -61,7 +61,7 @@ namespace relational
         {
           if (var_override_.empty ())
           {
-            if (semantics::class_* c = comp_value (mi.t))
+            if (semantics::class_* c = composite (mi.t))
               os << "n += " << in_column_count (*c) << "UL;";
             else
               os << "n++;";
@@ -157,7 +157,7 @@ namespace relational
         virtual void
         post (member_info& mi)
         {
-          if (semantics::class_* c = comp_value (mi.t))
+          if (semantics::class_* c = composite (mi.t))
             index_ += in_column_count (*c);
           else
             index_++;
@@ -243,7 +243,7 @@ namespace relational
           // "unwrap" it. For simple values this is taken care of
           // by the value_traits specializations.
           //
-          if (mi.wrapper != 0 && comp_value (mi.t))
+          if (mi.wrapper != 0 && composite (mi.t))
           {
             // Here we need the wrapper type, not the wrapped type.
             //
@@ -251,7 +251,7 @@ namespace relational
               "get_ref (" + member + ")";
           }
 
-          if (comp_value (mi.t))
+          if (composite (mi.t))
             traits = "composite_value_traits< " + mi.fq_type () + " >";
           else
           {
@@ -324,7 +324,7 @@ namespace relational
         virtual void
         post (member_info& mi)
         {
-          if (!comp_value (mi.t))
+          if (!composite (mi.t))
           {
             // When handling a pointer, mi.t is the id type of the referenced
             // object.
@@ -430,7 +430,7 @@ namespace relational
           // "unwrap" it. For simple values this is taken care of
           // by the value_traits specializations.
           //
-          if (mi.wrapper != 0 && comp_value (mi.t))
+          if (mi.wrapper != 0 && composite (mi.t))
           {
             // Here we need the wrapper type, not the wrapped type.
             //
@@ -438,7 +438,7 @@ namespace relational
               "set_ref (" + member + ")";
           }
 
-          if (comp_value (mi.t))
+          if (composite (mi.t))
             traits = "composite_value_traits< " + mi.fq_type () + " >";
           else
           {
@@ -490,7 +490,7 @@ namespace relational
         virtual void
         post (member_info& mi)
         {
-          if (comp_value (mi.t))
+          if (composite (mi.t))
             return;
 
           // When handling a pointer, mi.t is the id type of the referenced
