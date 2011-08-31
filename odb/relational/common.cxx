@@ -25,7 +25,7 @@ namespace relational
   }
 
   query_columns::
-  query_columns (semantics::class_& c) //@@ context::object
+  query_columns (semantics::class_& c) //@@ context::{cur,top}_object
       : ptr_ (true), decl_ (false)
   {
     scope_ = "access::object_traits< " + c.fq_name () + " >::query_columns";
@@ -33,7 +33,7 @@ namespace relational
   }
 
   void query_columns::
-  object (semantics::class_& c)
+  traverse_object (semantics::class_& c)
   {
     // We only want members for objects unless we are traversing a
     // pointer, in which case we need the whole thing.
@@ -45,13 +45,13 @@ namespace relational
   }
 
   void query_columns::
-  composite (semantics::data_member* m, semantics::class_& c)
+  traverse_composite (semantics::data_member* m, semantics::class_& c)
   {
     // Base type.
     //
     if (m == 0)
     {
-      object_columns_base::composite (m, c);
+      object_columns_base::traverse_composite (m, c);
       return;
     }
 
@@ -64,7 +64,7 @@ namespace relational
          << "struct " << name
          << "{";
 
-      object_columns_base::composite (m, c);
+      object_columns_base::traverse_composite (m, c);
 
       os << "};";
     }
@@ -73,14 +73,14 @@ namespace relational
       string old_scope (scope_);
       scope_ += "::" + name;
 
-      object_columns_base::composite (m, c);
+      object_columns_base::traverse_composite (m, c);
 
       scope_ = old_scope;
     }
   }
 
   bool query_columns::
-  column (semantics::data_member& m, string const& col_name, bool)
+  traverse_column (semantics::data_member& m, string const& col_name, bool)
   {
     string name (public_name (m));
 

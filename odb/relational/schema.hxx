@@ -83,7 +83,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m, semantics::type& c)
+      traverse_container (semantics::data_member& m, semantics::type& c)
       {
         // Ignore inverse containers of object pointers.
         //
@@ -167,7 +167,7 @@ namespace relational
         if (c.file () != unit.file ())
           return;
 
-        if (!c.count ("object") || abstract (c))
+        if (!object (c) || abstract (c))
           return;
 
         string const& name (table_name (c));
@@ -208,7 +208,9 @@ namespace relational
       }
 
       virtual bool
-      column (semantics::data_member& m, string const& name, bool first)
+      traverse_column (semantics::data_member& m,
+                       string const& name,
+                       bool first)
       {
         // Ignore inverse object pointers.
         //
@@ -372,7 +374,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m, semantics::type& t)
+      traverse_container (semantics::data_member& m, semantics::type& t)
       {
         using semantics::type;
         using semantics::data_member;
@@ -398,7 +400,7 @@ namespace relational
         string id_name (column_name (m, "id", "object_id"));
         {
           instance<object_columns> oc ("id");
-          oc->column (m, id_name, true);
+          oc->traverse_column (m, id_name, true);
         }
 
         // index (simple value)
@@ -411,7 +413,7 @@ namespace relational
 
           instance<object_columns> oc ("index");
           index_name = column_name (m, "index", "index");
-          oc->column (m, index_name, true);
+          oc->traverse_column (m, index_name, true);
         }
 
         // key (simple or composite value)
@@ -425,13 +427,13 @@ namespace relational
           if (semantics::class_* ckt = comp_value_wrapper (kt))
           {
             instance<object_columns> oc;
-            oc->traverse_composite (m, *ckt, "key", "key");
+            oc->traverse (m, *ckt, "key", "key");
           }
           else
           {
             instance<object_columns> oc ("key");
             string const& name (column_name (m, "key", "key"));
-            oc->column (m, name, true);
+            oc->traverse_column (m, name, true);
           }
         }
 
@@ -443,13 +445,13 @@ namespace relational
           if (semantics::class_* cvt = comp_value_wrapper (vt))
           {
             instance<object_columns> oc;
-            oc->traverse_composite (m, *cvt, "value", "value");
+            oc->traverse (m, *cvt, "value", "value");
           }
           else
           {
             instance<object_columns> oc ("value");
             string const& name (column_name (m, "value", "value"));
-            oc->column (m, name, true);
+            oc->traverse_column (m, name, true);
           }
         }
 
@@ -520,7 +522,7 @@ namespace relational
         if (c.file () != unit.file ())
           return;
 
-        if (!c.count ("object") || abstract (c))
+        if (!object (c) || abstract (c))
           return;
 
         string const& name (table_name (c));

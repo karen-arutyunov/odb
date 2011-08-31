@@ -12,47 +12,47 @@ using namespace std;
 //
 
 void object_members_base::
-simple (semantics::data_member&)
+traverse_simple (semantics::data_member&)
 {
 }
 
 void object_members_base::
-container (semantics::data_member&, semantics::type&)
-{
-}
-
-void object_members_base::
-composite (semantics::data_member*, semantics::class_& c)
+traverse_composite (semantics::data_member*, semantics::class_& c)
 {
   inherits (c);
   names (c);
 }
 
 void object_members_base::
-composite_wrapper (semantics::data_member* m,
-                   semantics::class_& c,
-                   semantics::type*)
+traverse_composite_wrapper (semantics::data_member* m,
+                            semantics::class_& c,
+                            semantics::type*)
 {
-  composite (m, c);
+  traverse_composite (m, c);
 }
 
 void object_members_base::
-object (semantics::class_& c)
+traverse_container (semantics::data_member&, semantics::type&)
+{
+}
+
+void object_members_base::
+traverse_object (semantics::class_& c)
 {
   inherits (c);
   names (c);
 }
 
 void object_members_base::
-traverse_composite (semantics::data_member& m, semantics::class_& c)
+traverse (semantics::data_member& m, semantics::class_& c)
 {
-  composite_wrapper (&m, c, 0);
+  traverse_composite_wrapper (&m, c, 0);
 }
 
 void object_members_base::
 traverse (semantics::class_& c)
 {
-  bool obj (c.count ("object"));
+  bool obj (object (c));
 
   // Ignore transient bases.
   //
@@ -62,8 +62,8 @@ traverse (semantics::class_& c)
   semantics::class_* prev;
   if (obj)
   {
-    prev = context::object;
-    context::object = &c;
+    prev = context::cur_object;
+    context::cur_object = &c;
 
     if (context::top_object == 0)
       context::top_object = &c;
@@ -83,7 +83,7 @@ traverse (semantics::class_& c)
       tb = true;
     }
 
-    object (c);
+    traverse_object (c);
 
     if (tb)
     {
@@ -94,9 +94,9 @@ traverse (semantics::class_& c)
   else
   {
     if (obj)
-      object (c);
+      traverse_object (c);
     else
-      composite_wrapper (0, c, 0);
+      traverse_composite_wrapper (0, c, 0);
   }
 
   if (obj)
@@ -104,7 +104,7 @@ traverse (semantics::class_& c)
     if (prev == 0)
       context::top_object = 0;
 
-    context::object = prev;
+    context::cur_object = prev;
   }
 }
 
@@ -161,7 +161,7 @@ traverse (semantics::data_member& m)
       om_.table_prefix_.level++;
     }
 
-    om_.composite_wrapper (&m, *comp, (wrapper (t) ? &t : 0));
+    om_.traverse_composite_wrapper (&m, *comp, (wrapper (t) ? &t : 0));
 
     if (om_.build_table_prefix_)
     {
@@ -174,11 +174,11 @@ traverse (semantics::data_member& m)
   }
   else if (semantics::type* c = context::container_wrapper (t))
   {
-    om_.container (m, *c);
+    om_.traverse_container (m, *c);
   }
   else
   {
-    om_.simple (m);
+    om_.traverse_simple (m);
   }
 }
 
@@ -192,24 +192,24 @@ flush ()
 }
 
 void object_columns_base::
-composite (semantics::data_member*, semantics::class_& c)
+traverse_composite (semantics::data_member*, semantics::class_& c)
 {
   inherits (c);
   names (c);
 }
 
 void object_columns_base::
-object (semantics::class_& c)
+traverse_object (semantics::class_& c)
 {
   inherits (c);
   names (c);
 }
 
 void object_columns_base::
-traverse_composite (semantics::data_member& m,
-                    semantics::class_& c,
-                    string const& key_prefix,
-                    string const& default_name)
+traverse (semantics::data_member& m,
+          semantics::class_& c,
+          string const& key_prefix,
+          string const& default_name)
 {
   bool custom (m.count (key_prefix + "-column"));
   string name (member_.column_name (m, key_prefix, default_name));
@@ -227,7 +227,7 @@ traverse_composite (semantics::data_member& m,
       member_.prefix_ += '_';
   }
 
-  composite (&m, c);
+  traverse_composite (&m, c);
 
   if (!member_.first_)
     flush ();
@@ -236,7 +236,7 @@ traverse_composite (semantics::data_member& m,
 void object_columns_base::
 traverse (semantics::class_& c)
 {
-  bool obj (c.count ("object"));
+  bool obj (object (c));
 
   // Ignore transient bases.
   //
@@ -251,24 +251,24 @@ traverse (semantics::class_& c)
   semantics::class_* prev;
   if (obj)
   {
-    prev = context::object;
-    context::object = &c;
+    prev = context::cur_object;
+    context::cur_object = &c;
 
     if (context::top_object == 0)
       context::top_object = &c;
   }
 
   if (obj)
-    object (c);
+    traverse_object (c);
   else
-    composite (0, c);
+    traverse_composite (0, c);
 
   if (obj)
   {
     if (prev == 0)
       context::top_object = 0;
 
-    context::object = prev;
+    context::cur_object = prev;
   }
 
   if (f && !member_.first_)
@@ -303,7 +303,7 @@ traverse (semantics::data_member& m)
         prefix_ += '_';
     }
 
-    oc_.composite (&m, *comp);
+    oc_.traverse_composite (&m, *comp);
 
     prefix_ = old_prefix;
   }
@@ -314,7 +314,7 @@ traverse (semantics::data_member& m)
   }
   else
   {
-    if (oc_.column (m, prefix_ + column_name (m), first_))
+    if (oc_.traverse_column (m, prefix_ + column_name (m), first_))
     {
       if (first_)
         first_ = false;

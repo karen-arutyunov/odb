@@ -16,13 +16,7 @@
 struct object_members_base: traversal::class_, virtual context
 {
   virtual void
-  simple (semantics::data_member&);
-
-  // The second argument is the actual container type in case m.type ()
-  // is a wrapper.
-  //
-  virtual void
-  container (semantics::data_member&, semantics::type&);
+  traverse_simple (semantics::data_member&);
 
   // If you override this function, you can call the base to traverse
   // bases and members. The first argument is the data member and can
@@ -31,24 +25,30 @@ struct object_members_base: traversal::class_, virtual context
   // the same as m.type ().
   //
   virtual void
-  composite (semantics::data_member*, semantics::class_&);
+  traverse_composite (semantics::data_member*, semantics::class_&);
 
   // More general version of the above function that allows detection
   // of wrapped composite value. By default this function calls
-  // composite (m, comp) ignoring the wrapper type. Note that this
-  // function is called for all composite value (wrapped or not).
+  // traverse_composite (m, comp) ignoring the wrapper type. Note that
+  // this function is called for all composite value (wrapped or not).
   // If it is not wrapped, the wrapper argument will be NULL.
   //
   virtual void
-  composite_wrapper (semantics::data_member*,
-                     semantics::class_& comp,
-                     semantics::type* wrapper);
+  traverse_composite_wrapper (semantics::data_member*,
+                              semantics::class_& comp,
+                              semantics::type* wrapper);
+
+  // The second argument is the actual container type in case m.type ()
+  // is a wrapper.
+  //
+  virtual void
+  traverse_container (semantics::data_member&, semantics::type&);
 
   // If you override this function, you can call the base to traverse
   // bases and members.
   //
   virtual void
-  object (semantics::class_&);
+  traverse_object (semantics::class_&);
 
 public:
   object_members_base ()
@@ -73,8 +73,10 @@ public:
   virtual void
   traverse (semantics::class_&);
 
+  // Composite value with data member.
+  //
   virtual void
-  traverse_composite (semantics::data_member&, semantics::class_&);
+  traverse (semantics::data_member&, semantics::class_& comp);
 
 protected:
   std::string prefix_;
@@ -123,7 +125,9 @@ struct object_columns_base: traversal::class_, virtual context
   // first flag should not be changed.
   //
   virtual bool
-  column (semantics::data_member&, std::string const& name, bool first) = 0;
+  traverse_column (semantics::data_member&,
+                   std::string const& name,
+                   bool first) = 0;
 
   // If you override this function, you can call the base to traverse
   // bases and members. The first argument is the data member and can
@@ -132,13 +136,13 @@ struct object_columns_base: traversal::class_, virtual context
   // the same as m.type ().
   //
   virtual void
-  composite (semantics::data_member*, semantics::class_&);
+  traverse_composite (semantics::data_member*, semantics::class_&);
 
   // If you override this function, you can call the base to traverse
   // bases and members.
   //
   virtual void
-  object (semantics::class_&);
+  traverse_object (semantics::class_&);
 
   // Called after the last column, provided at least one column hasn't
   // been ignored.
@@ -164,11 +168,13 @@ public:
   virtual void
   traverse (semantics::class_&);
 
+  // Composite value with data member.
+  //
   virtual void
-  traverse_composite (semantics::data_member&,
-                      semantics::class_&,
-                      std::string const& key_prefix,
-                      std::string const& default_name);
+  traverse (semantics::data_member&,
+            semantics::class_& comp,
+            std::string const& key_prefix,
+            std::string const& default_name);
 private:
   void
   init ()

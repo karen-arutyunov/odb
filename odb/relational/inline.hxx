@@ -43,7 +43,7 @@ namespace relational
       {
         // Ignore transient bases.
         //
-        if (!c.count ("object"))
+        if (!object (c))
           return;
 
         if (c.count ("callback"))
@@ -84,10 +84,10 @@ namespace relational
         if (c.file () != unit.file ())
           return;
 
-        if (c.count ("object"))
+        if (object (c))
           traverse_object (c);
         else if (comp_value (c))
-          traverse_value (c);
+          traverse_composite (c);
       }
 
       virtual void
@@ -239,7 +239,7 @@ namespace relational
       }
 
       virtual void
-      traverse_value (type&)
+      traverse_composite (type&)
       {
         /*
           string const& type (c.fq_name ());

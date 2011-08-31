@@ -115,7 +115,7 @@ context (ostream& os_,
       embedded_schema (ops.generate_schema () &&
                        ops.schema_format ().count (schema_format::embedded)),
       top_object (data_->top_object_),
-      object (data_->object_)
+      cur_object (data_->cur_object_)
 {
   assert (current_ == 0);
   current_ = this;
@@ -139,7 +139,7 @@ context ()
     include_regex (current ().include_regex),
     embedded_schema (current ().embedded_schema),
     top_object (current ().top_object),
-    object (current ().object)
+    cur_object (current ().cur_object)
 {
 }
 
@@ -887,7 +887,7 @@ namespace
     }
 
     virtual void
-    simple (semantics::data_member& m)
+    traverse_simple (semantics::data_member& m)
     {
       if (out_ || !context::inverse (m))
         count_++;
@@ -939,13 +939,13 @@ namespace
     }
 
     virtual void
-    simple (semantics::data_member& m)
+    traverse_simple (semantics::data_member& m)
     {
       r_ = r_ || context::is_a (m, flags_);
     }
 
     virtual void
-    container (semantics::data_member& m, semantics::type& c)
+    traverse_container (semantics::data_member& m, semantics::type& c)
     {
       // We don't cross the container boundaries (separate table).
       //

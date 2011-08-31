@@ -44,7 +44,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        bool obj (c.count ("object"));
+        bool obj (object (c));
 
         // Ignore transient bases.
         //
@@ -128,7 +128,7 @@ namespace relational
       {
         // Ignore transient bases.
         //
-        if (!c.count ("object"))
+        if (!object (c))
           return;
 
         if (first_)
@@ -187,10 +187,10 @@ namespace relational
       }
 
       virtual void
-      composite (semantics::data_member* m, semantics::class_& c)
+      traverse_composite (semantics::data_member* m, semantics::class_& c)
       {
-        if (c_.count ("object"))
-          object_members_base::composite (m, c);
+        if (object (c_))
+          object_members_base::traverse_composite (m, c);
         else
         {
           // If we are generating traits for a composite value type, then
@@ -212,7 +212,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m, semantics::type& c)
+      traverse_container (semantics::data_member& m, semantics::type& c)
       {
         using semantics::type;
         using semantics::class_;
@@ -222,9 +222,10 @@ namespace relational
         //
         bool base, abst;
 
-        if (c_.count ("object"))
+        if (object (c_))
         {
-          base = context::object != &c_ || !m.scope ().count ("object");
+          base = cur_object != &c_ || 
+            !object (dynamic_cast<type&> (m.scope ()));
           abst = abstract (c_);
         }
         else
@@ -342,7 +343,7 @@ namespace relational
         {
           semantics::class_& b (dynamic_cast<semantics::class_&> (m.scope ()));
 
-          if (b.count ("object"))
+          if (object (b))
             os << ": access::object_traits< " << b.fq_name () << " >::" <<
               name;
           else
@@ -751,10 +752,10 @@ namespace relational
         if (c.file () != unit.file ())
           return;
 
-        if (c.count ("object"))
+        if (object (c))
           traverse_object (c);
         else if (comp_value (c))
-          traverse_value (c);
+          traverse_composite (c);
       }
 
       virtual void
@@ -1072,7 +1073,7 @@ namespace relational
       }
 
       virtual void
-      traverse_value (type& c)
+      traverse_composite (type& c)
       {
         string const& type (c.fq_name ());
 

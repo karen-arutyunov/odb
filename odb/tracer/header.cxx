@@ -21,7 +21,7 @@ namespace tracer
         if (c.file () != unit.file ())
           return;
 
-        if (!c.count ("object"))
+        if (!object (c))
           return;
 
         string const& type (c.fq_name ());

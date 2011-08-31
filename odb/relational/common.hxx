@@ -68,13 +68,13 @@ namespace relational
     }
 
     virtual void
-    object (semantics::class_&);
+    traverse_object (semantics::class_&);
 
     virtual void
-    composite (semantics::data_member*, semantics::class_&);
+    traverse_composite (semantics::data_member*, semantics::class_&);
 
     virtual bool
-    column (semantics::data_member&, string const&, bool);
+    traverse_column (semantics::data_member&, string const&, bool);
 
   protected:
     bool ptr_;

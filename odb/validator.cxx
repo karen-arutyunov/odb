@@ -94,7 +94,7 @@ namespace
       //
       if (object_)
       {
-        if (!c.count ("object"))
+        if (!context::object (c))
           return;
       }
       else
@@ -176,12 +176,12 @@ namespace
     virtual void
     traverse (type& c)
     {
-      if (c.count ("object"))
+      if (context::object (c))
         traverse_object (c);
       else
       {
         if (context::comp_value (c))
-          traverse_value (c);
+          traverse_composite (c);
 
         vt_.dispatch (c);
       }
@@ -239,7 +239,7 @@ namespace
       {
         type& b (i->base ());
 
-        if (b.count ("object"))
+        if (context::object (b))
           base = true;
         if (context::comp_value (b))
         {
@@ -328,7 +328,7 @@ namespace
     }
 
     virtual void
-    traverse_value (type& c)
+    traverse_composite (type& c)
     {
       bool base (false);
 
@@ -340,7 +340,7 @@ namespace
 
         if (context::comp_value (b))
           base = true;
-        else if (b.count ("object"))
+        else if (context::object (b))
         {
           // @@ Should we use hint here?
           //

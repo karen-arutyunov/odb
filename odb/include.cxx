@@ -81,7 +81,7 @@ namespace
 
       // We only generate things for objects and composite value types.
       //
-      if (!(c.count ("object") || comp_value (c)))
+      if (!(object (c) || comp_value (c)))
         return;
 
       // This is a persistent object or composite value type declared in

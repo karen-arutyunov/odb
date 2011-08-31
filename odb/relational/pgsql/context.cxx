@@ -113,7 +113,7 @@ namespace relational
         {
           // Ignore transient bases.
           //
-          if (!(c.count ("object") || context::comp_value (c)))
+          if (!(context::object (c) || context::comp_value (c)))
             return;
 
           if (c.count ("pgsql-grow"))

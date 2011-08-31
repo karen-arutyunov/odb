@@ -696,7 +696,7 @@ namespace relational
 
           c = dynamic_cast<class_*> (unit.find (tn));
 
-          if (c == 0 || !c->count ("object"))
+          if (c == 0 || !object (*c))
             return 0;
 
           t.set ("element-type", c);
@@ -1087,7 +1087,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        bool obj (c.count ("object"));
+        bool obj (object (c));
 
         if (!(obj || comp_value (c)))
           return;

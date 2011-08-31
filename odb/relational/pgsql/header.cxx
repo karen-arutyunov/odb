@@ -60,7 +60,7 @@ namespace relational
         virtual void
         container_public_extra_pre (semantics::data_member&)
         {
-          if (!c_.count ("object") || abstract (c_))
+          if (!object (c_) || abstract (c_))
             return;
 
           // Container statement names.

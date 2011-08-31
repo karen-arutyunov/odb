@@ -134,7 +134,7 @@ namespace relational
         }
 
         virtual bool
-        column (semantics::data_member& m, string const& name, bool)
+        traverse_column (semantics::data_member& m, string const& name, bool)
         {
           if (inverse (m))
             return false;
@@ -186,7 +186,7 @@ namespace relational
         }
 
         virtual void
-        container (semantics::data_member& m, semantics::type& t)
+        traverse_container (semantics::data_member& m, semantics::type& t)
         {
           using semantics::type;
           using semantics::data_member;
@@ -208,7 +208,7 @@ namespace relational
           {
             object_columns_references ocr (e_, os_, name, "id");
             string id_name (column_name (m, "id", "object_id"));
-            ocr.column (m, id_name, true);
+            ocr.traverse_column (m, id_name, true);
           }
 
           // value
@@ -216,13 +216,13 @@ namespace relational
           if (semantics::class_* cvt = comp_value_wrapper (vt))
           {
             object_columns_references ocr (e_, os_, name);
-            ocr.traverse_composite (m, *cvt, "value", "value");
+            ocr.traverse (m, *cvt, "value", "value");
           }
           else
           {
             object_columns_references ocr (e_, os_, name, "value");
             string const& value_name (column_name (m, "value", "value"));
-            ocr.column (m, value_name, true);
+            ocr.traverse_column (m, value_name, true);
           }
 
           tables_.insert (name);
@@ -250,7 +250,7 @@ namespace relational
           if (c.file () != unit.file ())
             return;
 
-          if (!c.count ("object") || abstract (c))
+          if (!object (c) || abstract (c))
             return;
 
           string const& name (table_name (c));

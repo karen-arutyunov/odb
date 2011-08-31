@@ -13,7 +13,7 @@ namespace
 {
   struct data_member: traversal::data_member, context
   {
-    data_member (semantics::class_& cl) //@@ context::object
+    data_member (semantics::class_& cl) //@@ context::{cur,top}_object
     {
       scope_ = "access::value_traits< " + cl.fq_name () + " >";
     }

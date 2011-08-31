@@ -105,7 +105,9 @@ namespace relational
       struct statement_oids: object_columns_base, context
       {
         virtual bool
-        column (semantics::data_member& m, std::string const&, bool first)
+        traverse_column (semantics::data_member& m,
+                         std::string const&,
+                         bool first)
         {
           if (!first)
             os << ',' << endl;
@@ -933,7 +935,7 @@ namespace relational
                << "{";
 
             instance<statement_oids> st;
-            st->column (*id_m, "", true);
+            st->traverse_column (*id_m, "", true);
 
             os << "};";
           }
@@ -947,7 +949,7 @@ namespace relational
 
             instance<statement_oids> st;
             st->traverse (t);
-            st->column (*id_m, "", false);
+            st->traverse_column (*id_m, "", false);
 
             os << "};";
           }
@@ -960,7 +962,7 @@ namespace relational
                << "{";
 
             instance<statement_oids> st;
-            st->column (*id_m, "", true);
+            st->traverse_column (*id_m, "", true);
 
             os << "};";
           }
@@ -1005,7 +1007,7 @@ namespace relational
         virtual void
         container_extra (semantics::data_member& m, semantics::type& t)
         {
-          if (!c_.count ("object") || abstract (c_))
+          if (!object (c_) || abstract (c_))
             return;
 
           string scope (scope_ + "::" + prefix_ + public_name (m) + "_traits");
@@ -1095,7 +1097,7 @@ namespace relational
                       comp_value_wrapper (container_kt (t)))
                   {
                     instance<statement_oids> st;
-                    st->traverse_composite (m, *ktc, "key", "key");
+                    st->traverse (m, *ktc, "key", "key");
                     os << ",";
                   }
                   else
@@ -1113,7 +1115,7 @@ namespace relational
               if (semantics::class_* vtc = comp_value_wrapper (vt))
               {
                 instance <statement_oids> st;
-                st->traverse_composite (m, *vtc, "value", "value");
+                st->traverse (m, *vtc, "value", "value");
               }
               else
                 os << oids[column_sql_type (m, "value").type];

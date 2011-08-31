@@ -63,7 +63,9 @@ namespace relational
       }
 
       virtual bool
-      column (semantics::data_member& m, string const& name, bool first)
+      traverse_column (semantics::data_member& m,
+                       string const& name,
+                       bool first)
       {
         semantics::data_member* im (inverse (m));
 
@@ -160,7 +162,7 @@ namespace relational
     {
       typedef object_joins base;
 
-      //@@ context::object Might have to be create every time.
+      //@@ context::{cur,top}_object Might have to be created every time.
       //
       object_joins (semantics::class_& scope, bool query)
           : query_ (query),
@@ -208,7 +210,9 @@ namespace relational
       }
 
       virtual bool
-      column (semantics::data_member& m, string const& col_name, bool)
+      traverse_column (semantics::data_member& m,
+                       string const& col_name,
+                       bool)
       {
         semantics::class_* c (object_pointer (m.type ()));
 
@@ -398,7 +402,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        bool obj (c.count ("object"));
+        bool obj (object (c));
 
         // Ignore transient bases.
         //
@@ -455,7 +459,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        bool obj (c.count ("object"));
+        bool obj (object (c));
 
         // Ignore transient bases.
         //
@@ -513,7 +517,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        bool obj (c.count ("object"));
+        bool obj (object (c));
 
         // Ignore transient bases.
         //
@@ -564,7 +568,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        bool obj (c.count ("object"));
+        bool obj (object (c));
 
         // Ignore transient bases.
         //
@@ -588,7 +592,7 @@ namespace relational
       container_traits (semantics::class_& c)
           : object_members_base (true, true), c_ (c)
       {
-        if (c.count ("object"))
+        if (object (c))
           scope_ = "access::object_traits< " + c.fq_name () + " >";
         else
           scope_ = "access::composite_value_traits< " + c.fq_name () + " >";
@@ -604,10 +608,10 @@ namespace relational
       }
 
       virtual void
-      composite (semantics::data_member* m, semantics::class_& c)
+      traverse_composite (semantics::data_member* m, semantics::class_& c)
       {
-        if (c_.count ("object"))
-          object_members_base::composite (m, c);
+        if (object (c_))
+          object_members_base::traverse_composite (m, c);
         else
         {
           // If we are generating traits for a composite value type, then
@@ -624,7 +628,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m, semantics::type& t)
+      traverse_container (semantics::data_member& m, semantics::type& t)
       {
         using semantics::type;
 
@@ -633,9 +637,10 @@ namespace relational
         //
         bool base, abst;
 
-        if (c_.count ("object"))
+        if (object (c_))
         {
-          base = context::object != &c_ || !m.scope ().count ("object");
+          base = cur_object != &c_ ||
+            !object (dynamic_cast<type&> (m.scope ()));
           abst = abstract (c_);
         }
         else
@@ -773,7 +778,7 @@ namespace relational
                 instance<object_columns> t (table, false, false);
 
                 if (semantics::class_* ckt = comp_value_wrapper (*kt))
-                  t->traverse_composite (m, *ckt, "key", "key");
+                  t->traverse (m, *ckt, "key", "key");
                 else
                 {
                   string const& col (column_qname (m, "key", "key"));
@@ -792,7 +797,7 @@ namespace relational
             instance<object_columns> t (table, false);
 
             if (semantics::class_* cvt = comp_value_wrapper (vt))
-              t->traverse_composite (m, *cvt, "value", "value");
+              t->traverse (m, *cvt, "value", "value");
             else
             {
               string const& col (column_qname (m, "value", "value"));
@@ -849,7 +854,7 @@ namespace relational
                 instance<object_columns> t (false, false);
 
                 if (semantics::class_* ckt = comp_value_wrapper (*kt))
-                  t->traverse_composite (m, *ckt, "key", "key");
+                  t->traverse (m, *ckt, "key", "key");
                 else
                 {
                   t->column (m, "key", "", column_qname (m, "key", "key"));
@@ -867,7 +872,7 @@ namespace relational
             instance<object_columns> t (false);
 
             if (semantics::class_* cvt = comp_value_wrapper (vt))
-              t->traverse_composite (m, *cvt, "value", "value");
+              t->traverse (m, *cvt, "value", "value");
             else
             {
               t->column (m, "value", "", column_qname (m, "value", "value"));
@@ -1636,7 +1641,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m, semantics::type&)
+      traverse_container (semantics::data_member& m, semantics::type&)
       {
         string traits (prefix_ + public_name (m) + "_traits");
         os << db << "::container_statements_impl< " << traits << " > " <<
@@ -1654,7 +1659,7 @@ namespace relational
       }
 
       virtual void
-      container (semantics::data_member& m, semantics::type&)
+      traverse_container (semantics::data_member& m, semantics::type&)
       {
         if (first_)
         {
@@ -1695,13 +1700,13 @@ namespace relational
       }
 
       virtual void
-      composite_wrapper (semantics::data_member* m,
-                         semantics::class_& c,
-                         semantics::type* w)
+      traverse_composite_wrapper (semantics::data_member* m,
+                                  semantics::class_& c,
+                                  semantics::type* w)
       {
         if (m == 0)
         {
-          object_members_base::composite (m, c);
+          object_members_base::traverse_composite (m, c);
           return;
         }
 
@@ -1726,12 +1731,12 @@ namespace relational
 
         obj_prefix_ += '.';
 
-        object_members_base::composite (m, c);
+        object_members_base::traverse_composite (m, c);
         obj_prefix_ = old;
       }
 
       virtual void
-      container (semantics::data_member& m, semantics::type&)
+      traverse_container (semantics::data_member& m, semantics::type&)
       {
         using semantics::type;
 
@@ -1814,7 +1819,7 @@ namespace relational
       }
 
       virtual void
-      simple (semantics::data_member& m)
+      traverse_simple (semantics::data_member& m)
       {
         if (!inverse (m))
         {
@@ -1895,10 +1900,10 @@ namespace relational
         if (c.file () != unit.file ())
           return;
 
-        if (c.count ("object"))
+        if (object (c))
           traverse_object (c);
         else if (comp_value (c))
-          traverse_value (c);
+          traverse_composite (c);
       }
 
       virtual void
@@ -2807,7 +2812,7 @@ namespace relational
       }
 
       virtual void
-      traverse_value (type& c)
+      traverse_composite (type& c)
       {
         string const& type (c.fq_name ());
         string traits ("access::composite_value_traits< " + type + " >");

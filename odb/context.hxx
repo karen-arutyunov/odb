@@ -77,6 +77,11 @@ public:
   // Predicates.
   //
 public:
+  static bool
+  object (semantics::type& t)
+  {
+    return t.count ("object");
+  }
 
   // Check whether the type is a wrapper. Return the wrapped type if
   // it is a wrapper and NULL otherwise.
@@ -437,7 +442,7 @@ protected:
     virtual
     ~data () {}
     data (std::ostream& os)
-        : os_ (os.rdbuf ()), top_object_ (0), object_ (0)
+        : os_ (os.rdbuf ()), top_object_ (0), cur_object_ (0)
     {
     }
 
@@ -446,7 +451,7 @@ protected:
     std::stack<std::streambuf*> os_stack_;
 
     semantics::class_* top_object_;
-    semantics::class_* object_;
+    semantics::class_* cur_object_;
 
     keyword_set_type keyword_set_;
     type_map_type type_map_;
@@ -476,7 +481,7 @@ public:
   // Object currently being traversed. It can be the same as top_object
   // or it can a base of top_object.
   //
-  semantics::class_*& object;
+  semantics::class_*& cur_object;
 
   // Per-database customizable functionality.
   //
