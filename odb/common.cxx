@@ -111,7 +111,7 @@ traverse (semantics::class_& c)
 void object_members_base::member::
 traverse (semantics::data_member& m)
 {
-  if (m.count ("transient"))
+  if (transient (m))
     return;
 
   semantics::type& t (m.type ());
@@ -278,7 +278,7 @@ traverse (semantics::class_& c)
 void object_columns_base::member::
 traverse (semantics::data_member& m)
 {
-  if (m.count ("transient"))
+  if (transient (m))
     return;
 
   semantics::type& t (m.type ());

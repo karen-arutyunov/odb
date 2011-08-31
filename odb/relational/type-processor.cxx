@@ -112,7 +112,7 @@ namespace relational
       virtual void
       traverse (semantics::data_member& m)
       {
-        if (m.count ("transient"))
+        if (transient (m))
           return;
 
         semantics::type& t (m.type ());

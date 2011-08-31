@@ -20,7 +20,7 @@ namespace relational
     void member_base::
     traverse (semantics::data_member& m)
     {
-      if (m.count ("transient"))
+      if (transient (m))
         return;
 
       string var;

@@ -83,6 +83,12 @@ public:
     return t.count ("object");
   }
 
+  static bool
+  transient (semantics::data_member& m)
+  {
+    return m.count ("transient");
+  }
+
   // Check whether the type is a wrapper. Return the wrapped type if
   // it is a wrapper and NULL otherwise.
   //

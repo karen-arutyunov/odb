@@ -16,7 +16,7 @@ namespace
     virtual void
     traverse (semantics::data_member& m)
     {
-      if (m.count ("transient"))
+      if (transient (m))
         return;
 
       string const& name (public_name (m));

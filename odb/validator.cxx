@@ -48,7 +48,7 @@ namespace
     virtual void
     traverse (type& m)
     {
-      if (m.count ("transient"))
+      if (context::transient (m))
         return;
 
       count_++;
