@@ -969,7 +969,7 @@ namespace relational
         }
 
         virtual void
-        query_statement_ctor_args (type&)
+        object_query_statement_ctor_args (type&)
         {
           os << "sts.connection ()," << endl
              << "query_statement_name," << endl
@@ -981,7 +981,7 @@ namespace relational
         }
 
         virtual void
-        erase_query_statement_ctor_args (type&)
+        object_erase_query_statement_ctor_args (type&)
         {
           os << "conn," << endl
              << "erase_query_statement_name," << endl

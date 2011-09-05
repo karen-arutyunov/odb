@@ -404,7 +404,7 @@ namespace relational
       {
         bool obj (object (c));
 
-        // Ignore transient bases.
+        // Ignore transient bases. Not used for views.
         //
         if (!(obj || composite (c)))
           return;
@@ -461,7 +461,7 @@ namespace relational
       {
         bool obj (object (c));
 
-        // Ignore transient bases.
+        // Ignore transient bases. Not used for views.
         //
         if (!(obj || composite (c)))
           return;
@@ -519,7 +519,7 @@ namespace relational
       {
         bool obj (object (c));
 
-        // Ignore transient bases.
+        // Ignore transient bases. Not used for views.
         //
         if (!(obj || composite (c)))
           return;
@@ -570,7 +570,7 @@ namespace relational
       {
         bool obj (object (c));
 
-        // Ignore transient bases.
+        // Ignore transient bases. Not used for views.
         //
         if (!(obj || composite (c)))
           return;
@@ -689,8 +689,13 @@ namespace relational
 
         grow = grow || context::grow (m, vt, "value");
 
-        bool eager_ptr (is_a (m, test_eager_pointer, vt, "value") ||
-                        has_a (vt, test_eager_pointer));
+        bool eager_ptr (is_a (m, test_eager_pointer, vt, "value"));
+
+        if (!eager_ptr)
+        {
+          if (semantics::class_* cvt = composite_wrapper (vt))
+            eager_ptr = has_a (*cvt, test_eager_pointer);
+        }
 
         string name (prefix_ + public_name (m) + "_traits");
         string scope (scope_ + "::" + name);
@@ -1902,9 +1907,24 @@ namespace relational
 
         if (object (c))
           traverse_object (c);
+        else if (view (c))
+          traverse_view (c);
         else if (composite (c))
           traverse_composite (c);
       }
+
+      //
+      // common
+      //
+
+      virtual void
+      post_query_ (type&)
+      {
+      }
+
+      //
+      // object
+      //
 
       virtual void
       object_extra (type&)
@@ -1912,7 +1932,7 @@ namespace relational
       }
 
       virtual void
-      query_statement_ctor_args (type&)
+      object_query_statement_ctor_args (type&)
       {
         os << "sts.connection ()," << endl
            << "query_clause + q.clause (table_name)," << endl
@@ -1921,16 +1941,11 @@ namespace relational
       }
 
       virtual void
-      erase_query_statement_ctor_args (type&)
+      object_erase_query_statement_ctor_args (type&)
       {
         os << "conn," << endl
            << "erase_query_clause + q.clause (table_name)," << endl
            << "q.parameters_binding ()";
-      }
-
-      virtual void
-      post_query_ (type&)
-      {
       }
 
       virtual void
@@ -2249,10 +2264,10 @@ namespace relational
            << "{"
            << "using namespace " << db << ";"
            << endl
-           << db << "::connection& conn (" << db <<
-          "::transaction::current ().connection ());"
+           << db << "::connection& conn (" << endl
+           << db << "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
-           << "conn.statement_cache ().find<object_type> ());"
+           << "conn.statement_cache ().find_object<object_type> ());"
            << "image_type& im (sts.image ());"
            << "binding& imb (sts.in_image_binding ());"
            << endl
@@ -2311,10 +2326,10 @@ namespace relational
            << "{"
            << "using namespace " << db << ";"
            << endl
-           << db << "::connection& conn (" << db <<
-          "::transaction::current ().connection ());"
+           << db << "::connection& conn (" << endl
+           << db << "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
-           << "conn.statement_cache ().find<object_type> ());"
+           << "conn.statement_cache ().find_object<object_type> ());"
            << endl;
 
         // Initialize id image.
@@ -2363,10 +2378,10 @@ namespace relational
            << "{"
            << "using namespace " << db << ";"
            << endl
-           << db << "::connection& conn (" << db <<
-          "::transaction::current ().connection ());"
+           << db << "::connection& conn (" << endl
+           << db << "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
-           << "conn.statement_cache ().find<object_type> ());"
+           << "conn.statement_cache ().find_object<object_type> ());"
            << endl;
 
         // Initialize id image.
@@ -2410,10 +2425,10 @@ namespace relational
              << "{"
              << "using namespace " << db << ";"
              << endl
-             << db << "::connection& conn (" << db <<
-            "::transaction::current ().connection ());"
+             << db << "::connection& conn (" << endl
+             << db << "::transaction::current ().connection ());"
              << "object_statements< object_type >& sts (" << endl
-             << "conn.statement_cache ().find<object_type> ());"
+             << "conn.statement_cache ().find_object<object_type> ());"
              << "object_statements< object_type >::auto_lock l (sts);"
              << endl
              << "if (l.locked ())"
@@ -2452,10 +2467,10 @@ namespace relational
            << "{"
            << "using namespace " << db << ";"
            << endl
-           << db << "::connection& conn (" << db <<
-          "::transaction::current ().connection ());"
+           << db << "::connection& conn (" << endl
+           << db << "::transaction::current ().connection ());"
            << "object_statements< object_type >& sts (" << endl
-           << "conn.statement_cache ().find<object_type> ());"
+           << "conn.statement_cache ().find_object<object_type> ());"
            << "object_statements< object_type >::auto_lock l (sts);"
            << endl
            << "if (l.locked ())"
@@ -2568,19 +2583,24 @@ namespace relational
              << "const query_type& q)"
              << "{"
              << "using namespace " << db << ";"
+             << "using odb::details::shared;"
+             << "using odb::details::shared_ptr;"
              << endl
-             << db << "::connection& conn (" << db <<
-            "::transaction::current ().connection ());"
+             << db << "::connection& conn (" << endl
+             << db << "::transaction::current ().connection ());"
              << endl
              << "object_statements< object_type >& sts (" << endl
-             << "conn.statement_cache ().find<object_type> ());"
-             << "odb::details::shared_ptr<select_statement> st;"
+             << "conn.statement_cache ().find_object<object_type> ());"
+             << "shared_ptr<select_statement> st;"
              << endl
              << "query_ (db, q, sts, st);"
              << endl
-             << "odb::details::shared_ptr<odb::result_impl<object_type> > r (" << endl
-             << "new (odb::details::shared) " << db <<
-            "::result_impl<object_type> (q, st, sts));"
+             << "shared_ptr<odb::result_impl<object_type, " <<
+            "class_object> > r (" << endl
+             << "new (shared) " << db <<
+            "::result_impl<object_type, class_object> (" << endl
+             << "q, st, sts));"
+             << endl
              << "return result<object_type> (r);"
              << "}";
 
@@ -2592,19 +2612,24 @@ namespace relational
              << "const query_type& q)"
              << "{"
              << "using namespace " << db << ";"
+             << "using odb::details::shared;"
+             << "using odb::details::shared_ptr;"
              << endl
-             << db << "::connection& conn (" << db <<
-            "::transaction::current ().connection ());"
+             << db << "::connection& conn (" << endl
+             << db << "::transaction::current ().connection ());"
              << endl
              << "object_statements< object_type >& sts (" << endl
-             << "conn.statement_cache ().find<object_type> ());"
-             << "odb::details::shared_ptr<select_statement> st;"
+             << "conn.statement_cache ().find_object<object_type> ());"
+             << "shared_ptr<select_statement> st;"
              << endl
              << "query_ (db, q, sts, st);"
              << endl
-             << "odb::details::shared_ptr<odb::result_impl<const object_type> > r (" << endl
-             << "new (odb::details::shared) " << db <<
-            "::result_impl<const object_type> (q, st, sts));"
+             << "shared_ptr<odb::result_impl<" <<
+            "const object_type, class_object> > r (" << endl
+             << "new (shared) " << db <<
+            "::result_impl<const object_type, class_object> (" << endl
+             << "q, st, sts));"
+             << endl
              << "return result<const object_type> (r);"
              << "}";
 
@@ -2628,7 +2653,7 @@ namespace relational
              << "st.reset (new (odb::details::shared) select_statement ("
              << endl;
 
-          query_statement_ctor_args (c);
+          object_query_statement_ctor_args (c);
 
           os << "));" << endl
              << "st->execute ();";
@@ -2644,12 +2669,12 @@ namespace relational
              << "{"
              << "using namespace " << db << ";"
              << endl
-             << db << "::connection& conn (" << db <<
-            "::transaction::current ().connection ());"
+             << db << "::connection& conn (" << endl
+             << db << "::transaction::current ().connection ());"
              << endl
              << "delete_statement st (" << endl;
 
-          erase_query_statement_ctor_args (c);
+          object_erase_query_statement_ctor_args (c);
 
           os << ");"
              << endl
@@ -2811,6 +2836,142 @@ namespace relational
            << endl;
       }
 
+      //
+      // view
+      //
+
+      virtual void
+      view_extra (type&)
+      {
+      }
+
+      virtual void
+      view_query_statement_ctor_args (type&)
+      {
+        os << "sts.connection ()," << endl
+           << "query_statement + q.clause (\"\")," << endl
+           << "q.parameters_binding ()," << endl
+           << "imb";
+      }
+
+      virtual void
+      traverse_view (type& c)
+      {
+        string const& type (c.fq_name ());
+        string traits ("access::view_traits< " + type + " >");
+
+        os << "// " << c.name () << endl
+           << "//" << endl
+           << endl;
+
+        view_extra (c);
+
+        //
+        // Functions.
+        //
+
+        // grow ()
+        //
+        os << "bool " << traits << "::" << endl
+           << "grow (image_type& i, " << truncated_vector << " t)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (i);"
+           << "ODB_POTENTIALLY_UNUSED (t);"
+           << endl
+           << "bool grew (false);"
+           << endl;
+
+        index_ = 0;
+        names (c, grow_member_names_);
+
+        os << "return grew;"
+           << "}";
+
+        // bind (image_type)
+        //
+        os << "void " << traits << "::" << endl
+           << "bind (" << bind_vector << " b, image_type& i)"
+           << "{"
+           << "bool out (true);" //@@ Try to get rid of this.
+           << "ODB_POTENTIALLY_UNUSED (out);"
+           << endl
+           << "std::size_t n (0);"
+           << endl;
+
+        names (c, bind_member_names_);
+
+        os << "}";
+
+        // init (view, image)
+        //
+        os << "void " << traits << "::" << endl
+           << "init (view_type& o, const image_type& i)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (o);"
+           << "ODB_POTENTIALLY_UNUSED (i);"
+           << endl;
+
+        names (c, init_value_member_names_);
+
+        os << "}";
+
+        // query_statement
+        //
+        os << "const char* const " << traits << "::query_statement =" << endl
+           << strlit (c.get<string> ("query")) << endl
+           << strlit (" ") << ";" << endl
+           << endl;
+
+        // query ()
+        //
+        os << "result< " << traits << "::view_type >" << endl
+           << traits << "::" << endl
+           << "query (database&, const query_type& q)"
+           << "{"
+           << "using namespace " << db << ";"
+           << "using odb::details::shared;"
+           << "using odb::details::shared_ptr;"
+           << endl
+           << db << "::connection& conn (" << endl
+           << db << "::transaction::current ().connection ());"
+           << endl
+           << "view_statements< view_type >& sts (" << endl
+           << "conn.statement_cache ().find_view<view_type> ());"
+           << endl
+           << "image_type& im (sts.image ());"
+           << "binding& imb (sts.image_binding ());"
+           << endl
+           << "if (im.version != sts.image_version () || imb.version == 0)"
+           << "{"
+           << "bind (imb.bind, im);"
+           << "sts.image_version (im.version);"
+           << "imb.version++;"
+           << "}"
+           << "shared_ptr<select_statement> st (" << endl
+           << "new (shared) select_statement (" << endl;
+
+        view_query_statement_ctor_args (c);
+
+        os << "));" << endl
+           << "st->execute ();";
+
+        post_query_ (c);
+
+        os << endl
+           << "shared_ptr<odb::result_impl<view_type, " <<
+          "class_view> > r (" << endl
+           << "new (shared) " << db <<
+          "::result_impl<view_type, class_view> (" << endl
+           << "q, st, sts));"
+           << endl
+           << "return result<view_type> (r);"
+           << "}";
+      }
+
+      //
+      // composite
+      //
+
       virtual void
       traverse_composite (type& c)
       {
@@ -2863,7 +3024,7 @@ namespace relational
 
         os << "}";
 
-        // init (image, object)
+        // init (image, value)
         //
         os << "bool " << traits << "::" << endl
            << "init (image_type& i, const value_type& o)"
@@ -2880,7 +3041,7 @@ namespace relational
         os << "return grew;"
            << "}";
 
-        // init (object, image)
+        // init (value, image)
         //
         os << "void " << traits << "::" << endl
            << "init (value_type& o, const image_type&  i, database& db)"

@@ -50,6 +50,12 @@ struct object_members_base: traversal::class_, virtual context
   virtual void
   traverse_object (semantics::class_&);
 
+  // If you override this function, you can call the base to traverse
+  // members.
+  //
+  virtual void
+  traverse_view (semantics::class_&);
+
 public:
   object_members_base ()
       : member_ (*this)
@@ -143,6 +149,12 @@ struct object_columns_base: traversal::class_, virtual context
   //
   virtual void
   traverse_object (semantics::class_&);
+
+  // If you override this function, you can call the base to traverse
+  // members.
+  //
+  virtual void
+  traverse_view (semantics::class_&);
 
   // Called after the last column, provided at least one column hasn't
   // been ignored.

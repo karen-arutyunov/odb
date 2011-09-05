@@ -1087,16 +1087,16 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        bool obj (object (c));
+        bool ov (object (c) || view (c));
 
-        if (!(obj || composite (c)))
+        if (!(ov || composite (c)))
           return;
 
         names (c);
 
-        // Assign object pointer.
+        // Assign pointer.
         //
-        if (obj)
+        if (ov)
           assign_pointer (c);
       }
 

@@ -41,29 +41,31 @@ namespace relational
       virtual void
       traverse (type& c)
       {
+        bool obj (object (c));
+
         // Ignore transient bases.
         //
-        if (!object (c))
+        if (!(obj || view (c)))
           return;
 
         if (c.count ("callback"))
         {
           string name (c.get<string> ("callback"));
 
-          // In case of the const object, we only generate the call if
+          // In case of the const instance, we only generate the call if
           // there is a const callback.
           //
           if (const_)
           {
             if (c.count ("callback-const"))
-              os << "static_cast< const " << c.fq_name () << "& > (obj)." <<
+              os << "static_cast< const " << c.fq_name () << "& > (x)." <<
                 name << " (e, db);";
           }
           else
-            os << "static_cast< " << c.fq_name () << "& > (obj)." <<
+            os << "static_cast< " << c.fq_name () << "& > (x)." <<
               name << " (e, db);";
         }
-        else
+        else if (obj)
           inherits (c);
       }
 
@@ -86,6 +88,8 @@ namespace relational
 
         if (object (c))
           traverse_object (c);
+        if (view (c))
+          traverse_view (c);
         else if (composite (c))
           traverse_composite (c);
       }
@@ -178,11 +182,11 @@ namespace relational
         //
         os << "inline" << endl
            << "void " << traits << "::" << endl
-           << "callback (database& db, object_type& obj, callback_event e)"
+           << "callback (database& db, object_type& x, callback_event e)"
            <<  endl
            << "{"
            << "ODB_POTENTIALLY_UNUSED (db);"
-           << "ODB_POTENTIALLY_UNUSED (obj);"
+           << "ODB_POTENTIALLY_UNUSED (x);"
            << "ODB_POTENTIALLY_UNUSED (e);"
            << endl;
         callback_calls_->traverse (c, false);
@@ -190,11 +194,10 @@ namespace relational
 
         os << "inline" << endl
            << "void " << traits << "::" << endl
-           << "callback (database& db, const object_type& obj, " <<
-          "callback_event e)"
+           << "callback (database& db, const object_type& x, callback_event e)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (db);"
-           << "ODB_POTENTIALLY_UNUSED (obj);"
+           << "ODB_POTENTIALLY_UNUSED (x);"
            << "ODB_POTENTIALLY_UNUSED (e);"
            << endl;
         callback_calls_->traverse (c, true);
@@ -236,6 +239,38 @@ namespace relational
              << "{"
              << "}";
         }
+      }
+
+      virtual void
+      view_extra (type&)
+      {
+      }
+
+      virtual void
+      traverse_view (type& c)
+      {
+        string const& type (c.fq_name ());
+        string traits ("access::view_traits< " + type + " >");
+
+        os << "// " << c.name () << endl
+           << "//" << endl
+           << endl;
+
+        view_extra (c);
+
+        // callback ()
+        //
+        os << "inline" << endl
+           << "void " << traits << "::" << endl
+           << "callback (database& db, view_type& x, callback_event e)"
+           <<  endl
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (db);"
+           << "ODB_POTENTIALLY_UNUSED (x);"
+           << "ODB_POTENTIALLY_UNUSED (e);"
+           << endl;
+        callback_calls_->traverse (c, false);
+        os << "}";
       }
 
       virtual void

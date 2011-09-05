@@ -122,9 +122,11 @@ namespace relational
         virtual void
         traverse (type& c)
         {
+          bool view (context::view (c));
+
           // Ignore transient bases.
           //
-          if (!(context::object (c) || context::composite (c)))
+          if (!(context::object (c) || view || context::composite (c)))
             return;
 
           if (c.count ("mysql-grow"))
@@ -133,7 +135,8 @@ namespace relational
           {
             // r_ should be false.
             //
-            inherits (c);
+            if (!view)
+              inherits (c);
 
             if (!r_)
               names (c);

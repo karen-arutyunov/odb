@@ -44,6 +44,14 @@ traverse_object (semantics::class_& c)
 }
 
 void object_members_base::
+traverse_view (semantics::class_& c)
+{
+  // A view has no bases.
+  //
+  names (c);
+}
+
+void object_members_base::
 traverse (semantics::data_member& m, semantics::class_& c)
 {
   traverse_composite_wrapper (&m, c, 0);
@@ -52,24 +60,28 @@ traverse (semantics::data_member& m, semantics::class_& c)
 void object_members_base::
 traverse (semantics::class_& c)
 {
-  bool obj (object (c));
+  class_kind_type k (class_kind (c));
 
-  // Ignore transient bases.
-  //
-  if (!(obj || context::composite (c)))
-    return;
-
-  semantics::class_* prev;
-  if (obj)
+  if (k == class_other)
   {
-    prev = context::cur_object;
-    context::cur_object = &c;
-
-    if (context::top_object == 0)
-      context::top_object = &c;
+    // Ignore transient bases.
+    //
+    assert (context::top_object != 0);
+    return;
+  }
+  else if (k == class_composite)
+  {
+    traverse_composite_wrapper (0, c, 0);
+    return;
   }
 
-  if (obj && build_table_prefix_)
+  semantics::class_* prev (context::cur_object);
+  context::cur_object = &c;
+
+  if (context::top_object == 0)
+    context::top_object = &c;
+
+  if (build_table_prefix_)
   {
     // Don't reset the table prefix if we are traversing a base.
     //
@@ -83,7 +95,10 @@ traverse (semantics::class_& c)
       tb = true;
     }
 
-    traverse_object (c);
+    if (k == class_object)
+      traverse_object (c);
+    else
+      traverse_view (c);
 
     if (tb)
     {
@@ -93,19 +108,16 @@ traverse (semantics::class_& c)
   }
   else
   {
-    if (obj)
+    if (k == class_object)
       traverse_object (c);
     else
-      traverse_composite_wrapper (0, c, 0);
+      traverse_view (c);
   }
 
-  if (obj)
-  {
-    if (prev == 0)
-      context::top_object = 0;
+  if (prev == 0)
+    context::top_object = 0;
 
-    context::cur_object = prev;
-  }
+  context::cur_object = prev;
 }
 
 void object_members_base::member::
@@ -206,6 +218,14 @@ traverse_object (semantics::class_& c)
 }
 
 void object_columns_base::
+traverse_view (semantics::class_& c)
+{
+  // A view has no bases.
+  //
+  names (c);
+}
+
+void object_columns_base::
 traverse (semantics::data_member& m,
           semantics::class_& c,
           string const& key_prefix,
@@ -236,12 +256,15 @@ traverse (semantics::data_member& m,
 void object_columns_base::
 traverse (semantics::class_& c)
 {
-  bool obj (object (c));
+  class_kind_type k (class_kind (c));
 
   // Ignore transient bases.
   //
-  if (!(obj || context::composite (c)))
+  if (k == class_other)
+  {
+    assert (context::top_object != 0);
     return;
+  }
 
   bool f (top_level_);
 
@@ -249,7 +272,7 @@ traverse (semantics::class_& c)
     top_level_ = false;
 
   semantics::class_* prev;
-  if (obj)
+  if (k == class_object || k == class_view)
   {
     prev = context::cur_object;
     context::cur_object = &c;
@@ -258,12 +281,14 @@ traverse (semantics::class_& c)
       context::top_object = &c;
   }
 
-  if (obj)
+  if (k == class_object)
     traverse_object (c);
-  else
+  else if (k == class_view)
+    traverse_view (c);
+  else if (k == class_composite)
     traverse_composite (0, c);
 
-  if (obj)
+  if (k == class_object || k == class_view)
   {
     if (prev == 0)
       context::top_object = 0;

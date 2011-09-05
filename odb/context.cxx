@@ -279,6 +279,19 @@ null (semantics::data_member& m, string const& kp)
   }
 }
 
+context::class_kind_type context::
+class_kind (semantics::class_& c)
+{
+  if (object (c))
+    return class_object;
+  else if (view (c))
+    return class_view;
+  else if (composite (c))
+    return class_composite;
+  else
+    return class_other;
+}
+
 string context::
 upcase (string const& s)
 {
@@ -1006,10 +1019,10 @@ is_a (semantics::data_member& m,
 }
 
 bool context::
-has_a (semantics::type& t, unsigned short flags)
+has_a (semantics::class_& c, unsigned short flags)
 {
   has_a_impl impl (flags);
-  impl.dispatch (t);
+  impl.dispatch (c);
   return impl.result ();
 }
 

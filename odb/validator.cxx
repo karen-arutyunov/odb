@@ -80,10 +80,12 @@ namespace
   //
   struct id_member: traversal::class_
   {
-    id_member (bool object, bool& valid, semantics::data_member*& m)
-        : object_ (object), member_ (valid, m)
+    id_member (class_kind kind, bool& valid, semantics::data_member*& m)
+        : kind_ (kind), member_ (valid, m)
     {
-      *this >> inherits_ >> *this;
+      if (kind != class_view)
+        *this >> inherits_ >> *this;
+
       *this >> names_ >> member_;
     }
 
@@ -92,18 +94,36 @@ namespace
     {
       // Skip transient bases.
       //
-      if (object_)
+      switch (kind_)
       {
-        if (!context::object (c))
-          return;
-      }
-      else
-      {
-        if (!context::composite (c))
-          return;
+      case class_object:
+        {
+          if (!context::object (c))
+            return;
+          break;
+        }
+      case class_view:
+        {
+          break;
+        }
+      case class_composite:
+        {
+          if (!context::composite (c))
+            return;
+          break;
+        }
+      case class_other:
+        {
+          assert (false);
+          break;
+        }
       }
 
-      inherits (c);
+      // Views don't have bases.
+      //
+      if (kind_ != class_view)
+        inherits (c);
+
       names (c);
     }
 
@@ -139,7 +159,7 @@ namespace
       semantics::data_member*& m_;
     };
 
-    bool object_;
+    class_kind kind_;
     member member_;
     traversal::names names_;
     traversal::inherits inherits_;
@@ -178,6 +198,8 @@ namespace
     {
       if (context::object (c))
         traverse_object (c);
+      else if (context::view (c))
+        traverse_view (c);
       else
       {
         if (context::composite (c))
@@ -241,18 +263,20 @@ namespace
 
         if (context::object (b))
           base = true;
-        if (context::composite (b))
+        else if (context::view (b) || context::composite (b))
         {
           // @@ Should we use hint here?
           //
           string name (b.fq_name ());
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: base class '" << name << "' is a value type"
+               << " error: base class '" << name << "' is a view or value type"
                << endl;
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: object types cannot derive from value types" << endl;
+               << " info: object types cannot derive from view or value "
+               << "types"
+               << endl;
 
           cerr << b.file () << ":" << b.line () << ":" << b.column () << ":"
                << " info: class '" << name << "' is defined here" << endl;
@@ -265,7 +289,7 @@ namespace
       //
       semantics::data_member* id (0);
       {
-        id_member t (true, valid_, id);
+        id_member t (class_object, valid_, id);
         t.traverse (c);
       }
 
@@ -328,31 +352,33 @@ namespace
     }
 
     virtual void
-    traverse_composite (type& c)
+    traverse_view (type& c)
     {
-      bool base (false);
-
+      // Check bases.
+      //
       for (type::inherits_iterator i (c.inherits_begin ());
            i != c.inherits_end ();
            ++i)
       {
         type& b (i->base ());
 
-        if (context::composite (b))
-          base = true;
-        else if (context::object (b))
+        if (context::object (b) ||
+            context::view (b) ||
+            context::composite (b))
         {
           // @@ Should we use hint here?
           //
           string name (b.fq_name ());
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: base class '" << name << "' is an object type"
+               << " error: base class '" << name << "' is an object, "
+               << "view, or value type"
                << endl;
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: composite value types cannot derive from object "
-               << "types" << endl;
+               << " info: view types cannot derive from view, object or "
+               << "value types"
+               << endl;
 
           cerr << b.file () << ":" << b.line () << ":" << b.column () << ":"
                << " info: class '" << name << "' is defined here" << endl;
@@ -365,7 +391,73 @@ namespace
       //
       semantics::data_member* id (0);
       {
-        id_member t (false, valid_, id);
+        id_member t (class_view, valid_, id);
+        t.traverse (c);
+      }
+
+      if (id != 0)
+      {
+        cerr << id->file () << ":" << id->line () << ":" << id->column ()
+             << ": error: view type data member cannot be designated as "
+             << "object id" << endl;
+
+        valid_ = false;
+      }
+
+      // Check members.
+      //
+      member_.count_ = 0;
+      names (c);
+
+      if (member_.count_ == 0)
+      {
+        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: no persistent data members in the class" << endl;
+
+        valid_ = false;
+      }
+    }
+
+    virtual void
+    traverse_composite (type& c)
+    {
+      bool base (false);
+
+      for (type::inherits_iterator i (c.inherits_begin ());
+           i != c.inherits_end ();
+           ++i)
+      {
+        type& b (i->base ());
+
+        if (context::composite (b))
+          base = true;
+        else if (context::object (b) || context::view (b))
+        {
+          // @@ Should we use hint here?
+          //
+          string name (b.fq_name ());
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " error: base class '" << name << "' is a view or object "
+               << "type"
+               << endl;
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " info: composite value types cannot derive from object "
+               << "or view types" << endl;
+
+          cerr << b.file () << ":" << b.line () << ":" << b.column () << ":"
+               << " info: class '" << name << "' is defined here" << endl;
+
+          valid_ = false;
+        }
+      }
+
+      // Check id.
+      //
+      semantics::data_member* id (0);
+      {
+        id_member t (class_composite, valid_, id);
         t.traverse (c);
       }
 

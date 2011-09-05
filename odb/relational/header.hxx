@@ -46,7 +46,7 @@ namespace relational
       {
         bool obj (object (c));
 
-        // Ignore transient bases.
+        // Ignore transient bases. Not used for views.
         //
         if (!(obj || composite (c)))
           return;
@@ -92,6 +92,7 @@ namespace relational
       {
         os << "struct image_type";
 
+        if (!view (c))
         {
           instance<image_base> b;
           traversal::inherits i (*b);
@@ -126,7 +127,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        // Ignore transient bases.
+        // Ignore transient bases. Not used for views.
         //
         if (!object (c))
           return;
@@ -224,7 +225,7 @@ namespace relational
 
         if (object (c_))
         {
-          base = cur_object != &c_ || 
+          base = cur_object != &c_ ||
             !object (dynamic_cast<type&> (m.scope ()));
           abst = abstract (c_);
         }
@@ -754,6 +755,8 @@ namespace relational
 
         if (object (c))
           traverse_object (c);
+        else if (view (c))
+          traverse_view (c);
         else if (composite (c))
           traverse_composite (c);
       }
@@ -780,6 +783,12 @@ namespace relational
 
         os << "// " << c.name () << endl
            << "//" << endl;
+
+        os << "template <>" << endl
+           << "struct class_traits< " << type << " >"
+           << "{"
+           << "static const class_kind kind = class_object;"
+           << "};";
 
         os << "template <>" << endl
            << "class access::object_traits< " << type << " >"
@@ -1073,6 +1082,124 @@ namespace relational
       }
 
       virtual void
+      view_public_extra_pre (type&)
+      {
+      }
+
+      virtual void
+      view_public_extra_post (type&)
+      {
+      }
+
+      virtual void
+      traverse_view (type& c)
+      {
+        string const& type (c.fq_name ());
+
+        os << "// " << c.name () << endl
+           << "//" << endl;
+
+        os << "template <>" << endl
+           << "struct class_traits< " << type << " >"
+           << "{"
+           << "static const class_kind kind = class_view;"
+           << "};";
+
+        os << "template <>" << endl
+           << "class access::view_traits< " << type << " >"
+           << "{"
+           << "public:" << endl;
+
+        view_public_extra_pre (c);
+
+        // view_type & pointer_type
+        //
+        os << "typedef " << type << " view_type;"
+           << "typedef " << c.get<string> ("object-pointer") << " pointer_type;"
+           << endl;
+
+        // image_type
+        //
+        image_type_->traverse (c);
+
+        //
+        // Query.
+        //
+
+        // query_base_type
+        //
+        os << "typedef " << db << "::query query_base_type;"
+           << endl;
+
+        // query_type
+        //
+        os << "typedef query_base_type query_type;"
+           << endl;
+
+        /*
+        os << "struct query_type: query_base_type, query_columns"
+           << "{"
+           << "query_type ();"
+           << "query_type (const std::string&);"
+           << "query_type (const query_base_type&);"
+           << "};";
+        */
+
+        //
+        // Functions.
+        //
+
+        // grow ()
+        //
+        os << "static bool" << endl
+           << "grow (image_type&, " << truncated_vector << ");"
+           << endl;
+
+        // bind (image_type)
+        //
+        os << "static void" << endl
+           << "bind (" << bind_vector << ", image_type&);"
+           << endl;
+
+        // init (view, image)
+        //
+        os << "static void" << endl
+           << "init (view_type&, const image_type&);"
+           << endl;
+
+        // column_count
+        //
+        os << "static const std::size_t column_count = " <<
+          out_column_count (c) << "UL;"
+           << endl;
+
+        // Statements.
+        //
+        os << "static const char* const query_statement;"
+           << endl;
+
+        //
+        // Functions.
+        //
+
+        // callback ()
+        //
+        os << "static void" << endl
+           << "callback (database&, view_type&, callback_event);"
+           <<  endl;
+
+        // query ()
+        //
+        os << "static result<view_type>" << endl
+           << "query (database&, const query_type&);"
+           << endl;
+
+        view_public_extra_post (c);
+
+        os << "};";
+      }
+
+      virtual void
       traverse_composite (type& c)
       {
         string const& type (c.fq_name ());
@@ -1081,11 +1208,17 @@ namespace relational
            << "//" << endl;
 
         os << "template <>" << endl
+           << "struct class_traits< " << type << " >"
+           << "{"
+           << "static const class_kind kind = class_composite;"
+           << "};";
+
+        os << "template <>" << endl
            << "class access::composite_value_traits< " << type << " >"
            << "{"
            << "public:" << endl;
 
-        // object_type
+        // value_type
         //
         os << "typedef " << type << " value_type;"
            << endl;
@@ -1113,13 +1246,13 @@ namespace relational
            << "bind (" << bind_vector << ", image_type&);"
            << endl;
 
-        // init (image, object)
+        // init (image, value)
         //
         os << "static bool" << endl
            << "init (image_type&, const value_type&);"
            << endl;
 
-        // init (object, image)
+        // init (value, image)
         //
         os << "static void" << endl
            << "init (value_type&, const image_type&, database&);"

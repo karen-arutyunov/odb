@@ -126,9 +126,11 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
     }
   }
   else if (p == "object" ||
+           p == "view" ||
            p == "pointer" ||
            p == "abstract" ||
-           p == "callback")
+           p == "callback" ||
+           p == "query")
   {
     if (tc != RECORD_TYPE)
     {
@@ -140,7 +142,7 @@ check_decl_type (tree d, string const& name, string const& p, location_t l)
   else if (p == "table")
   {
     // Table can be used for both members (container) and types (container
-    // or object).
+    // object, or view).
     //
     if (tc != FIELD_DECL && !TYPE_P (d))
     {
@@ -433,6 +435,40 @@ handle_pragma (cpp_reader* reader,
     }
 
     val = IDENTIFIER_POINTER (t);
+
+    if (pragma_lex (&t) != CPP_CLOSE_PAREN)
+    {
+      error () << "')' expected at the end of db pragma '" << p << "'" << endl;
+      return;
+    }
+
+    tt = pragma_lex (&t);
+  }
+  else if (p == "query")
+  {
+    // query ("statement")
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (pragma_lex (&t) != CPP_OPEN_PAREN)
+    {
+      error () << "'(' expected after db pragma '" << p << "'" << endl;
+      return;
+    }
+
+    tt = pragma_lex (&t);
+
+    if (tt != CPP_STRING)
+    {
+      error () << "query statement expected in db pragma '" << p << "'" << endl;
+      return;
+    }
+
+    val = TREE_STRING_POINTER (t);
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
@@ -839,47 +875,12 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
   // Pragma qualifiers.
   //
-  if (p == "object")
+  if (p == "object" ||
+      p == "view" ||
+      p == "value")
   {
     // object [(<identifier>)]
-    //
-
-    tt = pragma_lex (&t);
-
-    if (tt == CPP_OPEN_PAREN)
-    {
-      tt = pragma_lex (&t);
-
-      if (tt == CPP_NAME || tt == CPP_SCOPE)
-      {
-        decl = parse_scoped_name (t, tt, decl_name, true, p);
-
-        if (decl == 0)
-          return;
-
-        // Make sure we've got the correct declaration type.
-        //
-        if (!check_decl_type (decl, decl_name, p, loc))
-          return;
-
-        if (tt != CPP_CLOSE_PAREN)
-        {
-          error () << "')' expected at the end of db pragma '" << p << "'"
-                   << endl;
-          return;
-        }
-
-        tt = pragma_lex (&t);
-      }
-      else
-      {
-        error () << "type name expected in db pragma '" << p << "'" << endl;
-        return;
-      }
-    }
-  }
-  else if (p == "value")
-  {
+    // view [(<identifier>)]
     // value [(<identifier>)]
     //
 
@@ -1026,6 +1027,12 @@ extern "C" void
 handle_pragma_db_object (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "object");
+}
+
+extern "C" void
+handle_pragma_db_view (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "view");
 }
 
 extern "C" void
@@ -1229,6 +1236,7 @@ register_odb_pragmas (void*, void*)
 
   /*
   c_register_pragma_with_expansion ("db", "object", handle_pragma_db_object);
+  c_register_pragma_with_expansion ("db", "view", handle_pragma_db_view);
   c_register_pragma_with_expansion ("db", "value", handle_pragma_db_value);
   c_register_pragma_with_expansion ("db", "member", handle_pragma_db_member);
   c_register_pragma_with_expansion ("db", "id", handle_pragma_db_id);

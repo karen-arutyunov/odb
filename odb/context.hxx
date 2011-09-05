@@ -57,6 +57,16 @@ enum container_kind
   ck_multimap
 };
 
+// The same as class_kind in libodb/odb/traits.hxx.
+//
+enum class_kind
+{
+  class_object,
+  class_view,
+  class_composite,
+  class_other
+};
+
 class context
 {
 public:
@@ -81,6 +91,12 @@ public:
   object (semantics::type& t)
   {
     return t.count ("object");
+  }
+
+  static bool
+  view (semantics::type& t)
+  {
+    return t.count ("view");
   }
 
   static bool
@@ -176,6 +192,11 @@ public:
 
   bool
   null (semantics::data_member&, string const& key_prefix);
+
+  typedef ::class_kind class_kind_type;
+
+  static class_kind_type
+  class_kind (semantics::class_&);
 
   // Database names and types.
   //
@@ -377,7 +398,7 @@ public:
         string const& key_prefix);
 
   bool
-  has_a (semantics::type&, unsigned short flags);
+  has_a (semantics::class_&, unsigned short flags);
 
 public:
   // Process include path by adding the prefix, putting it through
@@ -480,12 +501,12 @@ public:
 
   bool embedded_schema;
 
-  // Outermost object currently being traversed.
+  // Outermost object or view currently being traversed.
   //
   semantics::class_*& top_object;
 
-  // Object currently being traversed. It can be the same as top_object
-  // or it can a base of top_object.
+  // Object or view currently being traversed. It can be the same as
+  // top_object or it can a base of top_object.
   //
   semantics::class_*& cur_object;
 

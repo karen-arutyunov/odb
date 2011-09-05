@@ -79,7 +79,9 @@ namespace
       if (c.file () == unit.file ())
         return;
 
-      // We only generate things for objects and composite value types.
+      // We only generate things for objects and composite value types. In
+      // particular, we don't care about views since they cannot be used in
+      // definitions of other views, objects, or composite values.
       //
       if (!(object (c) || composite (c)))
         return;
