@@ -21,9 +21,9 @@ namespace relational
         class_ (base const& x): base (x) {}
 
         virtual void
-        object_public_extra_post (type& t)
+        object_public_extra_post (type& c)
         {
-          if (abstract (t))
+          if (abstract (c))
             return;
 
           // Statement names.
@@ -49,6 +49,15 @@ namespace relational
              << "static const unsigned int erase_statement_types[];"
              << endl;
 
+        }
+
+        virtual void
+        view_public_extra_post (type&)
+        {
+          // Statement names.
+          //
+          os << "static const char* const query_statement_name;"
+             << endl;
         }
       };
       entry<class_> class_entry_;

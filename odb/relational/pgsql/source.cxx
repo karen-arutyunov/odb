@@ -873,14 +873,14 @@ namespace relational
         }
 
         virtual void
-        object_extra (type& t)
+        object_extra (type& c)
         {
-          if (abstract (t))
+          if (abstract (c))
             return;
 
-          string const& tn (t.fq_name ());
-          string traits ("access::object_traits< " + tn + " >::");
-          string const& fn (flat_name (tn));
+          string const& n (c.fq_name ());
+          string traits ("access::object_traits< " + n + " >::");
+          string const& fn (flat_name (n));
           string name_decl ("const char* const " + traits);
 
           os << name_decl << endl
@@ -912,7 +912,7 @@ namespace relational
           // Statement types.
           //
           string oid_decl ("const unsigned int " + traits);
-          semantics::data_member* id_m (id_member (t));
+          semantics::data_member* id_m (id_member (c));
 
           // persist_statement_types.
           //
@@ -922,7 +922,7 @@ namespace relational
                << "{";
 
             instance<statement_oids> st;
-            st->traverse (t);
+            st->traverse (c);
 
             os << "};";
           }
@@ -948,7 +948,7 @@ namespace relational
                << "{";
 
             instance<statement_oids> st;
-            st->traverse (t);
+            st->traverse (c);
             st->traverse_column (*id_m, "", false);
 
             os << "};";
@@ -966,6 +966,19 @@ namespace relational
 
             os << "};";
           }
+        }
+
+        virtual void
+        view_extra (type& c)
+        {
+          string const& n (c.fq_name ());
+          string traits ("access::view_traits< " + n + " >::");
+          string const& fn (flat_name (n));
+          string name_decl ("const char* const " + traits);
+
+          os << name_decl << endl
+             << "query_statement_name = " << strlit (fn + "_query") << ";"
+             << endl;
         }
 
         virtual void
@@ -991,6 +1004,17 @@ namespace relational
              << "q.parameters_binding ()";
         }
 
+        virtual void
+        view_query_statement_ctor_args (type&)
+        {
+          os << "sts.connection ()," << endl
+             << "query_statement_name," << endl
+             << "query_statement + q.clause (\"\")," << endl
+             << "q.parameter_types ()," << endl
+             << "q.parameter_count ()," << endl
+             << "q.parameters_binding ()," << endl
+             << "imb";
+        }
 
         virtual void
         post_query_ (type&)
