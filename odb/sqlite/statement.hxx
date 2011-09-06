@@ -216,6 +216,10 @@ namespace odb
                         binding& cond,
                         binding& data);
 
+      select_statement (connection& conn,
+                        const std::string& statement,
+                        binding& data);
+
       // Common select interface expected by the generated code.
       //
     public:
@@ -273,7 +277,7 @@ namespace odb
 
     private:
       bool done_;
-      binding& cond_;
+      binding* cond_;
       binding& data_;
     };
 

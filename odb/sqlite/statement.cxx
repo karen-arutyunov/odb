@@ -239,7 +239,15 @@ namespace odb
                       const string& s,
                       binding& cond,
                       binding& data)
-        : statement (conn, s), cond_ (cond), data_ (data)
+        : statement (conn, s), cond_ (&cond), data_ (data)
+    {
+    }
+
+    select_statement::
+    select_statement (connection& conn,
+                      const string& s,
+                      binding& data)
+        : statement (conn, s), cond_ (0), data_ (data)
     {
     }
 
@@ -250,7 +258,10 @@ namespace odb
         reset ();
 
       done_ = false;
-      bind_param (cond_.bind, cond_.count);
+
+      if (cond_ != 0)
+        bind_param (cond_->bind, cond_->count);
+
       active (true);
     }
 
