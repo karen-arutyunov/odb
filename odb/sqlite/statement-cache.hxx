@@ -12,12 +12,16 @@
 #include <typeinfo>
 
 #include <odb/forward.hxx>
+
 #include <odb/details/shared-ptr.hxx>
 #include <odb/details/type-info.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/statement.hxx>
+#include <odb/sqlite/statements-base.hxx>
 #include <odb/sqlite/object-statements.hxx>
+#include <odb/sqlite/view-statements.hxx>
+
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
@@ -69,7 +73,7 @@ namespace odb
 
       template <typename T>
       object_statements<T>&
-      find ()
+      find_object ()
       {
         map::iterator i (map_.find (&typeid (T)));
 
@@ -78,6 +82,22 @@ namespace odb
 
         details::shared_ptr<object_statements<T> > p (
           new (details::shared) object_statements<T> (conn_));
+
+        map_.insert (map::value_type (&typeid (T), p));
+        return *p;
+      }
+
+      template <typename T>
+      view_statements<T>&
+      find_view ()
+      {
+        map::iterator i (map_.find (&typeid (T)));
+
+        if (i != map_.end ())
+          return static_cast<view_statements<T>&> (*i->second);
+
+        details::shared_ptr<view_statements<T> > p (
+          new (details::shared) view_statements<T> (conn_));
 
         map_.insert (map::value_type (&typeid (T), p));
         return *p;
@@ -92,7 +112,7 @@ namespace odb
 
     private:
       typedef std::map<const std::type_info*,
-                       details::shared_ptr<object_statements_base>,
+                       details::shared_ptr<statements_base>,
                        details::type_info_comparator> map;
 
       connection& conn_;

@@ -8,14 +8,15 @@
 
 #include <odb/pre.hxx>
 
-#include <cstddef> // std::size_t
-
+#include <odb/traits.hxx>
 #include <odb/result.hxx>
+
 #include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx> // query, query_params
 #include <odb/sqlite/statement.hxx>
+
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
@@ -35,54 +36,18 @@ namespace odb
       details::shared_ptr<select_statement> statement_;
     };
 
-    template <typename T>
-    class result_impl: public odb::result_impl<T>, public result_impl_base
-    {
-    public:
-      typedef typename odb::result_impl<T>::pointer_type pointer_type;
-      typedef typename odb::result_impl<T>::pointer_traits pointer_traits;
-
-      typedef typename odb::result_impl<T>::object_type object_type;
-      typedef typename odb::result_impl<T>::id_type id_type;
-      typedef typename odb::result_impl<T>::object_traits object_traits;
-
-
-      virtual
-      ~result_impl ();
-
-      result_impl (const query&,
-                   details::shared_ptr<select_statement>,
-                   object_statements<object_type>&);
-
-      virtual void
-      load (object_type&);
-
-      virtual id_type
-      load_id ();
-
-      virtual void
-      next ();
-
-      virtual void
-      cache ();
-
-      virtual std::size_t
-      size ();
-
-      using odb::result_impl<T>::current;
-
-    private:
-      void
-      load_image ();
-
-    private:
-      object_statements<object_type>& statements_;
-    };
+    template <typename T, class_kind kind>
+    class result_impl;
   }
 }
-
-#include <odb/sqlite/result.txx>
 
 #include <odb/post.hxx>
 
 #endif // ODB_SQLITE_RESULT_HXX
+
+// Include result specializations so that the user code only needs
+// to include this header.
+//
+
+#include <odb/sqlite/object-result.hxx>
+#include <odb/sqlite/view-result.hxx>

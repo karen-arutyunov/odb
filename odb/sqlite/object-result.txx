@@ -1,4 +1,4 @@
-// file      : odb/sqlite/result.txx
+// file      : odb/sqlite/object-result.txx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
@@ -6,29 +6,31 @@
 #include <odb/callback.hxx>
 #include <odb/exceptions.hxx>
 
+#include <odb/sqlite/object-statements.hxx>
+
 namespace odb
 {
   namespace sqlite
   {
     template <typename T>
-    result_impl<T>::
+    result_impl<T, class_object>::
     ~result_impl ()
     {
     }
 
     template <typename T>
-    result_impl<T>::
+    result_impl<T, class_object>::
     result_impl (const query& q,
-                 details::shared_ptr<select_statement> st,
-                 object_statements<object_type>& sts)
-        : odb::result_impl<T> (sts.connection ().database ()),
-          result_impl_base (q, st),
-          statements_ (sts)
+                 details::shared_ptr<select_statement> statement,
+                 object_statements<object_type>& statements)
+        : base_type (statements.connection ().database ()),
+          result_impl_base (q, statement),
+          statements_ (statements)
     {
     }
 
     template <typename T>
-    void result_impl<T>::
+    void result_impl<T, class_object>::
     load (object_type& obj)
     {
       load_image ();
@@ -65,7 +67,8 @@ namespace odb
     }
 
     template <typename T>
-    typename result_impl<T>::id_type result_impl<T>::
+    typename result_impl<T, class_object>::id_type
+    result_impl<T, class_object>::
     load_id ()
     {
       load_image ();
@@ -73,7 +76,7 @@ namespace odb
     }
 
     template <typename T>
-    void result_impl<T>::
+    void result_impl<T, class_object>::
     next ()
     {
       this->current (pointer_type ());
@@ -83,7 +86,7 @@ namespace odb
     }
 
     template <typename T>
-    void result_impl<T>::
+    void result_impl<T, class_object>::
     load_image ()
     {
       // The image can grow between calls to load() as a result of other
@@ -118,13 +121,13 @@ namespace odb
     }
 
     template <typename T>
-    void result_impl<T>::
+    void result_impl<T, class_object>::
     cache ()
     {
     }
 
     template <typename T>
-    std::size_t result_impl<T>::
+    std::size_t result_impl<T, class_object>::
     size ()
     {
       throw result_not_cached ();

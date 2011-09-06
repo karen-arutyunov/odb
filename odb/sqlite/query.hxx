@@ -1199,7 +1199,7 @@ namespace odb
 namespace odb
 {
   template <typename T>
-  class query<T, sqlite::query>: public object_traits<T>::query_type
+  class query<T, sqlite::query>: public query_selector<T>::type
   {
   public:
     // We don't define any typedefs here since they may clash with
@@ -1212,40 +1212,40 @@ namespace odb
 
     explicit
     query (const std::string& q)
-        : object_traits<T>::query_type (q)
+        : query_selector<T>::type (q)
     {
     }
 
     template <typename T2>
     explicit
     query (sqlite::val_bind<T2> v)
-        : object_traits<T>::query_type (sqlite::query (v))
+        : query_selector<T>::type (sqlite::query (v))
     {
     }
 
     template <typename T2>
     explicit
     query (sqlite::ref_bind<T2> r)
-        : object_traits<T>::query_type (sqlite::query (r))
+        : query_selector<T>::type (sqlite::query (r))
     {
     }
 
     query (const sqlite::query& q)
-        : object_traits<T>::query_type (q)
+        : query_selector<T>::type (q)
     {
     }
 
     template <sqlite::database_type_id ID>
     query (const sqlite::query_column<bool, ID>& qc)
-        : object_traits<T>::query_type (qc)
+        : query_selector<T>::type (qc)
     {
     }
 
     std::string
     clause () const
     {
-      return object_traits<T>::query_type::clause (
-        object_traits<T>::table_name);
+      return query_selector<T>::type::clause (
+        query_selector<T>::table_name ());
     }
   };
 }

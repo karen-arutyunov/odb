@@ -15,31 +15,23 @@
 #include <odb/forward.hxx>
 #include <odb/traits.hxx>
 #include <odb/cache-traits.hxx>
+
 #include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/binding.hxx>
 #include <odb/sqlite/statement.hxx>
+#include <odb/sqlite/statements-base.hxx>
+
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
 {
   namespace sqlite
   {
-    class connection;
-
-    class LIBODB_SQLITE_EXPORT object_statements_base:
-      public details::shared_base
+    class LIBODB_SQLITE_EXPORT object_statements_base: public statements_base
     {
     public:
-      typedef sqlite::connection connection_type;
-
-      connection_type&
-      connection ()
-      {
-        return conn_;
-      }
-
       // Locking.
       //
       void
@@ -68,7 +60,7 @@ namespace odb
 
     protected:
       object_statements_base (connection_type& conn)
-        : conn_ (conn), locked_ (false)
+        : statements_base (conn), locked_ (false)
       {
       }
 
@@ -89,7 +81,6 @@ namespace odb
       };
 
     protected:
-      connection_type& conn_;
       bool locked_;
     };
 
@@ -150,9 +141,12 @@ namespace odb
         bool locked_;
       };
 
-      //
-      //
+
+    public:
       object_statements (connection_type&);
+
+      virtual
+      ~object_statements ();
 
       // Delayed loading.
       //

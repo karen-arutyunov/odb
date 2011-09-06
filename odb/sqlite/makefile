@@ -16,6 +16,7 @@ query.cxx               \
 result.cxx              \
 statement-cache.cxx     \
 statement.cxx           \
+statements-base.cxx     \
 traits.cxx              \
 transaction.cxx         \
 transaction-impl.cxx
