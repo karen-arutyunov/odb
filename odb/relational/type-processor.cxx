@@ -5,6 +5,8 @@
 
 #include <odb/gcc.hxx>
 
+#include <vector>
+
 #include <odb/cxx-lexer.hxx>
 
 #include <odb/relational/context.hxx>
@@ -1087,17 +1089,77 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        bool ov (object (c) || view (c));
+        class_kind_type k (class_kind (c));
 
-        if (!(ov || composite (c)))
+        if (k == class_other)
           return;
 
         names (c);
 
         // Assign pointer.
         //
-        if (ov)
+        if (k == class_object || k == class_view)
           assign_pointer (c);
+
+        // Do some additional processing for views.
+        //
+        if (k == class_view)
+          traverse_view (c);
+      }
+
+      virtual void
+      traverse_view (type& c)
+      {
+        // Convert referenced objects from tree nodes to semantic graph
+        // nodes.
+        //
+        if (c.count ("objects"))
+        {
+          using semantics::class_;
+
+          typedef vector<tree> tree_nodes;
+          typedef vector<class_*> class_nodes;
+
+          strings names  (c.get<strings> ("objects"));
+          tree_nodes tnodes (c.get<tree_nodes> ("objects-node"));
+
+          c.remove ("objects");
+          c.remove ("objects-node");
+
+          c.set ("objects", class_nodes ());
+          class_nodes& nodes (c.get<class_nodes> ("objects"));
+
+          for (size_t i (0); i < names.size (); ++i)
+          {
+            tree n (TYPE_MAIN_VARIANT (tnodes[i]));
+
+            if (TREE_CODE (n) != RECORD_TYPE)
+            {
+              os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+                 << " error: name '" << names[i] << "' in db pragma object "
+                 << " does not name a class" << endl;
+
+              throw generation_failed ();
+            }
+
+            class_& o (dynamic_cast<class_&> (*unit.find (n)));
+
+            if (!object (o))
+            {
+              os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+                 << " error: name '" << names[i] << "' in db pragma object "
+                 << "does not name a persistent class" << endl;
+
+              os << o.file () << ":" << o.line () << ":" << o.column () << ":"
+                 << " info: class '" << names[i] << "' is defined here"
+                 << endl;
+
+              throw generation_failed ();
+            }
+
+            nodes.push_back (&o);
+          }
+        }
       }
 
       void

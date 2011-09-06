@@ -17,12 +17,28 @@ struct pragma
 {
   enum mode_type {override, accumulate};
 
+  // Check that the pragma is applicable to the declaration. Return true
+  // on success, complain and return false otherwise.
+  //
+  typedef bool (*check_func) (tree decl,
+                              std::string const& decl_name,
+                              std::string const& prag_name,
+                              location_t);
+
   pragma (mode_type m,
-          std::string const& n,
+          std::string const& pn,
+          std::string const& cn,
           std::string const& v,
-          tree tn,
-          location_t l)
-      : mode (m), name (n), value (v), node (tn), loc (l)
+          tree n,
+          location_t l,
+          check_func c)
+    : mode (m),
+      pragma_name (pn),
+      context_name (cn),
+      value (v),
+      node (n),
+      loc (l),
+      check (c)
   {
   }
 
@@ -30,16 +46,19 @@ struct pragma
   operator< (pragma const& y) const
   {
     if (mode == override)
-      return name < y.name;
+      return pragma_name < y.pragma_name;
     else
-      return name < y.name || (name == y.name && loc < y.loc);
+      return pragma_name < y.pragma_name ||
+        (pragma_name == y.pragma_name && loc < y.loc);
   }
 
   mode_type mode;
-  std::string name;
+  std::string pragma_name;  // Actual pragma name for diagnostics.
+  std::string context_name; // Context entry name.
   std::string value;
   tree node;
   location_t loc;
+  check_func check;
 };
 
 typedef std::vector<pragma> pragma_list;
@@ -87,14 +106,5 @@ extern decl_pragmas decl_pragmas_;
 
 extern "C" void
 register_odb_pragmas (void*, void*);
-
-// Check that the pragma is applicable to the declaration. Return true
-// on success, complain and return false otherwise.
-//
-bool
-check_decl_type (tree decl,
-                 std::string const& name,
-                 std::string const& prag,
-                 location_t);
 
 #endif // ODB_PRAGMA_HXX

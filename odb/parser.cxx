@@ -1856,7 +1856,7 @@ process_pragmas (tree t,
     {
       assert (!i->assoc);
 
-      if (check_decl_type (t, name, i->prag->name, i->prag->loc))
+      if (i->prag->check (t, name, i->prag->pragma_name, i->prag->loc))
         prags.insert (*i->prag);
       else
         error_++;
@@ -1902,12 +1902,12 @@ void parser::impl::
 add_pragma (node& n, pragma const& p)
 {
   if (trace)
-    ts << "\t\t pragma " << p.name << " (" << p.value << ")" << endl;
+    ts << "\t\t pragma " << p.pragma_name << " (" << p.value << ")" << endl;
 
   // Convert '_' to '-' in the pragma name so we get foo-bar instead
   // of foo_bar (that's the convention used).
   //
-  string kv (p.name);
+  string kv (p.context_name);
   for (size_t i (0); i < kv.size (); ++i)
     if (kv[i] == '_')
       kv[i] = '-';
@@ -1957,7 +1957,7 @@ diagnose_unassoc_pragmas (decl_set const& decls)
     {
       pragma const& p (*i->prag);
       error (p.loc)
-        << "odb pragma '" << p.name << "' is not associated with a "
+        << "db pragma '" << p.pragma_name << "' is not associated with a "
         << "declaration" << endl;
       error_++;
     }

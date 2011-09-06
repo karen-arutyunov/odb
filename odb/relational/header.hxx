@@ -1133,17 +1133,26 @@ namespace relational
 
         // query_type
         //
-        os << "typedef query_base_type query_type;"
-           << endl;
+        if (c.count ("objects"))
+        {
+          /*
+          typedef std::vector<semantics::class_*> objects;
 
-        /*
-        os << "struct query_type: query_base_type, query_columns"
-           << "{"
-           << "query_type ();"
-           << "query_type (const std::string&);"
-           << "query_type (const query_base_type&);"
-           << "};";
-        */
+          objects const& objs (c.get<objects> ("objects"));
+          */
+
+          /*
+            os << "struct query_type: query_base_type, query_columns"
+            << "{"
+            << "query_type ();"
+            << "query_type (const std::string&);"
+            << "query_type (const query_base_type&);"
+            << "};";
+          */
+        }
+        else
+          os << "typedef query_base_type query_type;"
+             << endl;
 
         //
         // Functions.
