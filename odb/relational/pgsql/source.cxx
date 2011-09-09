@@ -891,19 +891,19 @@ namespace relational
           string const& n (c.fq_name ());
           string traits ("access::object_traits< " + n + " >::");
           string const& fn (flat_name (n));
-          string name_decl ("const char* const " + traits);
+          string name_decl ("const char " + traits);
 
           os << name_decl << endl
-             << "persist_statement_name = " << strlit (fn + "_persist") << ";"
+             << "persist_statement_name[] = " << strlit (fn + "_persist") << ";"
              << endl
              << name_decl << endl
-             << "find_statement_name = " << strlit (fn + "_find") << ";"
+             << "find_statement_name[] = " << strlit (fn + "_find") << ";"
              << endl
              << name_decl << endl
-             << "update_statement_name = " << strlit (fn + "_update") << ";"
+             << "update_statement_name[] = " << strlit (fn + "_update") << ";"
              << endl
              << name_decl << endl
-             << "erase_statement_name = " << strlit (fn + "_erase") << ";"
+             << "erase_statement_name[] = " << strlit (fn + "_erase") << ";"
              << endl;
 
           // Query statement name.
@@ -911,10 +911,10 @@ namespace relational
           if (options.generate_query ())
           {
             os << name_decl << endl
-               << "query_statement_name = " << strlit (fn + "_query") << ";"
+               << "query_statement_name[] = " << strlit (fn + "_query") << ";"
                << endl
                << name_decl << endl
-               << "erase_query_statement_name = " <<
+               << "erase_query_statement_name[] = " <<
               strlit (fn + "_erase_query") << ";"
                << endl;
           }
@@ -984,10 +984,10 @@ namespace relational
           string const& n (c.fq_name ());
           string traits ("access::view_traits< " + n + " >::");
           string const& fn (flat_name (n));
-          string name_decl ("const char* const " + traits);
+          string name_decl ("const char " + traits);
 
           os << name_decl << endl
-             << "query_statement_name = " << strlit (fn + "_query") << ";"
+             << "query_statement_name[] = " << strlit (fn + "_query") << ";"
              << endl;
         }
 
@@ -996,7 +996,7 @@ namespace relational
         {
           os << "sts.connection ()," << endl
              << "query_statement_name," << endl
-             << "query_clause + q.clause (table_name)," << endl
+             << "query_clause + q.clause ()," << endl
              << "q.parameter_types ()," << endl
              << "q.parameter_count ()," << endl
              << "q.parameters_binding ()," << endl
@@ -1008,7 +1008,7 @@ namespace relational
         {
           os << "conn," << endl
              << "erase_query_statement_name," << endl
-             << "erase_query_clause + q.clause (table_name)," << endl
+             << "erase_query_clause + q.clause ()," << endl
              << "q.parameter_types ()," << endl
              << "q.parameter_count ()," << endl
              << "q.parameters_binding ()";
@@ -1019,7 +1019,7 @@ namespace relational
         {
           os << "sts.connection ()," << endl
              << "query_statement_name," << endl
-             << "query_statement + q.clause (\"\")," << endl
+             << "query_statement + q.clause ()," << endl
              << "q.parameter_types ()," << endl
              << "q.parameter_count ()," << endl
              << "q.parameters_binding ()," << endl
@@ -1048,7 +1048,7 @@ namespace relational
 
           // Statment names.
           //
-          string stmt_decl ("const char* const " + scope + "::");
+          string stmt_decl ("const char " + scope + "::");
 
           // Prefix top-object name to avoid conflicts with inherited
           // member statement names.
@@ -1056,15 +1056,15 @@ namespace relational
           string stmt_prefix (top_object->fq_name () +  m.fq_name ());
 
           os << stmt_decl << endl
-             << "select_all_name = " <<
+             << "select_all_name[] = " <<
              strlit (stmt_prefix + "_select_all") << ";"
              << endl
              << stmt_decl << endl
-             << "insert_one_name = " <<
+             << "insert_one_name[] = " <<
              strlit (stmt_prefix + "_insert_one") << ";"
              << endl
              << stmt_decl << endl
-             << "delete_all_name = " <<
+             << "delete_all_name[] = " <<
              strlit (stmt_prefix + "_delete_all") << ";"
              << endl;
 

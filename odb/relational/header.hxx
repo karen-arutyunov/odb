@@ -115,14 +115,17 @@ namespace relational
     };
 
     //
-    // query_type
+    // query_columns_type
     //
 
-    struct query_base: traversal::class_, virtual context
+    struct query_columns_bases: traversal::class_, virtual context
     {
-      typedef query_base base;
+      typedef query_columns_bases base;
 
-      query_base (): first_ (true) {}
+      query_columns_bases (bool ptr, bool first = true)
+          : ptr_ (ptr), first_ (first)
+      {
+      }
 
       virtual void
       traverse (type& c)
@@ -143,37 +146,156 @@ namespace relational
              << "  ";
         }
 
-        os << "object_traits< " << c.fq_name () << " >::query_columns";
+        os  << (ptr_ ? "pointer_query_columns" : "query_columns") <<
+          "< " << c.fq_name () << ", table >";
       }
 
     private:
+      bool ptr_;
       bool first_;
     };
 
-    struct query_type: traversal::class_, virtual context
+    struct query_columns_base_aliases: traversal::class_, virtual context
     {
-      typedef query_type base;
+      typedef query_columns_base_aliases base;
+
+      query_columns_base_aliases (bool ptr)
+          : ptr_ (ptr)
+      {
+      }
 
       virtual void
       traverse (type& c)
       {
-        os << "struct query_columns";
+        // Ignore transient bases. Not used for views.
+        //
+        if (!object (c))
+          return;
 
-        {
-          instance<query_base> b;
-          traversal::inherits i (*b);
-          inherits (c, i);
-        }
-
-        os << "{";
-
-        {
-          instance<query_columns> t;
-          t->traverse (c);
-        }
-
-        os << "};";
+        os  << "// " << c.name () << endl
+            << "//" << endl
+          << "typedef " <<
+          (ptr_ ? "pointer_query_columns" : "query_columns") <<
+          "< " << c.fq_name () << ", table > " << c.name () << ";"
+            << endl;
       }
+
+    private:
+      bool ptr_;
+    };
+
+    struct query_columns_type: traversal::class_, virtual context
+    {
+      typedef query_columns_type base;
+
+      // Depending on the ptr argument, generate query_columns or
+      // pointer_query_columns specialization. The latter is used
+      // for object pointers where we don't support nested pointers.
+      //
+      query_columns_type (bool ptr): ptr_ (ptr) {}
+
+      virtual void
+      traverse (type& c)
+      {
+        string const& type (c.fq_name ());
+
+        if (ptr_)
+        {
+          os << "template <const char* table>" << endl
+             << "struct pointer_query_columns< " << type << ", table >";
+
+          // If we don't have pointers (in the whole hierarchy), then
+          // pointer_query_columns and query_columns are the same.
+          //
+          if (!has_a (c, test_pointer))
+          {
+            os << ":" << endl
+               << "  query_columns< " << type << ", table >"
+               << "{"
+               << "};";
+          }
+          else
+          {
+            {
+              instance<query_columns_bases> b (ptr_);
+              traversal::inherits i (*b);
+              inherits (c, i);
+            }
+
+            os << "{";
+
+            {
+              instance<query_columns_base_aliases> b (ptr_);
+              traversal::inherits i (*b);
+              inherits (c, i);
+            }
+
+            {
+              instance<query_columns> t (ptr_);
+              t->traverse (c);
+            }
+
+            os << "};";
+
+            {
+              instance<query_columns> t (ptr_, c);
+              t->traverse (c);
+            }
+          }
+        }
+        else
+        {
+          bool has_ptr (has_a (c, test_pointer | exclude_base));
+
+          if (has_ptr)
+          {
+            os << "template <>" << endl
+               << "struct query_columns_base< " << type << " >"
+               << "{";
+
+            instance<query_columns_base> t;
+            t->traverse (c);
+
+            os << "};";
+          }
+
+          os << "template <const char* table>" << endl
+             << "struct query_columns< " << type << ", table >";
+
+          if (has_ptr)
+            os << ":" << endl
+               << "  query_columns_base< " << type << " >";
+
+          {
+            instance<query_columns_bases> b (ptr_, !has_ptr);
+            traversal::inherits i (*b);
+            inherits (c, i);
+          }
+
+          os << "{";
+
+          {
+            instance<query_columns_base_aliases> b (ptr_);
+            traversal::inherits i (*b);
+            inherits (c, i);
+          }
+
+          {
+            instance<query_columns> t (ptr_);
+            t->traverse (c);
+          }
+
+          os << "};";
+
+          {
+            instance<query_columns> t (ptr_, c);
+            t->traverse (c);
+          }
+        }
+      }
+
+    public:
+      bool ptr_;
     };
 
     // Member-specific traits types for container members.
@@ -368,9 +490,9 @@ namespace relational
 
           // Statements.
           //
-          os << "static const char* const insert_one_statement;"
-             << "static const char* const select_all_statement;"
-             << "static const char* const delete_all_statement;"
+          os << "static const char insert_one_statement[];"
+             << "static const char select_all_statement[];"
+             << "static const char delete_all_statement[];"
              << endl;
         }
 
@@ -732,18 +854,26 @@ namespace relational
       semantics::class_& c_;
     };
 
+    // First pass over objects, views, and composites. Some code must be
+    // split into two parts to deal with yet undefined types.
     //
-    //
-    struct class_: traversal::class_, virtual context
+    struct class1: traversal::class_, virtual context
     {
-      typedef class_ base;
+      typedef class1 base;
 
-      class_ (): id_image_member_ ("id_") {}
+      class1 ()
+          : id_image_member_ ("id_"),
+            query_columns_type_ (false),
+            pointer_query_columns_type_ (true)
+      {
+      }
 
-      class_ (class_ const&)
+      class1 (class_ const&)
           : root_context (), //@@ -Wextra
             context (),
-            id_image_member_ ("id_")
+            id_image_member_ ("id_"),
+            query_columns_type_ (false),
+            pointer_query_columns_type_ (true)
       {
       }
 
@@ -774,7 +904,6 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
-        bool abst (abstract (c));
         string const& type (c.fq_name ());
 
         semantics::data_member* id (id_member (c));
@@ -784,12 +913,33 @@ namespace relational
         os << "// " << c.name () << endl
            << "//" << endl;
 
+        // class_traits
+        //
         os << "template <>" << endl
            << "struct class_traits< " << type << " >"
            << "{"
            << "static const class_kind kind = class_object;"
            << "};";
 
+        // pointer_query_columns & query_columns
+        //
+        if (options.generate_query ())
+        {
+          // If we don't have object pointers, then also generate
+          // query_columns (in this case pointer_query_columns and
+          // query_columns are the same and the former inherits from
+          // the latter). Otherwise we have to postpone query_columns
+          // generation until the second pass to deal with forward-
+          // declared objects.
+          //
+          if (!has_a (c, test_pointer))
+            query_columns_type_->traverse (c);
+
+          pointer_query_columns_type_->traverse (c);
+        }
+
+        // object_traits
+        //
         os << "template <>" << endl
            << "class access::object_traits< " << type << " >"
            << "{"
@@ -835,17 +985,6 @@ namespace relational
         // image_type
         //
         image_type_->traverse (c);
-
-        //
-        // Query (abstract and concrete).
-        //
-
-        if (options.generate_query ())
-        {
-          // query_columns
-          //
-          query_type_->traverse (c);
-        }
 
         //
         // Containers (abstract and concrete).
@@ -919,7 +1058,7 @@ namespace relational
         //
         // The rest only applies to concrete objects.
         //
-        if (abst)
+        if (abstract (c))
         {
           object_public_extra_post (c);
           os << "};";
@@ -939,12 +1078,7 @@ namespace relational
 
           // query_type
           //
-          os << "struct query_type: query_base_type, query_columns"
-             << "{"
-             << "query_type ();"
-             << "query_type (const std::string&);"
-             << "query_type (const query_base_type&);"
-             << "};";
+          os << "struct query_type;";
         }
 
         //
@@ -966,17 +1100,17 @@ namespace relational
 
         // Statements.
         //
-        os << "static const char* const persist_statement;"
-           << "static const char* const find_statement;"
-           << "static const char* const update_statement;"
-           << "static const char* const erase_statement;";
+        os << "static const char persist_statement[];"
+           << "static const char find_statement[];"
+           << "static const char update_statement[];"
+           << "static const char erase_statement[];";
 
         if (options.generate_query ())
         {
-          os << "static const char* const query_clause;"
-             << "static const char* const erase_query_clause;"
+          os << "static const char query_clause[];"
+             << "static const char erase_query_clause[];"
              << endl
-             << "static const char* const table_name;";
+             << "static const char table_name[];";
         }
 
         os << endl;
@@ -1184,7 +1318,7 @@ namespace relational
 
         // Statements.
         //
-        os << "static const char* const query_statement;"
+        os << "static const char query_statement[];"
            << endl;
 
         //
@@ -1272,8 +1406,87 @@ namespace relational
 
     private:
       instance<image_type> image_type_;
-      instance<query_type> query_type_;
       instance<image_member> id_image_member_;
+
+      instance<query_columns_type> query_columns_type_;
+      instance<query_columns_type> pointer_query_columns_type_;
+    };
+
+    // Second pass over objects, views, and composites.
+    //
+    struct class2: traversal::class_, virtual context
+    {
+      typedef class2 base;
+
+      class2 (): query_columns_type_ (false) {}
+
+      class2 (class_ const&)
+          : root_context (), //@@ -Wextra
+            context (),
+            query_columns_type_ (false)
+      {
+      }
+
+      virtual void
+      traverse (type& c)
+      {
+        if (c.file () != unit.file ())
+          return;
+
+        if (object (c))
+          traverse_object (c);
+        else if (view (c))
+          traverse_view (c);
+        else if (composite (c))
+          traverse_composite (c);
+      }
+
+      virtual void
+      traverse_object (type& c)
+      {
+        bool abst (abstract (c));
+        string const& type (c.fq_name ());
+
+        os << "// " << c.name () << endl
+           << "//" << endl;
+
+        if (options.generate_query ())
+        {
+          // query_columns
+          //
+          // If we don't have any pointers, then query_columns is generated
+          // in pass 1 (see the comment in class1 for details).
+          //
+          if (has_a (c, test_pointer))
+            query_columns_type_->traverse (c);
+
+          // query_type
+          //
+          if (!abst)
+            os << "struct access::object_traits< " << type << " >::" <<
+              "query_type:" << endl
+               << "  query_base_type," << endl
+               << "  query_columns< " << type << ", table_name >"
+               << "{"
+               << "query_type ();"
+               << "query_type (const std::string&);"
+               << "query_type (const query_base_type&);"
+               << "};";
+        }
+      }
+
+      virtual void
+      traverse_view (type&)
+      {
+      }
+
+      virtual void
+      traverse_composite (type&)
+      {
+      }
+
+    private:
+      instance<query_columns_type> query_columns_type_;
     };
 
     struct include: virtual context

@@ -16,9 +16,9 @@ namespace relational
     {
       namespace relational = relational::header;
 
-      struct class_: relational::class_
+      struct class1: relational::class1
       {
-        class_ (base const& x): base (x) {}
+        class1 (base const& x): base (x) {}
 
         virtual void
         object_public_extra_post (type& c)
@@ -28,16 +28,16 @@ namespace relational
 
           // Statement names.
           //
-          os << "static const char* const persist_statement_name;"
-             << "static const char* const find_statement_name;"
-             << "static const char* const update_statement_name;"
-             << "static const char* const erase_statement_name;";
+          os << "static const char persist_statement_name[];"
+             << "static const char find_statement_name[];"
+             << "static const char update_statement_name[];"
+             << "static const char erase_statement_name[];";
 
           // Query statement name.
           //
           if (options.generate_query ())
-            os << "static const char* const query_statement_name;"
-               << "static const char* const erase_query_statement_name;";
+            os << "static const char query_statement_name[];"
+               << "static const char erase_query_statement_name[];";
 
           os << endl;
 
@@ -56,11 +56,11 @@ namespace relational
         {
           // Statement names.
           //
-          os << "static const char* const query_statement_name;"
+          os << "static const char query_statement_name[];"
              << endl;
         }
       };
-      entry<class_> class_entry_;
+      entry<class1> class1_entry_;
 
       struct container_traits: relational::container_traits, context
       {
@@ -74,9 +74,9 @@ namespace relational
 
           // Container statement names.
           //
-          os << "static const char* const select_all_name;"
-             << "static const char* const insert_one_name;"
-             << "static const char* const delete_all_name;"
+          os << "static const char select_all_name[];"
+             << "static const char insert_one_name[];"
+             << "static const char delete_all_name[];"
              << endl;
 
           // Container statement types.

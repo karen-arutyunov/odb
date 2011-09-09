@@ -18,26 +18,45 @@ namespace relational
       context ctx;
       ostream& os (ctx.os);
 
-      traversal::unit unit;
-      traversal::defines unit_defines;
-      traversal::namespace_ ns;
-      instance<class_> c;
-
-      unit >> unit_defines >> ns;
-      unit_defines >> c;
-
-      traversal::defines ns_defines;
-
-      ns >> ns_defines >> ns;
-      ns_defines >> c;
-
       instance<include> i;
       i->generate ();
 
       os << "namespace odb"
          << "{";
 
-      unit.dispatch (ctx.unit);
+      {
+        traversal::unit unit;
+        traversal::defines unit_defines;
+        traversal::namespace_ ns;
+        instance<class1> c;
+
+        unit >> unit_defines >> ns;
+        unit_defines >> c;
+
+        traversal::defines ns_defines;
+
+        ns >> ns_defines >> ns;
+        ns_defines >> c;
+
+        unit.dispatch (ctx.unit);
+      }
+
+      {
+        traversal::unit unit;
+        traversal::defines unit_defines;
+        traversal::namespace_ ns;
+        instance<class2> c;
+
+        unit >> unit_defines >> ns;
+        unit_defines >> c;
+
+        traversal::defines ns_defines;
+
+        ns >> ns_defines >> ns;
+        ns_defines >> c;
+
+        unit.dispatch (ctx.unit);
+      }
 
       os << "}";
     }

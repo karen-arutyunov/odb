@@ -54,12 +54,35 @@ namespace relational
 
   //
   //
+  struct query_columns_base: object_columns_base, virtual context
+  {
+    typedef query_columns_base base;
+
+    query_columns_base ();
+    query_columns_base (semantics::class_&);
+
+    virtual void
+    traverse_object (semantics::class_&);
+
+    virtual void
+    traverse_composite (semantics::data_member*, semantics::class_&);
+
+    virtual bool
+    traverse_column (semantics::data_member&, string const&, bool);
+
+  protected:
+    bool decl_;
+    string scope_;
+  };
+
+  //
+  //
   struct query_columns: object_columns_base, virtual context
   {
     typedef query_columns base;
 
-    query_columns ();
-    query_columns (semantics::class_&);
+    query_columns (bool ptr);
+    query_columns (bool ptr, semantics::class_&);
 
     virtual string
     database_type_id (semantics::data_member&)

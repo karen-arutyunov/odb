@@ -91,7 +91,8 @@ namespace relational
           if (container_wrapper (im->type ()))
           {
             // This container is a direct member of the class so the table
-            // prefix is just the class table name.
+            // prefix is just the class table name. We don't assign join
+            // aliases for container tables so use the actual table name.
             //
             column (
               *im, "id",
@@ -104,8 +105,12 @@ namespace relational
           else
           {
             semantics::data_member& id (*id_member (*c));
+
+            // Use the join alias (column name) instead of the actual
+            // table name unless we are handling a container.
+            //
             column (id, "",
-                    table_name_.empty () ? table_name_ : table_qname (*c),
+                    table_name_.empty () ? table_name_ : quote_id (name),
                     column_qname (id));
           }
         }
@@ -162,7 +167,7 @@ namespace relational
     {
       typedef object_joins base;
 
-      //@@ context::{cur,top}_object Might have to be created every time.
+      //@@ context::{cur,top}_object; might have to be created every time.
       //
       object_joins (semantics::class_& scope, bool query)
           : query_ (query),
@@ -188,38 +193,25 @@ namespace relational
           string line (" LEFT JOIN ");
           line += i->table;
 
-          // If this is a self-join, alias it as '_' to resolve any
-          // ambiguities.
-          //
-          if (i->table == table_)
-            line += " AS _";
+          if (!i->alias.empty ())
+            line += " AS " + i->alias;
 
           line += " ON ";
-
-          for (conditions::iterator b (i->cond.begin ()), j (b);
-               j != i->cond.end (); ++j)
-          {
-            if (j != b)
-              line += " OR ";
-
-            line += *j;
-          }
+          line += i->cond;
 
           os << strlit (line) << endl;
         }
       }
 
       virtual bool
-      traverse_column (semantics::data_member& m,
-                       string const& col_name,
-                       bool)
+      traverse_column (semantics::data_member& m, string const& column, bool)
       {
         semantics::class_* c (object_pointer (m.type ()));
 
         if (c == 0)
-          return true;
+          return false;
 
-        string t, dt;
+        string t, a, dt, da;
         std::ostringstream cond, dcond; // @@ diversion?
 
         if (semantics::data_member* im = inverse (m))
@@ -243,33 +235,20 @@ namespace relational
             if (query_)
             {
               dt = quote_id (ct);
+              da = quote_id (column);
+
               string const& id (column_qname (*im, "id", "object_id"));
 
-              // If this is a self-join, use the '_' alias instead of the
-              // table name.
-              //
-              if (dt == table_)
-                dcond << "_";
-              else
-                dcond << dt;
-
-              dcond << '.' << column_qname (*id_member (*c)) << " = " <<
+              dcond << da << '.' << column_qname (*id_member (*c)) << " = " <<
                 t << '.' << id;
             }
           }
           else
           {
             t = table_qname (*c);
+            a = quote_id (column);
 
-            // If this is a self-join, use the '_' alias instead of the
-            // table name.
-            //
-            if (t == table_)
-              cond << "_";
-            else
-              cond << t;
-
-            cond << '.' << column_qname (*im) << " = " <<
+            cond << a << '.' << column_qname (*im) << " = " <<
               table_ << "." << column_qname (id_);
           }
         }
@@ -279,61 +258,29 @@ namespace relational
           // in the WHERE clause.
           //
           t = table_qname (*c);
+          a = quote_id (column);
 
-          // If this is a self-join, use the '_' alias instead of the
-          // table name.
-          //
-          if (t == table_)
-            cond << "_";
-          else
-            cond << t;
-
-          cond << '.' << column_qname (*id_member (*c)) << " = " <<
-            table_ << "." << quote_id (col_name);
+          cond << a << '.' << column_qname (*id_member (*c)) << " = " <<
+            table_ << "." << quote_id (column);
         }
 
         if (!t.empty ())
         {
-          size_t i;
-          table_map::iterator it (table_map_.find (t));
-
-          if (it != table_map_.end ())
-            i = it->second;
-          else
-          {
-            i = joins_.size ();
-            joins_.push_back (join ());
-            table_map_[t] = i;
-          }
-
-          joins_[i].table = t;
-          joins_[i].cond.insert (cond.str ());
+          joins_.push_back (join ());
+          joins_.back ().table = t;
+          joins_.back ().alias = a;
+          joins_.back ().cond = cond.str ();
         }
 
+        // Add dependent join (i.e., an object table join via the
+        // container table).
+        //
         if (!dt.empty ())
         {
-          // Add dependent join. If one already exists, move it to the
-          // bottom.
-          //
-          size_t i;
-          table_map::iterator it (table_map_.find (dt));
-
-          if (it != table_map_.end ())
-          {
-            i = joins_.size ();
-            joins_.push_back (join ());
-            joins_[it->second].swap (joins_.back ());
-            it->second = i;
-          }
-          else
-          {
-            i = joins_.size ();
-            joins_.push_back (join ());
-            table_map_[dt] = i;
-          }
-
-          joins_[i].table = dt;
-          joins_[i].cond.insert (dcond.str ());
+          joins_.push_back (join ());
+          joins_.back ().table = dt;
+          joins_.back ().alias = da;
+          joins_.back ().cond = dcond.str ();
         }
 
         return true;
@@ -341,29 +288,19 @@ namespace relational
 
     private:
       bool query_;
-      string table_; //@@ No longer used because of the _ alias.
+      string table_;
       semantics::data_member& id_;
-
-      typedef std::set<string> conditions;
 
       struct join
       {
         string table;
-        conditions cond;
-
-        void
-        swap (join& o)
-        {
-          table.swap (o.table);
-          cond.swap (o.cond);
-        }
+        string alias;
+        string cond;
       };
 
       typedef std::vector<join> joins;
-      typedef std::map<string, size_t> table_map;
 
       joins joins_;
-      table_map table_map_;
     };
 
     //
@@ -715,8 +652,8 @@ namespace relational
 
           // select_all_statement
           //
-          os << "const char* const " << scope <<
-            "::select_all_statement =" << endl;
+          os << "const char " << scope <<
+            "::select_all_statement[] =" << endl;
 
           if (inverse)
           {
@@ -830,8 +767,8 @@ namespace relational
 
           // insert_one_statement
           //
-          os << "const char* const " << scope <<
-            "::insert_one_statement =" << endl;
+          os << "const char " << scope <<
+            "::insert_one_statement[] =" << endl;
 
           if (inverse)
             os << strlit ("") << ";"
@@ -901,8 +838,8 @@ namespace relational
 
           // delete_all_statement
           //
-          os << "const char* const " << scope <<
-            "::delete_all_statement =" << endl;
+          os << "const char " << scope <<
+            "::delete_all_statement[] =" << endl;
 
           if (inverse)
             os << strlit ("") << ";"
@@ -1935,7 +1872,7 @@ namespace relational
       object_query_statement_ctor_args (type&)
       {
         os << "sts.connection ()," << endl
-           << "query_clause + q.clause (table_name)," << endl
+           << "query_clause + q.clause ()," << endl
            << "q.parameters_binding ()," << endl
            << "imb";
       }
@@ -1944,7 +1881,7 @@ namespace relational
       object_erase_query_statement_ctor_args (type&)
       {
         os << "conn," << endl
-           << "erase_query_clause + q.clause (table_name)," << endl
+           << "erase_query_clause + q.clause ()," << endl
            << "q.parameters_binding ()";
       }
 
@@ -1956,6 +1893,7 @@ namespace relational
         string traits ("access::object_traits< " + type + " >");
 
         bool grow (context::grow (c));
+        bool has_ptr (has_a (c, test_pointer));
 
         semantics::data_member* id (id_member (c));
         bool auto_id (id ? id->count ("auto") : false);
@@ -1974,8 +1912,13 @@ namespace relational
 
         if (options.generate_query ())
         {
-          instance<query_columns> t (c);
-          t->traverse (c);
+          // query_columns_base
+          //
+          if (has_ptr)
+          {
+            instance<query_columns_base> t (c);
+            t->traverse (c);
+          }
         }
 
         //
@@ -2147,7 +2090,7 @@ namespace relational
         // persist_statement
         //
         {
-          os << "const char* const " << traits << "::persist_statement " <<
+          os << "const char " << traits << "::persist_statement[] " <<
             "=" << endl
              << strlit ("INSERT INTO " + table + " (") << endl;
 
@@ -2165,7 +2108,7 @@ namespace relational
         // find_statement
         //
         {
-          os << "const char* const " << traits << "::find_statement =" << endl
+          os << "const char " << traits << "::find_statement[] =" << endl
              << strlit ("SELECT ") << endl;
 
           instance<object_columns> t (table, true);
@@ -2187,7 +2130,7 @@ namespace relational
         // update_statement
         //
         {
-          os << "const char* const " << traits << "::update_statement " <<
+          os << "const char " << traits << "::update_statement[] " <<
             "=" << endl
              << strlit ("UPDATE " + table + " SET ") << endl;
 
@@ -2203,7 +2146,7 @@ namespace relational
         //
         {
           instance<query_parameters> qp;
-          os << "const char* const " << traits << "::erase_statement =" << endl
+          os << "const char " << traits << "::erase_statement[] =" << endl
              << strlit ("DELETE FROM " + table) << endl
              << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
              << endl;
@@ -2220,7 +2163,7 @@ namespace relational
           // We only need DISTINCT if there are joins (object pointers)
           // and can optimize it out otherwise.
           //
-          os << "const char* const " << traits << "::query_clause =" << endl
+          os << "const char " << traits << "::query_clause[] =" << endl
              << strlit (oj->count () ? "SELECT DISTINCT " : "SELECT ") << endl;
 
           {
@@ -2235,7 +2178,7 @@ namespace relational
 
           // erase_query_clause
           //
-          os << "const char* const " << traits << "::erase_query_clause =" << endl
+          os << "const char " << traits << "::erase_query_clause[] =" << endl
             << strlit ("DELETE FROM " + table) << endl;
 
           // DELETE JOIN:
@@ -2251,8 +2194,8 @@ namespace relational
 
           // table_name
           //
-          os << "const char* const " << traits << "::table_name =" << endl
-             << strlit (table) << ";"
+          os << "const char " << traits << "::table_name[] =" << endl
+             << strlit (table_name (c)) << ";" // Use unquoted name.
              << endl;
         }
 
@@ -2849,7 +2792,7 @@ namespace relational
       view_query_statement_ctor_args (type&)
       {
         os << "sts.connection ()," << endl
-           << "query_statement + q.clause (\"\")," << endl
+           << "query_statement + q.clause ()," << endl
            << "q.parameters_binding ()," << endl
            << "imb";
       }
@@ -2917,7 +2860,7 @@ namespace relational
 
         // query_statement
         //
-        os << "const char* const " << traits << "::query_statement =" << endl
+        os << "const char " << traits << "::query_statement[] =" << endl
            << strlit (c.get<string> ("query")) << endl
            << strlit (" ") << ";" << endl
            << endl;

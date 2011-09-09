@@ -15,32 +15,123 @@ using namespace std;
 
 namespace relational
 {
+  // query_columns_base
+  //
+
+  query_columns_base::
+  query_columns_base ()
+      : decl_ (true)
+  {
+  }
+
+  query_columns_base::
+  query_columns_base (semantics::class_& c) //@@ context::{cur,top}_object
+      : decl_ (false)
+  {
+    scope_ = "query_columns_base< " + c.fq_name () + " >";
+  }
+
+  void query_columns_base::
+  traverse_object (semantics::class_& c)
+  {
+    // We don't want to traverse bases.
+    //
+    names (c);
+  }
+
+  void query_columns_base::
+  traverse_composite (semantics::data_member* m, semantics::class_& c)
+  {
+    // Base type.
+    //
+    if (m == 0)
+    {
+      object_columns_base::traverse_composite (m, c);
+      return;
+    }
+
+    // Don't generate an empty struct if we don't have any pointers.
+    //
+    if (!has_a (c, test_pointer))
+      return;
+
+    string name (public_name (*m));
+
+    if (decl_)
+    {
+      os << "// " << name << endl
+         << "//" << endl
+         << "struct " << name << "_base_"
+         << "{";
+
+      object_columns_base::traverse_composite (m, c);
+
+      os << "};";
+    }
+    else
+    {
+      string old_scope (scope_);
+      scope_ += "::" + name + "_base_";
+
+      object_columns_base::traverse_composite (m, c);
+
+      scope_ = old_scope;
+    }
+  }
+
+  bool query_columns_base::
+  traverse_column (semantics::data_member& m, string const& column, bool)
+  {
+    semantics::class_* c (object_pointer (m.type ()));
+
+    if (c == 0)
+      return false;
+
+    string name (public_name (m));
+
+    if (decl_)
+      os << "// " << name << endl
+         << "//" << endl
+         << "static const char " << name << "_alias_[];"
+         << endl
+         << "typedef" << endl
+         << "odb::pointer_query_columns< " << c->fq_name () << ", " <<
+        name << "_alias_ >" << endl
+         << name << ";"
+         << endl;
+    else
+      // For now use column name. This will become problematic when we
+      // add support for composite ids.
+      //
+      os << "const char " << scope_ <<  "::" << name << "_alias_[] =" << endl
+         << strlit (column) << ";"
+         << endl;
+
+    return true;
+  }
+
   // query_columns
   //
 
   query_columns::
-  query_columns ()
-      : ptr_ (true), decl_ (true)
+  query_columns (bool ptr)
+      : ptr_ (ptr), decl_ (true)
   {
   }
 
   query_columns::
-  query_columns (semantics::class_& c) //@@ context::{cur,top}_object
-      : ptr_ (true), decl_ (false)
+  query_columns (bool ptr, semantics::class_& c) //@@ context::{cur,top}_object
+      : ptr_ (ptr), decl_ (false)
   {
-    scope_ = "access::object_traits< " + c.fq_name () + " >::query_columns";
-    table_ = default_table_ = table_qname (c);
+    scope_ = ptr ? "pointer_query_columns" : "query_columns";
+    scope_ += "< " + c.fq_name () + ", table >";
   }
 
   void query_columns::
   traverse_object (semantics::class_& c)
   {
-    // We only want members for objects unless we are traversing a
-    // pointer, in which case we need the whole thing.
+    // We don't want to traverse bases.
     //
-    if (!ptr_)
-      inherits (c);
-
     names (c);
   }
 
@@ -61,8 +152,15 @@ namespace relational
     {
       os << "// " << name << endl
          << "//" << endl
-         << "struct " << name
-         << "{";
+         << "struct " << name;
+
+      // Derive from the base in query_columns_base. It contains columns
+      // for the pointer members.
+      //
+      if (!ptr_ && has_a (c, test_pointer))
+        os << ": " << name << "_base_";
+
+      os << "{";
 
       object_columns_base::traverse_composite (m, c);
 
@@ -80,104 +178,55 @@ namespace relational
   }
 
   bool query_columns::
-  traverse_column (semantics::data_member& m, string const& col_name, bool)
+  traverse_column (semantics::data_member& m, string const& column, bool)
   {
-    string name (public_name (m));
+    string mtype;
 
     if (semantics::class_* c = object_pointer (m.type ()))
     {
-      // We cannot just typedef the query_type from the referenced
-      // object for two reasons: (1) it may not be defined yet and
-      // (2) it will contain columns for its own pointers which
-      // won't work (for now we only support one level of indirection
-      // in queries). So we will have to duplicate the columns (sans
-      // the pointers).
+      // If this is for the pointer_query_columns and the member is not
+      // inverse, then create the normal member corresponding to the id
+      // column. This will allow the user to check it for NULL or to
+      // compare ids. In case this is for query_columns, then the
+      // corresponding member is defined in query_columns_base.
       //
-      // There are a number of problems with this approach: Regarding (1),
-      // the class have to be defined during ODB compilation in which
-      // case the ODB compiler will hunt down the #include statement
-      // and add it to the generated code. Regarding (2), things get
-      // complicated really quickly once we bring inheritance into
-      // the picture (name conflicts, etc). Plus, it is nice to reuse
-      // things. So the long-term solution is probably to make it a
-      // template with the table name as an argument.
-      //
+      if (!ptr_ || inverse (m))
+        return false;
 
-      if (ptr_)
-      {
-        ptr_ = false;
+      semantics::data_member& id (*id_member (*c));
+      mtype = id.type ().fq_name (id.belongs ().hint ());
+    }
+    else
+      mtype = m.type ().fq_name (m.belongs ().hint ());
 
-        if (decl_)
-        {
-          os << "// " << name << endl
-             << "//" << endl
-             << "struct " << name
-             << "{";
+    string name (public_name (m));
+    string db_type_id (database_type_id (m));
 
-          traverse (*c);
+    string type (
+      string (db.string ()) + "::value_traits< "
+      + mtype + ", "
+      + db_type_id
+      + " >::query_type");
 
-          os << "};";
-        }
-        else
-        {
-          string old_scope (scope_), old_table (table_);
-          scope_ += "::" + name;
-          table_ = table_qname (*c);
-          traverse (*c);
-          table_ = old_table;
-          scope_ = old_scope;
-        }
-
-        ptr_ = true;
-      }
+    if (decl_)
+    {
+      os << "// " << name << endl
+         << "//" << endl
+         << "static const " << db << "::query_column<" << endl
+         << "  " << type << "," << endl
+         << "  " << db_type_id << " >" << endl
+         << name << ";"
+         << endl;
     }
     else
     {
-      string db_type_id (database_type_id (m));
-
-      string type (
-        string (db.string ()) + "::value_traits< "
-        + m.type ().fq_name (m.belongs ().hint ()) + ", "
-        + db_type_id
-        + " >::query_type");
-
-      if (decl_)
-      {
-        os << "// " << name << endl
-           << "//" << endl
-           << "static const " << db << "::query_column<" << endl
-           << "  " << type << "," << endl
-           << "  " << db_type_id << " >" << endl
-           << name << ";"
-           << endl;
-      }
-      else
-      {
-        // Leave the default table name unless we are generating members
-        // for a referenced object.
-        //
-        string column;
-
-        if (!ptr_)
-        {
-          // If this is a self-reference, use the special '_' alias.
-          //
-          if (table_ != default_table_)
-            column = table_;
-          else
-            column = "_";
-        }
-
-        column += '.';
-        column += quote_id (col_name);
-
-        os << "const " << db << "::query_column<" << endl
-           << "  " << type << "," << endl
-           << "  " << db_type_id << " >" << endl
-           << scope_ << "::" << name << " (" << endl
-           << strlit (column) << ");"
-           << endl;
-      }
+      os << "template <const char* table>" << endl
+         << "const " << db << "::query_column<" << endl
+         << "  " << type << "," << endl
+         << "  " << db_type_id << " >" << endl
+         << scope_ << "::" << name << " (" << endl
+         << "table, " << strlit (column) << ");"
+         << endl;
     }
 
     return true;
