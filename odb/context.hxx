@@ -385,6 +385,8 @@ public:
   static unsigned short const test_straight_container = 0x10;
   static unsigned short const test_inverse_container = 0x20;
 
+  static unsigned short const exclude_base = 0x8000;
+
   bool
   is_a (semantics::data_member& m, unsigned short flags)
   {

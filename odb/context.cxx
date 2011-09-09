@@ -971,6 +971,15 @@ namespace
         "value");
     }
 
+    virtual void
+    traverse_object (semantics::class_& c)
+    {
+      if ((flags_ & context::exclude_base) == 0)
+        inherits (c);
+
+      names (c);
+    }
+
   private:
     bool r_;
     unsigned short flags_;
