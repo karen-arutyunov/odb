@@ -104,11 +104,18 @@ namespace relational
 
       struct statement_oids: object_columns_base, context
       {
+        statement_oids (bool out): out_ (out) {}
+
         virtual bool
         traverse_column (semantics::data_member& m,
                          std::string const&,
                          bool first)
         {
+          // Ignore inverse object pointers if we are generating 'in' columns.
+          //
+          if (!out_ && inverse (m) != 0)
+            return false;
+
           if (!first)
             os << ',' << endl;
 
@@ -116,6 +123,9 @@ namespace relational
 
           return true;
         }
+
+      private:
+        bool out_;
       };
 
       //
@@ -921,7 +931,7 @@ namespace relational
                << "persist_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st;
+            instance<statement_oids> st (false);
             st->traverse (c);
 
             os << "};";
@@ -934,7 +944,7 @@ namespace relational
                << "find_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st;
+            instance<statement_oids> st (true);
             st->traverse_column (*id_m, "", true);
 
             os << "};";
@@ -947,7 +957,7 @@ namespace relational
                << "update_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st;
+            instance<statement_oids> st (false);
             st->traverse (c);
             st->traverse_column (*id_m, "", false);
 
@@ -961,7 +971,7 @@ namespace relational
                << "erase_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st;
+            instance<statement_oids> st (true);
             st->traverse_column (*id_m, "", true);
 
             os << "};";
@@ -1120,7 +1130,7 @@ namespace relational
                   if (semantics::class_* ktc =
                       composite_wrapper (container_kt (t)))
                   {
-                    instance<statement_oids> st;
+                    instance<statement_oids> st (false);
                     st->traverse (m, *ktc, "key", "key");
                     os << ",";
                   }
@@ -1138,7 +1148,7 @@ namespace relational
 
               if (semantics::class_* vtc = composite_wrapper (vt))
               {
-                instance <statement_oids> st;
+                instance <statement_oids> st (false);
                 st->traverse (m, *vtc, "value", "value");
               }
               else
