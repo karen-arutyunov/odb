@@ -24,16 +24,16 @@ namespace
 
     if (n.count (p + "null") && n.count (p + "not-null"))
     {
-      if (n.get<location_t> (p + "null-loc") <
-          n.get<location_t> (p + "not-null-loc"))
+      if (n.get<location_t> (p + "null-location") <
+          n.get<location_t> (p + "not-null-location"))
       {
         n.remove (p + "null");
-        n.remove (p + "null-loc");
+        n.remove (p + "null-location");
       }
       else
       {
         n.remove (p + "not-null");
-        n.remove (p + "not-null-loc");
+        n.remove (p + "not-null-location");
       }
     }
   }
@@ -334,7 +334,7 @@ namespace
           valid_ = false;
         }
         else
-          id->set ("not-null", string ());
+          id->set ("not-null", true);
       }
 
       // Check members.

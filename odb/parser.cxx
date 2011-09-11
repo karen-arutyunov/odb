@@ -1902,49 +1902,23 @@ void parser::impl::
 add_pragma (node& n, pragma const& p)
 {
   if (trace)
-    ts << "\t\t pragma " << p.pragma_name << " (" << p.value << ")" << endl;
+    ts << "\t\t pragma " << p.pragma_name << endl;
 
   // Convert '_' to '-' in the pragma name so we get foo-bar instead
   // of foo_bar (that's the convention used).
   //
-  string kv (p.context_name);
-  for (size_t i (0); i < kv.size (); ++i)
-    if (kv[i] == '_')
-      kv[i] = '-';
+  string k (p.context_name);
+  for (size_t i (0); i < k.size (); ++i)
+    if (k[i] == '_')
+      k[i] = '-';
 
-  string kl (kv + "-loc");
-  string kn (kv + "-node");
-
-  if (p.mode == pragma::override)
+  if (p.add == 0)
   {
-    n.set (kv, p.value);
-    n.set (kn, p.node);
-    n.set (kl, p.loc);
+    n.set (k, p.value);
+    n.set (k + "-location", p.loc);
   }
   else
-  {
-    // Having three parallel vectors is not the most efficient
-    // way to store this, but it is quite simple.
-    //
-    typedef vector<string> values;
-    typedef vector<tree> nodes;
-    typedef vector<location_t> locations;
-
-    if (!n.count (kv))
-    {
-      n.set (kv, values ());
-      n.set (kn, nodes ());
-      n.set (kl, locations ());
-    }
-
-    values& vs (n.get<values> (kv));
-    nodes& ns (n.get<nodes> (kn));
-    locations& ls (n.get<locations> (kl));
-
-    vs.push_back (p.value);
-    ns.push_back (p.node);
-    ls.push_back (p.loc);
-  }
+    p.add (n, k, p.value, p.loc);
 }
 
 void parser::impl::

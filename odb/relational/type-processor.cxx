@@ -411,7 +411,7 @@ namespace relational
 
           // Mark id column as not null.
           //
-          t.set ("id-not-null", string ());
+          t.set ("id-not-null", true);
 
           // Get the value type.
           //
@@ -465,7 +465,7 @@ namespace relational
               throw generation_failed ();
             }
             else
-              t.set ("value-not-null", string ());
+              t.set ("value-not-null", true);
           }
 
           // Issue a warning if we are relaxing null-ness in the
@@ -517,7 +517,7 @@ namespace relational
 
             t.set ("index-tree-type", it);
             t.set ("index-tree-hint", ih);
-            t.set ("index-not-null", string ());
+            t.set ("index-not-null", true);
           }
 
           // Get the key type for maps.
@@ -559,7 +559,7 @@ namespace relational
 
             t.set ("key-tree-type", kt);
             t.set ("key-tree-hint", kh);
-            t.set ("key-not-null", string ());
+            t.set ("key-not-null", true);
           }
         }
 
@@ -581,7 +581,7 @@ namespace relational
         // no concept of order in this construct.
         //
         if (ck == ck_ordered && m.count ("value-inverse"))
-          m.set ("unordered", string ()); // Keep compatible with pragma.
+          m.set ("unordered", true);
 
         // Issue an error if we have a null column in a set container.
         // This can only happen if the value is declared as null in
@@ -1110,33 +1110,24 @@ namespace relational
       virtual void
       traverse_view (type& c)
       {
-        // Convert referenced objects from tree nodes to semantic graph
+        // Resolve referenced objects from tree nodes to semantic graph
         // nodes.
         //
         if (c.count ("objects"))
         {
           using semantics::class_;
+          typedef vector<view_object> objects;
 
-          typedef vector<tree> tree_nodes;
-          typedef vector<class_*> class_nodes;
+          objects& objs (c.get<objects> ("objects"));
 
-          strings names  (c.get<strings> ("objects"));
-          tree_nodes tnodes (c.get<tree_nodes> ("objects-node"));
-
-          c.remove ("objects");
-          c.remove ("objects-node");
-
-          c.set ("objects", class_nodes ());
-          class_nodes& nodes (c.get<class_nodes> ("objects"));
-
-          for (size_t i (0); i < names.size (); ++i)
+          for (objects::iterator i (objs.begin ()); i < objs.end (); ++i)
           {
-            tree n (TYPE_MAIN_VARIANT (tnodes[i]));
+            tree n (TYPE_MAIN_VARIANT (i->node));
 
             if (TREE_CODE (n) != RECORD_TYPE)
             {
               os << c.file () << ":" << c.line () << ":" << c.column () << ":"
-                 << " error: name '" << names[i] << "' in db pragma object "
+                 << " error: name '" << i->name << "' in db pragma object "
                  << " does not name a class" << endl;
 
               throw generation_failed ();
@@ -1147,17 +1138,17 @@ namespace relational
             if (!object (o))
             {
               os << c.file () << ":" << c.line () << ":" << c.column () << ":"
-                 << " error: name '" << names[i] << "' in db pragma object "
+                 << " error: name '" << i->name << "' in db pragma object "
                  << "does not name a persistent class" << endl;
 
               os << o.file () << ":" << o.line () << ":" << o.column () << ":"
-                 << " info: class '" << names[i] << "' is defined here"
+                 << " info: class '" << i->name << "' is defined here"
                  << endl;
 
               throw generation_failed ();
             }
 
-            nodes.push_back (&o);
+            i->object = &o;
           }
         }
       }

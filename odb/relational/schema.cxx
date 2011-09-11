@@ -25,56 +25,38 @@ namespace relational
     void object_columns::
     default_ (semantics::data_member& m)
     {
-      string s;
-      tree n (0);
+      default_value* dv (0);
 
       semantics::type& t (m.type ());
 
       if (m.count ("default"))
-      {
-        s = m.get<string> ("default");
-
-        // Empty string is a default value override which means
-        // there is no default value.
-        //
-        if (s.empty ())
-          return;
-
-        if (m.count ("default-node"))
-          n = m.get<tree> ("default-node");
-      }
+        dv = &m.get<default_value> ("default");
       else if (t.count ("default"))
-      {
-        s = t.get<string> ("default");
-
-        if (s.empty ())
-          return;
-
-        if (t.count ("default-node"))
-          n = t.get<tree> ("default-node");
-      }
+        dv = &t.get<default_value> ("default");
       else
         return; // No default value for this column.
 
-      // The first letter in the default value string identifies
-      // the type of the value. See pragma.cxx for details.
-      //
-      switch (s[0])
+      switch (dv->kind)
       {
-      case 'n':
+      case default_value::reset:
+        {
+          // No default value.
+          break;
+        }
+      case default_value::null:
         {
           default_null (m);
           break;
         }
-      case 't':
-      case 'f':
+      case default_value::boolean:
         {
-          default_bool (m, s[0] == 't');
+          default_bool (m, dv->value == "true");
           break;
         }
-      case '+':
-      case '-':
+      case default_value::number:
         {
+          tree n (dv->node);
+
           switch (TREE_CODE (n))
           {
           case INTEGER_CST:
@@ -88,7 +70,7 @@ namespace relational
 
               unsigned long long v ((h << width) + l);
 
-              default_integer (m, v, s[0] == '-');
+              default_integer (m, v, dv->value == "-");
               break;
             }
           case REAL_CST:
@@ -109,7 +91,7 @@ namespace relational
                 is >> v;
               }
 
-              if (s[0] == '-')
+              if (dv->value == "-")
                 v = -v;
 
               default_float (m, v);
@@ -120,19 +102,16 @@ namespace relational
           }
           break;
         }
-
-      case 's':
+      case default_value::string:
         {
-          default_string (m, string (s, 1, string::npos));
+          default_string (m, dv->value);
           break;
         }
-      case 'e':
+      case default_value::enumerator:
         {
-          default_enum (m, n, string (s, 1, string::npos));
+          default_enum (m, dv->node, dv->value);
           break;
         }
-      default:
-        assert (false);
       }
     }
 

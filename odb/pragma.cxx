@@ -5,11 +5,35 @@
 
 #include <odb/gcc.hxx>
 
+#include <vector>
+
 #include <odb/error.hxx>
 #include <odb/pragma.hxx>
 #include <odb/cxx-lexer.hxx>
+#include <odb/context.hxx>
 
 using namespace std;
+using namespace cutl;
+
+using container::any;
+
+template <typename X>
+void
+accumulate (compiler::context& ctx, string const& k, any const& v, location_t)
+{
+  // Empty values are used to indicate that this pragma must be ignored.
+  //
+  if (v.empty ())
+    return;
+
+  typedef vector<X> container;
+
+  container& c (ctx.count (k)
+                ? ctx.get<container> (k)
+                : ctx.set (k, container ()));
+
+  c.push_back (v.value<X> ());
+}
 
 // Lists of pragmas.
 //
@@ -311,10 +335,9 @@ handle_pragma (cpp_reader* reader,
   cpp_ttype tt;
 
   string name (p);                           // Pragma name.
-  string val;                                // Pragma string value.
-  tree node (0);                             // Pragma tree node value.
+  any val;                                   // Pragma value.
+  pragma::add_func adder (0);                // Custom context adder.
   location_t loc (input_location);           // Pragma location.
-  pragma::mode_type mode (pragma::override); // Pragma mode.
 
   if (p == "table")
   {
@@ -340,7 +363,7 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    val = TREE_STRING_POINTER (t);
+    val = string (TREE_STRING_POINTER (t));
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
@@ -366,6 +389,7 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
+    string v;
     size_t pb (0);
     bool punc (false);
 
@@ -374,7 +398,7 @@ handle_pragma (cpp_reader* reader,
          tt = pragma_lex (&t))
     {
       if (punc && tt > CPP_LAST_PUNCTUATOR)
-        val += ' ';
+        v += ' ';
 
       punc = false;
 
@@ -389,29 +413,29 @@ handle_pragma (cpp_reader* reader,
       {
       case CPP_LESS:
         {
-          val += "< ";
+          v += "< ";
           break;
         }
       case CPP_GREATER:
         {
-          val += " >";
+          v += " >";
           break;
         }
       case CPP_COMMA:
         {
-          val += ", ";
+          v += ", ";
           break;
         }
       case CPP_NAME:
         {
-          val += IDENTIFIER_POINTER (t);
+          v += IDENTIFIER_POINTER (t);
           punc = true;
           break;
         }
       default:
         {
           if (tt <= CPP_LAST_PUNCTUATOR)
-            val += cxx_lexer::token_spelling[tt];
+            v += cxx_lexer::token_spelling[tt];
           else
           {
             error () << "unexpected token '" << cxx_lexer::token_spelling[tt]
@@ -429,11 +453,13 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    if (val.empty ())
+    if (v.empty ())
     {
       error () << "expected pointer name in db pragma " << p << endl;
       return;
     }
+
+    val = v;
 
     tt = pragma_lex (&t);
   }
@@ -473,7 +499,7 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    val = IDENTIFIER_POINTER (t);
+    val = string (IDENTIFIER_POINTER (t));
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
@@ -507,7 +533,7 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    val = TREE_STRING_POINTER (t);
+    val = string (TREE_STRING_POINTER (t));
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
@@ -541,11 +567,10 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    name = "objects"; // Change the context entry name.
-    mode = pragma::accumulate;
-    node = parse_scoped_name (t, tt, val, true, p);
+    view_object vo;
+    vo.node = parse_scoped_name (t, tt, vo.name, true, p);
 
-    if (node == 0)
+    if (vo.node == 0)
       return; // Diagnostics has already been issued.
 
     if (tt != CPP_CLOSE_PAREN)
@@ -553,6 +578,10 @@ handle_pragma (cpp_reader* reader,
       error () << "')' expected at the end of db pragma " << p << endl;
       return;
     }
+
+    val = vo;
+    name = "objects"; // Change the context entry name.
+    adder = &accumulate<view_object>;
 
     tt = pragma_lex (&t);
   }
@@ -612,7 +641,7 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    val = TREE_STRING_POINTER (t);
+    val = string (TREE_STRING_POINTER (t));
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
@@ -648,16 +677,26 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
 
-    // An empty options specifier signals options reset.
-    //
     if (tt == CPP_STRING)
     {
-      val = TREE_STRING_POINTER (t);
+      string o (TREE_STRING_POINTER (t));
+
+      // Ignore empty options strings. Internally, we use them to
+      // indicate options reset (see below).
+      //
+      if (!o.empty ())
+        val = string (TREE_STRING_POINTER (t));
+
       tt = pragma_lex (&t);
     }
-    // Empty options specifier signals options reset.
-    //
-    else if (tt != CPP_CLOSE_PAREN)
+    else if (tt == CPP_CLOSE_PAREN)
+    {
+      // Empty options specifier signals options reset. Encode it as an
+      // empty string.
+      //
+      val = string ();
+    }
+    else
     {
       error () << "options string expected in db pragma " << p << endl;
       return;
@@ -669,7 +708,7 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    mode = pragma::accumulate;
+    adder = &accumulate<string>;
     tt = pragma_lex (&t);
   }
   else if (p == "type" ||
@@ -704,7 +743,7 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    val = TREE_STRING_POINTER (t);
+    val = string (TREE_STRING_POINTER (t));
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
@@ -756,34 +795,41 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
 
-    // Encode the kind of value we have in the first letter of
-    // the string.
-    //
+    default_value dv;
+
     switch (tt)
     {
     case CPP_CLOSE_PAREN:
       {
-        // Default value override.
+        // Default value reset.
         //
+        dv.kind = default_value::reset;
         break;
       }
     case CPP_STRING:
       {
-        val = "s";
-        val += TREE_STRING_POINTER (t);
+        dv.kind = default_value::string;
+        dv.value = TREE_STRING_POINTER (t);
         tt = pragma_lex (&t);
         break;
       }
     case CPP_NAME:
       {
-        // This can be the null, true, or false keyword or a enumerator
+        // This can be the null, true, or false keyword or an enumerator
         // name.
         //
         string n (IDENTIFIER_POINTER (t));
 
-        if (n == "null" || n == "true" || n == "false")
+        if (n == "null")
         {
-          val = n[0];
+          dv.kind = default_value::null;
+          tt = pragma_lex (&t);
+          break;
+        }
+        else if (n == "true" || n == "false")
+        {
+          dv.kind = default_value::boolean;
+          dv.value = n;
           tt = pragma_lex (&t);
           break;
         }
@@ -793,26 +839,27 @@ handle_pragma (cpp_reader* reader,
       {
         // We have a potentially scopped enumerator name.
         //
-        string n;
-        tree decl (parse_scoped_name (t, tt, n, false, p));
+        dv.node = parse_scoped_name (t, tt, dv.value, false, p);
 
-        if (decl == 0)
+        if (dv.node == 0)
           return; // Diagnostics has already been issued.
 
-        node = decl;
-        val = "e" + n;
+        dv.kind = default_value::enumerator;
         break;
       }
     case CPP_MINUS:
     case CPP_PLUS:
       {
-        val = (tt == CPP_MINUS ? "-" : "+");
+        if (tt == CPP_MINUS)
+          dv.value = "-";
+
         tt = pragma_lex (&t);
 
         if (tt != CPP_NUMBER)
         {
-          error () << "expected numeric constant after '" << val
-                   << "' in db pragma " << p << endl;
+          error () << "expected numeric constant after '"
+                   << (tt == CPP_MINUS ? "-" : "+") << "' in db pragma "
+                   << p << endl;
           return;
         }
 
@@ -828,10 +875,8 @@ handle_pragma (cpp_reader* reader,
           return;
         }
 
-        if (val.empty ())
-          val = "+";
-
-        node = t;
+        dv.node = t;
+        dv.kind = default_value::number;
         tt = pragma_lex (&t);
         break;
       }
@@ -848,6 +893,7 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
+    val = dv;
     tt = pragma_lex (&t);
   }
   else if (p == "inverse")
@@ -874,7 +920,7 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    val = IDENTIFIER_POINTER (t);
+    val = string (IDENTIFIER_POINTER (t));
 
     if (pragma_lex (&t) != CPP_CLOSE_PAREN)
     {
@@ -914,9 +960,15 @@ handle_pragma (cpp_reader* reader,
     return;
   }
 
+  // If the value is not specified and we don't use a custom adder,
+  // then make it bool (flag).
+  //
+  if (adder == 0 && val.empty ())
+    val = true;
+
   // Record this pragma.
   //
-  pragma prag (mode, p, name, val, node, loc, &check_spec_decl_type);
+  pragma prag (p, name, val, loc, &check_spec_decl_type, adder);
 
   if (decl)
     decl_pragmas_[decl].insert (prag);
@@ -1073,7 +1125,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
   // Record this pragma.
   //
-  pragma prag (pragma::override, p, p, "", 0, loc, &check_qual_decl_type);
+  pragma prag (p, p, any (true), loc, &check_qual_decl_type, 0);
 
   if (decl)
     decl_pragmas_[decl].insert (prag);

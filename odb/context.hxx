@@ -6,6 +6,8 @@
 #ifndef ODB_CONTEXT_HXX
 #define ODB_CONTEXT_HXX
 
+#include <odb/gcc-fwd.hxx>
+
 #include <map>
 #include <set>
 #include <stack>
@@ -65,6 +67,32 @@ enum class_kind
   class_view,
   class_composite,
   class_other
+};
+
+// Semantic graph context types.
+//
+struct view_object
+{
+  tree node;
+  std::string name;
+  semantics::class_* object;
+};
+
+struct default_value
+{
+  enum kind_type
+  {
+    reset,   // Default value reset.
+    null,
+    boolean,
+    number,  // Integer of floating-point number. Value contains sign.
+    string,
+    enumerator // Value is the name, node is the tree node.
+  };
+
+  kind_type kind;
+  std::string value;
+  tree node;
 };
 
 class context

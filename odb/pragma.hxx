@@ -13,10 +13,11 @@
 #include <vector>
 #include <string>
 
+#include <cutl/container/any.hxx>
+#include <cutl/compiler/context.hxx>
+
 struct pragma
 {
-  enum mode_type {override, accumulate};
-
   // Check that the pragma is applicable to the declaration. Return true
   // on success, complain and return false otherwise.
   //
@@ -25,46 +26,50 @@ struct pragma
                               std::string const& prag_name,
                               location_t);
 
-  pragma (mode_type m,
-          std::string const& pn,
+  // Add the pragma value to the context.
+  //
+  typedef void (*add_func) (cutl::compiler::context&,
+                            std::string const& key,
+                            cutl::container::any const& value,
+                            location_t);
+
+  pragma (std::string const& pn,
           std::string const& cn,
-          std::string const& v,
-          tree n,
+          cutl::container::any const& v,
           location_t l,
-          check_func c)
-    : mode (m),
-      pragma_name (pn),
+          check_func c,
+          add_func a)
+    : pragma_name (pn),
       context_name (cn),
       value (v),
-      node (n),
       loc (l),
-      check (c)
+      check (c),
+      add (a)
   {
   }
 
   bool
   operator< (pragma const& y) const
   {
-    if (mode == override)
+    if (add == 0)
       return pragma_name < y.pragma_name;
     else
       return pragma_name < y.pragma_name ||
         (pragma_name == y.pragma_name && loc < y.loc);
   }
 
-  mode_type mode;
   std::string pragma_name;  // Actual pragma name for diagnostics.
   std::string context_name; // Context entry name.
-  std::string value;
-  tree node;
+  cutl::container::any value;
   location_t loc;
   check_func check;
+  add_func add;
 };
 
 typedef std::vector<pragma> pragma_list;
 
-// A set of pragmas. Insertion of a pragma with the same name and override
-// mode overrides the old value.
+// A set of pragmas. Insertion of a pragma with the same name and no
+// custom add function overrides the old value.
 //
 struct pragma_set: std::set<pragma>
 {
