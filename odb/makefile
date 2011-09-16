@@ -15,6 +15,7 @@ context.cxx                    \
 common.cxx                     \
 emitter.cxx                    \
 error.cxx                      \
+lookup.cxx                     \
 include.cxx                    \
 header.cxx                     \
 inline.cxx                     \

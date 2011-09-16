@@ -3,7 +3,7 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <cctype> // std::toupper, std::is{alpha,upper,lower}
+#include <cctype> // std::toupper
 #include <cassert>
 
 #include <odb/context.hxx>
@@ -377,16 +377,40 @@ composite_ (semantics::class_& c)
 }
 
 string context::
-table_name (semantics::class_& t) const
+table_name (semantics::class_& c) const
 {
   string name (options.table_prefix ());
 
-  if (t.count ("table"))
-    name += t.get<string> ("table");
+  if (c.count ("table"))
+    name += c.get<string> ("table");
   else
-    name += t.name ();
+    name += c.name ();
 
   return name;
+}
+
+string context::
+table_name (semantics::class_& obj, data_member_path const& mp) const
+{
+  table_prefix tp (table_name (obj) + "_", 1);
+
+  if (mp.size () == 1)
+  {
+    // Container directly in the object.
+    //
+    return table_name (*mp.back (), tp);
+  }
+  else
+  {
+    data_member_path::const_iterator i (mp.begin ());
+
+    // The last member is the container.
+    //
+    for (data_member_path::const_iterator e (mp.end () - 1); i != e; ++i)
+      object_members_base::append (**i, tp);
+
+    return table_name (**i, tp);
+  }
 }
 
 string context::
@@ -425,16 +449,39 @@ string context::
 column_name (semantics::data_member& m) const
 {
   if (m.count ("column"))
-    return m.get<string> ("column");
-  else if (m.type ().count ("column"))
-    return m.type ().get<string> ("column");
+    return m.get<table_column> ("column").column;
   else
     return public_name_db (m);
 }
 
 string context::
+column_name (data_member_path const& mp) const
+{
+  // The path can lead to a composite value member and column names for
+  // such members are derived dynamically using the same derivation
+  // process as when generating object columns (see object_columns_base).
+  //
+  string r;
+
+  for (data_member_path::const_iterator i (mp.begin ()); i != mp.end (); ++i)
+  {
+    semantics::data_member& m (**i);
+
+    if (composite_wrapper (m.type ()))
+      r += object_columns_base::column_prefix (m);
+    else
+      r += column_name (m);
+  }
+
+  return r;
+}
+
+string context::
 column_name (semantics::data_member& m, string const& p, string const& d) const
 {
+  // A container column name can be specified for the member of for the
+  // container type.
+  //
   string key (p + "-column");
   if (m.count (key))
     return m.get<string> (key);

@@ -16,6 +16,10 @@
 
 using namespace std;
 
+//
+// cxx_lexer
+//
+
 // Token spelling. See cpplib.h for details.
 //
 #define OP(e, s) s ,
@@ -23,6 +27,98 @@ using namespace std;
 char const* cxx_lexer::token_spelling[N_TTYPES + 1] = { TTYPE_TABLE "KEYWORD"};
 #undef OP
 #undef TK
+
+cxx_lexer::
+~cxx_lexer ()
+{
+}
+
+//
+// cxx_tokens_lexer
+//
+
+void cxx_tokens_lexer::
+start (cxx_tokens const& ts)
+{
+  tokens_ = &ts;
+  cur_ = ts.begin ();
+}
+
+cpp_ttype cxx_tokens_lexer::
+next (std::string& token)
+{
+  if (cur_ != tokens_->end ())
+  {
+    token = cur_->literal;
+    return static_cast<cpp_ttype> (cur_++->type);
+  }
+  else
+    return CPP_EOF;
+}
+
+//
+// cxx_pragma_lexer
+//
+
+void cxx_pragma_lexer::
+start ()
+{
+  token_ = &token_data_;
+  type_ = &type_data_;
+}
+
+string cxx_pragma_lexer::
+start (tree& token, cpp_ttype& type)
+{
+  token_ = &token;
+  type_ = &type;
+
+  return translate ();
+}
+
+cpp_ttype cxx_pragma_lexer::
+next (string& token)
+{
+  *type_ = pragma_lex (token_);
+  token = translate ();
+  return *type_;
+}
+
+string cxx_pragma_lexer::
+translate ()
+{
+  string r;
+
+  switch (*type_)
+  {
+  case CPP_NAME:
+    {
+      r = IDENTIFIER_POINTER (*token_);
+
+      // See if this is a keyword using the C++ parser machinery and
+      // the current C++ dialect.
+      //
+      tree id (get_identifier (r.c_str ()));
+
+      if (C_IS_RESERVED_WORD (id))
+        *type_ = CPP_KEYWORD;
+      break;
+    }
+  case CPP_STRING:
+    {
+      r = TREE_STRING_POINTER (*token_);
+      break;
+    }
+  default:
+    break;
+  }
+
+  return r;
+}
+
+//
+// cxx_string_lexer
+//
 
 // Diagnostics callback.
 //
@@ -65,7 +161,7 @@ cpp_error_callback (
     vfprintf (stderr, msg, *ap);
     fprintf (stderr, "\n");
 
-    // By resetting the error callback we indicate to cxx_lexer
+    // By resetting the error callback we indicate to cxx_string_lexer
     // that there was an error.
     //
     cpp_get_callbacks (reader)->error = 0;
@@ -75,8 +171,8 @@ cpp_error_callback (
   return false;
 }
 
-cxx_lexer::
-cxx_lexer ()
+cxx_string_lexer::
+cxx_string_lexer ()
     : reader_ (0)
 {
   linemap_init (&line_map_);
@@ -91,8 +187,8 @@ cxx_lexer ()
   callbacks_ = cpp_get_callbacks (reader_);
 }
 
-cxx_lexer::
-~cxx_lexer ()
+cxx_string_lexer::
+~cxx_string_lexer ()
 {
   if (reader_ != 0)
     cpp_destroy (reader_);
@@ -100,7 +196,7 @@ cxx_lexer::
   linemap_free (&line_map_);
 }
 
-void cxx_lexer::
+void cxx_string_lexer::
 start (string const& data)
 {
   // The previous lexing session should have popped the buffer.
@@ -119,7 +215,7 @@ start (string const& data)
     true);
 }
 
-cpp_ttype cxx_lexer::
+cpp_ttype cxx_string_lexer::
 next (string& token)
 {
   token.clear ();

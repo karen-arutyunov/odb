@@ -146,7 +146,7 @@ namespace semantics
     // @@ Creating a lexer for each call is a bad idea. Need
     //    to cache it somewhere.
     //
-    cxx_lexer l;
+    cxx_string_lexer l;
     l.start (n);
 
     string r, t;

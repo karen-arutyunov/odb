@@ -127,7 +127,7 @@ namespace relational
           }
 
           line_ += column;
-          line_ += "+0, ' ', ";
+          line_ += "+0,' ',";
 
           if (!table.empty ())
           {
@@ -141,6 +141,30 @@ namespace relational
         }
       };
       entry<object_columns> object_columns_;
+
+      struct view_columns: relational::view_columns, context
+      {
+        view_columns (base const& x): base (x) {}
+
+        virtual void
+        column (semantics::data_member& m, string const& column)
+        {
+          // The same idea as in object_columns.
+          //
+          if (column_sql_type (m).type != sql_type::ENUM)
+          {
+            base::column (m, column);
+            return;
+          }
+
+          line_ += "CONCAT(";
+          line_ += column;
+          line_ += "+0,' ',";
+          line_ += column;
+          line_ += ")";
+        }
+      };
+      entry<view_columns> view_columns_;
 
       //
       // bind

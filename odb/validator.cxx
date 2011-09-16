@@ -187,8 +187,15 @@ namespace
   //
   struct class_: traversal::class_
   {
-    class_ (bool& valid, semantics::unit& unit, value_type& vt)
-        : valid_ (valid), unit_ (unit), vt_ (vt), member_ (valid)
+    class_ (bool& valid,
+            options const& ops,
+            semantics::unit& unit,
+            value_type& vt)
+        : valid_ (valid),
+          options_ (ops),
+          unit_ (unit),
+          vt_ (vt),
+          member_ (valid)
     {
       *this >> names_ >> member_;
     }
@@ -354,6 +361,22 @@ namespace
     virtual void
     traverse_view (type& c)
     {
+      // Views require query support.
+      //
+      if (!options_.generate_query ())
+      {
+        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: query support is required when using views"
+             << endl;
+
+        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " info: use the --generate-query option to enable query "
+             << "support"
+             << endl;
+
+        valid_ = false;
+      }
+
       // Check bases.
       //
       for (type::inherits_iterator i (c.inherits_begin ());
@@ -485,6 +508,7 @@ namespace
     }
 
     bool& valid_;
+    options const& options_;
     semantics::unit& unit_;
     value_type& vt_;
 
@@ -494,7 +518,7 @@ namespace
 }
 
 bool validator::
-validate (options const&,
+validate (options const& ops,
           semantics::unit& u,
           semantics::path const&)
 {
@@ -505,7 +529,7 @@ validate (options const&,
   traversal::declares unit_declares;
   traversal::namespace_ ns;
   value_type vt (valid);
-  class_ c (valid, u, vt);
+  class_ c (valid, ops, u, vt);
 
   unit >> unit_defines >> ns;
   unit_defines >> c;

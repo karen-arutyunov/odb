@@ -5,10 +5,14 @@
 
 #include <odb/gcc.hxx>
 
+#include <cctype> // std::isalnum
 #include <vector>
+#include <sstream>
 
 #include <odb/error.hxx>
+#include <odb/lookup.hxx>
 #include <odb/pragma.hxx>
+#include <odb/cxx-token.hxx>
 #include <odb/cxx-lexer.hxx>
 #include <odb/context.hxx>
 
@@ -40,96 +44,185 @@ accumulate (compiler::context& ctx, string const& k, any const& v, location_t)
 loc_pragmas loc_pragmas_;
 decl_pragmas decl_pragmas_;
 
-static tree
-parse_scoped_name (tree& t,
-                   cpp_ttype& tt,
-                   string& name,
-                   bool is_type,
-                   string const& prag)
+static bool
+parse_expression (tree& t,
+                  cpp_ttype& tt,
+                  cxx_tokens& ts,
+                  string const& prag)
 {
-  tree scope, id;
-  bool first (true);
+  // Keep reading tokens until we see a matching ')' while keeping track
+  // of their balance.
+  //
+  size_t balance (0);
 
-  if (tt == CPP_SCOPE)
+  for (; tt != CPP_EOF; tt = pragma_lex (&t))
   {
-    name += "::";
-    scope = global_namespace;
-    first = false;
-    tt = pragma_lex (&t);
-  }
-  else
-    scope = current_scope ();
+    bool done (false);
+    cxx_token ct;
 
-  while (true)
-  {
-    if (tt != CPP_NAME)
+    switch (tt)
     {
-      error () << "invalid name in db pragma " << prag << endl;
-      return 0;
-    }
-
-    id = t;
-    name += IDENTIFIER_POINTER (t);
-    tt = pragma_lex (&t);
-
-    bool last (tt != CPP_SCOPE);
-    tree decl = lookup_qualified_name (scope, id, last && is_type, false);
-
-    // If this is the first component in the name, then also search the
-    // outer scopes.
-    //
-    if (decl == error_mark_node && first && scope != global_namespace)
-    {
-      do
+    case CPP_OPEN_PAREN:
       {
-        scope = TYPE_P (scope)
-          ? CP_TYPE_CONTEXT (scope)
-          : CP_DECL_CONTEXT (scope);
-        decl = lookup_qualified_name (scope, id, last && is_type, false);
-      } while (decl == error_mark_node && scope != global_namespace);
-    }
-
-    if (decl == error_mark_node)
-    {
-      if (last)
-      {
-        error () << "unable to resolve " << (is_type ? "type " : "") << "name "
-                 << "'" << name << "' in db pragma " << prag << endl;
+        balance++;
+        break;
       }
-      else
+    case CPP_CLOSE_PAREN:
       {
-        error () << "unable to resolve name '" << name << "' in db pragma "
-                 << prag << endl;
+        if (balance == 0)
+          done = true;
+        else
+          balance--;
+        break;
       }
+    case CPP_STRING:
+      {
+        ct.literal = TREE_STRING_POINTER (t);
+        break;
+      }
+    case CPP_NAME:
+      {
+        ct.literal = IDENTIFIER_POINTER (t);
+        break;
+      }
+    case CPP_NUMBER:
+      {
+        switch (TREE_CODE (t))
+        {
+        case INTEGER_CST:
+          {
+            tree type (TREE_TYPE (t));
 
-      return 0;
+            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (t));
+            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (t));
+
+            unsigned long long l (hwl);
+            unsigned long long h (hwh);
+            unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+            unsigned long long v ((h << width) + l);
+
+            ostringstream os;
+            os << v;
+
+            if (type == long_long_integer_type_node)
+              os << "LL";
+            else if (type == long_long_unsigned_type_node)
+              os << "ULL";
+            else if (type == long_integer_type_node)
+              os << "L";
+            else if (type == long_unsigned_type_node)
+              os << "UL";
+            else if (
+              TYPE_UNSIGNED (type) &&
+              TYPE_PRECISION (type) >= TYPE_PRECISION (integer_type_node))
+              os << "U";
+
+            ct.literal = os.str ();
+            break;
+          }
+        case REAL_CST:
+          {
+            tree type (TREE_TYPE (t));
+            REAL_VALUE_TYPE val (TREE_REAL_CST (t));
+
+            // This is the best we can do. val cannot be INF or NaN.
+            //
+            char tmp[256];
+            real_to_decimal (tmp, &val, sizeof (tmp), 0, true);
+            istringstream is (tmp);
+            ostringstream os;
+
+            if (type == float_type_node)
+            {
+              float f;
+              is >> f;
+              os << f << 'F';
+            }
+            else
+            {
+              double d;
+              is >> d;
+              os << d;
+            }
+
+            ct.literal = os.str ();
+            break;
+          }
+        default:
+          {
+            error ()
+              << "unexpected numeric constant in db pragma " << prag << endl;
+            return false;
+          }
+        }
+
+        break;
+      }
+    default:
+      {
+        break;
+      }
     }
 
-    scope = decl;
-
-    if (last)
+    if (done)
       break;
 
-    first = false;
-
-    if (TREE_CODE (scope) == TYPE_DECL)
-      scope = TREE_TYPE (scope);
-
-    name += "::";
-    tt = pragma_lex (&t);
+    ct.type = tt;
+    ts.push_back (ct);
   }
 
-  // Get the actual type if this is a TYPE_DECL.
-  //
-  if (is_type)
+  return true;
+}
+
+
+static string
+parse_scoped_name (tree& token, cpp_ttype& type, string const& prag)
+{
+  try
   {
-    if (TREE_CODE (scope) == TYPE_DECL)
-      scope = TREE_TYPE (scope);
-
-    scope = TYPE_MAIN_VARIANT (scope);
+    cxx_pragma_lexer lex;
+    string st (lex.start (token, type));
+    return lookup::parse_scoped_name (st, type, lex);
   }
+  catch (lookup::invalid_name const&)
+  {
+    error () << "invalid name in db pragma " << prag << endl;
+    return "";
+  }
+}
 
-  return scope;
+static tree
+resolve_scoped_name (tree& token,
+                     cpp_ttype& type,
+                     string& name,
+                     bool is_type,
+                     string const& prag)
+{
+  try
+  {
+    cxx_pragma_lexer lex;
+    cpp_ttype ptt; // Not used.
+    string st (lex.start (token, type));
+    return lookup::resolve_scoped_name (
+      st, type, ptt, lex, current_scope (), name, is_type);
+  }
+  catch (lookup::invalid_name const&)
+  {
+    error () << "invalid name in db pragma " << prag << endl;
+    return 0;
+  }
+  catch (lookup::unable_to_resolve const& e)
+  {
+    if (e.last ())
+      error () << "unable to resolve " << (is_type ? "type " : "") << "name "
+               << "'" << e.name () << "' in db pragma " << prag << endl;
+    else
+      error () << "unable to resolve name '" << e.name () << "' in db pragma "
+               << prag << endl;
+
+    return 0;
+  }
 }
 
 static bool
@@ -511,7 +604,9 @@ handle_pragma (cpp_reader* reader,
   }
   else if (p == "query")
   {
+    // query ()
     // query ("statement")
+    // query (expr)
     //
 
     // Make sure we've got the correct declaration type.
@@ -527,25 +622,59 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
 
-    if (tt != CPP_STRING)
+    view_query vq;
+
+    bool s (false);
+    string str;
+
+    if (tt == CPP_STRING)
     {
-      error () << "query statement expected in db pragma " << p << endl;
-      return;
+      s = true;
+      str = TREE_STRING_POINTER (t);
+      tt = pragma_lex (&t);
     }
 
-    val = string (TREE_STRING_POINTER (t));
+    if (tt == CPP_CLOSE_PAREN)
+    {
+      if (s)
+        vq.literal = str;
+      else
+      {
+        // Empty query() pragma indicates that the statement will be
+        // provided at runtime. Encode this case as empty literal
+        // and expression.
+        //
+      }
+    }
+    else
+    {
+      // Expression.
+      //
+      if (s)
+      {
+        vq.expr.push_back (cxx_token ());
+        vq.expr.back ().type = CPP_STRING;
+        vq.expr.back ().literal = str;
+      }
 
-    if (pragma_lex (&t) != CPP_CLOSE_PAREN)
+      if (!parse_expression (t, tt, vq.expr, p))
+        return; // Diagnostics has already been issued.
+    }
+
+    if (tt != CPP_CLOSE_PAREN)
     {
       error () << "')' expected at the end of db pragma " << p << endl;
       return;
     }
 
+    vq.scope = current_scope ();
+    vq.loc = loc;
+    val = vq;
     tt = pragma_lex (&t);
   }
   else if (p == "object")
   {
-    // object (name)
+    // object (fq-name [ = name] [: expr])
     //
 
     // Make sure we've got the correct declaration type.
@@ -568,10 +697,41 @@ handle_pragma (cpp_reader* reader,
     }
 
     view_object vo;
-    vo.node = parse_scoped_name (t, tt, vo.name, true, p);
+    vo.node = resolve_scoped_name (t, tt, vo.orig_name, true, p);
 
     if (vo.node == 0)
       return; // Diagnostics has already been issued.
+
+    if (tt == CPP_EQ)
+    {
+      // We have an alias.
+      //
+      if (pragma_lex (&t) != CPP_NAME)
+      {
+        error () << "alias name expected after '=' in db pragma " << p << endl;
+        return;
+      }
+
+      vo.alias = IDENTIFIER_POINTER (t);
+      tt = pragma_lex (&t);
+    }
+
+    if (tt == CPP_COLON)
+    {
+      // We have a condition.
+
+      tt = pragma_lex (&t);
+
+      if (!parse_expression (t, tt, vo.cond, p))
+        return; // Diagnostics has already been issued.
+
+      if (vo.cond.empty ())
+      {
+        error ()
+          << "join condition expected after ':' in db pragma " << p << endl;
+        return;
+      }
+    }
 
     if (tt != CPP_CLOSE_PAREN)
     {
@@ -579,6 +739,8 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
+    vo.scope = current_scope ();
+    vo.loc = loc;
     val = vo;
     name = "objects"; // Change the context entry name.
     adder = &accumulate<view_object>;
@@ -609,13 +771,217 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
   }
-  else if (p == "column" ||
-           p == "value_column" ||
+  else if (p == "column")
+  {
+    // column ("<name>")
+    // column ("<name>.<name>")
+    // column ("<name>"."<name>")
+    // column (fq-name)             (view only)
+    // column (expr)                (view only)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (pragma_lex (&t) != CPP_OPEN_PAREN)
+    {
+      error () << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    tt = pragma_lex (&t);
+
+    bool s (false);
+    string str;
+
+    // String can be just the column name, a table name followed by the
+    // column name, or part of an expression, depending on what comes
+    // after the string.
+    //
+    if (tt == CPP_STRING)
+    {
+      s = true;
+      str = TREE_STRING_POINTER (t);
+      tt = pragma_lex (&t);
+    }
+
+    if (tt == CPP_CLOSE_PAREN)
+    {
+      if (s)
+      {
+        // "<name>" or "<name>.<name>"
+        //
+        table_column tc;
+        tc.expr = false;
+
+        // Scan the string and see if we have any non-identifier
+        // characters. If so, assume it is an expression. While
+        // at it also see if there is '.'.
+        //
+        string::size_type p (string::npos);
+
+        for (size_t i (0); i < str.size (); ++i)
+        {
+          char c (str[i]);
+
+          if (!(isalnum (c) || c == '_'))
+          {
+            tc.expr = true;
+            break;
+          }
+
+          if (c == '.')
+          {
+            if (p != string::npos)
+            {
+              // Second '.' -- something fishy is going on.
+              tc.expr = true;
+              break;
+            }
+
+            p  = i;
+          }
+        }
+
+        if (!tc.expr && p != string::npos)
+        {
+          tc.table.assign (str, 0, p);
+          tc.column.assign (str, p + 1, string::npos);
+        }
+        else
+          tc.column = str;
+
+        val = tc;
+      }
+      else
+      {
+        error () << "column name expected in db pragma " << p << endl;
+        return;
+      }
+    }
+    else if (tt == CPP_DOT)
+    {
+      if (s)
+      {
+        // "<name>"."<name>"
+        //
+        table_column tc;
+        tc.expr = false;
+
+        if (pragma_lex (&t) != CPP_STRING)
+        {
+          error () << "column name expected after '.' in db pragma " << p
+                   << endl;
+          return;
+        }
+
+        tc.table = str;
+        tc.column = TREE_STRING_POINTER (t);
+        val = tc;
+        tt = pragma_lex (&t);
+      }
+      else
+      {
+        error () << "column name expected in db pragma " << p << endl;
+        return;
+      }
+    }
+    else
+    {
+      // We have an expression.
+      //
+      column_expr e;
+
+      if (s)
+      {
+        e.push_back (column_expr_part ());
+        e.back ().kind = column_expr_part::literal;
+        e.back ().value = str;
+
+        if (tt != CPP_PLUS)
+        {
+          error () << "'+' or ')' expected in db pragma " << p << endl;
+          return;
+        }
+
+        tt = pragma_lex (&t);
+      }
+
+      for (;;)
+      {
+        if (tt == CPP_STRING)
+        {
+          e.push_back (column_expr_part ());
+          e.back ().kind = column_expr_part::literal;
+          e.back ().value = TREE_STRING_POINTER (t);
+
+          tt = pragma_lex (&t);
+        }
+        else if (tt == CPP_NAME || tt == CPP_SCOPE)
+        {
+          string name (parse_scoped_name (t, tt, p));
+
+          if (name.empty ())
+            return; // Diagnostics has already been issued.
+
+          // Resolve nested members if any.
+          //
+          for (; tt == CPP_DOT; tt = pragma_lex (&t))
+          {
+            if (pragma_lex (&t) != CPP_NAME)
+            {
+              error () << "name expected after '.' in db pragma " << p << endl;
+              return;
+            }
+
+            name += '.';
+            name += IDENTIFIER_POINTER (t);
+          }
+
+          e.push_back (column_expr_part ());
+          e.back ().kind = column_expr_part::reference;
+          e.back ().value = name;
+          e.back ().scope = current_scope ();
+          e.back ().loc = loc;
+        }
+        else
+        {
+          error () << "string literal or name expected in db pragma " << p
+                   << endl;
+          return;
+        }
+
+        if (tt == CPP_PLUS)
+          tt = pragma_lex (&t);
+        else if (tt == CPP_CLOSE_PAREN)
+          break;
+        else
+        {
+          error () << "'+' or ')' expected in db pragma " << p << endl;
+          return;
+        }
+      }
+
+      e.loc = loc;
+      val = e;
+      name = "column-expr";
+    }
+
+    if (tt != CPP_CLOSE_PAREN)
+    {
+      error () << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    tt = pragma_lex (&t);
+  }
+  else if (p == "value_column" ||
            p == "index_column" ||
            p == "key_column" ||
            p == "id_column")
   {
-    // column ("<name>")
     // value_column ("<name>")
     // index_column ("<name>")
     // key_column ("<name>")
@@ -839,7 +1205,7 @@ handle_pragma (cpp_reader* reader,
       {
         // We have a potentially scopped enumerator name.
         //
-        dv.node = parse_scoped_name (t, tt, dv.value, false, p);
+        dv.node = resolve_scoped_name (t, tt, dv.value, false, p);
 
         if (dv.node == 0)
           return; // Diagnostics has already been issued.
@@ -1021,7 +1387,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
       if (tt == CPP_NAME || tt == CPP_SCOPE)
       {
-        decl = parse_scoped_name (t, tt, decl_name, true, p);
+        decl = resolve_scoped_name (t, tt, decl_name, true, p);
 
         if (decl == 0)
           return; // Diagnostics has already been issued.
@@ -1059,7 +1425,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
       if (tt == CPP_NAME || tt == CPP_SCOPE)
       {
-        decl = parse_scoped_name (t, tt, decl_name, false, p);
+        decl = resolve_scoped_name (t, tt, decl_name, false, p);
 
         if (decl == 0)
           return; // Diagnostics has already been issued.

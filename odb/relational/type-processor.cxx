@@ -7,7 +7,10 @@
 
 #include <vector>
 
+#include <odb/error.hxx>
+#include <odb/lookup.hxx>
 #include <odb/cxx-lexer.hxx>
+#include <odb/common.hxx>
 
 #include <odb/relational/context.hxx>
 #include <odb/relational/type-processor.hxx>
@@ -1079,6 +1082,449 @@ namespace relational
       tree container_traits_;
     };
 
+    //
+    //
+    struct view_data_member: traversal::data_member, context
+    {
+      view_data_member (semantics::class_& c)
+          : view_ (c),
+            query_ (c.get<view_query> ("query")),
+            amap_ (c.get<view_alias_map> ("alias-map")),
+            omap_ (c.get<view_object_map> ("object-map"))
+      {
+      }
+
+      struct assoc_member
+      {
+        semantics::data_member* m;
+        view_object* vo;
+      };
+
+      typedef vector<assoc_member> assoc_members;
+
+      virtual void
+      traverse (semantics::data_member& m)
+      {
+        using semantics::data_member;
+
+        if (transient (m))
+          return;
+
+        data_member* src_m (0); // Source member.
+
+        // Resolve member references in column expressions.
+        //
+        if (m.count ("column"))
+        {
+          // Column literal.
+          //
+          if (query_.kind != view_query::condition)
+          {
+            warn (m.get<location_t> ("column-location"))
+              << "db pragma column ignored in a view with "
+              << (query_.kind == view_query::runtime ? "runtime" : "complete")
+              << " query" << endl;
+          }
+
+          return;
+        }
+        else if (m.count ("column-expr"))
+        {
+          column_expr& e (m.get<column_expr> ("column-expr"));
+
+          if (query_.kind != view_query::condition)
+          {
+            warn (e.loc)
+              << "db pragma column ignored in a view with "
+              << (query_.kind == view_query::runtime ? "runtime" : "complete")
+              << " query" << endl;
+            return;
+          }
+
+          for (column_expr::iterator i (e.begin ()); i != e.end (); ++i)
+          {
+            // This code is quite similar to translate_expression in the
+            // source generator.
+            //
+            try
+            {
+              if (i->kind != column_expr_part::reference)
+                continue;
+
+              lex_.start (i->value);
+
+              string t;
+              cpp_ttype tt (lex_.next (t));
+
+              string name;
+              tree decl (0);
+              semantics::class_* obj (0);
+
+              // Check if this is an alias.
+              //
+              if (tt == CPP_NAME)
+              {
+                view_alias_map::iterator j (amap_.find (t));
+
+                if (j != amap_.end ())
+                {
+                  i->table = j->first;
+                  obj = j->second->object;
+
+                  // Skip '::'.
+                  //
+                  if (lex_.next (t) != CPP_SCOPE)
+                  {
+                    error (i->loc)
+                      << "member name expected after an alias in db pragma "
+                      << "column" << endl;
+                    throw generation_failed ();
+                  }
+
+                  tt = lex_.next (t);
+
+                  cpp_ttype ptt; // Not used.
+                  decl = lookup::resolve_scoped_name (
+                    t, tt, ptt, lex_, obj->tree_node (), name, false);
+                }
+              }
+
+              // If it is not an alias, do the normal lookup.
+              //
+              if (obj == 0)
+              {
+                // Also get the object type. We need to do it so that
+                // we can get the correct (derived) table name (the
+                // member can come from a base class).
+                //
+                tree type;
+                cpp_ttype ptt; // Not used.
+                decl = lookup::resolve_scoped_name (
+                  t, tt, ptt, lex_, i->scope, name, false, &type);
+
+                type = TYPE_MAIN_VARIANT (type);
+
+                view_object_map::iterator j (omap_.find (type));
+
+                if (j == omap_.end ())
+                {
+                  error (i->loc)
+                    << "name '" << name << "' in db pragma column does not "
+                    << "refer to a data member of a persistent class that "
+                    << "is used in this view" << endl;
+                  throw generation_failed ();
+                }
+
+                obj = j->second->object;
+                i->table = table_name (*obj);
+              }
+
+              // Check that we have a data member.
+              //
+              if (TREE_CODE (decl) != FIELD_DECL)
+              {
+                error (i->loc) << "name '" << name << "' in db pragma column "
+                               << "does not refer to a data member" << endl;
+                throw generation_failed ();
+              }
+
+              data_member* m (dynamic_cast<data_member*> (unit.find (decl)));
+              i->member_path.push_back (m);
+
+              // Finally, resolve nested members if any.
+              //
+              for (; tt == CPP_DOT; tt = lex_.next (t))
+              {
+                lex_.next (t); // Get CPP_NAME.
+
+                tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
+
+                decl = lookup_qualified_name (
+                  type, get_identifier (t.c_str ()), false, false);
+
+                if (decl == error_mark_node || TREE_CODE (decl) != FIELD_DECL)
+                {
+                  error (i->loc) << "name '" << t << "' in db pragma column "
+                                 << "does not refer to a data member" << endl;
+                  throw generation_failed ();
+                }
+
+                m = dynamic_cast<data_member*> (unit.find (decl));
+                i->member_path.push_back (m);
+              }
+
+              // If the expression is just this reference, then we have
+              // a source member.
+              //
+              if (e.size () == 1)
+                src_m = m;
+            }
+            catch (lookup::invalid_name const&)
+            {
+              error (i->loc) << "invalid name in db pragma column" << endl;
+              throw generation_failed ();
+            }
+            catch (lookup::unable_to_resolve const& e)
+            {
+              error (i->loc) << "unable to resolve name '" << e.name ()
+                             << "' in db pragma column" << endl;
+              throw generation_failed ();
+            }
+          }
+
+          // We have the source member, check that the C++ types are the
+          // same (sans cvr-qualification and wrapping) and issue a warning
+          // if they differ. In rare cases where this is not a mistake, the
+          // user can a phony expression (e.g., "" + person:name) to disable
+          // the warning. Note that in this case there will be no type pragma
+          // copying, which is probably ok seeing that the C++ types are
+          // different.
+          //
+          //
+          if (src_m != 0 &&
+              !member_resolver::check_types (m.type (), src_m->type ()))
+          {
+            warn (e.loc)
+              << "object data member '" << src_m->name () << "' specified "
+              << "in db pragma column has a different type compared to the "
+              << "view data member" << endl;
+
+            info (src_m->file (), src_m->line (), src_m->column ())
+              << "object data member is defined here" << endl;
+
+            info (m.file (), m.line (), m.column ())
+              << "view data member is defined here" << endl;
+          }
+        }
+        // This member has no column information. If we are generting our
+        // own query, try to find a member with the same (or similar) name
+        // in one of the associated objects.
+        //
+        else if (query_.kind == view_query::condition)
+        {
+          view_objects& objs (view_.get<view_objects> ("objects"));
+
+          assoc_members exact_members, pub_members;
+          member_resolver resolver (exact_members, pub_members, m);
+
+          for (view_objects::iterator i (objs.begin ()); i != objs.end (); ++i)
+            resolver.traverse (*i);
+
+          assoc_members& members (
+            !exact_members.empty () ? exact_members : pub_members);
+
+          // Issue diagnostics if we didn't find any or found more
+          // than one.
+          //
+          if (members.empty ())
+          {
+            error (m.file (), m.line (), m.column ())
+              << "unable to find a corresponding data member for '"
+              << m.name () << "' in any of the associated objects" << endl;
+
+            info (m.file (), m.line (), m.column ())
+              << "use db pragma column to specify the corresponding data "
+              << "member or column name" << endl;
+
+            throw generation_failed ();
+          }
+          else if (members.size () > 1)
+          {
+            error (m.file (), m.line (), m.column ())
+              << "corresponding data member for '" << m.name () << "' is "
+              << "ambiguous" << endl;
+
+            info (m.file (), m.line (), m.column ())
+              << "candidates are:" << endl;
+
+            for (assoc_members::const_iterator i (members.begin ());
+                 i != members.end ();
+                 ++i)
+            {
+              info (i->m->file (), i->m->line (), i->m->column ())
+                << "  '" << i->m->name () << "' in object '"
+                << i->vo->name () << "'" << endl;
+            }
+
+            info (m.file (), m.line (), m.column ())
+              << "use db pragma column to resolve this ambiguity" << endl;
+
+            throw generation_failed ();
+          }
+
+          // Synthesize the column expression for this member.
+          //
+          assoc_member const& am (members.back ());
+
+          column_expr& e (m.set ("column-expr", column_expr ()));
+          e.push_back (column_expr_part ());
+          column_expr_part& ep (e.back ());
+
+          ep.kind = column_expr_part::reference;
+          ep.table = am.vo->alias.empty ()
+            ? table_name (*am.vo->object)
+            : am.vo->alias;
+          ep.member_path.push_back (am.m);
+
+          src_m = am.m;
+        }
+
+        // If we have the source member and don't have the type pragma of
+        // our own, but the source member does, then copy the columnt type
+        // over.
+        //
+        if (src_m != 0 && !m.count ("type") && src_m->count ("type"))
+          m.set ("column-type", src_m->get<string> ("column-type"));
+
+        // Check the return statements above if you add any extra logic
+        // here.
+      }
+
+      struct member_resolver: traversal::class_
+      {
+        member_resolver (assoc_members& members,
+                         assoc_members& pub_members,
+                         semantics::data_member& m)
+            : member_ (members, pub_members, m)
+        {
+          *this >> names_ >> member_;
+          *this >> inherits_ >> *this;
+        }
+
+        void
+        traverse (view_object& vo)
+        {
+          member_.vo_ = &vo;
+          traverse (*vo.object);
+        }
+
+        virtual void
+        traverse (type& c)
+        {
+          if (!object (c))
+            return; // Ignore transient bases.
+
+          names (c);
+          inherits (c);
+        }
+
+      public:
+        static bool
+        check_types (semantics::type& t1, semantics::type& t2)
+        {
+          using semantics::type;
+          using semantics::derived_type;
+
+          // Require that the types be the same sans the wrapping and
+          // cvr-qualification.
+          //
+          type* pt1 (&t1);
+          type* pt2 (&t2);
+
+          if (type* wt1 = context::wrapper (*pt1))
+            pt1 = wt1;
+
+          if (type* wt2 = context::wrapper (*pt2))
+            pt2 = wt2;
+
+          if (derived_type* dt1 = dynamic_cast<derived_type*> (pt1))
+            pt1 = &dt1->base_type ();
+
+          if (derived_type* dt2 = dynamic_cast<derived_type*> (pt2))
+            pt2 = &dt2->base_type ();
+
+          if (pt1 != pt2)
+            return false;
+
+          return true;
+        }
+
+      private:
+        struct data_member: traversal::data_member
+        {
+          data_member (assoc_members& members,
+                       assoc_members& pub_members,
+                       semantics::data_member& m)
+              : members_ (members),
+                pub_members_ (pub_members),
+                name_ (m.name ()),
+                pub_name_ (context::current ().public_name (m)),
+                type_ (m.type ())
+          {
+          }
+
+          virtual void
+          traverse (type& m)
+          {
+            // First see if we have the exact match.
+            //
+            if (name_ == m.name ())
+            {
+              if (check (m))
+              {
+                assoc_member am;
+                am.m = &m;
+                am.vo = vo_;
+                members_.push_back (am);
+              }
+
+              return;
+            }
+
+            // Don't bother with public name matching if we already
+            // have an exact match.
+            //
+            if (members_.empty ())
+            {
+              if (pub_name_ == context::current ().public_name (m))
+              {
+                if (check (m))
+                {
+                  assoc_member am;
+                  am.m = &m;
+                  am.vo = vo_;
+                  pub_members_.push_back (am);
+                }
+
+                return;
+              }
+            }
+          }
+
+          bool
+          check (semantics::data_member& m)
+          {
+            // Make sure that the found node can possibly match.
+            //
+            if (context::transient (m) || context::inverse (m))
+              return false;
+
+            return check_types (m.type (), type_);
+          }
+
+          assoc_members& members_;
+          assoc_members& pub_members_;
+
+          string name_;
+          string pub_name_;
+          semantics::type& type_;
+
+          view_object* vo_;
+        };
+
+        traversal::names names_;
+        data_member member_;
+        traversal::inherits inherits_;
+      };
+
+    private:
+      semantics::class_& view_;
+      view_query& query_;
+      view_alias_map& amap_;
+      view_object_map& omap_;
+      cxx_string_lexer lex_;
+    };
+
     struct class_: traversal::class_, context
     {
       class_ ()
@@ -1107,28 +1553,104 @@ namespace relational
           traverse_view (c);
       }
 
+      //
+      // View.
+      //
+
+      struct relationship
+      {
+        semantics::data_member* member;
+        string name;
+        view_object* pointer;
+        view_object* pointee;
+      };
+
+      typedef vector<relationship> relationships;
+
       virtual void
       traverse_view (type& c)
       {
+        bool has_q (c.count ("query"));
+        bool has_o (c.count ("objects"));
+
+        // Determine the kind of query template we've got.
+        //
+        view_query& vq (has_q
+                        ? c.get<view_query> ("query")
+                        : c.set ("query", view_query ()));
+        if (has_q)
+        {
+          if (!vq.literal.empty ())
+          {
+            string q (upcase (vq.literal));
+            vq.kind = (q.compare (0, 7, "SELECT ") == 0)
+              ? view_query::complete
+              : view_query::condition;
+          }
+          else if (!vq.expr.empty ())
+          {
+            // If the first token in the expression is a string and
+            // it starts with "SELECT " or is equal to "SELECT", then
+            // we have a complete query.
+            //
+            if (vq.expr.front ().type == CPP_STRING)
+            {
+              string q (upcase (vq.expr.front ().literal));
+              vq.kind = (q.compare (0, 7, "SELECT ") == 0 || q == "SELECT")
+                ? view_query::complete
+                : view_query::condition;
+            }
+            else
+              vq.kind = view_query::condition;
+          }
+          else
+            vq.kind = view_query::runtime;
+        }
+        else
+          vq.kind = has_o ? view_query::condition : view_query::runtime;
+
+        // We cannot have an incomplete query if there are not objects
+        // to derive the rest from.
+        //
+        if (vq.kind == view_query::condition && !has_o)
+        {
+          error (c.file (), c.line (), c.column ())
+            << "view '" << c.fq_name () << "' has an incomplete query "
+            << "template and no associated objects" << endl;
+
+          info (c.file (), c.line (), c.column ())
+            << "use db pragma query to provide a complete query template"
+            << endl;
+
+          info (c.file (), c.line (), c.column ())
+            << "or use db pragma object to associate one or more objects "
+            << "with the view"
+            << endl;
+
+          throw generation_failed ();
+        }
+
         // Resolve referenced objects from tree nodes to semantic graph
         // nodes.
         //
-        if (c.count ("objects"))
+        view_alias_map& amap (c.set ("alias-map", view_alias_map ()));
+        view_object_map& omap (c.set ("object-map", view_object_map ()));
+
+        if (has_o)
         {
           using semantics::class_;
-          typedef vector<view_object> objects;
 
-          objects& objs (c.get<objects> ("objects"));
+          view_objects& objs (c.get<view_objects> ("objects"));
 
-          for (objects::iterator i (objs.begin ()); i < objs.end (); ++i)
+          for (view_objects::iterator i (objs.begin ()); i != objs.end (); ++i)
           {
             tree n (TYPE_MAIN_VARIANT (i->node));
 
             if (TREE_CODE (n) != RECORD_TYPE)
             {
-              os << c.file () << ":" << c.line () << ":" << c.column () << ":"
-                 << " error: name '" << i->name << "' in db pragma object "
-                 << " does not name a class" << endl;
+              error (i->loc)
+                << "name '" << i->orig_name << "' in db pragma object does "
+                << "not name a class" << endl;
 
               throw generation_failed ();
             }
@@ -1137,21 +1659,241 @@ namespace relational
 
             if (!object (o))
             {
-              os << c.file () << ":" << c.line () << ":" << c.column () << ":"
-                 << " error: name '" << i->name << "' in db pragma object "
-                 << "does not name a persistent class" << endl;
+              error (i->loc)
+                << "name '" << i->orig_name << "' in db pragma object does "
+                << "not name a persistent class" << endl;
 
-              os << o.file () << ":" << o.line () << ":" << o.column () << ":"
-                 << " info: class '" << i->name << "' is defined here"
-                 << endl;
+              info (o.file (), o.line (), o.column ())
+                << "class '" << i->orig_name << "' is defined here" << endl;
 
               throw generation_failed ();
             }
 
             i->object = &o;
+
+            if (i->alias.empty ())
+            {
+              if (!omap.insert (view_object_map::value_type (n, &*i)).second)
+              {
+                error (i->loc)
+                  << "persistent class '" << i->orig_name << "' is used in "
+                  << "the view more than once" << endl;
+
+                info (i->loc)
+                  << "use the alias clause to assign it a different name"
+                  << endl;
+
+                throw generation_failed ();
+              }
+            }
+            else
+            {
+              if (!amap.insert (
+                    view_alias_map::value_type (i->alias, &*i)).second)
+              {
+                error (i->loc)
+                  << "alias '" << i->alias << "' is used in the view more "
+                  << "than once" << endl;
+
+                throw generation_failed ();
+              }
+            }
+
+            // If we have to generate the query and there was no JOIN
+            // condition specified by the user, try to come up with one
+            // automatically based on object relationships.
+            //
+            if (vq.kind == view_query::condition &&
+                i->cond.empty () &&
+                i != objs.begin ())
+            {
+              relationships rs;
+
+              // Check objects specified prior to this one for any
+              // relationships. We don't examine objects that were
+              // specified after this one because that would require
+              // rearranging the JOIN order.
+              //
+              for (view_objects::iterator j (objs.begin ()); j != i; ++j)
+              {
+                // First see if any of the objects that were specified
+                // prior to this object point to it.
+                //
+                {
+                  relationship_resolver r (rs, *i, true);
+                  r.traverse (*j);
+                }
+
+                // Now see if this object points to any of the objects
+                // specified prior to it. Ignore self-references if any,
+                // since they were already added to the list in the
+                // previous pass.
+                //
+                {
+                  relationship_resolver r (rs, *j, false);
+                  r.traverse (*i);
+                }
+              }
+
+              // Issue diagnostics if we didn't find any or found more
+              // than one.
+              //
+              if (rs.empty ())
+              {
+                error (i->loc)
+                  << "unable to find an object relationship involving "
+                  << "object '" << i->name () << "' and any of the previously "
+                  << "associated objects" << endl;
+
+                info (i->loc)
+                  << "use the join condition clause in db pragma object "
+                  << "to specify a custom join condition" << endl;
+
+                throw generation_failed ();
+              }
+              else if (rs.size () > 1)
+              {
+                error (i->loc)
+                  << "object relationship for object '" << i->name () <<  "' "
+                  << "is ambiguous" << endl;
+
+                info (i->loc)
+                  << "candidates are:" << endl;
+
+                for (relationships::const_iterator j (rs.begin ());
+                     j != rs.end ();
+                     ++j)
+                {
+                  semantics::data_member& m (*j->member);
+
+                  info (m.file (), m.line (), m.column ())
+                    << "  '" << j->name << "' "
+                    << "in object '" << j->pointer->name () << "' "
+                    << "pointing to '" << j->pointee->name () << "'"
+                    << endl;
+                }
+
+                info (i->loc)
+                  << "use the join condition clause in db pragma object "
+                  << "to resolve this ambiguity" << endl;
+
+                throw generation_failed ();
+              }
+
+              // Synthesize the condition.
+              //
+              relationship const& r (rs.back ());
+
+              string name (r.pointer->alias.empty ()
+                           ? r.pointer->object->fq_name ()
+                           : r.pointer->alias);
+              name += "::";
+              name += r.name;
+
+              lexer.start (name);
+
+              string t;
+              for (cpp_ttype tt (lexer.next (t));
+                   tt != CPP_EOF;
+                   tt = lexer.next (t))
+              {
+                cxx_token ct;
+                ct.type = tt;
+                ct.literal = t;
+                i->cond.push_back (ct);
+              }
+            }
           }
         }
+
+        // Handle data members.
+        //
+        {
+          view_data_member t (c);
+          traversal::names n (t);
+          names (c, n);
+        }
       }
+
+      struct relationship_resolver: object_members_base
+      {
+        relationship_resolver (relationships& rs,
+                               view_object& pointee,
+                               bool self_pointer)
+            : object_members_base (false, false, true),
+              relationships_ (rs),
+              self_pointer_ (self_pointer),
+              pointer_ (0),
+              pointee_ (pointee)
+        {
+        }
+
+        void
+        traverse (view_object& pointer)
+        {
+          pointer_ = &pointer;
+          object_members_base::traverse (*pointer.object);
+        }
+
+        virtual void
+        traverse_simple (semantics::data_member& m)
+        {
+          if (semantics::class_* c = object_pointer (m.type ()))
+          {
+            // Ignore inverse sides of the same relationship to avoid
+            // phony conflicts caused by the direct side that will end
+            // up in the relationship list as well.
+            //
+            if (inverse (m))
+              return;
+
+            // Ignore self-pointers if requested.
+            //
+            if (!self_pointer_ && pointer_->object == c)
+              return;
+
+            if (pointee_.object == c)
+            {
+              relationships_.push_back (relationship ());
+              relationships_.back ().member = &m;
+              relationships_.back ().name = member_prefix_ + m.name ();
+              relationships_.back ().pointer = pointer_;
+              relationships_.back ().pointee = &pointee_;
+            }
+          }
+        }
+
+        virtual void
+        traverse_container (semantics::data_member& m, semantics::type& t)
+        {
+          if (semantics::class_* c =
+              object_pointer (context::container_vt (t)))
+          {
+            if (inverse (m, "value"))
+              return;
+
+            // Ignore self-pointers if requested.
+            //
+            if (!self_pointer_ && pointer_->object == c)
+              return;
+
+            if (pointee_.object == c)
+            {
+              relationships_.push_back (relationship ());
+              relationships_.back ().member = &m;
+              relationships_.back ().name = member_prefix_ + m.name ();
+              relationships_.back ().pointer = pointer_;
+              relationships_.back ().pointee = &pointee_;
+            }
+          }
+        }
+
+      private:
+        relationships& relationships_;
+        bool self_pointer_;
+        view_object* pointer_;
+        view_object& pointee_;
+      };
 
       void
       assign_pointer (type& c)
@@ -1301,7 +2043,7 @@ namespace relational
             bool punc (false);
             bool scoped (false);
 
-            for (cpp_ttype tt = lexer.next (t);
+            for (cpp_ttype tt (lexer.next (t));
                  tt != CPP_EOF;
                  tt = lexer.next (t))
             {
@@ -1479,7 +2221,7 @@ namespace relational
       }
 
     private:
-      cxx_lexer lexer;
+      cxx_string_lexer lexer;
 
       data_member member_;
       traversal::names member_names_;

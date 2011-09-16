@@ -21,6 +21,7 @@
 #include <cutl/shared-ptr.hxx>
 
 #include <odb/options.hxx>
+#include <odb/cxx-token.hxx>
 #include <odb/semantics.hxx>
 #include <odb/traversal.hxx>
 
@@ -69,15 +70,22 @@ enum class_kind
   class_other
 };
 
+// Data member path.
+//
+// If it is a direct member of an object, then we will have just
+// one member. However, if this is a member inside a composite
+// value, then we will have a "path" constructed out of members
+// that lead all the way from the object member to the innermost
+// composite value member.
+//
+typedef std::vector<semantics::data_member*> data_member_path;
+
+//
 // Semantic graph context types.
 //
-struct view_object
-{
-  tree node;
-  std::string name;
-  semantics::class_* object;
-};
 
+//
+//
 struct default_value
 {
   enum kind_type
@@ -93,6 +101,87 @@ struct default_value
   kind_type kind;
   std::string value;
   tree node;
+};
+
+//
+//
+struct view_object
+{
+  // Return an alias or unqualified object name.
+  //
+  std::string
+  name () const
+  {
+    return alias.empty () ? object->name () : alias;
+  }
+
+  tree node;
+  std::string orig_name;  // Original name as specified in the pragma.
+  std::string alias;
+  tree scope;
+  location_t loc;
+  semantics::class_* object;
+
+  cxx_tokens cond; // Join condition tokens.
+};
+
+typedef std::vector<view_object> view_objects;
+
+typedef std::map<std::string, view_object*> view_alias_map;
+typedef std::map<tree, view_object*> view_object_map;
+
+//
+//
+struct view_query
+{
+  enum kind_type
+  {
+    runtime,
+    complete,
+    condition
+  };
+
+  kind_type kind;
+  std::string literal;
+  cxx_tokens expr;
+  tree scope;
+  location_t loc;
+};
+
+//
+//
+struct table_column
+{
+  std::string table;
+  std::string column;
+  bool expr; // True if column is an expression, and therefore should not
+             // be quoted.
+};
+
+//
+//
+struct column_expr_part
+{
+  enum kind_type
+  {
+    literal,
+    reference
+  };
+
+  kind_type kind;
+  std::string value;
+  std::string table;            // Table name/alias for references.
+  data_member_path member_path; // Path to member for references.
+
+  // Scope and location of this pragma. Used to resolve the member name.
+  //
+  tree scope;
+  location_t loc;
+};
+
+struct column_expr: std::vector<column_expr_part>
+{
+  location_t loc;
 };
 
 class context
@@ -232,10 +321,9 @@ public:
   string
   table_name (semantics::class_&) const;
 
-  // Table name for the container member. The table prefix passed as the
-  // second argument must include the table prefix specified with the
-  // --table-prefix option.
-  //
+  string
+  table_name (semantics::class_&, data_member_path const&) const;
+
   struct table_prefix
   {
     table_prefix (): level (0) {}
@@ -245,11 +333,18 @@ public:
     size_t level;
   };
 
+  // Table name for the container member. The table prefix passed as the
+  // second argument must include the table prefix specified with the
+  // --table-prefix option.
+  //
   string
   table_name (semantics::data_member&, table_prefix const&) const;
 
   string
   column_name (semantics::data_member&) const;
+
+  string
+  column_name (data_member_path const&) const;
 
   string
   column_name (semantics::data_member&,
@@ -336,7 +431,7 @@ public:
     return pointer_kind (p) == pk_weak;
   }
 
-  semantics::data_member*
+  static semantics::data_member*
   inverse (semantics::data_member& m)
   {
     return object_pointer (m.type ())

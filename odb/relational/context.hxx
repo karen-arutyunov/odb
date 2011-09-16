@@ -47,6 +47,12 @@ namespace relational
     }
 
     string
+    column_qname (data_member_path const& mp) const
+    {
+      return quote_id (column_name (mp));
+    }
+
+    string
     column_qname (semantics::data_member& m,
                   string const& key_prefix,
                   string const& default_name) const
@@ -58,6 +64,12 @@ namespace relational
     table_qname (semantics::class_& c) const
     {
       return quote_id (table_name (c));
+    }
+
+    string
+    table_qname (semantics::class_& obj, data_member_path const& mp) const
+    {
+      return quote_id (table_name (obj, mp));
     }
 
     string

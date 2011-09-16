@@ -305,7 +305,7 @@ namespace relational
       typedef container_traits base;
 
       container_traits (semantics::class_& c)
-          : object_members_base (true, false), c_ (c)
+          : object_members_base (true, false, false), c_ (c)
       {
       }
 
@@ -390,7 +390,7 @@ namespace relational
           }
         }
 
-        string name (prefix_ + public_name (m) + "_traits");
+        string name (flat_prefix_ + public_name (m) + "_traits");
 
         // Figure out column counts.
         //
@@ -1269,20 +1269,82 @@ namespace relational
         //
         if (c.count ("objects"))
         {
-          /*
-          typedef std::vector<semantics::class_*> objects;
+          view_objects& objs (c.get<view_objects> ("objects"));
 
-          objects const& objs (c.get<objects> ("objects"));
-          */
+          if (objs.size () > 1)
+          {
+            os << "struct query_columns"
+               << "{";
 
-          /*
-            os << "struct query_type: query_base_type, query_columns"
-            << "{"
-            << "query_type ();"
-            << "query_type (const std::string&);"
-            << "query_type (const query_base_type&);"
-            << "};";
-          */
+            for (view_objects::const_iterator i (objs.begin ());
+                 i < objs.end ();
+                 ++i)
+            {
+              bool alias (!i->alias.empty ());
+              semantics::class_& o (*i->object);
+              string const& name (alias ? i->alias : o.name ());
+              string const& type (o.fq_name ());
+
+              os << "// " << name << endl
+                 << "//" << endl;
+
+              if (alias && i->alias != table_name (o))
+                os << "static const char " << name << "_alias_[];"
+                   << endl
+                   << "typedef" << endl
+                   << "odb::pointer_query_columns< " << type << ", " <<
+                  name << "_alias_ >" << endl
+                   << name << ";"
+                   << endl;
+              else
+                os << "typedef" << endl
+                   << "odb::pointer_query_columns<" << endl
+                   << "  " << type << "," << endl
+                   << "  " << "odb::access::object_traits< " << type <<
+                  " >::table_name >" << endl
+                   << name << ";"
+                   << endl;
+            }
+
+            os << "};"
+               << "struct query_type: query_base_type, query_columns"
+               << "{";
+          }
+          else
+          {
+            // For a single object view we generate a shortcut without
+            // an intermediate typedef.
+            //
+            view_object const& vo (objs[0]);
+
+            bool alias (!vo.alias.empty ());
+            semantics::class_& o (*vo.object);
+            string const& type (o.fq_name ());
+
+            if (alias && vo.alias != table_name (o))
+              os << "static const char query_alias[];"
+                 << endl
+                 << "struct query_type:" << endl
+                 << "  query_base_type," << endl
+                 << "  odb::pointer_query_columns< " << type <<
+                ", query_alias >"
+                 << "{";
+            else
+              os << "struct query_type:" << endl
+                 << "  query_base_type," << endl
+                 << "  odb::pointer_query_columns<" << endl
+                 << "    " << type << "," << endl
+                 << "    odb::access::object_traits< " << type <<
+                " >::table_name >"
+                 << "{";
+          }
+
+          os << "query_type ();"
+             << "query_type (bool);"
+             << "query_type (const char*);"
+             << "query_type (const std::string&);"
+             << "query_type (const query_base_type&);"
+             << "};";
         }
         else
           os << "typedef query_base_type query_type;"
@@ -1307,7 +1369,7 @@ namespace relational
         // init (view, image)
         //
         os << "static void" << endl
-           << "init (view_type&, const image_type&);"
+           << "init (view_type&, const image_type&, database&);"
            << endl;
 
         // column_count
@@ -1318,8 +1380,14 @@ namespace relational
 
         // Statements.
         //
-        os << "static const char query_statement[];"
-           << endl;
+        view_query& vq (c.get<view_query> ("query"));
+
+        if (vq.kind != view_query::runtime)
+        {
+          os << "static query_base_type" << endl
+             << "query_statement (const query_base_type&);"
+             << endl;
+        }
 
         //
         // Functions.
@@ -1447,17 +1515,20 @@ namespace relational
         bool abst (abstract (c));
         string const& type (c.fq_name ());
 
-        os << "// " << c.name () << endl
-           << "//" << endl;
-
         if (options.generate_query ())
         {
+          bool has_ptr (has_a (c, test_pointer));
+
+          if (has_ptr || !abst)
+            os << "// " << c.name () << endl
+               << "//" << endl;
+
           // query_columns
           //
           // If we don't have any pointers, then query_columns is generated
           // in pass 1 (see the comment in class1 for details).
           //
-          if (has_a (c, test_pointer))
+          if (has_ptr)
             query_columns_type_->traverse (c);
 
           // query_type
@@ -1469,10 +1540,14 @@ namespace relational
                << "  query_columns< " << type << ", table_name >"
                << "{"
                << "query_type ();"
+               << "query_type (bool);"
+               << "query_type (const char*);"
                << "query_type (const std::string&);"
                << "query_type (const query_base_type&);"
                << "};";
         }
+
+        // Move header comment out of if-block if adding any code here.
       }
 
       virtual void

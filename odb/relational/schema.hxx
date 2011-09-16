@@ -72,7 +72,9 @@ namespace relational
       typedef member_drop base;
 
       member_drop (emitter& e, ostream& os, std::vector<tables>& t)
-          : object_members_base (false, true), common (e, os), tables_ (t)
+          : object_members_base (false, true, false),
+            common (e, os),
+            tables_ (t)
       {
       }
 
@@ -363,7 +365,9 @@ namespace relational
       typedef member_create base;
 
       member_create (emitter& e, ostream& os, std::vector<tables>& t)
-          : object_members_base (false, true), common (e, os), tables_ (t)
+          : object_members_base (false, true, false),
+            common (e, os),
+            tables_ (t)
       {
       }
 

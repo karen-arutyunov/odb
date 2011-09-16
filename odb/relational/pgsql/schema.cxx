@@ -178,7 +178,7 @@ namespace relational
       struct member_create: object_members_base, context
       {
         member_create (emitter& e, ostream& os, relational::tables& tables)
-            : object_members_base (false, true),
+            : object_members_base (false, true, false),
               e_ (e),
               os_ (os),
               tables_ (tables)

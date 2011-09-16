@@ -6,8 +6,9 @@
 #ifndef ODB_ERROR_HXX
 #define ODB_ERROR_HXX
 
-#include <odb/gcc.hxx>
+#include <odb/gcc-fwd.hxx>
 
+#include <cstddef>
 #include <iostream>
 
 #include <cutl/fs/path.hxx>
@@ -15,15 +16,41 @@
 using std::endl;
 
 std::ostream&
-error (cutl::fs::path const&, size_t line, size_t clmn);
+error (cutl::fs::path const&, std::size_t line, std::size_t clmn);
+
+std::ostream&
+warn (cutl::fs::path const&, std::size_t line, std::size_t clmn);
+
+std::ostream&
+info (cutl::fs::path const&, std::size_t line, std::size_t clmn);
 
 std::ostream&
 error (location_t);
 
-inline std::ostream&
-error ()
-{
-  return error (input_location);
-}
+std::ostream&
+warn (location_t);
+
+std::ostream&
+info (location_t);
+
+std::ostream&
+error ();
+
+std::ostream&
+warn ();
+
+std::ostream&
+info ();
+
+// location_t macro wrappers.
+//
+cutl::fs::path
+location_file (location_t);
+
+std::size_t
+location_line (location_t);
+
+std::size_t
+location_column (location_t);
 
 #endif // ODB_ERROR_HXX

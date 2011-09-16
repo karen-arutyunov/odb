@@ -1019,10 +1019,10 @@ namespace relational
         {
           os << "sts.connection ()," << endl
              << "query_statement_name," << endl
-             << "query_statement + q.clause ()," << endl
-             << "q.parameter_types ()," << endl
-             << "q.parameter_count ()," << endl
-             << "q.parameters_binding ()," << endl
+             << "qs.clause ()," << endl
+             << "qs.parameter_types ()," << endl
+             << "qs.parameter_count ()," << endl
+             << "qs.parameters_binding ()," << endl
              << "imb";
         }
 
@@ -1044,7 +1044,8 @@ namespace relational
           if (!object (c_) || abstract (c_))
             return;
 
-          string scope (scope_ + "::" + prefix_ + public_name (m) + "_traits");
+          string scope (scope_ + "::" + flat_prefix_ + public_name (m) +
+                        "_traits");
 
           // Statment names.
           //

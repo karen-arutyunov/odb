@@ -130,47 +130,26 @@ traverse (semantics::data_member& m)
 
   if (semantics::class_* comp = context::composite_wrapper (t))
   {
-    string old_prefix, old_table_prefix;
+    string old_flat_prefix, old_table_prefix, old_member_prefix;
 
-    if (om_.build_prefix_)
+    if (om_.build_flat_prefix_)
     {
-      old_prefix = om_.prefix_;
-      om_.prefix_ += om_.public_name (m);
-      om_.prefix_ += '_';
+      old_flat_prefix = om_.flat_prefix_;
+      om_.flat_prefix_ += om_.public_name (m);
+      om_.flat_prefix_ += '_';
+    }
+
+    if (om_.build_member_prefix_)
+    {
+      old_member_prefix = om_.member_prefix_;
+      om_.member_prefix_ += m.name ();
+      om_.member_prefix_ += '.';
     }
 
     if (om_.build_table_prefix_)
     {
       old_table_prefix = om_.table_prefix_.prefix;
-
-      // If the user provided a table prefix, then use it verbatim. Also
-      // drop the top-level table prefix in this case.
-      //
-      if (m.count ("table"))
-      {
-        if (om_.table_prefix_.level <= 1)
-          om_.table_prefix_.prefix = om_.options.table_prefix ();
-
-        om_.table_prefix_.prefix += m.get<string> ("table");
-      }
-      // Otherwise use the member name and add an underscore unless it is
-      // already there.
-      //
-      else
-      {
-        string name (om_.public_name_db (m));
-        size_t n (name.size ());
-
-        if (om_.table_prefix_.prefix.empty ())
-          om_.table_prefix_.prefix = om_.options.table_prefix ();
-
-        om_.table_prefix_.prefix += name;
-
-        if (n != 0 && name[n - 1] != '_')
-          om_.table_prefix_.prefix += '_';
-      }
-
-      om_.table_prefix_.level++;
+      append (m, om_.table_prefix_);
     }
 
     om_.traverse_composite_wrapper (&m, *comp, (wrapper (t) ? &t : 0));
@@ -181,8 +160,11 @@ traverse (semantics::data_member& m)
       om_.table_prefix_.prefix = old_table_prefix;
     }
 
-    if (om_.build_prefix_)
-      om_.prefix_ = old_prefix;
+    if (om_.build_flat_prefix_)
+      om_.flat_prefix_ = old_flat_prefix;
+
+    if (om_.build_member_prefix_)
+      om_.member_prefix_ = old_member_prefix;
   }
   else if (semantics::type* c = context::container_wrapper (t))
   {
@@ -192,6 +174,41 @@ traverse (semantics::data_member& m)
   {
     om_.traverse_simple (m);
   }
+}
+
+void object_members_base::
+append (semantics::data_member& m, table_prefix& tp)
+{
+  context& ctx (context::current ());
+
+  // If the user provided a table prefix, then use it verbatim. Also
+  // drop the top-level table prefix in this case.
+  //
+  if (m.count ("table"))
+  {
+    if (tp.level <= 1)
+      tp.prefix = ctx.options.table_prefix ();
+
+    tp.prefix += m.get<string> ("table");
+  }
+  // Otherwise use the member name and add an underscore unless it is
+  // already there.
+  //
+  else
+  {
+    string name (ctx.public_name_db (m));
+    size_t n (name.size ());
+
+    if (tp.prefix.empty ())
+      tp.prefix = ctx.options.table_prefix ();
+
+    tp.prefix += name;
+
+    if (n != 0 && name[n - 1] != '_')
+      tp.prefix += '_';
+  }
+
+  tp.level++;
 }
 
 //
@@ -231,21 +248,7 @@ traverse (semantics::data_member& m,
           string const& key_prefix,
           string const& default_name)
 {
-  bool custom (m.count (key_prefix + "-column"));
-  string name (member_.column_name (m, key_prefix, default_name));
-
-  // If the user provided the column prefix, then use it verbatime.
-  // Otherwise, append the underscore, unless it is already there.
-  //
-  member_.prefix_ = name;
-
-  if (!custom)
-  {
-    size_t n (name.size ());
-
-    if (n != 0 && name[n - 1] != '_')
-      member_.prefix_ += '_';
-  }
+  column_prefix_ = column_prefix (m, key_prefix, default_name);
 
   traverse_composite (&m, c);
 
@@ -300,6 +303,37 @@ traverse (semantics::class_& c)
     flush ();
 }
 
+string object_columns_base::
+column_prefix (semantics::data_member& m, string const& kp, string const& dn)
+{
+  bool custom;
+  string r;
+
+  if (kp.empty ())
+  {
+    custom = m.count ("column");
+    r = context::current ().column_name (m);
+  }
+  else
+  {
+    custom = m.count (kp + "-column");
+    r = context::current ().column_name (m, kp, dn);
+  }
+
+  // If the user provided the column prefix, then use it verbatime.
+  // Otherwise, append the underscore, unless it is already there.
+  //
+  if (!custom)
+  {
+    size_t n (r.size ());
+
+    if (n != 0 && r[n - 1] != '_')
+      r += '_';
+  }
+
+  return r;
+}
+
 void object_columns_base::member::
 traverse (semantics::data_member& m)
 {
@@ -310,27 +344,12 @@ traverse (semantics::data_member& m)
 
   if (semantics::class_* comp = composite_wrapper (t))
   {
-    string old_prefix (prefix_);
-
-    bool custom (m.count ("column"));
-    string name (column_name (m));
-
-    // If the user provided the column prefix, then use it verbatime.
-    // Otherwise, append the underscore, unless it is already there.
-    //
-    prefix_ += name;
-
-    if (!custom)
-    {
-      size_t n (name.size ());
-
-      if (n != 0 && name[n - 1] != '_')
-        prefix_ += '_';
-    }
+    string old_prefix (oc_.column_prefix_);
+    oc_.column_prefix_ += column_prefix (m);
 
     oc_.traverse_composite (&m, *comp);
 
-    prefix_ = old_prefix;
+    oc_.column_prefix_ = old_prefix;
   }
   else if (container_wrapper (t))
   {
@@ -339,7 +358,7 @@ traverse (semantics::data_member& m)
   }
   else
   {
-    if (oc_.traverse_column (m, prefix_ + column_name (m), first_))
+    if (oc_.traverse_column (m, oc_.column_prefix_ + column_name (m), first_))
     {
       if (first_)
         first_ = false;

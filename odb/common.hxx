@@ -11,7 +11,8 @@
 
 #include <odb/context.hxx>
 
-// Traverse object members recursively by going into composite members.
+// Traverse object members recursively by going into bases and
+// composite members.
 //
 struct object_members_base: traversal::class_, virtual context
 {
@@ -60,20 +61,22 @@ public:
   object_members_base ()
       : member_ (*this)
   {
-    init (false, false);
+    init (false, false, false);
   }
 
-  object_members_base (bool build_prefix, bool build_table_prefix)
+  object_members_base (bool build_flat_prefix,
+                       bool build_table_prefix,
+                       bool build_member_prefix)
       : member_ (*this)
   {
-    init (build_prefix, build_table_prefix);
+    init (build_flat_prefix, build_table_prefix, build_member_prefix);
   }
 
   object_members_base (object_members_base const& x)
       : context (), //@@ -Wextra
         member_ (*this)
   {
-    init (x.build_prefix_, x.build_table_prefix_);
+    init (x.build_flat_prefix_, x.build_table_prefix_, x.build_member_prefix_);
   }
 
   virtual void
@@ -84,16 +87,26 @@ public:
   virtual void
   traverse (semantics::data_member&, semantics::class_& comp);
 
+public:
+  // Append composite member prefix.
+  //
+  static void
+  append (semantics::data_member&, table_prefix&);
+
 protected:
-  std::string prefix_;
-  context::table_prefix table_prefix_;
+  std::string flat_prefix_;
+  table_prefix table_prefix_;
+  std::string member_prefix_;
 
 private:
   void
-  init (bool build_prefix, bool build_table_prefix)
+  init (bool build_flat_prefix,
+        bool build_table_prefix,
+        bool build_member_prefix)
   {
-    build_prefix_ = build_prefix;
+    build_flat_prefix_ = build_flat_prefix;
     build_table_prefix_ = build_table_prefix;
+    build_member_prefix_ = build_member_prefix;
 
     *this >> names_ >> member_;
     *this >> inherits_ >> *this;
@@ -114,8 +127,9 @@ private:
     object_members_base& om_;
   };
 
-  bool build_prefix_;
+  bool build_flat_prefix_;
   bool build_table_prefix_;
+  bool build_member_prefix_;
 
   member member_;
   traversal::names names_;
@@ -187,6 +201,18 @@ public:
             semantics::class_& comp,
             std::string const& key_prefix,
             std::string const& default_name);
+
+public:
+  // Return column prefix for composite data member.
+  //
+  static string
+  column_prefix (semantics::data_member&,
+                 std::string const& key_prefix = std::string (),
+                 std::string const& default_name = std::string ());
+
+protected:
+  string column_prefix_;
+
 private:
   void
   init ()
@@ -208,8 +234,6 @@ private:
 
   public:
     object_columns_base& oc_;
-
-    string prefix_;
     bool first_;
   };
 

@@ -215,6 +215,20 @@ namespace relational
 
           os << "inline" << endl
              << traits << "::query_type::" << endl
+             << "query_type (bool v)" << endl
+             << "  : query_base_type (v)"
+             << "{"
+             << "}";
+
+          os << "inline" << endl
+             << traits << "::query_type::" << endl
+             << "query_type (const char* q)" << endl
+             << "  : query_base_type (q)"
+             << "{"
+             << "}";
+
+          os << "inline" << endl
+             << traits << "::query_type::" << endl
              << "query_type (const std::string& q)" << endl
              << "  : query_base_type (q)"
              << "{"
@@ -257,6 +271,45 @@ namespace relational
            << endl;
 
         view_extra (c);
+
+        // query_type
+        //
+        if (c.count ("objects"))
+        {
+          os << "inline" << endl
+             << traits << "::query_type::" << endl
+             << "query_type ()"
+             << "{"
+             << "}";
+
+          os << "inline" << endl
+             << traits << "::query_type::" << endl
+             << "query_type (bool v)" << endl
+             << "  : query_base_type (v)"
+             << "{"
+             << "}";
+
+          os << "inline" << endl
+             << traits << "::query_type::" << endl
+             << "query_type (const char* q)" << endl
+             << "  : query_base_type (q)"
+             << "{"
+             << "}";
+
+          os << "inline" << endl
+             << traits << "::query_type::" << endl
+             << "query_type (const std::string& q)" << endl
+             << "  : query_base_type (q)"
+             << "{"
+             << "}";
+
+          os << "inline" << endl
+             << traits << "::query_type::" << endl
+             << "query_type (const query_base_type& q)" << endl
+             << "  : query_base_type (q)"
+             << "{"
+             << "}";
+        }
 
         // callback ()
         //

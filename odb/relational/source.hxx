@@ -11,6 +11,7 @@
 #include <vector>
 #include <sstream>
 
+#include <odb/error.hxx>
 #include <odb/emitter.hxx>
 
 #include <odb/relational/context.hxx>
@@ -161,6 +162,196 @@ namespace relational
 
     private:
       bool last_;
+    };
+
+    struct view_columns: object_columns_base, virtual context
+    {
+      typedef view_columns base;
+
+      view_columns (): in_composite_ (false) {}
+
+      virtual void
+      traverse_composite (semantics::data_member* pm, semantics::class_& c)
+      {
+        if (in_composite_)
+        {
+          object_columns_base::traverse_composite (pm, c);
+          return;
+        }
+
+        // Override the column prerix.
+        //
+        semantics::data_member& m (*pm);
+
+        // If we have literal column specified, use that.
+        //
+        if (m.count ("column"))
+        {
+          table_column const& tc (m.get<table_column> ("column"));
+
+          if (!tc.table.empty ())
+            table_prefix_ = tc.table;
+
+          column_prefix_ = object_columns_base::column_prefix (m);
+        }
+        // Otherwise, see if there is a column expression. For composite
+        // members in a view, this should be a single reference.
+        //
+        else if (m.count ("column-expr"))
+        {
+          column_expr const& e (m.get<column_expr> ("column-expr"));
+
+          if (e.size () > 1)
+          {
+            cerr << m.file () << ":" << m.line () << ":" << m.column ()
+                 << ": error: column expression specified for a data member "
+                 << "of a composite value type" << endl;
+
+            throw generation_failed ();
+          }
+
+          data_member_path const& mp (e.back ().member_path);
+
+          if (mp.size () > 1)
+          {
+            cerr << m.file () << ":" << m.line () << ":" << m.column ()
+                 << ": error: invalid data member in db pragma column"
+                 << endl;
+
+            throw generation_failed ();
+          }
+
+          table_prefix_ = e.back ().table;
+          column_prefix_ = object_columns_base::column_prefix (*mp.back ());
+        }
+        else
+        {
+          cerr << m.file () << ":" << m.line () << ":" << m.column ()
+               << ": error: no column prefix provided for a view data member"
+               << endl;
+
+          cerr << m.file () << ":" << m.line () << ":" << m.column ()
+               << ": info: use db pragma column to specify the column prefix"
+               << endl;
+
+          throw generation_failed ();
+        }
+
+        in_composite_ = true;
+        object_columns_base::traverse_composite (pm, c);
+        in_composite_ = false;
+      }
+
+      virtual bool
+      traverse_column (semantics::data_member& m,
+                       string const& name,
+                       bool first)
+      {
+        if (!first)
+        {
+          line_ += ',';
+          os << strlit (line_) << endl;
+        }
+
+        line_.clear ();
+
+        string col;
+
+        // If we are inside a composite value, use the standard
+        // column name machinery.
+        //
+        if (in_composite_)
+        {
+          if (!table_prefix_.empty ())
+          {
+            col += quote_id (table_prefix_);
+            col += '.';
+          }
+
+          col += quote_id (name);
+        }
+        // If we have literal column specified, use that.
+        //
+        else if (m.count ("column"))
+        {
+          table_column const& tc (m.get<table_column> ("column"));
+
+          if (!tc.expr)
+          {
+            if (!tc.table.empty ())
+            {
+              col += quote_id (tc.table);
+              col += '.';
+            }
+
+            col += quote_id (tc.column);
+          }
+          else
+            col += tc.column;
+        }
+        // Otherwise, see if there is a column expression.
+        //
+        else if (m.count ("column-expr"))
+        {
+          column_expr const& e (m.get<column_expr> ("column-expr"));
+
+          for (column_expr::const_iterator i (e.begin ()); i != e.end (); ++i)
+          {
+            switch (i->kind)
+            {
+            case column_expr_part::literal:
+              {
+                col += i->value;
+                break;
+              }
+            case column_expr_part::reference:
+              {
+                col += quote_id (i->table);
+                col += '.';
+                col += quote_id (column_name (i->member_path));
+                break;
+              }
+            }
+          }
+        }
+        else
+        {
+          cerr << m.file () << ":" << m.line () << ":" << m.column ()
+               << ": error: no column name provided for a view data member"
+               << endl;
+
+          cerr << m.file () << ":" << m.line () << ":" << m.column ()
+               << ": info: use db pragma column to specify the column name"
+               << endl;
+
+          throw generation_failed ();
+        }
+
+        column (m, col);
+
+        return true;
+      }
+
+      // The column argument is a qualified and quoted column or
+      // expression.
+      //
+      virtual void
+      column (semantics::data_member&, string const& column)
+      {
+        line_ += column;
+      }
+
+      virtual void
+      flush ()
+      {
+        if (!line_.empty ())
+          os << strlit (line_) << endl;
+      }
+
+    protected:
+      string line_;
+      bool in_composite_;
+      string table_prefix_; // Table corresponding to column_prefix_;
     };
 
     struct object_joins: object_columns_base, virtual context
@@ -527,7 +718,7 @@ namespace relational
       typedef container_traits base;
 
       container_traits (semantics::class_& c)
-          : object_members_base (true, true), c_ (c)
+          : object_members_base (true, true, false), c_ (c)
       {
         if (object (c))
           scope_ = "access::object_traits< " + c.fq_name () + " >";
@@ -634,7 +825,7 @@ namespace relational
             eager_ptr = has_a (*cvt, test_eager_pointer);
         }
 
-        string name (prefix_ + public_name (m) + "_traits");
+        string name (flat_prefix_ + public_name (m) + "_traits");
         string scope (scope_ + "::" + name);
 
         os << "// " << m.name () << endl
@@ -1578,16 +1769,16 @@ namespace relational
       typedef container_cache_members base;
 
       container_cache_members ()
-          : object_members_base (true, false)
+          : object_members_base (true, false, false)
       {
       }
 
       virtual void
       traverse_container (semantics::data_member& m, semantics::type&)
       {
-        string traits (prefix_ + public_name (m) + "_traits");
+        string traits (flat_prefix_ + public_name (m) + "_traits");
         os << db << "::container_statements_impl< " << traits << " > " <<
-          prefix_ << m.name () << ";";
+          flat_prefix_ << m.name () << ";";
       }
     };
 
@@ -1596,7 +1787,7 @@ namespace relational
       typedef container_cache_init_members base;
 
       container_cache_init_members ()
-          : object_members_base (true, false), first_ (true)
+          : object_members_base (true, false, false), first_ (true)
       {
       }
 
@@ -1613,7 +1804,7 @@ namespace relational
           os << "," << endl
              << "  ";
 
-        os << prefix_ << m.name () << " (c)";
+        os << flat_prefix_ << m.name () << " (c)";
       }
 
     protected:
@@ -1635,7 +1826,7 @@ namespace relational
       };
 
       container_calls (call_type call)
-          : object_members_base (true, false),
+          : object_members_base (true, false, false),
             call_ (call),
             obj_prefix_ ("obj.")
       {
@@ -1686,8 +1877,8 @@ namespace relational
 
         string const& name (m.name ());
         string obj_name (obj_prefix_ + name);
-        string sts_name (prefix_ + name);
-        string traits (prefix_ + public_name (m) + "_traits");
+        string sts_name (flat_prefix_ + name);
+        string traits (flat_prefix_ + public_name (m) + "_traits");
 
         // If this is a wrapped container, then we need to "unwrap" it.
         //
@@ -2792,8 +2983,8 @@ namespace relational
       view_query_statement_ctor_args (type&)
       {
         os << "sts.connection ()," << endl
-           << "query_statement + q.clause ()," << endl
-           << "q.parameters_binding ()," << endl
+           << "qs.clause ()," << endl
+           << "qs.parameters_binding ()," << endl
            << "imb";
       }
 
@@ -2808,6 +2999,42 @@ namespace relational
            << endl;
 
         view_extra (c);
+
+        //
+        // Query.
+        //
+
+        // query_type
+        //
+        if (c.count ("objects"))
+        {
+          view_objects& objs (c.get<view_objects> ("objects"));
+
+          if (objs.size () > 1)
+          {
+            for (view_objects::const_iterator i (objs.begin ());
+                 i < objs.end ();
+                 ++i)
+            {
+              if (!i->alias.empty () && i->alias != table_name (*i->object))
+                os << "const char " << traits << "::query_columns::" << endl
+                   << i->alias << "_alias_[] = " << strlit (i->alias) << ";"
+                   << endl;
+            }
+          }
+          else
+          {
+            // For a single object view we generate a shortcut without
+            // an intermediate typedef.
+            //
+            view_object const& vo (objs[0]);
+
+            if (!vo.alias.empty () && vo.alias != table_name (*vo.object))
+              os << "const char " << traits << "::" << endl
+                 << "query_alias[] = " << strlit (vo.alias) << ";"
+                 << endl;
+          }
+        }
 
         //
         // Functions.
@@ -2848,22 +3075,503 @@ namespace relational
         // init (view, image)
         //
         os << "void " << traits << "::" << endl
-           << "init (view_type& o, const image_type& i)"
+           << "init (view_type& o, const image_type& i, database& db)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (o);"
            << "ODB_POTENTIALLY_UNUSED (i);"
+           << "ODB_POTENTIALLY_UNUSED (db);"
            << endl;
 
         names (c, init_value_member_names_);
 
         os << "}";
 
-        // query_statement
+        // query_statement()
         //
-        os << "const char " << traits << "::query_statement[] =" << endl
-           << strlit (c.get<string> ("query")) << endl
-           << strlit (" ") << ";" << endl
-           << endl;
+        view_query& vq (c.get<view_query> ("query"));
+
+        if (vq.kind != view_query::runtime)
+        {
+          os << traits << "::query_base_type" << endl
+             << traits << "::" << endl
+             << "query_statement (const query_base_type& q)"
+             << "{";
+
+          if (vq.kind == view_query::complete)
+          {
+            os << "query_base_type r (" << endl;
+
+            bool ph (false);
+
+            if (!vq.literal.empty ())
+            {
+              // See if we have the '(?)' placeholder.
+              //
+              // @@ Ideally we would need to make sure we don't match
+              // this inside strings and quoted identifier. So the
+              // proper way to handle this would be to tokenize the
+              // statement using sql_lexer, once it is complete enough.
+              //
+              string::size_type p (vq.literal.find ("(?)"));
+
+              if (p != string::npos)
+              {
+                ph = true;
+                os << strlit (string (vq.literal, 0, p + 1))
+                   << " + q + "
+                   << strlit (string (vq.literal, p + 2));
+              }
+              else
+                os << strlit (vq.literal);
+            }
+            else
+              // Output the pragma location for easier error tracking.
+              //
+              os << "// From " <<
+                location_file (vq.loc).leaf () << ":" <<
+                location_line (vq.loc) << ":" <<
+                location_column (vq.loc) << endl
+                 << translate_expression (
+                   c, vq.expr, vq.scope, vq.loc, "query", &ph).value;
+
+            os << ");";
+
+            // If there was no placeholder, add the query condition
+            // at the end.
+            //
+            if (!ph)
+              os << "r += q.clause_prefix ();"
+                 << "r += q;";
+          }
+          else // vq.kind == view_query::condition
+          {
+            os << "query_base_type r (" << endl
+               << strlit ("SELECT ") << endl;
+
+            // Generate select-list.
+            //
+            {
+              instance<view_columns> t;
+              t->traverse (c);
+            }
+
+            os << ");"
+               << endl;
+
+            // Generate from-list.
+            //
+            view_objects const& objs (c.get<view_objects> ("objects"));
+
+            for (view_objects::const_iterator i (objs.begin ());
+                 i != objs.end ();
+                 ++i)
+            {
+              string l;
+
+              // First object.
+              //
+              if (i == objs.begin ())
+              {
+                l = "FROM ";
+                l += table_qname (*i->object);
+
+                if (!i->alias.empty ())
+                {
+                  l += " AS ";
+                  l += quote_id (i->alias);
+                }
+
+                os << "r += " << strlit (l) << ";"
+                   << endl;
+
+                continue;
+              }
+
+              expression e (
+                translate_expression (
+                  c, i->cond, i->scope, i->loc, "object"));
+
+              // Literal expression.
+              //
+              if (e.kind == expression::literal)
+              {
+                l = "LEFT JOIN ";
+                l += table_qname (*i->object);
+
+                if (!i->alias.empty ())
+                {
+                  l += " AS ";
+                  l += quote_id (i->alias);
+                }
+
+                l += " ON";
+
+                os << "r += " << strlit (l) << ";"
+                  // Output the pragma location for easier error tracking.
+                  //
+                   << "// From " <<
+                  location_file (i->loc).leaf () << ":" <<
+                  location_line (i->loc) << ":" <<
+                  location_column (i->loc) << endl
+                   << "r += " << e.value << ";"
+                   << endl;
+
+                continue;
+              }
+
+              // We have an object relationship (pointer) for which we need
+              // to come up with the corresponding JOIN condition. If this
+              // is a to-many relationship, then we first need to JOIN the
+              // container table. This code is similar to object_joins.
+              //
+              using semantics::data_member;
+
+              data_member& m (*e.member_path.back ());
+
+              // Resolve the pointed-to object to view_object and do
+              // some sanity checks while at it.
+              //
+              semantics::class_* c (0);
+
+              if (semantics::type* cont = container_wrapper (m.type ()))
+                c = object_pointer (container_vt (*cont));
+              else
+                c = object_pointer (m.type ());
+
+              view_object const* vo (0);
+
+              // Check if the pointed-to object has been previously
+              // associated with this view and is unambiguous. A
+              // pointer to ourselves is always assumed to point
+              // to this association.
+              //
+              if (i->object == c)
+                vo = &*i;
+              else
+              {
+                bool ambig (false);
+
+                for (view_objects::const_iterator j (objs.begin ());
+                     j != i;
+                     ++j)
+                {
+                  if (j->object != c)
+                    continue;
+
+                  if (vo == 0)
+                  {
+                    vo = &*j;
+                    continue;
+                  }
+
+                  // If it is the first ambiguous object, issue the
+                  // error.
+                  //
+                  if (!ambig)
+                  {
+                    error (i->loc)
+                      << "pointed-to object '" << c->name () <<  "' is "
+                      << "ambiguous" << endl;
+
+                    info (i->loc)
+                      << "candidates are:" << endl;
+
+                    info (vo->loc)
+                      << "  '" << vo->name () << "'" << endl;
+
+                    ambig = true;
+                  }
+
+                  info (j->loc)
+                    << "  '" << j->name () << "'" << endl;
+                }
+
+                if (ambig)
+                {
+                  info (i->loc)
+                    << "use the full join condition clause in db pragma "
+                    << "object to resolve this ambiguity" << endl;
+
+                  throw generation_failed ();
+                }
+
+                if (vo == 0)
+                {
+                  error (i->loc)
+                    << "pointed-to object '" << c->name () << "' "
+                    << "specified in the join condition has not been "
+                    << "previously associated with this view" << endl;
+
+                  throw generation_failed ();
+                }
+              }
+
+              // Left and right-hand side table names.
+              //
+              string lt (e.vo->alias.empty ()
+                         ? table_name (*e.vo->object)
+                         : e.vo->alias);
+
+              string rt (vo->alias.empty ()
+                         ? table_name (*vo->object)
+                         : vo->alias);
+
+              // First join the container table if necessary.
+              //
+              data_member* im (inverse (m));
+
+              semantics::type* cont (
+                container_wrapper (im != 0 ? im->type () : m.type ()));
+
+              // Container table.
+              //
+              string ct;
+              if (cont != 0)
+              {
+                if (im != 0)
+                {
+                  // For now a direct member can only be directly in
+                  // the object scope. When this changes, the inverse()
+                  // function would have to return a member path instead
+                  // of just a single member.
+                  //
+                  table_prefix tp (table_name (*vo->object) + "_", 1);
+                  ct = table_qname (*im, tp);
+                }
+                else
+                  ct = table_qname (*e.vo->object, e.member_path);
+              }
+
+              if (cont != 0)
+              {
+                l = "LEFT JOIN ";
+                l += ct;
+                l += " ON";
+                os << "r += " << strlit (l) << ";";
+
+                // If we are the pointed-to object, then we have to turn
+                // things around. This is necessary to have the proper
+                // JOIN order. There seems to be a pattern there but
+                // it is not yet intuitively clear what it means.
+                //
+                if (im != 0)
+                {
+                  if (i->object == c)
+                  {
+                    // container.value = pointer.id
+                    //
+                    l  = ct;
+                    l += '.';
+                    l += column_qname (*im, "value", "value");
+                    l += "=";
+                    l += quote_id (lt);
+                    l += '.';
+                    l += column_qname (*id_member (*e.vo->object));
+                  }
+                  else
+                  {
+                    // container.id = pointed-to.id
+                    //
+                    l  = ct;
+                    l += '.';
+                    l += column_qname (*im, "id", "object_id");
+                    l += "=";
+                    l += quote_id (rt);
+                    l += '.';
+                    l += column_qname (*id_member (*vo->object));
+                  }
+                }
+                else
+                {
+                  if (i->object == c)
+                  {
+                    // container.id = pointer.id
+                    //
+                    l  = ct;
+                    l += '.';
+                    l += column_qname (m, "id", "object_id");
+                    l += "=";
+                    l += quote_id (lt);
+                    l += '.';
+                    l += column_qname (*id_member (*e.vo->object));
+                  }
+                  else
+                  {
+                    // container.value = pointed-to.id
+                    //
+                    l  = ct;
+                    l += '.';
+                    l += column_qname (m, "value", "value");
+                    l += "=";
+                    l += quote_id (rt);
+                    l += '.';
+                    l += column_qname (*id_member (*vo->object));
+                  }
+                }
+
+                os << "r += " << strlit (l) << ";";
+              }
+
+              l = "LEFT JOIN ";
+              l += table_qname (*i->object);
+
+              if (!i->alias.empty ())
+              {
+                l += " AS ";
+                l += quote_id (i->alias);
+              }
+
+              l += " ON";
+              os << "r += " << strlit (l) << ";";
+
+              if (cont != 0)
+              {
+                if (im != 0)
+                {
+                  if (i->object == c)
+                  {
+                    // container.id = pointed-to.id
+                    //
+                    l  = ct;
+                    l += '.';
+                    l += column_qname (*im, "id", "object_id");
+                    l += "=";
+                    l += quote_id (rt);
+                    l += '.';
+                    l += column_qname (*id_member (*vo->object));
+                  }
+                  else
+                  {
+                    // container.value = pointer.id
+                    //
+                    l  = ct;
+                    l += '.';
+                    l += column_qname (*im, "value", "value");
+                    l += "=";
+                    l += quote_id (lt);
+                    l += '.';
+                    l += column_qname (*id_member (*e.vo->object));
+                  }
+                }
+                else
+                {
+                  if (i->object == c)
+                  {
+                    // container.value = pointed-to.id
+                    //
+                    l  = ct;
+                    l += '.';
+                    l += column_qname (m, "value", "value");
+                    l += "=";
+                    l += quote_id (rt);
+                    l += '.';
+                    l += column_qname (*id_member (*vo->object));
+                  }
+                  else
+                  {
+                    // container.id = pointer.id
+                    //
+                    l  = ct;
+                    l += '.';
+                    l += column_qname (m, "id", "object_id");
+                    l += "=";
+                    l += quote_id (lt);
+                    l += '.';
+                    l += column_qname (*id_member (*e.vo->object));
+                  }
+                }
+              }
+              else
+              {
+                if (im != 0)
+                {
+                  // our.id = pointed-to.pointer
+                  //
+                  l  = quote_id (lt);
+                  l += '.';
+                  l += column_qname (*id_member (*e.vo->object));
+                  l += " = ";
+                  l += quote_id (rt);
+                  l += '.';
+                  l += column_qname (*im);
+                }
+                else
+                {
+                  // our.pointer = pointed-to.id
+                  //
+                  l  = quote_id (lt);
+                  l += '.';
+                  l += column_qname (e.member_path);
+                  l += " = ";
+                  l += quote_id (rt);
+                  l += '.';
+                  l += column_qname (*id_member (*vo->object));
+                }
+              }
+
+              os << "r += " << strlit (l) << ";"
+                 << endl;
+            }
+
+            // Generate the query condition.
+            //
+            if (!vq.literal.empty () || !vq.expr.empty ())
+            {
+              os << "query_base_type c (" << endl;
+
+              bool ph (false);
+
+              if (!vq.literal.empty ())
+              {
+                // See if we have the '(?)' placeholder.
+                //
+                // @@ Ideally we would need to make sure we don't match
+                // this inside strings and quoted identifier. So the
+                // proper way to handle this would be to tokenize the
+                // statement using sql_lexer, once it is complete enough.
+                //
+                string::size_type p (vq.literal.find ("(?)"));
+
+                if (p != string::npos)
+                {
+                  ph = true;
+                  os << strlit (string (vq.literal, 0, p + 1))
+                     << " + q + "
+                     << strlit (string (vq.literal, p + 2));
+                }
+                else
+                  os << strlit (vq.literal);
+              }
+              else
+                // Output the pragma location for easier error tracking.
+                //
+                os << "// From " <<
+                  location_file (vq.loc).leaf () << ":" <<
+                  location_line (vq.loc) << ":" <<
+                  location_column (vq.loc) << endl
+                   << translate_expression (
+                     c, vq.expr, vq.scope, vq.loc, "query", &ph).value;
+
+              os << ");";
+
+              if (!ph)
+                os << "c += q;";
+
+              os << "r += c.clause_prefix ();"
+                 << "r += c;"
+                 << endl;
+            }
+            else
+            {
+              os << "r += q.clause_prefix ();"
+                 << "r += q;"
+                 << endl;
+            }
+          }
+
+          os << "return r;"
+             << "}";
+        }
 
         // query ()
         //
@@ -2889,8 +3597,14 @@ namespace relational
            << "bind (imb.bind, im);"
            << "sts.image_version (im.version);"
            << "imb.version++;"
-           << "}"
-           << "shared_ptr<select_statement> st (" << endl
+           << "}";
+
+        if (vq.kind == view_query::runtime)
+          os << "query_base_type const& qs (q);";
+        else
+          os << "query_base_type const& qs (query_statement (q));";
+
+        os << "shared_ptr<select_statement> st (" << endl
            << "new (shared) select_statement (" << endl;
 
         view_query_statement_ctor_args (c);
@@ -2905,12 +3619,33 @@ namespace relational
           "class_view> > r (" << endl
            << "new (shared) " << db <<
           "::result_impl<view_type, class_view> (" << endl
-           << "q, st, sts));"
+           << "qs, st, sts));"
            << endl
            << "return result<view_type> (r);"
            << "}";
       }
 
+      struct expression
+      {
+        explicit
+        expression (std::string const& v): kind (literal), value (v) {}
+        expression (view_object* vo): kind (pointer), vo (vo) {}
+
+        enum kind_type {literal, pointer};
+
+        kind_type kind;
+        std::string value;
+        data_member_path member_path;
+        view_object* vo;
+      };
+
+      expression
+      translate_expression (type& c,
+                            cxx_tokens const&,
+                            tree scope,
+                            location_t loc,
+                            string const& prag,
+                            bool* placeholder = 0);
       //
       // composite
       //
