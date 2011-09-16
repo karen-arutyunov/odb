@@ -2351,11 +2351,8 @@ namespace relational
           instance<object_joins> oj (c, t); //@@ (im)perfect forwarding
           oj->traverse (c);
 
-          // We only need DISTINCT if there are joins (object pointers)
-          // and can optimize it out otherwise.
-          //
           os << "const char " << traits << "::query_clause[] =" << endl
-             << strlit (oj->count () ? "SELECT DISTINCT " : "SELECT ") << endl;
+             << strlit ("SELECT ") << endl;
 
           {
             instance<object_columns> oc (table, true);
