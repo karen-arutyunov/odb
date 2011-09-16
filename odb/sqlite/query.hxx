@@ -136,6 +136,22 @@ namespace odb
       {
       }
 
+      // True or false literal.
+      //
+      explicit
+      query (bool v)
+        : parameters_ (new (details::shared) query_params)
+      {
+        clause_.push_back (clause_part (clause_part::native, v ? "1" : "0"));
+      }
+
+      explicit
+      query (const char* native)
+        : parameters_ (new (details::shared) query_params)
+      {
+        clause_.push_back (clause_part (clause_part::native, native));
+      }
+
       explicit
       query (const std::string& native)
         : parameters_ (new (details::shared) query_params)
@@ -176,6 +192,9 @@ namespace odb
     public:
       std::string
       clause () const;
+
+      const char*
+      clause_prefix () const;
 
       binding&
       parameters_binding () const;
@@ -1061,6 +1080,45 @@ namespace odb
       const char* column_;
     };
 
+    // Provide operator+() for using columns to construct native
+    // query fragments (e.g., ORDER BY).
+    //
+    template <typename T, database_type_id ID>
+    inline query
+    operator+ (const query_column<T, ID>& c, const std::string& s)
+    {
+      query q (c.table (), c.column ());
+      q += s;
+      return q;
+    }
+
+    template <typename T, database_type_id ID>
+    inline query
+    operator+ (const std::string& s, const query_column<T, ID>& c)
+    {
+      query q (s);
+      q.append (c.table (), c.column ());
+      return q;
+    }
+
+    template <typename T, database_type_id ID>
+    inline query
+    operator+ (const query_column<T, ID>& c, const query& q)
+    {
+      query r (c.table (), c.column ());
+      r += q;
+      return r;
+    }
+
+    template <typename T, database_type_id ID>
+    inline query
+    operator+ (const query& q, const query_column<T, ID>& c)
+    {
+      query r (q);
+      r.append (c.table (), c.column ());
+      return r;
+    }
+
     //
     //
     template <typename T, database_type_id>
@@ -1223,6 +1281,18 @@ namespace odb
     //
 
     query ()
+    {
+    }
+
+    explicit
+    query (bool v)
+        : query_selector<T>::type (v)
+    {
+    }
+
+    explicit
+    query (const char* q)
+        : query_selector<T>::type (q)
     {
     }
 

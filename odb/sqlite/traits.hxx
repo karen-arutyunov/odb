@@ -236,8 +236,7 @@ namespace odb
     // of an image from the value but not the other way around. This way
     // we can pass such values to the queries.
     //
-    template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<const char*, id_text>
+    struct LIBODB_SQLITE_EXPORT c_string_value_traits
     {
       typedef const char* value_type;
       typedef const char* query_type;
@@ -248,6 +247,17 @@ namespace odb
                  std::size_t& n,
                  bool& is_null,
                  const char*);
+    };
+
+    template <>
+    struct LIBODB_SQLITE_EXPORT default_value_traits<const char*, id_text>:
+      c_string_value_traits
+    {
+    };
+
+    template <std::size_t n>
+    struct default_value_traits<char[n], id_text>: c_string_value_traits
+    {
     };
 
     // std::vector<char> (buffer) specialization.
@@ -383,6 +393,12 @@ namespace odb
 
     template <>
     struct default_type_traits<const char*>
+    {
+      static const database_type_id db_type_id = id_text;
+    };
+
+    template <std::size_t n>
+    struct default_type_traits<char[n]>
     {
       static const database_type_id db_type_id = id_text;
     };

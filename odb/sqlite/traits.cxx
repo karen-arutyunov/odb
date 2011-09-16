@@ -20,10 +20,7 @@ namespace odb
     //
 
     void default_value_traits<string, id_text>::
-    set_image (buffer& b,
-               size_t& n,
-               bool& is_null,
-               const string& v)
+    set_image (buffer& b, size_t& n, bool& is_null, const string& v)
     {
       is_null = false;
       n = v.size ();
@@ -36,14 +33,11 @@ namespace odb
     }
 
     //
-    // default_value_traits<const char*>
+    // c_string_value_traits
     //
 
-    void default_value_traits<const char*, id_text>::
-    set_image (buffer& b,
-               size_t& n,
-               bool& is_null,
-               const char* v)
+    void c_string_value_traits::
+    set_image (buffer& b, size_t& n, bool& is_null, const char* v)
     {
       is_null = false;
       n = strlen (v);
