@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include <odb/error.hxx>
+#include <odb/diagnostics.hxx>
 #include <odb/lookup.hxx>
 #include <odb/cxx-lexer.hxx>
 #include <odb/common.hxx>

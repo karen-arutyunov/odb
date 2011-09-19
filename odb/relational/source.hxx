@@ -11,7 +11,7 @@
 #include <vector>
 #include <sstream>
 
-#include <odb/error.hxx>
+#include <odb/diagnostics.hxx>
 #include <odb/emitter.hxx>
 
 #include <odb/relational/context.hxx>

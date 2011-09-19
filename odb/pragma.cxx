@@ -9,7 +9,7 @@
 #include <vector>
 #include <sstream>
 
-#include <odb/error.hxx>
+#include <odb/diagnostics.hxx>
 #include <odb/lookup.hxx>
 #include <odb/pragma.hxx>
 #include <odb/cxx-token.hxx>

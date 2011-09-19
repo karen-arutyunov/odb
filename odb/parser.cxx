@@ -13,7 +13,7 @@
 #include <sstream>
 #include <iostream>
 
-#include <odb/error.hxx>
+#include <odb/diagnostics.hxx>
 #include <odb/parser.hxx>
 #include <odb/semantics.hxx>
 

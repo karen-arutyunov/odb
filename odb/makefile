@@ -13,8 +13,8 @@ sql-token.cxx                  \
 sql-lexer.cxx                  \
 context.cxx                    \
 common.cxx                     \
+diagnostics.cxx                \
 emitter.cxx                    \
-error.cxx                      \
 lookup.cxx                     \
 include.cxx                    \
 header.cxx                     \
