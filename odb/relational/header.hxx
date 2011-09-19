@@ -1165,11 +1165,11 @@ namespace relational
         {
           os << "template<typename T>" << endl
              << "static result<T>" << endl
-             << "query (database&, const query_type&);"
+             << "query (database&, const query_base_type&);"
              << endl;
 
           os << "static unsigned long long" << endl
-             << "erase_query (database&, const query_type&);"
+             << "erase_query (database&, const query_base_type&);"
              << endl;
         }
 
@@ -1207,7 +1207,7 @@ namespace relational
         if (options.generate_query ())
           os << "static void" << endl
              << "query_ (database&," << endl
-             << "const query_type&," << endl
+             << "const query_base_type&," << endl
              << db << "::object_statements< object_type >&," << endl
              << "details::shared_ptr< " << db << "::select_statement >&);"
              << endl;
@@ -1402,7 +1402,7 @@ namespace relational
         // query ()
         //
         os << "static result<view_type>" << endl
-           << "query (database&, const query_type&);"
+           << "query (database&, const query_base_type&);"
            << endl;
 
         view_public_extra_post (c);

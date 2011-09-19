@@ -2711,7 +2711,7 @@ namespace relational
              << traits << "::" << endl
              << "query< " << traits << "::object_type > (" << endl
              << "database& db," << endl
-             << "const query_type& q)"
+             << "const query_base_type& q)"
              << "{"
              << "using namespace " << db << ";"
              << "using odb::details::shared;"
@@ -2740,7 +2740,7 @@ namespace relational
              << traits << "::" << endl
              << "query< const " << traits << "::object_type > (" << endl
              << "database& db," << endl
-             << "const query_type& q)"
+             << "const query_base_type& q)"
              << "{"
              << "using namespace " << db << ";"
              << "using odb::details::shared;"
@@ -2766,7 +2766,7 @@ namespace relational
 
           os << "void " << traits << "::" << endl
              << "query_ (database&," << endl
-             << "const query_type& q," << endl
+             << "const query_base_type& q," << endl
              << db << "::object_statements< object_type >& sts," << endl
              << "odb::details::shared_ptr<" << db << "::select_statement>& st)"
              << "{"
@@ -2796,7 +2796,7 @@ namespace relational
           // erase_query
           //
           os << "unsigned long long " << traits << "::" << endl
-             << "erase_query (database&, const query_type& q)"
+             << "erase_query (database&, const query_base_type& q)"
              << "{"
              << "using namespace " << db << ";"
              << endl
@@ -3574,7 +3574,7 @@ namespace relational
         //
         os << "result< " << traits << "::view_type >" << endl
            << traits << "::" << endl
-           << "query (database&, const query_type& q)"
+           << "query (database&, const query_base_type& q)"
            << "{"
            << "using namespace " << db << ";"
            << "using odb::details::shared;"
