@@ -114,6 +114,13 @@ namespace odb
     bool statement::
     bind_result (const bind* p, size_t n, bool truncated)
     {
+      // Make sure that the number of columns in the result returned by
+      // the database matches the number that we expect. A common cause
+      // of this assertion is a native view with a number of data members
+      // not matching the number of columns in the SELECT-list.
+      //
+      assert (static_cast<size_t> (sqlite3_data_count (stmt_)) == n);
+
       bool r (true);
 
       for (size_t i (0); i < n; ++i)
