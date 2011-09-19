@@ -13,6 +13,7 @@
 #include <stack>
 #include <vector>
 #include <string>
+#include <memory>  // std::auto_ptr
 #include <ostream>
 #include <cstddef> // std::size_t
 #include <iostream>
@@ -685,6 +686,11 @@ private:
   context&
   operator= (context const&);
 };
+
+// Create concrete database context.
+//
+std::auto_ptr<context>
+create_context (std::ostream&, semantics::unit&, options const&);
 
 // Checks if scope Y names any of X.
 //

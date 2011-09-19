@@ -21,6 +21,7 @@
 #include <odb/profile.hxx>
 #include <odb/version.hxx>
 #include <odb/validator.hxx>
+#include <odb/processor.hxx>
 #include <odb/generator.hxx>
 #include <odb/semantics/unit.hxx>
 
@@ -109,13 +110,23 @@ gate_callback (void*, void*)
     parser p (*options_, loc_pragmas_, decl_pragmas_);
     auto_ptr<unit> u (p.parse (global_namespace, file_));
 
+    // Validate.
     //
-    //
-    validator v;
-    if (!v.validate (*options_, *u, file_))
-      r = 1;
+    {
+      validator v;
+      if (!v.validate (*options_, *u, file_))
+        r = 1;
+    }
 
+    // Process.
     //
+    if (r == 0)
+    {
+      processor p;
+      p.process (*options_, *u, file_);
+    }
+
+    // Generate.
     //
     if (r == 0)
     {
@@ -124,6 +135,12 @@ gate_callback (void*, void*)
     }
   }
   catch (parser::failed const&)
+  {
+    // Diagnostics has aready been issued.
+    //
+    r = 1;
+  }
+  catch (processor::failed const&)
   {
     // Diagnostics has aready been issued.
     //

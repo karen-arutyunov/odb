@@ -21,11 +21,6 @@
 #include <odb/generate.hxx>
 #include <odb/tracer/generate.hxx>
 #include <odb/relational/generate.hxx>
-#include <odb/relational/type-processor.hxx>
-
-#include <odb/relational/mysql/context.hxx>
-#include <odb/relational/pgsql/context.hxx>
-#include <odb/relational/sqlite/context.hxx>
 
 using namespace std;
 using namespace cutl;
@@ -93,56 +88,11 @@ namespace
   }
 }
 
-generator::
-generator ()
-{
-}
-
-static auto_ptr<context>
-create_context (ostream& os, semantics::unit& unit, options const& ops)
-{
-  auto_ptr<context> r;
-
-  switch (ops.database ())
-  {
-  case database::mysql:
-    {
-      r.reset (new relational::mysql::context (os, unit, ops));
-      break;
-    }
-  case database::pgsql:
-    {
-      r.reset (new relational::pgsql::context (os, unit, ops));
-      break;
-    }
-  case database::sqlite:
-    {
-      r.reset (new relational::sqlite::context (os, unit, ops));
-      break;
-    }
-  case database::tracer:
-    {
-      r.reset (new context (os, unit, ops));
-      break;
-    }
-  }
-
-  return r;
-}
-
 void generator::
 generate (options const& ops, semantics::unit& unit, path const& p)
 {
   try
   {
-    // Process types.
-    //
-    if (ops.database () != database::tracer)
-    {
-      auto_ptr<context> ctx (create_context (cerr, unit, ops));
-      relational::process_types ();
-    }
-
     // Output files.
     //
     path file (p.leaf ());
@@ -439,13 +389,13 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
     auto_rm.cancel ();
   }
-  catch (const generation_failed&)
+  catch (generation_failed const&)
   {
     // Code generation failed. Diagnostics has already been issued.
     //
     throw failed ();
   }
-  catch (const re::format& e)
+  catch (re::format const& e)
   {
     cerr << "error: invalid regex: '" << e.regex () << "': " <<
       e.description () << endl;

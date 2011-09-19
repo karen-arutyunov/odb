@@ -1,27 +1,27 @@
-// file      : odb/generator.hxx
+// file      : odb/processor.hxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#ifndef ODB_GENERATOR_HXX
-#define ODB_GENERATOR_HXX
+#ifndef ODB_PROCESSOR_HXX
+#define ODB_PROCESSOR_HXX
 
 #include <odb/options.hxx>
 #include <odb/semantics/unit.hxx>
 
-class generator
+class processor
 {
 public:
   class failed {};
 
   void
-  generate (options const&, semantics::unit&, semantics::path const&);
+  process (options const&, semantics::unit&, semantics::path const&);
 
-  generator () {}
+  processor () {}
 
 private:
-  generator (generator const&);
-  generator& operator= (generator const&);
+  processor (processor const&);
+  processor& operator= (processor const&);
 };
 
-#endif // ODB_GENERATOR_HXX
+#endif // ODB_PROCESSOR_HXX

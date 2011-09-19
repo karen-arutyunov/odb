@@ -12,10 +12,10 @@
 class validator
 {
 public:
-  validator ();
-
   bool
   validate (options const&, semantics::unit&, semantics::path const&);
+
+  validator () {}
 
 private:
   validator (validator const&);

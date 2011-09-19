@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include <odb/traversal.hxx>
+#include <odb/common.hxx>
 #include <odb/context.hxx>
 #include <odb/validator.hxx>
 
@@ -165,6 +166,64 @@ namespace
     traversal::inherits inherits_;
   };
 
+  struct view_data_member: object_members_base
+  {
+    view_data_member (bool& valid)
+        : object_members_base (false, false, true), valid_ (valid), dm_ (0)
+    {
+    }
+
+    virtual void
+    traverse_simple (semantics::data_member& m)
+    {
+      if (context::object_pointer (m.type ()))
+      {
+        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+        cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+             << " error: view data member '" << member_prefix_ << m.name ()
+             << "' is an object pointer" << endl;
+
+        cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+             << ": info: views cannot contain object pointers" << endl;
+
+        valid_ = false;
+      }
+    }
+
+    virtual void
+    traverse_container (semantics::data_member& m, semantics::type&)
+    {
+      semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+      cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << " error: view data member '" << member_prefix_ << m.name ()
+           << "' is a container" << endl;
+
+      cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << ": info: views cannot contain containers" << endl;
+
+      valid_ = false;
+    }
+
+    virtual void
+    traverse_composite (semantics::data_member* m, semantics::class_& c)
+    {
+      semantics::data_member* old_dm (dm_);
+
+      if (dm_ == 0)
+        dm_ = m;
+
+      object_members_base::traverse_composite (m, c);
+
+      dm_ = old_dm;
+    }
+
+  private:
+    bool& valid_;
+    semantics::data_member* dm_; // Direct view data member.
+  };
+
   //
   //
   struct value_type: traversal::type
@@ -195,9 +254,11 @@ namespace
           options_ (ops),
           unit_ (unit),
           vt_ (vt),
-          member_ (valid)
+          member_ (valid),
+          view_member_ (valid)
     {
       *this >> names_ >> member_;
+      view_names_ >> view_member_;
     }
 
     virtual void
@@ -439,6 +500,8 @@ namespace
 
         valid_ = false;
       }
+
+      //names (c, view_names_);
     }
 
     virtual void
@@ -514,14 +577,17 @@ namespace
 
     data_member member_;
     traversal::names names_;
+
+    view_data_member view_member_;
+    traversal::names view_names_;
   };
 }
 
 bool validator::
-validate (options const& ops,
-          semantics::unit& u,
-          semantics::path const&)
+validate (options const& ops, semantics::unit& u, semantics::path const&)
 {
+  auto_ptr<context> ctx (create_context (cerr, u, ops));
+
   bool valid (true);
 
   traversal::unit unit;
@@ -545,9 +611,4 @@ validate (options const& ops,
   unit.dispatch (u);
 
   return valid;
-}
-
-validator::
-validator ()
-{
 }

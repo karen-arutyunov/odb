@@ -9,6 +9,10 @@
 #include <odb/context.hxx>
 #include <odb/common.hxx>
 
+#include <odb/relational/mysql/context.hxx>
+#include <odb/relational/pgsql/context.hxx>
+#include <odb/relational/sqlite/context.hxx>
+
 using namespace std;
 
 namespace
@@ -91,6 +95,38 @@ namespace
     "xor",
     "xor_eq"
   };
+}
+
+auto_ptr<context>
+create_context (ostream& os, semantics::unit& unit, options const& ops)
+{
+  auto_ptr<context> r;
+
+  switch (ops.database ())
+  {
+  case database::mysql:
+    {
+      r.reset (new relational::mysql::context (os, unit, ops));
+      break;
+    }
+  case database::pgsql:
+    {
+      r.reset (new relational::pgsql::context (os, unit, ops));
+      break;
+    }
+  case database::sqlite:
+    {
+      r.reset (new relational::sqlite::context (os, unit, ops));
+      break;
+    }
+  case database::tracer:
+    {
+      r.reset (new context (os, unit, ops));
+      break;
+    }
+  }
+
+  return r;
 }
 
 context::

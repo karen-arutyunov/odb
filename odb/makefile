@@ -20,6 +20,7 @@ include.cxx                    \
 header.cxx                     \
 inline.cxx                     \
 validator.cxx                  \
+processor.cxx                  \
 generator.cxx                  \
 parser.cxx                     \
 plugin.cxx                     \
@@ -37,11 +38,11 @@ tracer/source.cxx
 cxx_ptun +=                    \
 relational/common.cxx          \
 relational/context.cxx         \
+relational/processor.cxx       \
 relational/header.cxx          \
 relational/inline.cxx          \
 relational/source.cxx          \
-relational/schema.cxx          \
-relational/type-processor.cxx
+relational/schema.cxx
 
 # Relational/MySQL
 #
