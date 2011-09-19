@@ -79,8 +79,25 @@ start (tree& token, cpp_ttype& type)
 cpp_ttype cxx_pragma_lexer::
 next (string& token)
 {
-  *type_ = pragma_lex (token_);
+  next (*token_);
   token = translate ();
+  return *type_;
+}
+
+cpp_ttype cxx_pragma_lexer::
+next (tree& token)
+{
+  *type_ = pragma_lex (token_);
+
+  // See if this is a keyword using the C++ parser machinery and
+  // the current C++ dialect.
+  //
+  if (*type_ == CPP_NAME && C_IS_RESERVED_WORD (*token_))
+    *type_ = CPP_KEYWORD;
+
+  if (&token != token_)
+    token = *token_;
+
   return *type_;
 }
 
@@ -89,29 +106,10 @@ translate ()
 {
   string r;
 
-  switch (*type_)
-  {
-  case CPP_NAME:
-    {
-      r = IDENTIFIER_POINTER (*token_);
-
-      // See if this is a keyword using the C++ parser machinery and
-      // the current C++ dialect.
-      //
-      tree id (get_identifier (r.c_str ()));
-
-      if (C_IS_RESERVED_WORD (id))
-        *type_ = CPP_KEYWORD;
-      break;
-    }
-  case CPP_STRING:
-    {
-      r = TREE_STRING_POINTER (*token_);
-      break;
-    }
-  default:
-    break;
-  }
+  if (*type_ == CPP_NAME || *type_ == CPP_KEYWORD)
+    r = IDENTIFIER_POINTER (*token_);
+  else if (*type_ == CPP_STRING)
+    r = TREE_STRING_POINTER (*token_);
 
   return r;
 }

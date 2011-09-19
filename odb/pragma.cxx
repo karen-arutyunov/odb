@@ -51,11 +51,14 @@ parse_expression (tree& t,
                   string const& prag)
 {
   // Keep reading tokens until we see a matching ')' while keeping track
-  // of their balance.
+  // of their balance. Also switch to the pragma lexer so that we detect
+  // C++ keywords (this is a C++ expression).
   //
   size_t balance (0);
+  cxx_pragma_lexer lex;
+  lex.start (t, tt);
 
-  for (; tt != CPP_EOF; tt = pragma_lex (&t))
+  for (; tt != CPP_EOF; tt = lex.next (t))
   {
     bool done (false);
     cxx_token ct;
@@ -81,6 +84,7 @@ parse_expression (tree& t,
         break;
       }
     case CPP_NAME:
+  //case CPP_KEYWORD: see default:
       {
         ct.literal = IDENTIFIER_POINTER (t);
         break;
@@ -161,6 +165,11 @@ parse_expression (tree& t,
       }
     default:
       {
+        // CPP_KEYWORD is not in the cpp_ttype enumeration.
+        //
+        if (tt == CPP_KEYWORD)
+          ct.literal = IDENTIFIER_POINTER (t);
+
         break;
       }
     }

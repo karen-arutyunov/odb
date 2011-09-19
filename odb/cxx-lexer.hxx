@@ -72,6 +72,12 @@ public:
   virtual cpp_ttype
   next (std::string& token);
 
+  // This pragma-specific version of next() returns a token as a tree
+  // node.
+  //
+  cpp_ttype
+  next (tree& token);
+
 private:
   std::string
   translate ();
