@@ -39,6 +39,10 @@ namespace
     }
   }
 
+  //
+  // Pass 1.
+  //
+
   struct data_member: traversal::data_member
   {
     data_member (bool& valid)
@@ -166,64 +170,6 @@ namespace
     traversal::inherits inherits_;
   };
 
-  struct view_data_member: object_members_base
-  {
-    view_data_member (bool& valid)
-        : object_members_base (false, false, true), valid_ (valid), dm_ (0)
-    {
-    }
-
-    virtual void
-    traverse_simple (semantics::data_member& m)
-    {
-      if (context::object_pointer (m.type ()))
-      {
-        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
-
-        cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-             << " error: view data member '" << member_prefix_ << m.name ()
-             << "' is an object pointer" << endl;
-
-        cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-             << ": info: views cannot contain object pointers" << endl;
-
-        valid_ = false;
-      }
-    }
-
-    virtual void
-    traverse_container (semantics::data_member& m, semantics::type&)
-    {
-      semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
-
-      cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-           << " error: view data member '" << member_prefix_ << m.name ()
-           << "' is a container" << endl;
-
-      cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-           << ": info: views cannot contain containers" << endl;
-
-      valid_ = false;
-    }
-
-    virtual void
-    traverse_composite (semantics::data_member* m, semantics::class_& c)
-    {
-      semantics::data_member* old_dm (dm_);
-
-      if (dm_ == 0)
-        dm_ = m;
-
-      object_members_base::traverse_composite (m, c);
-
-      dm_ = old_dm;
-    }
-
-  private:
-    bool& valid_;
-    semantics::data_member* dm_; // Direct view data member.
-  };
-
   //
   //
   struct value_type: traversal::type
@@ -244,9 +190,9 @@ namespace
 
   //
   //
-  struct class_: traversal::class_
+  struct class1: traversal::class_
   {
-    class_ (bool& valid,
+    class1 (bool& valid,
             options const& ops,
             semantics::unit& unit,
             value_type& vt)
@@ -254,11 +200,9 @@ namespace
           options_ (ops),
           unit_ (unit),
           vt_ (vt),
-          member_ (valid),
-          view_member_ (valid)
+          member_ (valid)
     {
       *this >> names_ >> member_;
-      view_names_ >> view_member_;
     }
 
     virtual void
@@ -500,8 +444,6 @@ namespace
 
         valid_ = false;
       }
-
-      //names (c, view_names_);
     }
 
     virtual void
@@ -577,38 +519,166 @@ namespace
 
     data_member member_;
     traversal::names names_;
+  };
 
-    view_data_member view_member_;
-    traversal::names view_names_;
+  //
+  // Pass 2.
+  //
+
+  struct view_members: object_members_base
+  {
+    view_members (bool& valid)
+        : object_members_base (false, false, true), valid_ (valid), dm_ (0)
+    {
+    }
+
+    virtual void
+    traverse_simple (semantics::data_member& m)
+    {
+      if (context::object_pointer (m.type ()))
+      {
+        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+        cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+             << " error: view data member '" << member_prefix_ << m.name ()
+             << "' is an object pointer" << endl;
+
+        cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+             << ": info: views cannot contain object pointers" << endl;
+
+        valid_ = false;
+      }
+    }
+
+    virtual void
+    traverse_container (semantics::data_member& m, semantics::type&)
+    {
+      semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+      cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << " error: view data member '" << member_prefix_ << m.name ()
+           << "' is a container" << endl;
+
+      cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << ": info: views cannot contain containers" << endl;
+
+      valid_ = false;
+    }
+
+    virtual void
+    traverse_composite (semantics::data_member* m, semantics::class_& c)
+    {
+      semantics::data_member* old_dm (dm_);
+
+      if (dm_ == 0)
+        dm_ = m;
+
+      object_members_base::traverse_composite (m, c);
+
+      dm_ = old_dm;
+    }
+
+  private:
+    bool& valid_;
+    semantics::data_member* dm_; // Direct view data member.
+  };
+
+  //
+  //
+  struct class2: traversal::class_
+  {
+    class2 (bool& valid, options const& ops, semantics::unit& unit)
+        : valid_ (valid), options_ (ops), unit_ (unit), view_members_ (valid)
+    {
+    }
+
+    virtual void
+    traverse (type& c)
+    {
+      if (context::object (c))
+        traverse_object (c);
+      else if (context::view (c))
+        traverse_view (c);
+      else if (context::composite (c))
+        traverse_composite (c);
+    }
+
+    virtual void
+    traverse_object (type&)
+    {
+    }
+
+    virtual void
+    traverse_view (type& c)
+    {
+      // Make sure we don't have any containers or object pointers.
+      //
+      view_members_.traverse (c);
+    }
+
+    virtual void
+    traverse_composite (type&)
+    {
+    }
+
+    bool& valid_;
+    options const& options_;
+    semantics::unit& unit_;
+
+    view_members view_members_;
   };
 }
 
 bool validator::
-validate (options const& ops, semantics::unit& u, semantics::path const&)
+validate (options const& ops,
+          semantics::unit& u,
+          semantics::path const&,
+          unsigned short pass)
 {
   auto_ptr<context> ctx (create_context (cerr, u, ops));
 
   bool valid (true);
 
-  traversal::unit unit;
-  traversal::defines unit_defines;
-  traversal::declares unit_declares;
-  traversal::namespace_ ns;
-  value_type vt (valid);
-  class_ c (valid, ops, u, vt);
+  if (pass == 1)
+  {
+    traversal::unit unit;
+    traversal::defines unit_defines;
+    traversal::declares unit_declares;
+    traversal::namespace_ ns;
+    value_type vt (valid);
+    class1 c (valid, ops, u, vt);
 
-  unit >> unit_defines >> ns;
-  unit_defines >> c;
-  unit >> unit_declares >> vt;
+    unit >> unit_defines >> ns;
+    unit_defines >> c;
+    unit >> unit_declares >> vt;
 
-  traversal::defines ns_defines;
-  traversal::declares ns_declares;
+    traversal::defines ns_defines;
+    traversal::declares ns_declares;
 
-  ns >> ns_defines >> ns;
-  ns_defines >> c;
-  ns >> ns_declares >> vt;
+    ns >> ns_defines >> ns;
+    ns_defines >> c;
+    ns >> ns_declares >> vt;
 
-  unit.dispatch (u);
+    unit.dispatch (u);
+  }
+  else
+  {
+    traversal::unit unit;
+    traversal::defines unit_defines;
+    traversal::namespace_ ns;
+    value_type vt (valid);
+    class2 c (valid, ops, u);
+
+    unit >> unit_defines >> ns;
+    unit_defines >> c;
+
+    traversal::defines ns_defines;
+
+    ns >> ns_defines >> ns;
+    ns_defines >> c;
+
+    unit.dispatch (u);
+  }
 
   return valid;
 }

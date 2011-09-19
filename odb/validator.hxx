@@ -12,8 +12,13 @@
 class validator
 {
 public:
+  // The first pass is performed before processing. The second -- after.
+  //
   bool
-  validate (options const&, semantics::unit&, semantics::path const&);
+  validate (options const&,
+            semantics::unit&,
+            semantics::path const&,
+            unsigned short pass);
 
   validator () {}
 

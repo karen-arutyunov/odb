@@ -110,11 +110,11 @@ gate_callback (void*, void*)
     parser p (*options_, loc_pragmas_, decl_pragmas_);
     auto_ptr<unit> u (p.parse (global_namespace, file_));
 
-    // Validate.
+    // Validate, pass 1.
     //
     {
       validator v;
-      if (!v.validate (*options_, *u, file_))
+      if (!v.validate (*options_, *u, file_, 1))
         r = 1;
     }
 
@@ -124,6 +124,15 @@ gate_callback (void*, void*)
     {
       processor p;
       p.process (*options_, *u, file_);
+    }
+
+    // Validate, pass 2.
+    //
+    if (r == 0)
+    {
+      validator v;
+      if (!v.validate (*options_, *u, file_, 2))
+        r = 1;
     }
 
     // Generate.
