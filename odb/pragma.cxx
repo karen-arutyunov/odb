@@ -506,7 +506,7 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    string v;
+    class_pointer cp;
     size_t pb (0);
     bool punc (false);
 
@@ -515,7 +515,7 @@ handle_pragma (cpp_reader* reader,
          tt = pragma_lex (&t))
     {
       if (punc && tt > CPP_LAST_PUNCTUATOR)
-        v += ' ';
+        cp.name += ' ';
 
       punc = false;
 
@@ -530,29 +530,29 @@ handle_pragma (cpp_reader* reader,
       {
       case CPP_LESS:
         {
-          v += "< ";
+          cp.name += "< ";
           break;
         }
       case CPP_GREATER:
         {
-          v += " >";
+          cp.name += " >";
           break;
         }
       case CPP_COMMA:
         {
-          v += ", ";
+          cp.name += ", ";
           break;
         }
       case CPP_NAME:
         {
-          v += IDENTIFIER_POINTER (t);
+          cp.name += IDENTIFIER_POINTER (t);
           punc = true;
           break;
         }
       default:
         {
           if (tt <= CPP_LAST_PUNCTUATOR)
-            v += cxx_lexer::token_spelling[tt];
+            cp.name += cxx_lexer::token_spelling[tt];
           else
           {
             error () << "unexpected token '" << cxx_lexer::token_spelling[tt]
@@ -570,13 +570,15 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    if (v.empty ())
+    if (cp.name.empty ())
     {
       error () << "expected pointer name in db pragma " << p << endl;
       return;
     }
 
-    val = v;
+    cp.scope = current_scope ();
+    cp.loc = loc;
+    val = cp;
 
     tt = pragma_lex (&t);
   }

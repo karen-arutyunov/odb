@@ -1898,21 +1898,21 @@ namespace relational
       void
       assign_pointer (type& c)
       {
+        location_t loc (0);     // Pragma location, or 0 if not used.
+
         try
         {
           string ptr;
           string const& name (c.fq_name ());
 
-          tree decl (0);    // Resolved template node.
-          string decl_name; // User-provided template name.
-
-          // Scope in which the pointer pragma was specified.
-          //
-          tree resolve_scope (c.scope ().tree_node ());
+          tree decl (0);          // Resolved template node.
+          string decl_name;       // User-provided template name.
+          tree resolve_scope (0); // Scope in which we resolve names.
 
           if (c.count ("pointer"))
           {
-            string const& p (c.get<string> ("pointer"));
+            class_pointer const& cp (c.get<class_pointer> ("pointer"));
+            string const& p (cp.name);
 
             if (p == "*")
               ptr = name + "*";
@@ -1930,7 +1930,7 @@ namespace relational
               // This is not a template-id. Resolve it and see if it is a
               // template or a type.
               //
-              decl = resolve_name (p, resolve_scope, true);
+              decl = resolve_name (p, cp.scope, true);
               int tc (TREE_CODE (decl));
 
               if (tc == TYPE_DECL)
@@ -1958,14 +1958,18 @@ namespace relational
               }
               else
               {
-                cerr << c.file () << ":" << c.line () << ":" << c.column ()
-                     << ": error: name '" << p << "' specified with "
-                     << "'#pragma object pointer' does not name a type "
-                     << "or a template" << endl;
+                error (cp.loc)
+                  << "name '" << p << "' specified with db pragma pointer "
+                  << "does not name a type or a template" << endl;
 
                 throw generation_failed ();
               }
             }
+
+            // Resolve scope is the scope of the pragma.
+            //
+            resolve_scope = cp.scope;
+            loc = cp.loc;
           }
           else
           {
@@ -1980,6 +1984,10 @@ namespace relational
               ptr = p + "< " + name + " >";
               decl_name = p;
             }
+
+            // Resolve scope is the scope of the class.
+            //
+            resolve_scope = c.scope ().tree_node ();
           }
 
           // Check if we are using TR1.
@@ -2012,10 +2020,12 @@ namespace relational
               if (TREE_CODE (decl) != TEMPLATE_DECL || !
                   DECL_CLASS_TEMPLATE_P (decl))
               {
-                cerr << c.file () << ":" << c.line () << ":" << c.column ()
-                     << ": error: name '" << decl_name << "' specified with "
-                     << "'#pragma object pointer' does not name a class "
-                     << "template" << endl;
+                // This is only checked for the --default-pointer option.
+                //
+                error (c.file (), c.line (), c.column ())
+                  << "name '" << decl_name << "' specified with the "
+                  << "--default-pointer option does not name a class "
+                  << "template" << endl;
 
                 throw generation_failed ();
               }
@@ -2122,17 +2132,28 @@ namespace relational
         }
         catch (invalid_name const& ex)
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column ()
-               << ": error: name '" << ex.name () << "' specified with "
-               << "'#pragma object pointer' is invalid" << endl;
+          if (loc != 0)
+            error (loc)
+              << "name '" << ex.name () << "' specified with db pragma "
+              << "pointer is invalid" << endl;
+          else
+            error (c.file (), c.line (), c.column ())
+              << "name '" << ex.name () << "' specified with the "
+              << "--default-pointer option is invalid" << endl;
+
 
           throw generation_failed ();
         }
         catch (unable_to_resolve const& ex)
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column ()
-               << ": error: unable to resolve name '" << ex.name ()
-               << "' specified with '#pragma object pointer'" << endl;
+          if (loc != 0)
+            error (loc)
+              << "unable to resolve name '" << ex.name () << "' specified "
+              << "with db pragma pointer" << endl;
+          else
+            error (c.file (), c.line (), c.column ())
+              << "unable to resolve name '" << ex.name () << "' specified "
+              << "with the --default-pointer option" << endl;
 
           throw generation_failed ();
         }

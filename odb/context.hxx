@@ -84,6 +84,15 @@ typedef std::vector<semantics::data_member*> data_member_path;
 // Semantic graph context types.
 //
 
+// Object or view pointer.
+//
+struct class_pointer
+{
+  std::string name;
+  tree scope;
+  location_t loc;
+};
+
 //
 //
 struct default_value
