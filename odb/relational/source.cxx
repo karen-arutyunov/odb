@@ -131,7 +131,7 @@ namespace relational
               error (loc)
                 << "member name expected after an alias in db pragma "
                 << prag << endl;
-              throw generation_failed ();
+              throw operation_failed ();
             }
 
             ptt = tt;
@@ -185,7 +185,7 @@ namespace relational
             error (loc)
               << "name '" << name << "' in db pragma " << prag << " "
               << "does not refer to a data member" << endl;
-            throw generation_failed ();
+            throw operation_failed ();
           }
           else
             return expression (
@@ -227,7 +227,7 @@ namespace relational
           {
             error (loc)
               << "name expected after '.' in db pragma " << prag << endl;
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
@@ -240,7 +240,7 @@ namespace relational
             error (loc)
               << "name '" << t << "' in db pragma " << prag << " does not "
               << "refer to a data member" << endl;
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           m = dynamic_cast<data_member*> (ctx.unit.find (decl));
@@ -285,7 +285,7 @@ namespace relational
         if (fail)
         {
           error (loc) << "invalid name in db pragma " << prag << endl;
-          throw generation_failed ();
+          throw operation_failed ();
         }
         else
           return expression (
@@ -297,7 +297,7 @@ namespace relational
         {
           error (loc) << "unable to resolve name '" << e.name ()
                       << "' in db pragma " << prag << endl;
-          throw generation_failed ();
+          throw operation_failed ();
         }
         else
           return expression (

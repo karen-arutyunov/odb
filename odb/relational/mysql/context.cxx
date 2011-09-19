@@ -575,7 +575,7 @@ namespace relational
                 else
                   cerr << " error: expected MySQL type name" << endl;
 
-                throw generation_failed ();
+                throw operation_failed ();
               }
 
               // Fall through.
@@ -600,7 +600,7 @@ namespace relational
                            << ": error: string literal expected in MySQL ENUM "
                            << "or SET declaration" << endl;
 
-                      throw generation_failed ();
+                      throw operation_failed ();
                     }
 
                     if (r.type == sql_type::ENUM)
@@ -616,7 +616,7 @@ namespace relational
                            << ": error: comma expected in MySQL ENUM or "
                            << "SET declaration" << endl;
 
-                      throw generation_failed ();
+                      throw operation_failed ();
                     }
 
                     t = l.next ();
@@ -630,7 +630,7 @@ namespace relational
                          << ": error: integer range expected in MySQL type "
                          << "declaration" << endl;
 
-                    throw generation_failed ();
+                    throw operation_failed ();
                   }
 
                   unsigned int v;
@@ -642,7 +642,7 @@ namespace relational
                          << ": error: invalid range value '" << t.literal ()
                          << "'in MySQL type declaration" << endl;
 
-                    throw generation_failed ();
+                    throw operation_failed ();
                   }
 
                   r.range = true;
@@ -673,7 +673,7 @@ namespace relational
                        << ": error: expected ')' in MySQL type declaration"
                        << endl;
 
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
 
                 s = parse_sign;
@@ -730,7 +730,7 @@ namespace relational
           cerr << m.file () << ":" << m.line () << ":" << m.column ()
                << ": error: incomplete MySQL type declaration" << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         // If range is omitted for CHAR or BIT types, it defaults to 1.
@@ -749,7 +749,7 @@ namespace relational
              << ": error: invalid MySQL type declaration: " << e.message
              << endl;
 
-        throw generation_failed ();
+        throw operation_failed ();
       }
     }
   }

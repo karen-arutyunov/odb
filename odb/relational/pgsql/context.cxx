@@ -370,7 +370,7 @@ namespace relational
                        << ": error: PostgreSQL time zones are not currently "
                        << "supported" << endl;
 
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
                 else if (id == "TIMESTAMP")
                 {
@@ -382,7 +382,7 @@ namespace relational
                        << ": error: PostgreSQL time zones are not currently "
                        << "supported" << endl;
 
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
                 //
                 // String and binary types.
@@ -457,7 +457,7 @@ namespace relational
                 else
                   cerr << " error: expected PostgreSQL type name" << endl;
 
-                throw generation_failed ();
+                throw operation_failed ();
               }
 
               // Fall through.
@@ -476,7 +476,7 @@ namespace relational
                        << ": error: integer range expected in PostgreSQL type "
                        << "declaration" << endl;
 
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
 
                 unsigned int v;
@@ -488,7 +488,7 @@ namespace relational
                        << ": error: invalid range value '" << t.literal ()
                        << "'in PostgreSQL type declaration" << endl;
 
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
 
                 r.range = true;
@@ -510,7 +510,7 @@ namespace relational
                        << ": error: expected ')' in PostgreSQL type "
                        << "declaration" << endl;
 
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
 
                 s = parse_suffix;
@@ -551,7 +551,7 @@ namespace relational
                                << m.column ()<< ": error: PostgreSQL time "
                                << "zones are not currently supported" << endl;
 
-                          throw generation_failed ();
+                          throw operation_failed ();
                         }
                       }
                     }
@@ -597,7 +597,7 @@ namespace relational
           cerr << m.file () << ":" << m.line () << ":" << m.column ()
                << ": error: incomplete PostgreSQL type declaration" << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         // If range is omitted for CHAR or BIT types, it defaults to 1.
@@ -616,7 +616,7 @@ namespace relational
              << ": error: invalid PostgreSQL type declaration: " << e.message
              << endl;
 
-        throw generation_failed ();
+        throw operation_failed ();
       }
     }
   }

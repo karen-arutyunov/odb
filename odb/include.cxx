@@ -188,7 +188,7 @@ namespace
       if (!is.is_open ())
       {
         cerr << "error: unable to open '" << f << "' in read mode" << endl;
-        throw generation_failed ();
+        throw operation_failed ();
       }
 
       parse_stream (is, f, lines);
@@ -244,7 +244,7 @@ namespace
                 {
                   cerr << name << ":" << lb << ":1: error: "
                        << "unable to parse #include directive" << endl;
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
               }
             }
@@ -277,7 +277,7 @@ namespace
       if (is.bad () || (is.fail () && !is.eof ()))
       {
         cerr << "error: input error while reading '" << name << "'" << endl;
-        throw generation_failed ();
+        throw operation_failed ();
       }
     }
 

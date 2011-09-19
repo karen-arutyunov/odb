@@ -25,7 +25,7 @@ process (options const& ops, semantics::unit& unit, semantics::path const&)
       relational::process ();
     }
   }
-  catch (generation_failed const&)
+  catch (operation_failed const&)
   {
     // Processing failed. Diagnostics has already been issued.
     //

@@ -8,7 +8,7 @@
 
 namespace relational
 {
-  // Issues diagnostics and throws generation_failed in case of an error.
+  // Issues diagnostics and throws operation_failed in case of an error.
   //
   void
   process ();

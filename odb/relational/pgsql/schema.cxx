@@ -67,7 +67,7 @@ namespace relational
                    << ": error: automatically assigned object id must map "
                    << "to PostgreSQL INTEGER or BIGINT" << endl;
 
-              throw generation_failed ();
+              throw operation_failed ();
             }
           }
           else
@@ -99,7 +99,7 @@ namespace relational
                    << ": error: column with default value specified as C++ "
                    << "enumerator must map to PostgreSQL integer type" << endl;
 
-              throw generation_failed ();
+              throw operation_failed ();
             }
           }
 

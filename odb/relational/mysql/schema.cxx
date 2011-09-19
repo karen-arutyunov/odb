@@ -89,7 +89,7 @@ namespace relational
                    << "enumerator must map to MySQL ENUM or integer type"
                    << endl;
 
-              throw generation_failed ();
+              throw operation_failed ();
             }
           }
 
@@ -124,7 +124,7 @@ namespace relational
                    << ": error: unable to map C++ enumerator '" << name
                    << "' to MySQL ENUM value" << endl;
 
-              throw generation_failed ();
+              throw operation_failed ();
             }
           }
           else

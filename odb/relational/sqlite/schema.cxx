@@ -35,7 +35,7 @@ namespace relational
                  << ": error: column with default value specified as C++ "
                  << "enumerator must map to SQLite INTEGER" << endl;
 
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           using semantics::enumerator;

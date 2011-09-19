@@ -225,7 +225,7 @@ namespace relational
         {
         }
 
-        // Issues diagnostics and throws generation_failed in case of
+        // Issues diagnostics and throws operation_failed in case of
         // an error.
         //
         sql_type
@@ -270,7 +270,7 @@ namespace relational
                 cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
                      << ": error: expected SQLite type name instead of '"
                      << t << "'" << endl;
-                throw generation_failed ();
+                throw operation_failed ();
               }
             }
           }
@@ -279,14 +279,14 @@ namespace relational
             cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
                  << ": error: invalid SQLite type declaration: " << e.message
                  << endl;
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           if (ids_.empty ())
           {
             cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
                  << ": error: expected SQLite type name" << endl;
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           sql_type r;
@@ -322,7 +322,7 @@ namespace relational
             {
               cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
                    << " error: unknown SQLite type '" << id << "'" << endl;
-              throw generation_failed ();
+              throw operation_failed ();
             }
           }
 
@@ -344,7 +344,7 @@ namespace relational
               cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
                    << ": error: missing ')' in SQLite type declaration"
                    << endl;
-              throw generation_failed ();
+              throw operation_failed ();
             }
           }
         }

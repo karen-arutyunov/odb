@@ -389,7 +389,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
     auto_rm.cancel ();
   }
-  catch (generation_failed const&)
+  catch (operation_failed const&)
   {
     // Code generation failed. Diagnostics has already been issued.
     //

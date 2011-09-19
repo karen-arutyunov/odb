@@ -38,7 +38,7 @@ typedef std::vector<regexsub> regex_mapping;
 
 //
 //
-class generation_failed {};
+class operation_failed {};
 
 // Keep this enum synchronized with the one in libodb/odb/pointer-traits.hxx.
 //

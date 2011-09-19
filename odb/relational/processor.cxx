@@ -53,7 +53,7 @@ namespace relational
           os << unit.file () << ": error: unable to resolve odb namespace"
              << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         // Find wrapper traits.
@@ -67,7 +67,7 @@ namespace relational
           os << unit.file () << ": error: unable to resolve wrapper_traits "
              << "in the odb namespace" << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         // Find pointer traits.
@@ -81,7 +81,7 @@ namespace relational
           os << unit.file () << ": error: unable to resolve pointer_traits "
              << "in the odb namespace" << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         // Find the access class.
@@ -94,7 +94,7 @@ namespace relational
           os << unit.file () << ": error: unable to resolve access class"
              << "in the odb namespace" << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         access = TREE_TYPE (access);
@@ -110,7 +110,7 @@ namespace relational
           os << unit.file () << ": error: unable to resolve container_traits "
              << "in the odb namespace" << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
       }
 
@@ -216,7 +216,7 @@ namespace relational
            << " info: use '#pragma db type' to specify the database type"
            << endl;
 
-        throw generation_failed ();
+        throw operation_failed ();
       }
 
       void
@@ -308,7 +308,7 @@ namespace relational
            << " info: use '#pragma db " << prefix << "_type' to specify the "
            << "database type" << endl;
 
-        throw generation_failed ();
+        throw operation_failed ();
       }
 
       bool
@@ -371,7 +371,7 @@ namespace relational
                 inst, get_identifier ("kind"), false, false));
 
             if (kind == error_mark_node || TREE_CODE (kind) != VAR_DECL)
-              throw generation_failed ();
+              throw operation_failed ();
 
 
             // Instantiate this decalaration so that we can get its value.
@@ -384,7 +384,7 @@ namespace relational
             tree init (DECL_INITIAL (kind));
 
             if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
-              throw generation_failed ();
+              throw operation_failed ();
 
             unsigned long long e;
 
@@ -401,7 +401,7 @@ namespace relational
 
             ck = static_cast<container_kind_type> (e);
           }
-          catch (generation_failed const&)
+          catch (operation_failed const&)
           {
             os << f << ":" << l << ":" << c << ": error: "
                << "container_traits specialization does not define the "
@@ -425,7 +425,7 @@ namespace relational
                 inst, get_identifier ("value_type"), true, false));
 
             if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
-              throw generation_failed ();
+              throw operation_failed ();
 
             tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
             vt = &dynamic_cast<semantics::type&> (*unit.find (type));
@@ -442,7 +442,7 @@ namespace relational
               decl = TYPE_NAME (ot);
             }
           }
-          catch (generation_failed const&)
+          catch (operation_failed const&)
           {
             os << f << ":" << l << ":" << c << ": error: "
                << "container_traits specialization does not define the "
@@ -465,7 +465,7 @@ namespace relational
               os << t.file () << ":" << t.line () << ":" << t.column () << ":"
                  << " error: set container cannot contain null values" << endl;
 
-              throw generation_failed ();
+              throw operation_failed ();
             }
             else
               t.set ("value-not-null", true);
@@ -492,7 +492,7 @@ namespace relational
                   inst, get_identifier ("index_type"), true, false));
 
               if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
-                throw generation_failed ();
+                throw operation_failed ();
 
               tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
               it = &dynamic_cast<semantics::type&> (*unit.find (type));
@@ -509,7 +509,7 @@ namespace relational
                 decl = TYPE_NAME (ot);
               }
             }
-            catch (generation_failed const&)
+            catch (operation_failed const&)
             {
               os << f << ":" << l << ":" << c << ": error: "
                  << "container_traits specialization does not define the "
@@ -534,7 +534,7 @@ namespace relational
                   inst, get_identifier ("key_type"), true, false));
 
               if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
-                throw generation_failed ();
+                throw operation_failed ();
 
               tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
               kt = &dynamic_cast<semantics::type&> (*unit.find (type));
@@ -551,7 +551,7 @@ namespace relational
                 decl = TYPE_NAME (ot);
               }
             }
-            catch (generation_failed const&)
+            catch (operation_failed const&)
             {
               os << f << ":" << l << ":" << c << ": error: "
                  << "container_traits specialization does not define the "
@@ -595,7 +595,7 @@ namespace relational
           os << m.file () << ":" << m.line () << ":" << m.column () << ":"
              << " error: set container cannot contain null values" << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         // Issue a warning if we are relaxing null-ness in the member.
@@ -652,7 +652,7 @@ namespace relational
                 inst, get_identifier ("element_type"), true, false));
 
             if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
-              throw generation_failed ();
+              throw operation_failed ();
 
             tn = TYPE_MAIN_VARIANT (TREE_TYPE (decl));
 
@@ -691,7 +691,7 @@ namespace relational
                 || n.compare (0, 19, "::boost::shared_ptr") == 0;
             }
           }
-          catch (generation_failed const&)
+          catch (operation_failed const&)
           {
             os << fl << ":" << ln << ":" << cl << ": error: pointer_traits "
                << "specialization does not define the 'element_type' type"
@@ -715,7 +715,7 @@ namespace relational
                 inst, get_identifier ("kind"), false, false));
 
             if (kind == error_mark_node || TREE_CODE (kind) != VAR_DECL)
-              throw generation_failed ();
+              throw operation_failed ();
 
             // Instantiate this decalaration so that we can get its value.
             //
@@ -727,7 +727,7 @@ namespace relational
             tree init (DECL_INITIAL (kind));
 
             if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
-              throw generation_failed ();
+              throw operation_failed ();
 
             unsigned long long e;
 
@@ -745,7 +745,7 @@ namespace relational
             pointer_kind_type pk = static_cast<pointer_kind_type> (e);
             t.set ("pointer-kind", pk);
           }
-          catch (generation_failed const&)
+          catch (operation_failed const&)
           {
             os << fl << ":" << ln << ":" << cl << ": error: pointer_traits "
                << "specialization does not define the 'kind' constant" << endl;
@@ -761,7 +761,7 @@ namespace relational
                 inst, get_identifier ("lazy"), false, false));
 
             if (lazy == error_mark_node || TREE_CODE (lazy) != VAR_DECL)
-              throw generation_failed ();
+              throw operation_failed ();
 
             // Instantiate this decalaration so that we can get its value.
             //
@@ -773,7 +773,7 @@ namespace relational
             tree init (DECL_INITIAL (lazy));
 
             if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
-              throw generation_failed ();
+              throw operation_failed ();
 
             unsigned long long e;
 
@@ -790,7 +790,7 @@ namespace relational
 
             t.set ("pointer-lazy", static_cast<bool> (e));
           }
-          catch (generation_failed const&)
+          catch (operation_failed const&)
           {
             os << fl << ":" << ln << ":" << cl << ": error: pointer_traits "
                << "specialization does not define the 'kind' constant" << endl;
@@ -813,7 +813,7 @@ namespace relational
              << "info: consider including its definition with the "
              << "--odb-prologue option" << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         // Make sure the pointed-to class is not abstract.
@@ -827,7 +827,7 @@ namespace relational
           os << c->file () << ":" << c->line () << ":" << c->column () << ": "
              << "info: class '" << c->name () << "' is defined here" << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         // See if this is the inverse side of a bidirectional relationship.
@@ -846,7 +846,7 @@ namespace relational
                << "error: unable to resolve data member '" << name << "' "
                << "specified with '#pragma db inverse' in class '"
                << c->fq_name () << "'" << endl;
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           data_member* im (dynamic_cast<data_member*> (unit.find (decl)));
@@ -857,7 +857,7 @@ namespace relational
                << "ice: unable to find semantic graph node corresponding to "
                << "data member '" << name << "' in class '" << c->fq_name ()
                << "'" << endl;
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           // @@ Would be good to check that the other end is actually
@@ -904,7 +904,7 @@ namespace relational
               inst, get_identifier ("wrapped_type"), true, false));
 
           if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
-            throw generation_failed ();
+            throw operation_failed ();
 
           tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
           semantics::type& wt (
@@ -927,7 +927,7 @@ namespace relational
           t.set ("wrapper-type", &wt);
           t.set ("wrapper-hint", wh);
         }
-        catch (generation_failed const&)
+        catch (operation_failed const&)
         {
           os << f << ":" << l << ":" << c << ": error: "
              << "wrapper_traits specialization does not define the "
@@ -947,7 +947,7 @@ namespace relational
               inst, get_identifier ("null_handler"), false, false));
 
           if (nh == error_mark_node || TREE_CODE (nh) != VAR_DECL)
-            throw generation_failed ();
+            throw operation_failed ();
 
           // Instantiate this decalaration so that we can get its value.
           //
@@ -959,7 +959,7 @@ namespace relational
           tree init (DECL_INITIAL (nh));
 
           if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
-            throw generation_failed ();
+            throw operation_failed ();
 
           unsigned long long e;
 
@@ -977,7 +977,7 @@ namespace relational
           null_handler = static_cast<bool> (e);
           t.set ("wrapper-null-handler", null_handler);
         }
-        catch (generation_failed const&)
+        catch (operation_failed const&)
         {
           os << f << ":" << l << ":" << c << ": error: "
              << "wrapper_traits specialization does not define the "
@@ -997,7 +997,7 @@ namespace relational
                 inst, get_identifier ("null_default"), false, false));
 
             if (nh == error_mark_node || TREE_CODE (nh) != VAR_DECL)
-              throw generation_failed ();
+              throw operation_failed ();
 
             // Instantiate this decalaration so that we can get its value.
             //
@@ -1009,7 +1009,7 @@ namespace relational
             tree init (DECL_INITIAL (nh));
 
             if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
-              throw generation_failed ();
+              throw operation_failed ();
 
             unsigned long long e;
 
@@ -1026,7 +1026,7 @@ namespace relational
 
             t.set ("wrapper-null-default", static_cast<bool> (e));
           }
-          catch (generation_failed const&)
+          catch (operation_failed const&)
           {
             os << f << ":" << l << ":" << c << ": error: "
                << "wrapper_traits specialization does not define the "
@@ -1056,7 +1056,7 @@ namespace relational
         {
           // Diagnostics has already been issued by lookup_template_class.
           //
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         inst = TYPE_MAIN_VARIANT (inst);
@@ -1178,7 +1178,7 @@ namespace relational
                     error (i->loc)
                       << "member name expected after an alias in db pragma "
                       << "column" << endl;
-                    throw generation_failed ();
+                    throw operation_failed ();
                   }
 
                   tt = lex_.next (t);
@@ -1212,7 +1212,7 @@ namespace relational
                     << "name '" << name << "' in db pragma column does not "
                     << "refer to a data member of a persistent class that "
                     << "is used in this view" << endl;
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
 
                 obj = j->second->object;
@@ -1225,7 +1225,7 @@ namespace relational
               {
                 error (i->loc) << "name '" << name << "' in db pragma column "
                                << "does not refer to a data member" << endl;
-                throw generation_failed ();
+                throw operation_failed ();
               }
 
               data_member* m (dynamic_cast<data_member*> (unit.find (decl)));
@@ -1246,7 +1246,7 @@ namespace relational
                 {
                   error (i->loc) << "name '" << t << "' in db pragma column "
                                  << "does not refer to a data member" << endl;
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
 
                 m = dynamic_cast<data_member*> (unit.find (decl));
@@ -1262,13 +1262,13 @@ namespace relational
             catch (lookup::invalid_name const&)
             {
               error (i->loc) << "invalid name in db pragma column" << endl;
-              throw generation_failed ();
+              throw operation_failed ();
             }
             catch (lookup::unable_to_resolve const& e)
             {
               error (i->loc) << "unable to resolve name '" << e.name ()
                              << "' in db pragma column" << endl;
-              throw generation_failed ();
+              throw operation_failed ();
             }
           }
 
@@ -1326,7 +1326,7 @@ namespace relational
               << "use db pragma column to specify the corresponding data "
               << "member or column name" << endl;
 
-            throw generation_failed ();
+            throw operation_failed ();
           }
           else if (members.size () > 1)
           {
@@ -1349,7 +1349,7 @@ namespace relational
             info (m.file (), m.line (), m.column ())
               << "use db pragma column to resolve this ambiguity" << endl;
 
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           // Synthesize the column expression for this member.
@@ -1627,7 +1627,7 @@ namespace relational
             << "with the view"
             << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         // Resolve referenced objects from tree nodes to semantic graph
@@ -1652,7 +1652,7 @@ namespace relational
                 << "name '" << i->orig_name << "' in db pragma object does "
                 << "not name a class" << endl;
 
-              throw generation_failed ();
+              throw operation_failed ();
             }
 
             class_& o (dynamic_cast<class_&> (*unit.find (n)));
@@ -1666,7 +1666,7 @@ namespace relational
               info (o.file (), o.line (), o.column ())
                 << "class '" << i->orig_name << "' is defined here" << endl;
 
-              throw generation_failed ();
+              throw operation_failed ();
             }
 
             i->object = &o;
@@ -1683,7 +1683,7 @@ namespace relational
                   << "use the alias clause to assign it a different name"
                   << endl;
 
-                throw generation_failed ();
+                throw operation_failed ();
               }
             }
             else
@@ -1695,7 +1695,7 @@ namespace relational
                   << "alias '" << i->alias << "' is used in the view more "
                   << "than once" << endl;
 
-                throw generation_failed ();
+                throw operation_failed ();
               }
             }
 
@@ -1749,7 +1749,7 @@ namespace relational
                   << "use the join condition clause in db pragma object "
                   << "to specify a custom join condition" << endl;
 
-                throw generation_failed ();
+                throw operation_failed ();
               }
               else if (rs.size () > 1)
               {
@@ -1777,7 +1777,7 @@ namespace relational
                   << "use the join condition clause in db pragma object "
                   << "to resolve this ambiguity" << endl;
 
-                throw generation_failed ();
+                throw operation_failed ();
               }
 
               // Synthesize the condition.
@@ -1962,7 +1962,7 @@ namespace relational
                   << "name '" << p << "' specified with db pragma pointer "
                   << "does not name a type or a template" << endl;
 
-                throw generation_failed ();
+                throw operation_failed ();
               }
             }
 
@@ -2027,7 +2027,7 @@ namespace relational
                   << "--default-pointer option does not name a class "
                   << "template" << endl;
 
-                throw generation_failed ();
+                throw operation_failed ();
               }
 
               string n (decl_as_string (decl, TFF_PLAIN_IDENTIFIER));
@@ -2125,7 +2125,7 @@ namespace relational
           }
           catch (cxx_lexer::invalid_input const&)
           {
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           c.set ("object-pointer", ptr);
@@ -2142,7 +2142,7 @@ namespace relational
               << "--default-pointer option is invalid" << endl;
 
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
         catch (unable_to_resolve const& ex)
         {
@@ -2155,7 +2155,7 @@ namespace relational
               << "unable to resolve name '" << ex.name () << "' specified "
               << "with the --default-pointer option" << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
       }
 

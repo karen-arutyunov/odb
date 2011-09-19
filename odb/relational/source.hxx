@@ -207,7 +207,7 @@ namespace relational
                  << ": error: column expression specified for a data member "
                  << "of a composite value type" << endl;
 
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           data_member_path const& mp (e.back ().member_path);
@@ -218,7 +218,7 @@ namespace relational
                  << ": error: invalid data member in db pragma column"
                  << endl;
 
-            throw generation_failed ();
+            throw operation_failed ();
           }
 
           table_prefix_ = e.back ().table;
@@ -234,7 +234,7 @@ namespace relational
                << ": info: use db pragma column to specify the column prefix"
                << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         in_composite_ = true;
@@ -324,7 +324,7 @@ namespace relational
                << ": info: use db pragma column to specify the column name"
                << endl;
 
-          throw generation_failed ();
+          throw operation_failed ();
         }
 
         column (m, col);
@@ -3289,7 +3289,7 @@ namespace relational
                     << "use the full join condition clause in db pragma "
                     << "object to resolve this ambiguity" << endl;
 
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
 
                 if (vo == 0)
@@ -3299,7 +3299,7 @@ namespace relational
                     << "specified in the join condition has not been "
                     << "previously associated with this view" << endl;
 
-                  throw generation_failed ();
+                  throw operation_failed ();
                 }
               }
 
