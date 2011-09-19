@@ -112,38 +112,30 @@ gate_callback (void*, void*)
 
     // Validate, pass 1.
     //
-    {
-      validator v;
-      if (!v.validate (*options_, *u, file_, 1))
-        r = 1;
-    }
+    validator v;
+    v.validate (*options_, *u, file_, 1);
 
     // Process.
     //
-    if (r == 0)
-    {
-      processor p;
-      p.process (*options_, *u, file_);
-    }
+    processor pr;
+    pr.process (*options_, *u, file_);
 
     // Validate, pass 2.
     //
-    if (r == 0)
-    {
-      validator v;
-      if (!v.validate (*options_, *u, file_, 2))
-        r = 1;
-    }
+    v.validate (*options_, *u, file_, 2);
 
     // Generate.
     //
-    if (r == 0)
-    {
-      generator g;
-      g.generate (*options_, *u, file_);
-    }
+    generator g;
+    g.generate (*options_, *u, file_);
   }
   catch (parser::failed const&)
+  {
+    // Diagnostics has aready been issued.
+    //
+    r = 1;
+  }
+  catch (validator::failed const&)
   {
     // Diagnostics has aready been issued.
     //

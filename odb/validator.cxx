@@ -629,7 +629,7 @@ namespace
   };
 }
 
-bool validator::
+void validator::
 validate (options const& ops,
           semantics::unit& u,
           semantics::path const&,
@@ -680,5 +680,6 @@ validate (options const& ops,
     unit.dispatch (u);
   }
 
-  return valid;
+  if (!valid)
+    throw failed ();
 }

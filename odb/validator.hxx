@@ -12,9 +12,11 @@
 class validator
 {
 public:
+  struct failed {};
+
   // The first pass is performed before processing. The second -- after.
   //
-  bool
+  void
   validate (options const&,
             semantics::unit&,
             semantics::path const&,
