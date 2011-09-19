@@ -114,16 +114,6 @@ namespace lookup
       tt = lex.next (t);
     }
 
-    // Get the actual type if this is a TYPE_DECL.
-    //
-    if (is_type)
-    {
-      if (TREE_CODE (scope) == TYPE_DECL)
-        scope = TREE_TYPE (scope);
-
-      scope = TYPE_MAIN_VARIANT (scope);
-    }
-
     return scope;
   }
 }

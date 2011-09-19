@@ -1906,6 +1906,10 @@ namespace relational
           tree decl (0);    // Resolved template node.
           string decl_name; // User-provided template name.
 
+          // Scope in which the pointer pragma was specified.
+          //
+          tree resolve_scope (c.scope ().tree_node ());
+
           if (c.count ("pointer"))
           {
             string const& p (c.get<string> ("pointer"));
@@ -1926,7 +1930,7 @@ namespace relational
               // This is not a template-id. Resolve it and see if it is a
               // template or a type.
               //
-              decl = resolve_name (p, c.scope (), true);
+              decl = resolve_name (p, resolve_scope, true);
               int tc (TREE_CODE (decl));
 
               if (tc == TYPE_DECL)
@@ -2003,7 +2007,7 @@ namespace relational
             if (!tr1)
             {
               if (decl == 0)
-                decl = resolve_name (decl_name, c.scope (), false);
+                decl = resolve_name (decl_name, resolve_scope, false);
 
               if (TREE_CODE (decl) != TEMPLATE_DECL || !
                   DECL_CLASS_TEMPLATE_P (decl))
@@ -2076,7 +2080,7 @@ namespace relational
                   //
                   if (!scoped)
                   {
-                    tree decl (resolve_name (t, c.scope (), false));
+                    tree decl (resolve_name (t, resolve_scope, false));
                     tree scope (CP_DECL_CONTEXT (decl));
 
                     if (scope != global_namespace)
@@ -2146,82 +2150,36 @@ namespace relational
         string name_;
       };
 
-      struct unable_to_resolve
-      {
-        unable_to_resolve (string const& n): name_ (n) {}
-
-        string const&
-        name () const {return name_;}
-
-      private:
-        string name_;
-      };
+      typedef lookup::unable_to_resolve unable_to_resolve;
 
       tree
-      resolve_name (string const& qn, semantics::scope& ss, bool type)
+      resolve_name (string const& qn, tree scope, bool is_type)
       {
-        tree scope (ss.tree_node ());
-
-        // @@ Could use cxx_lexer to parse the name.
-        //
-        for (size_t b (0), e (qn.find (':')), size (qn.size ());;
-             e = qn.find (':', b))
+        try
         {
-          bool last (e == string::npos);
-          string n (qn, b, last ? string::npos : e - b);
+          string t;
+          cpp_ttype tt, ptt;
 
-          if (n.empty ())
-          {
-            if (b == 0)
-              scope = global_namespace;
-            else
-              throw invalid_name (qn);
-          }
-          else
-          {
-            tree nid (get_identifier (n.c_str ()));
-            scope = lookup_qualified_name (scope, nid, last && type, false);
+          nested_lexer.start (qn);
+          tt = nested_lexer.next (t);
 
-            // If this is the first component in the name, then also
-            // search the outer scopes.
-            //
-            if (scope == error_mark_node && b == 0 && !ss.global_scope ())
-            {
-              semantics::scope* s (&ss);
-              do
-              {
-                s = &s->scope_ ();
-                scope = lookup_qualified_name (
-                  s->tree_node (), nid, last && type, false);
-              } while (scope == error_mark_node && !s->global_scope ());
-            }
-
-            if (scope == error_mark_node)
-              throw unable_to_resolve (qn);
-
-            if (!last && TREE_CODE (scope) == TYPE_DECL)
-              scope = TREE_TYPE (scope);
-          }
-
-          if (e == string::npos)
-            break;
-
-          if (qn[++e] != ':')
-            throw invalid_name (qn);
-
-          ++e; // Second ':'.
-
-          if (e == size)
-            break;
-
-          b = e;
+          string name;
+          return lookup::resolve_scoped_name (
+            t, tt, ptt, nested_lexer, scope, name, is_type);
         }
-
-        return scope;
+        catch (cxx_lexer::invalid_input const&)
+        {
+          throw invalid_name (qn);
+        }
+        catch (lookup::invalid_name const&)
+        {
+          throw invalid_name (qn);
+        }
       }
 
     private:
       cxx_string_lexer lexer;
+      cxx_string_lexer nested_lexer;
 
       data_member member_;
       traversal::names member_names_;

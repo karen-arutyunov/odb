@@ -213,8 +213,23 @@ resolve_scoped_name (tree& token,
     cxx_pragma_lexer lex;
     cpp_ttype ptt; // Not used.
     string st (lex.start (token, type));
-    return lookup::resolve_scoped_name (
-      st, type, ptt, lex, current_scope (), name, is_type);
+
+    tree decl (
+      lookup::resolve_scoped_name (
+        st, type, ptt, lex, current_scope (), name, is_type));
+
+    // Get the actual type if this is a TYPE_DECL.
+    //
+    if (is_type)
+    {
+      if (TREE_CODE (decl) == TYPE_DECL)
+        decl = TREE_TYPE (decl);
+
+      if (TYPE_P (decl)) // Can be a template.
+        decl = TYPE_MAIN_VARIANT (decl);
+    }
+
+    return decl;
   }
   catch (lookup::invalid_name const&)
   {
