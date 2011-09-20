@@ -2063,7 +2063,7 @@ namespace relational
       object_query_statement_ctor_args (type&)
       {
         os << "sts.connection ()," << endl
-           << "query_clause + q.clause ()," << endl
+           << "query_statement + q.clause ()," << endl
            << "q.parameters_binding ()," << endl
            << "imb";
       }
@@ -2072,7 +2072,7 @@ namespace relational
       object_erase_query_statement_ctor_args (type&)
       {
         os << "conn," << endl
-           << "erase_query_clause + q.clause ()," << endl
+           << "erase_query_statement + q.clause ()," << endl
            << "q.parameters_binding ()";
       }
 
@@ -2345,13 +2345,13 @@ namespace relational
 
         if (options.generate_query ())
         {
-          // query_clause
+          // query_statement
           //
           bool t (true);
           instance<object_joins> oj (c, t); //@@ (im)perfect forwarding
           oj->traverse (c);
 
-          os << "const char " << traits << "::query_clause[] =" << endl
+          os << "const char " << traits << "::query_statement[] =" << endl
              << strlit ("SELECT ") << endl;
 
           {
@@ -2364,10 +2364,10 @@ namespace relational
           os << strlit (" ") << ";"
              << endl;
 
-          // erase_query_clause
+          // erase_query_statement
           //
-          os << "const char " << traits << "::erase_query_clause[] =" << endl
-            << strlit ("DELETE FROM " + table) << endl;
+          os << "const char " << traits << "::erase_query_statement[] =" << endl
+             << strlit ("DELETE FROM " + table) << endl;
 
           // DELETE JOIN:
           //

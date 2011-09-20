@@ -1107,8 +1107,8 @@ namespace relational
 
         if (options.generate_query ())
         {
-          os << "static const char query_clause[];"
-             << "static const char erase_query_clause[];"
+          os << "static const char query_statement[];"
+             << "static const char erase_query_statement[];"
              << endl
              << "static const char table_name[];";
         }

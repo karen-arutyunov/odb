@@ -996,7 +996,7 @@ namespace relational
         {
           os << "sts.connection ()," << endl
              << "query_statement_name," << endl
-             << "query_clause + q.clause ()," << endl
+             << "query_statement + q.clause ()," << endl
              << "q.parameter_types ()," << endl
              << "q.parameter_count ()," << endl
              << "q.parameters_binding ()," << endl
@@ -1008,7 +1008,7 @@ namespace relational
         {
           os << "conn," << endl
              << "erase_query_statement_name," << endl
-             << "erase_query_clause + q.clause ()," << endl
+             << "erase_query_statement + q.clause ()," << endl
              << "q.parameter_types ()," << endl
              << "q.parameter_count ()," << endl
              << "q.parameters_binding ()";
