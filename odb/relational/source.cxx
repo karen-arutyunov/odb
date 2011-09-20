@@ -245,10 +245,7 @@ namespace relational
 
           m = dynamic_cast<data_member*> (ctx.unit.find (decl));
 
-          //@@ Temporarily translate '.' to '::' until the query is changed
-          //   to use '.' for composite member access.
-          //
-          r += "::";
+          r += '.';
           r += ctx.public_name (*m);
 
           if (check_ptr)
