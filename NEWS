@@ -1,14 +1,5 @@
 Version 1.6.0
 
-  * SQLite ODB runtime now enables foreign key constraints checking by
-    default. While this should not affect correct applications, due to
-    bugs in SQLite DDL foreign keys support, you may need to temporarily
-    disable foreign key constraints checking when re-creating the database
-    schema (the sign that you may need to do so is the "foreign key
-    constraint failed" exception thrown by the commit() function after the
-    call to schema_catalog::create_schema()). For more information, refer
-    to Section 12.5.3, "Foreign Key Constraints" in the ODB manual.
-
   * New function, database::erase_query(), allows the deletion of the
     database state of multiple objects matching certain criteria. It uses
     the same query expression as the database::query() function. For more
@@ -57,6 +48,23 @@ Version 1.6.0
     SQLite, single_connection_factory now have a virtual create() function
     that can be overridden to implement custom connection establishment and
     configuration.
+
+  * The query expression syntax for object pointers and composite values has
+    changed. Now, instead of using the scope resolution operator ('::') the
+    member access via pointer operator (->) is used for object pointers and
+    the member access operator (.) is used for composite values. Examples of
+    old and new syntax for pointers, old: query<employee>::employer::name
+    and new: query<employee>::employer->name. For composites values, old:
+    query<employee>::name::first and new: query<employee>::name.first.
+
+  * SQLite ODB runtime now enables foreign key constraints checking by
+    default. While this should not affect correct applications, due to
+    bugs in SQLite DDL foreign keys support, you may need to temporarily
+    disable foreign key constraints checking when re-creating the database
+    schema (the sign that you may need to do so is the "foreign key
+    constraint failed" exception thrown by the commit() function after the
+    call to schema_catalog::create_schema()). For more information, refer
+    to Section 12.5.3, "Foreign Key Constraints" in the ODB manual.
 
   * Support for specifying the client character set for the MySQL database.
     For more information, refer to Section 11.2, "MySQL Database Class" in

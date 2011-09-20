@@ -2911,6 +2911,36 @@ db.erase_query&lt;person> (query::last == "Doe" &amp;&amp; query::are &lt; 30);
 t.commit ();
   </pre>
 
+  <p>Unlike the <code>query()</code> function, when calling
+     <code>erase_query()</code> we cannot use members from pointed-to
+     objects in the query expression. However, we can still use
+     a member corresponding to a pointer as an ordinary object
+     member that has the id type of the pointed-to object
+     (<a href="#6">Chapter 6, "Relationships"</a>). This allows us
+     to compare object ids as well as test the pointer for
+     <code>NULL</code>. As an example, the following transaction
+     makes sure that all the <code>employee</code> objects that
+     reference an <code>employer</code> object that is about to
+     be deleted are deleted as well. Here we assume that the
+     <code>employee</code> class contains a pointer to the
+     <code>employer</code> class. Refer to <a href="#6">Chapter 6,
+     "Relationships"</a> for complete definitions of these
+     classes.</p>
+
+  <pre class="c++">
+typedef odb::query&lt;employee> query;
+
+transaction t (db.begin ());
+
+employer&amp; e = ... // Employer object to be deleted.
+
+db.erase_query&lt;employee> (query::employer == e.id ());
+db.erase (e);
+
+t.commit ();
+  </pre>
+
+
   <h2><a name="3.11">3.11 Executing Native SQL Statements</a></h2>
 
   <p>In some situations we may need to execute native SQL statements
@@ -4208,17 +4238,19 @@ unsigned long john_id, jane_id;
   <p>We can also use data members from pointed-to
      objects in database queries (<a href="#4">Chapter 4, "Querying the
      Database"</a>). For each pointer in a persistent class, the query
-     class defines a nested scope containing members corresponding
-     to the data members in the pointed-to object. For example, the
-     query class for the <code>employee</code> object contains
-     the <code>employer</code> scope (derived from the <code>employer_</code>
-     pointer) which in turn contains the <code>name</code> member
-     (derived from the <code>employer::name_</code> data member of the
-     pointed-to object). As a result, we can use the
-     <code>query::employer::name</code> expression while querying
-     the database for the <code>employee</code> objects. For example,
-     the following transaction finds all the employees of Example Inc
-     that have the Doe last name:</p>
+     class defines a smart pointer-like member that contains members
+     corresponding to the data members in the pointed-to object. We
+     can then use the access via pointer syntax (<code>-></code>)
+     to refer to data members in pointed-to objects.
+     For example, the query class for the <code>employee</code> object
+     contains the <code>employer</code> member (its name is derived from the
+     <code>employer_</code> pointer) which in turn contains the
+     <code>name</code> member (its name is derived from the
+     <code>employer::name_</code> data member of the pointed-to object).
+     As a result, we can use the <code>query::employer->name</code>
+     expression while querying the database for the <code>employee</code>
+     objects. For example, the following transaction finds all the
+     employees of Example Inc that have the Doe last name:</p>
 
   <pre class="c++">
 typedef odb::query&lt;employee> query;
@@ -4228,7 +4260,7 @@ session s;
 transaction t (db.begin ());
 
 result r (db->query&lt;employee> (
-  query::employer::name == "Example Inc" &amp;&amp; query::last == "Doe"));
+  query::employer->name == "Example Inc" &amp;&amp; query::last == "Doe"));
 
 for (result::iterator i (r.begin ()); i != r.end (); ++i)
   cout &lt;&lt; i->first_ &lt;&lt; " " &lt;&lt; i->last_ &lt;&lt; endl;
@@ -4236,6 +4268,16 @@ for (result::iterator i (r.begin ()); i != r.end (); ++i)
 t.commit ();
   </pre>
 
+  <p>A query class member corresponding to a non-inverse
+     (<a href="#6.2">Section 6.2, "Bidirectional Relationships"</a>) object
+     pointer can also be used as a normal member that has the id type
+     of the pointed-to object. For example, the following query locates
+     all the <code>employee</code> objects that don't have an associated
+     <code>employer</code> object:</p>
+
+  <pre class="c++">
+result r (db->query&lt;employee> (query::employer.is_null ()));
+  </pre>
 
   <p>An important concept to keep in mind when working with object
      relationships is the independence of persistent objects. In particular,
@@ -5198,17 +5240,19 @@ class person
 
   <p>We can also use data members from composite value types
      in database queries (<a href="#4">Chapter 4, "Querying the
-     Database"</a>). For each composite value in a persistent class,
-     the query class defines a nested scope containing members corresponding
-     to the data members in the value type. For example, the
+     Database"</a>). For each composite value in a persistent class, the
+     query class defines a nested member that contains members corresponding
+     to the data members in the value type. We can then use the member access
+     syntax (.) to refer to data members in value types. For example, the
      query class for the <code>person</code> object presented above
-     contains the <code>name</code> scope (derived from the <code>name_</code>
-     data member) which in turn contains the <code>extras</code> member
-     (derived from the <code>name::extras_</code> data member of the
-     composite value type). This process continues recursively for nested
-     composite value types and, as a result, we can use the
-     <code>query::name::extras::nickname</code> expression while querying
-     the database for the <code>person</code> objects. For example:</p>
+     contains the <code>name</code> member (its name is derived from
+     the <code>name_</code> data member) which in turn contains the
+     <code>extras</code> member (its name is derived from the
+     <code>name::extras_</code> data member of the composite value type).
+     This process continues recursively for nested composite value types
+     and, as a result, we can use the <code>query::name.extras.nickname</code>
+     expression while querying the database for the <code>person</code>
+     objects. For example:</p>
 
   <pre class="c++">
 typedef odb::query&lt;person> query;
@@ -5217,7 +5261,7 @@ typedef odb::result&lt;person> result;
 transaction t (db->begin ());
 
 result r (db->query&lt;person> (
-  query::name::extras::nickname == "Squeaky"));
+  query::name.extras.nickname == "Squeaky"));
 
 ...
 
