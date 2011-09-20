@@ -297,8 +297,8 @@ namespace relational
 
     member_database_type_id::
     member_database_type_id (semantics::type* type,
-                          string const& fq_type,
-                          string const& key_prefix)
+                             string const& fq_type,
+                             string const& key_prefix)
         : relational::member_base (type, fq_type, key_prefix)
     {
     }
