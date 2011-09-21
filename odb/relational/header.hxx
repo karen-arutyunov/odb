@@ -1163,8 +1163,7 @@ namespace relational
         //
         if (options.generate_query ())
         {
-          os << "template<typename T>" << endl
-             << "static result<T>" << endl
+          os << "static result<object_type>" << endl
              << "query (database&, const query_base_type&);"
              << endl;
 
@@ -1203,14 +1202,6 @@ namespace relational
            << "load_ (" << db << "::object_statements< object_type >&, " <<
           "object_type&);"
            << endl;
-
-        if (options.generate_query ())
-          os << "static void" << endl
-             << "query_ (database&," << endl
-             << "const query_base_type&," << endl
-             << db << "::object_statements< object_type >&," << endl
-             << "details::shared_ptr< " << db << "::select_statement >&);"
-             << endl;
 
         os << "};";
       }

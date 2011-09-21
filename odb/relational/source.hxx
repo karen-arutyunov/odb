@@ -2706,12 +2706,9 @@ namespace relational
         {
           // query ()
           //
-          os << "template<>" << endl
-             << "result< " << traits << "::object_type >" << endl
+          os << "result< " << traits << "::object_type >" << endl
              << traits << "::" << endl
-             << "query< " << traits << "::object_type > (" << endl
-             << "database& db," << endl
-             << "const query_base_type& q)"
+             << "query (database&, const query_base_type& q)"
              << "{"
              << "using namespace " << db << ";"
              << "using odb::details::shared;"
@@ -2722,55 +2719,6 @@ namespace relational
              << endl
              << "object_statements< object_type >& sts (" << endl
              << "conn.statement_cache ().find_object<object_type> ());"
-             << "shared_ptr<select_statement> st;"
-             << endl
-             << "query_ (db, q, sts, st);"
-             << endl
-             << "shared_ptr<odb::result_impl<object_type, " <<
-            "class_object> > r (" << endl
-             << "new (shared) " << db <<
-            "::result_impl<object_type, class_object> (" << endl
-             << "q, st, sts));"
-             << endl
-             << "return result<object_type> (r);"
-             << "}";
-
-          os << "template<>" << endl
-             << "result< const " << traits << "::object_type >" << endl
-             << traits << "::" << endl
-             << "query< const " << traits << "::object_type > (" << endl
-             << "database& db," << endl
-             << "const query_base_type& q)"
-             << "{"
-             << "using namespace " << db << ";"
-             << "using odb::details::shared;"
-             << "using odb::details::shared_ptr;"
-             << endl
-             << db << "::connection& conn (" << endl
-             << db << "::transaction::current ().connection ());"
-             << endl
-             << "object_statements< object_type >& sts (" << endl
-             << "conn.statement_cache ().find_object<object_type> ());"
-             << "shared_ptr<select_statement> st;"
-             << endl
-             << "query_ (db, q, sts, st);"
-             << endl
-             << "shared_ptr<odb::result_impl<" <<
-            "const object_type, class_object> > r (" << endl
-             << "new (shared) " << db <<
-            "::result_impl<const object_type, class_object> (" << endl
-             << "q, st, sts));"
-             << endl
-             << "return result<const object_type> (r);"
-             << "}";
-
-          os << "void " << traits << "::" << endl
-             << "query_ (database&," << endl
-             << "const query_base_type& q," << endl
-             << db << "::object_statements< object_type >& sts," << endl
-             << "odb::details::shared_ptr<" << db << "::select_statement>& st)"
-             << "{"
-             << "using namespace " << db << ";"
              << endl
              << "image_type& im (sts.image ());"
              << "binding& imb (sts.out_image_binding ());"
@@ -2781,8 +2729,8 @@ namespace relational
              << "sts.out_image_version (im.version);"
              << "imb.version++;"
              << "}"
-             << "st.reset (new (odb::details::shared) select_statement ("
-             << endl;
+             << "shared_ptr<select_statement> st (" << endl
+             << "new (shared) select_statement (" << endl;
 
           object_query_statement_ctor_args (c);
 
@@ -2791,7 +2739,15 @@ namespace relational
 
           post_query_ (c);
 
-          os << "}";
+          os << endl
+             << "shared_ptr<odb::result_impl<object_type, " <<
+            "class_object> > r (" << endl
+             << "new (shared) " << db <<
+            "::result_impl<object_type, class_object> (" << endl
+             << "q, st, sts));"
+             << endl
+             << "return result<object_type> (r);"
+             << "}";
 
           // erase_query
           //

@@ -761,7 +761,7 @@ namespace relational
                  << "// cannot be initialized from an object pointer." << endl
                  << "//" << endl
                  << member << " = ptr_traits::pointer_type (" << endl
-                 << "db.load< ptr_traits::element_type > (id));";
+                 << "db.load< obj_traits::object_type > (id));";
 
             os << "}"
                << "}";

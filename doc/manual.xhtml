@@ -3060,12 +3060,6 @@ namespace odb
     what () const throw ();
   };
 
-  struct const_object: exception
-  {
-    virtual const char*
-    what () const throw ();
-  };
-
   // Database operations exceptions.
   //
   struct recoverable: exception
@@ -3137,11 +3131,9 @@ namespace odb
      <code>odb::transaction</code> class and are discussed
      in <a href="#3.4">Section 3.4, "Transactions"</a>.</p>
 
-  <p>The next three exceptions (<code>already_in_session</code>,
-     <code>not_in_session</code>, and
-     <code>const_object</code>) are thrown by the
-     <code>odb::session</code> class and are discussed
-     in <a href="#9">Chapter 9, "Session"</a>.</p>
+  <p>The next two exceptions (<code>already_in_session</code>, and
+     <code>not_in_session</code>) are thrown by the <code>odb::session</code>
+     class and are discussed in <a href="#9">Chapter 9, "Session"</a>.</p>
 
   <p>The <code>recoverable</code> exception serves as a common base
      for all the recoverable exceptions, which are: <code>connection_lost</code>,
@@ -6051,26 +6043,43 @@ t.commit ();
      a pre-allocated instance, the object is only cached if its object
      pointer is a raw pointer.</p>
 
-  <p>Finally, the session caches both constant and unrestricted objects,
-     depending on whether a constant reference or constant pointer was
-     passed to the <code>database::persist()</code> function (in contrast,
-     when loaded, objects are always created and cached as unrestricted).
-     If we try to load an object as unrestricted that was previously
-     persisted and cached as constant, the <code>odb::const_object</code>
-     exception is thrown. The following transaction shows the
-     situation where this would happen:</p>
+  <p>Also note that when we persist an object as a constant reference
+     or constant pointer, the session caches such an object as
+     unrestricted (non-<code>const</code>). This can lead to undefined
+     behavior if the object being persisted was actually created as
+     <code>const</code> and is later found in the session cache and
+     used as non-<code>const</code>. As a result, when using sessions,
+     it is recommended that all persistent objects are created as
+     non-<code>const</code> instances. The following code fragment
+     illustrates this point:</p>
 
   <pre class="c++">
-shared_ptr&lt;const person> p (new person ("John", "Doe"));
+void save (database&amp; db, shared_ptr&lt;const person> p)
+{
+  transaction t (db.begin ());
+  db.persist (p); // Persisted as const pointer.
+  t.commit ();
+}
 
 session s;
-transaction t (db.begin ());
 
-unsigned long id (db.persist (p));
-shared_ptr&lt;const person> p1 (db.load&lt;const person> (id)); // Ok.
-shared_ptr&lt;person> p2 (db.load&lt;person> (id));             // Exception.
+shared_ptr&lt;const person> p1 (new const person ("John", "Doe"));
+unsigned long id1 (save (db, p1)); // p1 is cached in s as non-const.
 
-t.commit ();
+{
+  transaction t (db.begin ());
+  shared_ptr&lt;person> p (db.load&lt;person> (id1)); // p == p1
+  p->age (30); // Undefined behavior since p1 was created const.
+}
+
+shared_ptr&lt;const person> p2 (new person ("Jane", "Doe"));
+unsigned long id2 (save (db, p2)); // p2 is cached in s as non-const.
+
+{
+  transaction t (db.begin ());
+  shared_ptr&lt;person> p (db.load&lt;person> (id2)); // p == p2
+  p->age (30); // Ok, since p2 was not created const.
+}
   </pre>
 
 

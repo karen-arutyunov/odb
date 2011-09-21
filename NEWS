@@ -70,6 +70,11 @@ Version 1.6.0
     For more information, refer to Section 11.2, "MySQL Database Class" in
     the ODB manual.
 
+  * Object cache maintained by a session nor longer distinguishes between
+    const and non-const objects. Instead, const objects are treated as
+    non-const by casting away constness. For more information on this new
+    behavior, refer to Section 9.1, "Object Cache" in the ODB manual.
+
 Version 1.5.0
 
   * Support for the PostgreSQL database. The provided connection factories
