@@ -213,8 +213,8 @@ namespace relational
         {
           os << b << ".type = pgsql::bind::numeric;"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
-             << b << ".capacity = " << endl
-             << arg << "." << mi.var << "value.capacity ();"
+             << b << ".capacity = " << arg << "." << mi.var <<
+            "value.capacity ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
@@ -234,8 +234,8 @@ namespace relational
           os << b << ".type = " <<
             char_bin_buffer_types[mi.st->type - sql_type::CHAR] << ";"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
-             << b << ".capacity = " << endl
-             << arg << "." << mi.var << "value.capacity ();"
+             << b << ".capacity = " << arg << "." << mi.var <<
+            "value.capacity ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
@@ -245,8 +245,7 @@ namespace relational
         {
           os << b << ".type = pgsql::bind::bit;"
              << b << ".buffer = " << arg << "." << mi.var << "value;"
-             << b << ".capacity = sizeof (" << endl
-             << arg << "." << mi.var << "value);"
+             << b << ".capacity = sizeof (" << arg << "." << mi.var << "value);"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
@@ -256,8 +255,8 @@ namespace relational
         {
           os << b << ".type = pgsql::bind::varbit;"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
-             << b << ".capacity = " << endl
-             << arg << "." << mi.var << "value.capacity ();"
+             << b << ".capacity = " << arg << "." << mi.var <<
+            "value.capacity ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
