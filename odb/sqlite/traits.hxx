@@ -260,6 +260,11 @@ namespace odb
     {
     };
 
+    template <std::size_t n>
+    struct default_value_traits<const char[n], id_text>: c_string_value_traits
+    {
+    };
+
     // std::vector<char> (buffer) specialization.
     //
     template <>
@@ -399,6 +404,12 @@ namespace odb
 
     template <std::size_t n>
     struct default_type_traits<char[n]>
+    {
+      static const database_type_id db_type_id = id_text;
+    };
+
+    template <std::size_t n>
+    struct default_type_traits<const char[n]>
     {
       static const database_type_id db_type_id = id_text;
     };
