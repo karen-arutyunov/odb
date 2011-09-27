@@ -138,7 +138,7 @@ namespace relational
             tt = lex.next (t);
 
             decl = lookup::resolve_scoped_name (
-              t, tt, ptt, lex, vo->object->tree_node (), name, false);
+              t, tt, ptt, lex, vo->obj->tree_node (), name, false);
           }
         }
 
@@ -172,7 +172,7 @@ namespace relational
           if (multi_obj)
           {
             r += "::";
-            r += vo->object->name ();
+            r += vo->obj->name ();
           }
         }
 

@@ -52,10 +52,10 @@ struct pragma
   operator< (pragma const& y) const
   {
     if (add == 0)
-      return pragma_name < y.pragma_name;
+      return context_name < y.context_name;
     else
-      return pragma_name < y.pragma_name ||
-        (pragma_name == y.pragma_name && loc < y.loc);
+      return context_name < y.context_name ||
+        (context_name == y.context_name && loc < y.loc);
   }
 
   std::string pragma_name;  // Actual pragma name for diagnostics.

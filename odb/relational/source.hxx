@@ -2959,17 +2959,22 @@ namespace relational
 
         // query_type
         //
-        if (c.count ("objects"))
+        size_t obj_count (c.get<size_t> ("object-count"));
+
+        if (obj_count != 0)
         {
           view_objects& objs (c.get<view_objects> ("objects"));
 
-          if (objs.size () > 1)
+          if (obj_count > 1)
           {
             for (view_objects::const_iterator i (objs.begin ());
                  i < objs.end ();
                  ++i)
             {
-              if (!i->alias.empty () && i->alias != table_name (*i->object))
+              if (i->kind != view_object::object)
+                continue; // Skip tables.
+
+              if (!i->alias.empty () && i->alias != table_name (*i->obj))
                 os << "const char " << traits << "::query_columns::" << endl
                    << i->alias << "_alias_[] = " << strlit (i->alias) << ";"
                    << endl;
@@ -2980,11 +2985,18 @@ namespace relational
             // For a single object view we generate a shortcut without
             // an intermediate typedef.
             //
-            view_object const& vo (objs[0]);
+            view_object const* vo (0);
+            for (view_objects::const_iterator i (objs.begin ());
+                 vo == 0 && i < objs.end ();
+                 ++i)
+            {
+              if (i->kind == view_object::object)
+                vo = &*i;
+            }
 
-            if (!vo.alias.empty () && vo.alias != table_name (*vo.object))
+            if (!vo->alias.empty () && vo->alias != table_name (*vo->obj))
               os << "const char " << traits << "::" << endl
-                 << "query_alias[] = " << strlit (vo.alias) << ";"
+                 << "query_alias[] = " << strlit (vo->alias) << ";"
                  << endl;
           }
         }
@@ -3119,14 +3131,78 @@ namespace relational
                  i != objs.end ();
                  ++i)
             {
+              bool first (i == objs.begin ());
               string l;
+
+              //
+              // Tables.
+              //
+
+              if (i->kind == view_object::table)
+              {
+                if (first)
+                {
+                  l = "FROM ";
+                  l += quote_id (i->orig_name);
+
+                  if (!i->alias.empty ())
+                  {
+                    l += " AS ";
+                    l += quote_id (i->alias);
+                  }
+
+                  os << "r += " << strlit (l) << ";"
+                     << endl;
+
+                  continue;
+                }
+
+                l = "LEFT JOIN ";
+                l += quote_id (i->orig_name);
+
+                if (!i->alias.empty ())
+                {
+                  l += " AS ";
+                  l += quote_id (i->alias);
+                }
+
+                expression e (
+                  translate_expression (
+                    c, i->cond, i->scope, i->loc, "table"));
+
+                if (e.kind != expression::literal)
+                {
+                  error (i->loc)
+                    << "invalid join condition in db pragma table" << endl;
+
+                  throw operation_failed ();
+                }
+
+                l += " ON";
+
+                os << "r += " << strlit (l) << ";"
+                  // Output the pragma location for easier error tracking.
+                  //
+                   << "// From " <<
+                  location_file (i->loc).leaf () << ":" <<
+                  location_line (i->loc) << ":" <<
+                  location_column (i->loc) << endl
+                   << "r += " << e.value << ";"
+                   << endl;
+
+                continue;
+              }
+
+              //
+              // Objects.
+              //
 
               // First object.
               //
-              if (i == objs.begin ())
+              if (first)
               {
                 l = "FROM ";
-                l += table_qname (*i->object);
+                l += table_qname (*i->obj);
 
                 if (!i->alias.empty ())
                 {
@@ -3149,7 +3225,7 @@ namespace relational
               if (e.kind == expression::literal)
               {
                 l = "LEFT JOIN ";
-                l += table_qname (*i->object);
+                l += table_qname (*i->obj);
 
                 if (!i->alias.empty ())
                 {
@@ -3198,7 +3274,7 @@ namespace relational
               // pointer to ourselves is always assumed to point
               // to this association.
               //
-              if (i->object == c)
+              if (i->obj == c)
                 vo = &*i;
               else
               {
@@ -3208,7 +3284,7 @@ namespace relational
                      j != i;
                      ++j)
                 {
-                  if (j->object != c)
+                  if (j->obj != c)
                     continue;
 
                   if (vo == 0)
@@ -3262,11 +3338,11 @@ namespace relational
               // Left and right-hand side table names.
               //
               string lt (e.vo->alias.empty ()
-                         ? table_name (*e.vo->object)
+                         ? table_name (*e.vo->obj)
                          : e.vo->alias);
 
               string rt (vo->alias.empty ()
-                         ? table_name (*vo->object)
+                         ? table_name (*vo->obj)
                          : vo->alias);
 
               // First join the container table if necessary.
@@ -3288,11 +3364,11 @@ namespace relational
                   // function would have to return a member path instead
                   // of just a single member.
                   //
-                  table_prefix tp (table_name (*vo->object) + "_", 1);
+                  table_prefix tp (table_name (*vo->obj) + "_", 1);
                   ct = table_qname (*im, tp);
                 }
                 else
-                  ct = table_qname (*e.vo->object, e.member_path);
+                  ct = table_qname (*e.vo->obj, e.member_path);
               }
 
               if (cont != 0)
@@ -3309,7 +3385,7 @@ namespace relational
                 //
                 if (im != 0)
                 {
-                  if (i->object == c)
+                  if (i->obj == c)
                   {
                     // container.value = pointer.id
                     //
@@ -3319,7 +3395,7 @@ namespace relational
                     l += "=";
                     l += quote_id (lt);
                     l += '.';
-                    l += column_qname (*id_member (*e.vo->object));
+                    l += column_qname (*id_member (*e.vo->obj));
                   }
                   else
                   {
@@ -3331,12 +3407,12 @@ namespace relational
                     l += "=";
                     l += quote_id (rt);
                     l += '.';
-                    l += column_qname (*id_member (*vo->object));
+                    l += column_qname (*id_member (*vo->obj));
                   }
                 }
                 else
                 {
-                  if (i->object == c)
+                  if (i->obj == c)
                   {
                     // container.id = pointer.id
                     //
@@ -3346,7 +3422,7 @@ namespace relational
                     l += "=";
                     l += quote_id (lt);
                     l += '.';
-                    l += column_qname (*id_member (*e.vo->object));
+                    l += column_qname (*id_member (*e.vo->obj));
                   }
                   else
                   {
@@ -3358,7 +3434,7 @@ namespace relational
                     l += "=";
                     l += quote_id (rt);
                     l += '.';
-                    l += column_qname (*id_member (*vo->object));
+                    l += column_qname (*id_member (*vo->obj));
                   }
                 }
 
@@ -3366,7 +3442,7 @@ namespace relational
               }
 
               l = "LEFT JOIN ";
-              l += table_qname (*i->object);
+              l += table_qname (*i->obj);
 
               if (!i->alias.empty ())
               {
@@ -3381,7 +3457,7 @@ namespace relational
               {
                 if (im != 0)
                 {
-                  if (i->object == c)
+                  if (i->obj == c)
                   {
                     // container.id = pointed-to.id
                     //
@@ -3391,7 +3467,7 @@ namespace relational
                     l += "=";
                     l += quote_id (rt);
                     l += '.';
-                    l += column_qname (*id_member (*vo->object));
+                    l += column_qname (*id_member (*vo->obj));
                   }
                   else
                   {
@@ -3403,12 +3479,12 @@ namespace relational
                     l += "=";
                     l += quote_id (lt);
                     l += '.';
-                    l += column_qname (*id_member (*e.vo->object));
+                    l += column_qname (*id_member (*e.vo->obj));
                   }
                 }
                 else
                 {
-                  if (i->object == c)
+                  if (i->obj == c)
                   {
                     // container.value = pointed-to.id
                     //
@@ -3418,7 +3494,7 @@ namespace relational
                     l += "=";
                     l += quote_id (rt);
                     l += '.';
-                    l += column_qname (*id_member (*vo->object));
+                    l += column_qname (*id_member (*vo->obj));
                   }
                   else
                   {
@@ -3430,7 +3506,7 @@ namespace relational
                     l += "=";
                     l += quote_id (lt);
                     l += '.';
-                    l += column_qname (*id_member (*e.vo->object));
+                    l += column_qname (*id_member (*e.vo->obj));
                   }
                 }
               }
@@ -3442,7 +3518,7 @@ namespace relational
                   //
                   l  = quote_id (lt);
                   l += '.';
-                  l += column_qname (*id_member (*e.vo->object));
+                  l += column_qname (*id_member (*e.vo->obj));
                   l += " = ";
                   l += quote_id (rt);
                   l += '.';
@@ -3458,7 +3534,7 @@ namespace relational
                   l += " = ";
                   l += quote_id (rt);
                   l += '.';
-                  l += column_qname (*id_member (*vo->object));
+                  l += column_qname (*id_member (*vo->obj));
                 }
               }
 

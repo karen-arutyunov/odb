@@ -274,7 +274,9 @@ namespace relational
 
         // query_type
         //
-        if (c.count ("objects"))
+        size_t obj_count (c.get<size_t> ("object-count"));
+
+        if (obj_count != 0)
         {
           os << "inline" << endl
              << traits << "::query_type::" << endl

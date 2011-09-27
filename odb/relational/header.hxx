@@ -1258,11 +1258,13 @@ namespace relational
 
         // query_type
         //
-        if (c.count ("objects"))
+        size_t obj_count (c.get<size_t> ("object-count"));
+
+        if (obj_count != 0)
         {
           view_objects& objs (c.get<view_objects> ("objects"));
 
-          if (objs.size () > 1)
+          if (obj_count > 1)
           {
             os << "struct query_columns"
                << "{";
@@ -1271,8 +1273,11 @@ namespace relational
                  i < objs.end ();
                  ++i)
             {
+              if (i->kind != view_object::object)
+                continue; // Skip tables.
+
               bool alias (!i->alias.empty ());
-              semantics::class_& o (*i->object);
+              semantics::class_& o (*i->obj);
               string const& name (alias ? i->alias : o.name ());
               string const& type (o.fq_name ());
 
@@ -1306,13 +1311,20 @@ namespace relational
             // For a single object view we generate a shortcut without
             // an intermediate typedef.
             //
-            view_object const& vo (objs[0]);
+            view_object const* vo (0);
+            for (view_objects::const_iterator i (objs.begin ());
+                 vo == 0 && i < objs.end ();
+                 ++i)
+            {
+              if (i->kind == view_object::object)
+                vo = &*i;
+            }
 
-            bool alias (!vo.alias.empty ());
-            semantics::class_& o (*vo.object);
+            bool alias (!vo->alias.empty ());
+            semantics::class_& o (*vo->obj);
             string const& type (o.fq_name ());
 
-            if (alias && vo.alias != table_name (o))
+            if (alias && vo->alias != table_name (o))
               os << "static const char query_alias[];"
                  << endl
                  << "struct query_type:" << endl

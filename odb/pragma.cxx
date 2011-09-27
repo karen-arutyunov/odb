@@ -443,6 +443,22 @@ check_spec_decl_type (tree d,
 }
 
 static void
+add_pragma (pragma const& prag, tree decl)
+{
+  if (decl)
+    decl_pragmas_[decl].insert (prag);
+  else
+  {
+    tree scope (current_scope ());
+
+    if (!CLASS_TYPE_P (scope))
+      scope = global_namespace;
+
+    loc_pragmas_[scope].push_back (prag);
+  }
+}
+
+static void
 handle_pragma (cpp_reader* reader,
                string const& p,
                tree decl,
@@ -459,6 +475,7 @@ handle_pragma (cpp_reader* reader,
   if (p == "table")
   {
     // table ("<name>")
+    // table ("<name>" [= "<alias>"] [: "<cond>"]  (view only)
     //
 
     // Make sure we've got the correct declaration type.
@@ -480,13 +497,68 @@ handle_pragma (cpp_reader* reader,
       return;
     }
 
-    val = string (TREE_STRING_POINTER (t));
+    // The table specifier is used for both objects and views. In case
+    // of an object, the context values is just a string. In case of a
+    // view, the context value is a view_object entry. The problem is
+    // that at this stage we don't know whether we are dealing with an
+    // object or a view. To resolve this in a somewhat hackish way, we
+    // are going to create both a string and a view_object entry.
+    //
+    view_object vo;
+    vo.kind = view_object::table;
+    vo.orig_name = TREE_STRING_POINTER (t);
 
-    if (pragma_lex (&t) != CPP_CLOSE_PAREN)
+    tt = pragma_lex (&t);
+
+    if (tt == CPP_EQ)
+    {
+      // We have an alias.
+      //
+      if (pragma_lex (&t) != CPP_STRING)
+      {
+        error ()
+          << "table alias expected after '=' in db pragma " << p << endl;
+        return;
+      }
+
+      vo.alias = TREE_STRING_POINTER (t);
+      tt = pragma_lex (&t);
+    }
+
+    if (tt == CPP_COLON)
+    {
+      // We have a condition.
+
+      tt = pragma_lex (&t);
+
+      if (!parse_expression (t, tt, vo.cond, p))
+        return; // Diagnostics has already been issued.
+
+      if (vo.cond.empty ())
+      {
+        error ()
+          << "join condition expected after ':' in db pragma " << p << endl;
+        return;
+      }
+    }
+
+    if (tt != CPP_CLOSE_PAREN)
     {
       error () << "')' expected at the end of db pragma " << p << endl;
       return;
     }
+
+    // Add the "table" pragma.
+    //
+    if (vo.alias.empty () && vo.cond.empty ())
+      add_pragma (
+        pragma (p, name, vo.orig_name, loc, &check_spec_decl_type, 0), decl);
+
+    vo.scope = current_scope ();
+    vo.loc = loc;
+    val = vo;
+    name = "objects";
+    adder = &accumulate<view_object>;
 
     tt = pragma_lex (&t);
   }
@@ -723,6 +795,7 @@ handle_pragma (cpp_reader* reader,
     }
 
     view_object vo;
+    vo.kind = view_object::object;
     vo.node = resolve_scoped_name (t, tt, vo.orig_name, true, p);
 
     if (vo.node == 0)
@@ -1360,19 +1433,7 @@ handle_pragma (cpp_reader* reader,
 
   // Record this pragma.
   //
-  pragma prag (p, name, val, loc, &check_spec_decl_type, adder);
-
-  if (decl)
-    decl_pragmas_[decl].insert (prag);
-  else
-  {
-    tree scope (current_scope ());
-
-    if (!CLASS_TYPE_P (scope))
-      scope = global_namespace;
-
-    loc_pragmas_[scope].push_back (prag);
-  }
+  add_pragma (pragma (p, name, val, loc, &check_spec_decl_type, adder), decl);
 
   // See if there are any more pragmas.
   //

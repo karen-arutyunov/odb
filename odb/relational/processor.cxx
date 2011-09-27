@@ -1169,7 +1169,7 @@ namespace relational
                 if (j != amap_.end ())
                 {
                   i->table = j->first;
-                  obj = j->second->object;
+                  obj = j->second->obj;
 
                   // Skip '::'.
                   //
@@ -1215,7 +1215,7 @@ namespace relational
                   throw operation_failed ();
                 }
 
-                obj = j->second->object;
+                obj = j->second->obj;
                 i->table = table_name (*obj);
               }
 
@@ -1308,7 +1308,10 @@ namespace relational
           member_resolver resolver (exact_members, pub_members, m);
 
           for (view_objects::iterator i (objs.begin ()); i != objs.end (); ++i)
-            resolver.traverse (*i);
+          {
+            if (i->kind == view_object::object)
+              resolver.traverse (*i);
+          }
 
           assoc_members& members (
             !exact_members.empty () ? exact_members : pub_members);
@@ -1362,7 +1365,7 @@ namespace relational
 
           ep.kind = column_expr_part::reference;
           ep.table = am.vo->alias.empty ()
-            ? table_name (*am.vo->object)
+            ? table_name (*am.vo->obj)
             : am.vo->alias;
           ep.member_path.push_back (am.m);
 
@@ -1395,7 +1398,7 @@ namespace relational
         traverse (view_object& vo)
         {
           member_.vo_ = &vo;
-          traverse (*vo.object);
+          traverse (*vo.obj);
         }
 
         virtual void
@@ -1636,6 +1639,9 @@ namespace relational
         view_alias_map& amap (c.set ("alias-map", view_alias_map ()));
         view_object_map& omap (c.set ("object-map", view_object_map ()));
 
+        size_t& obj_count (c.set ("object-count", size_t (0)));
+        size_t& tbl_count (c.set ("table-count", size_t (0)));
+
         if (has_o)
         {
           using semantics::class_;
@@ -1644,6 +1650,25 @@ namespace relational
 
           for (view_objects::iterator i (objs.begin ()); i != objs.end (); ++i)
           {
+            if (i->kind != view_object::object)
+            {
+              // Make sure we have join conditions for tables unless it
+              // is the first entry.
+              //
+              if (i != objs.begin () && i->cond.empty ())
+              {
+                error (i->loc)
+                  << "missing join condition in db pragma table" << endl;
+
+                throw operation_failed ();
+              }
+
+              tbl_count++;
+              continue;
+            }
+            else
+              obj_count++;
+
             tree n (TYPE_MAIN_VARIANT (i->node));
 
             if (TREE_CODE (n) != RECORD_TYPE)
@@ -1669,7 +1694,7 @@ namespace relational
               throw operation_failed ();
             }
 
-            i->object = &o;
+            i->obj = &o;
 
             if (i->alias.empty ())
             {
@@ -1716,6 +1741,9 @@ namespace relational
               //
               for (view_objects::iterator j (objs.begin ()); j != i; ++j)
               {
+                if (j->kind != view_object::object)
+                  continue; // Skip tables.
+
                 // First see if any of the objects that were specified
                 // prior to this object point to it.
                 //
@@ -1785,7 +1813,7 @@ namespace relational
               relationship const& r (rs.back ());
 
               string name (r.pointer->alias.empty ()
-                           ? r.pointer->object->fq_name ()
+                           ? r.pointer->obj->fq_name ()
                            : r.pointer->alias);
               name += "::";
               name += r.name;
@@ -1832,7 +1860,7 @@ namespace relational
         traverse (view_object& pointer)
         {
           pointer_ = &pointer;
-          object_members_base::traverse (*pointer.object);
+          object_members_base::traverse (*pointer.obj);
         }
 
         virtual void
@@ -1849,10 +1877,10 @@ namespace relational
 
             // Ignore self-pointers if requested.
             //
-            if (!self_pointer_ && pointer_->object == c)
+            if (!self_pointer_ && pointer_->obj == c)
               return;
 
-            if (pointee_.object == c)
+            if (pointee_.obj == c)
             {
               relationships_.push_back (relationship ());
               relationships_.back ().member = &m;
@@ -1874,10 +1902,10 @@ namespace relational
 
             // Ignore self-pointers if requested.
             //
-            if (!self_pointer_ && pointer_->object == c)
+            if (!self_pointer_ && pointer_->obj == c)
               return;
 
-            if (pointee_.object == c)
+            if (pointee_.obj == c)
             {
               relationships_.push_back (relationship ());
               relationships_.back ().member = &m;

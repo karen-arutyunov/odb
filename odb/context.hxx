@@ -113,7 +113,7 @@ struct default_value
   tree node;
 };
 
-//
+// Object or table associated with the view.
 //
 struct view_object
 {
@@ -122,21 +122,29 @@ struct view_object
   std::string
   name () const
   {
-    return alias.empty () ? object->name () : alias;
+    if (!alias.empty ())
+      return alias;
+
+    return kind == object ? obj->name () : orig_name;
   }
 
-  tree node;
+  enum kind_type { object, table };
+
+  kind_type kind;
+  tree node;              // Tree node if kind is object.
   std::string orig_name;  // Original name as specified in the pragma.
   std::string alias;
   tree scope;
   location_t loc;
-  semantics::class_* object;
+  semantics::class_* obj;
 
   cxx_tokens cond; // Join condition tokens.
 };
 
 typedef std::vector<view_object> view_objects;
 
+// The view_alias_map does not contain entries for tables.
+//
 typedef std::map<std::string, view_object*> view_alias_map;
 typedef std::map<tree, view_object*> view_object_map;
 
