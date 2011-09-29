@@ -53,6 +53,11 @@ relational/mysql/header.cxx    \
 relational/mysql/source.cxx    \
 relational/mysql/schema.cxx
 
+#
+#
+cxx_ptun +=                    \
+relational/oracle/context.cxx
+
 # Relational/PostgreSQL
 #
 cxx_ptun +=                    \
