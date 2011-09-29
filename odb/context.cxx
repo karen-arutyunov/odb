@@ -10,6 +10,9 @@
 #include <odb/common.hxx>
 
 #include <odb/relational/mysql/context.hxx>
+// @@ Uncomment once implemented.
+//
+// #include <odb/relational/oracle/context.hxx>
 #include <odb/relational/pgsql/context.hxx>
 #include <odb/relational/sqlite/context.hxx>
 
@@ -107,6 +110,13 @@ create_context (ostream& os, semantics::unit& unit, options const& ops)
   case database::mysql:
     {
       r.reset (new relational::mysql::context (os, unit, ops));
+      break;
+    }
+  case database::oracle:
+    {
+      // @@ Uncomment once implemented.
+      //
+      // r.reset (new relational::oracle::context (os, unit, ops));
       break;
     }
   case database::pgsql:

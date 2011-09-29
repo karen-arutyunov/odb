@@ -17,6 +17,7 @@ using namespace std;
 static const char* database_[] =
 {
   "mysql",
+  "oracle",
   "pgsql",
   "sqlite",
   "tracer"

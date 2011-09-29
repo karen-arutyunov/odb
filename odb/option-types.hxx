@@ -15,6 +15,7 @@ struct database
     // Keep in alphabetic order.
     //
     mysql,
+    oracle,
     pgsql,
     sqlite,
     tracer

@@ -21,10 +21,7 @@ process_options (options& o)
     switch (o.database ())
     {
     case database::mysql:
-      {
-        f.insert (schema_format::sql);
-        break;
-      }
+    case database::oracle:
     case database::pgsql:
       {
         f.insert (schema_format::sql);
