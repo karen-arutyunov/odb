@@ -499,7 +499,7 @@ namespace relational
 
                 if (tt == CPP_CLOSE_PAREN)
                 {
-                  r += 'q';
+                  r +=  "q.empty () ? query_base_type::true_expr : q";
                   *placeholder = true;
                 }
                 else

@@ -3082,8 +3082,8 @@ namespace relational
               if (p != string::npos)
               {
                 ph = true;
-                os << strlit (string (vq.literal, 0, p + 1))
-                   << " + q + "
+                os << strlit (string (vq.literal, 0, p + 1)) << " +" << endl
+                   << "(q.empty () ? query_base_type::true_expr : q) +" << endl
                    << strlit (string (vq.literal, p + 2));
               }
               else
@@ -3564,14 +3564,17 @@ namespace relational
                 if (p != string::npos)
                 {
                   ph = true;
-                  os << strlit (string (vq.literal, 0, p + 1))
-                     << " + q + "
+                  os << strlit (string (vq.literal, 0, p + 1))<< " +" << endl
+                     << "(q.empty () ? query_base_type::true_expr : q) +" << endl
                      << strlit (string (vq.literal, p + 2));
                 }
                 else
                   os << strlit (vq.literal);
+
+                os << ");";
               }
               else
+              {
                 // Output the pragma location for easier error tracking.
                 //
                 os << "// From " <<
@@ -3581,7 +3584,14 @@ namespace relational
                    << translate_expression (
                      c, vq.expr, vq.scope, vq.loc, "query", &ph).value;
 
-              os << ");";
+                os << ");";
+
+                // Optimize the query if it had a placeholder. This gets
+                // rid of useless clauses like WHERE TRUE.
+                //
+                if (ph)
+                  os << "c.optimize ();";
+              }
 
               if (!ph)
                 os << "c += q;";
