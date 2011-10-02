@@ -1272,28 +1272,45 @@ namespace relational
             }
           }
 
-          // We have the source member, check that the C++ types are the
-          // same (sans cvr-qualification and wrapping) and issue a warning
-          // if they differ. In rare cases where this is not a mistake, the
-          // user can a phony expression (e.g., "" + person:name) to disable
-          // the warning. Note that in this case there will be no type pragma
-          // copying, which is probably ok seeing that the C++ types are
-          // different.
+          // Check that the source member is not transient or inverse. Also
+          // check that the C++ types are the same (sans cvr-qualification
+          // and wrapping) and issue a warning if they differ. In rare cases
+          // where this is not a mistake, the user can use a phony expression
+          // (e.g., "" + person:name) to disable the warning. Note that in
+          // this case there will be no type pragma copying, which is probably
+          // ok seeing that the C++ types are different.
           //
           //
-          if (src_m != 0 &&
-              !member_resolver::check_types (m.type (), src_m->type ()))
+          if (src_m != 0)
           {
-            warn (e.loc)
-              << "object data member '" << src_m->name () << "' specified "
-              << "in db pragma column has a different type compared to the "
-              << "view data member" << endl;
+            string reason;
 
-            info (src_m->file (), src_m->line (), src_m->column ())
-              << "object data member is defined here" << endl;
+            if (transient (*src_m))
+              reason = "transient";
+            else if (inverse (*src_m))
+              reason = "inverse";
 
-            info (m.file (), m.line (), m.column ())
-              << "view data member is defined here" << endl;
+            if (!reason.empty ())
+            {
+              error (e.loc)
+                << "object data member '" << src_m->name () << "' specified "
+                << "in db pragma column is " << reason << endl;
+              throw operation_failed ();
+            }
+
+            if (!member_resolver::check_types (src_m->type (), m.type ()))
+            {
+              warn (e.loc)
+                << "object data member '" << src_m->name () << "' specified "
+                << "in db pragma column has a different type compared to the "
+                << "view data member" << endl;
+
+              info (src_m->file (), src_m->line (), src_m->column ())
+                << "object data member is defined here" << endl;
+
+              info (m.file (), m.line (), m.column ())
+                << "view data member is defined here" << endl;
+            }
           }
         }
         // This member has no column information. If we are generting our
@@ -1374,10 +1391,21 @@ namespace relational
 
         // If we have the source member and don't have the type pragma of
         // our own, but the source member does, then copy the columnt type
-        // over.
+        // over. In case the source member is a pointer, also check the id
+        // member.
         //
-        if (src_m != 0 && !m.count ("type") && src_m->count ("type"))
-          m.set ("column-type", src_m->get<string> ("column-type"));
+        if (src_m != 0 && !m.count ("type"))
+        {
+          if (src_m->count ("type"))
+            m.set ("column-type", src_m->get<string> ("column-type"));
+          else if (semantics::class_* c = object_pointer (src_m->type ()))
+          {
+            semantics::data_member& id (*id_member (*c));
+
+            if (id.count ("type"))
+              m.set ("column-type", id.get<string> ("column-type"));
+          }
+        }
 
         // Check the return statements above if you add any extra logic
         // here.
@@ -1413,30 +1441,37 @@ namespace relational
 
       public:
         static bool
-        check_types (semantics::type& t1, semantics::type& t2)
+        check_types (semantics::type& ot, semantics::type& vt)
         {
           using semantics::type;
           using semantics::derived_type;
 
           // Require that the types be the same sans the wrapping and
-          // cvr-qualification.
+          // cvr-qualification. If the object member type is a pointer,
+          // use the id type of the pointed-to object.
           //
-          type* pt1 (&t1);
-          type* pt2 (&t2);
+          type* t1;
 
-          if (type* wt1 = context::wrapper (*pt1))
-            pt1 = wt1;
+          if (semantics::class_* c = object_pointer (ot))
+            t1 = &id_member (*c)->type ();
+          else
+            t1 = &ot;
 
-          if (type* wt2 = context::wrapper (*pt2))
-            pt2 = wt2;
+          type* t2 (&vt);
 
-          if (derived_type* dt1 = dynamic_cast<derived_type*> (pt1))
-            pt1 = &dt1->base_type ();
+          if (type* wt1 = context::wrapper (*t1))
+            t1 = wt1;
 
-          if (derived_type* dt2 = dynamic_cast<derived_type*> (pt2))
-            pt2 = &dt2->base_type ();
+          if (type* wt2 = context::wrapper (*t2))
+            t2 = wt2;
 
-          if (pt1 != pt2)
+          if (derived_type* dt1 = dynamic_cast<derived_type*> (t1))
+            t1 = &dt1->base_type ();
+
+          if (derived_type* dt2 = dynamic_cast<derived_type*> (t2))
+            t2 = &dt2->base_type ();
+
+          if (t1 != t2)
             return false;
 
           return true;
