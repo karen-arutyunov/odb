@@ -13,6 +13,7 @@ error.cxx               \
 exceptions.cxx          \
 object-statements.cxx   \
 query.cxx               \
+query-const-expr.cxx    \
 result.cxx              \
 statement-cache.cxx     \
 statement.cxx           \
