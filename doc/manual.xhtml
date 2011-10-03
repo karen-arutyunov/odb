@@ -6230,7 +6230,7 @@ struct employee_residence
   <p>While there is a relationship between <code>country</code> and
      <code>employee</code>, it is ambiguous. It can be
      <code>employee::residence_</code> (which is what we want) or
-     it can be <code>employee::location_</code> (which we don't
+     it can be <code>employee::nationality_</code> (which we don't
      want). As result, when compiling the above view, the ODB
      compiler will issue an error indicating an ambiguous object
      relationship. To resolve this ambiguity, we can explicitly
@@ -6263,6 +6263,10 @@ struct employee_country
   ...
 };
   </pre>
+
+  <p>Note that correctly defining data members in this view requires
+     the use of a mechanism that we haven't yet covered. We will
+     see how to do this shortly.</p>
 
   <p>If we assign an alias to an object and refer to a data member of
      this object in one of the join conditions, we have to use the
