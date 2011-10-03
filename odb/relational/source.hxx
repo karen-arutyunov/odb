@@ -3639,9 +3639,9 @@ namespace relational
            << "}";
 
         if (vq.kind == view_query::runtime)
-          os << "query_base_type const& qs (q);";
+          os << "const query_base_type& qs (q);";
         else
-          os << "query_base_type const& qs (query_statement (q));";
+          os << "const query_base_type& qs (query_statement (q));";
 
         os << "shared_ptr<select_statement> st (" << endl
            << "new (shared) select_statement (" << endl;
