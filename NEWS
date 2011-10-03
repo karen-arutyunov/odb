@@ -1,5 +1,16 @@
 Version 1.6.0
 
+  * New concept, view, is a C++ class that embodies a light-weight, read-
+    only projection of one or more persistent objects or database tables
+    or the result of a native SQL query execution. Some of the common
+    applications of views include loading a subset of data members from
+    objects or columns from database tables, executing and handling
+    results of arbitrary SQL queries, including aggregate queries, as
+    well as joining multiple objects and/or database tables using object
+    relationships or custom join conditions. For more information refer
+    to Chapter 9, "Views" in the ODB manual as well as the 'view' example
+    in the odb-examples package.
+
   * New function, database::erase_query(), allows the deletion of the
     database state of multiple objects matching certain criteria. It uses
     the same query expression as the database::query() function. For more
@@ -12,7 +23,7 @@ Version 1.6.0
     boost::optional. A wrapper can be transparent or it can handle the
     NULL semantics. To allow the easy conversion of value types that do
     not support the NULL semantics into the ones that do, the odb::nullable
-    class template has been added. ODB also now includes built-in support for
+    class template has been added. ODB now also includes built-in support for
     std::auto_ptr and std::tr1::shared_ptr smart pointers as value wrappers
     as well as for boost::shared_ptr and QSharedPointer via the Boost and Qt
     profiles. Currently, the NULL semantics is only supported for simple
@@ -26,19 +37,19 @@ Version 1.6.0
     Library" in the ODB manual.
 
   * Support for mapping std::vector<char> to the BLOB (or equivalent) types.
-    For more information, refer to chapters 11 (for MySQL), 12 (for SQLite)
+    For more information, refer to Chapters 11 (for MySQL), 12 (for SQLite)
     and 13 (for PostgreSQL) in the ODB manual.
 
   * New option, --table-prefix, allows the specification of a prefix that
     is added to table and index names. For more information, refer to the
     ODB compiler command line interface documentation (man pages).
 
-  * New ODB runtime interface, odb::connection, represents a connection
-    to the database. The primary use case for a connection is to execute
-    native statements outside of a transaction. For more information, refer
-    to Section 3.5, "Connections" in the ODB manual.
+  * New ODB runtime library interface, odb::connection, represents a
+    connection to the database. The primary use case for a connection is to
+    execute native statements outside of a transaction. For more information,
+    refer to Section 3.5, "Connections" in the ODB manual.
 
-  * Support for multiplexing several transaction on the same thread. For
+  * Support for multiplexing several transactions on the same thread. For
     more information, refer to Section 3.4, "Transactions" in the ODB
     manual.
 
@@ -50,12 +61,12 @@ Version 1.6.0
     configuration.
 
   * The query expression syntax for object pointers and composite values has
-    changed. Now, instead of using the scope resolution operator ('::') the
-    member access via pointer operator (->) is used for object pointers and
+    changed. Now, instead of using the scope resolution operator ('::'), the
+    member access via a pointer operator (->) is used for object pointers and
     the member access operator (.) is used for composite values. Examples of
-    old and new syntax for pointers, old: query<employee>::employer::name
-    and new: query<employee>::employer->name. For composites values, old:
-    query<employee>::name::first and new: query<employee>::name.first.
+    old and new syntax for pointers, old: query<employee>::employer::name,
+    new: query<employee>::employer->name. For composites values, old:
+    query<employee>::name::first, new: query<employee>::name.first.
 
   * SQLite ODB runtime now enables foreign key constraints checking by
     default. While this should not affect correct applications, due to
@@ -70,7 +81,7 @@ Version 1.6.0
     For more information, refer to Section 11.2, "MySQL Database Class" in
     the ODB manual.
 
-  * Object cache maintained by a session nor longer distinguishes between
+  * Object cache maintained by a session no longer distinguishes between
     const and non-const objects. Instead, const objects are treated as
     non-const by casting away constness. For more information on this new
     behavior, refer to Section 9.1, "Object Cache" in the ODB manual.
