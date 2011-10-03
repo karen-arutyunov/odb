@@ -54,8 +54,8 @@ class options
 
   bool --generate-query | -q
   {
-    "Generate query support code. Without this support you can only
-     load objects via their ids."
+    "Generate query support code. Without this support you cannot use
+     views and can only load objects via their ids."
   };
 
   bool --generate-schema | -s
@@ -96,16 +96,17 @@ class options
   std::string --default-pointer = "*"
   {
     "<ptr>",
-    "Use <ptr> as the default pointer for persistent objects. Objects that
-     do not  have a pointer assigned with the \cb{db pointer} pragma
-     will use this pointer by default. The value of this option can be \cb{*}
-     which denotes the raw pointer and is the default, or a qualified name
-     of a smart pointer class template, for example, \cb{std::auto_ptr}. In
-     the latter case, the ODB compiler constructs the object pointer by adding
-     a single template argument of the object type to the qualified name, for
-     example \cb{std::auto_ptr<object>}. The object pointer is used by the
-     ODB runtime to return, pass, and cache dynamically allocated instances
-     of the object type.
+    "Use <ptr> as the default pointer for persistent objects and views.
+     Objects and views that do not have a pointer assigned with the
+     \cb{db pointer} pragma will use this pointer by default. The value
+     of this option can be \cb{*} which denotes the raw pointer and is
+     the default, or qualified name of a smart pointer class template,
+     for example, \cb{std::auto_ptr}. In the latter case, the ODB compiler
+     constructs the object or view pointer by adding a single template
+     argument of the object or view type to the qualified name, for example
+     \cb{std::auto_ptr<object>}. The ODB runtime uses object and view
+     pointers to return, and, in case of objects, pass and cache
+     dynamically allocated instances of object and view types.
 
      Except for the raw pointer and the standard smart pointers defined
      in the \cb{<memory>} header file, you are expected to include the
