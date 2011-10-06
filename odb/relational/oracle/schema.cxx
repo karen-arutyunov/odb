@@ -35,26 +35,20 @@ namespace relational
             "';" << endl
              << "  EXCEPTION" << endl
              << "    WHEN OTHERS THEN" << endl
-             << "      IF SQLCODE != -942 THEN" << endl
-             << "        RAISE;" << endl
-             << "      END IF;" << endl
+             << "      IF SQLCODE != -942 THEN RAISE; END IF;" << endl
              << "  END;"
              << "  BEGIN" << endl
              << "    EXECUTE IMMEDIATE 'DROP SEQUENCE " <<
             quote_id (table + "_seq") << "';" << endl
              << "  EXCEPTION" << endl
              << "    WHEN OTHERS THEN" << endl
-             << "      IF SQLCODE != -2289 THEN" << endl
-             << "        RAISE;" << endl
-             << "      END IF;" << endl
+             << "      IF SQLCODE != -2289 THEN RAISE; END IF;" << endl
              << "  END;" << endl
              << "    EXECUTE IMMEDIATE 'DROP TRIGGER " <<
-            quote_id (table + "_auto_id_trig") << "';" << endl
+            quote_id (table + "_trig") << "';" << endl
              << "  EXCEPTION" << endl
              << "    WHEN OTHERS THEN" << endl
-             << "      IF SQLCODE != -4080 THEN" << endl
-             << "        RAISE;" << endl
-             << "      END IF;" << endl
+             << "      IF SQLCODE != -4080 THEN RAISE; END IF;" << endl
              << "  END;" << endl
              << "END;" << endl;
         }
