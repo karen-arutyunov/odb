@@ -23,6 +23,7 @@ namespace relational
   context::
   context ()
       : data_ (current ().data_),
+        generate_grow (data_->generate_grow_),
         bind_vector (data_->bind_vector_),
         truncated_vector (data_->truncated_vector_)
   {
@@ -31,6 +32,7 @@ namespace relational
   context::
   context (data* d)
       : data_ (d),
+        generate_grow (data_->generate_grow_),
         bind_vector (data_->bind_vector_),
         truncated_vector (data_->truncated_vector_)
   {

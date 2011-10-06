@@ -684,9 +684,12 @@ namespace relational
 
         // grow ()
         //
-        os << "static void" << endl
-           << "grow (data_image_type&, " << truncated_vector << ");"
-           << endl;
+        if (generate_grow)
+        {
+          os << "static void" << endl
+             << "grow (data_image_type&, " << truncated_vector << ");"
+             << endl;
+        }
 
         // init (data_image)
         //
@@ -1015,9 +1018,12 @@ namespace relational
 
         // grow ()
         //
-        os << "static bool" << endl
-           << "grow (image_type&, " << truncated_vector << ");"
-           << endl;
+        if (generate_grow)
+        {
+          os << "static bool" << endl
+             << "grow (image_type&, " << truncated_vector << ");"
+             << endl;
+        }
 
         // bind (image_type)
         //
@@ -1359,9 +1365,12 @@ namespace relational
 
         // grow ()
         //
-        os << "static bool" << endl
-           << "grow (image_type&, " << truncated_vector << ");"
-           << endl;
+        if (generate_grow)
+        {
+          os << "static bool" << endl
+             << "grow (image_type&, " << truncated_vector << ");"
+             << endl;
+        }
 
         // bind (image_type)
         //
@@ -1450,9 +1459,12 @@ namespace relational
 
         // grow ()
         //
-        os << "static bool" << endl
-           << "grow (image_type&, " << truncated_vector << ");"
-           << endl;
+        if (generate_grow)
+        {
+          os << "static bool" << endl
+             << "grow (image_type&, " << truncated_vector << ");"
+             << endl;
+        }
 
         // bind (image_type)
         //

@@ -797,15 +797,21 @@ namespace relational
             {
               it = &container_it (t);
               ordered = true;
-              grow = grow || context::grow (m, *it, "index");
+
+              if (generate_grow)
+                grow = grow || context::grow (m, *it, "index");
             }
+
             break;
           }
         case ck_map:
         case ck_multimap:
           {
             kt = &container_kt (t);
-            grow = grow || context::grow (m, *kt, "key");
+
+            if (generate_grow)
+              grow = grow || context::grow (m, *kt, "key");
+
             break;
           }
         case ck_set:
@@ -815,7 +821,8 @@ namespace relational
           }
         }
 
-        grow = grow || context::grow (m, vt, "value");
+        if (generate_grow)
+          grow = grow || context::grow (m, vt, "value");
 
         bool eager_ptr (is_a (m, test_eager_pointer, vt, "value"));
 
@@ -1190,6 +1197,7 @@ namespace relational
 
         // grow ()
         //
+        if (generate_grow)
         {
           size_t index (0);
 
@@ -2007,8 +2015,11 @@ namespace relational
       void
       init ()
       {
-        grow_base_inherits_ >> grow_base_;
-        grow_member_names_ >> grow_member_;
+        if (generate_grow)
+        {
+          grow_base_inherits_ >> grow_base_;
+          grow_member_names_ >> grow_member_;
+        }
 
         bind_base_inherits_ >> bind_base_;
         bind_member_names_ >> bind_member_;
@@ -2083,13 +2094,20 @@ namespace relational
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
 
-        bool grow (context::grow (c));
         bool has_ptr (has_a (c, test_pointer));
 
         semantics::data_member* id (id_member (c));
         bool auto_id (id ? id->count ("auto") : false);
-        bool grow_id (id ? context::grow (*id) : false);
         bool base_id (id ? &id->scope () != &c : false); // Comes from base.
+
+        bool grow (false);
+        bool grow_id (false);
+
+        if (generate_grow)
+        {
+          grow = context::grow (c);
+          grow_id = id ? context::grow (*id) : false;
+        }
 
         os << "// " << c.name () << endl
            << "//" << endl
@@ -2144,21 +2162,24 @@ namespace relational
 
         // grow ()
         //
-        os << "bool " << traits << "::" << endl
-           << "grow (image_type& i, " << truncated_vector << " t)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (t);"
-           << endl
-           << "bool grew (false);"
-           << endl;
+        if (generate_grow)
+        {
+          os << "bool " << traits << "::" << endl
+             << "grow (image_type& i, " << truncated_vector << " t)"
+             << "{"
+             << "ODB_POTENTIALLY_UNUSED (i);"
+             << "ODB_POTENTIALLY_UNUSED (t);"
+             << endl
+             << "bool grew (false);"
+             << endl;
 
-        index_ = 0;
-        inherits (c, grow_base_inherits_);
-        names (c, grow_member_names_);
+          index_ = 0;
+          inherits (c, grow_base_inherits_);
+          names (c, grow_member_names_);
 
-        os << "return grew;"
-           << "}";
+          os << "return grew;"
+             << "}";
+        }
 
         // bind (image_type)
         //
@@ -3007,20 +3028,23 @@ namespace relational
 
         // grow ()
         //
-        os << "bool " << traits << "::" << endl
-           << "grow (image_type& i, " << truncated_vector << " t)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (t);"
-           << endl
-           << "bool grew (false);"
-           << endl;
+        if (generate_grow)
+        {
+          os << "bool " << traits << "::" << endl
+             << "grow (image_type& i, " << truncated_vector << " t)"
+             << "{"
+             << "ODB_POTENTIALLY_UNUSED (i);"
+             << "ODB_POTENTIALLY_UNUSED (t);"
+             << endl
+             << "bool grew (false);"
+             << endl;
 
-        index_ = 0;
-        names (c, grow_member_names_);
+          index_ = 0;
+          names (c, grow_member_names_);
 
-        os << "return grew;"
-           << "}";
+          os << "return grew;"
+             << "}";
+        }
 
         // bind (image_type)
         //
@@ -3708,21 +3732,24 @@ namespace relational
 
         // grow ()
         //
-        os << "bool " << traits << "::" << endl
-           << "grow (image_type& i, " << truncated_vector << " t)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (t);"
-           << endl
-           << "bool grew (false);"
-           << endl;
+        if (generate_grow)
+        {
+          os << "bool " << traits << "::" << endl
+             << "grow (image_type& i, " << truncated_vector << " t)"
+             << "{"
+             << "ODB_POTENTIALLY_UNUSED (i);"
+             << "ODB_POTENTIALLY_UNUSED (t);"
+             << endl
+             << "bool grew (false);"
+             << endl;
 
-        index_ = 0;
-        inherits (c, grow_base_inherits_);
-        names (c, grow_member_names_);
+          index_ = 0;
+          inherits (c, grow_base_inherits_);
+          names (c, grow_member_names_);
 
-        os << "return grew;"
-           << "}";
+          os << "return grew;"
+             << "}";
+        }
 
         // bind (image_type)
         //

@@ -75,6 +75,7 @@ namespace relational
       assert (current_ == 0);
       current_ = this;
 
+      data_->generate_grow_ = true;
       data_->bind_vector_ = "pgsql::bind*";
       data_->truncated_vector_ = "bool*";
 
