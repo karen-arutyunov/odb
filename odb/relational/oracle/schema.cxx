@@ -240,7 +240,9 @@ namespace relational
           if (tables_[pass_].count (name))
             return;
 
-          if (id_member (c)->count ("auto"))
+          semantics::data_member* id (id_member (c));
+
+          if (id->count ("auto"))
           {
             string seq_name (quote_id (name + "_seq"));
 
@@ -248,12 +250,12 @@ namespace relational
                 << "  START WITH 1 INCREMENT BY 1;" << endl;
 
             os_ << "CREATE TRIGGER " <<
-              quote_id (name + "_auto_id_trig") << endl
+              quote_id (name + "_trig") << endl
                 << "  BEFORE INSERT ON " << quote_id (name) << endl
                 << "  FOR EACH ROW" << endl
                 << "BEGIN" << endl
-                << "  SELECT " << seq_name <<
-              ".nextval INTO :new.id FROM DUAL;" << endl
+                << "  SELECT " << seq_name << ".nextval INTO :new. " <<
+              id->name () << " FROM DUAL;" << endl
                 << "END;";
           }
 
