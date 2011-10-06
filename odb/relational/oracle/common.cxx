@@ -122,9 +122,7 @@ namespace relational
               // extraction into a 64 bit integer.
               //
               else if (
-                (options.oracle_client_version ().ver_major () > 11 ||
-                 (options.oracle_client_version ().ver_major () == 11 &&
-                  options.oracle_client_version ().ver_minor () >= 2)) &&
+                (options.oracle_client_version () >= oracle_version (11, 2)) &&
                 (r <= 19 || (r == 20 && unsigned_integer (mi.t))))
                 traverse_int64 (mi);
               else

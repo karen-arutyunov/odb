@@ -69,6 +69,12 @@ operator<< (std::ostream&, schema_format);
 //
 struct oracle_version
 {
+  oracle_version () {}
+  oracle_version (unsigned short major, unsigned short minor)
+      : major_ (major), minor_ (minor)
+  {
+  }
+
   unsigned short
   ver_major () const
   {
@@ -81,13 +87,52 @@ struct oracle_version
     return minor_;
   }
 
-  friend std::istream& operator>> (std::istream&, oracle_version&);
-  friend std::ostream& operator<< (std::ostream&, oracle_version);
+  bool
+  equal (const oracle_version& x) const
+  {
+    return major_ == x.major_ && minor_ == x.minor_;
+  }
+
+  bool
+  less (const oracle_version& x) const
+  {
+    return major_ < x.major_ || (major_ == x.major_ && minor_ <  x.minor_);
+  }
+
+  bool
+  greater (const oracle_version& x) const
+  {
+    return major_ > x.major_ || (major_ == x.major_ && minor_ > x.minor_);
+  }
 
 private:
   unsigned short major_;
   unsigned short minor_;
 };
+
+bool
+inline operator< (const oracle_version& x, const oracle_version& y)
+{
+  return x.less (y);
+}
+
+bool
+inline operator> (const oracle_version& x, const oracle_version& y)
+{
+  return x.greater (y);
+}
+
+bool
+inline operator<= (const oracle_version& x, const oracle_version& y)
+{
+  return !x.greater (y);
+}
+
+bool
+inline operator>= (const oracle_version& x, const oracle_version& y)
+{
+  return !x.less (y);
+}
 
 std::istream&
 operator>> (std::istream&, oracle_version&);

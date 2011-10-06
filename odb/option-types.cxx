@@ -120,10 +120,7 @@ operator>> (istream& is, oracle_version& v)
       is >> minor;
 
       if (!is.fail ())
-      {
-        v.major_ = major;
-        v.minor_ = minor;
-      }
+        v = oracle_version (major, minor);
     }
     else
       is.setstate (istream::failbit);
@@ -135,5 +132,5 @@ operator>> (istream& is, oracle_version& v)
 ostream&
 operator<< (ostream& os, oracle_version v)
 {
-  return os << v.major_ << '.' << v.minor_;
+  return os << v.ver_major () << '.' << v.ver_minor ();
 }
