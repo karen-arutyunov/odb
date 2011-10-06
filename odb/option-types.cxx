@@ -7,6 +7,7 @@
 #include <istream>
 #include <ostream>
 #include <algorithm> // std::lower_bound
+#include <sstream>  // std::ostringstream
 
 #include <odb/option-types.hxx>
 
@@ -93,4 +94,47 @@ ostream&
 operator<< (ostream& os, schema_format sf)
 {
   return os << sf.string ();
+}
+
+// oracle_version
+//
+istream&
+operator>> (istream& is, oracle_version& v)
+{
+  unsigned short major, minor;
+
+  // Extract the major version.
+  //
+  is >> major;
+
+  if (!is.fail ())
+  {
+    // Extract the decimal point.
+    //
+    char p;
+    is >> p;
+
+    if (!is.fail () && p == '.')
+    {
+      // Extract the minor version.
+      //
+      is >> minor;
+
+      if (!is.fail ())
+      {
+        v.major_ = major;
+        v.minor_ = minor;
+      }
+    }
+    else
+      is.setstate (istream::failbit);
+  }
+
+  return is;
+}
+
+ostream&
+operator<< (ostream& os, oracle_version v)
+{
+  return os << v.major_ << '.' << v.minor_;
 }

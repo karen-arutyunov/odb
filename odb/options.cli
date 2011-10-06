@@ -452,4 +452,17 @@ class options
      but may lead to automatically-assigned ids not being in a strictly
      ascending order. Refer to the SQLite documentation for details."
   };
+
+  //
+  // Oracle-specific options.
+  //
+
+  ::oracle_version --oracle-client-version
+  {
+    "<v>",
+    "Specify the minimum Oracle client library (OCI) version with which the
+     generated C++ code will be linked. This information is used to enable
+     version-specific optimizations in the generated C++ code. The version
+     must be in the \c{\i{major}\b{.}\i{minor}} form, for example, \cb{11.2}."
+  };
 };
