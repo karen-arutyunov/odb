@@ -7,7 +7,6 @@
 #include <istream>
 #include <ostream>
 #include <algorithm> // std::lower_bound
-#include <sstream>  // std::ostringstream
 
 #include <odb/option-types.hxx>
 
