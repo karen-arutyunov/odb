@@ -58,6 +58,8 @@ relational/mysql/schema.cxx
 cxx_ptun +=                    \
 relational/oracle/common.cxx   \
 relational/oracle/context.cxx  \
+relational/oracle/header.cxx   \
+relational/oracle/source.cxx   \
 relational/oracle/schema.cxx
 
 # Relational/PostgreSQL

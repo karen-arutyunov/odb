@@ -1,0 +1,176 @@
+// file      : odb/relational/oracle/header.cxx
+// author    : Constantin Michael <constantin@codesynthesis.com>
+// copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
+// license   : GNU GPL v3; see accompanying LICENSE file
+
+#include <odb/relational/header.hxx>
+
+#include <odb/relational/oracle/common.hxx>
+#include <odb/relational/oracle/context.hxx>
+
+namespace relational
+{
+  namespace oracle
+  {
+    namespace header
+    {
+      namespace relational = relational::header;
+
+      struct image_member: relational::image_member, member_base
+      {
+        image_member (base const& x)
+            : member_base::base (x), // virtual base
+              base (x),
+              member_base (x),
+              member_image_type_ (base::type_override_,
+                                  base::fq_type_override_,
+                                  base::key_prefix_)
+        {
+        }
+
+        virtual bool
+        pre (member_info& mi)
+        {
+          if (container (mi.t))
+            return false;
+
+          image_type = member_image_type_.image_type (mi.m);
+
+          if (var_override_.empty ())
+            os << "// " << mi.m.name () << endl
+               << "//" << endl;
+
+          return true;
+        }
+
+        virtual void
+        traverse_composite (member_info& mi)
+        {
+          os << image_type << " " << mi.var << "value;"
+             << endl;
+        }
+
+        virtual void
+        traverse_int32 (member_info& mi)
+        {
+          os << image_type << " " << mi.var << "value;"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_int64 (member_info& mi)
+        {
+          os << image_type << " " << mi.var << "value;"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_big_int (member_info& mi)
+        {
+          // Each significant base-100 digit requires a byte of storage
+          // in the manitissa. The default precision is 38 decimal digits,
+          // which is equivalent to 19 base-100 digits.
+          //
+          size_t n (19);
+
+          if (mi.st->range)
+            n = mi.st->range_value / 2 + mi.st->range_value % 2;
+
+          // We require an additional 2 bytes for length and exponent fields.
+          //
+          n += 2;
+
+          os << "char " << mi.var << "value[" << n << "];"
+             << "ub2 " << mi.var << "size;"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_float (member_info& mi)
+        {
+          os << image_type << " " << mi.var << "value;"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_double (member_info& mi)
+        {
+          os << image_type << " " << mi.var << "value;"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_big_float (member_info& mi)
+        {
+          os << "char " << mi.var << "value[21];"
+             << "ub2 " << mi.var << "size;"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_date (member_info& mi)
+        {
+          os << "char " << mi.var << "value[7];"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_timestamp (member_info& mi)
+        {
+          // @@ Need to calculate the length of the array based on the
+          // member_info range.
+          //
+          os << "char " << mi.var << "value[11];"
+             << "ub2 " << mi.var << "size;"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_string (member_info& mi)
+        {
+          size_t n (mi.st->range ? mi.st->range_value : 1);
+
+          // National characters can be either UTF-8 or UTF-16 encoded, both
+          // of which have a maximum character encoding size of 4 bytes.
+          // Assume the database character set uses a single byte fixed width
+          // encoding.
+          //
+          if ((mi.st->type == sql_type::NCHAR ||
+               mi.st->type == sql_type::NVARCHAR2) && !mi.st->byte_semantics)
+            n *= 4;
+
+          os << "char " << mi.var << "value[" << n << "];"
+             << "ub2 " << mi.var << "size;"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_lob (member_info& mi)
+        {
+          os << image_type << " " << mi.var << "callback;"
+             << "sb2 " << mi.var << "indicator;"
+             << "OCILobLocator* " << mi.var << "lob;"
+             << "void* " << mi.var << "context;"
+             << "ub4 " << mi.var << "position_context;"
+             << "char " << mi.var << "buffer[4096];"
+             << endl;
+        }
+
+      private:
+        string image_type;
+
+        member_image_type member_image_type_;
+      };
+      entry<image_member> image_member_;
+    }
+  }
+}
