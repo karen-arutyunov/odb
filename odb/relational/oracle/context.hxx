@@ -74,6 +74,9 @@ namespace relational
       column_sql_type (semantics::data_member&,
                        string const& key_prefix = string ());
 
+      static bool
+      unsigned_integer (semantics::type& t);
+
     protected:
       virtual string
       database_type_impl (semantics::type&, semantics::names*, bool);

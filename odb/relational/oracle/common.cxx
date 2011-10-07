@@ -13,19 +13,6 @@ namespace relational
 {
   namespace oracle
   {
-    static bool
-    unsigned_integer (semantics::type& t)
-    {
-      const string& s (t.name ());
-
-      return s == "bool" ||
-        s == "unsigned char" ||
-        s == "short unsigned int" ||
-        s == "unsigned int" ||
-        s == "long unsigned int" ||
-        s == "long long unsigned int";
-    }
-
     //
     // member_base
     //
