@@ -1,7 +1,7 @@
 // file      : odb/relational/oracle/context.cxx
 // author    : Constantin Michael <constantin@codesynthesis.com>
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
-// license   : ODB NCUEL; see accompanying LICENSE file
+// license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cassert>
 #include <sstream>
