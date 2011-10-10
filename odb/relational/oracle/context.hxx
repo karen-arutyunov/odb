@@ -75,7 +75,7 @@ namespace relational
                        string const& key_prefix = string ());
 
       static bool
-      unsigned_integer (semantics::type& t);
+      unsigned_integer (semantics::type&);
 
     protected:
       virtual string

@@ -107,6 +107,9 @@ namespace relational
         virtual void
         traverse_big_float (member_info& mi)
         {
+          // big_float is mapped to the OCI type SQLT_NUM, which requires 21
+          // bytes of storage.
+          //
           os << "char " << mi.var << "value[21];"
              << "ub2 " << mi.var << "size;"
              << "sb2 " << mi.var << "indicator;"

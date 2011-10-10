@@ -23,8 +23,7 @@ namespace relational
       struct query_parameters: relational::query_parameters
       {
         query_parameters (base const& x)
-            : base (x),
-              i_ (0)
+            : base (x), i_ (0)
         {
         }
 
@@ -50,7 +49,7 @@ namespace relational
           "oracle::bind::nstring", // NCHAR
           "oracle::bind::string",  // VARCHAR2
           "oracle::bind::nstring", // NVARCHAR2
-          "oracle::bind::string"  // RAW
+          "oracle::bind::string"   // RAW
         };
 
         const char* lob_buffer_types[] =
@@ -227,10 +226,10 @@ namespace relational
           os << b << ".type = " <<
             lob_buffer_types[mi.st->type - sql_type::BLOB] << ";"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;"
-             << b << ".size = " << "out ?" << endl
-             << "reinterpret_cast<ub2*> (&" << arg << "." << mi.var <<
-            "lob) :" << endl
-             << "reinterpret_cast<ub2*> (&" << arg << "." << mi.var <<
+             << b << ".size = " << "out" << endl
+             << "? reinterpret_cast<ub2*> (&" << arg << "." << mi.var <<
+            "lob)" << endl
+             << ": reinterpret_cast<ub2*> (&" << arg << "." << mi.var <<
             "position_context);"
              << b << ".callback_context = " << arg << "." << mi.var <<
             "context;"
