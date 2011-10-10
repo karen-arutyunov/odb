@@ -149,8 +149,8 @@ namespace relational
         {
           os << b << ".type = oracle::bind::number;"
              << b << ".buffer = " << arg << "." << mi.var << "value;"
-             << b << ".capacity = " << arg << "." << mi.var <<
-            "static_cast<ub4> (sizeof (" << arg << "." << mi.var << "value));"
+             << b << ".capacity = static_cast<ub4> (sizeof (" << arg <<
+            "." << mi.var << "value));"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;";
         }
@@ -214,8 +214,8 @@ namespace relational
           os << b << ".type = " <<
             string_buffer_types[mi.st->type - sql_type::CHAR] << ";"
              << b << ".buffer = " << arg << "." << mi.var << "value;"
-             << b << ".capacity = " << arg << "." << mi.var <<
-            "static_cast<ub4> (sizeof (" << arg << "." << mi.var << "value));"
+             << b << ".capacity = static_cast<ub4> (sizeof (" << arg <<
+            "." << mi.var << "value));"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;";
         }
