@@ -255,7 +255,7 @@ namespace relational
                 << "  FOR EACH ROW" << endl
                 << "BEGIN" << endl
                 << "  SELECT " << seq_name << ".nextval INTO :new. " <<
-              id->name () << " FROM DUAL;" << endl
+              column_qname (*id) << " FROM DUAL;" << endl
                 << "END;";
           }
 
