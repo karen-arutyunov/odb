@@ -225,6 +225,8 @@ namespace relational
         {
           os << b << ".type = " <<
             lob_buffer_types[mi.st->type - sql_type::BLOB] << ";"
+             << b << ".lob_callback = " << arg << "." << mi.var <<
+             "callback;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;"
              << b << ".size = " << "out" << endl
              << "? reinterpret_cast<ub2*> (&" << arg << "." << mi.var <<
