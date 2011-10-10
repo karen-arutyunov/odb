@@ -69,7 +69,10 @@ operator<< (std::ostream&, schema_format);
 //
 struct oracle_version
 {
-  oracle_version () {}
+  oracle_version (): major_ (0), minor_ (0)
+  {
+  }
+
   oracle_version (unsigned short major, unsigned short minor)
       : major_ (major), minor_ (minor)
   {
@@ -87,51 +90,49 @@ struct oracle_version
     return minor_;
   }
 
-  bool
-  equal (const oracle_version& x) const
-  {
-    return major_ == x.major_ && minor_ == x.minor_;
-  }
-
-  bool
-  less (const oracle_version& x) const
-  {
-    return major_ < x.major_ || (major_ == x.major_ && minor_ <  x.minor_);
-  }
-
-  bool
-  greater (const oracle_version& x) const
-  {
-    return major_ > x.major_ || (major_ == x.major_ && minor_ > x.minor_);
-  }
-
 private:
   unsigned short major_;
   unsigned short minor_;
 };
 
-bool
-inline operator< (const oracle_version& x, const oracle_version& y)
+inline bool
+operator== (const oracle_version& x, const oracle_version& y)
 {
-  return x.less (y);
+  return x.ver_major () == y.ver_major ();
 }
 
-bool
-inline operator> (const oracle_version& x, const oracle_version& y)
+inline bool
+operator!= (const oracle_version& x, const oracle_version& y)
 {
-  return x.greater (y);
+  return !(x == y);
 }
 
-bool
-inline operator<= (const oracle_version& x, const oracle_version& y)
+inline bool
+operator< (const oracle_version& x, const oracle_version& y)
 {
-  return !x.greater (y);
+  return x.ver_major () < y.ver_major () ||
+    (x.ver_major () == y.ver_major () &&
+     x.ver_minor () <  y.ver_minor ());
 }
 
-bool
-inline operator>= (const oracle_version& x, const oracle_version& y)
+inline bool
+operator> (const oracle_version& x, const oracle_version& y)
 {
-  return !x.less (y);
+  return x.ver_major () > y.ver_major () ||
+    (x.ver_major () == y.ver_major () &&
+     x.ver_minor () > y.ver_minor ());
+}
+
+inline bool
+operator<= (const oracle_version& x, const oracle_version& y)
+{
+  return !(x > y);
+}
+
+inline bool
+operator>= (const oracle_version& x, const oracle_version& y)
+{
+  return !(x < y);
 }
 
 std::istream&
