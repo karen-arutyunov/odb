@@ -147,9 +147,17 @@ namespace relational
           // Assume the database character set uses a single byte fixed width
           // encoding.
           //
-          if ((mi.st->type == sql_type::NCHAR ||
-               mi.st->type == sql_type::NVARCHAR2) && !mi.st->byte_semantics)
+          sql_type::core_type t (mi.st->type);
+
+          if ((t == sql_type::NCHAR || t == sql_type::NVARCHAR2) &&
+              !mi.st->byte_semantics)
             n *= 4;
+
+          if (t == sql_type::CHAR  || t == sql_type::NCHAR ||
+              t == sql_type::RAW)
+            n = n > 2000 ? 2000 : n;
+          else if (t == sql_type::VARCHAR2 || t == sql_type::NVARCHAR2)
+            n = n > 4000 ? 4000 : n;
 
           os << "char " << mi.var << "value[" << n << "];"
              << "ub2 " << mi.var << "size;"
