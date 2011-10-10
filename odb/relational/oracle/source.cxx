@@ -562,7 +562,6 @@ namespace relational
               db_type_id = member_database_type_id_.database_type_id (mi.m);
 
               // Handle NULL pointers and extract the id.
-              // @@ Check the null logic with boris.
               //
               os << "{"
                  << "typedef object_traits< " << c->fq_name () <<
@@ -587,12 +586,6 @@ namespace relational
             {
               type = mi.fq_type ();
               db_type_id = member_database_type_id_.database_type_id (mi.m);
-
-              os << "i." << mi.var << "indicator = is_null ? -1 : 0;"
-                 << "}";
-
-              os << "{"
-                 << "bool is_null (i. " << mi.var << "indicator == -1);";
             }
 
             traits = "oracle::value_traits<\n    "
@@ -649,7 +642,9 @@ namespace relational
         traverse_int32 (member_info& mi)
         {
           os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, is_null);"
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "indicator == -1);"
              << endl;
         }
 
@@ -657,7 +652,9 @@ namespace relational
         traverse_int64 (member_info& mi)
         {
           os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, is_null);"
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "indicator == -1);"
              << endl;
         }
 
@@ -668,7 +665,7 @@ namespace relational
              << member << "," << endl
              << "i." << mi.var << "value," << endl
              << "i." << mi.var << "size," << endl
-             << "is_null);"
+             << "i." << mi.var << "indicator == -1);"
              << endl;
         }
 
@@ -676,7 +673,9 @@ namespace relational
         traverse_float (member_info& mi)
         {
           os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, is_null);"
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "indicator == -1);"
              << endl;
         }
 
@@ -684,7 +683,9 @@ namespace relational
         traverse_double (member_info& mi)
         {
           os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, is_null)"
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "indicator == -1);"
              << endl;
         }
 
@@ -695,7 +696,7 @@ namespace relational
              << member << "," << endl
              << "i." << mi.var << "value," << endl
              << "i." << mi.var << "size," << endl
-             << "is_null);"
+             << "i." << mi.var << "indicator == -1);"
              << endl;
         }
 
@@ -703,7 +704,9 @@ namespace relational
         traverse_date (member_info& mi)
         {
           os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, is_null);"
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "indicator == -1);"
              << endl;
         }
 
@@ -714,7 +717,7 @@ namespace relational
              << member << "," << endl
              << "i." << mi.var << "value," << endl
              << "i." << mi.var << "size," << endl
-             << "is_null);"
+             << "i." << mi.var << "indicator == -1);"
              << endl;
         }
 
@@ -725,7 +728,7 @@ namespace relational
              << member << "," << endl
              << "i." << mi.var << "value," << endl
              << "i." << mi.var << "size," << endl
-             << "is_null);"
+             << "i." << mi.var << "indicator == -1);"
              << endl;
         }
 
@@ -736,7 +739,7 @@ namespace relational
              << member << "," << endl
              << "i." << mi.var << "callback.result," << endl
              << "i." << mi.var << "context," << endl
-             << "is_null);"
+             << "i." << mi.var << "indicator == -1);"
              << endl;
         }
 
