@@ -101,10 +101,10 @@ namespace odb
       typename object_traits::container_statement_cache_type
       container_statement_cache_type;
 
-      typedef sqlite::insert_statement persist_statement_type;
-      typedef sqlite::select_statement find_statement_type;
+      typedef sqlite::insert_statement insert_statement_type;
+      typedef sqlite::select_statement select_statement_type;
       typedef sqlite::update_statement update_statement_type;
-      typedef sqlite::delete_statement erase_statement_type;
+      typedef sqlite::delete_statement delete_statement_type;
 
       // Automatic lock.
       //
@@ -177,89 +177,70 @@ namespace odb
       // Object image.
       //
       image_type&
-      image ()
-      {
-        return image_;
-      }
+      image () {return image_;}
 
+      // Insert binding.
+      //
       std::size_t
-      in_image_version () const
-      {
-        return in_image_version_;
-      }
-
-      std::size_t
-      out_image_version () const
-      {
-        return out_image_version_;
-      }
+      insert_image_version () const { return insert_image_version_;}
 
       void
-      in_image_version (std::size_t v)
-      {
-        in_image_version_ = v;
-      }
+      insert_image_version (std::size_t v) {insert_image_version_ = v;}
+
+      binding&
+      insert_image_binding () {return insert_image_binding_;}
+
+      // Update binding.
+      //
+      std::size_t
+      update_image_version () const { return update_image_version_;}
 
       void
-      out_image_version (std::size_t v)
-      {
-        out_image_version_ = v;
-      }
+      update_image_version (std::size_t v) {update_image_version_ = v;}
 
       binding&
-      in_image_binding ()
-      {
-        return in_image_binding_;
-      }
+      update_image_binding () {return update_image_binding_;}
+
+      // Select binding.
+      //
+      std::size_t
+      select_image_version () const { return select_image_version_;}
+
+      void
+      select_image_version (std::size_t v) {select_image_version_ = v;}
 
       binding&
-      out_image_binding ()
-      {
-        return out_image_binding_;
-      }
+      select_image_binding () {return select_image_binding_;}
 
       bool*
-      out_image_truncated ()
-      {
-        return out_image_truncated_;
-      }
+      select_image_truncated () {return select_image_truncated_;}
 
-      // Object id image.
+      // Object id image and binding.
       //
       id_image_type&
-      id_image ()
-      {
-        return id_image_;
-      }
+      id_image () {return id_image_;}
 
       std::size_t
-      id_image_version () const
-      {
-        return id_image_version_;
-      }
+      id_image_version () const {return id_image_version_;}
 
       void
-      id_image_version (std::size_t v)
-      {
-        id_image_version_ = v;
-      }
+      id_image_version (std::size_t v) {id_image_version_ = v;}
 
       binding&
-      id_image_binding ()
-      {
-        return id_image_binding_;
-      }
+      id_image_binding () {return id_image_binding_;}
 
       // Statements.
       //
-      persist_statement_type&
+      insert_statement_type&
       persist_statement ()
       {
         if (persist_ == 0)
         {
           persist_.reset (
-            new (details::shared) persist_statement_type (
-              conn_, object_traits::persist_statement, in_image_binding_));
+            new (details::shared) insert_statement_type (
+              conn_,
+              object_traits::persist_statement,
+              insert_image_binding_));
 
           persist_->cached (true);
         }
@@ -267,17 +248,17 @@ namespace odb
         return *persist_;
       }
 
-      find_statement_type&
+      select_statement_type&
       find_statement ()
       {
         if (find_ == 0)
         {
           find_.reset (
-            new (details::shared) find_statement_type (
+            new (details::shared) select_statement_type (
               conn_,
               object_traits::find_statement,
               id_image_binding_,
-              out_image_binding_));
+              select_image_binding_));
 
           find_->cached (true);
         }
@@ -295,7 +276,7 @@ namespace odb
               conn_,
               object_traits::update_statement,
               id_image_binding_,
-              in_image_binding_));
+              update_image_binding_));
 
           update_->cached (true);
         }
@@ -303,13 +284,13 @@ namespace odb
         return *update_;
       }
 
-      erase_statement_type&
+      delete_statement_type&
       erase_statement ()
       {
         if (erase_ == 0)
         {
           erase_.reset (
-            new (details::shared) erase_statement_type (
+            new (details::shared) delete_statement_type (
               conn_,
               object_traits::erase_statement,
               id_image_binding_));
@@ -340,33 +321,58 @@ namespace odb
       clear_delayed_ ();
 
     private:
+      // select = total
+      // insert = total - inverse
+      // update = total - inverse - id - readonly
+      //
+      static const std::size_t select_column_count =
+        object_traits::column_count;
+
+      static const std::size_t insert_column_count =
+        object_traits::column_count - object_traits::inverse_column_count;
+
+      static const std::size_t update_column_count = insert_column_count -
+        object_traits::id_column_count - object_traits::readonly_column_count;
+
+      static const std::size_t id_column_count =
+        object_traits::id_column_count;
+
+    private:
       container_statement_cache_type container_statement_cache_;
 
       image_type image_;
 
-      // In (send) binding. The last element is the id parameter.
+      // Select binding.
       //
-      std::size_t in_image_version_;
-      binding in_image_binding_;
-      bind in_image_bind_[object_traits::in_column_count + 1];
+      std::size_t select_image_version_;
+      binding select_image_binding_;
+      bind select_image_bind_[select_column_count];
+      bool select_image_truncated_[select_column_count];
 
-      // Out (receive) binding.
+      // Insert binding.
       //
-      std::size_t out_image_version_;
-      binding out_image_binding_;
-      bind out_image_bind_[object_traits::out_column_count];
-      bool out_image_truncated_[object_traits::out_column_count];
+      std::size_t insert_image_version_;
+      binding insert_image_binding_;
+      bind insert_image_bind_[insert_column_count];
 
-      // Id image binding (only in).
+      // Update binding. The suffix of the bind array is object id. We
+      // do it this way for consistency with other database runtimes.
+      //
+      std::size_t update_image_version_;
+      binding update_image_binding_;
+      bind update_image_bind_[update_column_count + id_column_count];
+
+      // Id image binding (only used as a parameter). Uses the suffix in
+      // the update bind.
       //
       id_image_type id_image_;
       std::size_t id_image_version_;
       binding id_image_binding_;
 
-      details::shared_ptr<persist_statement_type> persist_;
-      details::shared_ptr<find_statement_type> find_;
+      details::shared_ptr<insert_statement_type> persist_;
+      details::shared_ptr<select_statement_type> find_;
       details::shared_ptr<update_statement_type> update_;
-      details::shared_ptr<erase_statement_type> erase_;
+      details::shared_ptr<delete_statement_type> erase_;
 
       // Delayed loading.
       //
