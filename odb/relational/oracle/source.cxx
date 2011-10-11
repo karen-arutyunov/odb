@@ -415,7 +415,6 @@ namespace relational
           os << "std::size_t size (0);"
              << traits << "::set_image (" << endl
              << "i." << mi.var << "value," << endl
-             << "sizeof (i." << mi.var << "value)," << endl
              << "size," << endl
              << "is_null," << endl
              << member << ");"
@@ -664,7 +663,6 @@ namespace relational
           os << traits << "::set_value (" << endl
              << member << "," << endl
              << "i." << mi.var << "value," << endl
-             << "i." << mi.var << "size," << endl
              << "i." << mi.var << "indicator == -1);"
              << endl;
         }
