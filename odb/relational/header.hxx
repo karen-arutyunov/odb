@@ -394,69 +394,79 @@ namespace relational
 
         // Figure out column counts.
         //
-        size_t data_columns (1), cond_columns (1); // One for object id.
+        size_t data_columns, cond_columns;
 
-        switch (ck)
+        if (!abst)
         {
-        case ck_ordered:
+          type& idt (container_idt (m));
+
+          if (class_* idc = composite_wrapper (idt))
+            data_columns = cond_columns = column_count (*idc).total;
+          else
+            data_columns = cond_columns = 1;
+
+          switch (ck)
           {
-            // Add one for the index.
-            //
-            if (ordered)
+          case ck_ordered:
             {
-              data_columns++;
-
-              // Index is not currently used (see also bind()).
+              // Add one for the index.
               //
-              // cond_columns++;
+              if (ordered)
+              {
+                data_columns++;
+
+                // Index is not currently used (see also bind()).
+                //
+                // cond_columns++;
+              }
+              break;
             }
-            break;
+          case ck_map:
+          case ck_multimap:
+            {
+              // Add some for the key.
+              //
+              size_t n;
+
+              if (class_* kc = composite_wrapper (*kt))
+                n = column_count (*kc).total;
+              else
+                n = 1;
+
+              data_columns += n;
+
+              // Key is not currently used (see also bind()).
+              //
+              // cond_columns += n;
+
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              // Not currently used (see also bind())
+              //
+              // Value is also a key.
+              //
+              //if (class_* vc = composite_wrapper (vt))
+              //  cond_columns += column_count (*vc).total;
+              //else
+              //  cond_columns++;
+
+              break;
+            }
           }
-        case ck_map:
-        case ck_multimap:
-          {
-            // Add some for the key.
-            //
-            size_t n;
 
-            if (class_* kc = composite_wrapper (*kt))
-              n = in_column_count (*kc);
-            else
-              n = 1;
+          if (class_* vc = composite_wrapper (vt))
+            data_columns += column_count (*vc).total;
+          else
+            data_columns++;
 
-            data_columns += n;
-
-            // Key is not currently used (see also bind()).
-            //
-            // cond_columns += n;
-
-            break;
-          }
-        case ck_set:
-        case ck_multiset:
-          {
-            // Not currently used (see also bind())
-            //
-            // Value is also a key.
-            //
-            //if (class_* vc = composite_wrapper (vt))
-            //  cond_columns += in_column_count (*vc);
-            //else
-            //  cond_columns++;
-
-            break;
-          }
+          // Store column counts for the source generator.
+          //
+          m.set ("cond-column-count", cond_columns);
+          m.set ("data-column-count", data_columns);
         }
-
-        if (class_* vc = composite_wrapper (vt))
-          data_columns += in_column_count (*vc);
-        else
-          data_columns++;
-
-        // Store column counts for the source generator.
-        //
-        m.set ("cond-column-count", cond_columns);
-        m.set ("data-column-count", data_columns);
 
         os << "// " << m.name () << endl
            << "//" << endl
@@ -913,6 +923,8 @@ namespace relational
         bool auto_id (id ? id->count ("auto") : false);
         bool base_id (id ? &id->scope () != &c : false); // Comes from base.
 
+        column_count_type const& cc (column_count (c));
+
         os << "// " << c.name () << endl
            << "//" << endl;
 
@@ -1034,7 +1046,8 @@ namespace relational
         // bind (image_type)
         //
         os << "static void" << endl
-           << "bind (" << bind_vector << ", image_type&, bool);"
+           << "bind (" << bind_vector << ", image_type&, "
+           << db << "::statement_kind);"
            << endl;
 
         // bind (id_image_type)
@@ -1049,7 +1062,8 @@ namespace relational
         // init (image, object)
         //
         os << "static bool" << endl
-           << "init (image_type&, const object_type&);"
+           << "init (image_type&, const object_type&, " <<
+          db << "::statement_kind);"
            << endl;
 
         // init (object, image)
@@ -1104,18 +1118,23 @@ namespace relational
 
         // column_count
         //
-        os << "static const std::size_t in_column_count = " <<
-          in_column_count (c) << "UL;"
-           << "static const std::size_t out_column_count = " <<
-          out_column_count (c) << "UL;"
+        os << "static const std::size_t column_count = " << cc.total << "UL;"
+           << "static const std::size_t id_column_count = " << cc.id << "UL;"
+           << "static const std::size_t inverse_column_count = " <<
+          cc.inverse << "UL;"
+           << "static const std::size_t readonly_column_count = " <<
+          cc.readonly << "UL;"
            << endl;
 
         // Statements.
         //
         os << "static const char persist_statement[];"
-           << "static const char find_statement[];"
-           << "static const char update_statement[];"
-           << "static const char erase_statement[];";
+           << "static const char find_statement[];";
+
+        if (cc.total != cc.id + cc.inverse + cc.readonly)
+          os << "static const char update_statement[];";
+
+        os << "static const char erase_statement[];";
 
         if (options.generate_query ())
         {
@@ -1393,7 +1412,7 @@ namespace relational
         // column_count
         //
         os << "static const std::size_t column_count = " <<
-          out_column_count (c) << "UL;"
+          column_count (c).total << "UL;"
            << endl;
 
         // Statements.
@@ -1475,13 +1494,15 @@ namespace relational
         // bind (image_type)
         //
         os << "static void" << endl
-           << "bind (" << bind_vector << ", image_type&);"
+           << "bind (" << bind_vector << ", image_type&, " <<
+          db << "::statement_kind);"
            << endl;
 
         // init (image, value)
         //
         os << "static bool" << endl
-           << "init (image_type&, const value_type&);"
+           << "init (image_type&, const value_type&, " <<
+          db << "::statement_kind);"
            << endl;
 
         // init (value, image)

@@ -91,7 +91,10 @@ namespace relational
                << "//" << endl;
 
             if (inverse (mi.m, key_prefix_))
-              os << "if (out)"
+              os << "if (sk == statement_select)"
+                 << "{";
+            else if (id (mi.m) || readonly (mi.m))
+              os << "if (sk != statement_update)"
                  << "{";
           }
 
@@ -104,11 +107,43 @@ namespace relational
           if (var_override_.empty ())
           {
             if (semantics::class_* c = composite (mi.t))
-              os << "n += " << in_column_count (*c) << "UL;";
+
+            {
+              column_count_type const& cc (column_count (*c));
+
+              os << "n += " << cc.total << "UL";
+
+              // select = total
+              // insert = total - inverse
+              // update = total - inverse - readonly
+              //
+              if (cc.inverse != 0 || cc.readonly != 0)
+              {
+                os << " - (" << endl
+                   << "sk == statement_select ? 0 : ";
+
+                if (cc.inverse != 0)
+                  os << cc.inverse << "UL" << endl;
+
+                if (cc.readonly != 0)
+                {
+                  if (cc.inverse != 0)
+                    os << " + ";
+
+                  os << "(" << endl
+                     << "sk == statement_insert ? 0 : " <<
+                    cc.readonly << "UL)";
+                }
+
+                os << ")";
+              }
+
+              os << ";";
+            }
             else
               os << "n++;";
 
-            if (inverse (mi.m, key_prefix_))
+            if (inverse (mi.m, key_prefix_) || id (mi.m) || readonly (mi.m))
               os << "}";
             else
               os << endl;
@@ -119,7 +154,7 @@ namespace relational
         traverse_composite (member_info& mi)
         {
           os << "composite_value_traits< " << mi.fq_type () <<
-            " >::bind (b + n, " << arg << "." << mi.var << "value);";
+            " >::bind (b + n, " << arg << "." << mi.var << "value, sk);";
         }
 
         virtual void
@@ -229,7 +264,7 @@ namespace relational
              << b << ".callback = &" << arg << "." << mi.var <<
              "callback;"
              << b << ".context = &" << arg << "." << mi.var << "context;"
-             << "if (out)" << endl
+             << "if (sk == statement_select)" << endl
              << b << ".buffer = &" << arg << "." << mi.var << "lob;"
              << "else" << endl
              << b << ".size = reinterpret_cast<ub2*> (&" << arg << "." <<
@@ -263,7 +298,7 @@ namespace relational
         pre (member_info& mi)
         {
           // Ignore containers (they get their own table) and inverse
-          // object pointers (they are not present in the 'in' binding).
+          // object pointers (they are not present in this binding).
           //
           if (container (mi.t) || inverse (mi.m, key_prefix_))
             return false;
@@ -277,6 +312,11 @@ namespace relational
 
             os << "// " << name << endl
                << "//" << endl;
+
+            if (id (mi.m) || readonly (mi.m))
+              // The block scope is added later, if necessary.
+              //
+              os << "if (sk == statement_insert)";
           }
 
           // If this is a wrapped composite value, then we need to
@@ -388,7 +428,8 @@ namespace relational
         {
           os << traits << "::init (" << endl
              << "i." << mi.var << "value," << endl
-             << member << ");";
+             << member << "," << endl
+             << "sk);";
         }
 
         virtual void

@@ -10,6 +10,14 @@
 
 namespace relational
 {
+  enum statement_kind
+  {
+    statement_select,
+    statement_insert,
+    statement_update,
+    statement_where   // WHERE clause.
+  };
+
   class context: public virtual ::context
   {
   public:

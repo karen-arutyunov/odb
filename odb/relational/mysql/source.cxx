@@ -77,7 +77,7 @@ namespace relational
           // When we store a ENUM column in the MySQL database, if we bind
           // an integer parameter, then it is treated as an index and if we
           // bind a string, then it is treated as a enumerator. Everything
-          // would have worked well if the same logic applied to the load
+          // would have worked well if the same logic applied to the select
           // operation. That is, if we bind integer, then the database sends
           // the index and if we bind string then the database sends the
           // enumerator. Unfortunately, MySQL always sends the enumerator
@@ -112,7 +112,8 @@ namespace relational
           // to value_traits.
           //
 
-          if (!out_ || column_sql_type (m, key_prefix).type != sql_type::ENUM)
+          if (sk_ != statement_select ||
+              column_sql_type (m, key_prefix).type != sql_type::ENUM)
           {
             base::column (m, key_prefix, table, column);
             return;
@@ -197,7 +198,10 @@ namespace relational
                << "//" << endl;
 
             if (inverse (mi.m, key_prefix_))
-              os << "if (out)"
+              os << "if (sk == statement_select)"
+                 << "{";
+            else if (id (mi.m) || readonly (mi.m))
+              os << "if (sk != statement_update)"
                  << "{";
           }
 
@@ -210,11 +214,42 @@ namespace relational
           if (var_override_.empty ())
           {
             if (semantics::class_* c = composite (mi.t))
-              os << "n += " << in_column_count (*c) << "UL;";
+            {
+              column_count_type const& cc (column_count (*c));
+
+              os << "n += " << cc.total << "UL";
+
+              // select = total
+              // insert = total - inverse
+              // update = total - inverse - readonly
+              //
+              if (cc.inverse != 0 || cc.readonly != 0)
+              {
+                os << " - (" << endl
+                   << "sk == statement_select ? 0 : ";
+
+                if (cc.inverse != 0)
+                  os << cc.inverse << "UL" << endl;
+
+                if (cc.readonly != 0)
+                {
+                  if (cc.inverse != 0)
+                    os << " + ";
+
+                  os << "(" << endl
+                     << "sk == statement_insert ? 0 : " <<
+                    cc.readonly << "UL)";
+                }
+
+                os << ")";
+              }
+
+              os << ";";
+            }
             else
               os << "n++;";
 
-            if (inverse (mi.m, key_prefix_))
+            if (inverse (mi.m, key_prefix_) || id (mi.m) || readonly (mi.m))
               os << "}";
             else
               os << endl;
@@ -225,7 +260,7 @@ namespace relational
         traverse_composite (member_info& mi)
         {
           os << "composite_value_traits< " << mi.fq_type () <<
-            " >::bind (b + n, " << arg << "." << mi.var << "value);";
+            " >::bind (b + n, " << arg << "." << mi.var << "value, sk);";
         }
 
         virtual void
@@ -382,7 +417,7 @@ namespace relational
         post (member_info& mi)
         {
           if (semantics::class_* c = composite (mi.t))
-            index_ += in_column_count (*c);
+            index_ += column_count (*c).total;
           else
             index_++;
         }
@@ -514,7 +549,7 @@ namespace relational
         pre (member_info& mi)
         {
           // Ignore containers (they get their own table) and inverse
-          // object pointers (they are not present in the 'in' binding).
+          // object pointers (they are not present in this binding).
           //
           if (container (mi.t) || inverse (mi.m, key_prefix_))
             return false;
@@ -528,6 +563,11 @@ namespace relational
 
             os << "// " << name << endl
                << "//" << endl;
+
+            if (id (mi.m) || readonly (mi.m))
+              // The block scope is added later, if necessary.
+              //
+              os << "if (sk == statement_insert)";
           }
 
           // If this is a wrapped composite value, then we need to
@@ -637,9 +677,12 @@ namespace relational
         virtual void
         traverse_composite (member_info& mi)
         {
+          // Should be a single statement or a block.
+          //
           os << "if (" << traits << "::init (" << endl
              << "i." << mi.var << "value," << endl
-             << member << "))"
+             << member << "," << endl
+             << "sk))"
              << "{"
              << "grew = true;"
              << "}";

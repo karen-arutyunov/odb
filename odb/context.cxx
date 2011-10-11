@@ -968,61 +968,61 @@ namespace
 {
   struct column_count_impl: object_members_base
   {
-    column_count_impl (bool out)
-        : out_ (out), count_ (0)
-    {
-    }
+    typedef context::column_count_type count_type;
 
     virtual void
     traverse (semantics::class_& c)
     {
-      char const* key (out_ ? "out-column-count" : "in-column-count");
+      if (c.count ("column-count"))
+      {
+        count_type const& bc (c.get<count_type> ("column-count"));
 
-      if (c.count (key))
-        count_ += c.get<size_t> (key);
+        c_.total += bc.total;
+        c_.id += bc.id;
+        c_.inverse += bc.inverse;
+        c_.readonly += bc.readonly;
+      }
       else
       {
-        size_t n (count_);
+        count_type t (c_);
         object_members_base::traverse (c);
-        c.set (key, count_ - n);
+
+        t.total = c_.total - t.total;
+        t.id = c_.id - t.id;
+        t.inverse = c_.inverse - t.inverse;
+        t.readonly = c_.readonly - t.readonly;
+
+        c.set ("column-count", t);
       }
     }
 
     virtual void
     traverse_simple (semantics::data_member& m)
     {
-      if (out_ || !context::inverse (m))
-        count_++;
+      c_.total++;
+
+      if (m.count ("id"))
+        c_.id++;
+
+      if (context::inverse (m))
+        c_.inverse++;
     }
 
   private:
-    bool out_;
-    size_t count_;
+    count_type c_;
   };
 }
 
-size_t context::
-in_column_count (semantics::class_& c)
+context::column_count_type context::
+column_count (semantics::class_& c)
 {
-  if (!c.count ("in-column-count"))
+  if (!c.count ("column-count"))
   {
-    column_count_impl t (false);
+    column_count_impl t;
     t.traverse (c);
   }
 
-  return c.get<size_t> ("in-column-count");
-}
-
-size_t context::
-out_column_count (semantics::class_& c)
-{
-  if (!c.count ("out-column-count"))
-  {
-    column_count_impl t (true);
-    t.traverse (c);
-  }
-
-  return c.get<size_t> ("out-column-count");
+  return c.get<column_count_type> ("column-count");
 }
 
 namespace

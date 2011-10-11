@@ -216,7 +216,7 @@ public:
   upcase (string const&);
 
 public:
-  semantics::type&
+  static semantics::type&
   member_type (semantics::data_member& m, string const& key_prefix);
 
   // Predicates.
@@ -232,12 +232,6 @@ public:
   view (semantics::type& t)
   {
     return t.count ("view");
-  }
-
-  static bool
-  transient (semantics::data_member& m)
-  {
-    return m.count ("transient");
   }
 
   // Check whether the type is a wrapper. Return the wrapped type if
@@ -320,6 +314,24 @@ public:
     // the database sense.
     //
     return c.abstract () || c.count ("abstract");
+  }
+
+  static bool
+  transient (semantics::data_member& m)
+  {
+    return m.count ("transient");
+  }
+
+  static bool
+  id (semantics::data_member& m)
+  {
+    return m.count ("id");
+  }
+
+  bool
+  readonly (semantics::data_member& m)
+  {
+    return m.count ("readonly");
   }
 
   bool
@@ -412,11 +424,18 @@ public:
   // Counts and other information.
   //
 public:
-  static size_t
-  in_column_count (semantics::class_&);
+  struct column_count_type
+  {
+    column_count_type (): total (0), id (0), inverse (0), readonly (0) {}
 
-  static size_t
-  out_column_count (semantics::class_&);
+    size_t total;
+    size_t id;
+    size_t inverse;
+    size_t readonly;
+  };
+
+  static column_count_type
+  column_count (semantics::class_&);
 
   static semantics::data_member*
   id_member (semantics::class_& c)
@@ -480,9 +499,9 @@ public:
   }
 
   static semantics::type&
-  container_idt (semantics::type& c)
+  container_idt (semantics::data_member& m)
   {
-    return *c.get<semantics::type*> ("id-tree-type");
+    return member_type (m, "id");
   }
 
   static semantics::type&
@@ -578,7 +597,7 @@ private:
   composite_ (semantics::class_&);
 
   template <typename X>
-  X
+  static X
   indirect_value (semantics::context const& c, string const& key)
   {
     typedef X (*func) ();

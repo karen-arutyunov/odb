@@ -104,16 +104,21 @@ namespace relational
 
       struct statement_oids: object_columns_base, context
       {
-        statement_oids (bool out): out_ (out) {}
+        statement_oids (statement_kind sk): sk_ (sk) {}
 
         virtual bool
         traverse_column (semantics::data_member& m,
                          std::string const&,
                          bool first)
         {
-          // Ignore inverse object pointers if we are generating 'in' columns.
+          // Ignore certain columns depending on what kind statement we are
+          // generating. See object_columns in common source generator for
+          // details.
           //
-          if (!out_ && inverse (m) != 0)
+          if (inverse (m) && sk_ != statement_select)
+            return false;
+
+          if ((id (m) || readonly (m)) && sk_ == statement_update)
             return false;
 
           if (!first)
@@ -125,7 +130,7 @@ namespace relational
         }
 
       private:
-        bool out_;
+        statement_kind sk_;
       };
 
       //
@@ -159,7 +164,10 @@ namespace relational
                << "//" << endl;
 
             if (inverse (mi.m, key_prefix_))
-              os << "if (out)"
+              os << "if (sk == statement_select)"
+                 << "{";
+            else if (id (mi.m) || readonly (mi.m))
+              os << "if (sk != statement_update)"
                  << "{";
           }
 
@@ -172,11 +180,42 @@ namespace relational
           if (var_override_.empty ())
           {
             if (semantics::class_* c = composite (mi.t))
-              os << "n += " << in_column_count (*c) << "UL;";
+            {
+              column_count_type const& cc (column_count (*c));
+
+              os << "n += " << cc.total << "UL";
+
+              // select = total
+              // insert = total - inverse
+              // update = total - inverse - readonly
+              //
+              if (cc.inverse != 0 || cc.readonly != 0)
+              {
+                os << " - (" << endl
+                   << "sk == statement_select ? 0 : ";
+
+                if (cc.inverse != 0)
+                  os << cc.inverse << "UL" << endl;
+
+                if (cc.readonly != 0)
+                {
+                  if (cc.inverse != 0)
+                    os << " + ";
+
+                  os << "(" << endl
+                     << "sk == statement_insert ? 0 : " <<
+                    cc.readonly << "UL)";
+                }
+
+                os << ")";
+              }
+
+              os << ";";
+            }
             else
               os << "n++;";
 
-            if (inverse (mi.m, key_prefix_))
+            if (inverse (mi.m, key_prefix_) || id (mi.m) || readonly (mi.m))
               os << "}";
             else
               os << endl;
@@ -187,7 +226,7 @@ namespace relational
         traverse_composite (member_info& mi)
         {
           os << "composite_value_traits< " << mi.fq_type () <<
-            " >::bind (b + n, " << arg << "." << mi.var << "value);";
+            " >::bind (b + n, " << arg << "." << mi.var << "value, sk);";
         }
 
         virtual void
@@ -309,7 +348,7 @@ namespace relational
         post (member_info& mi)
         {
           if (semantics::class_* c = composite (mi.t))
-            index_ += in_column_count (*c);
+            index_ += column_count (*c).total;
           else
             index_++;
         }
@@ -415,7 +454,7 @@ namespace relational
         pre (member_info& mi)
         {
           // Ignore containers (they get their own table) and inverse
-          // object pointers (they are not present in the 'in' binding).
+          // object pointers (they are not present in this binding).
           //
           if (container (mi.t) || inverse (mi.m, key_prefix_))
             return false;
@@ -429,6 +468,11 @@ namespace relational
 
             os << "// " << name << endl
                << "//" << endl;
+
+            if (id (mi.m) || readonly (mi.m))
+              // The block scope is added later, if necessary.
+              //
+              os << "if (sk == statement_insert)";
           }
 
           // If this is a wrapped composite value, then we need to
@@ -538,9 +582,12 @@ namespace relational
         virtual void
         traverse_composite (member_info& mi)
         {
+          // Should be a single statement or a block.
+          //
           os << "if (" << traits << "::init (" << endl
              << "i." << mi.var << "value," << endl
-             << member << "))"
+             << member << "," << endl
+             << "sk))"
              << "{"
              << "grew = true;"
              << "}";
@@ -887,21 +934,28 @@ namespace relational
           if (abstract (c))
             return;
 
+          column_count_type const& cc (column_count (c));
+
           string const& n (c.fq_name ());
           string traits ("access::object_traits< " + n + " >::");
           string const& fn (flat_name (n));
           string name_decl ("const char " + traits);
 
           os << name_decl << endl
-             << "persist_statement_name[] = " << strlit (fn + "_persist") << ";"
+             << "persist_statement_name[] = " << strlit (fn + "_persist") <<
+            ";"
              << endl
              << name_decl << endl
              << "find_statement_name[] = " << strlit (fn + "_find") << ";"
-             << endl
-             << name_decl << endl
-             << "update_statement_name[] = " << strlit (fn + "_update") << ";"
-             << endl
-             << name_decl << endl
+             << endl;
+
+          if (cc.total != cc.id + cc.inverse + cc.readonly)
+            os << name_decl << endl
+               << "update_statement_name[] = " << strlit (fn + "_update") <<
+              ";"
+               << endl;
+
+          os << name_decl << endl
              << "erase_statement_name[] = " << strlit (fn + "_erase") << ";"
              << endl;
 
@@ -930,7 +984,7 @@ namespace relational
                << "persist_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st (false);
+            instance<statement_oids> st (statement_insert);
             st->traverse (c);
 
             os << "};";
@@ -943,7 +997,7 @@ namespace relational
                << "find_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st (true);
+            instance<statement_oids> st (statement_select);
             st->traverse_column (*id_m, "", true);
 
             os << "};";
@@ -951,14 +1005,21 @@ namespace relational
 
           // update_statement_types.
           //
+          if (cc.total != cc.id + cc.inverse + cc.readonly)
           {
             os << oid_decl << endl
                << "update_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st (false);
-            st->traverse (c);
-            st->traverse_column (*id_m, "", false);
+            {
+              instance<statement_oids> st (statement_update);
+              st->traverse (c);
+            }
+
+            {
+              instance<statement_oids> st (statement_where);
+              st->traverse_column (*id_m, "", false);
+            }
 
             os << "};";
           }
@@ -970,7 +1031,7 @@ namespace relational
                << "erase_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st (true);
+            instance<statement_oids> st (statement_where);
             st->traverse_column (*id_m, "", true);
 
             os << "};";
@@ -1130,7 +1191,7 @@ namespace relational
                   if (semantics::class_* ktc =
                       composite_wrapper (container_kt (t)))
                   {
-                    instance<statement_oids> st (false);
+                    instance<statement_oids> st (statement_insert);
                     st->traverse (m, *ktc, "key", "key");
                     os << ",";
                   }
@@ -1148,7 +1209,7 @@ namespace relational
 
               if (semantics::class_* vtc = composite_wrapper (vt))
               {
-                instance <statement_oids> st (false);
+                instance <statement_oids> st (statement_insert);
                 st->traverse (m, *vtc, "value", "value");
               }
               else

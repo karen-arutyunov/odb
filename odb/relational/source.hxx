@@ -49,17 +49,17 @@ namespace relational
     {
       typedef object_columns base;
 
-      object_columns (bool out,
+      object_columns (statement_kind sk,
                       bool last = true,
                       query_parameters* param = 0)
-          : out_ (out), param_ (param), last_ (last)
+          : sk_ (sk), param_ (param), last_ (last)
       {
       }
 
       object_columns (std::string const& table_qname,
-                      bool out,
+                      statement_kind sk,
                       bool last = true)
-          : out_ (out), param_ (0), table_name_ (table_qname), last_ (last)
+          : sk_ (sk), param_ (0), table_name_ (table_qname), last_ (last)
       {
       }
 
@@ -70,9 +70,15 @@ namespace relational
       {
         semantics::data_member* im (inverse (m));
 
-        // Ignore inverse object pointers if we are generating 'in' columns.
+        // Ignore certain columns depending on what kind statement we are
+        // generating. Columns corresponding to the inverse members are
+        // only present in the select statements while the id and readonly
+        // columns are not present in the update statements.
         //
-        if (im != 0 && !out_)
+        if (im != 0 && sk_ != statement_select)
+          return false;
+
+        if ((id (m) || readonly (m)) && sk_ == statement_update)
           return false;
 
         if (!first)
@@ -155,7 +161,7 @@ namespace relational
       }
 
     protected:
-      bool out_;
+      statement_kind sk_;
       query_parameters* param_;
       string line_;
       string table_name_;
@@ -540,14 +546,39 @@ namespace relational
         os << "// " << c.name () << " base" << endl
            << "//" << endl;
 
-        if (obj)
-          os << "object_traits< " << c.fq_name () <<
-            " >::bind (b + n, i, out);";
-        else
-          os << "composite_value_traits< " << c.fq_name () <<
-            " >::bind (b + n, i);";
+        os << (obj ? "object" : "composite_value") << "_traits< " <<
+          c.fq_name () << " >::bind (b + n, i, sk);";
 
-        os << "n += " << in_column_count (c) << "UL;"
+        column_count_type const& cc (column_count (c));
+
+        os << "n += " << cc.total << "UL";
+
+        // select = total
+        // insert = total - inverse
+        // update = total - inverse - id - readonly
+        //
+        if (cc.inverse != 0 || cc.id != 0 || cc.readonly != 0)
+        {
+          os << " - (" << endl
+             << "sk == statement_select ? 0 : ";
+
+          if (cc.inverse != 0)
+            os << cc.inverse << "UL" << endl;
+
+          if (cc.id != 0 || cc.readonly != 0)
+          {
+            if (cc.inverse != 0)
+              os << " + ";
+
+            os << "(" << endl
+               << "sk == statement_insert ? 0 : " <<
+              cc.id + cc.readonly << "UL)";
+          }
+
+          os << ")";
+        }
+
+        os << ";"
            << endl;
       }
     };
@@ -602,7 +633,7 @@ namespace relational
            << "grew = true;"
            << endl;
 
-        index_ += in_column_count (c);
+        index_ += column_count (c).total;
       }
 
     protected:
@@ -655,7 +686,7 @@ namespace relational
         os << "// " << c.name () << " base" << endl
            << "//" << endl
            << "if (" << (obj ? "object" : "composite_value") << "_traits< " <<
-          c.fq_name () << " >::init (i, o))" << endl
+          c.fq_name () << " >::init (i, o, sk))" << endl
            << "grew = true;"
            << endl;
       }
@@ -905,7 +936,7 @@ namespace relational
               {
                 if (ordered)
                 {
-                  instance<object_columns> t (table, false, false);
+                  instance<object_columns> t (table, statement_select, false);
                   string const& col (column_qname (m, "index", "index"));
                   t->column (m, "index", table, col);
                   t->flush ();
@@ -915,7 +946,7 @@ namespace relational
             case ck_map:
             case ck_multimap:
               {
-                instance<object_columns> t (table, false, false);
+                instance<object_columns> t (table, statement_select, false);
 
                 if (semantics::class_* ckt = composite_wrapper (*kt))
                   t->traverse (m, *ckt, "key", "key");
@@ -934,7 +965,7 @@ namespace relational
               }
             }
 
-            instance<object_columns> t (table, false);
+            instance<object_columns> t (table, statement_select);
 
             if (semantics::class_* cvt = composite_wrapper (vt))
               t->traverse (m, *cvt, "value", "value");
@@ -982,7 +1013,7 @@ namespace relational
               {
                 if (ordered)
                 {
-                  instance<object_columns> t (false, false);
+                  instance<object_columns> t (statement_insert, false);
                   t->column (m, "index", "", column_qname (m, "index", "index"));
                   t->flush ();
                 }
@@ -991,7 +1022,7 @@ namespace relational
             case ck_map:
             case ck_multimap:
               {
-                instance<object_columns> t (false, false);
+                instance<object_columns> t (statement_insert, false);
 
                 if (semantics::class_* ckt = composite_wrapper (*kt))
                   t->traverse (m, *ckt, "key", "key");
@@ -1009,7 +1040,7 @@ namespace relational
               }
             }
 
-            instance<object_columns> t (false);
+            instance<object_columns> t (statement_insert);
 
             if (semantics::class_* cvt = composite_wrapper (vt))
               t->traverse (m, *cvt, "value", "value");
@@ -1089,6 +1120,8 @@ namespace relational
           // Index/key is currently not used (see also cond_column_count).
           //
 #if 0
+          // Would need statement_kind if this is enabled.
+          //
           switch (ck)
           {
           case ck_ordered:
@@ -1135,6 +1168,15 @@ namespace relational
              << "std::size_t id_size," << endl
              << "data_image_type& d)"
              << "{"
+             << "using namespace " << db << ";"
+             << endl
+            // In the case of containers, insert and select column sets are
+            // the same since we can't have inverse members as container
+            // elements.
+            //
+             << "statement_kind sk (statement_select);"
+             << "ODB_POTENTIALLY_UNUSED (sk);"
+             << endl
              << "size_t n (0);"
              << endl;
 
@@ -1170,7 +1212,7 @@ namespace relational
               bm->traverse (m);
 
               if (semantics::class_* c = composite_wrapper (*kt))
-                os << "n += " << in_column_count (*c) << "UL;"
+                os << "n += " << column_count (*c).total << "UL;"
                    << endl;
               else
                 os << "n++;"
@@ -1263,11 +1305,36 @@ namespace relational
                   "const value_type& v)";
               else
                 os << "init (data_image_type& i, const value_type& v)";
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              os << "init (data_image_type& i, const key_type& k, " <<
+                "const value_type& v)";
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              os << "init (data_image_type& i, const value_type& v)";
+              break;
+            }
+          }
 
-              os << "{"
-                 << "bool grew (false);"
-                 << endl;
+          os << "{"
+             << "using namespace " << db << ";"
+             << endl
+             << "statement_kind sk (statement_insert);"
+             << "ODB_POTENTIALLY_UNUSED (sk);"
+             << endl
+             << "bool grew (false);"
+             << endl;
 
+          switch (ck)
+          {
+          case ck_ordered:
+            {
               if (ordered)
               {
                 os << "// index" << endl
@@ -1277,18 +1344,12 @@ namespace relational
                   "index_", "j", *it, "index_type", "index");
                 im->traverse (m);
               }
-
               break;
             }
           case ck_map:
           case ck_multimap:
             {
-              os << "init (data_image_type& i, const key_type& k, " <<
-                "const value_type& v)"
-                 << "{"
-                 << "bool grew (false);"
-                 << endl
-                 << "// key" << endl
+              os << "// key" << endl
                  << "//" << endl;
 
               instance<init_image_member> im (
@@ -1300,11 +1361,6 @@ namespace relational
           case ck_set:
           case ck_multiset:
             {
-              os << "init (data_image_type& i, const value_type& v)"
-                 << "{"
-                 << "bool grew (false);"
-                 << endl;
-
               break;
             }
           }
@@ -2124,6 +2180,8 @@ namespace relational
           grow_id = id ? context::grow (*id) : false;
         }
 
+        column_count_type const& cc (column_count (c));
+
         os << "// " << c.name () << endl
            << "//" << endl
            << endl;
@@ -2199,9 +2257,12 @@ namespace relational
         // bind (image_type)
         //
         os << "void " << traits << "::" << endl
-           << "bind (" << bind_vector << " b, image_type& i, bool out)"
+           << "bind (" << bind_vector << " b, image_type& i, " <<
+          db << "::statement_kind sk)"
            << "{"
-           << "ODB_POTENTIALLY_UNUSED (out);"
+           << "ODB_POTENTIALLY_UNUSED (sk);"
+           << endl
+           << "using namespace " << db << ";"
            << endl
            << "std::size_t n (0);"
            << endl;
@@ -2226,10 +2287,14 @@ namespace relational
         // init (image, object)
         //
         os << "bool " << traits << "::" << endl
-           << "init (image_type& i, const object_type& o)"
+           << "init (image_type& i, const object_type& o, " <<
+          db << "::statement_kind sk)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (i);"
            << "ODB_POTENTIALLY_UNUSED (o);"
+           << "ODB_POTENTIALLY_UNUSED (sk);"
+           << endl
+           << "using namespace " << db << ";"
            << endl
            << "bool grew (false);"
            << endl;
@@ -2321,7 +2386,7 @@ namespace relational
             "=" << endl
              << strlit ("INSERT INTO " + table_qname(c) + " (") << endl;
 
-          instance<object_columns> ct (false);
+          instance<object_columns> ct (statement_insert);
           ct->traverse (c);
 
           string values;
@@ -2343,7 +2408,7 @@ namespace relational
           os << "const char " << traits << "::find_statement[] =" << endl
              << strlit ("SELECT ") << endl;
 
-          instance<object_columns> t (table, true);
+          instance<object_columns> t (table, statement_select);
           t->traverse (c);
 
           os << strlit (" FROM " + table) << endl;
@@ -2361,13 +2426,14 @@ namespace relational
 
         // update_statement
         //
+        if (cc.total != cc.id + cc.inverse + cc.readonly)
         {
           os << "const char " << traits << "::update_statement[] " <<
             "=" << endl
              << strlit ("UPDATE " + table + " SET ") << endl;
 
           instance<query_parameters> qp;
-          instance<object_columns> t (false, true, qp.get ());
+          instance<object_columns> t (statement_update, true, qp.get ());
           t->traverse (c);
 
           os << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
@@ -2396,7 +2462,7 @@ namespace relational
              << strlit ("SELECT ") << endl;
 
           {
-            instance<object_columns> oc (table, true);
+            instance<object_columns> oc (table, statement_select);
             oc->traverse (c);
           }
 
@@ -2441,9 +2507,9 @@ namespace relational
            << "object_statements< object_type >& sts (" << endl
            << "conn.statement_cache ().find_object<object_type> ());"
            << "image_type& im (sts.image ());"
-           << "binding& imb (sts.in_image_binding ());"
+           << "binding& imb (sts.insert_image_binding ());"
            << endl
-           << "if (init (im, obj))" << endl
+           << "if (init (im, obj, statement_insert))" << endl
            << "im.version++;"
            << endl;
 
@@ -2455,10 +2521,11 @@ namespace relational
           os << endl;
         }
 
-        os << "if (im.version != sts.in_image_version () || imb.version == 0)"
+        os << "if (im.version != sts.insert_image_version () || " <<
+          "imb.version == 0)"
            << "{"
-           << "bind (imb.bind, im, false);"
-           << "sts.in_image_version (im.version);"
+           << "bind (imb.bind, im, statement_insert);"
+           << "sts.insert_image_version (im.version);"
            << "imb.version++;"
            << "}"
            << "insert_statement& st (sts.persist_statement ());"
@@ -2504,42 +2571,59 @@ namespace relational
            << "conn.statement_cache ().find_object<object_type> ());"
            << endl;
 
-        // Initialize id image.
-        //
-        os << "id_image_type& i (sts.id_image ());"
-           << "init (i, obj." << id->name () << ");"
-           << endl;
+        if (cc.total != cc.id + cc.inverse + cc.readonly)
+        {
+          // Initialize id image.
+          //
+          os << "id_image_type& i (sts.id_image ());"
+             << "init (i, obj." << id->name () << ");"
+             << endl;
 
-        os << "binding& idb (sts.id_image_binding ());"
-           << "if (i.version != sts.id_image_version () || idb.version == 0)"
-           << "{"
-           << "bind (idb.bind, i);"
-           << "sts.id_image_version (i.version);"
-           << "idb.version++;"
-           << "}";
+          os << "binding& idb (sts.id_image_binding ());"
+             << "if (i.version != sts.id_image_version () || idb.version == 0)"
+             << "{"
+             << "bind (idb.bind, i);"
+             << "sts.id_image_version (i.version);"
+             << "idb.version++;"
+             << "}";
 
-        // Initialize data image.
-        //
-        os << "image_type& im (sts.image ());"
-           << "binding& imb (sts.in_image_binding ());"
-           << endl
-           << "if (init (im, obj))" << endl
-           << "im.version++;"
-           << endl
-           << "if (im.version != sts.in_image_version () || imb.version == 0)"
-           << "{"
-           << "bind (imb.bind, im, false);"
-           << "sts.in_image_version (im.version);"
-           << "imb.version++;"
-           << "}"
-           << "sts.update_statement ().execute ();";
+          // Initialize data image.
+          //
+          os << "image_type& im (sts.image ());"
+             << "binding& imb (sts.update_image_binding ());"
+             << endl
+             << "if (init (im, obj, statement_update))" << endl
+             << "im.version++;"
+             << endl
+             << "if (im.version != sts.update_image_version () || " <<
+            "imb.version == 0)"
+             << "{"
+             << "bind (imb.bind, im, statement_update);"
+             << "sts.update_image_version (im.version);"
+             << "imb.version++;"
+             << "}"
+             << "sts.update_statement ().execute ();";
+        }
+        else
+        {
+          // We don't have any columns to update. Note that we still have
+          // to make sure this object exists in the database. For that we
+          // will run the SELECT query using the find_() function.
+          //
+          os << "if (!find_ (sts, obj." << id->name () << "))" << endl
+             << "throw object_not_persistent ();";
 
           if (straight_containers)
-          {
-            os << endl;
-            instance<container_calls> t (container_calls::update_call);
-            t->traverse (c);
-          }
+            os << endl
+               << "binding& idb (sts.id_image_binding ());";
+        }
+
+        if (straight_containers)
+        {
+          os << endl;
+          instance<container_calls> t (container_calls::update_call);
+          t->traverse (c);
+        }
 
         os << "}";
 
@@ -2702,12 +2786,13 @@ namespace relational
         // Rebind data image.
         //
         os << "image_type& im (sts.image ());"
-           << "binding& imb (sts.out_image_binding ());"
+           << "binding& imb (sts.select_image_binding ());"
            << endl
-           << "if (im.version != sts.out_image_version () || imb.version == 0)"
+           << "if (im.version != sts.select_image_version () || " <<
+          "imb.version == 0)"
            << "{"
-           << "bind (imb.bind, im, true);"
-           << "sts.out_image_version (im.version);"
+           << "bind (imb.bind, im, statement_select);"
+           << "sts.select_image_version (im.version);"
            << "imb.version++;"
            << "}"
            << "select_statement& st (sts.find_statement ());"
@@ -2718,13 +2803,13 @@ namespace relational
           os << endl
              << "if (r == select_statement::truncated)"
              << "{"
-             << "if (grow (im, sts.out_image_truncated ()))" << endl
+             << "if (grow (im, sts.select_image_truncated ()))" << endl
              << "im.version++;"
              << endl
-             << "if (im.version != sts.out_image_version ())"
+             << "if (im.version != sts.select_image_version ())"
              << "{"
-             << "bind (imb.bind, im, true);"
-             << "sts.out_image_version (im.version);"
+             << "bind (imb.bind, im, statement_select);"
+             << "sts.select_image_version (im.version);"
              << "imb.version++;"
              << "st.refetch ();"
              << "}"
@@ -2768,12 +2853,13 @@ namespace relational
              << "conn.statement_cache ().find_object<object_type> ());"
              << endl
              << "image_type& im (sts.image ());"
-             << "binding& imb (sts.out_image_binding ());"
+             << "binding& imb (sts.select_image_binding ());"
              << endl
-             << "if (im.version != sts.out_image_version () || imb.version == 0)"
+             << "if (im.version != sts.select_image_version () || " <<
+            "imb.version == 0)"
              << "{"
-             << "bind (imb.bind, im, true);"
-             << "sts.out_image_version (im.version);"
+             << "bind (imb.bind, im, statement_select);"
+             << "sts.select_image_version (im.version);"
              << "imb.version++;"
              << "}"
              << "shared_ptr<select_statement> st (" << endl
@@ -3077,8 +3163,10 @@ namespace relational
         os << "void " << traits << "::" << endl
            << "bind (" << bind_vector << " b, image_type& i)"
            << "{"
-           << "bool out (true);" //@@ Try to get rid of this.
-           << "ODB_POTENTIALLY_UNUSED (out);"
+           << "using namespace " << db << ";"
+           << endl
+           << db << "::statement_kind sk (statement_select);"
+           << "ODB_POTENTIALLY_UNUSED (sk);"
            << endl
            << "std::size_t n (0);"
            << endl;
@@ -3765,10 +3853,14 @@ namespace relational
         // bind (image_type)
         //
         os << "void " << traits << "::" << endl
-           << "bind (" << bind_vector << " b, image_type& i)"
+           << "bind (" << bind_vector << " b, image_type& i, " <<
+          db << "::statement_kind sk)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (b);"
            << "ODB_POTENTIALLY_UNUSED (i);"
+           << "ODB_POTENTIALLY_UNUSED (sk);"
+           << endl
+           << "using namespace " << db << ";"
            << endl
            << "std::size_t n (0);"
            << "ODB_POTENTIALLY_UNUSED (n);"
@@ -3782,10 +3874,14 @@ namespace relational
         // init (image, value)
         //
         os << "bool " << traits << "::" << endl
-           << "init (image_type& i, const value_type& o)"
+           << "init (image_type& i, const value_type& o, " <<
+          db << "::statement_kind sk)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (i);"
            << "ODB_POTENTIALLY_UNUSED (o);"
+           << "ODB_POTENTIALLY_UNUSED (sk);"
+           << endl
+           << "using namespace " << db << ";"
            << endl
            << "bool grew (false);"
            << endl;
@@ -3867,7 +3963,8 @@ namespace relational
 
         os << endl;
 
-        os << "#include <odb/" << db << "/traits.hxx>" << endl
+        os << "#include <odb/" << db << "/binding.hxx>" << endl
+           << "#include <odb/" << db << "/traits.hxx>" << endl
            << "#include <odb/" << db << "/database.hxx>" << endl
            << "#include <odb/" << db << "/transaction.hxx>" << endl
            << "#include <odb/" << db << "/connection.hxx>" << endl
