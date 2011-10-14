@@ -49,7 +49,7 @@ namespace relational
           "oracle::bind::nstring", // NCHAR
           "oracle::bind::string",  // VARCHAR2
           "oracle::bind::nstring", // NVARCHAR2
-          "oracle::bind::string"   // RAW
+          "oracle::bind::raw"      // RAW
         };
 
         const char* lob_buffer_types[] =
