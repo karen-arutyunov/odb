@@ -170,7 +170,8 @@ namespace relational
               !mi.st->byte_semantics)
             n *= 4;
 
-          if (t == sql_type::CHAR  || t == sql_type::NCHAR ||
+          if (t == sql_type::CHAR  ||
+              t == sql_type::NCHAR ||
               t == sql_type::RAW)
             n = n > 2000 ? 2000 : n;
           else if (t == sql_type::VARCHAR2 || t == sql_type::NVARCHAR2)
@@ -187,7 +188,8 @@ namespace relational
         {
           os << image_type << " " << mi.var << "callback;"
              << "sb2 " << mi.var << "indicator;"
-             << "auto_descriptor<OCILobLocator> " << mi.var << "lob;"
+             << "oracle::auto_descriptor<OCILobLocator> " << mi.var <<
+            "lob;"
              << "void* " << mi.var << "context;"
              << "ub4 " << mi.var << "position_context;"
              << "char " << mi.var << "buffer[4096];"

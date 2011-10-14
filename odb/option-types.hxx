@@ -69,9 +69,7 @@ operator<< (std::ostream&, schema_format);
 //
 struct oracle_version
 {
-  oracle_version (): major_ (0), minor_ (0)
-  {
-  }
+  oracle_version (): major_ (0), minor_ (0) {}
 
   oracle_version (unsigned short major, unsigned short minor)
       : major_ (major), minor_ (minor)
