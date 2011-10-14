@@ -1210,7 +1210,7 @@ namespace relational
           switch (ck)
           {
           case ck_ordered:
-            {
+           {
               if (ordered)
               {
                 os << "// index" << endl
@@ -2039,6 +2039,11 @@ namespace relational
       }
 
       virtual void
+      init_value_extra ()
+      {
+      }
+
+      virtual void
       traverse (type& c)
       {
         if (c.file () != unit.file ())
@@ -2598,8 +2603,11 @@ namespace relational
              << "if (l.locked ())"
              << "{"
              << "callback (db, obj, callback_event::pre_load);"
-             << "init (obj, sts.image (), db);"
-             << "load_ (sts, obj);"
+             << "init (obj, sts.image (), db);";
+
+          init_value_extra ();
+
+          os << "load_ (sts, obj);"
              << "sts.load_delayed ();"
              << "l.unlock ();"
              << "callback (db, obj, callback_event::post_load);"
@@ -2636,8 +2644,11 @@ namespace relational
            << "if (l.locked ())"
            << "{"
            << "callback (db, obj, callback_event::pre_load);"
-           << "init (obj, sts.image (), db);"
-           << "load_ (sts, obj);"
+           << "init (obj, sts.image (), db);";
+
+        init_value_extra ();
+
+        os << "load_ (sts, obj);"
            << "sts.load_delayed ();"
            << "l.unlock ();"
            << "callback (db, obj, callback_event::post_load);"
