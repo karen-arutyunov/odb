@@ -484,7 +484,8 @@ namespace relational
         virtual void
         traverse_lob (member_info& mi)
         {
-          os << traits << "::set_image (" << endl
+          os << "i." << mi.var << "position_context = 0;"
+             << traits << "::set_image (" << endl
              << "i." << mi.var << "callback.param," << endl
              << "i." << mi.var << "context," << endl
              << "is_null," << endl
