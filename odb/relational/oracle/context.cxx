@@ -399,7 +399,9 @@ namespace relational
               // Some prefixes can also be type names if not followed
               // by the actual type name.
               //
-              if (r.type == sql_type::invalid && !prefix.empty ())
+              if (r.type != sql_type::invalid)
+                t = l.next ();
+              else if (!prefix.empty ())
               {
                 if (prefix == "CHAR" || prefix == "CHARACTER")
                 {
@@ -423,20 +425,20 @@ namespace relational
                   r.range = true;
                   r.range_value = 6;
                 }
-              }
 
-              if (r.type == sql_type::invalid)
-              {
-                cerr << m.file () << ":" << m.line () << ":" <<
-                  m.column () << ":";
+                if (r.type == sql_type::invalid)
+                {
+                  cerr << m.file () << ":" << m.line () << ":" <<
+                    m.column () << ":";
 
-                if (tt == sql_token::t_identifier)
-                  cerr << " error: unknown Oracle type '" <<
-                    prefix + t.identifier () << "'" << endl;
-                else
-                  cerr << " error: expected Oracle type name" << endl;
+                  if (tt == sql_token::t_identifier)
+                    cerr << " error: unknown Oracle type '" <<
+                      prefix + t.identifier () << "'" << endl;
+                  else
+                    cerr << " error: expected Oracle type name" << endl;
 
-                throw operation_failed ();
+                  throw operation_failed ();
+                }
               }
 
               // Fall through.
