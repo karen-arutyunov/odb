@@ -44,6 +44,39 @@ namespace relational
       ostream& os_;
     };
 
+    struct schema_emitter: emitter, virtual context
+    {
+      typedef schema_emitter base;
+
+      virtual void
+      pre ()
+      {
+        first_ = true;
+      }
+
+      virtual void
+      line (const std::string& l)
+      {
+        if (first_)
+          first_ = false;
+        else
+          os << endl;
+
+        os << l;
+      }
+
+      virtual void
+      post ()
+      {
+        if (!first_) // Ignore empty statements.
+          os << ';' << endl
+             << endl;
+      }
+
+    private:
+      bool first_;
+    };
+
     //
     // Drop.
     //
