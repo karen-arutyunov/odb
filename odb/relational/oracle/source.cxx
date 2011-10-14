@@ -225,7 +225,7 @@ namespace relational
         {
           os << b << ".type = " <<
             lob_buffer_types[mi.st->type - sql_type::BLOB] << ";"
-             << b << ".lob_callback = " << arg << "." << mi.var <<
+             << b << ".callback = &" << arg << "." << mi.var <<
              "callback;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;"
              << b << ".size = " << "out" << endl
@@ -233,8 +233,7 @@ namespace relational
             "lob)" << endl
              << ": reinterpret_cast<ub2*> (&" << arg << "." << mi.var <<
             "position_context);"
-             << b << ".callback_context = " << arg << "." << mi.var <<
-            "context;"
+             << b << ".context = &" << arg << "." << mi.var << "context;"
              << b << ".buffer = " << arg << "." << mi.var << "buffer;"
              << b << ".capacity = static_cast<ub4> (sizeof (" << arg << "." <<
             mi.var << "buffer));"
@@ -487,7 +486,7 @@ namespace relational
           os << "i." << mi.var << "position_context = 0;"
              << traits << "::set_image (" << endl
              << "i." << mi.var << "callback.param," << endl
-             << "i." << mi.var << "context," << endl
+             << "i." << mi.var << "context.param," << endl
              << "is_null," << endl
              << member << ");";
         }
@@ -737,7 +736,7 @@ namespace relational
           os << traits << "::set_value (" << endl
              << member << "," << endl
              << "i." << mi.var << "callback.result," << endl
-             << "i." << mi.var << "context," << endl
+             << "i." << mi.var << "context.result," << endl
              << "i." << mi.var << "indicator == -1);"
              << endl;
         }

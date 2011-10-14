@@ -186,11 +186,11 @@ namespace relational
         virtual void
         traverse_lob (member_info& mi)
         {
-          os << image_type << " " << mi.var << "callback;"
+          os << "mutable " << image_type << " " << mi.var << "callback;"
              << "sb2 " << mi.var << "indicator;"
              << "oracle::auto_descriptor<OCILobLocator> " << mi.var <<
             "lob;"
-             << "void* " << mi.var << "context;"
+             << "mutable oracle::lob_context " << mi.var << "context;"
              << "ub4 " << mi.var << "position_context;"
              << "char " << mi.var << "buffer[4096];"
              << endl;
