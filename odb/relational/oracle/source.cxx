@@ -760,6 +760,12 @@ namespace relational
         {
           os << im << "value = 0;";
         }
+
+        virtual void
+        init_value_extra ()
+        {
+          os << "sts.find_statement ().stream_result ();";
+        }
       };
       entry<class_> class_entry_;
     }
