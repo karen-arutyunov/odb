@@ -3,10 +3,14 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <string>
+
 #include <odb/relational/schema.hxx>
 
 #include <odb/relational/oracle/common.hxx>
 #include <odb/relational/oracle/context.hxx>
+
+using namespace std;
 
 namespace relational
 {
@@ -15,6 +19,48 @@ namespace relational
     namespace schema
     {
       namespace relational = relational::schema;
+
+      struct schema_emitter: relational::schema_emitter
+      {
+        schema_emitter (const base& x): base (x) {}
+
+        virtual void
+        pre ()
+        {
+          first_ = true;
+        }
+
+        virtual void
+        line (const std::string& l)
+        {
+          if (first_)
+            first_ = false;
+          else
+            os << endl;
+
+          last_ = l;
+          os << l;
+        }
+
+        virtual void
+        post ()
+        {
+          if (!first_) // Ignore empty statements.
+          {
+            if (last_ == "END;")
+              os << endl
+                 << '/' << endl;
+            else
+              os << ';' << endl
+                 << endl;
+          }
+        }
+
+      private:
+        bool first_;
+        string last_;
+      };
+      entry<schema_emitter> schema_emitter_;
 
       //
       // Drop.
@@ -44,6 +90,7 @@ namespace relational
              << "    WHEN OTHERS THEN" << endl
              << "      IF SQLCODE != -2289 THEN RAISE; END IF;" << endl
              << "  END;" << endl
+             << "  BEGIN" << endl
              << "    EXECUTE IMMEDIATE 'DROP TRIGGER " <<
             quote_id (table + "_trig") << "';" << endl
              << "  EXCEPTION" << endl
