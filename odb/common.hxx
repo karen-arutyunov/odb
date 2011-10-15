@@ -98,6 +98,9 @@ protected:
   table_prefix table_prefix_;
   std::string member_prefix_;
 
+  data_member_path member_path_;
+  data_member_scope member_scope_;
+
 private:
   void
   init (bool build_flat_prefix,
@@ -212,6 +215,9 @@ public:
 
 protected:
   string column_prefix_;
+
+  data_member_path member_path_;
+  data_member_scope member_scope_;
 
 private:
   void

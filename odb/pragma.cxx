@@ -315,6 +315,18 @@ check_spec_decl_type (tree d,
       return false;
     }
   }
+  else if (p == "readonly")
+  {
+    // Readonly can be used for both data members and classes (object or
+    // composite value).
+    //
+    if (tc != FIELD_DECL && !CLASS_TYPE_P (d))
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a data member or class" << endl;
+      return false;
+    }
+  }
   else if (p == "pointer" ||
            p == "abstract" ||
            p == "callback" ||
@@ -1407,6 +1419,18 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
   }
+  else if (p == "readonly")
+  {
+    // transient
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    tt = pragma_lex (&t);
+  }
   else if (p == "transient")
   {
     // transient
@@ -1565,6 +1589,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "default" ||
            p == "inverse" ||
            p == "unordered" ||
+           p == "readonly" ||
            p == "transient")
   {
     handle_pragma (reader, p, 0, "");
@@ -1777,6 +1802,12 @@ handle_pragma_db_unordered (cpp_reader* r)
 }
 
 extern "C" void
+handle_pragma_db_readonly (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "readonly");
+}
+
+extern "C" void
 handle_pragma_db_transient (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "transient");
@@ -1843,6 +1874,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "default", handle_pragma_db_default);
   c_register_pragma_with_expansion ("db", "inverse", handle_pragma_db_inverse);
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
+  c_register_pragma_with_expansion ("db", "readonly", handle_pragma_db_readonly);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
   */
 }

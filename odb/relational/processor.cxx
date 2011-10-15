@@ -122,6 +122,8 @@ namespace relational
 
         semantics::type& t (m.type ());
 
+        // Handle wrappers.
+        //
         semantics::type* wt (0);
         semantics::names* wh (0);
         if (process_wrapper (t))

@@ -71,6 +71,32 @@ namespace
         valid_ = false;
       }
 
+      // Make sure id or inverse member is not marked readonly since we
+      // depend on these three sets not having overlaps. Once we support
+      // composite ids, we will also need to make sure there are no
+      // nested readonly members (probably move it to pass 2 and use
+      // column_count()).
+      //
+      if (m.count ("readonly"))
+      {
+        if (m.count ("id"))
+        {
+          cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
+               << " error: object id should not be declared readonly" << endl;
+
+          valid_ = false;
+        }
+
+        if (m.count ("inverse"))
+        {
+          cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
+               << " error: inverse object pointer should not be declared "
+               << "readonly" << endl;
+
+          valid_ = false;
+        }
+      }
+
       // Resolve null overrides.
       //
       override_null (m);

@@ -81,6 +81,17 @@ enum class_kind
 //
 typedef std::vector<semantics::data_member*> data_member_path;
 
+// Class inheritance chain, from the most derived to base.
+//
+typedef std::vector<semantics::class_*> class_inheritance_chain;
+
+// A list of inheritance chains for a data member in an object.
+// The first entry in this list would correspond to the object.
+// All subsequent entries, if any, correspond to composite
+// values.
+//
+typedef std::vector<class_inheritance_chain> data_member_scope;
+
 //
 // Semantic graph context types.
 //
@@ -328,10 +339,19 @@ public:
     return m.count ("id");
   }
 
-  bool
-  readonly (semantics::data_member& m)
+  // The member scope is used to override readonly status when a readonly
+  // class (object or composite value) inherits from a readwrite base.
+  //
+  static bool
+  readonly (data_member_path const&, data_member_scope const&);
+
+  static bool
+  readonly (semantics::data_member&);
+
+  static bool
+  readonly (semantics::class_& c)
   {
-    return m.count ("readonly");
+    return c.count ("readonly");
   }
 
   bool
@@ -544,22 +564,29 @@ public:
   static unsigned short const test_container = 0x08;
   static unsigned short const test_straight_container = 0x10;
   static unsigned short const test_inverse_container = 0x20;
+  static unsigned short const test_readonly_container = 0x40;
 
   static unsigned short const exclude_base = 0x8000;
 
   bool
-  is_a (semantics::data_member& m, unsigned short flags)
+  is_a (data_member_path const& mp,
+        data_member_scope const& ms,
+        unsigned short flags)
   {
-    return is_a (m, flags, m.type (), "");
+    return is_a (mp, ms, flags, mp.back ()->type (), "");
   }
 
   bool
-  is_a (semantics::data_member&,
+  is_a (data_member_path const&,
+        data_member_scope const&,
         unsigned short flags,
         semantics::type&,
         string const& key_prefix);
 
-  bool
+  // Return the number of matching entities. Can be uses as a just
+  // a bool value (0 means no match).
+  //
+  size_t
   has_a (semantics::class_&, unsigned short flags);
 
 public:

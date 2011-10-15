@@ -188,6 +188,58 @@ context ()
 context* context::current_;
 
 bool context::
+readonly (data_member_path const& mp, data_member_scope const& ms)
+{
+  assert (mp.size () == ms.size ());
+
+  data_member_scope::const_reverse_iterator si (ms.rbegin ());
+
+  for (data_member_path::const_reverse_iterator pi (mp.rbegin ());
+       pi != mp.rend ();
+       ++pi, ++si)
+  {
+    semantics::data_member& m (**pi);
+
+    if (m.count ("readonly"))
+      return true;
+
+    // Check if any of the classes in the inheritance chain for the
+    // class containing this member are readonly.
+    //
+    class_inheritance_chain const& ic (*si);
+
+    assert (ic.back () == &m.scope ());
+
+    for (class_inheritance_chain::const_reverse_iterator ci (ic.rbegin ());
+         ci != ic.rend ();
+         ++ci)
+    {
+      semantics::class_& c (**ci);
+
+      if (c.count ("readonly"))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+bool context::
+readonly (semantics::data_member& m)
+{
+  if (m.count ("readonly"))
+    return true;
+
+  // Check if the whole class (object or composite value) is marked
+  // as readonly.
+  //
+  if (m.scope ().count ("readonly"))
+    return true;
+
+  return false;
+}
+
+bool context::
 null (semantics::data_member& m)
 {
   semantics::type& t (m.type ());
@@ -388,8 +440,11 @@ composite_ (semantics::class_& c)
 {
   bool r (true);
 
-  //@@ This is bad. Did we add new value pragmas and forgot to
-  //   account for them here?
+  // List of pragmas that disqualify a value type from being treated as
+  // composite.
+  //
+  //@@ Did we add new simple value pragmas and forgot to account for
+  //   them here?
   //
   r = r && c.count ("value");
   r = r && !c.count ("table");
@@ -968,34 +1023,6 @@ namespace
 {
   struct column_count_impl: object_members_base
   {
-    typedef context::column_count_type count_type;
-
-    virtual void
-    traverse (semantics::class_& c)
-    {
-      if (c.count ("column-count"))
-      {
-        count_type const& bc (c.get<count_type> ("column-count"));
-
-        c_.total += bc.total;
-        c_.id += bc.id;
-        c_.inverse += bc.inverse;
-        c_.readonly += bc.readonly;
-      }
-      else
-      {
-        count_type t (c_);
-        object_members_base::traverse (c);
-
-        t.total = c_.total - t.total;
-        t.id = c_.id - t.id;
-        t.inverse = c_.inverse - t.inverse;
-        t.readonly = c_.readonly - t.readonly;
-
-        c.set ("column-count", t);
-      }
-    }
-
     virtual void
     traverse_simple (semantics::data_member& m)
     {
@@ -1003,13 +1030,13 @@ namespace
 
       if (m.count ("id"))
         c_.id++;
-
-      if (context::inverse (m))
+      else if (context::inverse (m))
         c_.inverse++;
+      else if (context::readonly (member_path_, member_scope_))
+        c_.readonly++;
     }
 
-  private:
-    count_type c_;
+    context::column_count_type c_;
   };
 }
 
@@ -1020,6 +1047,7 @@ column_count (semantics::class_& c)
   {
     column_count_impl t;
     t.traverse (c);
+    c.set ("column-count", t.c_);
   }
 
   return c.get<column_count_type> ("column-count");
@@ -1030,34 +1058,39 @@ namespace
   struct has_a_impl: object_members_base
   {
     has_a_impl (unsigned short flags)
-        : r_ (false), flags_ (flags)
+        : r_ (0), flags_ (flags)
     {
     }
 
-    bool
+    size_t
     result () const
     {
       return r_;
     }
 
     virtual void
-    traverse_simple (semantics::data_member& m)
+    traverse_simple (semantics::data_member&)
     {
-      r_ = r_ || context::is_a (m, flags_);
+      if (context::is_a (member_path_, member_scope_, flags_))
+        r_++;
     }
 
     virtual void
-    traverse_container (semantics::data_member& m, semantics::type& c)
+    traverse_container (semantics::data_member&, semantics::type& c)
     {
       // We don't cross the container boundaries (separate table).
       //
-      r_ = r_ || context::is_a (
-        m,
-        flags_ & (context::test_container |
-                  context::test_straight_container |
-                  context::test_inverse_container),
-        context::container_vt (c),
-        "value");
+      unsigned short f (flags_ & (context::test_container |
+                                  context::test_straight_container |
+                                  context::test_inverse_container |
+                                  context::test_readonly_container));
+
+      if (context::is_a (member_path_,
+                         member_scope_,
+                         f,
+                         context::container_vt (c),
+                         "value"))
+        r_++;
     }
 
     virtual void
@@ -1070,18 +1103,21 @@ namespace
     }
 
   private:
-    bool r_;
+    size_t r_;
     unsigned short flags_;
   };
 }
 
 bool context::
-is_a (semantics::data_member& m,
+is_a (data_member_path const& mp,
+      data_member_scope const& ms,
       unsigned short f,
       semantics::type& t,
       string const& kp)
 {
   bool r (false);
+
+  semantics::data_member& m (*mp.back ());
 
   if (f & test_pointer)
   {
@@ -1113,10 +1149,15 @@ is_a (semantics::data_member& m,
     r = r || (container_wrapper (m.type ()) && inverse (m, kp));
   }
 
+  if (f & test_readonly_container)
+  {
+    r = r || (container_wrapper (m.type ()) && readonly (mp, ms));
+  }
+
   return r;
 }
 
-bool context::
+size_t context::
 has_a (semantics::class_& c, unsigned short flags)
 {
   has_a_impl impl (flags);

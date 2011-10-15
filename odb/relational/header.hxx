@@ -538,19 +538,19 @@ namespace relational
         os << " container_type;";
 
         os << "typedef odb::access::container_traits< container_type > " <<
-          "container_traits;";
+          "container_traits_type;";
 
         switch (ck)
         {
         case ck_ordered:
           {
-            os << "typedef container_traits::index_type index_type;";
+            os << "typedef container_traits_type::index_type index_type;";
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "typedef container_traits::key_type key_type;";
+            os << "typedef container_traits_type::key_type key_type;";
           }
         case ck_set:
         case ck_multiset:
@@ -559,7 +559,7 @@ namespace relational
           }
         }
 
-        os << "typedef container_traits::value_type value_type;"
+        os << "typedef container_traits_type::value_type value_type;"
            << endl;
 
         // functions_type
@@ -844,7 +844,7 @@ namespace relational
 
         // update
         //
-        if (!inverse)
+        if (!(inverse || readonly (member_path_, member_scope_)))
           os << "static void" << endl
              << "update (const container_type&," << endl
              << "const " << db << "::binding& id," << endl
@@ -1169,9 +1169,10 @@ namespace relational
 
         // update ()
         //
-        os << "static void" << endl
-           << "update (database&, const object_type&);"
-           << endl;
+        if (!readonly (c))
+          os << "static void" << endl
+             << "update (database&, const object_type&);"
+             << endl;
 
         // erase ()
         //

@@ -78,7 +78,8 @@ namespace relational
         if (im != 0 && sk_ != statement_select)
           return false;
 
-        if ((id (m) || readonly (m)) && sk_ == statement_update)
+        if ((id (m) || readonly (member_path_, member_scope_)) &&
+            sk_ == statement_update)
           return false;
 
         if (!first)
@@ -546,6 +547,16 @@ namespace relational
         os << "// " << c.name () << " base" << endl
            << "//" << endl;
 
+        // If the derived class is readonly, then we will never be
+        // called with sk == statement_update.
+        //
+        bool ro (readonly (c));
+        bool check (ro && !readonly (*context::top_object));
+
+        if (check)
+          os << "if (sk != statement_update)"
+             << "{";
+
         os << (obj ? "object" : "composite_value") << "_traits< " <<
           c.fq_name () << " >::bind (b + n, i, sk);";
 
@@ -557,7 +568,7 @@ namespace relational
         // insert = total - inverse
         // update = total - inverse - id - readonly
         //
-        if (cc.inverse != 0 || cc.id != 0 || cc.readonly != 0)
+        if (cc.inverse != 0 || (!ro && (cc.id != 0 || cc.readonly != 0)))
         {
           os << " - (" << endl
              << "sk == statement_select ? 0 : ";
@@ -565,7 +576,7 @@ namespace relational
           if (cc.inverse != 0)
             os << cc.inverse << "UL" << endl;
 
-          if (cc.id != 0 || cc.readonly != 0)
+          if (!ro && (cc.id != 0 || cc.readonly != 0))
           {
             if (cc.inverse != 0)
               os << " + ";
@@ -578,8 +589,12 @@ namespace relational
           os << ")";
         }
 
-        os << ";"
-           << endl;
+        os << ";";
+
+        if (check)
+          os << "}";
+        else
+          os << endl;
       }
     };
 
@@ -684,11 +699,25 @@ namespace relational
           return;
 
         os << "// " << c.name () << " base" << endl
-           << "//" << endl
-           << "if (" << (obj ? "object" : "composite_value") << "_traits< " <<
+           << "//" << endl;
+
+        // If the derived class is readonly, then we will never be
+        // called with sk == statement_update.
+        //
+        bool check (readonly (c) && !readonly (*context::top_object));
+
+        if (check)
+          os << "if (sk != statement_update)"
+             << "{";
+
+        os << "if (" << (obj ? "object" : "composite_value") << "_traits< " <<
           c.fq_name () << " >::init (i, o, sk))" << endl
-           << "grew = true;"
-           << endl;
+           << "grew = true;";
+
+        if (check)
+          os << "}";
+        else
+          os << endl;
       }
     };
 
@@ -855,8 +884,11 @@ namespace relational
         if (generate_grow)
           grow = grow || context::grow (m, vt, "value");
 
-        bool eager_ptr (is_a (m, test_eager_pointer, vt, "value"));
-
+        bool eager_ptr (is_a (member_path_,
+                              member_scope_,
+                              test_eager_pointer,
+                              vt,
+                              "value"));
         if (!eager_ptr)
         {
           if (semantics::class_* cvt = composite_wrapper (vt))
@@ -1684,7 +1716,7 @@ namespace relational
           if (ck == ck_ordered)
             os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
 
-          os << "container_traits::persist (c, fs);"
+          os << "container_traits_type::persist (c, fs);"
              << "}";
         }
 
@@ -1751,12 +1783,12 @@ namespace relational
         if (ck == ck_ordered)
           os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
 
-        os << "container_traits::load (c, more, fs);"
+        os << "container_traits_type::load (c, more, fs);"
            << "}";
 
         // update
         //
-        if (!inverse)
+        if (!(inverse || readonly (member_path_, member_scope_)))
         {
           os << "void " << scope << "::" << endl
              << "update (const container_type& c," << endl
@@ -1790,7 +1822,7 @@ namespace relational
           if (ck == ck_ordered)
             os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
 
-          os << "container_traits::update (c, fs);"
+          os << "container_traits_type::update (c, fs);"
              << "}";
         }
 
@@ -1817,7 +1849,7 @@ namespace relational
           if (ck == ck_ordered)
             os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
 
-          os << "container_traits::erase (fs);"
+          os << "container_traits_type::erase (fs);"
              << "}";
         }
       }
@@ -1982,7 +2014,7 @@ namespace relational
           }
         case update_call:
           {
-            if (!inverse)
+            if (!(inverse || readonly (member_path_, member_scope_)))
               os << traits << "::update (" << endl
                  << obj_name << "," << endl
                  << "idb," << endl
@@ -2106,12 +2138,16 @@ namespace relational
         if (c.file () != unit.file ())
           return;
 
+        context::top_object = context::cur_object = &c;
+
         if (object (c))
           traverse_object (c);
         else if (view (c))
           traverse_view (c);
         else if (composite (c))
           traverse_composite (c);
+
+        context::top_object = context::cur_object = 0;
       }
 
       //
@@ -2206,8 +2242,25 @@ namespace relational
         //
         // Containers (abstract and concrete).
         //
-        bool straight_containers (has_a (c, test_straight_container));
-        bool containers (straight_containers || has_a (c, test_container));
+        bool containers (has_a (c, test_container));
+        bool straight_containers (false);
+        bool straight_readwrite_containers (false);
+
+        if (containers)
+        {
+          containers = true;
+          size_t scn (has_a (c, test_straight_container));
+
+          if (scn != 0)
+          {
+            straight_containers = true;
+
+            // Inverse containers cannot be marked readonly.
+            //
+            straight_readwrite_containers =
+              scn > has_a (c, test_readonly_container);
+          }
+        }
 
         if (containers)
         {
@@ -2263,8 +2316,13 @@ namespace relational
            << "ODB_POTENTIALLY_UNUSED (sk);"
            << endl
            << "using namespace " << db << ";"
-           << endl
-           << "std::size_t n (0);"
+           << endl;
+
+        if (readonly (c))
+          os << "assert (sk != statement_update);"
+             << endl;
+
+        os << "std::size_t n (0);"
            << endl;
 
         inherits (c, bind_base_inherits_);
@@ -2295,8 +2353,13 @@ namespace relational
            << "ODB_POTENTIALLY_UNUSED (sk);"
            << endl
            << "using namespace " << db << ";"
-           << endl
-           << "bool grew (false);"
+           << endl;
+
+        if (readonly (c))
+          os << "assert (sk != statement_update);"
+             << endl;
+
+        os << "bool grew (false);"
            << endl;
 
         inherits (c, init_image_base_inherits_);
@@ -2560,72 +2623,75 @@ namespace relational
 
         // update ()
         //
-        os << "void " << traits << "::" << endl
-           << "update (database&, const object_type& obj)"
-           << "{"
-           << "using namespace " << db << ";"
-           << endl
-           << db << "::connection& conn (" << endl
-           << db << "::transaction::current ().connection ());"
-           << "object_statements< object_type >& sts (" << endl
-           << "conn.statement_cache ().find_object<object_type> ());"
-           << endl;
-
-        if (cc.total != cc.id + cc.inverse + cc.readonly)
+        if (!readonly (c))
         {
-          // Initialize id image.
-          //
-          os << "id_image_type& i (sts.id_image ());"
-             << "init (i, obj." << id->name () << ");"
+          os << "void " << traits << "::" << endl
+             << "update (database&, const object_type& obj)"
+             << "{"
+             << "using namespace " << db << ";"
+             << endl
+             << db << "::connection& conn (" << endl
+             << db << "::transaction::current ().connection ());"
+             << "object_statements< object_type >& sts (" << endl
+             << "conn.statement_cache ().find_object<object_type> ());"
              << endl;
 
-          os << "binding& idb (sts.id_image_binding ());"
-             << "if (i.version != sts.id_image_version () || idb.version == 0)"
-             << "{"
-             << "bind (idb.bind, i);"
-             << "sts.id_image_version (i.version);"
-             << "idb.version++;"
-             << "}";
+          if (cc.total != cc.id + cc.inverse + cc.readonly)
+          {
+            // Initialize id image.
+            //
+            os << "id_image_type& i (sts.id_image ());"
+               << "init (i, obj." << id->name () << ");"
+               << endl;
 
-          // Initialize data image.
-          //
-          os << "image_type& im (sts.image ());"
-             << "binding& imb (sts.update_image_binding ());"
-             << endl
-             << "if (init (im, obj, statement_update))" << endl
-             << "im.version++;"
-             << endl
-             << "if (im.version != sts.update_image_version () || " <<
-            "imb.version == 0)"
-             << "{"
-             << "bind (imb.bind, im, statement_update);"
-             << "sts.update_image_version (im.version);"
-             << "imb.version++;"
-             << "}"
-             << "sts.update_statement ().execute ();";
+            os << "binding& idb (sts.id_image_binding ());"
+               << "if (i.version != sts.id_image_version () || idb.version == 0)"
+               << "{"
+               << "bind (idb.bind, i);"
+               << "sts.id_image_version (i.version);"
+               << "idb.version++;"
+               << "}";
+
+            // Initialize data image.
+            //
+            os << "image_type& im (sts.image ());"
+               << "binding& imb (sts.update_image_binding ());"
+               << endl
+               << "if (init (im, obj, statement_update))" << endl
+               << "im.version++;"
+               << endl
+               << "if (im.version != sts.update_image_version () || " <<
+              "imb.version == 0)"
+               << "{"
+               << "bind (imb.bind, im, statement_update);"
+               << "sts.update_image_version (im.version);"
+               << "imb.version++;"
+               << "}"
+               << "sts.update_statement ().execute ();";
+          }
+          else
+          {
+            // We don't have any columns to update. Note that we still have
+            // to make sure this object exists in the database. For that we
+            // will run the SELECT query using the find_() function.
+            //
+            os << "if (!find_ (sts, obj." << id->name () << "))" << endl
+               << "throw object_not_persistent ();";
+
+            if (straight_readwrite_containers)
+              os << endl
+                 << "binding& idb (sts.id_image_binding ());";
+          }
+
+          if (straight_readwrite_containers)
+          {
+            os << endl;
+            instance<container_calls> t (container_calls::update_call);
+            t->traverse (c);
+          }
+
+          os << "}";
         }
-        else
-        {
-          // We don't have any columns to update. Note that we still have
-          // to make sure this object exists in the database. For that we
-          // will run the SELECT query using the find_() function.
-          //
-          os << "if (!find_ (sts, obj." << id->name () << "))" << endl
-             << "throw object_not_persistent ();";
-
-          if (straight_containers)
-            os << endl
-               << "binding& idb (sts.id_image_binding ());";
-        }
-
-        if (straight_containers)
-        {
-          os << endl;
-          instance<container_calls> t (container_calls::update_call);
-          t->traverse (c);
-        }
-
-        os << "}";
 
         // erase ()
         //
@@ -3861,8 +3927,13 @@ namespace relational
            << "ODB_POTENTIALLY_UNUSED (sk);"
            << endl
            << "using namespace " << db << ";"
-           << endl
-           << "std::size_t n (0);"
+           << endl;
+
+        if (readonly (c))
+          os << "assert (sk != statement_update);"
+             << endl;
+
+        os << "std::size_t n (0);"
            << "ODB_POTENTIALLY_UNUSED (n);"
            << endl;
 
@@ -3882,8 +3953,13 @@ namespace relational
            << "ODB_POTENTIALLY_UNUSED (sk);"
            << endl
            << "using namespace " << db << ";"
-           << endl
-           << "bool grew (false);"
+           << endl;
+
+        if (readonly (c))
+          os << "assert (sk != statement_update);"
+             << endl;
+
+        os << "bool grew (false);"
            << endl;
 
         inherits (c, init_image_base_inherits_);
@@ -3950,7 +4026,8 @@ namespace relational
       {
         extra_pre ();
 
-        os << "#include <cstring> // std::memcpy" << endl
+        os << "#include <cassert>" << endl
+           << "#include <cstring> // std::memcpy" << endl
            << endl;
 
         os << "#include <odb/cache-traits.hxx>" << endl;

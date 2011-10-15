@@ -54,7 +54,21 @@ traverse_view (semantics::class_& c)
 void object_members_base::
 traverse (semantics::data_member& m, semantics::class_& c)
 {
+  // We are starting from the member. Add an empty chain which
+  // corresponds to the scope that contains this member.
+  //
+  //member_scope_.push_back (class_inheritance_chain ());
+  //member_path_.push_back (&m);
+
+  member_scope_.push_back (class_inheritance_chain ());
+  member_scope_.back ().push_back (&c);
+
   traverse_composite_wrapper (&m, c, 0);
+
+  member_scope_.pop_back ();
+
+  //member_path_.pop_back ();
+  //member_scope_.pop_back ();
 }
 
 void object_members_base::
@@ -71,7 +85,18 @@ traverse (semantics::class_& c)
   }
   else if (k == class_composite)
   {
+    if (member_scope_.empty ())
+      member_scope_.push_back (class_inheritance_chain ());
+
+    member_scope_.back ().push_back (&c);
+
     traverse_composite_wrapper (0, c, 0);
+
+    member_scope_.back ().pop_back ();
+
+    if (member_scope_.back ().empty ())
+      member_scope_.pop_back ();
+
     return;
   }
 
@@ -80,6 +105,11 @@ traverse (semantics::class_& c)
 
   if (context::top_object == 0)
     context::top_object = &c;
+
+  if (member_scope_.empty ())
+    member_scope_.push_back (class_inheritance_chain ());
+
+  member_scope_.back ().push_back (&c);
 
   if (build_table_prefix_)
   {
@@ -114,6 +144,11 @@ traverse (semantics::class_& c)
       traverse_view (c);
   }
 
+  member_scope_.back ().pop_back ();
+
+  if (member_scope_.back ().empty ())
+    member_scope_.pop_back ();
+
   if (prev == 0)
     context::top_object = 0;
 
@@ -126,10 +161,15 @@ traverse (semantics::data_member& m)
   if (transient (m))
     return;
 
+  om_.member_path_.push_back (&m);
+
   semantics::type& t (m.type ());
 
   if (semantics::class_* comp = context::composite_wrapper (t))
   {
+    om_.member_scope_.push_back (class_inheritance_chain ());
+    om_.member_scope_.back ().push_back (comp);
+
     string old_flat_prefix, old_table_prefix, old_member_prefix;
 
     if (om_.build_flat_prefix_)
@@ -165,6 +205,8 @@ traverse (semantics::data_member& m)
 
     if (om_.build_member_prefix_)
       om_.member_prefix_ = old_member_prefix;
+
+    om_.member_scope_.pop_back ();
   }
   else if (semantics::type* c = context::container_wrapper (t))
   {
@@ -174,6 +216,8 @@ traverse (semantics::data_member& m)
   {
     om_.traverse_simple (m);
   }
+
+  om_.member_path_.pop_back ();
 }
 
 void object_members_base::
@@ -248,12 +292,26 @@ traverse (semantics::data_member& m,
           string const& key_prefix,
           string const& default_name)
 {
+  // We are starting from the member. Add an empty chain which
+  // corresponds to the scope that contains this member.
+  //
+  //member_scope_.push_back (class_inheritance_chain ());
+  //member_path_.push_back (&m);
+
+  member_scope_.push_back (class_inheritance_chain ());
+  member_scope_.back ().push_back (&c);
+
   column_prefix_ = column_prefix (m, key_prefix, default_name);
 
   traverse_composite (&m, c);
 
   if (!member_.first_)
     flush ();
+
+  member_scope_.pop_back ();
+
+  //member_path_.pop_back ();
+  //member_scope_.pop_back ();
 }
 
 void object_columns_base::
@@ -284,12 +342,22 @@ traverse (semantics::class_& c)
       context::top_object = &c;
   }
 
+  if (member_scope_.empty ())
+    member_scope_.push_back (class_inheritance_chain ());
+
+  member_scope_.back ().push_back (&c);
+
   if (k == class_object)
     traverse_object (c);
   else if (k == class_view)
     traverse_view (c);
   else if (k == class_composite)
     traverse_composite (0, c);
+
+  member_scope_.back ().pop_back ();
+
+  if (member_scope_.back ().empty ())
+    member_scope_.pop_back ();
 
   if (k == class_object || k == class_view)
   {
@@ -340,16 +408,23 @@ traverse (semantics::data_member& m)
   if (transient (m))
     return;
 
+  oc_.member_path_.push_back (&m);
+
   semantics::type& t (m.type ());
 
   if (semantics::class_* comp = composite_wrapper (t))
   {
+    oc_.member_scope_.push_back (class_inheritance_chain ());
+    oc_.member_scope_.back ().push_back (comp);
+
     string old_prefix (oc_.column_prefix_);
     oc_.column_prefix_ += column_prefix (m);
 
     oc_.traverse_composite (&m, *comp);
 
     oc_.column_prefix_ = old_prefix;
+
+    oc_.member_scope_.pop_back ();
   }
   else if (container_wrapper (t))
   {
@@ -364,4 +439,6 @@ traverse (semantics::data_member& m)
         first_ = false;
     }
   }
+
+  oc_.member_path_.pop_back ();
 }

@@ -93,9 +93,19 @@ namespace relational
             if (inverse (mi.m, key_prefix_))
               os << "if (sk == statement_select)"
                  << "{";
-            else if (id (mi.m) || readonly (mi.m))
-              os << "if (sk != statement_update)"
-                 << "{";
+            // If the whole class is readonly, then we will never be
+            // called with sk == statement_update.
+            //
+            else if (!readonly (*context::top_object))
+            {
+              semantics::class_* c;
+
+              if (id (mi.m) ||
+                  readonly (mi.m) ||
+                  ((c = composite (mi.t)) && readonly (*c)))
+                os << "if (sk != statement_update)"
+                   << "{";
+            }
           }
 
           return true;
@@ -106,9 +116,11 @@ namespace relational
         {
           if (var_override_.empty ())
           {
-            if (semantics::class_* c = composite (mi.t))
+            semantics::class_* c;
 
+            if ((c = composite (mi.t)))
             {
+              bool ro (readonly (*c));
               column_count_type const& cc (column_count (*c));
 
               os << "n += " << cc.total << "UL";
@@ -117,7 +129,7 @@ namespace relational
               // insert = total - inverse
               // update = total - inverse - readonly
               //
-              if (cc.inverse != 0 || cc.readonly != 0)
+              if (cc.inverse != 0 || (!ro && cc.readonly != 0))
               {
                 os << " - (" << endl
                    << "sk == statement_select ? 0 : ";
@@ -125,7 +137,7 @@ namespace relational
                 if (cc.inverse != 0)
                   os << cc.inverse << "UL" << endl;
 
-                if (cc.readonly != 0)
+                if (!ro && cc.readonly != 0)
                 {
                   if (cc.inverse != 0)
                     os << " + ";
@@ -143,7 +155,23 @@ namespace relational
             else
               os << "n++;";
 
-            if (inverse (mi.m, key_prefix_) || id (mi.m) || readonly (mi.m))
+            bool block (false);
+
+            // The same logic as in pre().
+            //
+            if (inverse (mi.m, key_prefix_))
+              block = true;
+            else if (!readonly (*context::top_object))
+            {
+              semantics::class_* c;
+
+              if (id (mi.m) ||
+                  readonly (mi.m) ||
+                  ((c = composite (mi.t)) && readonly (*c)))
+                block = true;
+            }
+
+            if (block)
               os << "}";
             else
               os << endl;
@@ -313,10 +341,18 @@ namespace relational
             os << "// " << name << endl
                << "//" << endl;
 
-            if (id (mi.m) || readonly (mi.m))
-              // The block scope is added later, if necessary.
-              //
-              os << "if (sk == statement_insert)";
+            // If the whole class is readonly, then we will never be
+            // called with sk == statement_update.
+            //
+            if (!readonly (*context::top_object))
+            {
+              semantics::class_* c;
+
+              if (id (mi.m) ||
+                  readonly (mi.m) ||
+                  ((c = composite (mi.t)) && readonly (*c)))
+                os << "if (sk == statement_insert)";
+            }
           }
 
           // If this is a wrapped composite value, then we need to
@@ -332,7 +368,10 @@ namespace relational
           }
 
           if (composite (mi.t))
+          {
+            os << "{";
             traits = "composite_value_traits< " + mi.fq_type () + " >";
+          }
           else
           {
             // When handling a pointer, mi.t is the id type of the referenced
@@ -404,7 +443,9 @@ namespace relational
         virtual void
         post (member_info& mi)
         {
-          if (!composite (mi.t))
+          if (composite (mi.t))
+            os << "}";
+          else
           {
             // When handling a pointer, mi.t is the id type of the referenced
             // object.
