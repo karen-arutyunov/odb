@@ -973,6 +973,9 @@ namespace relational
           {
             os << "typedef " << id->type ().fq_name (id->belongs ().hint ()) <<
               " id_type;"
+               << endl
+               << "static const bool auto_id = " <<
+              (id_member (c)->count ("auto") ? "true;" : "false;")
                << endl;
 
             os << "struct id_image_type"

@@ -16,23 +16,6 @@ namespace relational
     {
       namespace relational = relational::header;
 
-      struct class1: relational::class1
-      {
-        class1 (base const& x): base (x) {}
-
-        virtual void
-        object_public_extra_post (type& c)
-        {
-          if (abstract (c))
-            return;
-
-          os << "static const bool auto_id = " <<
-            (id_member (c)->count ("auto") ? "true;" : "false;")
-             << endl;
-        }
-      };
-      entry<class1> class1_entry_;
-
       struct image_member: relational::image_member, member_base
       {
         image_member (base const& x)
