@@ -225,18 +225,15 @@ namespace relational
         {
           os << b << ".type = " <<
             lob_buffer_types[mi.st->type - sql_type::BLOB] << ";"
+             << b << ".indicator = &" << arg << "." << mi.var << "indicator;"
              << b << ".callback = &" << arg << "." << mi.var <<
              "callback;"
-             << b << ".indicator = &" << arg << "." << mi.var << "indicator;"
-             << b << ".size = " << "out" << endl
-             << "? reinterpret_cast<ub2*> (&" << arg << "." << mi.var <<
-            "lob)" << endl
-             << ": reinterpret_cast<ub2*> (&" << arg << "." << mi.var <<
-            "position_context);"
              << b << ".context = &" << arg << "." << mi.var << "context;"
-             << b << ".buffer = " << arg << "." << mi.var << "buffer;"
-             << b << ".capacity = static_cast<ub4> (sizeof (" << arg << "." <<
-            mi.var << "buffer));"
+             << "if (out)" << endl
+             << b << ".buffer = &" << arg << "." << mi.var << "lob;"
+             << "else" << endl
+             << b << ".size = reinterpret_cast<ub2*> (&" << arg << "." <<
+            mi.var << "position_context);"
              << endl;
         }
 

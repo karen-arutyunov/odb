@@ -175,7 +175,6 @@ namespace relational
             "lob;"
              << "mutable oracle::lob_context " << mi.var << "context;"
              << "ub4 " << mi.var << "position_context;"
-             << "char " << mi.var << "buffer[4096];"
              << endl;
         }
 
