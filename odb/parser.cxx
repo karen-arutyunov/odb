@@ -1332,7 +1332,10 @@ emit_type (tree t,
     ts << "found node " << &r << " for type " << mv << endl;
 
   if (cp_type_quals (t) == TYPE_UNQUALIFIED)
+  {
+    unit_->insert (t, r); // Add this variant to the map.
     return r;
+  }
 
   // See if this type already has this variant.
   //
@@ -1350,6 +1353,7 @@ emit_type (tree t,
       if (trace)
         ts << "found qualifier variant " << &q << endl;
 
+      unit_->insert (t, q); // Add this variant to the map.
       return q;
     }
   }
@@ -1358,7 +1362,8 @@ emit_type (tree t,
   // unique in the tree so don't add this node to the map.
   //
   qualifier& q (unit_->new_node<qualifier> (file, line, clmn, t, qc, qv, qr));
-  unit_->new_edge<qualifies> (q, r);
+  qualifies& e (unit_->new_edge<qualifies> (q, r));
+  unit_->insert (t, q);
 
   // See if there is a name hint for this type.
   //
