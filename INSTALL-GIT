@@ -31,8 +31,14 @@ also need the following packages:
   - GNU sed  >= 4.0.0   http://www.gnu.org/software/sed/
   - tofrodos >= 1.7.0   http://www.thefreecountry.com/tofrodos/
 
+As we as the GNU autotools:
+
+  - GNU libtool  >= 2.2.6b  http://www.gnu.org/software/libtool/
+  - GNU autoconf >= 2.67    http://www.gnu.org/software/autoconf/
+  - GNU automake >= 1.11.1  http://www.gnu.org/software/automake/
+
 Any reasonably up to date GNU/Linux installation would normally have all of
-the above packages already present, except for build and maybe tofrodos.
+the above packages already present, except for build, cli, and maybe tofrodos.
 
 
 Configuring and Building
