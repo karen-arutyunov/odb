@@ -10,6 +10,7 @@ namespace semantics
 {
   qualifies::
   qualifies ()
+      : hint_ (0)
   {
   }
 

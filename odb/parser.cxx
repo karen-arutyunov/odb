@@ -1359,6 +1359,64 @@ emit_type (tree t,
   //
   qualifier& q (unit_->new_node<qualifier> (file, line, clmn, t, qc, qv, qr));
   unit_->new_edge<qualifies> (q, r);
+
+  // See if there is a name hint for this type.
+  //
+  // If TREE_TYPE (TYPE_NAME (t)) != t then we have an inline qualifier,
+  // as in:
+  //
+  // const foo x;
+  //
+  // If they are equal, then there are two possible cases. The first is
+  // when we have a qualifier typedef, as in:
+  //
+  // typedef const foo cfoo;
+  // cfoo x;
+  //
+  // The second is when we have a qualifier typedef but what is actually
+  // used in the declaration is an inline qualifier, as in:
+  //
+  // typedef const foo cfoo;
+  // const foo x;
+  //
+  // Unfortunately, in GCC, these two cases are indistinguishable. In
+  // certain cases this can lead to a wrong hint being used for the base
+  // type, for example:
+  //
+  // typedef foo my_foo;
+  // typedef foo foo_t;
+  // typedef const foo_t cfoo;
+  //
+  // const my_foo x;
+  //
+  // Above, the hint will be foo_t while it should be my_foo.
+  //
+  tree bt (0);
+
+  if (tree decl = TYPE_NAME (t))
+  {
+    bt = TREE_TYPE (decl);
+
+    if (t == bt)
+    {
+      // A const type can be named only with a typedef. Get the
+      // original type.
+      //
+      tree ot (DECL_ORIGINAL_TYPE (decl));
+
+      // And chase it one more time to get rid of the qualification.
+      //
+      decl = TYPE_NAME (ot);
+      bt = decl != 0 ? TREE_TYPE (decl) : 0;
+    }
+  }
+
+  if (bt != 0)
+  {
+    if (names* hint = unit_->find_hint (bt))
+      e.hint (*hint);
+  }
+
   process_named_pragmas (t, q);
 
   return q;

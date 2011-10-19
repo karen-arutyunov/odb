@@ -43,6 +43,21 @@ namespace semantics
       return *qualifier_;
     }
 
+    // Name hint of the base type.
+    //
+  public:
+    void
+    hint (names& hint)
+    {
+      hint_ = &hint;
+    }
+
+    names*
+    hint () const
+    {
+      return hint_;
+    }
+
   public:
     qualifies ();
 
@@ -61,6 +76,7 @@ namespace semantics
   protected:
     type_type* type_;
     qualifier_type* qualifier_;
+    names* hint_;
   };
 
   class qualifier: public derived_type
