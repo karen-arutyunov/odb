@@ -33,14 +33,20 @@ namespace relational
         var = name + (name[name.size () - 1] == '_' ? "" : "_");
       }
 
-      semantics::type& t (type_override_ != 0 ? *type_override_ : m.type ());
+      bool cq (type_override_ != 0 ? false: const_type (m.type ()));
+      semantics::type& t (type_override_ != 0 ? *type_override_ : utype (m));
 
       if (semantics::class_* c = composite_wrapper (t))
       {
         // If t is a wrapper, pass the wrapped type. Also pass the
         // original, wrapper type.
         //
-        member_info mi (m, *c, (wrapper (t) ? &t : 0), var, fq_type_override_);
+        member_info mi (m,
+                        *c,
+                        (wrapper (t) ? &t : 0),
+                        cq,
+                        var,
+                        fq_type_override_);
         if (pre (mi))
         {
           traverse_composite (mi);
@@ -51,7 +57,12 @@ namespace relational
       {
         // The same unwrapping logic as for composite values.
         //
-        member_info mi (m, *c, (wrapper (t) ? &t : 0), var, fq_type_override_);
+        member_info mi (m,
+                        *c,
+                        (wrapper (t) ? &t : 0),
+                        cq,
+                        var,
+                        fq_type_override_);
         if (pre (mi))
         {
           traverse_container (mi);
@@ -64,8 +75,12 @@ namespace relational
 
         if (semantics::class_* c = object_pointer (t))
         {
-          member_info mi (
-            m, id_member (*c)->type (), 0, var, fq_type_override_);
+          member_info mi (m,
+                          utype (*id_member (*c)),
+                          0,
+                          cq,
+                          var,
+                          fq_type_override_);
           mi.st = &st;
           if (pre (mi))
           {
@@ -75,7 +90,7 @@ namespace relational
         }
         else
         {
-          member_info mi (m, t, 0, var, fq_type_override_);
+          member_info mi (m, t, 0, cq, var, fq_type_override_);
           mi.st = &st;
           if (pre (mi))
           {

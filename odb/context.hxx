@@ -227,8 +227,46 @@ public:
   upcase (string const&);
 
 public:
+  // Return cvr-unqualified base of the type, or type itself, if it is
+  // not qualified.
+  //
+  static semantics::type&
+  utype (semantics::type&);
+
+  // The same as above, but also returns the name hint for the unqualified
+  // type. If the original type is already unqualified, then the hint
+  // argument is not modified.
+  //
+  static semantics::type&
+  utype (semantics::type&, semantics::names*& hint);
+
+  // The same for a member's type.
+  //
+  static semantics::type&
+  utype (semantics::data_member& m)
+  {
+    return utype (m.type ());
+  }
+
+  // In addition to the unqualified type, this version also returns the
+  // name hint for this type. If the member type is already unqualified,
+  // then the hint is from the belongs edge. Otherwise, it is from the
+  // qualifies edge.
+  //
+  static semantics::type&
+  utype (semantics::data_member&, semantics::names*& hint);
+
+  static bool
+  const_type (semantics::type&);
+
   static semantics::type&
   member_type (semantics::data_member& m, string const& key_prefix);
+
+  static semantics::type&
+  member_utype (semantics::data_member& m, string const& key_prefix)
+  {
+    return utype (member_type (m, key_prefix));
+  }
 
   // Predicates.
   //
@@ -246,7 +284,8 @@ public:
   }
 
   // Check whether the type is a wrapper. Return the wrapped type if
-  // it is a wrapper and NULL otherwise.
+  // it is a wrapper and NULL otherwise. Note that the returned type
+  // may be cvr-qualified.
   //
   static semantics::type*
   wrapper (semantics::type& t)
@@ -288,7 +327,7 @@ public:
     if (semantics::class_* c = composite (t))
       return c;
     else if (semantics::type* wt = wrapper (t))
-      return composite (*wt);
+      return composite (utype (*wt));
     else
       return 0;
   }
@@ -308,8 +347,12 @@ public:
     if (container (t))
       return &t;
     else if (semantics::type* wt = wrapper (t))
+    {
+      wt = &utype (*wt);
       return container (*wt) ? wt : 0;
-    else return 0;
+    }
+    else
+      return 0;
   }
 
   static semantics::class_*
@@ -491,7 +534,7 @@ public:
   static semantics::data_member*
   inverse (semantics::data_member& m)
   {
-    return object_pointer (m.type ())
+    return object_pointer (utype (m))
       ? m.get<semantics::data_member*> ("inverse", 0)
       : 0;
   }
@@ -502,7 +545,7 @@ public:
     if (key_prefix.empty ())
       return inverse (m);
 
-    return object_pointer (member_type (m, key_prefix))
+    return object_pointer (member_utype (m, key_prefix))
       ? m.get<semantics::data_member*> (key_prefix + "-inverse", 0)
       : 0;
   }
@@ -521,7 +564,7 @@ public:
   static semantics::type&
   container_idt (semantics::data_member& m)
   {
-    return member_type (m, "id");
+    return member_utype (m, "id");
   }
 
   static semantics::type&
@@ -548,7 +591,7 @@ public:
     if (m.count ("unordered"))
       return true;
 
-    if (semantics::type* c = container_wrapper (m.type ()))
+    if (semantics::type* c = container_wrapper (utype (m)))
       return c->count ("unordered");
 
     return false;
@@ -573,7 +616,7 @@ public:
         data_member_scope const& ms,
         unsigned short flags)
   {
-    return is_a (mp, ms, flags, mp.back ()->type (), "");
+    return is_a (mp, ms, flags, utype (*mp.back ()), "");
   }
 
   bool

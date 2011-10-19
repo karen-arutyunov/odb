@@ -242,7 +242,7 @@ readonly (semantics::data_member& m)
 bool context::
 null (semantics::data_member& m)
 {
-  semantics::type& t (m.type ());
+  semantics::type& t (utype (m));
 
   if (object_pointer (t))
   {
@@ -306,8 +306,8 @@ null (semantics::data_member& m, string const& kp)
   if (kp.empty ())
     return null (m);
 
-  semantics::type& c (m.type ());
-  semantics::type& t (member_type (m, kp));
+  semantics::type& c (utype (m));
+  semantics::type& t (member_utype (m, kp));
 
   if (object_pointer (t))
   {
@@ -362,7 +362,10 @@ null (semantics::data_member& m, string const& kp)
 
             // Otherwise, check the wrapped type.
             //
-            if (t.get<semantics::type*> ("wrapper-type")->count ("null"))
+            semantics::type& wt (
+              utype (*t.get<semantics::type*> ("wrapper-type")));
+
+            if (wt.count ("null"))
               return true;
           }
         }
@@ -415,8 +418,58 @@ restore ()
 }
 
 semantics::type& context::
+utype (semantics::type& t)
+{
+  if (semantics::qualifier* q = dynamic_cast<semantics::qualifier*> (&t))
+    return q->base_type ();
+  else
+    return t;
+}
+
+semantics::type& context::
+utype (semantics::type& t, semantics::names*& hint)
+{
+  if (semantics::qualifier* q = dynamic_cast<semantics::qualifier*> (&t))
+  {
+    hint = q->qualifies ().hint ();
+    return q->base_type ();
+  }
+  else
+    return t;
+}
+
+semantics::type& context::
+utype (semantics::data_member& m, semantics::names*& hint)
+{
+  semantics::type& t (m.type ());
+
+  if (semantics::qualifier* q = dynamic_cast<semantics::qualifier*> (&t))
+  {
+    hint = q->qualifies ().hint ();
+    return q->base_type ();
+  }
+  else
+  {
+    hint = m.belongs ().hint ();
+    return t;
+  }
+}
+
+bool context::
+const_type (semantics::type& t)
+{
+  if (semantics::qualifier* q = dynamic_cast<semantics::qualifier*> (&t))
+    return q->const_ ();
+
+  return false;
+}
+
+semantics::type& context::
 member_type (semantics::data_member& m, string const& key_prefix)
 {
+  // This function returns the potentially-qualified type but for
+  // intermediate types we use unqualified versions.
+  //
   if (key_prefix.empty ())
     return m.type ();
 
@@ -427,10 +480,10 @@ member_type (semantics::data_member& m, string const& key_prefix)
 
   // "See throught" wrappers.
   //
-  semantics::type& t (m.type ());
+  semantics::type& t (utype (m));
 
   if (semantics::type* wt = wrapper (t))
-    return *indirect_value<semantics::type*> (*wt, key);
+    return *indirect_value<semantics::type*> (utype (*wt), key);
   else
     return *indirect_value<semantics::type*> (t, key);
 }
@@ -564,7 +617,7 @@ column_name (data_member_path const& mp) const
   {
     semantics::data_member& m (**i);
 
-    if (composite_wrapper (m.type ()))
+    if (composite_wrapper (utype (m)))
       r += object_columns_base::column_prefix (m);
     else
       r += column_name (m);
@@ -576,16 +629,22 @@ column_name (data_member_path const& mp) const
 string context::
 column_name (semantics::data_member& m, string const& p, string const& d) const
 {
-  // A container column name can be specified for the member of for the
+  // A container column name can be specified for the member or for the
   // container type.
   //
   string key (p + "-column");
+
   if (m.count (key))
     return m.get<string> (key);
-  else if (m.type ().count (key))
-    return m.type ().get<string> (key);
   else
-    return d;
+  {
+    semantics::type& t (utype (m));
+
+    if (t.count (key))
+      return t.get<string> (key);
+  }
+
+  return d;
 }
 
 string context::
@@ -601,7 +660,7 @@ column_options (semantics::data_member& m)
 {
   // Accumulate options from both type and member.
   //
-  semantics::type& t (m.type ());
+  semantics::type& t (utype (m));
 
   string r;
 
@@ -654,8 +713,8 @@ column_options (semantics::data_member& m, string const& kp)
 
   // Accumulate options from type, container, and member.
   //
-  semantics::type& c (m.type ());
-  semantics::type& t (member_type (m, kp));
+  semantics::type& c (utype (m));
+  semantics::type& t (member_utype (m, kp));
 
   string r;
 
@@ -1120,38 +1179,32 @@ is_a (data_member_path const& mp,
   semantics::data_member& m (*mp.back ());
 
   if (f & test_pointer)
-  {
     r = r || object_pointer (t);
-  }
 
   if (f & test_eager_pointer)
-  {
     r = r || (object_pointer (t) && !lazy_pointer (t));
-  }
 
   if (f & test_lazy_pointer)
-  {
     r = r || (object_pointer (t) && lazy_pointer (t));
-  }
 
-  if (f & test_container)
+  if ((f & (test_container |
+            test_straight_container |
+            test_inverse_container |
+            test_readonly_container)) != 0)
   {
-    r = r || container_wrapper (m.type ());
-  }
+    semantics::type& c (utype (m));
 
-  if (f & test_straight_container)
-  {
-    r = r || (container_wrapper (m.type ()) && !inverse (m, kp));
-  }
+    if (f & test_container)
+      r = r || container_wrapper (c);
 
-  if (f & test_inverse_container)
-  {
-    r = r || (container_wrapper (m.type ()) && inverse (m, kp));
-  }
+    if (f & test_straight_container)
+      r = r || (container_wrapper (c) && !inverse (m, kp));
 
-  if (f & test_readonly_container)
-  {
-    r = r || (container_wrapper (m.type ()) && readonly (mp, ms));
+    if (f & test_inverse_container)
+      r = r || (container_wrapper (c) && inverse (m, kp));
+
+    if (f & test_readonly_container)
+      r = r || (container_wrapper (c) && readonly (mp, ms));
   }
 
   return r;

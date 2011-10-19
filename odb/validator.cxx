@@ -57,10 +57,10 @@ namespace
         return;
 
       count_++;
-      semantics::type& type (m.type ());
-      semantics::belongs& b (m.belongs ());
+      semantics::names* hint;
+      semantics::type& t (context::utype (m, hint));
 
-      if (type.fq_anonymous (b.hint ()))
+      if (t.fq_anonymous (hint))
       {
         cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
              << " error: unnamed type in data member declaration" << endl;
@@ -561,7 +561,7 @@ namespace
     virtual void
     traverse_simple (semantics::data_member& m)
     {
-      if (context::object_pointer (m.type ()))
+      if (context::object_pointer (utype (m)))
       {
         semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
 

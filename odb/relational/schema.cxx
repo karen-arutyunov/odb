@@ -27,7 +27,7 @@ namespace relational
     {
       default_value* dv (0);
 
-      semantics::type& t (m.type ());
+      semantics::type& t (utype (m));
 
       if (m.count ("default"))
         dv = &m.get<default_value> ("default");

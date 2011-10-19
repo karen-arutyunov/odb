@@ -217,7 +217,7 @@ namespace relational
           // is_null()/is_not_null() will be valid for composite values
           // as well.
           //
-          if (!context::composite_wrapper (m->type ()))
+          if (!context::composite_wrapper (context::utype (*m)))
             break;
 
           ptt = tt;
@@ -259,7 +259,7 @@ namespace relational
         {
           using semantics::type;
 
-          type* t (&m->type ());
+          type* t (&context::utype (*m));
 
           if (type* c = context::container_wrapper (*t))
             t = &context::container_vt (*c);

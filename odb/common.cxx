@@ -163,7 +163,7 @@ traverse (semantics::data_member& m)
 
   om_.member_path_.push_back (&m);
 
-  semantics::type& t (m.type ());
+  semantics::type& t (utype (m));
 
   if (semantics::class_* comp = context::composite_wrapper (t))
   {
@@ -410,7 +410,7 @@ traverse (semantics::data_member& m)
 
   oc_.member_path_.push_back (&m);
 
-  semantics::type& t (m.type ());
+  semantics::type& t (utype (m));
 
   if (semantics::class_* comp = composite_wrapper (t))
   {

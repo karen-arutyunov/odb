@@ -629,7 +629,7 @@ namespace relational
             // When handling a pointer, mi.t is the id type of the referenced
             // object.
             //
-            semantics::type& mt (member_type (mi.m, key_prefix_));
+            semantics::type& mt (member_utype (mi.m, key_prefix_));
 
             if (semantics::class_* c = object_pointer (mt))
             {
@@ -702,7 +702,7 @@ namespace relational
             // When handling a pointer, mi.t is the id type of the referenced
             // object.
             //
-            if (object_pointer (member_type (mi.m, key_prefix_)))
+            if (object_pointer (member_utype (mi.m, key_prefix_)))
             {
               os << "}";
 
@@ -876,6 +876,10 @@ namespace relational
             string const& name (mi.m.name ());
             member = "o." + name;
 
+            if (mi.cq)
+              member = "const_cast< " + mi.fq_type (false) + "& > (" +
+                member + ")";
+
             os << "// " << name << endl
                << "//" << endl;
           }
@@ -889,7 +893,7 @@ namespace relational
             // Here we need the wrapper type, not the wrapped type.
             //
             member = "wrapper_traits< " + mi.fq_type (false) + " >::" +
-              "set_ref (" + member + ")";
+              "set_ref (\n" + member + ")";
           }
 
           if (composite (mi.t))
@@ -899,7 +903,7 @@ namespace relational
             // When handling a pointer, mi.t is the id type of the referenced
             // object.
             //
-            semantics::type& mt (member_type (mi.m, key_prefix_));
+            semantics::type& mt (member_utype (mi.m, key_prefix_));
 
             if (semantics::class_* c = object_pointer (mt))
             {
@@ -950,13 +954,20 @@ namespace relational
           // When handling a pointer, mi.t is the id type of the referenced
           // object.
           //
-          semantics::type& mt (member_type (mi.m, key_prefix_));
+          semantics::type& mt (member_utype (mi.m, key_prefix_));
 
           if (object_pointer (mt))
           {
-            member = member_override_.empty ()
-              ? "o." + mi.m.name ()
-              : member_override_;
+            if (!member_override_.empty ())
+              member = member_override_;
+            else
+            {
+              member = "o." + mi.m.name ();
+
+              if (mi.cq)
+                member = "const_cast< " + mi.fq_type (false) + "& > (" +
+                  member + ")";
+            }
 
             if (lazy_pointer (mt))
               os << member << " = ptr_traits::pointer_type (db, id);";
@@ -987,8 +998,9 @@ namespace relational
         traverse_integer (member_info& mi)
         {
           os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, " <<
-            "i." << mi.var << "null);"
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "null);"
              << endl;
         }
 
@@ -996,8 +1008,9 @@ namespace relational
         traverse_float (member_info& mi)
         {
           os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, " <<
-            "i." << mi.var << "null);"
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "null);"
              << endl;
         }
 
@@ -1016,8 +1029,9 @@ namespace relational
         traverse_date_time (member_info& mi)
         {
           os << traits << "::set_value (" << endl
-             << member << ", i." << mi.var << "value, " <<
-            "i." << mi.var << "null);"
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "null);"
              << endl;
         }
 

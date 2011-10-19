@@ -363,7 +363,7 @@ namespace relational
       virtual void
       reference (semantics::data_member& m)
       {
-        if (semantics::class_* c = object_pointer (member_type (m, prefix_)))
+        if (semantics::class_* c = object_pointer (member_utype (m, prefix_)))
         {
           os << " REFERENCES " << table_qname (*c) << " (" <<
             column_qname (*id_member (*c)) << ")";

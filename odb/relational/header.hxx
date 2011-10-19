@@ -523,16 +523,24 @@ namespace relational
         os << "typedef ";
 
         {
-          semantics::type& t (m.type ());
+          semantics::names* hint;
+          semantics::type& t (utype (m, hint));
 
-          if (wrapper (t))
-            // Use the hint from the wrapper.
+          if (semantics::type* wt = wrapper (t))
+          {
+            // Use the hint from the wrapper unless the wrapped type is
+            // qualified. In this case use the hint for the unqualified
+            // type.
             //
-            os << c.fq_name (t.get<semantics::names*> ("wrapper-hint"));
+            hint = t.get<semantics::names*> ("wrapper-hint");
+            utype (*wt, hint);
+
+            os << c.fq_name (hint);
+          }
           else
             // t and c are the same.
             //
-            os << c.fq_name (m.belongs ().hint ());
+            os << t.fq_name (hint);
         }
 
         os << " container_type;";
@@ -986,10 +994,13 @@ namespace relational
           }
           else
           {
-            os << "typedef " << id->type ().fq_name (id->belongs ().hint ()) <<
-              " id_type;"
-               << endl
-               << "static const bool auto_id = " <<
+            semantics::names* hint;
+            semantics::type& t (utype (*id, hint));
+
+            os << "typedef " << t.fq_name (hint) << " id_type;"
+               << endl;
+
+            os << "static const bool auto_id = " <<
               (auto_id ? "true" : "false") << ";"
                << endl;
 

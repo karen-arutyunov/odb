@@ -44,9 +44,13 @@ namespace tracer
 
         // id_type
         //
-        os << "typedef " << id.type ().fq_name (id.belongs ().hint ()) <<
-          " id_type;"
-           << endl;
+        {
+          semantics::names* hint;
+          semantics::type& t (utype (id, hint));
+
+          os << "typedef " << t.fq_name (hint) << " id_type;"
+             << endl;
+        }
 
         // type_name ()
         //

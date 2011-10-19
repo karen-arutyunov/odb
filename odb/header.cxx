@@ -20,7 +20,10 @@ namespace
         return;
 
       string const& name (public_name (m));
-      string const& type (m.type ().fq_name (m.belongs ().hint ()));
+
+      semantics::names* hint;
+      semantics::type& t (utype (m, hint));
+      string const& type (t.fq_name (hint));
 
       os << "static " << type << "&" << endl
          << name << " (value_type&);"

@@ -82,7 +82,7 @@ namespace relational
   bool query_columns_base::
   traverse_column (semantics::data_member& m, string const& column, bool)
   {
-    semantics::class_* ptr (object_pointer (m.type ()));
+    semantics::class_* ptr (object_pointer (utype (m)));
 
     if (ptr == 0)
       return false;
@@ -211,7 +211,9 @@ namespace relational
   bool query_columns::
   traverse_column (semantics::data_member& m, string const& column, bool)
   {
-    semantics::class_* ptr (object_pointer (m.type ()));
+    semantics::names* hint;
+    semantics::type& t (utype (m, hint));
+    semantics::class_* ptr (object_pointer (t));
 
     if (ptr != 0)
     {
@@ -233,10 +235,11 @@ namespace relational
       if (ptr != 0)
       {
         semantics::data_member& id (*id_member (*ptr));
-        type = id.type ().fq_name (id.belongs ().hint ());
+        semantics::type& t (utype (id, hint));
+        type = t.fq_name (hint);
       }
       else
-        type = m.type ().fq_name (m.belongs ().hint ());
+        type = t.fq_name (hint);
 
       string type_id (database_type_id (m));
 

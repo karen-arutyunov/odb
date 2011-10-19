@@ -94,9 +94,9 @@ namespace relational
         //
         if (im != 0)
         {
-          semantics::class_* c (object_pointer (m.type ()));
+          semantics::class_* c (object_pointer (utype (m)));
 
-          if (container_wrapper (im->type ()))
+          if (container_wrapper (utype (*im)))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name. We don't assign join
@@ -404,7 +404,7 @@ namespace relational
       virtual bool
       traverse_column (semantics::data_member& m, string const& column, bool)
       {
-        semantics::class_* c (object_pointer (m.type ()));
+        semantics::class_* c (object_pointer (utype (m)));
 
         if (c == 0)
           return false;
@@ -414,7 +414,7 @@ namespace relational
 
         if (semantics::data_member* im = inverse (m))
         {
-          if (container_wrapper (im->type ()))
+          if (container_wrapper (utype (*im)))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
@@ -924,7 +924,7 @@ namespace relational
             string inv_id;    // Other id column.
             string inv_fid;   // Other foreign id column (ref to us).
 
-            if (container_wrapper (im->type ()))
+            if (container_wrapper (utype (*im)))
             {
               // many(i)-to-many
               //
@@ -1948,15 +1948,28 @@ namespace relational
         //
         if (w != 0)
         {
+          semantics::names* hint;
+          semantics::type& t (utype (*m, hint));
+
           // Because we cannot have nested containers, m.type () should
           // be the same as w.
           //
-          assert (m != 0 && &m->type () == w);
-          string const& type (m->type ().fq_name (m->belongs ().hint ()));
+          assert (&t == w);
+
+          string const& type (t.fq_name (hint));
+
+          if (call_ == load_call && const_type (m->type ()))
+            obj_prefix_ = "const_cast< " + type + "& > (\n" +
+              obj_prefix_ + ")";
 
           obj_prefix_ = "wrapper_traits< " + type + " >::" +
             (call_ == load_call ? "set_ref" : "get_ref") +
-            " (" + obj_prefix_ + ")";
+            " (\n" + obj_prefix_ + ")";
+        }
+        else if (call_ == load_call && const_type (m->type ()))
+        {
+          obj_prefix_ = "const_cast< " + c.fq_name () + "& > (\n" +
+            obj_prefix_ + ")";
         }
 
         obj_prefix_ += '.';
@@ -1977,19 +1990,35 @@ namespace relational
         string sts_name (flat_prefix_ + name);
         string traits (flat_prefix_ + public_name (m) + "_traits");
 
+        if (call_ == load_call && const_type (m.type ()))
+        {
+
+        }
+
+        semantics::names* hint;
+        semantics::type& t (utype (m, hint));
+
         // If this is a wrapped container, then we need to "unwrap" it.
         //
+        if (wrapper (t))
         {
-          semantics::type& t (m.type ());
-          if (wrapper (t))
-          {
-            string const& type (t.fq_name (m.belongs ().hint ()));
+          string const& type (t.fq_name (hint));
 
-            obj_name = "wrapper_traits< " + type + " >::" +
-              (call_ == load_call ? "set_ref" : "get_ref") +
-              " (" + obj_name + ")";
-          }
+          // We cannot use traits::container_type here.
+          //
+          if (call_ == load_call && const_type (m.type ()))
+            obj_name = "const_cast< " + type + "& > (\n" + obj_name + ")";
+
+          obj_name = "wrapper_traits< " + type + " >::" +
+            (call_ == load_call ? "set_ref" : "get_ref") +
+            " (\n" + obj_name + ")";
         }
+        else if (call_ == load_call && const_type (m.type ()))
+        {
+          obj_name = "const_cast< " + traits + "::container_type& > (\n" +
+            obj_name + ")";
+        }
+
 
         switch (call_)
         {
@@ -2597,8 +2626,15 @@ namespace relational
            << endl;
 
         if (auto_id)
-          os << "obj." << id->name () << " = static_cast<id_type> (st.id ());"
+        {
+          if (const_type (id->type ()))
+            os << "const_cast< id_type& > (obj." << id->name () << ")";
+          else
+            os << "obj." << id->name ();
+
+          os << " = static_cast< id_type > (st.id ());"
              << endl;
+        }
 
         if (straight_containers)
         {
@@ -3453,11 +3489,12 @@ namespace relational
               // some sanity checks while at it.
               //
               semantics::class_* c (0);
+              semantics::type& t (utype (m));
 
-              if (semantics::type* cont = container_wrapper (m.type ()))
+              if (semantics::type* cont = container_wrapper (t))
                 c = object_pointer (container_vt (*cont));
               else
-                c = object_pointer (m.type ());
+                c = object_pointer (t);
 
               view_object const* vo (0);
 
@@ -3542,7 +3579,8 @@ namespace relational
               data_member* im (inverse (m));
 
               semantics::type* cont (
-                container_wrapper (im != 0 ? im->type () : m.type ()));
+                container_wrapper (
+                  utype (im != 0 ? *im : m)));
 
               // Container table.
               //

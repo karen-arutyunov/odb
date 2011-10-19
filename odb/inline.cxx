@@ -24,15 +24,25 @@ namespace
       if (transient (m))
         return;
 
+      semantics::type& t (m.type ());
+
       string const& name (public_name (m));
-      string const& type (m.type ().fq_name (m.belongs ().hint ()));
+
+      semantics::names* hint;
+      semantics::type& ut (utype (m, hint));
+      string const& type (ut.fq_name (hint));
 
       os << "inline" << endl
          << type << "& " << scope_ << "::" << endl
          << name << " (value_type& v)"
-         << "{"
-         << "return v." << m.name () << ";"
-         << "}";
+         << "{";
+
+      if (const_type (t))
+        os << "return const_cast< " << type << "& > (v." << m.name () << ");";
+      else
+        os << "return v." << m.name () << ";";
+
+      os << "}";
 
       os << "inline" << endl
          << "const " << type << "& " << scope_ << "::" << endl

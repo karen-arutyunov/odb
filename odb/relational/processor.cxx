@@ -120,16 +120,32 @@ namespace relational
         if (transient (m))
           return;
 
-        semantics::type& t (m.type ());
+        semantics::names* hint;
+        semantics::type& t (utype (m, hint));
 
         // Handle wrappers.
         //
-        semantics::type* wt (0);
-        semantics::names* wh (0);
+        semantics::type* wt (0), *qwt (0);
+        semantics::names* whint (0);
         if (process_wrapper (t))
         {
-          wt = t.get<semantics::type*> ("wrapper-type");
-          wh = t.get<semantics::names*> ("wrapper-hint");
+          qwt = t.get<semantics::type*> ("wrapper-type");
+          whint = t.get<semantics::names*> ("wrapper-hint");
+          wt = &utype (*qwt, whint);
+        }
+
+        // If the type is const and the member is not id or inverse, then
+        // mark it as readonly. In case of a wrapper, both the wrapper type
+        // and the wrapped type must be const. To see why, consider these
+        // possibilities:
+        //
+        // auto_ptr<const T> - can modify by setting a new pointer
+        // const auto_ptr<T> - can modify by changing the pointed-to value
+        //
+        if (const_type (m.type ()) && !(m.count ("id") || m.count ("inverse")))
+        {
+          if (qwt == 0 || const_type (*qwt))
+            m.set ("readonly", true);
         }
 
         // Nothing to do if this is a composite value type.
@@ -145,10 +161,12 @@ namespace relational
         if (semantics::class_* c = process_object_pointer (m, t))
         {
           // This is an object pointer. The column type is the pointed-to
-          // object id type. Except by default it can be NULL.
+          // object id type.
           //
           semantics::data_member& id (*id_member (*c));
-          semantics::type& idt (id.type ());
+
+          semantics::names* idhint;
+          semantics::type& idt (utype (id, idhint));
 
           if (type.empty () && id.count ("type"))
             type = id.get<string> ("type");
@@ -160,7 +178,7 @@ namespace relational
             type = idt.get<string> ("type");
 
           if (type.empty ())
-            type = database_type (idt, id.belongs ().hint (), true);
+            type = database_type (idt, idhint, true);
         }
         else
         {
@@ -178,10 +196,10 @@ namespace relational
             type = wt->get<string> ("type");
 
           if (type.empty ())
-            type = database_type (t, m.belongs ().hint (), m.count ("id"));
+            type = database_type (t, hint, m.count ("id"));
 
           if (type.empty () && wt != 0)
-            type = database_type (*wt, wh, m.count ("id"));
+            type = database_type (*wt, whint, m.count ("id"));
         }
 
         if (!type.empty ())
@@ -190,7 +208,7 @@ namespace relational
 
           // Issue a warning if we are relaxing null-ness.
           //
-          if (m.count ("null") && m.type ().count ("not-null"))
+          if (m.count ("null") && t.count ("not-null"))
           {
             os << m.file () << ":" << m.line () << ":" << m.column () << ":"
                << " warning: data member declared null while its type is "
@@ -208,11 +226,10 @@ namespace relational
 
         // If it is none of the above then we have an error.
         //
-        string const& fq_type (t.fq_name (m.belongs ().hint ()));
-
         os << m.file () << ":" << m.line () << ":" << m.column () << ":"
-           << " error: unable to map C++ type '" << fq_type << "' used in "
-           << "data member '" << m.name () << "' to a database type" << endl;
+           << " error: unable to map C++ type '" << t.fq_name (hint)
+           << "' used in data member '" << m.name () << "' to a "
+           << "database type" << endl;
 
         os << m.file () << ":" << m.line () << ":" << m.column () << ":"
            << " info: use '#pragma db type' to specify the database type"
@@ -240,7 +257,7 @@ namespace relational
           return;
 
         string type;
-        semantics::type& ct (m.type ());
+        semantics::type& ct (utype (m));
 
         // Custom mapping can come from these places (listed in the order
         // of priority): member, container type, value type. To complicate
@@ -260,7 +277,9 @@ namespace relational
           // object id type. Except by default it can be NULL.
           //
           semantics::data_member& id (*id_member (*c));
-          semantics::type& idt (id.type ());
+
+          semantics::names* hint;
+          semantics::type& idt (utype (id, hint));
 
           if (type.empty () && id.count ("type"))
             type = id.get<string> ("type");
@@ -272,7 +291,7 @@ namespace relational
             type = idt.get<string> ("type");
 
           if (type.empty ())
-            type = database_type (idt, id.belongs ().hint (), true);
+            type = database_type (idt, hint, true);
         }
         else
         {
@@ -908,7 +927,15 @@ namespace relational
           if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
             throw operation_failed ();
 
-          tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
+          // The wrapped_type alias is a typedef in an instantiation
+          // that we just instantiated dynamically. As a result there
+          // is no semantic graph edges corresponding to this typedef
+          // since we haven't parsed it yet. So to get the tree node
+          // that can actually be resolved to the graph node, we use
+          // the source type of this typedef.
+          //
+          tree type (DECL_ORIGINAL_TYPE (decl));
+
           semantics::type& wt (
             dynamic_cast<semantics::type&> (*unit.find (type)));
 
@@ -1300,7 +1327,7 @@ namespace relational
               throw operation_failed ();
             }
 
-            if (!member_resolver::check_types (src_m->type (), m.type ()))
+            if (!member_resolver::check_types (utype (*src_m), utype (m)))
             {
               warn (e.loc)
                 << "object data member '" << src_m->name () << "' specified "
@@ -1400,7 +1427,7 @@ namespace relational
         {
           if (src_m->count ("type"))
             m.set ("column-type", src_m->get<string> ("column-type"));
-          else if (semantics::class_* c = object_pointer (src_m->type ()))
+          else if (semantics::class_* c = object_pointer (utype (*src_m)))
           {
             semantics::data_member& id (*id_member (*c));
 
@@ -1446,7 +1473,6 @@ namespace relational
         check_types (semantics::type& ot, semantics::type& vt)
         {
           using semantics::type;
-          using semantics::derived_type;
 
           // Require that the types be the same sans the wrapping and
           // cvr-qualification. If the object member type is a pointer,
@@ -1455,23 +1481,17 @@ namespace relational
           type* t1;
 
           if (semantics::class_* c = object_pointer (ot))
-            t1 = &id_member (*c)->type ();
+            t1 = &utype (*id_member (*c));
           else
             t1 = &ot;
 
           type* t2 (&vt);
 
           if (type* wt1 = context::wrapper (*t1))
-            t1 = wt1;
+            t1 = &utype (*wt1);
 
           if (type* wt2 = context::wrapper (*t2))
-            t2 = wt2;
-
-          if (derived_type* dt1 = dynamic_cast<derived_type*> (t1))
-            t1 = &dt1->base_type ();
-
-          if (derived_type* dt2 = dynamic_cast<derived_type*> (t2))
-            t2 = &dt2->base_type ();
+            t2 = &utype (*wt2);
 
           if (t1 != t2)
             return false;
@@ -1489,7 +1509,7 @@ namespace relational
                 pub_members_ (pub_members),
                 name_ (m.name ()),
                 pub_name_ (context::current ().public_name (m)),
-                type_ (m.type ())
+                type_ (utype (m))
           {
           }
 
@@ -1539,7 +1559,7 @@ namespace relational
             if (context::transient (m) || context::inverse (m))
               return false;
 
-            return check_types (m.type (), type_);
+            return check_types (utype (m), type_);
           }
 
           assoc_members& members_;
@@ -1903,7 +1923,7 @@ namespace relational
         virtual void
         traverse_simple (semantics::data_member& m)
         {
-          if (semantics::class_* c = object_pointer (m.type ()))
+          if (semantics::class_* c = object_pointer (utype (m)))
           {
             // Ignore inverse sides of the same relationship to avoid
             // phony conflicts caused by the direct side that will end

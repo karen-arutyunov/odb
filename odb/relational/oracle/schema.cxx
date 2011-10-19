@@ -201,7 +201,8 @@ namespace relational
           if (inverse (m))
             return false;
 
-          if (semantics::class_* c = object_pointer (member_type (m, prefix_)))
+          if (semantics::class_* c =
+              object_pointer (member_utype (m, prefix_)))
           {
             pre_statement ();
 
