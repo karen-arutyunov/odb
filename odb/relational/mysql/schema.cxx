@@ -44,17 +44,15 @@ namespace relational
         virtual void
         null (semantics::data_member& m)
         {
-          if (!context::null (m, prefix_))
-            os << " NOT NULL";
+          // MySQL TIMESTAMP is by default NOT NULL. If we want it
+          // to contain NULL values, we need to explicitly declare
+          // the column as NULL.
+          //
+          if (context::null (m, prefix_) &&
+              column_sql_type (m, prefix_).type == sql_type::TIMESTAMP)
+            os << " NULL";
           else
-          {
-            // MySQL TIMESTAMP is by default NOT NULL. If we want it
-            // to contain NULL values, we need to explicitly declare
-            // the column as NULL.
-            //
-            if (column_sql_type (m, prefix_).type == sql_type::TIMESTAMP)
-              os << " NULL";
-          }
+            base::null (m);
         }
 
         virtual void
