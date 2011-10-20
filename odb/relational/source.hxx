@@ -1974,6 +1974,12 @@ namespace relational
         }
       }
 
+      size_t
+      count () const
+      {
+        return count_;
+      }
+
     private:
       string& params_;
       size_t count_;
@@ -2055,6 +2061,25 @@ namespace relational
           traverse_view (c);
         else if (composite (c))
           traverse_composite (c);
+      }
+
+      //
+      // statements
+      //
+
+      virtual void
+      persist_stmt (type& c)
+      {
+        os << strlit ("INSERT INTO " + table_qname(c) + " (") << endl;
+
+        instance<object_columns> ct (false);
+        ct->traverse (c);
+
+        string values;
+        instance<persist_statement_params> pt (values);
+        pt->traverse (c);
+
+        os << strlit (") VALUES (" + values + ")");
       }
 
       //
@@ -2308,17 +2333,11 @@ namespace relational
         //
         {
           os << "const char " << traits << "::persist_statement[] " <<
-            "=" << endl
-             << strlit ("INSERT INTO " + table + " (") << endl;
+            "=" << endl;
 
-          instance<object_columns> ct (false);
-          ct->traverse (c);
+          persist_stmt (c);
 
-          string values;
-          instance<persist_statement_params> pt (values);
-          pt->traverse (c);
-
-          os << strlit (") VALUES (" + values + ")") << ";"
+          os << ";"
              << endl;
         }
 

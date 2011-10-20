@@ -763,6 +763,35 @@ namespace relational
         {
           os << "sts.find_statement ().stream_result ();";
         }
+
+        virtual void
+        persist_stmt (type& c)
+        {
+          os << strlit ("INSERT INTO " + table_qname (c) + " (") << endl;
+
+          instance<relational::object_columns> ct (false);
+          ct->traverse (c);
+
+          string values;
+          instance<relational::persist_statement_params> pt (values);
+          pt->traverse (c);
+
+          os << strlit (") VALUES (" + values + ")");
+
+          semantics::data_member* id (id_member (c));
+
+          if (id->count ("auto"))
+          {
+            ostringstream n;
+            n << pt->count () + 1;
+
+            os << endl
+               << strlit (" RETURNING " +
+                          column_qname (*id) +
+                          " INTO :" +
+                          n.str ());
+          }
+        }
       };
       entry<class_> class_entry_;
     }
