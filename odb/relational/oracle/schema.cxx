@@ -25,21 +25,10 @@ namespace relational
         schema_emitter (const base& x): base (x) {}
 
         virtual void
-        pre ()
-        {
-          first_ = true;
-        }
-
-        virtual void
         line (const std::string& l)
         {
-          if (first_)
-            first_ = false;
-          else
-            os << endl;
-
+          base::line (l);
           last_ = l;
-          os << l;
         }
 
         virtual void
@@ -49,7 +38,9 @@ namespace relational
           {
             if (last_ == "END;")
               os << endl
-                 << '/' << endl;
+                 << '/' << endl
+                 << endl;
+
             else
               os << ';' << endl
                  << endl;
@@ -57,7 +48,6 @@ namespace relational
         }
 
       private:
-        bool first_;
         string last_;
       };
       entry<schema_emitter> schema_emitter_;

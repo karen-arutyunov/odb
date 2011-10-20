@@ -73,7 +73,7 @@ namespace relational
              << endl;
       }
 
-    private:
+    protected:
       bool first_;
     };
 
