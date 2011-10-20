@@ -301,19 +301,27 @@ namespace relational
           {
             string seq_name (quote_id (name + "_seq"));
 
+            pre_statement ();
+
             os_ << "CREATE SEQUENCE " << seq_name << endl
-                << "  START WITH 1 INCREMENT BY 1;" << endl;
+                << "  START WITH 1 INCREMENT BY 1" << endl
+                << endl;
+
+            post_statement ();
+
+            pre_statement ();
 
             os_ << "CREATE TRIGGER " <<
               quote_id (name + "_trig") << endl
                 << "  BEFORE INSERT ON " << quote_id (name) << endl
                 << "  FOR EACH ROW" << endl
                 << "BEGIN" << endl
-                << "  SELECT " << seq_name << ".nextval INTO :new. " <<
+                << "  SELECT " << seq_name << ".nextval INTO :new." <<
               column_qname (*id) << " FROM DUAL;" << endl
-                << "END;";
-          }
+                << "END;" << endl;
 
+            post_statement ();
+          }
 
           object_columns_references ocr (e_, os_, name);
           ocr.traverse (c);
