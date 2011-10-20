@@ -100,6 +100,17 @@ namespace relational
     }
 
     string context::
+    quote_id_impl (string const& id) const
+    {
+      string r;
+      r.reserve (32);
+      r += '"';
+      r.append (id, 0, 30);
+      r += '"';
+      return r;
+    }
+
+    string context::
     database_type_impl (semantics::type& t, semantics::names* hint, bool id)
     {
       string r (base_context::database_type_impl (t, hint, id));
