@@ -385,7 +385,7 @@ namespace relational
           line += i->table;
 
           if (!i->alias.empty ())
-            line += (use_as ? " AS " : " ") + i->alias;
+            line += (need_alias_as ? " AS " : " ") + i->alias;
 
           line += " ON ";
           line += i->cond;
@@ -3201,7 +3201,7 @@ namespace relational
                   l += quote_id (i->orig_name);
 
                   if (!i->alias.empty ())
-                    l += (use_as ? " AS " : " ") + quote_id (i->alias);
+                    l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
 
                   os << "r += " << strlit (l) << ";"
                      << endl;
@@ -3213,7 +3213,7 @@ namespace relational
                 l += quote_id (i->orig_name);
 
                 if (!i->alias.empty ())
-                  l += (use_as ? " AS " : " ") + quote_id (i->alias);
+                  l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
 
                 expression e (
                   translate_expression (
@@ -3254,7 +3254,7 @@ namespace relational
                 l += table_qname (*i->obj);
 
                 if (!i->alias.empty ())
-                  l += (use_as ? " AS " : " ") + quote_id (i->alias);
+                  l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
 
                 os << "r += " << strlit (l) << ";"
                    << endl;
@@ -3274,7 +3274,7 @@ namespace relational
                 l += table_qname (*i->obj);
 
                 if (!i->alias.empty ())
-                  l += (use_as ? " AS " : " ") + quote_id (i->alias);
+                  l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
 
                 l += " ON";
 
@@ -3488,7 +3488,7 @@ namespace relational
               l += table_qname (*i->obj);
 
               if (!i->alias.empty ())
-                l += (use_as ? " AS " : " ") + quote_id (i->alias);
+                l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
 
               l += " ON";
               os << "r += " << strlit (l) << ";";

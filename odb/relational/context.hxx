@@ -132,7 +132,7 @@ namespace relational
       data (std::ostream& os): root_context::data (os) {}
 
       bool generate_grow_;
-      bool use_as_;
+      bool need_alias_as_;
 
       string bind_vector_;
       string truncated_vector_;
@@ -141,7 +141,7 @@ namespace relational
 
   public:
     bool generate_grow;
-    bool use_as;
+    bool need_alias_as;
 
     string const& bind_vector;
     string const& truncated_vector;

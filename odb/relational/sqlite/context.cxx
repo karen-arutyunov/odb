@@ -74,7 +74,7 @@ namespace relational
       current_ = this;
 
       data_->generate_grow_ = true;
-      data_->use_as_ = true;
+      data_->need_alias_as_ = true;
       data_->bind_vector_ = "sqlite::bind*";
       data_->truncated_vector_ = "bool*";
 
