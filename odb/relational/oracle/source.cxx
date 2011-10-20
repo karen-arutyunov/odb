@@ -386,7 +386,7 @@ namespace relational
         virtual void
         traverse_composite (member_info& mi)
         {
-          os << traits << "init (" << endl
+          os << traits << "::init (" << endl
              << "i." << mi.var << "value," << endl
              << member << ");";
         }

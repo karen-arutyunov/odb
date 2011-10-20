@@ -1264,9 +1264,9 @@ namespace relational
               else
                 os << "init (data_image_type& i, const value_type& v)";
 
-              os<< "{"
-                << "bool grew (false);"
-                << endl;
+              os << "{"
+                 << "bool grew (false);"
+                 << endl;
 
               if (ordered)
               {
@@ -1304,6 +1304,7 @@ namespace relational
                  << "{"
                  << "bool grew (false);"
                  << endl;
+
               break;
             }
           }
