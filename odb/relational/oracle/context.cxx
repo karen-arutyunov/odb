@@ -76,6 +76,7 @@ namespace relational
       current_ = this;
 
       data_->generate_grow_ = false;
+      data_->use_as_ = false;
       data_->bind_vector_ = "oracle::bind*";
 
       // Populate the C++ type to DB type map.
