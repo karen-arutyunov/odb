@@ -149,6 +149,11 @@ namespace relational
           else
             os << " DEFAULT " << static_cast<long long> (e.value ());
         }
+
+        virtual void
+        reference (semantics::data_member&)
+        {
+        }
       };
       entry<object_columns> object_columns_;
 
