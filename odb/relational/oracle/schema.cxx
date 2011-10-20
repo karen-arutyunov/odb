@@ -68,7 +68,7 @@ namespace relational
           os << "BEGIN" << endl
              << "  BEGIN" << endl
              << "    EXECUTE IMMEDIATE 'DROP TABLE " << quote_id (table) <<
-            "';" << endl
+            " CASCADE CONSTRAINTS';" << endl
              << "  EXCEPTION" << endl
              << "    WHEN OTHERS THEN" << endl
              << "      IF SQLCODE != -942 THEN RAISE; END IF;" << endl
