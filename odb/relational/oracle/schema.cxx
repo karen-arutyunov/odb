@@ -112,6 +112,19 @@ namespace relational
         object_columns (base const& x): base (x) {}
 
         virtual void
+        null (semantics::data_member& m)
+        {
+          sql_type::core_type t (column_sql_type (m, prefix_).type);
+
+          // Oracle interprets empty VARCHAR2 and NVARCHAR2 strings as NULL. As
+          // an empty string is always valid within the C++ context, VARCHAR2
+          // and NVARCHAR2 columns are always specified as nullable.
+          //
+          if (t != sql_type::VARCHAR2 && t != sql_type::NVARCHAR2)
+            base::null (m);
+        }
+
+        virtual void
         default_enum (semantics::data_member& m, tree en, string const&)
         {
           // Make sure the column is mapped to Oracle NUMBER.
