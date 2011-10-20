@@ -754,9 +754,8 @@ namespace relational
         class_ (base const& x): base (x) {}
 
         virtual void
-        init_auto_id (semantics::data_member&, string const& im)
+        init_auto_id (semantics::data_member&, string const&)
         {
-          os << im << "value = 0;";
         }
 
         virtual void
