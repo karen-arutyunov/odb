@@ -660,6 +660,7 @@ namespace relational
           os << traits << "::set_value (" << endl
              << member << "," << endl
              << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "size," << endl
              << "i." << mi.var << "indicator == -1);"
              << endl;
         }

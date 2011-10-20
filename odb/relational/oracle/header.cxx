@@ -78,10 +78,10 @@ namespace relational
           if (mi.st->range)
             n = mi.st->range_value / 2 + mi.st->range_value % 2;
 
-          // We require an additional byte for each of the length, exponent,
-          // and negative value terminator values.
+          // We require an additional byte for each of the exponent and
+          // negative value terminator values.
           //
-          n += 3;
+          n += 2;
 
           os << "char " << mi.var << "value[" << n << "];"
              << "ub2 " << mi.var << "size;"
