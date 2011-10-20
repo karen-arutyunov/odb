@@ -1,3 +1,12 @@
+Version 1.7.0
+
+ * Support for read-only objects, composite value types, and data members.
+   The new readonly pragma can be used to declare one of these entities as
+   read-only. Constant data members are automatically treated as read-only.
+   For more information, refer to Section 11.1.4 "readonly (object)",
+   Section 11.3.6 "readonly (composite value)", and Section 11.4.10
+   "readonly (data member)" in the ODB manual.
+
 Version 1.6.0
 
   * New concept, view, is a C++ class that embodies a light-weight, read-
