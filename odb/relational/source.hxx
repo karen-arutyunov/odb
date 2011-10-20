@@ -1955,8 +1955,8 @@ namespace relational
     //
     struct persist_statement_params: object_members_base, virtual context
     {
-      persist_statement_params (string& params)
-          : params_ (params), count_ (0)
+      persist_statement_params (string& params, query_parameters& qp)
+          : params_ (params), count_ (0), qp_ (qp)
       {
       }
 
@@ -1969,22 +1969,16 @@ namespace relational
             params_ += ',';
 
           if (m.count ("id") && m.count ("auto"))
-            params_ += qp->auto_id ();
+            params_ += qp_.auto_id ();
           else
-            params_ += qp->next ();
+            params_ += qp_.next ();
         }
-      }
-
-      size_t
-      count () const
-      {
-        return count_;
       }
 
     private:
       string& params_;
       size_t count_;
-      instance<query_parameters> qp;
+      query_parameters& qp_;
     };
 
     //
@@ -2069,18 +2063,8 @@ namespace relational
       //
 
       virtual void
-      persist_stmt (type& c)
+      persist_stmt_extra (type&, query_parameters&)
       {
-        os << strlit ("INSERT INTO " + table_qname(c) + " (") << endl;
-
-        instance<object_columns> ct (false);
-        ct->traverse (c);
-
-        string values;
-        instance<persist_statement_params> pt (values);
-        pt->traverse (c);
-
-        os << strlit (") VALUES (" + values + ")");
       }
 
       //
@@ -2334,9 +2318,20 @@ namespace relational
         //
         {
           os << "const char " << traits << "::persist_statement[] " <<
-            "=" << endl;
+            "=" << endl
+             << strlit ("INSERT INTO " + table_qname(c) + " (") << endl;
 
-          persist_stmt (c);
+          instance<object_columns> ct (false);
+          ct->traverse (c);
+
+          string values;
+          instance<query_parameters> qp;
+          instance<persist_statement_params> pt (values, *qp);
+          pt->traverse (c);
+
+          os << strlit (") VALUES (" + values + ")");
+
+          persist_stmt_extra (c, *qp);
 
           os << ";"
              << endl;

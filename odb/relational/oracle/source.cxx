@@ -765,31 +765,17 @@ namespace relational
         }
 
         virtual void
-        persist_stmt (type& c)
+        persist_stmt_extra (type& c, relational::query_parameters& qp)
         {
-          os << strlit ("INSERT INTO " + table_qname (c) + " (") << endl;
-
-          instance<relational::object_columns> ct (false);
-          ct->traverse (c);
-
-          string values;
-          instance<relational::persist_statement_params> pt (values);
-          pt->traverse (c);
-
-          os << strlit (") VALUES (" + values + ")");
-
           semantics::data_member* id (id_member (c));
 
           if (id->count ("auto"))
           {
-            ostringstream n;
-            n << pt->count () + 1;
-
             os << endl
                << strlit (" RETURNING " +
                           column_qname (*id) +
-                          " INTO :" +
-                          n.str ());
+                          " INTO " +
+                          qp.next ());
           }
         }
       };
