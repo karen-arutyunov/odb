@@ -975,7 +975,7 @@ namespace relational
               " id_type;"
                << endl
                << "static const bool auto_id = " <<
-              (id_member (c)->count ("auto") ? "true;" : "false;")
+              (auto_id ? "true;" : "false;")
                << endl;
 
             os << "struct id_image_type"
