@@ -78,6 +78,25 @@ namespace relational
     };
 
     //
+    // File.
+    //
+
+    struct schema_file: virtual context
+    {
+      typedef schema_file base;
+
+      virtual void
+      pre ()
+      {
+      }
+
+      virtual void
+      post ()
+      {
+      }
+    };
+
+    //
     // Drop.
     //
 

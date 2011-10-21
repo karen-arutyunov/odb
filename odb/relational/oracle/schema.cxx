@@ -53,6 +53,31 @@ namespace relational
       entry<schema_emitter> schema_emitter_;
 
       //
+      // File.
+      //
+
+      struct schema_file: relational::schema_file, context
+      {
+        schema_file (const base& x): base (x) {}
+
+        virtual void
+        pre ()
+        {
+          os << "SET FEEDBACK OFF;" << endl
+             << "WHENEVER SQLERROR EXIT FAILURE;" << endl
+             << "WHENEVER OSERROR EXIT FAILURE;" << endl
+             << endl;
+        }
+
+        virtual void
+        post ()
+        {
+          os << "EXIT;" << endl;
+        }
+      };
+      entry<schema_file> schema_file_;
+
+      //
       // Drop.
       //
 

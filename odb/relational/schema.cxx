@@ -130,6 +130,9 @@ namespace relational
 
       instance<schema_emitter> emitter;
 
+      instance<schema_file> file;
+      file->pre ();
+
       // Drop.
       //
       {
@@ -181,6 +184,8 @@ namespace relational
           unit.dispatch (ctx.unit);
         }
       }
+
+      file->post ();
     }
   }
 }
