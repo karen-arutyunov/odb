@@ -965,6 +965,9 @@ namespace relational
 
             os << "typedef object_traits< " << base << " >::id_type id_type;"
                << endl
+               << "static const bool auto_id = object_traits< " << base <<
+              " >::auto_id;"
+               << endl
                << "typedef object_traits< " << base << " >::id_image_type " <<
               "id_image_type;"
                << endl;
