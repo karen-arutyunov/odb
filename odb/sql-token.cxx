@@ -3,7 +3,7 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <iostream>
+#include <ostream>
 
 #include <odb/sql-token.hxx>
 
@@ -11,34 +11,36 @@ using namespace std;
 
 static char punctuation_literals[] = {';', ',', '(', ')', '='};
 
-ostream&
-operator<< (ostream& os, sql_token const& t)
+string sql_token::
+string () const
 {
-  switch (t.type ())
+  switch (type ())
   {
   case sql_token::t_eos:
     {
-      os << "<end-of-stream>";
-      break;
+      return "<end-of-stream>";
     }
   case sql_token::t_identifier:
     {
-      os << t.identifier ();
-      break;
+      return identifier ();
     }
   case sql_token::t_punctuation:
     {
-      os << punctuation_literals[t.punctuation ()];
-      break;
+      return std::string (1, punctuation_literals[punctuation ()]);
     }
   case sql_token::t_string_lit:
   case sql_token::t_int_lit:
   case sql_token::t_float_lit:
     {
-      os << t.literal ();
-      break;
+      return literal ();
     }
   }
 
-  return os;
+  return "";
+}
+
+ostream&
+operator<< (ostream& os, sql_token const& t)
+{
+  return os << t.string ();
 }

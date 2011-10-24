@@ -59,6 +59,12 @@ public:
   std::string const&
   literal () const;
 
+  // Human-readable string representation.
+  //
+public:
+  std::string
+  string () const;
+
   // C-tors.
   //
 public:
