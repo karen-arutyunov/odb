@@ -661,7 +661,7 @@ validate (options const& ops,
           semantics::path const&,
           unsigned short pass)
 {
-  auto_ptr<context> ctx (create_context (cerr, u, ops));
+  auto_ptr<context> ctx (create_context (cerr, u, ops, 0));
 
   bool valid (true);
 

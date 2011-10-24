@@ -23,18 +23,18 @@ namespace relational
   context::
   context ()
       : data_ (current ().data_),
-        generate_grow (data_->generate_grow_),
-        need_alias_as (data_->need_alias_as_),
+        model (current ().model),
+        generate_grow (current ().generate_grow),
+        need_alias_as (current ().need_alias_as),
         bind_vector (data_->bind_vector_),
         truncated_vector (data_->truncated_vector_)
   {
   }
 
   context::
-  context (data* d)
+  context (data* d, sema_rel::model* m)
       : data_ (d),
-        generate_grow (data_->generate_grow_),
-        need_alias_as (data_->need_alias_as_),
+        model (m),
         bind_vector (data_->bind_vector_),
         truncated_vector (data_->truncated_vector_)
   {

@@ -7,101 +7,126 @@ include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 
 # Plugin units.
 #
-cxx_ptun :=                    \
-cxx-lexer.cxx                  \
-sql-token.cxx                  \
-sql-lexer.cxx                  \
-context.cxx                    \
-common.cxx                     \
-diagnostics.cxx                \
-emitter.cxx                    \
-lookup.cxx                     \
-include.cxx                    \
-header.cxx                     \
-inline.cxx                     \
-validator.cxx                  \
-processor.cxx                  \
-generator.cxx                  \
-parser.cxx                     \
-plugin.cxx                     \
+cxx_ptun :=                          \
+cxx-lexer.cxx                        \
+sql-token.cxx                        \
+sql-lexer.cxx                        \
+context.cxx                          \
+common.cxx                           \
+diagnostics.cxx                      \
+emitter.cxx                          \
+lookup.cxx                           \
+include.cxx                          \
+header.cxx                           \
+inline.cxx                           \
+validator.cxx                        \
+processor.cxx                        \
+generator.cxx                        \
+parser.cxx                           \
+plugin.cxx                           \
 pragma.cxx
 
-# Tracer
+# Tracer.
 #
-cxx_ptun +=                    \
-tracer/header.cxx              \
-tracer/inline.cxx              \
+cxx_ptun +=                          \
+tracer/header.cxx                    \
+tracer/inline.cxx                    \
 tracer/source.cxx
 
-# Relational
+# Relational.
 #
-cxx_ptun +=                    \
-relational/common.cxx          \
-relational/context.cxx         \
-relational/processor.cxx       \
-relational/header.cxx          \
-relational/inline.cxx          \
-relational/source.cxx          \
+cxx_ptun +=                          \
+relational/common.cxx                \
+relational/context.cxx               \
+relational/processor.cxx             \
+relational/header.cxx                \
+relational/inline.cxx                \
+relational/source.cxx                \
+relational/model.cxx                 \
 relational/schema.cxx
 
-# Relational/MySQL
+# Relational/MySQL.
 #
-cxx_ptun +=                    \
-relational/mysql/common.cxx    \
-relational/mysql/context.cxx   \
-relational/mysql/header.cxx    \
-relational/mysql/source.cxx    \
+cxx_ptun +=                          \
+relational/mysql/common.cxx          \
+relational/mysql/context.cxx         \
+relational/mysql/header.cxx          \
+relational/mysql/source.cxx          \
+relational/mysql/model.cxx           \
 relational/mysql/schema.cxx
 
 # Relational/Oracle
 #
-cxx_ptun +=                    \
-relational/oracle/common.cxx   \
-relational/oracle/context.cxx  \
-relational/oracle/header.cxx   \
-relational/oracle/source.cxx   \
+cxx_ptun +=                          \
+relational/oracle/common.cxx         \
+relational/oracle/context.cxx        \
+relational/oracle/header.cxx         \
+relational/oracle/source.cxx         \
+relational/oracle/model.cxx          \
 relational/oracle/schema.cxx
 
 # Relational/PostgreSQL
 #
-cxx_ptun +=                    \
-relational/pgsql/common.cxx    \
-relational/pgsql/context.cxx   \
-relational/pgsql/header.cxx    \
-relational/pgsql/schema.cxx    \
-relational/pgsql/source.cxx
+cxx_ptun +=                          \
+relational/pgsql/common.cxx          \
+relational/pgsql/context.cxx         \
+relational/pgsql/header.cxx          \
+relational/pgsql/source.cxx          \
+relational/pgsql/model.cxx           \
+relational/pgsql/schema.cxx
 
-# Relational/SQLite
+# Relational/SQLite.
 #
-cxx_ptun +=                    \
-relational/sqlite/common.cxx   \
-relational/sqlite/context.cxx  \
-relational/sqlite/header.cxx   \
-relational/sqlite/source.cxx   \
+cxx_ptun +=                          \
+relational/sqlite/common.cxx         \
+relational/sqlite/context.cxx        \
+relational/sqlite/header.cxx         \
+relational/sqlite/source.cxx         \
+relational/sqlite/model.cxx          \
 relational/sqlite/schema.cxx
 
-cxx_ptun +=                    \
-semantics/class.cxx            \
-semantics/class-template.cxx   \
-semantics/derived.cxx          \
-semantics/elements.cxx         \
-semantics/enum.cxx             \
-semantics/fundamental.cxx      \
-semantics/namespace.cxx        \
-semantics/template.cxx         \
-semantics/union.cxx            \
-semantics/union-template.cxx   \
+# Semantics.
+#
+cxx_ptun +=                          \
+semantics/class.cxx                  \
+semantics/class-template.cxx         \
+semantics/derived.cxx                \
+semantics/elements.cxx               \
+semantics/enum.cxx                   \
+semantics/fundamental.cxx            \
+semantics/namespace.cxx              \
+semantics/template.cxx               \
+semantics/union.cxx                  \
+semantics/union-template.cxx         \
 semantics/unit.cxx
 
-cxx_ptun +=                    \
-traversal/class.cxx            \
-traversal/class-template.cxx   \
-traversal/derived.cxx          \
-traversal/elements.cxx         \
-traversal/enum.cxx             \
-traversal/template.cxx         \
+# Semantics/Relational.
+#
+cxx_ptun +=                          \
+semantics/relational/column.cxx      \
+semantics/relational/elements.cxx    \
+semantics/relational/foreign-key.cxx \
+semantics/relational/index.cxx       \
+semantics/relational/key.cxx         \
+semantics/relational/model.cxx       \
+semantics/relational/primary-key.cxx \
+semantics/relational/table.cxx
+
+# Traversal.
+#
+cxx_ptun +=                          \
+traversal/class.cxx                  \
+traversal/class-template.cxx         \
+traversal/derived.cxx                \
+traversal/elements.cxx               \
+traversal/enum.cxx                   \
+traversal/template.cxx               \
 traversal/union-template.cxx
 
+# Traversal.
+#
+cxx_ptun +=                          \
+traversal/relational/elements.cxx
 
 # Driver units.
 #

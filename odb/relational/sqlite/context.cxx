@@ -65,16 +65,19 @@ namespace relational
     }
 
     context::
-    context (ostream& os, semantics::unit& u, options_type const& ops)
+    context (ostream& os,
+             semantics::unit& u,
+             options_type const& ops,
+             sema_rel::model* m)
         : root_context (os, u, ops, data_ptr (new (shared) data (os))),
-          base_context (static_cast<data*> (root_context::data_.get ())),
+          base_context (static_cast<data*> (root_context::data_.get ()), m),
           data_ (static_cast<data*> (base_context::data_))
     {
       assert (current_ == 0);
       current_ = this;
 
-      data_->generate_grow_ = true;
-      data_->need_alias_as_ = true;
+      generate_grow = true;
+      need_alias_as = true;
       data_->bind_vector_ = "sqlite::bind*";
       data_->truncated_vector_ = "bool*";
 
@@ -222,8 +225,8 @@ namespace relational
     {
       struct sql_parser
       {
-        sql_parser (semantics::data_member& m, std::string const& sql)
-            : m_ (m), l_ (sql)
+        sql_parser (std::string const& sql)
+            : l_ (sql)
         {
         }
 
@@ -269,27 +272,20 @@ namespace relational
               }
               else
               {
-                cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
-                     << ": error: expected SQLite type name instead of '"
-                     << t << "'" << endl;
-                throw operation_failed ();
+                throw context::invalid_sql_type (
+                  "expected SQLite type name instead of '" + t.string ()
+                  + "'");
               }
             }
           }
           catch (sql_lexer::invalid_input const& e)
           {
-            cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
-                 << ": error: invalid SQLite type declaration: " << e.message
-                 << endl;
-            throw operation_failed ();
+            throw context::invalid_sql_type (
+              "invalid SQLite type declaration: " + e.message);
           }
 
           if (ids_.empty ())
-          {
-            cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
-                 << ": error: expected SQLite type name" << endl;
-            throw operation_failed ();
-          }
+            throw context::invalid_sql_type ("expected SQLite type name");
 
           sql_type r;
 
@@ -322,9 +318,8 @@ namespace relational
               r.type = sql_type::TEXT;
             else
             {
-              cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
-                   << " error: unknown SQLite type '" << id << "'" << endl;
-              throw operation_failed ();
+              throw context::invalid_sql_type (
+                "unknown SQLite type '" + id + "'");
             }
           }
 
@@ -343,10 +338,8 @@ namespace relational
 
             if (t.type () == sql_token::t_eos)
             {
-              cerr << m_.file () << ":" << m_.line () << ":" << m_.column ()
-                   << ": error: missing ')' in SQLite type declaration"
-                   << endl;
-              throw operation_failed ();
+              throw context::invalid_sql_type (
+                "missing ')' in SQLite type declaration");
             }
           }
         }
@@ -368,7 +361,6 @@ namespace relational
         typedef vector<string> identifiers;
 
       private:
-        semantics::data_member& m_;
         sql_lexer l_;
         identifiers ids_;
       };
@@ -383,11 +375,27 @@ namespace relational
 
       if (!m.count (key))
       {
-        sql_parser p (m, column_type (m, kp));
-        m.set (key, p.parse ());
+        try
+        {
+          m.set (key, parse_sql_type (column_type (m, kp)));
+        }
+        catch (invalid_sql_type const& e)
+        {
+          cerr << m.file () << ":" << m.line () << ":" << m.column ()
+               << ": error: " << e.message () << endl;
+
+          throw operation_failed ();
+        }
       }
 
       return m.get<sql_type> (key);
+    }
+
+    sql_type context::
+    parse_sql_type (string const& t)
+    {
+      sql_parser p (t);
+      return p.parse ();
     }
   }
 }

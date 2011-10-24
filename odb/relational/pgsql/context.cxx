@@ -67,16 +67,19 @@ namespace relational
     }
 
     context::
-    context (ostream& os, semantics::unit& u, options_type const& ops)
+    context (ostream& os,
+             semantics::unit& u,
+             options_type const& ops,
+             sema_rel::model* m)
         : root_context (os, u, ops, data_ptr (new (shared) data (os))),
-          base_context (static_cast<data*> (root_context::data_.get ())),
+          base_context (static_cast<data*> (root_context::data_.get ()), m),
           data_ (static_cast<data*> (base_context::data_))
     {
       assert (current_ == 0);
       current_ = this;
 
-      data_->generate_grow_ = true;
-      data_->need_alias_as_ = true;
+      generate_grow = true;
+      need_alias_as = true;
       data_->bind_vector_ = "pgsql::bind*";
       data_->truncated_vector_ = "bool*";
 
@@ -232,9 +235,6 @@ namespace relational
     // SQL type parsing.
     //
 
-    static sql_type
-    parse_sql_type (semantics::data_member& m, std::string const& sql);
-
     sql_type const& context::
     column_sql_type (semantics::data_member& m, string const& kp)
     {
@@ -243,18 +243,30 @@ namespace relational
                   : "pgsql-" + kp + "-column-sql-type");
 
       if (!m.count (key))
-        m.set (key, parse_sql_type (m, column_type (m, kp)));
+      {
+        try
+        {
+          m.set (key, parse_sql_type (column_type (m, kp)));
+        }
+        catch (invalid_sql_type const& e)
+        {
+          cerr << m.file () << ":" << m.line () << ":" << m.column ()
+               << ": error: " << e.message () << endl;
+
+          throw operation_failed ();
+        }
+      }
 
       return m.get<sql_type> (key);
     }
 
-    static sql_type
-    parse_sql_type (semantics::data_member& m, string const& sql)
+    sql_type context::
+    parse_sql_type (string const& sqlt)
     {
       try
       {
         sql_type r;
-        sql_lexer l (sql);
+        sql_lexer l (sqlt);
 
         // While most type names use single identifier, there are
         // a couple of exceptions to this rule:
@@ -368,11 +380,8 @@ namespace relational
                 }
                 else if (id == "TIMETZ")
                 {
-                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                       << ": error: PostgreSQL time zones are not currently "
-                       << "supported" << endl;
-
-                  throw operation_failed ();
+                  throw invalid_sql_type (
+                    "PostgreSQL time zones are not currently supported");
                 }
                 else if (id == "TIMESTAMP")
                 {
@@ -380,11 +389,8 @@ namespace relational
                 }
                 else if (id == "TIMESTAMPTZ")
                 {
-                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                       << ": error: PostgreSQL time zones are not currently "
-                       << "supported" << endl;
-
-                  throw operation_failed ();
+                  throw invalid_sql_type (
+                    "PostgreSQL time zones are not currently supported");
                 }
                 //
                 // String and binary types.
@@ -450,16 +456,13 @@ namespace relational
 
               if (r.type == sql_type::invalid)
               {
-                cerr << m.file () << ":" << m.line () << ":" <<
-                  m.column () << ":";
-
                 if (tt == sql_token::t_identifier)
-                  cerr << " error: unknown PostgreSQL type '" <<
-                    t.identifier () << "'" << endl;
+                {
+                  throw invalid_sql_type (
+                    "unknown PostgreSQL type '" + t.identifier () + "'");
+                }
                 else
-                  cerr << " error: expected PostgreSQL type name" << endl;
-
-                throw operation_failed ();
+                  throw invalid_sql_type ("expected PostgreSQL type name");
               }
 
               // Fall through.
@@ -474,11 +477,8 @@ namespace relational
 
                 if (t.type () != sql_token::t_int_lit)
                 {
-                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                       << ": error: integer range expected in PostgreSQL type "
-                       << "declaration" << endl;
-
-                  throw operation_failed ();
+                  throw invalid_sql_type (
+                    "integer range expected in PostgreSQL type declaration");
                 }
 
                 unsigned int v;
@@ -486,11 +486,9 @@ namespace relational
 
                 if (!(is >> v && is.eof ()))
                 {
-                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                       << ": error: invalid range value '" << t.literal ()
-                       << "'in PostgreSQL type declaration" << endl;
-
-                  throw operation_failed ();
+                  throw invalid_sql_type (
+                    "invalid range value '" + t.literal () + "' in PostgreSQL "
+                    "type declaration");
                 }
 
                 r.range = true;
@@ -508,11 +506,8 @@ namespace relational
 
                 if (t.punctuation () != sql_token::p_rparen)
                 {
-                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                       << ": error: expected ')' in PostgreSQL type "
-                       << "declaration" << endl;
-
-                  throw operation_failed ();
+                  throw invalid_sql_type (
+                    "expected ')' in PostgreSQL type declaration");
                 }
 
                 s = parse_suffix;
@@ -549,11 +544,9 @@ namespace relational
 
                         if (id3 == "ZONE")
                         {
-                          cerr << m.file () << ":" << m.line () << ":"
-                               << m.column ()<< ": error: PostgreSQL time "
-                               << "zones are not currently supported" << endl;
-
-                          throw operation_failed ();
+                          throw invalid_sql_type (
+                            "PostgreSQL time zones are not currently "
+                            "supported");
                         }
                       }
                     }
@@ -596,10 +589,7 @@ namespace relational
 
         if (r.type == sql_type::invalid)
         {
-          cerr << m.file () << ":" << m.line () << ":" << m.column ()
-               << ": error: incomplete PostgreSQL type declaration" << endl;
-
-          throw operation_failed ();
+          throw invalid_sql_type ("incomplete PostgreSQL type declaration");
         }
 
         // If range is omitted for CHAR or BIT types, it defaults to 1.
@@ -614,11 +604,8 @@ namespace relational
       }
       catch (sql_lexer::invalid_input const& e)
       {
-        cerr << m.file () << ":" << m.line () << ":" << m.column ()
-             << ": error: invalid PostgreSQL type declaration: " << e.message
-             << endl;
-
-        throw operation_failed ();
+        throw invalid_sql_type (
+          "invalid PostgreSQL type declaration: " + e.message);
       }
     }
   }

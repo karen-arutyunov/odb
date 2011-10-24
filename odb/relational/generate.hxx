@@ -6,6 +6,10 @@
 #ifndef ODB_RELATIONAL_GENERATE_HXX
 #define ODB_RELATIONAL_GENERATE_HXX
 
+#include <cutl/shared-ptr.hxx>
+
+#include <odb/semantics/relational/model.hxx>
+
 namespace relational
 {
   namespace header
@@ -23,6 +27,12 @@ namespace relational
   namespace source
   {
     void
+    generate ();
+  }
+
+  namespace model
+  {
+    cutl::shared_ptr<semantics::relational::model>
     generate ();
   }
 

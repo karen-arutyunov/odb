@@ -2098,6 +2098,10 @@ namespace relational
       query_parameters& qp_;
     };
 
+    //@@ (im)-perfect forwarding.
+    //
+    static schema_format format_embedded (schema_format::embedded);
+
     //
     //
     struct class_: traversal::class_, virtual context
@@ -2110,8 +2114,13 @@ namespace relational
             bind_id_member_ ("id_"),
             init_id_image_member_ ("id_", "id"),
             init_id_value_member_ ("id"),
-            schema_drop_ (schema_emitter_),
-            schema_create_ (schema_emitter_)
+            stream_ (emitter_),
+            drop_model_ (emitter_, stream_, format_embedded),
+            drop_table_ (emitter_, stream_, format_embedded),
+            drop_index_ (emitter_, stream_, format_embedded),
+            create_model_ (emitter_, stream_, format_embedded),
+            create_table_ (emitter_, stream_, format_embedded),
+            create_index_ (emitter_, stream_, format_embedded)
       {
         init ();
       }
@@ -2124,8 +2133,13 @@ namespace relational
             bind_id_member_ ("id_"),
             init_id_image_member_ ("id_", "id"),
             init_id_value_member_ ("id"),
-            schema_drop_ (schema_emitter_),
-            schema_create_ (schema_emitter_)
+            stream_ (emitter_),
+            drop_model_ (emitter_, stream_, format_embedded),
+            drop_table_ (emitter_, stream_, format_embedded),
+            drop_index_ (emitter_, stream_, format_embedded),
+            create_model_ (emitter_, stream_, format_embedded),
+            create_table_ (emitter_, stream_, format_embedded),
+            create_index_ (emitter_, stream_, format_embedded)
       {
         init ();
       }
@@ -2147,6 +2161,17 @@ namespace relational
 
         init_value_base_inherits_ >> init_value_base_;
         init_value_member_names_ >> init_value_member_;
+
+        if (embedded_schema)
+        {
+          drop_model_ >> drop_names_;
+          drop_names_ >> drop_table_;
+          drop_names_ >> drop_index_;
+
+          create_model_ >> create_names_;
+          create_names_ >> create_table_;
+          create_names_ >> create_index_;
+        }
       }
 
       virtual void
@@ -3035,6 +3060,9 @@ namespace relational
         virtual void
         line (const string& l)
         {
+          if (l.empty ())
+            return; // Ignore empty lines.
+
           if (first_)
           {
             first_ = false;
@@ -3088,6 +3116,17 @@ namespace relational
       virtual void
       schema (type& c)
       {
+        typedef sema_rel::model::names_iterator iterator;
+
+        iterator begin (c.get<iterator> ("model-range-first"));
+        iterator end (c.get<iterator> ("model-range-last"));
+
+        if (begin == model->names_end ())
+          return; // This class doesn't have any model entities (e.g.,
+                  // a second class mapped to the same table).
+
+        ++end; // Transform the range from [begin, end] to [begin, end).
+
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
 
@@ -3110,10 +3149,14 @@ namespace relational
 
           for (unsigned short pass (1); pass < 3; ++pass)
           {
-            schema_emitter_.pass (pass);
-            schema_drop_->pass (pass);
-            schema_drop_->traverse (c);
-            close = close || !schema_emitter_.empty ();
+            emitter_.pass (pass);
+            drop_model_->pass (pass);
+            drop_table_->pass (pass);
+            drop_index_->pass (pass);
+
+            drop_model_->traverse (begin, end);
+
+            close = close || !emitter_.empty ();
           }
 
           if (close) // Close the last case and the switch block.
@@ -3134,10 +3177,14 @@ namespace relational
 
           for (unsigned short pass (1); pass < 3; ++pass)
           {
-            schema_emitter_.pass (pass);
-            schema_create_->pass (pass);
-            schema_create_->traverse (c);
-            close = close || !schema_emitter_.empty ();
+            emitter_.pass (pass);
+            create_model_->pass (pass);
+            create_table_->pass (pass);
+            create_index_->pass (pass);
+
+            create_model_->traverse (begin, end);
+
+            close = close || !emitter_.empty ();
           }
 
           if (close) // Close the last case and the switch block.
@@ -4050,9 +4097,18 @@ namespace relational
       traversal::names init_value_member_names_;
       instance<init_value_member> init_id_value_member_;
 
-      schema_emitter schema_emitter_;
-      instance<schema::class_drop> schema_drop_;
-      instance<schema::class_create> schema_create_;
+      schema_emitter emitter_;
+      emitter_ostream stream_;
+
+      trav_rel::names drop_names_;
+      instance<schema::drop_model> drop_model_;
+      instance<schema::drop_table> drop_table_;
+      instance<schema::drop_index> drop_index_;
+
+      trav_rel::names create_names_;
+      instance<schema::create_model> create_model_;
+      instance<schema::create_table> create_table_;
+      instance<schema::create_index> create_index_;
     };
 
     struct include: virtual context

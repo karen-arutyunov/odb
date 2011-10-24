@@ -24,6 +24,7 @@
 #include <odb/options.hxx>
 #include <odb/cxx-token.hxx>
 #include <odb/semantics.hxx>
+#include <odb/semantics/relational/model.hxx>
 #include <odb/traversal.hxx>
 
 using std::endl;
@@ -787,7 +788,10 @@ private:
 // Create concrete database context.
 //
 std::auto_ptr<context>
-create_context (std::ostream&, semantics::unit&, options const&);
+create_context (std::ostream&,
+                semantics::unit&,
+                options const&,
+                semantics::relational::model*);
 
 // Checks if scope Y names any of X.
 //

@@ -11,7 +11,6 @@
 #include <cassert>
 
 #include <odb/emitter.hxx>
-
 #include <odb/relational/common.hxx>
 #include <odb/relational/context.hxx>
 
@@ -19,11 +18,11 @@ namespace relational
 {
   namespace schema
   {
-    typedef std::set<std::string> tables;
-
     struct common: virtual context
     {
-      common (emitter& e, ostream& os): e_ (e), os_ (os) {}
+      typedef ::emitter emitter_type;
+
+      common (emitter_type& e, ostream& os): e_ (e), os_ (os) {}
 
       void
       pre_statement ()
@@ -39,8 +38,20 @@ namespace relational
         e_.post ();
       }
 
+      emitter_type&
+      emitter () const
+      {
+        return e_;
+      }
+
+      ostream&
+      stream () const
+      {
+        return os_;
+      }
+
     protected:
-      emitter& e_;
+      emitter_type& e_;
       ostream& os_;
     };
 
@@ -57,7 +68,7 @@ namespace relational
       virtual void
       line (const std::string& l)
       {
-        if (first_)
+        if (first_ && !l.empty ())
           first_ = false;
         else
           os << endl;
@@ -78,7 +89,7 @@ namespace relational
     };
 
     //
-    // File.
+    // File prologue/epilogue.
     //
 
     struct schema_file: virtual context
@@ -86,12 +97,12 @@ namespace relational
       typedef schema_file base;
 
       virtual void
-      pre ()
+      prologue ()
       {
       }
 
       virtual void
-      post ()
+      epilogue ()
       {
       }
     };
@@ -100,474 +111,23 @@ namespace relational
     // Drop.
     //
 
-    struct drop_common: virtual context
+    struct drop_table: trav_rel::table, common
     {
+      typedef drop_table base;
+
+      drop_table (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
       virtual void
-      drop_table (string const& table)
+      drop (string const& table)
       {
         os << "DROP TABLE IF EXISTS " << quote_id (table) << endl;
       }
 
       virtual void
-      drop_index (string const& /*table*/, string const& /*column*/)
-      {
-        // Most database systems drop indexes together with the table.
-        //
-
-        //os << "DROP INDEX IF EXISTS " << quote_id (table + '_' + column)
-        //   << endl;
-      }
-    };
-
-    struct member_drop: object_members_base, common, virtual drop_common
-    {
-      typedef member_drop base;
-
-      member_drop (emitter& e, ostream& os, std::vector<tables>& t)
-          : object_members_base (false, true, false),
-            common (e, os),
-            tables_ (t)
-      {
-      }
-
-      void
-      pass (unsigned short p)
-      {
-        pass_ = p;
-      }
-
-      virtual void
-      traverse_container (semantics::data_member& m, semantics::type& c)
-      {
-        // Ignore inverse containers of object pointers.
-        //
-        if (inverse (m, "value"))
-          return;
-
-        string const& name (table_name (m, table_prefix_));
-
-        if (tables_[pass_].count (name))
-          return;
-
-        // Drop table.
-        //
-        pre_statement ();
-        drop_table (name);
-        post_statement ();
-
-        tables_[pass_].insert (name);
-
-        // Drop indexes.
-        //
-        pre_statement ();
-        drop_index (name, column_name (m, "id", "object_id"));
-        post_statement ();
-
-        if (container_kind (c) == ck_ordered && !unordered (m))
-        {
-          pre_statement ();
-          drop_index (name, column_name (m, "index", "index"));
-          post_statement ();
-        }
-      }
-
-    protected:
-      std::vector<tables>& tables_;
-      unsigned short pass_;
-    };
-
-    struct class_drop: traversal::class_, common, virtual drop_common
-    {
-      typedef class_drop base;
-
-      class_drop (emitter& e)
-          : common (e, os_), os_ (e), member_drop_ (e, os_, tables_)
-      {
-        tables_.push_back (tables ()); // Dummy entry.
-      }
-
-      class_drop (class_drop const& x)
-          : root_context (), //@@ -Wextra
-            context (),
-            common (x.e_, os_), os_ (x.e_), member_drop_ (x.e_, os_, tables_)
-      {
-        tables_.push_back (tables ()); // Dummy entry.
-      }
-
-      void
-      pass (unsigned short p)
-      {
-        pass_ = p;
-
-        if (tables_.size () == pass_)
-          tables_.push_back (tables ());
-
-        member_drop_->pass (p);
-      }
-
-      virtual void
-      traverse (type& c)
-      {
-        // By default we do everything in a single pass. But some
-        // databases may require the second pass.
-        //
-        if (pass_ == 1)
-          drop (c);
-      }
-
-      virtual void
-      drop (type& c)
-      {
-        if (c.file () != unit.file ())
-          return;
-
-        if (!object (c) || abstract (c))
-          return;
-
-        string const& name (table_name (c));
-
-        if (tables_[pass_].count (name))
-          return;
-
-        // Drop tables for members. Do it before dropping the primary
-        // table -- some databases may prefer it that way.
-        //
-        member_drop_->traverse (c);
-
-        pre_statement ();
-        drop_table (name);
-        post_statement ();
-
-        tables_[pass_].insert (name);
-      }
-
-    protected:
-      emitter_ostream os_;
-      unsigned short pass_;
-      std::vector<tables> tables_; // Seperate table for each pass.
-      instance<member_drop> member_drop_;
-    };
-
-    //
-    // Create.
-    //
-
-    struct object_columns: object_columns_base, virtual context
-    {
-      typedef object_columns base;
-
-      object_columns (string const& prefix = string ())
-          : prefix_ (prefix)
-      {
-      }
-
-      virtual bool
-      traverse_column (semantics::data_member& m,
-                       string const& name,
-                       bool first)
-      {
-        // Ignore inverse object pointers.
-        //
-        if (inverse (m))
-          return false;
-
-        if (!first)
-          os << "," << endl;
-
-        os << "  " << quote_id (name) << " ";
-
-        type (m);
-        null (m);
-
-        // An id member cannot have a default value.
-        //
-        if (!m.count ("id"))
-          default_ (m);
-
-        // If we have options, add them.
-        //
-        string const& o (column_options (m, prefix_));
-
-        if (!o.empty ())
-          os << " " << o;
-
-        constraints (m);
-        reference (m);
-
-        return true;
-      }
-
-      virtual void
-      type (semantics::data_member& m)
-      {
-        os << column_type (m, prefix_);
-      }
-
-      virtual void
-      null (semantics::data_member& m)
-      {
-        if (!context::null (m, prefix_))
-          os << " NOT NULL";
-      }
-
-      virtual void
-      default_null (semantics::data_member&)
-      {
-        os << " DEFAULT NULL";
-      }
-
-      virtual void
-      default_bool (semantics::data_member&, bool v)
-      {
-        // Most databases do not support boolean literals. Those that
-        // do should override this.
-        //
-        os << " DEFAULT " << (v ? "1" : "0");
-      }
-
-      virtual void
-      default_integer (semantics::data_member&, unsigned long long v, bool neg)
-      {
-        os << " DEFAULT " << (neg ? "-" : "") << v;
-      }
-
-      virtual void
-      default_float (semantics::data_member&, double v)
-      {
-        os << " DEFAULT " << v;
-      }
-
-      virtual void
-      default_string (semantics::data_member&, string const& v)
-      {
-        os << " DEFAULT " << quote_string (v);
-      }
-
-      virtual void
-      default_enum (semantics::data_member&,
-                    tree /*enumerator*/,
-                    string const& /*name*/)
-      {
-        // Has to be implemented by the database-specific override.
-        //
-        assert (false);
-      }
-
-      virtual void
-      constraints (semantics::data_member& m)
-      {
-        if (m.count ("id"))
-          os << " PRIMARY KEY";
-      }
-
-      virtual void
-      reference (semantics::data_member& m)
-      {
-        if (semantics::class_* c = object_pointer (member_utype (m, prefix_)))
-        {
-          os << " REFERENCES " << table_qname (*c) << " (" <<
-            column_qname (*id_member (*c)) << ")";
-        }
-        else if (prefix_ == "id")
-        {
-          // Container id column references the object table. It also
-          // cascades on delete so that we can delete the object with
-          // a single delete statement (needed for erase_query()).
-          //
-          semantics::class_& c (*context::top_object);
-
-          os << " REFERENCES " << table_qname (c) << " (" <<
-            column_qname (*id_member (c)) << ") ON DELETE CASCADE";
-        }
-      }
-
-    protected:
-      void
-      default_ (semantics::data_member&);
-
-    protected:
-      string prefix_;
-    };
-
-    struct create_common: virtual context
-    {
-      virtual void
-      create_table_pre (string const& table)
-      {
-        os << "CREATE TABLE " << quote_id (table) << " (" << endl;
-      }
-
-      virtual void
-      create_table_post ()
-      {
-        os << ")" << endl;
-      }
-
-      virtual void
-      create_index (string const& table, string const& column)
-      {
-        os << "CREATE INDEX " << quote_id (table + '_' + column) << endl
-           << "  ON " << quote_id (table) << " (" << quote_id (column) << ")"
-           << endl;
-      }
-    };
-
-    struct member_create: object_members_base, common, virtual create_common
-    {
-      typedef member_create base;
-
-      member_create (emitter& e, ostream& os, std::vector<tables>& t)
-          : object_members_base (false, true, false),
-            common (e, os),
-            tables_ (t)
-      {
-      }
-
-      void
-      pass (unsigned short p)
-      {
-        pass_ = p;
-      }
-
-      virtual void
-      traverse_container (semantics::data_member& m, semantics::type& t)
-      {
-        using semantics::type;
-        using semantics::data_member;
-
-        // Ignore inverse containers of object pointers.
-        //
-        if (inverse (m, "value"))
-          return;
-
-        container_kind_type ck (container_kind (t));
-        type& vt (container_vt (t));
-
-        string const& name (table_name (m, table_prefix_));
-
-        if (tables_[pass_].count (name))
-          return;
-
-        pre_statement ();
-        create_table_pre (name);
-
-        // object_id (simple value)
-        //
-        string id_name (column_name (m, "id", "object_id"));
-        {
-          instance<object_columns> oc ("id");
-          oc->traverse_column (m, id_name, true);
-        }
-
-        // index (simple value)
-        //
-        string index_name;
-        bool ordered (ck == ck_ordered && !unordered (m));
-        if (ordered)
-        {
-          os << "," << endl;
-
-          instance<object_columns> oc ("index");
-          index_name = column_name (m, "index", "index");
-          oc->traverse_column (m, index_name, true);
-        }
-
-        // key (simple or composite value)
-        //
-        if (ck == ck_map || ck == ck_multimap)
-        {
-          type& kt (container_kt (t));
-
-          os << "," << endl;
-
-          if (semantics::class_* ckt = composite_wrapper (kt))
-          {
-            instance<object_columns> oc;
-            oc->traverse (m, *ckt, "key", "key");
-          }
-          else
-          {
-            instance<object_columns> oc ("key");
-            string const& name (column_name (m, "key", "key"));
-            oc->traverse_column (m, name, true);
-          }
-        }
-
-        // value (simple or composite value)
-        //
-        {
-          os << "," << endl;
-
-          if (semantics::class_* cvt = composite_wrapper (vt))
-          {
-            instance<object_columns> oc;
-            oc->traverse (m, *cvt, "value", "value");
-          }
-          else
-          {
-            instance<object_columns> oc ("value");
-            string const& name (column_name (m, "value", "value"));
-            oc->traverse_column (m, name, true);
-          }
-        }
-
-        create_table_post ();
-        post_statement ();
-
-        tables_[pass_].insert (name);
-
-        // Create indexes.
-        //
-        pre_statement ();
-        create_index (name, id_name);
-        post_statement ();
-
-        if (ordered)
-        {
-          pre_statement ();
-          create_index (name, index_name);
-          post_statement ();
-        }
-      }
-
-    protected:
-      std::vector<tables>& tables_;
-      unsigned short pass_;
-    };
-
-    struct class_create: traversal::class_, common, virtual create_common
-    {
-      typedef class_create base;
-
-      class_create (emitter& e)
-          : common (e, os_), os_ (e), member_create_ (e, os_, tables_)
-      {
-        tables_.push_back (tables ()); // Dummy entry.
-      }
-
-      class_create (class_create const& x)
-          : root_context (), //@@ -Wextra
-            context (),
-            common (x.e_, os_),
-            os_ (x.e_),
-            member_create_ (x.e_, os_, tables_)
-      {
-        tables_.push_back (tables ()); // Dummy entry.
-      }
-
-      void
-      pass (unsigned short p)
-      {
-        pass_ = p;
-
-        if (tables_.size () == pass_)
-          tables_.push_back (tables ());
-
-        member_create_->pass (p);
-      }
-
-      virtual void
-      traverse (type& c)
+      traverse (sema_rel::table& t)
       {
         // By default we do everything in a single pass. But some
         // databases may require the second pass.
@@ -575,43 +135,527 @@ namespace relational
         if (pass_ > 1)
           return;
 
-        if (c.file () != unit.file ())
-          return;
-
-        if (!object (c) || abstract (c))
-          return;
-
-        string const& name (table_name (c));
-
-        // If the table with this name was already created, assume the
-        // user knows what they are doing and skip it.
-        //
-        if (tables_[pass_].count (name))
-          return;
-
         pre_statement ();
-        create_table_pre (name);
-
-        {
-          instance<object_columns> oc;
-          oc->traverse (c);
-        }
-
-        create_table_post ();
+        drop (t.name ());
         post_statement ();
+      }
 
-        tables_[pass_].insert (name);
-
-        // Create tables for members.
-        //
-        member_create_->traverse (c);
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
       }
 
     protected:
-      emitter_ostream os_;
+      schema_format format_;
       unsigned short pass_;
-      std::vector<tables> tables_; // Seperate table for each pass.
-      instance<member_create> member_create_;
+    };
+
+    struct drop_index: trav_rel::index, common
+    {
+      typedef drop_index base;
+
+      drop_index (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      virtual void
+      drop (string const& /*index*/)
+      {
+        // Most database systems drop indexes together with the table.
+        //
+        //os << "DROP INDEX IF EXISTS " << quote_id (index);
+      }
+
+      virtual void
+      traverse (sema_rel::index& in)
+      {
+        // By default we do everything in a single pass. But some
+        // databases may require the second pass.
+        //
+        if (pass_ > 1)
+          return;
+
+        pre_statement ();
+        drop (in.name ());
+        post_statement ();
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+      }
+
+    protected:
+      schema_format format_;
+      unsigned short pass_;
+    };
+
+    struct drop_model: trav_rel::model, common
+    {
+      typedef drop_model base;
+
+      drop_model (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      // This version is only called for file schema.
+      //
+      virtual void
+      traverse (sema_rel::model& m)
+      {
+        traverse (m.names_begin (), m.names_end ());
+      }
+
+      virtual void
+      traverse (sema_rel::model::names_iterator begin,
+                sema_rel::model::names_iterator end)
+      {
+        // Traverse named entities in the reverse order. This way we
+        // drop them in the order opposite to creating.
+        //
+        if (begin != end)
+        {
+          for (--end;; --end)
+          {
+            dispatch (*end);
+
+            if (begin == end)
+              break;
+          }
+        }
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+      }
+
+    protected:
+      schema_format format_;
+      unsigned short pass_;
+    };
+
+    //
+    // Create.
+    //
+    struct create_table;
+
+    struct create_column: trav_rel::column, virtual context
+    {
+      typedef create_column base;
+
+      create_column (schema_format f, create_table& ct)
+          : format_ (f), create_table_ (ct), first_ (true)
+      {
+      }
+
+      virtual void
+      traverse (sema_rel::column& c)
+      {
+        if (first_)
+          first_ = false;
+        else
+          os << "," << endl;
+
+        create (c);
+      }
+
+      virtual void
+      create (sema_rel::column& c)
+      {
+        using sema_rel::column;
+
+        // See if this column is (part of) a primary key.
+        //
+        sema_rel::primary_key* pk (0);
+
+        for (column::contained_iterator i (c.contained_begin ());
+             i != c.contained_end ();
+             ++i)
+        {
+          if ((pk = dynamic_cast<sema_rel::primary_key*> (&i->key ())))
+            break;
+        }
+
+        os << "  " << quote_id (c.name ()) << " ";
+
+        type (c, pk != 0 && pk->auto_ ());
+        null (c);
+
+        // If this is a single-column primary key, generate it inline.
+        //
+        if (pk != 0 && pk->contains_size () == 1)
+          primary_key ();
+
+        if (pk != 0 && pk->auto_ ())
+          auto_ (c);
+
+        if (!c.default_ ().empty ())
+          os << " DEFAULT " << c.default_ ();
+
+        if (!c.options ().empty ())
+          os << " " << c.options ();
+      }
+
+      virtual void
+      type (sema_rel::column& c, bool /*auto*/)
+      {
+        os << c.type ();
+      }
+
+      virtual void
+      null (sema_rel::column& c)
+      {
+        if (!c.null ())
+          os << " NOT NULL";
+      }
+
+      virtual void
+      primary_key ()
+      {
+        os << " PRIMARY KEY";
+      }
+
+      virtual void
+      auto_ (sema_rel::column&)
+      {
+      }
+
+    protected:
+      schema_format format_;
+      create_table& create_table_;
+      bool first_;
+    };
+
+    struct create_primary_key: trav_rel::primary_key, virtual context
+    {
+      typedef create_primary_key base;
+
+      create_primary_key (schema_format f, create_table& ct)
+          : format_ (f), create_table_ (ct)
+      {
+      }
+
+      virtual void
+      traverse (sema_rel::primary_key& pk)
+      {
+        // Single-column primary keys are generated inline in the
+        // column declaration.
+        //
+        if (pk.contains_size () == 1)
+          return;
+
+        // We will always follow a column.
+        //
+        os << "," << endl
+           << endl;
+
+        create (pk);
+      }
+
+      virtual void
+      create (sema_rel::primary_key& pk)
+      {
+        using sema_rel::primary_key;
+
+        // By default we create unnamed primary key constraint.
+        //
+
+        os << "  PRIMARY KEY (";
+
+        for (primary_key::contains_iterator i (pk.contains_begin ());
+             i != pk.contains_end ();
+             ++i)
+        {
+          if (pk.contains_size () > 1)
+          {
+            if (i != pk.contains_begin ())
+              os << ",";
+
+            os << endl
+               << "    ";
+          }
+
+          os << quote_id (i->column ().name ());
+        }
+
+        os << ")";
+      }
+
+    protected:
+      schema_format format_;
+      create_table& create_table_;
+    };
+
+    struct create_foreign_key: trav_rel::foreign_key, virtual context
+    {
+      typedef create_foreign_key base;
+
+      create_foreign_key (schema_format f, create_table& ct)
+          : format_ (f), create_table_ (ct)
+      {
+      }
+
+      virtual void
+      traverse (sema_rel::foreign_key& fk)
+      {
+        // We will always follow a column or another key.
+        //
+        os << "," << endl
+           << endl;
+
+        create (fk);
+      }
+
+      virtual void
+      create (sema_rel::foreign_key& fk)
+      {
+        using sema_rel::foreign_key;
+
+        os << "  CONSTRAINT " << quote_id (name (fk)) << endl
+           << "    FOREIGN KEY (";
+
+        for (foreign_key::contains_iterator i (fk.contains_begin ());
+             i != fk.contains_end ();
+             ++i)
+        {
+          if (fk.contains_size () > 1)
+          {
+            if (i != fk.contains_begin ())
+              os << ",";
+
+            os << endl
+               << "      ";
+          }
+
+          os << quote_id (i->column ().name ());
+        }
+
+        os << ")" << endl
+           << "    REFERENCES " << quote_id (fk.referenced_table ()) << " (";
+
+        foreign_key::columns const& refs (fk.referenced_columns ());
+
+        for (foreign_key::columns::const_iterator i (refs.begin ());
+             i != refs.end ();
+             ++i)
+        {
+          if (refs.size () > 1)
+          {
+            if (i != refs.begin ())
+              os << ",";
+
+            os << endl
+               << "      ";
+          }
+
+          os << quote_id (*i);
+        }
+
+        os << ")";
+
+        if (fk.on_delete () != foreign_key::no_action)
+          on_delete (fk.on_delete ());
+
+        if (fk.deferred ())
+          deferred ();
+      }
+
+      virtual string
+      name (sema_rel::foreign_key& fk)
+      {
+        return fk.name ();
+      }
+
+      virtual void
+      on_delete (sema_rel::foreign_key::action a)
+      {
+        using sema_rel::foreign_key;
+
+        switch (a)
+        {
+        case foreign_key::cascade:
+          {
+            os << endl
+               << "    ON DELETE CASCADE";
+            break;
+          }
+        case foreign_key::no_action:
+          break;
+        }
+      }
+
+      virtual void
+      deferred ()
+      {
+        os << endl
+           << "    DEFERRABLE INITIALLY DEFERRED";
+      }
+
+    protected:
+      schema_format format_;
+      create_table& create_table_;
+    };
+
+    struct create_table: trav_rel::table, common
+    {
+      typedef create_table base;
+
+      create_table (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      virtual void
+      create_pre (string const& table)
+      {
+        os << "CREATE TABLE " << quote_id (table) << " (" << endl;
+      }
+
+      virtual void
+      create_post ()
+      {
+        os << ")" << endl;
+      }
+
+      virtual void
+      traverse (sema_rel::table& t)
+      {
+        // By default we do everything in a single pass. But some
+        // databases may require the second pass.
+        //
+        if (pass_ > 1)
+          return;
+
+        pre_statement ();
+        create_pre (t.name ());
+
+        instance<create_column> c (format_, *this);
+        instance<create_primary_key> pk (format_, *this);
+        instance<create_foreign_key> fk (format_, *this);
+        trav_rel::names n;
+
+        n >> c;
+        n >> pk;
+        n >> fk;
+
+        names (t, n);
+
+        create_post ();
+        post_statement ();
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+      }
+
+    protected:
+      schema_format format_;
+      unsigned short pass_;
+    };
+
+    struct create_index: trav_rel::index, common
+    {
+      typedef create_index base;
+
+      create_index (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      virtual void
+      traverse (sema_rel::index& in)
+      {
+        // By default we do everything in a single pass. But some
+        // databases may require the second pass.
+        //
+        if (pass_ > 1)
+          return;
+
+        pre_statement ();
+        create (in);
+        post_statement ();
+      }
+
+      virtual void
+      create (sema_rel::index& in)
+      {
+        using sema_rel::index;
+
+        os << "CREATE INDEX " << quote_id (in.name ()) << endl
+           << "  ON " << quote_id (in.table ().name ()) << " (";
+
+        for (index::contains_iterator i (in.contains_begin ());
+             i != in.contains_end ();
+             ++i)
+        {
+          if (in.contains_size () > 1)
+          {
+            if (i != in.contains_begin ())
+              os << ",";
+
+            os << endl
+               << "    ";
+          }
+
+          os << quote_id (i->column ().name ());
+        }
+
+        os << ")" << endl;
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+      }
+
+    protected:
+      schema_format format_;
+      unsigned short pass_;
+    };
+
+    struct create_model: trav_rel::model, common
+    {
+      typedef create_model base;
+
+      create_model (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      // This version is only called for file schema.
+      //
+      virtual void
+      traverse (sema_rel::model& m)
+      {
+        traverse (m.names_begin (), m.names_end ());
+      }
+
+      virtual void
+      traverse (sema_rel::model::names_iterator begin,
+                sema_rel::model::names_iterator end)
+      {
+        for (; begin != end; ++begin)
+          dispatch (*begin);
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+      }
+
+    protected:
+      schema_format format_;
+      unsigned short pass_;
     };
   }
 }

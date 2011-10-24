@@ -20,66 +20,20 @@ namespace relational
       // Create.
       //
 
-      struct object_columns: relational::object_columns, context
+      struct create_column: relational::create_column, context
       {
-        object_columns (base const& x): base (x) {}
+        create_column (base const& x): base (x) {}
 
         virtual void
-        default_enum (semantics::data_member& m, tree en, string const&)
+        auto_ (sema_rel::column&)
         {
-          // Make sure the column is mapped to INTEGER.
-          //
-          if (column_sql_type (m).type != sql_type::INTEGER)
-          {
-            cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                 << ": error: column with default value specified as C++ "
-                 << "enumerator must map to SQLite INTEGER" << endl;
-
-            throw operation_failed ();
-          }
-
-          using semantics::enumerator;
-
-          enumerator& e (dynamic_cast<enumerator&> (*unit.find (en)));
-
-          if (e.enum_ ().unsigned_ ())
-            os << " DEFAULT " << e.value ();
+          if (options.sqlite_lax_auto_id ())
+            os << " /*AUTOINCREMENT*/";
           else
-            os << " DEFAULT " << static_cast<long long> (e.value ());
+            os << " AUTOINCREMENT";
         }
-
-        virtual void
-        constraints (semantics::data_member& m)
-        {
-          base::constraints (m);
-
-          if (m.count ("auto"))
-          {
-            if (options.sqlite_lax_auto_id ())
-              os << " /*AUTOINCREMENT*/";
-            else
-              os << " AUTOINCREMENT";
-          }
-        }
-
-        virtual void
-        reference (semantics::data_member& m)
-        {
-          // In SQLite, by default, constraints are immediate.
-          //
-          if (semantics::class_* c =
-              object_pointer (member_utype (m, prefix_)))
-          {
-            os << " REFERENCES " << table_qname (*c) << " (" <<
-              column_qname (*id_member (*c)) << ") " <<
-              "DEFERRABLE INITIALLY DEFERRED";
-          }
-          else
-            base::reference (m);
-        }
-
       };
-      entry<object_columns> object_columns_;
+      entry<create_column> create_column_;
     }
   }
 }

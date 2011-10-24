@@ -318,8 +318,24 @@ namespace relational
   }
 
   template <typename T>
+  inline traversal::relational::edge_base&
+  operator>> (instance<T>& n, traversal::relational::edge_base& e)
+  {
+    n->edge_traverser (e);
+    return e;
+  }
+
+  template <typename T>
   inline traversal::node_base&
   operator>> (traversal::edge_base& e, instance<T>& n)
+  {
+    e.node_traverser (*n);
+    return *n;
+  }
+
+  template <typename T>
+  inline traversal::relational::node_base&
+  operator>> (traversal::relational::edge_base& e, instance<T>& n)
   {
     e.node_traverser (*n);
     return *n;

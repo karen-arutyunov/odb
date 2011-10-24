@@ -93,6 +93,32 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 {
   try
   {
+    // First create the database model.
+    //
+    cutl::shared_ptr<semantics::relational::model> model;
+
+    if (ops.generate_schema ())
+    {
+      auto_ptr<context> ctx (create_context (cerr, unit, ops, 0));
+
+      switch (ops.database ())
+      {
+      case database::mysql:
+      case database::oracle:
+      case database::pgsql:
+      case database::sqlite:
+        {
+          model = relational::model::generate ();
+          break;
+        }
+      case database::tracer:
+        {
+          cerr << "error: the tracer database does not have schema" << endl;
+          throw failed ();
+        }
+      }
+    }
+
     // Output files.
     //
     path file (p.leaf ());
@@ -196,7 +222,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     {
       cxx_filter filt (hxx);
-      auto_ptr<context> ctx (create_context (hxx, unit, ops));
+      auto_ptr<context> ctx (create_context (hxx, unit, ops, model.get ()));
 
       string guard (make_guard (gp + hxx_name, *ctx));
 
@@ -270,7 +296,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     {
       cxx_filter filt (ixx);
-      auto_ptr<context> ctx (create_context (ixx, unit, ops));
+      auto_ptr<context> ctx (create_context (ixx, unit, ops, model.get ()));
 
       // Copy prologue.
       //
@@ -313,7 +339,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     {
       cxx_filter filt (cxx);
-      auto_ptr<context> ctx (create_context (cxx, unit, ops));
+      auto_ptr<context> ctx (create_context (cxx, unit, ops, model.get ()));
 
       cxx << "#include <odb/pre.hxx>" << endl
           << endl;
@@ -363,7 +389,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     if (sql_schema)
     {
-      auto_ptr<context> ctx (create_context (sql, unit, ops));
+      auto_ptr<context> ctx (create_context (sql, unit, ops, model.get ()));
 
       // Copy prologue.
       //

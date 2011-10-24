@@ -67,16 +67,19 @@ namespace relational
     }
 
     context::
-    context (ostream& os, semantics::unit& u, options_type const& ops)
+    context (ostream& os,
+             semantics::unit& u,
+             options_type const& ops,
+             sema_rel::model* m)
         : root_context (os, u, ops, data_ptr (new (shared) data (os))),
-          base_context (static_cast<data*> (root_context::data_.get ())),
+          base_context (static_cast<data*> (root_context::data_.get ()), m),
           data_ (static_cast<data*> (base_context::data_))
     {
       assert (current_ == 0);
       current_ = this;
 
-      data_->generate_grow_ = false;
-      data_->need_alias_as_ = false;
+      generate_grow = false;
+      need_alias_as = false;
       data_->bind_vector_ = "oracle::bind*";
 
       // Populate the C++ type to DB type map.
@@ -143,9 +146,6 @@ namespace relational
     // SQL type parsing.
     //
 
-    static sql_type
-    parse_sql_type (semantics::data_member& m, std::string const& sql);
-
     sql_type const& context::
     column_sql_type (semantics::data_member& m, string const& kp)
     {
@@ -154,18 +154,30 @@ namespace relational
                   : "oracle-" + kp + "-column-sql-type");
 
       if (!m.count (key))
-        m.set (key, parse_sql_type (m, column_type (m, kp)));
+      {
+        try
+        {
+          m.set (key, parse_sql_type (column_type (m, kp)));
+        }
+        catch (invalid_sql_type const& e)
+        {
+          cerr << m.file () << ":" << m.line () << ":" << m.column ()
+               << ": error: " << e.message () << endl;
+
+          throw operation_failed ();
+        }
+      }
 
       return m.get<sql_type> (key);
     }
 
-    static sql_type
-    parse_sql_type (semantics::data_member& m, string const& sql)
+    sql_type context::
+    parse_sql_type (string const& sqlt)
     {
       try
       {
         sql_type r;
-        sql_lexer l (sql);
+        sql_lexer l (sqlt);
 
         // While most type names use single identifier, there are
         // a couple of exceptions to this rule:
@@ -304,11 +316,9 @@ namespace relational
                          (prefix == "TIMESTAMP WITH LOCAL TIME" ||
                           prefix == "TIMESTAMP WITH TIME"))
                 {
-                  cerr << m.file () << ":" << m.line () << ":"
-                       << m.column ()<< ": error: Oracle timestamps with time "
-                       << "zones are not currently supported" << endl;
-
-                  throw operation_failed ();
+                  throw invalid_sql_type (
+                    "Oracle timestamps with time zones are not currently "
+                    "supported");
                 }
                 //
                 // String and binary types.
@@ -387,24 +397,18 @@ namespace relational
                 //
                 else if (id == "LONG")
                 {
-                  cerr << m.file () << ":" << m.line () << ":"
-                       << m.column () << ": error: LONG types are not "
-                       << " supported" << endl;
-
-                  throw operation_failed ();
+                  throw invalid_sql_type (
+                    "Oracle LONG types are not supported");
                 }
                 else
                 {
-                  cerr << m.file () << ":" << m.line () << ":" <<
-                    m.column () << ":";
-
                   if (tt == sql_token::t_identifier)
-                    cerr << " error: unknown Oracle type '" <<
-                      t.identifier () << "'" << endl;
+                  {
+                    throw invalid_sql_type (
+                      "unknown Oracle type '" + t.identifier () + "'");
+                  }
                   else
-                    cerr << " error: expected Oracle type name" << endl;
-
-                  throw operation_failed ();
+                    throw invalid_sql_type ("expected Oracle type name");
                 }
               }
 
@@ -440,16 +444,13 @@ namespace relational
 
                 if (r.type == sql_type::invalid)
                 {
-                  cerr << m.file () << ":" << m.line () << ":" <<
-                    m.column () << ":";
-
                   if (tt == sql_token::t_identifier)
-                    cerr << " error: unknown Oracle type '" <<
-                      prefix + t.identifier () << "'" << endl;
+                  {
+                    throw invalid_sql_type (
+                      "unknown Oracle type '" + t.identifier () + "'");
+                  }
                   else
-                    cerr << " error: expected Oracle type name" << endl;
-
-                  throw operation_failed ();
+                    throw invalid_sql_type ("expected Oracle type name");
                 }
               }
 
@@ -465,11 +466,8 @@ namespace relational
 
                 if (t.type () != sql_token::t_int_lit)
                 {
-                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                       << ": error: integer range expected in Oracle type "
-                       << "declaration" << endl;
-
-                  throw operation_failed ();
+                  throw invalid_sql_type (
+                    "integer range expected in Oracle type declaration");
                 }
 
                 // Parse the range.
@@ -480,12 +478,9 @@ namespace relational
 
                   if (!(is >> v && is.eof ()))
                   {
-                    cerr << m.file () << ":" << m.line () << ":"
-                         << m.column ()
-                         << ": error: invalid range value '" << t.literal ()
-                         << "'in Oracle type declaration" << endl;
-
-                    throw operation_failed ();
+                    throw invalid_sql_type (
+                      "invalid range value '" + t.literal () + "' in Oracle "
+                      "type declaration");
                   }
 
                   r.range = true;
@@ -502,11 +497,8 @@ namespace relational
 
                   if (t.type () != sql_token::t_int_lit)
                   {
-                    cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                         << ": error: integer scale expected in Oracle type "
-                         << "declaration" << endl;
-
-                    throw operation_failed ();
+                    throw invalid_sql_type (
+                      "integer scale expected in Oracle type declaration");
                   }
 
                   short v;
@@ -514,12 +506,9 @@ namespace relational
 
                   if (!(is >> v && is.eof ()))
                   {
-                    cerr << m.file () << ":" << m.line () << ":"
-                         << m.column ()
-                         << ": error: invalid scale value '" << t.literal ()
-                         << "'in Oracle type declaration" << endl;
-
-                    throw operation_failed ();
+                    throw invalid_sql_type (
+                      "invalid scale value '" + t.literal () + "' in Oracle "
+                      "type declaration");
                   }
 
                   r.scale = true;
@@ -535,20 +524,16 @@ namespace relational
                     r.byte_semantics = false;
                   else if (id != "BYTE")
                   {
-                    cerr << m.file () << ":" << m.line () << ":"
-                         << m.column ()
-                         << ": error: invalid keyword '" << t.literal ()
-                         << "'in Oracle type declaration" << endl;
+                    throw invalid_sql_type (
+                      "invalid keyword '" + t.literal () + "' in Oracle "
+                      "type declaration");
                   }
                 }
 
                 if (t.punctuation () != sql_token::p_rparen)
                 {
-                  cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                       << ": error: expected ')' in Oracle type declaration"
-                       << endl;
-
-                  throw operation_failed ();
+                  throw invalid_sql_type (
+                    "expected ')' in Oracle type declaration");
                 }
               }
 
@@ -594,21 +579,16 @@ namespace relational
 
         if (r.type == sql_type::invalid)
         {
-          cerr << "error: incomplete Oracle type declaration: " << prefix
-               << endl;
-
-          throw operation_failed ();
+          throw invalid_sql_type (
+            "incomplete Oracle type declaration: '" + prefix + "'");
         }
 
         return r;
       }
       catch (sql_lexer::invalid_input const& e)
       {
-        cerr << m.file () << ":" << m.line () << ":" << m.column ()
-             << ": error: invalid Oracle type declaration: " << e.message
-             << endl;
-
-        throw operation_failed ();
+        throw invalid_sql_type (
+          "invalid Oracle type declaration: " + e.message);
       }
     }
   }

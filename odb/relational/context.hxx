@@ -8,8 +8,14 @@
 
 #include <odb/context.hxx>
 
+#include <odb/semantics/relational.hxx>
+#include <odb/traversal/relational.hxx>
+
 namespace relational
 {
+  namespace sema_rel = semantics::relational;
+  namespace trav_rel = traversal::relational;
+
   enum statement_kind
   {
     statement_select,
@@ -129,7 +135,7 @@ namespace relational
     struct data;
     typedef context base_context;
 
-    context (data*);
+    context (data*, sema_rel::model*);
 
   private:
     static context* current_;
@@ -139,15 +145,14 @@ namespace relational
     {
       data (std::ostream& os): root_context::data (os) {}
 
-      bool generate_grow_;
-      bool need_alias_as_;
-
       string bind_vector_;
       string truncated_vector_;
     };
     data* data_;
 
   public:
+    sema_rel::model* model;
+
     bool generate_grow;
     bool need_alias_as;
 

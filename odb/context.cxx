@@ -99,7 +99,10 @@ namespace
 }
 
 auto_ptr<context>
-create_context (ostream& os, semantics::unit& unit, options const& ops)
+create_context (ostream& os,
+                semantics::unit& unit,
+                options const& ops,
+                semantics::relational::model* m)
 {
   auto_ptr<context> r;
 
@@ -107,22 +110,22 @@ create_context (ostream& os, semantics::unit& unit, options const& ops)
   {
   case database::mysql:
     {
-      r.reset (new relational::mysql::context (os, unit, ops));
+      r.reset (new relational::mysql::context (os, unit, ops, m));
       break;
     }
   case database::oracle:
     {
-      r.reset (new relational::oracle::context (os, unit, ops));
+      r.reset (new relational::oracle::context (os, unit, ops, m));
       break;
     }
   case database::pgsql:
     {
-      r.reset (new relational::pgsql::context (os, unit, ops));
+      r.reset (new relational::pgsql::context (os, unit, ops, m));
       break;
     }
   case database::sqlite:
     {
-      r.reset (new relational::sqlite::context (os, unit, ops));
+      r.reset (new relational::sqlite::context (os, unit, ops, m));
       break;
     }
   case database::tracer:

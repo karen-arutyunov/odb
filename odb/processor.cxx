@@ -21,7 +21,7 @@ process (options const& ops, semantics::unit& unit, semantics::path const&)
     //
     if (ops.database () != database::tracer)
     {
-      auto_ptr<context> ctx (create_context (cerr, unit, ops));
+      auto_ptr<context> ctx (create_context (cerr, unit, ops, 0));
       relational::process ();
     }
   }

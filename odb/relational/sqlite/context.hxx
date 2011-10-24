@@ -37,6 +37,21 @@ namespace relational
       column_sql_type (semantics::data_member&,
                        string const& key_prefix = string ());
 
+    public:
+      struct invalid_sql_type
+      {
+        invalid_sql_type (string const& message): message_ (message) {}
+
+        string const&
+        message () const {return message_;}
+
+      private:
+        string message_;
+      };
+
+      static sql_type
+      parse_sql_type (string const&);
+
     protected:
       virtual bool
       grow_impl (semantics::class_&);
@@ -55,7 +70,10 @@ namespace relational
       virtual
       ~context ();
       context ();
-      context (std::ostream&, semantics::unit&, options_type const&);
+      context (std::ostream&,
+               semantics::unit&,
+               options_type const&,
+               sema_rel::model*);
 
       static context&
       current ()

@@ -3,7 +3,7 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <string>
+#include <set>
 
 #include <odb/relational/schema.hxx>
 
@@ -27,8 +27,13 @@ namespace relational
         virtual void
         line (const std::string& l)
         {
-          base::line (l);
-          last_ = l;
+          // SQLPlus doesn't like empty line in the middle of a statement.
+          //
+          if (!l.empty ())
+          {
+            base::line (l);
+            last_ = l;
+          }
         }
 
         virtual void
@@ -61,8 +66,11 @@ namespace relational
         schema_file (const base& x): base (x) {}
 
         virtual void
-        pre ()
+        prologue ()
         {
+          // Quiet down SQLPlus and make sure it exits with an error
+          // code if there is an error.
+          //
           os << "SET FEEDBACK OFF;" << endl
              << "WHENEVER SQLERROR EXIT FAILURE;" << endl
              << "WHENEVER OSERROR EXIT FAILURE;" << endl
@@ -70,7 +78,7 @@ namespace relational
         }
 
         virtual void
-        post ()
+        epilogue ()
         {
           os << "EXIT;" << endl;
         }
@@ -81,10 +89,12 @@ namespace relational
       // Drop.
       //
 
-      struct drop_common: virtual relational::drop_common
+      struct drop_table: relational::drop_table, context
       {
+        drop_table (base const& x): base (x) {}
+
         virtual void
-        drop_table (string const& table)
+        drop (string const& table)
         {
           // Oracle has no IF EXISTS conditional for dropping objects. The
           // PL/SQL approach below seems to be the least error-prone and the
@@ -107,7 +117,7 @@ namespace relational
              << "  END;" << endl
              << "  BEGIN" << endl
              << "    EXECUTE IMMEDIATE 'DROP TRIGGER " <<
-            quote_id (table + "_trig") << "';" << endl
+            quote_id (table + "_trg") << "';" << endl
              << "  EXCEPTION" << endl
              << "    WHEN OTHERS THEN" << endl
              << "      IF SQLCODE != -4080 THEN RAISE; END IF;" << endl
@@ -115,250 +125,176 @@ namespace relational
              << "END;" << endl;
         }
       };
-
-      struct member_drop: relational::member_drop, drop_common
-      {
-        member_drop (base const& x): base (x) {}
-      };
-      entry<member_drop> member_drop_;
-
-      struct class_drop: relational::class_drop, drop_common
-      {
-        class_drop (base const& x): base (x) {}
-      };
-      entry<class_drop> class_drop_;
+      entry<drop_table> drop_table_;
 
       //
       // Create.
       //
 
-      struct object_columns: relational::object_columns, context
+      struct create_foreign_key;
+
+      struct create_table: relational::create_table, context
       {
-        object_columns (base const& x): base (x) {}
+        create_table (base const& x): base (x) {}
 
-        virtual void
-        null (semantics::data_member& m)
-        {
-          sql_type::core_type t (column_sql_type (m, prefix_).type);
+        void
+        traverse (sema_rel::table&);
 
-          // Oracle interprets empty VARCHAR2 and NVARCHAR2 strings as NULL. As
-          // an empty string is always valid within the C++ context, VARCHAR2
-          // and NVARCHAR2 columns are always specified as nullable.
-          //
-          if (t != sql_type::VARCHAR2 && t != sql_type::NVARCHAR2)
-            base::null (m);
-        }
-
-        virtual void
-        default_enum (semantics::data_member& m, tree en, string const&)
-        {
-          // Make sure the column is mapped to Oracle NUMBER.
-          //
-          sql_type t (column_sql_type (m));
-
-          if (t.type != sql_type::NUMBER)
-          {
-            cerr << m.file () << ":" << m.line () << ":" << m.column ()
-                 << ": error: column with default value specified as C++ "
-                 << "enumerator must map to Oracle NUMBER" << endl;
-
-            throw operation_failed ();
-          }
-
-          using semantics::enumerator;
-
-          enumerator& e (dynamic_cast<enumerator&> (*unit.find (en)));
-
-          if (e.enum_ ().unsigned_ ())
-            os << " DEFAULT " << e.value ();
-          else
-            os << " DEFAULT " << static_cast<long long> (e.value ());
-        }
-
-        virtual void
-        reference (semantics::data_member&)
-        {
-        }
+      private:
+        friend class create_foreign_key;
+        set<string> tables_; // Set of tables we have already defined.
       };
-      entry<object_columns> object_columns_;
+      entry<create_table> create_table_;
 
-      struct object_columns_references:
-        object_columns_base, relational::common, context
+      struct create_column: relational::create_column, context
       {
-        object_columns_references (emitter& e,
-                                   ostream& os,
-                                   string const& table,
-                                   string const& prefix = string ())
-            : relational::common (e, os),
-              table_ (table),
-              prefix_ (prefix)
+        create_column (base const& x): base (x) {}
+
+        virtual void
+        null (sema_rel::column& c)
         {
-        }
-
-        virtual bool
-        traverse_column (semantics::data_member& m, string const& name, bool)
-        {
-          if (inverse (m))
-            return false;
-
-          if (semantics::class_* c =
-              object_pointer (member_utype (m, prefix_)))
+          // Oracle interprets empty VARCHAR2 and NVARCHAR2 strings as
+          // NULL. As an empty string is always valid within the C++
+          // context, VARCHAR2 and NVARCHAR2 columns are always
+          // specified as nullable.
+          //
+          if (!c.null ())
           {
-            pre_statement ();
-
-            os << "ALTER TABLE " << quote_id (table_) << endl
-               << "  ADD FOREIGN KEY (" << quote_id (name) << ")" << endl
-               << "  REFERENCES " << table_qname (*c) << endl
-               << "  DEFERRABLE INITIALLY DEFERRED" << endl;
-
-            post_statement ();
-          }
-          else if (prefix_ == "id")
-          {
-            semantics::class_& c (*context::top_object);
-
-            pre_statement ();
-
-            // We don't need INITIALLY DEFERRED here since the object row
-            // must exist before any container row.
+            // This should never fail since we have already parsed this.
             //
-            os << "ALTER TABLE " << quote_id (table_) << endl
-               << "  ADD FOREIGN KEY (" << quote_id (name) << ")" << endl
-               << "  REFERENCES " << table_qname (c) << endl
-               << "  ON DELETE CASCADE" << endl;
+            sql_type const& t (parse_sql_type (c.type ()));
 
-            post_statement ();
+            if (t.type == sql_type::VARCHAR2 || t.type == sql_type::NVARCHAR2)
+              return;
           }
 
-          return true;
+          base::null (c);
+        }
+      };
+      entry<create_column> create_column_;
+
+      struct create_foreign_key: relational::create_foreign_key, context
+      {
+        create_foreign_key (schema_format f, relational::create_table& ct)
+            : base (f, ct)
+        {
         }
 
-      private:
-        string table_;
-        string prefix_;
-      };
+        create_foreign_key (base const& x): base (x) {}
 
-      struct member_create: object_members_base, context
+        virtual void
+        traverse (sema_rel::foreign_key& fk)
+        {
+          // If the referenced table has already been defined, do the
+          // foreign key definition in the table definition. Otherwise
+          // postpone it until pass 2 where we do it via ALTER TABLE
+          // (see add_foreign_key below).
+          //
+          create_table& ct (static_cast<create_table&> (create_table_));
+
+          if (ct.tables_.find (fk.referenced_table ()) != ct.tables_.end ())
+          {
+            base::traverse (fk);
+            fk.set ("oracle-fk-defined", true); // Mark it as defined.
+          }
+        }
+
+        virtual string
+        name (sema_rel::foreign_key& fk)
+        {
+          // In Oracle, foreign key names are schema-global. Make them
+          // unique by prefixing the key name with table name.
+          //
+          return static_cast<sema_rel::table&> (fk.scope ()).name () +
+            '_' + fk.name ();
+        }
+      };
+      entry<create_foreign_key> create_foreign_key_;
+
+      struct add_foreign_key: create_foreign_key, relational::common
       {
-        member_create (emitter& e, ostream& os, relational::tables& tables)
-            : object_members_base (false, true, false),
-              e_ (e),
-              os_ (os),
-              tables_ (tables)
+        add_foreign_key (schema_format f, relational::create_table& ct)
+            : create_foreign_key (f, ct), common (ct.emitter (), ct.stream ())
         {
         }
 
         virtual void
-        traverse_container (semantics::data_member& m, semantics::type& t)
+        traverse (sema_rel::foreign_key& fk)
         {
-          using semantics::type;
-          using semantics::data_member;
-
-          // Ignore inverse containers of object pointers.
-          //
-          if (inverse (m, "value"))
-            return;
-
-          string const& name (table_name (m, table_prefix_));
-
-          if (tables_.count (name))
-            return;
-
-          type& vt (container_vt (t));
-
-          // object_id
-          //
+          if (!fk.count ("oracle-fk-defined"))
           {
-            object_columns_references ocr (e_, os_, name, "id");
-            string id_name (column_name (m, "id", "object_id"));
-            ocr.traverse_column (m, id_name, true);
-          }
-
-          // value
-          //
-          if (semantics::class_* cvt = composite_wrapper (vt))
-          {
-            object_columns_references ocr (e_, os_, name);
-            ocr.traverse (m, *cvt, "value", "value");
-          }
-          else
-          {
-            object_columns_references ocr (e_, os_, name, "value");
-            string const& value_name (column_name (m, "value", "value"));
-            ocr.traverse_column (m, value_name, true);
-          }
-
-          tables_.insert (name);
-        }
-
-      private:
-        emitter& e_;
-        ostream& os_;
-        relational::tables& tables_;
-      };
-
-      struct class_create: relational::class_create, context
-      {
-        class_create (base const& x): base (x) {}
-
-        virtual void
-        traverse (type& c)
-        {
-          if (pass_ != 2)
-          {
-            base::traverse (c);
-            return;
-          }
-
-          if (c.file () != unit.file ())
-            return;
-
-          if (!object (c) || abstract (c))
-            return;
-
-          string const& name (table_name (c));
-
-          if (tables_[pass_].count (name))
-            return;
-
-          semantics::data_member* id (id_member (c));
-
-          if (id->count ("auto"))
-          {
-            string seq_name (quote_id (name + "_seq"));
+            sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
 
             pre_statement ();
 
-            os_ << "CREATE SEQUENCE " << seq_name << endl
-                << "  START WITH 1 INCREMENT BY 1" << endl
-                << endl;
+            os << "ALTER TABLE " << quote_id (t.name ()) << " ADD" << endl;
+            base::create (fk);
+            os << endl;
+
+            post_statement ();
+          }
+        }
+      };
+
+      void create_table::
+      traverse (sema_rel::table& t)
+      {
+        if (pass_ == 1)
+        {
+          tables_.insert (t.name ()); // Add it before to cover self-refs.
+          base::traverse (t);
+
+          // Create the sequence and trigger if we have auto primary key.
+          //
+          using sema_rel::primary_key;
+
+          sema_rel::table::names_iterator i (t.find ("")); // Special name.
+
+          primary_key* pk (i != t.names_end ()
+                           ? &dynamic_cast<primary_key&> (i->nameable ())
+                           : 0);
+
+          if (pk != 0 && pk->auto_ ())
+          {
+            string const& tname (t.name ());
+            string const& cname (pk->contains_begin ()->column ().name ());
+
+            string seq_name (tname + "_seq");
+            string trg_name (tname + "_trg");
+
+            // Sequence.
+            //
+            pre_statement ();
+
+            os_ << "CREATE SEQUENCE " << quote_id (seq_name) << endl
+                << "  START WITH 1 INCREMENT BY 1" << endl;
 
             post_statement ();
 
+            // Trigger.
+            //
             pre_statement ();
 
-            os_ << "CREATE TRIGGER " <<
-              quote_id (name + "_trig") << endl
-                << "  BEFORE INSERT ON " << quote_id (name) << endl
+            os_ << "CREATE TRIGGER " << quote_id (trg_name) << endl
+                << "  BEFORE INSERT ON " << quote_id (tname) << endl
                 << "  FOR EACH ROW" << endl
                 << "BEGIN" << endl
-                << "  SELECT " << seq_name << ".nextval INTO :new." <<
-              column_qname (*id) << " FROM DUAL;" << endl
+                << "  SELECT " << quote_id (seq_name) << ".nextval " <<
+              "INTO :new." << quote_id (cname) << " FROM DUAL;" << endl
                 << "END;" << endl;
 
             post_statement ();
           }
 
-          object_columns_references ocr (e_, os_, name);
-          ocr.traverse (c);
-
-          tables_[pass_].insert (name);
-
-          member_create mc (e_, os_, tables_[pass_]);
-          mc.traverse (c);
+          return;
         }
-      };
-      entry<class_create> class_create_;
+
+        // Add foreign keys.
+        //
+        instance<add_foreign_key> fk (format_, *this);
+        trav_rel::names n (*fk);
+        names (t, n);
+      }
     }
   }
 }
