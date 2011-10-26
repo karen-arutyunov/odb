@@ -842,6 +842,20 @@ namespace relational
       };
       entry<init_value_member> init_value_member_;
 
+      struct container_traits: relational::container_traits, context
+      {
+        container_traits (base const& x): base (x) {}
+
+        virtual void
+        cache_result (string const&)
+        {
+          // Caching is not necessary since Oracle can execute several
+          // interleaving statements.
+          //
+        }
+      };
+      entry<container_traits> container_traits_;
+
       struct class_: relational::class_, context
       {
         class_ (base const& x): base (x) {}
