@@ -30,7 +30,7 @@ namespace relational
           // Oracle seems to have the TRUE and FALSE literals, though no
           // boolean type.
           //
-          return v ? "TRUE" : "FALSE";
+          return v ? "1" : "0";
         }
 
         virtual string
