@@ -285,6 +285,10 @@ namespace relational
         os << "  " << quote_id (c.name ()) << " ";
 
         type (c, pk != 0 && pk->auto_ ());
+
+        if (!c.default_ ().empty ())
+          os << " DEFAULT " << c.default_ ();
+
         null (c);
 
         // If this is a single-column primary key, generate it inline.
@@ -294,9 +298,6 @@ namespace relational
 
         if (pk != 0 && pk->auto_ ())
           auto_ (c);
-
-        if (!c.default_ ().empty ())
-          os << " DEFAULT " << c.default_ ();
 
         if (!c.options ().empty ())
           os << " " << c.options ();
