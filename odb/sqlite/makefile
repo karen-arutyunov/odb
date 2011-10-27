@@ -67,7 +67,7 @@ $(gen): cli_options +=                   \
 --cli-namespace odb::sqlite::details::cli \
 --guard-prefix LIBODB_SQLITE_DETAILS
 
-$(out_base)/details/config.h:
+$(out_base)/details/config.h: | $(out_base)/details/.
 	@echo '/* file      : odb/sqlite/details/config.h'               >$@
 	@echo ' * author    : automatically generated'                  >>$@
 	@echo ' */'                                                     >>$@
