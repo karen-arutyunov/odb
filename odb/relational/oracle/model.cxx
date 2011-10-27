@@ -25,15 +25,6 @@ namespace relational
         object_columns (base const& x): base (x) {}
 
         virtual string
-        default_bool (semantics::data_member&, bool v)
-        {
-          // Oracle seems to have the TRUE and FALSE literals, though no
-          // boolean type.
-          //
-          return v ? "1" : "0";
-        }
-
-        virtual string
         default_enum (semantics::data_member& m, tree en, string const&)
         {
           // Make sure the column is mapped to Oracle NUMBER.
