@@ -2182,6 +2182,11 @@ namespace relational
       }
 
       virtual void
+      init_image_pre (type&)
+      {
+      }
+
+      virtual void
       init_value_extra ()
       {
       }
@@ -2412,6 +2417,8 @@ namespace relational
         if (readonly (c))
           os << "assert (sk != statement_update);"
              << endl;
+
+        init_image_pre (c);
 
         os << "bool grew (false);"
            << endl;

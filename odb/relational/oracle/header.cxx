@@ -16,6 +16,19 @@ namespace relational
     {
       namespace relational = relational::header;
 
+      struct image_type: relational::image_type, context
+      {
+        image_type (base const& x): base (x) {};
+
+        virtual void
+        image_extra (type& c)
+        {
+          if (options.generate_query () && !composite (c))
+            os << "oracle::change_callback change_callback;";
+        }
+      };
+      entry<image_type> image_type_;
+
       struct image_member: relational::image_member, member_base
       {
         image_member (base const& x)

@@ -866,6 +866,14 @@ namespace relational
         }
 
         virtual void
+        init_image_pre (type& c)
+        {
+          if (options.generate_query () && !composite (c))
+            os << "if (i.change_callback.callback != 0)"
+               << "(i.change_callback.callback) (i.change_callback.context);";
+        }
+
+        virtual void
         init_value_extra ()
         {
           os << "sts.find_statement ().stream_result ();";

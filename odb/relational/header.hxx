@@ -88,6 +88,11 @@ namespace relational
       }
 
       virtual void
+      image_extra (type&)
+      {
+      }
+
+      virtual void
       traverse (type& c)
       {
         os << "struct image_type";
@@ -105,6 +110,8 @@ namespace relational
 
         if (!composite (c))
           os << "std::size_t version;";
+
+        image_extra (c);
 
         os << "};";
       }
