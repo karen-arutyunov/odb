@@ -35,9 +35,6 @@ namespace odb
       details::shared_ptr<query_params> params_;
       details::shared_ptr<select_statement> statement_;
     };
-
-    template <typename T, class_kind kind>
-    class result_impl;
   }
 }
 
