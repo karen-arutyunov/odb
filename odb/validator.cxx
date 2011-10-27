@@ -333,7 +333,10 @@ namespace
 
       if (id == 0)
       {
-        if (!context::abstract (c))
+        // An object without an id should either be abstract or
+        // explicitly marked as such.
+        //
+        if (!(c.count ("id") || context::abstract (c)))
         {
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " error: no data member designated as object id" << endl;
@@ -341,6 +344,10 @@ namespace
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " info: use '#pragma db id' to specify object id member"
                << endl;
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " info: or explicitly declare that this persistent class "
+               << "has no object id" << endl;
 
           valid_ = false;
         }
@@ -551,6 +558,58 @@ namespace
   // Pass 2.
   //
 
+  struct object_no_id_members: object_members_base
+  {
+    object_no_id_members (bool& valid)
+        : object_members_base (false, false, true), valid_ (valid), dm_ (0)
+    {
+    }
+
+    virtual void
+    traverse_simple (semantics::data_member& m)
+    {
+      if (m.count ("inverse"))
+      {
+        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+        cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+             << " error: inverse object pointer member '" << member_prefix_
+             << m.name () << "' in an object without id" << endl;
+
+        valid_ = false;
+      }
+    }
+
+    virtual void
+    traverse_container (semantics::data_member& m, semantics::type&)
+    {
+      semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+      cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << " error: container member '" << member_prefix_ << m.name ()
+           << "' in an object without id" << endl;
+
+      valid_ = false;
+    }
+
+    virtual void
+    traverse_composite (semantics::data_member* m, semantics::class_& c)
+    {
+      semantics::data_member* old_dm (dm_);
+
+      if (dm_ == 0)
+        dm_ = m;
+
+      object_members_base::traverse_composite (m, c);
+
+      dm_ = old_dm;
+    }
+
+  private:
+    bool& valid_;
+    semantics::data_member* dm_; // Direct view data member.
+  };
+
   struct view_members: object_members_base
   {
     view_members (bool& valid)
@@ -614,7 +673,11 @@ namespace
   struct class2: traversal::class_
   {
     class2 (bool& valid, options const& ops, semantics::unit& unit)
-        : valid_ (valid), options_ (ops), unit_ (unit), view_members_ (valid)
+        : valid_ (valid),
+          options_ (ops),
+          unit_ (unit),
+          object_no_id_members_ (valid),
+          view_members_ (valid)
     {
     }
 
@@ -630,8 +693,14 @@ namespace
     }
 
     virtual void
-    traverse_object (type&)
+    traverse_object (type& c)
     {
+      if (context::id_member (c) == 0 && !context::abstract (c))
+      {
+        // Make sure we don't have any containers or inverse pointers.
+        //
+        object_no_id_members_.traverse (c);
+      }
     }
 
     virtual void
@@ -651,6 +720,7 @@ namespace
     options const& options_;
     semantics::unit& unit_;
 
+    object_no_id_members object_no_id_members_;
     view_members view_members_;
   };
 }

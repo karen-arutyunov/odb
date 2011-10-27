@@ -102,7 +102,7 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
-        bool abst (abstract (c));
+        bool abstract (context::abstract (c));
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
 
@@ -115,28 +115,34 @@ namespace relational
 
         object_extra (c);
 
-        if (id != 0)
+        // id (object_type)
+        //
+        if (id != 0 || !abstract)
         {
-          // id (object_type)
-          //
           os << "inline" << endl
              << traits << "::id_type" << endl
              << traits << "::" << endl
-             << "id (const object_type& obj)"
+             << "id (const object_type&" << (id != 0 ? " obj" : "") << ")"
              << "{";
 
-          if (base_id)
-            os << "return object_traits< " << id->scope ().fq_name () <<
-              " >::id (obj);";
-          else
-            os << "return obj." << id->name () << ";";
+          if (id != 0)
+          {
+            if (base_id)
+              os << "return object_traits< " << id->scope ().fq_name () <<
+                " >::id (obj);";
+            else
+              os << "return obj." << id->name () << ";";
+          }
 
           os << "}";
+        }
 
-          // id (image_type)
-          //
+        if (id != 0)
+        {
           if (options.generate_query () && base_id)
           {
+            // id (image_type)
+            //
             os << "inline" << endl
                << traits << "::id_type" << endl
                << traits << "::" << endl
@@ -175,7 +181,7 @@ namespace relational
         //
         // The rest only applies to concrete objects.
         //
-        if (abst)
+        if (abstract)
           return;
 
         // callback ()
@@ -244,7 +250,7 @@ namespace relational
 
         // load_()
         //
-        if (!has_a (c, test_container))
+        if (id != 0 && !has_a (c, test_container))
         {
           os << "inline" << endl
              << "void " << traits << "::" << endl

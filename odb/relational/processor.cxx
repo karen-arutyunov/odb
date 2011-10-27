@@ -851,6 +851,20 @@ namespace relational
           throw operation_failed ();
         }
 
+        // Make sure the pointed-to class has object id.
+        //
+        if (context::id_member (*c) == 0)
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "error: pointed-to class '" << c->fq_name () << "' "
+             << "has no object id" << endl;
+
+          os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+             << "info: class '" << c->name () << "' is defined here" << endl;
+
+          throw operation_failed ();
+        }
+
         // See if this is the inverse side of a bidirectional relationship.
         // If so, then resolve the member and cache it in the context.
         //
@@ -882,8 +896,9 @@ namespace relational
           }
 
           // @@ Would be good to check that the other end is actually
-          // an object pointer and is not marked as inverse. But the
-          // other class may not have been processed yet.
+          // an object pointer, is not marked as inverse, and points
+          // to the correct object. But the other class may not have
+          // been processed yet.
           //
           m.remove ("inverse");
           m.set (kp + (kp.empty () ? "": "-") + "inverse", im);

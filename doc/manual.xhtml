@@ -438,7 +438,8 @@ for consistency.
 		<tr><th>11.1.2</th><td><a href="#11.1.2"><code>pointer</code></a></td></tr>
 		<tr><th>11.1.3</th><td><a href="#11.1.3"><code>abstract</code></a></td></tr>
 		<tr><th>11.1.4</th><td><a href="#11.1.4"><code>readonly</code></a></td></tr>
-		<tr><th>11.1.5</th><td><a href="#11.1.5"><code>callback</code></a></td></tr>
+		<tr><th>11.1.5</th><td><a href="#11.1.5"><code>id</code></a></td></tr>
+		<tr><th>11.1.6</th><td><a href="#11.1.6"><code>callback</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -1925,10 +1926,10 @@ max age: 33
 
   <p>An object is an independent entity. It can be stored, updated,
      and deleted in the database independent of other objects.
-     An object has an identifier, called <em>object id</em>, that is
-     unique among all instances of an object type within a database. In
-     contrast, a value can only be stored in the database as part of an
-     object and doesn't have its own unique identifier.</p>
+     Normally, an object has an identifier, called <em>object id</em>,
+     that is unique among all instances of an object type within a
+     database. In contrast, a value can only be stored in the database
+     as part of an object and doesn't have its own unique identifier.</p>
 
   <p>An object consists of data members which are either values
      (<a href="#7">Chapter 7, "Value Types"</a>), pointers
@@ -2030,9 +2031,13 @@ class person
 };
   </pre>
 
-  <p>These two pragmas are the minimum required to declare a
-     persistent class. Other pragmas can be used to fine-tune
-     the database-related properties of a class and its
+  <p>While it is possible to declare a persistent class without an
+     object id, such a class will have limited functionality
+     (<a href="#11.1.5">Section 11.1.5, "<code>id</code>"</a>).
+
+  <p>The above two pragmas are the minimum required to declare a
+     persistent class with an object id. Other pragmas can be used to
+     fine-tune the database-related properties of a class and its
      members (<a href="#11">Chapter 11, "ODB Pragma Language"</a>).</p>
 
   <p>Normally, an object class should define the default constructor. The
@@ -7496,9 +7501,15 @@ class person
     </tr>
 
     <tr>
+      <td><code>id</code></td>
+      <td>persistent class has no object id</td>
+      <td><a href="#11.1.5">11.1.5</a></td>
+    </tr>
+
+    <tr>
       <td><code>callback</code></td>
       <td>database operations callback</td>
-      <td><a href="#11.1.5">11.1.5</a></td>
+      <td><a href="#11.1.6">11.1.6</a></td>
     </tr>
 
   </table>
@@ -7631,7 +7642,46 @@ class person
      as well as composite value types (<a href="#11.3.6">Section 11.3.6,
      "<code>readonly</code>"</a>) as read-only.</p>
 
-  <h3><a name="11.1.5">11.1.5 <code>callback</code></a></h3>
+  <h3><a name="11.1.5">11.1.5 <code>id</code></a></h3>
+
+  <p>The <code>id</code> specifier specifies that the persistent class
+     has no object id. It should be followed by opening and closing
+     parenthesis. For example:</p>
+
+  <pre class="c++">
+#pragma db object id()
+class person
+{
+  ...
+};
+  </pre>
+
+  <p>A persistent class without an object id has limited functionality.
+     Such a class cannot be loaded with the <code>database::load()</code>
+     or <code>database::find()</code> functions (<a href="#3.8">Section 3.8,
+     "Loading Persistent Objects"</a>), updated with the
+     <code>database::update()</code> function (<a href="#3.9">Section 3.9,
+     "Updating Persistent Objects"</a>), or deleted with the
+     <code>database::erase()</code> function (<a href="#3.10">Section 3.10,
+     "Deleting Persistent Objects"</a>). To load and delete
+     objects without ids you can use the <code>database::query()</code>
+     (<a href="#4">Chapter 4, "Querying the Database"</a>) and
+     <code>database::erase_query()</code> (<a href="#3.10">Section 3.10,
+     "Deleting Persistent Objects"</a>) functions, respectively.
+     There is no way to update such objects except by using native SQL
+     statements (<a href="#3.11">Section 3.11, "Executing Native SQL
+     Statements"</a>).</p>
+
+  <p>Furthermore, persistent classes without object ids cannot have container
+     data members nor can they be used in object relationships. Such objects
+     are not entered into the session object cache
+     (<a href="#10.1">Section 10.1, "Object Cache"</a>) either.</p>
+
+  <p>To declare a persistent class with an object id, use the data member
+     <code>id</code> specifier (<a href="#11.4.1">Section 11.4.1,
+     "<code>id</code>"</a>).</p>
+
+  <h3><a name="11.1.6">11.1.6 <code>callback</code></a></h3>
 
   <p>The <code>callback</code> specifier specifies the persist class
      member function that should be called before and after a
@@ -7840,7 +7890,7 @@ private:
      result iteration. The semantics of the <code>callback</code>
      specifier for a view are similar to those of the
      <code>callback</code> specifier for an object
-     (<a href="#11.1.5">Section 11.1.5, "<code>callback</code>"</a>)
+     (<a href="#11.1.6">Section 11.1.6, "<code>callback</code>"</a>)
      except that the only events that can trigger a callback
      call in the case of a view are <code>pre_load</code> and
      <code>post_load</code>.</p>
@@ -8616,8 +8666,8 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <h3><a name="11.4.1">11.4.1 <code>id</code></a></h3>
 
   <p>The <code>id</code> specifier specifies that a data member contains
-     the object id. Every persistent class must have a member designated
-     as an object's identifier. For example:</p>
+     the object id. In a relational database, an identifier member is
+     mapped to a primary key. For example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -8630,11 +8680,13 @@ class person
 };
   </pre>
 
-  <p>In a relational database, an identifier member is mapped to a
-     primary key.</p>
+  <p>Normally, every persistent class has a data member designated as an
+     object's identifier. However, it is possible to declare a
+     persistent class without an id using the object <code>id</code>
+     specifier (<a href="#11.1.5">Section 11.1.5, "<code>id</code>"</a>).</p>
 
-  <p>Note also that the <code>id</code> specifier cannot be specified
-     for data members of composite value types or views.</p>
+  <p>Note also that the <code>id</code> specifier cannot be used for data
+     members of composite value types or views.</p>
 
   <h3><a name="11.4.2">11.4.2 <code>auto</code></a></h3>
 

@@ -302,11 +302,21 @@ check_spec_decl_type (tree d,
 {
   int tc (TREE_CODE (d));
 
-  if (p == "id" ||
-      p == "auto" ||
-      p == "column" ||
-      p == "inverse" ||
-      p == "transient")
+  if (p == "id")
+  {
+    // Id can be used for both data members and objects.
+    //
+    if (tc != FIELD_DECL && !CLASS_TYPE_P (d))
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a data member or class" << endl;
+      return false;
+    }
+  }
+  else if (p == "auto" ||
+           p == "column" ||
+           p == "inverse" ||
+           p == "transient")
   {
     if (tc != FIELD_DECL)
     {
@@ -473,6 +483,7 @@ add_pragma (pragma const& prag, tree decl)
 static void
 handle_pragma (cpp_reader* reader,
                string const& p,
+               string const& qualifier,
                tree decl,
                string const& decl_name)
 {
@@ -860,8 +871,8 @@ handle_pragma (cpp_reader* reader,
   }
   else if (p == "id")
   {
-    // id
-    //
+    // id     (member)
+    // id()   (object)
 
     // Make sure we've got the correct declaration type.
     //
@@ -869,6 +880,34 @@ handle_pragma (cpp_reader* reader,
       return;
 
     tt = pragma_lex (&t);
+
+    if (tt == CPP_OPEN_PAREN)
+    {
+      if (qualifier == "member")
+      {
+        error () << "unexpected '(' after db pragma " << p << endl;
+        return;
+      }
+
+      if (pragma_lex (&t) != CPP_CLOSE_PAREN)
+      {
+        error () << "')' expected at the end of db pragma " << p << endl;
+        return;
+      }
+
+      val = false; // Object without id.
+      tt = pragma_lex (&t);
+    }
+    else
+    {
+      if (qualifier == "object")
+      {
+        error () << "expected '(' after db pragma " << p << endl;
+        return;
+      }
+
+      val = true; // Member is object id.
+    }
   }
   else if (p == "auto")
   {
@@ -1463,7 +1502,7 @@ handle_pragma (cpp_reader* reader,
   //
   if (tt == CPP_NAME)
   {
-    handle_pragma (reader, IDENTIFIER_POINTER (t), decl, decl_name);
+    handle_pragma (reader, IDENTIFIER_POINTER (t), qualifier, decl, decl_name);
   }
   else if (tt != CPP_EOF)
     error () << "unexpected text after " << p << " in db pragma" << endl;
@@ -1592,7 +1631,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "readonly" ||
            p == "transient")
   {
-    handle_pragma (reader, p, 0, "");
+    handle_pragma (reader, p, "member", 0, "");
     return;
   }
   else
@@ -1621,7 +1660,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
   //
   if (tt == CPP_NAME)
   {
-    handle_pragma (reader, IDENTIFIER_POINTER (t), decl, decl_name);
+    handle_pragma (reader, IDENTIFIER_POINTER (t), p, decl, decl_name);
   }
   else if (tt != CPP_EOF)
     error () << "unexpected text after " << p << " in db pragma" << endl;

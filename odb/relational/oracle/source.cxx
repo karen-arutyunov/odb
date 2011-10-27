@@ -876,7 +876,7 @@ namespace relational
         {
           semantics::data_member* id (id_member (c));
 
-          if (id->count ("auto"))
+          if (id != 0 && id->count ("auto"))
           {
             os << endl
                << strlit (" RETURNING " +

@@ -925,6 +925,7 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
+        bool abstract (context::abstract (c));
         string const& type (c.fq_name ());
 
         semantics::data_member* id (id_member (c));
@@ -1013,6 +1014,15 @@ namespace relational
                << "};";
           }
         }
+        else if (!abstract)
+        {
+          // Object without id.
+          //
+          os << "typedef void id_type;"
+             << endl
+             << "static const bool auto_id = false;"
+             << endl;
+        }
 
         // image_type
         //
@@ -1033,17 +1043,19 @@ namespace relational
 
         // id ()
         //
-        if (id != 0)
-        {
+        if (id != 0 || !abstract)
+          // We want to generate a dummy void id() accessor even if this
+          // object has no id to help us in the runtime. This way we can
+          // generic code that will both for both void and non-void ids.
+          //
           os << "static id_type" << endl
              << "id (const object_type&);"
              << endl;
 
-          if (options.generate_query ())
-            os << "static id_type" << endl
-               << "id (const image_type&);"
-               << endl;
-        }
+        if (id != 0 && options.generate_query ())
+          os << "static id_type" << endl
+             << "id (const image_type&);"
+             << endl;
 
         // grow ()
         //
@@ -1095,7 +1107,7 @@ namespace relational
         //
         // The rest only applies to concrete objects.
         //
-        if (abstract (c))
+        if (abstract)
         {
           object_public_extra_post (c);
           os << "};";
@@ -1124,8 +1136,9 @@ namespace relational
 
         // Statement cache (forward declaration).
         //
-        os << "struct container_statement_cache_type;"
-           << endl;
+        if (id != 0)
+          os << "struct container_statement_cache_type;"
+             << endl;
 
         // column_count
         //
@@ -1139,13 +1152,17 @@ namespace relational
 
         // Statements.
         //
-        os << "static const char persist_statement[];"
-           << "static const char find_statement[];";
+        os << "static const char persist_statement[];";
 
-        if (cc.total != cc.id + cc.inverse + cc.readonly)
-          os << "static const char update_statement[];";
+        if (id != 0)
+        {
+          os << "static const char find_statement[];";
 
-        os << "static const char erase_statement[];";
+          if (cc.total != cc.id + cc.inverse + cc.readonly)
+            os << "static const char update_statement[];";
+
+          os << "static const char erase_statement[];";
+        }
 
         if (options.generate_query ())
         {
@@ -1178,29 +1195,32 @@ namespace relational
           "object_type&);"
            << endl;
 
-        // update ()
-        //
-        if (!readonly (c))
+        if (id != 0)
+        {
+          // find ()
+          //
+          if (c.default_ctor ())
+            os << "static pointer_type" << endl
+               << "find (database&, const id_type&);"
+               << endl;
+
+          os << "static bool" << endl
+             << "find (database&, const id_type&, object_type&);"
+             << endl;
+
+          // update ()
+          //
+          if (!readonly (c))
+            os << "static void" << endl
+               << "update (database&, const object_type&);"
+               << endl;
+
+          // erase ()
+          //
           os << "static void" << endl
-             << "update (database&, const object_type&);"
+             << "erase (database&, const id_type&);"
              << endl;
-
-        // erase ()
-        //
-        os << "static void" << endl
-           << "erase (database&, const id_type&);"
-           << endl;
-
-        // find ()
-        //
-        if (c.default_ctor ())
-          os << "static pointer_type" << endl
-             << "find (database&, const id_type&);"
-             << endl;
-
-        os << "static bool" << endl
-           << "find (database&, const id_type&, object_type&);"
-           << endl;
+        }
 
         // query ()
         //
@@ -1230,21 +1250,24 @@ namespace relational
         //
         os << "public:" << endl;
 
-        // Load the object image.
-        //
-        os << "static bool" << endl
-           << "find_ (" << db << "::object_statements< object_type >&, " <<
-          "const id_type&);"
-           << endl;
+        if (id != 0)
+        {
+          // Load the object image.
+          //
+          os << "static bool" << endl
+             << "find_ (" << db << "::object_statements< object_type >&, " <<
+            "const id_type&);"
+             << endl;
 
-        // Load the rest of the object (containers, etc). Expects the id
-        // image in the object statements to be initialized to the object
-        // id.
-        //
-        os << "static void" << endl
-           << "load_ (" << db << "::object_statements< object_type >&, " <<
-          "object_type&);"
-           << endl;
+          // Load the rest of the object (containers, etc). Expects the id
+          // image in the object statements to be initialized to the object
+          // id.
+          //
+          os << "static void" << endl
+             << "load_ (" << db << "::object_statements< object_type >&, " <<
+            "object_type&);"
+             << endl;
+        }
 
         os << "};";
       }

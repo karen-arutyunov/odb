@@ -988,6 +988,7 @@ namespace relational
           if (abstract (c))
             return;
 
+          semantics::data_member* id (id_member (c));
           column_count_type const& cc (column_count (c));
 
           string const& n (c.fq_name ());
@@ -998,20 +999,24 @@ namespace relational
           os << name_decl << endl
              << "persist_statement_name[] = " << strlit (fn + "_persist") <<
             ";"
-             << endl
-             << name_decl << endl
-             << "find_statement_name[] = " << strlit (fn + "_find") << ";"
              << endl;
 
-          if (cc.total != cc.id + cc.inverse + cc.readonly)
+          if (id != 0)
+          {
             os << name_decl << endl
-               << "update_statement_name[] = " << strlit (fn + "_update") <<
-              ";"
+               << "find_statement_name[] = " << strlit (fn + "_find") << ";"
                << endl;
 
-          os << name_decl << endl
-             << "erase_statement_name[] = " << strlit (fn + "_erase") << ";"
-             << endl;
+            if (cc.total != cc.id + cc.inverse + cc.readonly)
+              os << name_decl << endl
+                 << "update_statement_name[] = " << strlit (fn + "_update") <<
+                ";"
+                 << endl;
+
+            os << name_decl << endl
+               << "erase_statement_name[] = " << strlit (fn + "_erase") << ";"
+               << endl;
+          }
 
           // Query statement name.
           //
@@ -1029,7 +1034,6 @@ namespace relational
           // Statement types.
           //
           string oid_decl ("const unsigned int " + traits);
-          semantics::data_member* id_m (id_member (c));
 
           // persist_statement_types.
           //
@@ -1046,20 +1050,21 @@ namespace relational
 
           // find_statement_types.
           //
+          if (id != 0)
           {
             os << oid_decl << endl
                << "find_statement_types[] ="
                << "{";
 
             instance<statement_oids> st (statement_select);
-            st->traverse_column (*id_m, "", true);
+            st->traverse_column (*id, "", true);
 
             os << "};";
           }
 
           // update_statement_types.
           //
-          if (cc.total != cc.id + cc.inverse + cc.readonly)
+          if (id != 0 && cc.total != cc.id + cc.inverse + cc.readonly)
           {
             os << oid_decl << endl
                << "update_statement_types[] ="
@@ -1072,7 +1077,7 @@ namespace relational
 
             {
               instance<statement_oids> st (statement_where);
-              st->traverse_column (*id_m, "", false);
+              st->traverse_column (*id, "", false);
             }
 
             os << "};";
@@ -1080,13 +1085,14 @@ namespace relational
 
           // erase_statement_types.
           //
+          if (id != 0)
           {
             os << oid_decl << endl
                << "erase_statement_types[] ="
                << "{";
 
             instance<statement_oids> st (statement_where);
-            st->traverse_column (*id_m, "", true);
+            st->traverse_column (*id, "", true);
 
             os << "};";
           }

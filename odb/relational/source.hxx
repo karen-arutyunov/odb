@@ -2251,7 +2251,7 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
-        bool abst (abstract (c));
+        bool abstract (context::abstract (c));
         string const& type (c.fq_name ());
         string traits ("access::object_traits< " + type + " >");
 
@@ -2461,7 +2461,7 @@ namespace relational
         //
         // The rest only applies to concrete objects.
         //
-        if (abst)
+        if (abstract)
           return;
 
         //
@@ -2470,6 +2470,7 @@ namespace relational
 
         // Statement cache (definition).
         //
+        if (id != 0)
         {
           os << "struct " << traits << "::container_statement_cache_type"
              << "{";
@@ -2494,7 +2495,6 @@ namespace relational
         //
 
         string const& table (table_qname (c));
-        string const& id_col (column_qname (*id));
 
         // persist_statement
         //
@@ -2519,52 +2519,57 @@ namespace relational
              << endl;
         }
 
-        // find_statement
-        //
+        if (id != 0)
         {
-          os << "const char " << traits << "::find_statement[] =" << endl
-             << strlit ("SELECT ") << endl;
+          string const& id_col (column_qname (*id));
 
-          instance<object_columns> t (table, statement_select);
-          t->traverse (c);
+          // find_statement
+          //
+          {
+            os << "const char " << traits << "::find_statement[] =" << endl
+               << strlit ("SELECT ") << endl;
 
-          os << strlit (" FROM " + table) << endl;
+            instance<object_columns> t (table, statement_select);
+            t->traverse (c);
 
-          bool f (false);
-          instance<object_joins> j (c, f); // @@ (im)perfect forwarding
-          j->traverse (c);
-          j->write ();
+            os << strlit (" FROM " + table) << endl;
 
-          instance<query_parameters> qp;
-          os << strlit (" WHERE " + table + "." + id_col + "=" +
-                        qp->next ()) << ";"
-             << endl;
-        }
+            bool f (false);
+            instance<object_joins> j (c, f); // @@ (im)perfect forwarding
+            j->traverse (c);
+            j->write ();
 
-        // update_statement
-        //
-        if (cc.total != cc.id + cc.inverse + cc.readonly)
-        {
-          os << "const char " << traits << "::update_statement[] " <<
-            "=" << endl
-             << strlit ("UPDATE " + table + " SET ") << endl;
+            instance<query_parameters> qp;
+            os << strlit (" WHERE " + table + "." + id_col + "=" +
+                          qp->next ()) << ";"
+               << endl;
+          }
 
-          instance<query_parameters> qp;
-          instance<object_columns> t (statement_update, true, qp.get ());
-          t->traverse (c);
+          // update_statement
+          //
+          if (cc.total != cc.id + cc.inverse + cc.readonly)
+          {
+            os << "const char " << traits << "::update_statement[] " <<
+              "=" << endl
+               << strlit ("UPDATE " + table + " SET ") << endl;
 
-          os << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
-             << endl;
-        }
+            instance<query_parameters> qp;
+            instance<object_columns> t (statement_update, true, qp.get ());
+            t->traverse (c);
 
-        // erase_statement
-        //
-        {
-          instance<query_parameters> qp;
-          os << "const char " << traits << "::erase_statement[] =" << endl
-             << strlit ("DELETE FROM " + table) << endl
-             << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
-             << endl;
+            os << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
+               << endl;
+          }
+
+          // erase_statement
+          //
+          {
+            instance<query_parameters> qp;
+            os << "const char " << traits << "::erase_statement[] =" << endl
+               << strlit ("DELETE FROM " + table) << endl
+               << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
+               << endl;
+          }
         }
 
         if (options.generate_query ())
@@ -2613,6 +2618,11 @@ namespace relational
 
         // persist ()
         //
+        char const* object_statements_type (
+          id != 0
+          ? "object_statements< object_type >"
+          : "object_statements_no_id< object_type >");
+
         os << "void " << traits << "::" << endl
            << "persist (database&, " << (auto_id ? "" : "const ") <<
           "object_type& obj)"
@@ -2621,7 +2631,7 @@ namespace relational
            << endl
            << db << "::connection& conn (" << endl
            << db << "::transaction::current ().connection ());"
-           << "object_statements< object_type >& sts (" << endl
+           << object_statements_type << "& sts (" << endl
            << "conn.statement_cache ().find_object<object_type> ());"
            << "image_type& im (sts.image ());"
            << "binding& imb (sts.insert_image_binding ());"
@@ -2684,7 +2694,7 @@ namespace relational
 
         // update ()
         //
-        if (!readonly (c))
+        if (id != 0 && !readonly (c))
         {
           os << "void " << traits << "::" << endl
              << "update (database&, const object_type& obj)"
@@ -2693,7 +2703,7 @@ namespace relational
              << endl
              << db << "::connection& conn (" << endl
              << db << "::transaction::current ().connection ());"
-             << "object_statements< object_type >& sts (" << endl
+             << object_statements_type << "& sts (" << endl
              << "conn.statement_cache ().find_object<object_type> ());"
              << endl;
 
@@ -2756,51 +2766,54 @@ namespace relational
 
         // erase ()
         //
-        os << "void " << traits << "::" << endl
-           << "erase (database&, const id_type& id)"
-           << "{"
-           << "using namespace " << db << ";"
-           << endl
-           << db << "::connection& conn (" << endl
-           << db << "::transaction::current ().connection ());"
-           << "object_statements< object_type >& sts (" << endl
-           << "conn.statement_cache ().find_object<object_type> ());"
-           << endl;
-
-        // Initialize id image.
-        //
-        os << "id_image_type& i (sts.id_image ());"
-           << "init (i, id);"
-           << endl;
-
-        os << "binding& idb (sts.id_image_binding ());"
-           << "if (i.version != sts.id_image_version () || idb.version == 0)"
-           << "{"
-           << "bind (idb.bind, i);"
-           << "sts.id_image_version (i.version);"
-           << "idb.version++;"
-           << "}";
-
-        // Erase containers first so that there are no reference
-        // violations (we don't want to reply on ON DELETE CASCADE
-        // here since in case of a custom schema, it might not be
-        // there).
-        //
-        if (straight_containers)
+        if (id != 0)
         {
-          instance<container_calls> t (container_calls::erase_call);
-          t->traverse (c);
-          os << endl;
+          os << "void " << traits << "::" << endl
+             << "erase (database&, const id_type& id)"
+             << "{"
+             << "using namespace " << db << ";"
+             << endl
+             << db << "::connection& conn (" << endl
+             << db << "::transaction::current ().connection ());"
+             << object_statements_type << "& sts (" << endl
+             << "conn.statement_cache ().find_object<object_type> ());"
+             << endl;
+
+          // Initialize id image.
+          //
+          os << "id_image_type& i (sts.id_image ());"
+             << "init (i, id);"
+             << endl;
+
+          os << "binding& idb (sts.id_image_binding ());"
+             << "if (i.version != sts.id_image_version () || idb.version == 0)"
+             << "{"
+             << "bind (idb.bind, i);"
+             << "sts.id_image_version (i.version);"
+             << "idb.version++;"
+             << "}";
+
+          // Erase containers first so that there are no reference
+          // violations (we don't want to reply on ON DELETE CASCADE
+          // here since in case of a custom schema, it might not be
+          // there).
+          //
+          if (straight_containers)
+          {
+            instance<container_calls> t (container_calls::erase_call);
+            t->traverse (c);
+            os << endl;
+          }
+
+          os << "if (sts.erase_statement ().execute () != 1)" << endl
+             << "throw object_not_persistent ();";
+
+          os << "}";
         }
 
-        os << "if (sts.erase_statement ().execute () != 1)" << endl
-           << "throw object_not_persistent ();";
-
-        os << "}";
-
-        // find ()
+        // find (id)
         //
-        if (c.default_ctor ())
+        if (id != 0 && c.default_ctor ())
         {
           os << traits << "::pointer_type" << endl
              << traits << "::" << endl
@@ -2810,9 +2823,9 @@ namespace relational
              << endl
              << db << "::connection& conn (" << endl
              << db << "::transaction::current ().connection ());"
-             << "object_statements< object_type >& sts (" << endl
+             << object_statements_type << "& sts (" << endl
              << "conn.statement_cache ().find_object<object_type> ());"
-             << "object_statements< object_type >::auto_lock l (sts);"
+             << object_statements_type << "::auto_lock l (sts);"
              << endl
              << "if (l.locked ())"
              << "{"
@@ -2848,110 +2861,118 @@ namespace relational
              << "}";
         }
 
-        os << "bool " << traits << "::" << endl
-           << "find (database& db, const id_type& id, object_type& obj)"
-           << "{"
-           << "using namespace " << db << ";"
-           << endl
-           << db << "::connection& conn (" << endl
-           << db << "::transaction::current ().connection ());"
-           << "object_statements< object_type >& sts (" << endl
-           << "conn.statement_cache ().find_object<object_type> ());"
-           << "object_statements< object_type >::auto_lock l (sts);"
-           << endl
-           << "if (l.locked ())"
-           << "{"
-           << "if (!find_ (sts, id))" << endl
-           << "return false;"
-           << "}"
-           << "reference_cache_traits< object_type >::insert_guard ig (" << endl
-           << "reference_cache_traits< object_type >::insert (db, id, obj));"
-           << endl
-           << "if (l.locked ())"
-           << "{"
-           << "callback (db, obj, callback_event::pre_load);"
-           << "init (obj, sts.image (), db);";
-
-        init_value_extra ();
-
-        os << "load_ (sts, obj);"
-           << "sts.load_delayed ();"
-           << "l.unlock ();"
-           << "callback (db, obj, callback_event::post_load);"
-           << "}"
-           << "else" << endl
-           << "sts.delay_load (id, obj, ig.position ());"
-           << endl;
-
-        os << "ig.release ();"
-           << "return true;"
-           << "}";
-
+        // find (id, obj)
         //
-        //
-        os << "bool " << traits << "::" << endl
-           << "find_ (" << db << "::object_statements< object_type >& sts, " <<
-          "const id_type& id)"
-           << "{"
-           << "using namespace " << db << ";"
-           << endl;
-
-        // Initialize id image.
-        //
-        os << "id_image_type& i (sts.id_image ());"
-           << "init (i, id);"
-           << endl;
-
-        os << "binding& idb (sts.id_image_binding ());"
-           << "if (i.version != sts.id_image_version () || idb.version == 0)"
-           << "{"
-           << "bind (idb.bind, i);"
-           << "sts.id_image_version (i.version);"
-           << "idb.version++;"
-           << "}";
-
-        // Rebind data image.
-        //
-        os << "image_type& im (sts.image ());"
-           << "binding& imb (sts.select_image_binding ());"
-           << endl
-           << "if (im.version != sts.select_image_version () || " <<
-          "imb.version == 0)"
-           << "{"
-           << "bind (imb.bind, im, statement_select);"
-           << "sts.select_image_version (im.version);"
-           << "imb.version++;"
-           << "}"
-           << "select_statement& st (sts.find_statement ());"
-           << "st.execute ();"
-           << "select_statement::result r (st.fetch ());";
-
-        if (grow)
-          os << endl
-             << "if (r == select_statement::truncated)"
+        if (id != 0)
+        {
+          os << "bool " << traits << "::" << endl
+             << "find (database& db, const id_type& id, object_type& obj)"
              << "{"
-             << "if (grow (im, sts.select_image_truncated ()))" << endl
-             << "im.version++;"
+             << "using namespace " << db << ";"
              << endl
-             << "if (im.version != sts.select_image_version ())"
+             << db << "::connection& conn (" << endl
+             << db << "::transaction::current ().connection ());"
+             << object_statements_type << "& sts (" << endl
+             << "conn.statement_cache ().find_object<object_type> ());"
+             << object_statements_type << "::auto_lock l (sts);"
+             << endl
+             << "if (l.locked ())"
+             << "{"
+             << "if (!find_ (sts, id))" << endl
+             << "return false;"
+             << "}"
+             << "reference_cache_traits< object_type >::insert_guard ig (" << endl
+             << "reference_cache_traits< object_type >::insert (db, id, obj));"
+             << endl
+             << "if (l.locked ())"
+             << "{"
+             << "callback (db, obj, callback_event::pre_load);"
+             << "init (obj, sts.image (), db);";
+
+          init_value_extra ();
+
+          os << "load_ (sts, obj);"
+             << "sts.load_delayed ();"
+             << "l.unlock ();"
+             << "callback (db, obj, callback_event::post_load);"
+             << "}"
+             << "else" << endl
+             << "sts.delay_load (id, obj, ig.position ());"
+             << endl;
+
+          os << "ig.release ();"
+             << "return true;"
+             << "}";
+        }
+
+        // find_ ()
+        //
+        if (id != 0)
+        {
+          os << "bool " << traits << "::" << endl
+             << "find_ (" << db << "::" << object_statements_type << "& " <<
+            "sts, const id_type& id)"
+             << "{"
+             << "using namespace " << db << ";"
+             << endl;
+
+          // Initialize id image.
+          //
+          os << "id_image_type& i (sts.id_image ());"
+             << "init (i, id);"
+             << endl;
+
+          os << "binding& idb (sts.id_image_binding ());"
+             << "if (i.version != sts.id_image_version () || idb.version == 0)"
+             << "{"
+             << "bind (idb.bind, i);"
+             << "sts.id_image_version (i.version);"
+             << "idb.version++;"
+             << "}";
+
+          // Rebind data image.
+          //
+          os << "image_type& im (sts.image ());"
+             << "binding& imb (sts.select_image_binding ());"
+             << endl
+             << "if (im.version != sts.select_image_version () || " <<
+            "imb.version == 0)"
              << "{"
              << "bind (imb.bind, im, statement_select);"
              << "sts.select_image_version (im.version);"
              << "imb.version++;"
-             << "st.refetch ();"
              << "}"
-             << "}";
+             << "select_statement& st (sts.find_statement ());"
+             << "st.execute ();"
+             << "select_statement::result r (st.fetch ());";
 
-        os << "st.free_result ();"
-           << "return r != select_statement::no_data;"
-           << "}";
+          if (grow)
+            os << endl
+               << "if (r == select_statement::truncated)"
+               << "{"
+               << "if (grow (im, sts.select_image_truncated ()))" << endl
+               << "im.version++;"
+               << endl
+               << "if (im.version != sts.select_image_version ())"
+               << "{"
+               << "bind (imb.bind, im, statement_select);"
+               << "sts.select_image_version (im.version);"
+               << "imb.version++;"
+               << "st.refetch ();"
+               << "}"
+               << "}";
+
+          os << "st.free_result ();"
+             << "return r != select_statement::no_data;"
+             << "}";
+        }
 
         // load_()
         //
         if (containers)
         {
           os << "void " << traits << "::" << endl
-             << "load_ (" << db << "::object_statements< object_type >& " <<
+             << "load_ (" << db << "::" << object_statements_type << "& " <<
             "sts, object_type& obj)"
              << "{"
              << db << "::binding& idb (sts.id_image_binding ());"
@@ -2976,7 +2997,7 @@ namespace relational
              << db << "::connection& conn (" << endl
              << db << "::transaction::current ().connection ());"
              << endl
-             << "object_statements< object_type >& sts (" << endl
+             << object_statements_type << "& sts (" << endl
              << "conn.statement_cache ().find_object<object_type> ());"
              << endl
              << "image_type& im (sts.image ());"
@@ -2999,11 +3020,14 @@ namespace relational
 
           post_query_ (c);
 
+          char const* result_type (
+            id != 0
+            ? "object_result_impl<object_type>"
+            : "object_result_impl_no_id<object_type>");
+
           os << endl
-             << "shared_ptr<odb::result_impl<object_type, " <<
-            "class_object> > r (" << endl
-             << "new (shared) " << db <<
-            "::result_impl<object_type, class_object> (" << endl
+             << "shared_ptr< odb::" << result_type << " > r (" << endl
+             << "new (shared) " << db << "::" << result_type << " (" << endl
              << "q, st, sts));"
              << endl
              << "return result<object_type> (r);"
@@ -3928,10 +3952,8 @@ namespace relational
         post_query_ (c);
 
         os << endl
-           << "shared_ptr<odb::result_impl<view_type, " <<
-          "class_view> > r (" << endl
-           << "new (shared) " << db <<
-          "::result_impl<view_type, class_view> (" << endl
+           << "shared_ptr< odb::view_result_impl<view_type> > r (" << endl
+           << "new (shared) " << db << "::view_result_impl<view_type> (" << endl
            << "qs, st, sts));"
            << endl
            << "return result<view_type> (r);"
