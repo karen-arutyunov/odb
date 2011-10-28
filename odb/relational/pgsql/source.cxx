@@ -983,6 +983,18 @@ namespace relational
         }
 
         virtual void
+        persist_stmt_extra (type& c, relational::query_parameters&)
+        {
+          semantics::data_member* id (id_member (c));
+
+          if (id != 0 && id->count ("auto"))
+          {
+            os << endl
+               << strlit (" RETURNING " + column_qname (*id));
+          }
+        }
+
+        virtual void
         object_extra (type& c)
         {
           if (abstract (c))
