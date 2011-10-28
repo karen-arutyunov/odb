@@ -202,8 +202,7 @@ namespace relational
         {
           os << "mutable " << image_type << " " << mi.var << "callback;"
              << "sb2 " << mi.var << "indicator;"
-             << "oracle::auto_descriptor<OCILobLocator> " << mi.var <<
-            "lob;"
+             << "oracle::lob_auto_descriptor " << mi.var << "lob;"
              << "mutable oracle::lob_context " << mi.var << "context;"
              << "ub4 " << mi.var << "position_context;"
              << endl;
