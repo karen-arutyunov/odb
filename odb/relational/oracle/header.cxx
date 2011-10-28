@@ -23,7 +23,7 @@ namespace relational
         virtual void
         image_extra (type& c)
         {
-          if (options.generate_query () && !composite (c))
+          if (options.generate_query () && !(composite (c) || abstract (c)))
             os << "oracle::change_callback change_callback;";
         }
       };
