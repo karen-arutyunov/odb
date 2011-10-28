@@ -109,7 +109,8 @@ namespace relational
         names (c);
 
         if (!(composite (c) || abstract (c)))
-          os << "std::size_t version;";
+          os << "std::size_t version;"
+             << endl;
 
         image_extra (c);
 
