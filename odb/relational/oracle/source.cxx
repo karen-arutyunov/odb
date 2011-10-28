@@ -869,8 +869,8 @@ namespace relational
         init_image_pre (type& c)
         {
           if (options.generate_query () && !(composite (c) || abstract (c)))
-            os << "if (i.change_callback.callback != 0)"
-               << "(i.change_callback.callback) (i.change_callback.context);"
+            os << "if (i.change_callback_.callback != 0)"
+               << "(i.change_callback_.callback) (i.change_callback_.context);"
                << endl;
         }
 
