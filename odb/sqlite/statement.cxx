@@ -56,15 +56,17 @@ namespace odb
     }
 
     void statement::
-    bind_param (const bind* p, size_t n, size_t start_param)
+    bind_param (const bind* p, size_t n)
     {
       int e (SQLITE_OK);
-      start_param++; // SQLite parameters are counted from 1.
 
-      for (size_t i (0); e == SQLITE_OK && i < n; ++i)
+      // SQLite parameters are counted from 1.
+      //
+      n++;
+      for (size_t i (1); e == SQLITE_OK && i < n; ++i, ++p)
       {
-        const bind& b (p[i]);
-        int j (static_cast<int> (i + start_param));
+        const bind& b (*p);
+        int j (static_cast<int> (i));
 
         if (b.is_null != 0 && *b.is_null)
         {
@@ -244,17 +246,17 @@ namespace odb
     select_statement::
     select_statement (connection& conn,
                       const string& s,
-                      binding& cond,
-                      binding& data)
-        : statement (conn, s), cond_ (&cond), data_ (data)
+                      binding& param,
+                      binding& result)
+        : statement (conn, s), param_ (&param), result_ (result)
     {
     }
 
     select_statement::
     select_statement (connection& conn,
                       const string& s,
-                      binding& data)
-        : statement (conn, s), cond_ (0), data_ (data)
+                      binding& result)
+        : statement (conn, s), param_ (0), result_ (result)
     {
     }
 
@@ -266,8 +268,8 @@ namespace odb
 
       done_ = false;
 
-      if (cond_ != 0)
-        bind_param (cond_->bind, cond_->count);
+      if (param_ != 0)
+        bind_param (param_->bind, param_->count);
 
       active (true);
     }
@@ -314,7 +316,7 @@ namespace odb
       if (done_)
         return no_data;
 
-      return bind_result (data_.bind, data_.count) ? success : truncated;
+      return bind_result (result_.bind, result_.count) ? success : truncated;
     }
 
     void select_statement::
@@ -322,7 +324,7 @@ namespace odb
     {
       assert (!done_);
 
-      if (!bind_result (data_.bind, data_.count, true))
+      if (!bind_result (result_.bind, result_.count, true))
         assert (false);
     }
 
@@ -330,15 +332,15 @@ namespace odb
     //
 
     insert_statement::
-    insert_statement (connection& conn, const string& s, binding& data)
-        : statement (conn, s), data_ (data)
+    insert_statement (connection& conn, const string& s, binding& param)
+        : statement (conn, s), param_ (param)
     {
     }
 
     bool insert_statement::
     execute ()
     {
-      bind_param (data_.bind, data_.count);
+      bind_param (param_.bind, param_.count);
 
       int e;
       sqlite3* h (conn_.handle ());
@@ -382,17 +384,15 @@ namespace odb
     update_statement::
     update_statement (connection& conn,
                       const string& s,
-                      binding& cond,
-                      binding& data)
-        : statement (conn, s), cond_ (cond), data_ (data)
+                      binding& param)
+        : statement (conn, s), param_ (param)
     {
     }
 
     void update_statement::
     execute ()
     {
-      bind_param (data_.bind, data_.count);
-      bind_param (cond_.bind, cond_.count, data_.count);
+      bind_param (param_.bind, param_.count);
 
       int e;
       sqlite3* h (conn_.handle ());
@@ -418,15 +418,15 @@ namespace odb
     //
 
     delete_statement::
-    delete_statement (connection& conn, const string& s, binding& cond)
-        : statement (conn, s), cond_ (cond)
+    delete_statement (connection& conn, const string& s, binding& param)
+        : statement (conn, s), param_ (param)
     {
     }
 
     unsigned long long delete_statement::
     execute ()
     {
-      bind_param (cond_.bind, cond_.count);
+      bind_param (param_.bind, param_.count);
 
       int e;
       sqlite3* h (conn_.handle ());

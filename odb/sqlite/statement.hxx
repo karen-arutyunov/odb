@@ -80,7 +80,7 @@ namespace odb
 
     protected:
       void
-      bind_param (const bind*, std::size_t count, std::size_t start_param = 0);
+      bind_param (const bind*, std::size_t count);
 
       // Extract row columns into the bound buffers. If the truncated
       // argument is true, then only truncated columns are extracted.
@@ -213,12 +213,12 @@ namespace odb
     public:
       select_statement (connection& conn,
                         const std::string& statement,
-                        binding& cond,
-                        binding& data);
+                        binding& param,
+                        binding& result);
 
       select_statement (connection& conn,
                         const std::string& statement,
-                        binding& data);
+                        binding& result);
 
       // Common select interface expected by the generated code.
       //
@@ -277,8 +277,8 @@ namespace odb
 
     private:
       bool done_;
-      binding* cond_;
-      binding& data_;
+      binding* param_;
+      binding& result_;
     };
 
     class LIBODB_SQLITE_EXPORT insert_statement: public statement
@@ -286,7 +286,7 @@ namespace odb
     public:
       insert_statement (connection& conn,
                         const std::string& statement,
-                        binding& data);
+                        binding& param);
 
       // Return true if successful and false if the row is a duplicate.
       // All other errors are reported by throwing exceptions.
@@ -302,7 +302,7 @@ namespace odb
       insert_statement& operator= (const insert_statement&);
 
     private:
-      binding& data_;
+      binding& param_;
     };
 
     class LIBODB_SQLITE_EXPORT update_statement: public statement
@@ -310,8 +310,7 @@ namespace odb
     public:
       update_statement (connection& conn,
                         const std::string& statement,
-                        binding& cond,
-                        binding& data);
+                        binding& param);
       void
       execute ();
 
@@ -320,8 +319,7 @@ namespace odb
       update_statement& operator= (const update_statement&);
 
     private:
-      binding& cond_;
-      binding& data_;
+      binding& param_;
     };
 
     class LIBODB_SQLITE_EXPORT delete_statement: public statement
@@ -329,7 +327,7 @@ namespace odb
     public:
       delete_statement (connection& conn,
                         const std::string& statement,
-                        binding& cond);
+                        binding& param);
 
       unsigned long long
       execute ();
@@ -339,7 +337,7 @@ namespace odb
       delete_statement& operator= (const delete_statement&);
 
     private:
-      binding& cond_;
+      binding& param_;
     };
   }
 }
