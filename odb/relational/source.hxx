@@ -2716,36 +2716,50 @@ namespace relational
 
           if (cc.total != cc.id + cc.inverse + cc.readonly)
           {
-            // Initialize id image.
+            // Initialize object and id images.
             //
             os << "id_image_type& i (sts.id_image ());"
                << "init (i, obj." << id->name () << ");"
-               << endl;
-
-            os << "binding& idb (sts.id_image_binding ());"
-               << "if (i.version != sts.id_image_version () || idb.version == 0)"
-               << "{"
-               << "bind (idb.bind, i);"
-               << "sts.id_image_version (i.version);"
-               << "idb.version++;"
-               << "}";
-
-            // Initialize data image.
-            //
-            os << "image_type& im (sts.image ());"
-               << "binding& imb (sts.update_image_binding ());"
                << endl
+               << "image_type& im (sts.image ());"
                << "if (init (im, obj, statement_update))" << endl
                << "im.version++;"
-               << endl
+               << endl;
+
+            // Update binding is bound to two images (object and id)
+            // so we have to track both versions.
+            //
+            os << "bool u (false);" // Avoid incrementing version twice.
+               << "binding& imb (sts.update_image_binding ());"
                << "if (im.version != sts.update_image_version () || " <<
               "imb.version == 0)"
                << "{"
                << "bind (imb.bind, im, statement_update);"
                << "sts.update_image_version (im.version);"
                << "imb.version++;"
-               << "}"
-               << "sts.update_statement ().execute ();";
+               << "u = true;"
+               << "}";
+
+            // To update the id part of the update binding we have to do
+            // it indirectly via the id binding, which just points to the
+            // suffix of the update bind array (see object_statements).
+            //
+            os << "binding& idb (sts.id_image_binding ());"
+               << "if (i.version != sts.update_id_image_version () || " <<
+              "idb.version == 0)"
+               << "{"
+               << "bind (idb.bind, i);"
+               << "sts.update_id_image_version (i.version);"
+               << "if (!u)" << endl
+               << "imb.version++;"
+               << endl
+              // Update the id binding versions since we rebound it.
+              //
+               << "sts.id_image_version (i.version);"
+               << "idb.version++;"
+               << "}";
+
+            os << "sts.update_statement ().execute ();";
           }
           else
           {
