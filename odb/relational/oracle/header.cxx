@@ -25,9 +25,9 @@ namespace relational
         {
           if (!(composite (c) || abstract (c)))
           {
-            bool f (options.generate_query ());
+            bool gc (options.generate_query ());
 
-            if (f)
+            if (gc)
               os << "oracle::change_callback change_callback_;"
                  << endl;
 
@@ -35,7 +35,7 @@ namespace relational
                << "change_callback ()"
                << "{";
 
-            if (f)
+            if (gc)
               os << "return &change_callback_;";
             else
               os << "return 0;";
