@@ -389,7 +389,7 @@ namespace odb
     {
     }
 
-    void update_statement::
+    unsigned long long update_statement::
     execute ()
     {
       bind_param (param_.bind, param_.count);
@@ -410,8 +410,8 @@ namespace odb
       if (e != SQLITE_DONE)
         translate_error (e, conn_);
 
-      if (sqlite3_changes (conn_.handle ()) == 0)
-        throw object_not_persistent ();
+      return static_cast<unsigned long long> (
+        sqlite3_changes (conn_.handle ()));
     }
 
     // delete_statement
