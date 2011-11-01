@@ -67,7 +67,7 @@ namespace tracer
            << "throw object_not_persistent ();"
            << "}";
 
-        // erase ()
+        // erase (id_type)
         //
         os << "void " << traits << "::" << endl
            << "erase (database&, const id_type& id)"
@@ -76,6 +76,18 @@ namespace tracer
           "id << std::endl;"
            << endl
            << "if (id == id_type ())" << endl
+           << "throw object_not_persistent ();"
+           << "}";
+
+        // erase (object_type)
+        //
+        os << "void " << traits << "::" << endl
+           << "erase (database&, const object_type& obj)"
+           << "{"
+           << "std::cout << \"delete \" << type_name () << \" id \" << " <<
+          "obj." << id.name () << " << std::endl;"
+           << endl
+           << "if (obj." << id.name () << " == id_type ())" << endl
            << "throw object_not_persistent ();"
            << "}";
 

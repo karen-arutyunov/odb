@@ -26,17 +26,27 @@ namespace relational
           if (abstract (c))
             return;
 
+          semantics::data_member* id (id_member (c));
+          semantics::data_member* optimistic (context::optimistic (c));
+
           column_count_type const& cc (column_count (c));
 
           // Statement names.
           //
-          os << "static const char persist_statement_name[];"
-             << "static const char find_statement_name[];";
+          os << "static const char persist_statement_name[];";
 
-          if (cc.total != cc.id + cc.inverse + cc.readonly)
-            os << "static const char update_statement_name[];";
+          if (id != 0)
+          {
+            os << "static const char find_statement_name[];";
 
-          os << "static const char erase_statement_name[];";
+            if (cc.total != cc.id + cc.inverse + cc.readonly)
+              os << "static const char update_statement_name[];";
+
+            os << "static const char erase_statement_name[];";
+
+            if (optimistic != 0)
+              os << "static const char optimistic_erase_statement_name[];";
+          }
 
           // Query statement name.
           //
@@ -48,14 +58,23 @@ namespace relational
 
           // Statement types.
           //
-          os << "static const unsigned int persist_statement_types[];"
-             << "static const unsigned int find_statement_types[];";
+          os << "static const unsigned int persist_statement_types[];";
 
-          if (cc.total != cc.id + cc.inverse + cc.readonly)
-            os << "static const unsigned int update_statement_types[];";
+          if (id != 0)
+          {
+            os << "static const unsigned int find_statement_types[];";
 
-          os << "static const unsigned int erase_statement_types[];"
-             << endl;
+            if (cc.total != cc.id + cc.inverse + cc.readonly)
+              os << "static const unsigned int update_statement_types[];";
+
+            os << "static const unsigned int erase_statement_types[];";
+
+            if (optimistic != 0)
+              os << "static const unsigned int " <<
+                "optimistic_erase_statement_types[];";
+          }
+
+          os << endl;
         }
 
         virtual void

@@ -109,6 +109,8 @@ namespace relational
         semantics::data_member* id (id_member (c));
         bool base_id (id ? &id->scope () != &c : false); // Comes from base.
 
+        semantics::data_member* optimistic (context::optimistic (c));
+
         os << "// " << c.name () << endl
            << "//" << endl
            << endl;
@@ -139,10 +141,10 @@ namespace relational
 
         if (id != 0)
         {
+          // id (image_type)
+          //
           if (options.generate_query () && base_id)
           {
-            // id (image_type)
-            //
             os << "inline" << endl
                << traits << "::id_type" << endl
                << traits << "::" << endl
@@ -150,6 +152,20 @@ namespace relational
                << "{"
                << "return object_traits< " << id->scope ().fq_name () <<
               " >::id (i);"
+               << "}";
+          }
+
+          // version (image_type)
+          //
+          if (optimistic != 0 && base_id)
+          {
+            os << "inline" << endl
+               << traits << "::version_type" << endl
+               << traits << "::" << endl
+               << "version (const image_type& i)"
+               << "{"
+               << "return object_traits< " <<
+              optimistic->scope ().fq_name () << " >::version (i);"
                << "}";
           }
 
@@ -170,10 +186,11 @@ namespace relational
           {
             os << "inline" << endl
                << "void " << traits << "::" << endl
-               << "init (id_image_type& i, const id_type& id)"
+               << "init (id_image_type& i, const id_type& id" <<
+              (optimistic != 0 ? ", const version_type* v" : "") << ")"
                << "{"
                << "object_traits< " << id->scope ().fq_name () <<
-              " >::init (i, id);"
+              " >::init (i, id" << (optimistic != 0 ? ", v" : "") << ");"
                << "}";
           }
         }
@@ -183,6 +200,18 @@ namespace relational
         //
         if (abstract)
           return;
+
+        // erase (object_type)
+        //
+        if (id != 0 && optimistic == 0)
+        {
+          os << "inline" << endl
+             << "void " << traits << "::" << endl
+             << "erase (database& db, const object_type& obj)"
+             << "{"
+             << "erase (db, id (obj));"
+             << "}";
+        }
 
         // callback ()
         //

@@ -107,12 +107,15 @@ namespace
     size_t count_;
   };
 
-  // Find id member.
+  // Find special members (id, version).
   //
-  struct id_member: traversal::class_
+  struct special_members: traversal::class_
   {
-    id_member (class_kind kind, bool& valid, semantics::data_member*& m)
-        : kind_ (kind), member_ (valid, m)
+    special_members (class_kind kind,
+                     bool& valid,
+                     semantics::data_member*& id,
+                     semantics::data_member*& optimistic)
+        : kind_ (kind), member_ (valid, id, optimistic)
     {
       if (kind != class_view)
         *this >> inherits_ >> *this;
@@ -161,8 +164,10 @@ namespace
   private:
     struct member: traversal::data_member
     {
-      member (bool& valid, semantics::data_member*& m)
-          : valid_ (valid), m_ (m)
+      member (bool& valid,
+              semantics::data_member*& id,
+              semantics::data_member*& optimistic)
+          : valid_ (valid), id_ (id), optimistic_ (optimistic)
       {
       }
 
@@ -171,23 +176,44 @@ namespace
       {
         if (m.count ("id"))
         {
-          if (m_ != 0)
+          if (id_ != 0)
           {
             cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
                  << " error: multiple object id members" << endl;
 
-            cerr << m_->file () << ":" << m_->line () << ":" << m_->column ()
-                 << ": info: previous id member declared here" << endl;
+            semantics::data_member& i (*id_);
+
+            cerr << i.file () << ":" << i.line () << ":" << i.column ()
+                 << ": info: previous id member is declared here" << endl;
 
             valid_ = false;
           }
           else
-            m_ = &m;
+            id_ = &m;
+        }
+
+        if (m.count ("version"))
+        {
+          if (optimistic_ != 0)
+          {
+            cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
+                 << " error: multiple version members" << endl;
+
+            semantics::data_member& o (*optimistic_);
+
+            cerr << o.file () << ":" << o.line () << ":" << o.column ()
+                 << ": info: previous version member is declared here" << endl;
+
+            valid_ = false;
+          }
+          else
+            optimistic_ = &m;
         }
       }
 
       bool& valid_;
-      semantics::data_member*& m_;
+      semantics::data_member*& id_;
+      semantics::data_member*& optimistic_;
     };
 
     class_kind kind_;
@@ -323,11 +349,12 @@ namespace
         }
       }
 
-      // Check id.
+      // Check special members.
       //
       semantics::data_member* id (0);
+      semantics::data_member* optimistic (0);
       {
-        id_member t (class_object, valid_, id);
+        special_members t (class_object, valid_, id, optimistic);
         t.traverse (c);
       }
 
@@ -339,10 +366,10 @@ namespace
         if (!(c.count ("id") || context::abstract (c)))
         {
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: no data member designated as object id" << endl;
+               << " error: no data member designated as an object id" << endl;
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: use '#pragma db id' to specify object id member"
+               << " info: use '#pragma db id' to specify an object id member"
                << endl;
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
@@ -380,6 +407,90 @@ namespace
         }
         else
           id->set ("not-null", true);
+      }
+
+      if (optimistic != 0)
+      {
+        semantics::data_member& m (*optimistic);
+
+        // Make sure we have the class declared optimistic.
+        //
+        if (&optimistic->scope () == &c && !c.count ("optimistic"))
+        {
+          cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
+               << " error: version data member in a class not declared "
+               << "optimistic" << endl;
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " info: use '#pragma db optimistic' to declare this "
+               << "class optimistic" << endl;
+
+          valid_ = false;
+        }
+
+        // Make sure we have object id.
+        //
+        if (id == 0)
+        {
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " error: optimistic class without an object id" << endl;
+
+          valid_ = false;
+        }
+
+        // Make sure id and version members are in the same class. The
+        // current architecture relies on that.
+        //
+        if (id != 0 && &id->scope () != &optimistic->scope ())
+        {
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " error: object id and version members are in different "
+               << "classes" << endl;
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " info: object id and version members must be in the same "
+               << "class" << endl;
+
+          cerr << id->file () << ":" << id->line () << ":" << id->column ()
+               << ": info: object id member is declared here" << endl;
+
+          cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
+               << " error: version member is declared here" << endl;
+
+          valid_ = false;
+        }
+
+        // Make sure this class is not readonly.
+        //
+        if (c.count ("readonly"))
+        {
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " error: optimistic class cannot be readonly" << endl;
+
+          valid_ = false;
+        }
+
+
+        // This takes care of also marking derived classes as optimistic.
+        //
+        c.set ("optimistic-member", optimistic);
+      }
+      else
+      {
+        // Make sure there is a version member if the class declared
+        // optimistic.
+        //
+        if (c.count ("optimistic"))
+        {
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " error: optimistic class without a version member" << endl;
+
+          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
+               << " info: use '#pragma db version' to declare on of the "
+               << "data members as a version" << endl;
+
+          valid_ = false;
+        }
       }
 
       // Check members.
@@ -451,16 +562,28 @@ namespace
       // Check id.
       //
       semantics::data_member* id (0);
+      semantics::data_member* optimistic (0);
       {
-        id_member t (class_view, valid_, id);
+        special_members t (class_view, valid_, id, optimistic);
         t.traverse (c);
       }
 
       if (id != 0)
       {
         cerr << id->file () << ":" << id->line () << ":" << id->column ()
-             << ": error: view type data member cannot be designated as "
+             << ": error: view type data member cannot be designated as an "
              << "object id" << endl;
+
+        valid_ = false;
+      }
+
+      if (optimistic != 0)
+      {
+        semantics::data_member& o (*optimistic);
+
+        cerr << o.file () << ":" << o.line () << ":" << o.column ()
+             << ": error: view type data member cannot be designated as a "
+             << "version" << endl;
 
         valid_ = false;
       }
@@ -517,16 +640,28 @@ namespace
       // Check id.
       //
       semantics::data_member* id (0);
+      semantics::data_member* optimistic (0);
       {
-        id_member t (class_composite, valid_, id);
+        special_members t (class_composite, valid_, id, optimistic);
         t.traverse (c);
       }
 
       if (id != 0)
       {
         cerr << id->file () << ":" << id->line () << ":" << id->column ()
-             << ": error: value type data member cannot be designated as "
+             << ": error: value type data member cannot be designated as an "
              << "object id" << endl;
+
+        valid_ = false;
+      }
+
+      if (optimistic != 0)
+      {
+        semantics::data_member& o (*optimistic);
+
+        cerr << o.file () << ":" << o.line () << ":" << o.column ()
+             << ": error: value type data member cannot be designated as a "
+             << "version" << endl;
 
         valid_ = false;
       }
@@ -574,7 +709,7 @@ namespace
 
         cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
              << " error: inverse object pointer member '" << member_prefix_
-             << m.name () << "' in an object without id" << endl;
+             << m.name () << "' in an object without an object id" << endl;
 
         valid_ = false;
       }
@@ -587,7 +722,7 @@ namespace
 
       cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
            << " error: container member '" << member_prefix_ << m.name ()
-           << "' in an object without id" << endl;
+           << "' in an object without an object id" << endl;
 
       valid_ = false;
     }

@@ -316,7 +316,8 @@ check_spec_decl_type (tree d,
   else if (p == "auto" ||
            p == "column" ||
            p == "inverse" ||
-           p == "transient")
+           p == "transient" ||
+           p == "version")
   {
     if (tc != FIELD_DECL)
     {
@@ -341,7 +342,8 @@ check_spec_decl_type (tree d,
            p == "abstract" ||
            p == "callback" ||
            p == "query" ||
-           p == "object")
+           p == "object" ||
+           p == "optimistic")
   {
     if (tc != RECORD_TYPE)
     {
@@ -680,6 +682,18 @@ handle_pragma (cpp_reader* reader,
   else if (p == "abstract")
   {
     // abstract
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    tt = pragma_lex (&t);
+  }
+  else if (p == "optimistic")
+  {
+    // optimistic
     //
 
     // Make sure we've got the correct declaration type.
@@ -1460,7 +1474,7 @@ handle_pragma (cpp_reader* reader,
   }
   else if (p == "readonly")
   {
-    // transient
+    // readonly
     //
 
     // Make sure we've got the correct declaration type.
@@ -1473,6 +1487,18 @@ handle_pragma (cpp_reader* reader,
   else if (p == "transient")
   {
     // transient
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    tt = pragma_lex (&t);
+  }
+  else if (p == "version")
+  {
+    // version
     //
 
     // Make sure we've got the correct declaration type.
@@ -1629,7 +1655,8 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "inverse" ||
            p == "unordered" ||
            p == "readonly" ||
-           p == "transient")
+           p == "transient" ||
+           p == "version")
   {
     handle_pragma (reader, p, "member", 0, "");
     return;
@@ -1853,6 +1880,12 @@ handle_pragma_db_transient (cpp_reader* r)
 }
 
 extern "C" void
+handle_pragma_db_version (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "version");
+}
+
+extern "C" void
 handle_pragma_db (cpp_reader* r)
 {
   tree t;
@@ -1915,5 +1948,6 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "readonly", handle_pragma_db_readonly);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
+  c_register_pragma_with_expansion ("db", "version", handle_pragma_db_version);
   */
 }

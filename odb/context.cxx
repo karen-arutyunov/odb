@@ -1096,6 +1096,8 @@ namespace
         c_.inverse++;
       else if (context::readonly (member_path_, member_scope_))
         c_.readonly++;
+      else if (context::version (m))
+        c_.optimistic_managed++;
     }
 
     context::column_count_type c_;

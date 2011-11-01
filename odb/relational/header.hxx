@@ -892,6 +892,7 @@ namespace relational
 
       class1 ()
           : id_image_member_ ("id_"),
+            version_image_member_ ("version_"),
             query_columns_type_ (false),
             pointer_query_columns_type_ (true)
       {
@@ -901,6 +902,7 @@ namespace relational
           : root_context (), //@@ -Wextra
             context (),
             id_image_member_ ("id_"),
+            version_image_member_ ("version_"),
             query_columns_type_ (false),
             pointer_query_columns_type_ (true)
       {
@@ -939,6 +941,8 @@ namespace relational
         semantics::data_member* id (id_member (c));
         bool auto_id (id ? id->count ("auto") : false);
         bool base_id (id ? &id->scope () != &c : false); // Comes from base.
+
+        semantics::data_member* optimistic (context::optimistic (c));
 
         column_count_type const& cc (column_count (c));
 
@@ -992,8 +996,13 @@ namespace relational
           {
             string const& base (id->scope ().fq_name ());
 
-            os << "typedef object_traits< " << base << " >::id_type id_type;"
-               << endl
+            os << "typedef object_traits< " << base << " >::id_type id_type;";
+
+            if (optimistic != 0)
+              os << "typedef object_traits< " << base << " >::version_type " <<
+                "version_type;";
+
+            os << endl
                << "static const bool auto_id = object_traits< " << base <<
               " >::auto_id;"
                << endl
@@ -1003,13 +1012,23 @@ namespace relational
           }
           else
           {
-            semantics::names* hint;
-            semantics::type& t (utype (*id, hint));
+            {
+              semantics::names* hint;
+              semantics::type& t (utype (*id, hint));
 
-            os << "typedef " << t.fq_name (hint) << " id_type;"
-               << endl;
+              os << "typedef " << t.fq_name (hint) << " id_type;";
+            }
 
-            os << "static const bool auto_id = " <<
+            if (optimistic != 0)
+            {
+              semantics::names* hint;
+              semantics::type& t (utype (*optimistic, hint));
+
+              os << "typedef " << t.fq_name (hint) << " version_type;";
+            }
+
+            os << endl
+               << "static const bool auto_id = " <<
               (auto_id ? "true" : "false") << ";"
                << endl;
 
@@ -1017,6 +1036,9 @@ namespace relational
                << "{";
 
             id_image_member_->traverse (*id);
+
+            if (optimistic != 0)
+              version_image_member_->traverse (*optimistic);
 
             os << "std::size_t version;"
                << "};";
@@ -1054,7 +1076,8 @@ namespace relational
         if (id != 0 || !abstract)
           // We want to generate a dummy void id() accessor even if this
           // object has no id to help us in the runtime. This way we can
-          // generic code that will both for both void and non-void ids.
+          // write generic code that will work for both void and non-void
+          // ids.
           //
           os << "static id_type" << endl
              << "id (const object_type&);"
@@ -1063,6 +1086,11 @@ namespace relational
         if (id != 0 && options.generate_query ())
           os << "static id_type" << endl
              << "id (const image_type&);"
+             << endl;
+
+        if (id != 0 && optimistic != 0)
+          os << "static version_type" << endl
+             << "version (const image_type&);"
              << endl;
 
         // grow ()
@@ -1108,7 +1136,8 @@ namespace relational
         if (id != 0)
         {
           os << "static void" << endl
-             << "init (id_image_type&, const id_type&);"
+             << "init (id_image_type&, const id_type&" <<
+            (optimistic != 0 ? ", const version_type* = 0" : "") << ");"
              << endl;
         }
 
@@ -1156,6 +1185,8 @@ namespace relational
           cc.inverse << "UL;"
            << "static const std::size_t readonly_column_count = " <<
           cc.readonly << "UL;"
+           << "static const std::size_t managed_optimistic_column_count = " <<
+          cc.optimistic_managed << "UL;"
            << endl;
 
         // Statements.
@@ -1170,6 +1201,9 @@ namespace relational
             os << "static const char update_statement[];";
 
           os << "static const char erase_statement[];";
+
+          if (optimistic != 0)
+            os << "static const char optimistic_erase_statement[];";
         }
 
         if (options.generate_query ())
@@ -1216,6 +1250,10 @@ namespace relational
              << "find (database&, const id_type&, object_type&);"
              << endl;
 
+          os << "static bool" << endl
+             << "reload (database&, object_type&);"
+             << endl;
+
           // update ()
           //
           if (!readonly (c))
@@ -1227,6 +1265,10 @@ namespace relational
           //
           os << "static void" << endl
              << "erase (database&, const id_type&);"
+             << endl;
+
+          os << "static void" << endl
+             << "erase (database&, const object_type&);"
              << endl;
         }
 
@@ -1560,6 +1602,7 @@ namespace relational
     private:
       instance<image_type> image_type_;
       instance<image_member> id_image_member_;
+      instance<image_member> version_image_member_;
 
       instance<query_columns_type> query_columns_type_;
       instance<query_columns_type> pointer_query_columns_type_;

@@ -77,10 +77,16 @@ namespace tracer
            << "update (database&, const object_type&);"
            << endl;
 
-        // erase ()
+        // erase (id_type)
         //
         os << "static void" << endl
            << "erase (database&, const id_type&);"
+           << endl;
+
+        // erase (object_type)
+        //
+        os << "static void" << endl
+           << "erase (database&, const object_type&);"
            << endl;
 
         // find ()

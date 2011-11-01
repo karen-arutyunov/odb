@@ -197,7 +197,7 @@ namespace relational
             os << "// " << mi.m.name () << endl
                << "//" << endl;
 
-            if (inverse (mi.m, key_prefix_))
+            if (inverse (mi.m, key_prefix_) || version (mi.m))
               os << "if (sk == statement_select)"
                  << "{";
             // If the whole class is readonly, then we will never be
@@ -242,7 +242,7 @@ namespace relational
                    << "sk == statement_select ? 0 : ";
 
                 if (cc.inverse != 0)
-                  os << cc.inverse << "UL" << endl;
+                  os << cc.inverse << "UL";
 
                 if (!ro && cc.readonly != 0)
                 {
@@ -266,7 +266,7 @@ namespace relational
 
             // The same logic as in pre().
             //
-            if (inverse (mi.m, key_prefix_))
+            if (inverse (mi.m, key_prefix_) || version (mi.m))
               block = true;
             else if (!readonly (*context::top_object))
             {
@@ -587,6 +587,12 @@ namespace relational
             member = member_override_;
           else
           {
+            // If we are generating standard init() and this member
+            // contains version, ignore it.
+            //
+            if (version (mi.m))
+              return false;
+
             string const& name (mi.m.name ());
             member = "o." + name;
 

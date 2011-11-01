@@ -398,12 +398,32 @@ public:
     return c.count ("readonly");
   }
 
+  //
+  //
   bool
   null (semantics::data_member&);
 
   bool
   null (semantics::data_member&, string const& key_prefix);
 
+  // Optimistic concurrency.
+  //
+  static semantics::data_member*
+  optimistic (semantics::class_& c)
+  {
+    // Set by the validator.
+    //
+    return c.get<semantics::data_member*> ("optimistic-member", 0);
+  }
+
+  static bool
+  version (semantics::data_member& m)
+  {
+    return m.count ("version");
+  }
+
+  //
+  //
   typedef ::class_kind class_kind_type;
 
   static class_kind_type
@@ -490,12 +510,20 @@ public:
 public:
   struct column_count_type
   {
-    column_count_type (): total (0), id (0), inverse (0), readonly (0) {}
+    column_count_type ()
+        : total (0),
+          id (0),
+          inverse (0),
+          readonly (0),
+          optimistic_managed (0)
+    {
+    }
 
     size_t total;
     size_t id;
     size_t inverse;
     size_t readonly;
+    size_t optimistic_managed;
   };
 
   static column_count_type

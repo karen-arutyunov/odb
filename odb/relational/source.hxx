@@ -90,6 +90,17 @@ namespace relational
 
         line_.clear ();
 
+        // Version column (optimistic concurrency) requires special
+        // handling in the UPDATE statement.
+        //
+        //
+        if (sk_ == statement_update && version (m))
+        {
+          string const& qname (quote_id (name));
+          line_ = qname + "=" + qname + "+1";
+          return true;
+        }
+
         // Inverse object pointers come from a joined table.
         //
         if (im != 0)
@@ -565,20 +576,22 @@ namespace relational
         os << "n += " << cc.total << "UL";
 
         // select = total
-        // insert = total - inverse
-        // update = total - inverse - id - readonly
+        // insert = total - inverse - optimistic_managed
+        // update = total - inverse - optimistic_managed - id - readonly
         //
-        if (cc.inverse != 0 || (!ro && (cc.id != 0 || cc.readonly != 0)))
+        if (cc.inverse != 0 ||
+            cc.optimistic_managed != 0 ||
+            (!ro && (cc.id != 0 || cc.readonly != 0)))
         {
           os << " - (" << endl
              << "sk == statement_select ? 0 : ";
 
-          if (cc.inverse != 0)
-            os << cc.inverse << "UL" << endl;
+          if (cc.inverse != 0 || cc.optimistic_managed != 0)
+            os << (cc.inverse + cc.optimistic_managed) << "UL";
 
           if (!ro && (cc.id != 0 || cc.readonly != 0))
           {
-            if (cc.inverse != 0)
+            if (cc.inverse != 0 || cc.optimistic_managed != 0)
               os << " + ";
 
             os << "(" << endl
@@ -2085,7 +2098,9 @@ namespace relational
           if (count_++ != 0)
             params_ += ',';
 
-          if (m.count ("id") && m.count ("auto"))
+          if (version (m))
+            params_ += "1";
+          else if (m.count ("id") && m.count ("auto"))
             params_ += qp_.auto_id ();
           else
             params_ += qp_.next ();
@@ -2112,8 +2127,11 @@ namespace relational
           : grow_base_ (index_),
             grow_member_ (index_),
             bind_id_member_ ("id_"),
+            bind_version_member_ ("version_"),
             init_id_image_member_ ("id_", "id"),
+            init_version_image_member_ ("version_", "(*v)"),
             init_id_value_member_ ("id"),
+            init_version_value_member_ ("v"),
             stream_ (emitter_),
             drop_model_ (emitter_, stream_, format_embedded),
             drop_table_ (emitter_, stream_, format_embedded),
@@ -2131,8 +2149,11 @@ namespace relational
             grow_base_ (index_),
             grow_member_ (index_),
             bind_id_member_ ("id_"),
+            bind_version_member_ ("version_"),
             init_id_image_member_ ("id_", "id"),
+            init_version_image_member_ ("version_", "(*v)"),
             init_id_value_member_ ("id"),
+            init_version_value_member_ ("v"),
             stream_ (emitter_),
             drop_model_ (emitter_, stream_, format_embedded),
             drop_table_ (emitter_, stream_, format_embedded),
@@ -2266,13 +2287,16 @@ namespace relational
         bool auto_id (id ? id->count ("auto") : false);
         bool base_id (id ? &id->scope () != &c : false); // Comes from base.
 
+        semantics::data_member* optimistic (context::optimistic (c));
+
         bool grow (false);
         bool grow_id (false);
 
         if (generate_grow)
         {
           grow = context::grow (c);
-          grow_id = id ? context::grow (*id) : false;
+          grow_id = (id ? context::grow (*id) : false) ||
+            (optimistic ? context::grow (*optimistic) : false);
         }
 
         column_count_type const& cc (column_count (c));
@@ -2345,6 +2369,18 @@ namespace relational
              << "}";
         }
 
+        if (id != 0 && optimistic != 0 && !base_id)
+        {
+          os << traits << "::version_type" << endl
+             << traits << "::" << endl
+             << "version (const image_type& i)"
+             << "{"
+             << "version_type v;";
+          init_version_value_member_->traverse (*optimistic);
+          os << "return v;"
+             << "}";
+        }
+
         // grow ()
         //
         if (generate_grow)
@@ -2397,7 +2433,17 @@ namespace relational
              << "bind (" << bind_vector << " b, id_image_type& i)"
              << "{"
              << "std::size_t n (0);";
+
           bind_id_member_->traverse (*id);
+
+          if (optimistic != 0)
+          {
+            os << "n++;" //@@ composite id
+               << endl;
+
+            bind_version_member_->traverse (*optimistic);
+          }
+
           os << "}";
         }
 
@@ -2449,17 +2495,27 @@ namespace relational
         if (id != 0 && !base_id)
         {
           os << "void " << traits << "::" << endl
-             << "init (id_image_type& i, const id_type& id)"
+             << "init (id_image_type& i, const id_type& id" <<
+            (optimistic != 0 ? ", const version_type* v" : "") << ")"
              << "{";
 
           if (grow_id)
-            os << "bool grew (false);";
+            os << "bool grew (false);"
+               << endl;
 
           init_id_image_member_->traverse (*id);
 
+          if (optimistic != 0)
+          {
+            // Here we rely on the fact that init_image_member
+            // always wraps the statements in a block.
+            //
+            os << "if (v != 0)";
+            init_version_image_member_->traverse (*optimistic);
+          }
+
           if (grow_id)
-            os << endl
-               << "if (grew)" << endl
+            os << "if (grew)" << endl
                << "i.version++;";
 
           os << "}";
@@ -2564,7 +2620,13 @@ namespace relational
             instance<object_columns> t (statement_update, true, qp.get ());
             t->traverse (c);
 
-            os << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
+            string where (" WHERE " + id_col + "=" + qp->next ());
+
+            if (optimistic != 0)
+              where += " AND " + column_qname (*optimistic) + "=" +
+                qp->next ();
+
+            os << strlit (where) << ";"
                << endl;
           }
 
@@ -2575,6 +2637,20 @@ namespace relational
             os << "const char " << traits << "::erase_statement[] =" << endl
                << strlit ("DELETE FROM " + table) << endl
                << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
+               << endl;
+          }
+
+          if (optimistic != 0)
+          {
+            instance<query_parameters> qp;
+
+            string where (" WHERE " + id_col + "=" + qp->next ());
+            where += " AND " + column_qname (*optimistic) + "=" + qp->next ();
+
+            os << "const char " << traits <<
+              "::optimistic_erase_statement[] =" << endl
+               << strlit ("DELETE FROM " + table) << endl
+               << strlit (where) << ";"
                << endl;
           }
         }
@@ -2678,6 +2754,19 @@ namespace relational
              << endl;
         }
 
+        if (optimistic != 0)
+        {
+          // Set the version in the object member.
+          //
+          if (!auto_id || const_type (optimistic->type ()))
+            os << "const_cast< version_type& > (" <<
+              "obj." << optimistic->name () << ") = 1;";
+          else
+            os << "obj." << optimistic->name () << " = 1;";
+
+          os << endl;
+        }
+
         if (straight_containers)
         {
           // Initialize id_image and binding.
@@ -2718,9 +2807,15 @@ namespace relational
           {
             // Initialize object and id images.
             //
-            os << "id_image_type& i (sts.id_image ());"
-               << "init (i, obj." << id->name () << ");"
-               << endl
+            os << "id_image_type& i (sts.id_image ());";
+
+            if (optimistic == 0)
+              os << "init (i, obj." << id->name () << ");";
+            else
+              os << "init (i, obj." << id->name () << ", &obj." <<
+                optimistic->name () << ");";
+
+            os << endl
                << "image_type& im (sts.image ());"
                << "if (init (im, obj, statement_update))" << endl
                << "im.version++;"
@@ -2748,18 +2843,33 @@ namespace relational
                << "if (i.version != sts.update_id_image_version () || " <<
               "idb.version == 0)"
                << "{"
+              // If the id binding is up-to-date, then that means update
+              // binding is too and we just need to update the versions.
+              //
+               << "if (i.version != sts.id_image_version () || " <<
+              "idb.version == 0)"
+               << "{"
                << "bind (idb.bind, i);"
-               << "sts.update_id_image_version (i.version);"
-               << "if (!u)" << endl
-               << "imb.version++;"
-               << endl
-              // Update the id binding versions since we rebound it.
+              // Update the id binding versions since we may use them later
+              // to update containers.
               //
                << "sts.id_image_version (i.version);"
                << "idb.version++;"
+               << "}"
+               << "sts.update_id_image_version (i.version);"
+               << endl
+               << "if (!u)" << endl
+               << "imb.version++;"
                << "}";
 
-            os << "sts.update_statement ().execute ();";
+            os << "if (sts.update_statement ().execute () == 0)" << endl;
+
+            if (optimistic == 0)
+              os << "throw object_not_persistent ();";
+            else
+              os << "throw object_changed ();";
+
+            os << endl;
           }
           else
           {
@@ -2772,20 +2882,28 @@ namespace relational
 
             if (straight_readwrite_containers)
               os << endl
-                 << "binding& idb (sts.id_image_binding ());";
+                 << "binding& idb (sts.id_image_binding ());"
+                 << endl;
           }
 
           if (straight_readwrite_containers)
           {
-            os << endl;
             instance<container_calls> t (container_calls::update_call);
             t->traverse (c);
+          }
+
+          if (optimistic != 0)
+          {
+            // Update version in the object member.
+            //
+            os << "const_cast< version_type& > (" <<
+              "obj." << optimistic->name () << ")++;";
           }
 
           os << "}";
         }
 
-        // erase ()
+        // erase (id_type)
         //
         if (id != 0)
         {
@@ -2823,13 +2941,97 @@ namespace relational
           {
             instance<container_calls> t (container_calls::erase_call);
             t->traverse (c);
-            os << endl;
           }
 
           os << "if (sts.erase_statement ().execute () != 1)" << endl
              << "throw object_not_persistent ();";
 
           os << "}";
+        }
+
+        // erase (object_type)
+        //
+        if (id != 0 && optimistic != 0)
+        {
+          os << "void " << traits << "::" << endl
+             << "erase (database&, const object_type& obj)"
+             << "{"
+             << "using namespace " << db << ";"
+             << endl
+             << db << "::connection& conn (" << endl
+             << db << "::transaction::current ().connection ());"
+             << object_statements_type << "& sts (" << endl
+             << "conn.statement_cache ().find_object<object_type> ());"
+             << endl;
+
+          // Initialize id + managed column image.
+          //
+          os << "id_image_type& i (sts.id_image ());"
+             << "init (i, obj." << id->name () << ", &obj." <<
+            optimistic->name () << ");"
+             << endl;
+
+          // To update the id part of the optimistic id binding we have
+          // to do it indirectly via the id binding, since both id and
+          // optimistic id bindings just point to the suffix of the
+          // update bind array (see object_statements).
+          //
+          os << "binding& idb (sts.id_image_binding ());"
+             << "binding& oidb (sts.optimistic_id_image_binding ());"
+             << "if (i.version != sts.optimistic_id_image_version () || " <<
+            "oidb.version == 0)"
+             << "{"
+            // If the id binding is up-to-date, then that means optimistic
+            // id binding is too and we just need to update the versions.
+            //
+             << "if (i.version != sts.id_image_version () || idb.version == 0)"
+             << "{"
+             << "bind (idb.bind, i);"
+            // Update the id binding versions since we may use them later
+            // to delete containers.
+            //
+             << "sts.id_image_version (i.version);"
+             << "idb.version++;"
+             << "}"
+             << "sts.optimistic_id_image_version (i.version);"
+             << "oidb.version++;"
+             << "}";
+
+          // Erase containers first so that there are no reference
+          // violations (we don't want to rely on ON DELETE CASCADE
+          // here since in case of a custom schema, it might not be
+          // there).
+          //
+          if (straight_containers)
+          {
+            // Things get complicated here: we don't want to trash the
+            // containers and then find out that the versions don't match
+            // and we therefore cannot delete the object. After all, there
+            // is no guarantee that the user will abort the transaction.
+            // In fact, a perfectly reasonable scenario is to reload the
+            // object, re-apply the changes, and commit the transaction.
+            //
+            // There doesn't seem to be anything better than first making
+            // sure we can delete the object, then deleting the container
+            // data, and then deleting the object. To check that we can
+            // delete the object we are going to use find_() and then
+            // compare the versions. A special-purpose SELECT query would
+            // have been more efficient but it would complicated and bloat
+            // things significantly.
+            //
+            os << "if (!find_ (sts, obj." << id->name () << ") ||" << endl
+               << "version (sts.image ()) != obj." << optimistic->name () <<
+              ")" << endl
+               << "throw object_changed ();"
+               << endl;
+
+            instance<container_calls> t (container_calls::erase_call);
+            t->traverse (c);
+          }
+
+          os << "if (sts.optimistic_erase_statement ().execute () != 1)" << endl
+             << "throw object_changed ();"
+             << "}";
         }
 
         // find (id)
@@ -2895,18 +3097,18 @@ namespace relational
              << db << "::transaction::current ().connection ());"
              << object_statements_type << "& sts (" << endl
              << "conn.statement_cache ().find_object<object_type> ());"
-             << object_statements_type << "::auto_lock l (sts);"
              << endl
-             << "if (l.locked ())"
-             << "{"
-             << "if (!find_ (sts, id))" << endl
+            // This can only be top-level call so auto_lock must succeed.
+            //
+             << object_statements_type << "::auto_lock l (sts);"
+             << endl;
+
+          os << "if (!find_ (sts, id))" << endl
              << "return false;"
-             << "}"
+             << endl
              << "reference_cache_traits< object_type >::insert_guard ig (" << endl
              << "reference_cache_traits< object_type >::insert (db, id, obj));"
              << endl
-             << "if (l.locked ())"
-             << "{"
              << "callback (db, obj, callback_event::pre_load);"
              << "init (obj, sts.image (), db);";
 
@@ -2916,12 +3118,49 @@ namespace relational
              << "sts.load_delayed ();"
              << "l.unlock ();"
              << "callback (db, obj, callback_event::post_load);"
-             << "}"
-             << "else" << endl
-             << "sts.delay_load (id, obj, ig.position ());"
+             << "ig.release ();"
+             << "return true;"
+             << "}";
+        }
+
+        // reload()
+        //
+        if (id != 0)
+        {
+          os << "bool " << traits << "::" << endl
+             << "reload (database& db, object_type& obj)"
+             << "{"
+             << "using namespace " << db << ";"
+             << endl
+             << db << "::connection& conn (" << endl
+             << db << "::transaction::current ().connection ());"
+             << object_statements_type << "& sts (" << endl
+             << "conn.statement_cache ().find_object<object_type> ());"
+             << endl
+            // This can only be top-level call so auto_lock must succeed.
+            //
+             << object_statements_type << "::auto_lock l (sts);"
              << endl;
 
-          os << "ig.release ();"
+          os << "if (!find_ (sts, obj." << id->name () << "))" << endl
+             << "return false;"
+             << endl;
+
+          if (optimistic != 0)
+            os << "if (version (sts.image ()) == obj." <<
+              optimistic->name () << ")" << endl
+               << "return true;"
+               << endl;
+
+          os << "callback (db, obj, callback_event::pre_load);"
+             << "init (obj, sts.image (), db);";
+
+          init_value_extra ();
+
+          os << "load_ (sts, obj);"
+             << "sts.load_delayed ();"
+             << "l.unlock ();"
+             << "callback (db, obj, callback_event::post_load);"
              << "return true;"
              << "}";
         }
@@ -4126,6 +4365,7 @@ namespace relational
       instance<bind_member> bind_member_;
       traversal::names bind_member_names_;
       instance<bind_member> bind_id_member_;
+      instance<bind_member> bind_version_member_;
 
       instance<init_image_base> init_image_base_;
       traversal::inherits init_image_base_inherits_;
@@ -4133,12 +4373,15 @@ namespace relational
       traversal::names init_image_member_names_;
 
       instance<init_image_member> init_id_image_member_;
+      instance<init_image_member> init_version_image_member_;
 
       instance<init_value_base> init_value_base_;
       traversal::inherits init_value_base_inherits_;
       instance<init_value_member> init_value_member_;
       traversal::names init_value_member_names_;
+
       instance<init_value_member> init_id_value_member_;
+      instance<init_value_member> init_version_value_member_;
 
       schema_emitter emitter_;
       emitter_ostream stream_;
