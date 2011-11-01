@@ -990,12 +990,6 @@ handle_pragma (cpp_reader* reader,
         {
           char c (str[i]);
 
-          if (!(isalnum (c) || c == '_'))
-          {
-            tc.expr = true;
-            break;
-          }
-
           if (c == '.')
           {
             if (p != string::npos)
@@ -1006,6 +1000,11 @@ handle_pragma (cpp_reader* reader,
             }
 
             p  = i;
+          }
+          else if (!(isalnum (c) || c == '_'))
+          {
+            tc.expr = true;
+            break;
           }
         }
 
