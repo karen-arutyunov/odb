@@ -43,7 +43,7 @@ namespace odb
                           object_statements<object_type>&);
 
       virtual void
-      load (object_type&);
+      load (object_type&, bool fetch);
 
       virtual id_type
       load_id ();
