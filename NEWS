@@ -1,5 +1,8 @@
 Version 1.7.0
 
+ * Support for optimistic concurrency. For more information refer to the
+   'optimistic' example in the odb-examples package.
+
  * Support for read-only objects, composite value types, and data members.
    The new readonly pragma can be used to declare one of these entities as
    read-only. Constant data members are automatically treated as read-only.
