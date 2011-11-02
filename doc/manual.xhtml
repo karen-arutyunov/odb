@@ -3837,6 +3837,9 @@ namespace odb
 
     void
     load (T&amp; x);
+
+    typename object_traits&lt;T>::id_type
+    id ();
   };
 }
   </pre>
@@ -3905,6 +3908,25 @@ namespace odb
   }
   </pre>
 
+  <p>The <code>id()</code> function return the object id of the current
+     object. While we can achieve the same by loading the object and getting
+     its id, this function is more efficient since it doesn't actually
+     create the object. This can be useful when all we need is the object's
+     identifier. For example:</p>
+
+  <pre class="c++">
+  std::set&lt;unsigned long> set = ...; // Persons of interest.
+
+  result r (db.query&lt;person> (query::first == "John"));
+
+  for (result::iterator i (r.begin ()); i != r.end (); ++i)
+  {
+    if (set.find (i.id ()) != set.end ()) // No object loaded.
+    {
+      cout &lt;&lt; i->first () &lt;&lt; endl; // Object loaded.
+    }
+  }
+  </pre>
 
   <!-- CHAPTER -->
 
