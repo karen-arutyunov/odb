@@ -15,6 +15,11 @@ Version 1.7.0
    functionality. For more information, refer to Section 11.1.5 "id", in
    the ODB manual.
 
+ * Support for mapping char[N], unsigned char[N], and std::vector<unsigned
+   char> to the BLOB (or equivalent) types. For more information, refer to
+   Chapters 13 (for MySQL), 14 (for SQLite), 15 (for PostgreSQL), and 16
+   (for Oracle) in the ODB manual.
+
  * Query result iterator now provides the id() function with allows one to
    get object id without loading the object. For more information, refer to
    Section 4.4 "Query Result", in the ODB manual.
