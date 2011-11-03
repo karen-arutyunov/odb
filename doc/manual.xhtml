@@ -9788,14 +9788,15 @@ aCC +W2161 ...
      it is mapped to <code>TEXT</code>.</p>
 
   <p>The MySQL ODB runtime library also provides support for mapping the
-     <code>std::vector&lt;char></code> and
-     <code>std::vector&lt;unsigned&nbsp;char></code> types to the MySQL
-     BLOB types. However, this mapping is not enabled by default (by
-     default, <code>std::vector</code> will be treated as a container).
-     To enable the BLOB mapping for this type we need to specify
-     the database type explicitly using the <code>db&nbsp;type</code>
-     pragma (<a href="#11.4.3">Section 11.4.3, "<code>type</code>"</a>),
-     for example:</p>
+     <code>std::vector&lt;char></code>,
+     <code>std::vector&lt;unsigned&nbsp;char></code>,
+     <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types
+     to the MySQL BLOB types. However, this mapping is not enabled by
+     default (in particular, by default, <code>std::vector</code> will
+     be treated as a container). To enable the BLOB mapping for these
+     types we need to specify the database type explicitly using the
+     <code>db&nbsp;type</code> pragma (<a href="#11.4.3">Section
+     11.4.3, "<code>type</code>"</a>), for example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -9805,6 +9806,9 @@ class object
 
   #pragma db type("BLOB")
   std::vector&lt;char> buf_;
+
+  #pragma db type("BLOB")
+  unsigned char[16] uuid_;
 };
   </pre>
 
@@ -10414,14 +10418,15 @@ namespace odb
   </table>
 
   <p>The SQLite ODB runtime library also provides support for mapping the
-     <code>std::vector&lt;char></code> and
-     <code>std::vector&lt;unsigned&nbsp;char></code> types to the SQLite
-     BLOB type. However, this mapping is not enabled by default (by default,
-     <code>std::vector</code> will be treated as a container).
-     To enable the BLOB mapping for this type we need to specify
-     the database type explicitly using the <code>db&nbsp;type</code>
-     pragma (<a href="#11.4.3">Section 11.4.3, "<code>type</code>"</a>),
-     for example:</p>
+     <code>std::vector&lt;char></code>,
+     <code>std::vector&lt;unsigned&nbsp;char></code>,
+     <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types to
+     the SQLite BLOB type. However, this mapping is not enabled by default
+     (in particular, by default, <code>std::vector</code> will be treated
+     as a container). To enable the BLOB mapping for these types we need
+     to specify the database type explicitly using the
+     <code>db&nbsp;type</code> pragma (<a href="#11.4.3">Section 11.4.3,
+     "<code>type</code>"</a>), for example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -10431,6 +10436,9 @@ class object
 
   #pragma db type("BLOB")
   std::vector&lt;char> buf_;
+
+  #pragma db type("BLOB")
+  unsigned char[16] uuid_;
 };
   </pre>
 
@@ -11152,14 +11160,15 @@ CREATE TABLE Employee (
   </table>
 
   <p>The PostgreSQL ODB runtime library also provides support for mapping the
-     <code>std::vector&lt;char></code> and
-     <code>std::vector&lt;unsigned&nbsp;char></code> types to the PostgreSQL
-     <code>BYTEA</code> type. However, this mapping is not enabled by default
-     (by default, <code>std::vector</code> will be treated as a container).
-     To enable the <code>BYTEA</code> mapping for this type we need to specify
-     the database type explicitly using the <code>db&nbsp;type</code>
-     pragma (<a href="#11.4.3">Section 11.4.3, "<code>type</code>"</a>),
-     for example:</p>
+     <code>std::vector&lt;char></code>,
+     <code>std::vector&lt;unsigned&nbsp;char></code>,
+     <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types to
+     the PostgreSQL <code>BYTEA</code> type. However, this mapping is not
+     enabled by default (in particular, by default, <code>std::vector</code>
+     will be treated as a container). To enable the <code>BYTEA</code>
+     mapping for these types we need to specify the database type explicitly
+     using the <code>db&nbsp;type</code> pragma (<a href="#11.4.3">Section
+     11.4.3, "<code>type</code>"</a>), for example:</p>
 
   <pre class="c++">
 #pragma db object
@@ -11169,6 +11178,9 @@ class object
 
   #pragma db type("BYTEA")
   std::vector&lt;char> buf_;
+
+  #pragma db type("BYTEA")
+  unsigned char[16] uuid_;
 };
   </pre>
 
