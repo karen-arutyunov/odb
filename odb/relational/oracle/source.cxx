@@ -312,10 +312,19 @@ namespace relational
              "callback;"
              << b << ".context = &" << arg << "." << mi.var << "context;"
              << "if (sk == statement_select)" << endl
+             << "{"
              << b << ".buffer = &" << arg << "." << mi.var << "lob;"
+             << b << ".capacity = sizeof (OCILobLocator*);"
+             << b << ".size = 0;"
+             << "}"
              << "else" << endl
+             << "{"
+            //@@ Modify to less than the total size to see what happens
+            //
+             << b << ".capacity = 4096;"
              << b << ".size = reinterpret_cast<ub2*> (&" << arg << "." <<
             mi.var << "position_context);"
+             << "}"
              << endl;
         }
 
@@ -838,17 +847,6 @@ namespace relational
           os << traits << "::set_value (" << endl
              << member << "," << endl
              << "i." << mi.var << "value," << endl
-             << "i." << mi.var << "size," << endl
-             << "i." << mi.var << "indicator == -1);"
-             << endl;
-        }
-
-        virtual void
-        traverse_string (member_info& mi)
-        {
-          os << traits << "::set_value (" << endl
-             << member << "," << endl
-             << "i." << mi.var << "value," << endl
              << "i." << mi.var << "indicator == -1);"
              << endl;
         }
@@ -869,6 +867,17 @@ namespace relational
           os << traits << "::set_value (" << endl
              << member << "," << endl
              << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "indicator == -1);"
+             << endl;
+        }
+
+        virtual void
+        traverse_string (member_info& mi)
+        {
+          os << traits << "::set_value (" << endl
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "size," << endl
              << "i." << mi.var << "indicator == -1);"
              << endl;
         }
