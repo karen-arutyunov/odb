@@ -162,6 +162,16 @@ namespace relational
       }
 
       virtual void
+      traverse_interval_ym (member_info&)
+      {
+      }
+
+      virtual void
+      traverse_interval_ds (member_info&)
+      {
+      }
+
+      virtual void
       traverse_string (member_info&)
       {
       }
@@ -208,6 +218,12 @@ namespace relational
       traverse_timestamp (member_info&);
 
       virtual void
+      traverse_interval_ym (member_info&);
+
+      virtual void
+      traverse_interval_ds (member_info&);
+
+      virtual void
       traverse_string (member_info&);
 
       virtual void
@@ -251,6 +267,12 @@ namespace relational
 
       virtual void
       traverse_timestamp (member_info&);
+
+      virtual void
+      traverse_interval_ym (member_info&);
+
+      virtual void
+      traverse_interval_ds (member_info&);
 
       virtual void
       traverse_string (member_info&);

@@ -264,10 +264,29 @@ namespace relational
         traverse_timestamp (member_info& mi)
         {
           os << b << ".type = oracle::bind::timestamp;"
-             << b << ".buffer = " << arg << "." << mi.var << "value;"
-             << b << ".capacity = static_cast<ub4> (sizeof (" << arg << "." <<
-            mi.var << "value));"
-             << b << ".size = &" << arg << "." << mi.var << "size;"
+             << b << ".buffer = &" << arg << "." << mi.var << "value;"
+             << b << ".capacity = sizeof (OCIDateTime*);"
+             << b << ".size = 0;"
+             << b << ".indicator = &" << arg << "." << mi.var << "indicator;";
+        }
+
+        virtual void
+        traverse_interval_ym (member_info& mi)
+        {
+          os << b << ".type = oracle::bind::interval_ym;"
+             << b << ".buffer = &" << arg << "." << mi.var << "value;"
+             << b << ".capacity = sizeof (OCIInterval*);"
+             << b << ".size = 0;"
+             << b << ".indicator = &" << arg << "." << mi.var << "indicator;";
+        }
+
+        virtual void
+        traverse_interval_ds (member_info& mi)
+        {
+          os << b << ".type = oracle::bind::interval_ds;"
+             << b << ".buffer = &" << arg << "." << mi.var << "value;"
+             << b << ".capacity = sizeof (OCIInterval*);"
+             << b << ".size = 0;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;";
         }
 
@@ -542,14 +561,22 @@ namespace relational
         virtual void
         traverse_timestamp (member_info& mi)
         {
-          os << "std::size_t size (0);"
-             << traits << "::set_image (" << endl
-             << "i." << mi.var << "value," << endl
-             << "sizeof (i." << mi.var << "value)," << endl
-             << "size," << endl
-             << "is_null," << endl
-             << member << ");"
-             << "i." << mi.var << "size = static_cast<ub2> (size);";
+          os << traits << "::set_image (" << endl
+             << "i." << mi.var << "value, is_null," << member << ");";
+        }
+
+        virtual void
+        traverse_interval_ym (member_info& mi)
+        {
+          os << traits << "::set_image (" << endl
+             << "i." << mi.var << "value, is_null," << member << ");";
+        }
+
+        virtual void
+        traverse_interval_ds (member_info& mi)
+        {
+          os << traits << "::set_image (" << endl
+             << "i." << mi.var << "value, is_null," << member << ");";
         }
 
         virtual void
@@ -822,7 +849,26 @@ namespace relational
           os << traits << "::set_value (" << endl
              << member << "," << endl
              << "i." << mi.var << "value," << endl
-             << "i." << mi.var << "size," << endl
+             << "i." << mi.var << "indicator == -1);"
+             << endl;
+        }
+
+        virtual void
+        traverse_interval_ym (member_info& mi)
+        {
+          os << traits << "::set_value (" << endl
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
+             << "i." << mi.var << "indicator == -1);"
+             << endl;
+        }
+
+        virtual void
+        traverse_interval_ds (member_info& mi)
+        {
+          os << traits << "::set_value (" << endl
+             << member << "," << endl
+             << "i." << mi.var << "value," << endl
              << "i." << mi.var << "indicator == -1);"
              << endl;
         }

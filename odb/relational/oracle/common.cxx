@@ -206,6 +206,17 @@ namespace relational
           traverse_timestamp (mi);
           break;
         }
+      case sql_type::INTERVAL_YM:
+        {
+          traverse_interval_ym (mi);
+          break;
+
+        }
+      case sql_type::INTERVAL_DS:
+        {
+          traverse_interval_ds (mi);
+          break;
+        }
         // String and binary types.
         //
       case sql_type::CHAR:
@@ -309,7 +320,19 @@ namespace relational
     void member_image_type::
     traverse_timestamp (member_info&)
     {
-      type_ = "char*";
+      type_ = "oracle::datetime";
+    }
+
+    void member_image_type::
+    traverse_interval_ym (member_info&)
+    {
+      type_ = "oracle::interval_ym";
+    }
+
+    void member_image_type::
+    traverse_interval_ds (member_info&)
+    {
+      type_ = "oracle::interval_ds";
     }
 
     void member_image_type::
@@ -415,6 +438,18 @@ namespace relational
     traverse_timestamp (member_info&)
     {
       type_id_ = "oracle::id_timestamp";
+    }
+
+    void member_database_type_id::
+    traverse_interval_ym (member_info&)
+    {
+      type_id_ = "oracle::id_interval_ym";
+    }
+
+    void member_database_type_id::
+    traverse_interval_ds (member_info&)
+    {
+      type_id_ = "oracle::id_interval_ds";
     }
 
     void member_database_type_id::

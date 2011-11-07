@@ -159,11 +159,23 @@ namespace relational
         virtual void
         traverse_timestamp (member_info& mi)
         {
-          // @@ Need to calculate the length of the array based on the
-          // member_info range.
-          //
-          os << "char " << mi.var << "value[11];"
-             << "ub2 " << mi.var << "size;"
+          os << image_type << " " << mi.var << "value;"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_interval_ym (member_info& mi)
+        {
+          os << image_type << " " << mi.var << "value;"
+             << "sb2 " << mi.var << "indicator;"
+             << endl;
+        }
+
+        virtual void
+        traverse_interval_ds (member_info& mi)
+        {
+          os << image_type << " " << mi.var << "value;"
              << "sb2 " << mi.var << "indicator;"
              << endl;
         }

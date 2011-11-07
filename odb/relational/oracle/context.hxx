@@ -34,6 +34,8 @@ namespace relational
         //
         DATE,
         TIMESTAMP,
+        INTERVAL_YM,
+        INTERVAL_DS,
 
         // String and binary types.
         //
@@ -60,10 +62,13 @@ namespace relational
       }
 
       core_type type;
+
       bool range;
       unsigned short range_value; // Oracle max value is 4000.
+
       bool scale;
       short scale_value; // Oracle min value is -84. Max value is 127.
+
       bool byte_semantics;
     };
 
