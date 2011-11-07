@@ -6,8 +6,10 @@
 #include <cstring> // std::memcpy
 #include <cassert>
 
+#include <odb/tracer.hxx>
 #include <odb/exceptions.hxx> // object_not_persistent
 
+#include <odb/sqlite/database.hxx>
 #include <odb/sqlite/statement.hxx>
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/error.hxx>
@@ -24,7 +26,8 @@ namespace odb
     statement::
     ~statement ()
     {
-      finilize ();
+      if (stmt_ != 0)
+        finilize ();
     }
 
     void statement::
@@ -53,6 +56,35 @@ namespace odb
       next_ = this;
 
       list_add (); // Add to the list because we are uncached.
+
+      {
+        odb::tracer* t;
+        if ((t = conn_.transaction_tracer ()) ||
+            (t = conn_.tracer ()) ||
+            (t = conn_.database ().tracer ()))
+          t->prepare (conn_, *this);
+      }
+    }
+
+    void statement::
+    finilize ()
+    {
+      {
+        odb::tracer* t;
+        if ((t = conn_.transaction_tracer ()) ||
+            (t = conn_.tracer ()) ||
+            (t = conn_.database ().tracer ()))
+          t->deallocate (conn_, *this);
+      }
+
+      list_remove ();
+      stmt_.reset ();
+    }
+
+    const char* statement::
+    text () const
+    {
+      return sqlite3_sql (stmt_);
     }
 
     void statement::
@@ -187,28 +219,36 @@ namespace odb
       return r;
     }
 
-    // simple_statement
+    // generic_statement
     //
 
-    simple_statement::
-    simple_statement (connection& conn, const string& s)
+    generic_statement::
+    generic_statement (connection& conn, const string& s)
         : statement (conn, s),
           result_set_ (stmt_ ? sqlite3_column_count (stmt_) != 0: false)
     {
     }
 
-    simple_statement::
-    simple_statement (connection& conn, const char* s, std::size_t n)
+    generic_statement::
+    generic_statement (connection& conn, const char* s, std::size_t n)
         : statement (conn, s, n),
           result_set_ (stmt_ ? sqlite3_column_count (stmt_) != 0: false)
     {
     }
 
-    unsigned long long simple_statement::
+    unsigned long long generic_statement::
     execute ()
     {
       if (stmt_ == 0) // Empty statement or comment.
         return 0;
+
+      {
+        odb::tracer* t;
+        if ((t = conn_.transaction_tracer ()) ||
+            (t = conn_.tracer ()) ||
+            (t = conn_.database ().tracer ()))
+          t->execute (conn_, *this);
+      }
 
       unsigned long long r (0);
 
@@ -265,6 +305,14 @@ namespace odb
     {
       if (active ())
         reset ();
+
+      {
+        odb::tracer* t;
+        if ((t = conn_.transaction_tracer ()) ||
+            (t = conn_.tracer ()) ||
+            (t = conn_.database ().tracer ()))
+          t->execute (conn_, *this);
+      }
 
       done_ = false;
 
@@ -340,6 +388,14 @@ namespace odb
     bool insert_statement::
     execute ()
     {
+      {
+        odb::tracer* t;
+        if ((t = conn_.transaction_tracer ()) ||
+            (t = conn_.tracer ()) ||
+            (t = conn_.database ().tracer ()))
+          t->execute (conn_, *this);
+      }
+
       bind_param (param_.bind, param_.count);
 
       int e;
@@ -392,6 +448,14 @@ namespace odb
     unsigned long long update_statement::
     execute ()
     {
+      {
+        odb::tracer* t;
+        if ((t = conn_.transaction_tracer ()) ||
+            (t = conn_.tracer ()) ||
+            (t = conn_.database ().tracer ()))
+          t->execute (conn_, *this);
+      }
+
       bind_param (param_.bind, param_.count);
 
       int e;
@@ -426,6 +490,14 @@ namespace odb
     unsigned long long delete_statement::
     execute ()
     {
+      {
+        odb::tracer* t;
+        if ((t = conn_.transaction_tracer ()) ||
+            (t = conn_.tracer ()) ||
+            (t = conn_.database ().tracer ()))
+          t->execute (conn_, *this);
+      }
+
       bind_param (param_.bind, param_.count);
 
       int e;

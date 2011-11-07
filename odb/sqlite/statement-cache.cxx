@@ -17,9 +17,9 @@ namespace odb
           // String lengths below include '\0', as per SQLite manual
           // suggestions.
           //
-          begin_ (new (shared) simple_statement (conn_, "BEGIN", 6)),
-          commit_ (new (shared) simple_statement (conn_, "COMMIT", 7)),
-          rollback_ (new (shared) simple_statement (conn_, "ROLLBACK", 9))
+          begin_ (new (shared) generic_statement (conn_, "BEGIN", 6)),
+          commit_ (new (shared) generic_statement (conn_, "COMMIT", 7)),
+          rollback_ (new (shared) generic_statement (conn_, "ROLLBACK", 9))
     {
       rollback_->cached (true);
       commit_->cached (true);
@@ -30,7 +30,7 @@ namespace odb
     begin_immediate_statement_ () const
     {
       begin_immediate_.reset (
-        new (shared) simple_statement (conn_, "BEGIN IMMEDIATE", 16));
+        new (shared) generic_statement (conn_, "BEGIN IMMEDIATE", 16));
       begin_immediate_->cached (true);
     }
 
@@ -38,7 +38,7 @@ namespace odb
     begin_exclusive_statement_ () const
     {
       begin_exclusive_.reset (
-        new (shared) simple_statement (conn_, "BEGIN EXCLUSIVE", 16));
+        new (shared) generic_statement (conn_, "BEGIN EXCLUSIVE", 16));
       begin_exclusive_->cached (true);
     }
   }

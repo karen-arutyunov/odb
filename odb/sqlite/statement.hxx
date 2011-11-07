@@ -15,7 +15,7 @@
 #include <cassert>
 
 #include <odb/forward.hxx>
-#include <odb/details/shared-ptr.hxx>
+#include <odb/statement.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/binding.hxx>
@@ -30,17 +30,20 @@ namespace odb
   {
     class connection;
 
-    class LIBODB_SQLITE_EXPORT statement: public details::shared_base
+    class LIBODB_SQLITE_EXPORT statement: public odb::statement
     {
     public:
       virtual
       ~statement () = 0;
 
       sqlite3_stmt*
-      handle ()
+      handle () const
       {
         return stmt_;
       }
+
+      virtual const char*
+      text () const;
 
       // Cached state (public part).
       //
@@ -130,11 +133,7 @@ namespace odb
       //
     protected:
       void
-      finilize ()
-      {
-        list_remove ();
-        stmt_.reset ();
-      }
+      finilize ();
 
     protected:
       friend class connection;
@@ -191,18 +190,18 @@ namespace odb
       statement* next_;
     };
 
-    class LIBODB_SQLITE_EXPORT simple_statement: public statement
+    class LIBODB_SQLITE_EXPORT generic_statement: public statement
     {
     public:
-      simple_statement (connection&, const std::string& statement);
-      simple_statement (connection&, const char* statement, std::size_t n);
+      generic_statement (connection&, const std::string& statement);
+      generic_statement (connection&, const char* statement, std::size_t n);
 
       unsigned long long
       execute ();
 
     private:
-      simple_statement (const simple_statement&);
-      simple_statement& operator= (const simple_statement&);
+      generic_statement (const generic_statement&);
+      generic_statement& operator= (const generic_statement&);
 
     private:
       bool result_set_;

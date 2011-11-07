@@ -19,6 +19,7 @@
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx>
+#include <odb/sqlite/tracer.hxx>
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/connection-factory.hxx>
 #include <odb/sqlite/transaction-impl.hxx>
@@ -99,6 +100,25 @@ namespace odb
     public:
       connection_ptr
       connection ();
+
+      // SQL statement tracing.
+      //
+    public:
+      typedef sqlite::tracer tracer_type;
+
+      void
+      tracer (tracer_type& t)
+      {
+        odb::database::tracer (t);
+      }
+
+      void
+      tracer (tracer_type* t)
+      {
+        odb::database::tracer (t);
+      }
+
+      using odb::database::tracer;
 
     public:
       virtual

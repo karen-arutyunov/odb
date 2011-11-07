@@ -80,7 +80,7 @@ namespace odb
     {
       // Enable/disable foreign key constraints.
       //
-      simple_statement st (
+      generic_statement st (
         *this,
         db_.foreign_keys ()
         ? "PRAGMA foreign_keys=ON"
@@ -122,7 +122,7 @@ namespace odb
     unsigned long long connection::
     execute (const char* s, std::size_t n)
     {
-      simple_statement st (*this, s, n);
+      generic_statement st (*this, s, n);
       return st.execute ();
     }
 

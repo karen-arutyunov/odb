@@ -20,6 +20,7 @@
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx>
+#include <odb/sqlite/tracer.hxx>
 #include <odb/sqlite/transaction-impl.hxx>
 #include <odb/sqlite/auto-handle.hxx>
 
@@ -68,6 +69,25 @@ namespace odb
 
       virtual unsigned long long
       execute (const char* statement, std::size_t length);
+
+      // SQL statement tracing.
+      //
+    public:
+      typedef sqlite::tracer tracer_type;
+
+      void
+      tracer (tracer_type& t)
+      {
+        odb::connection::tracer (t);
+      }
+
+      void
+      tracer (tracer_type* t)
+      {
+        odb::connection::tracer (t);
+      }
+
+      using odb::connection::tracer;
 
     public:
       sqlite3*

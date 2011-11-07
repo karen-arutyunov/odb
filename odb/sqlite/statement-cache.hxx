@@ -35,13 +35,13 @@ namespace odb
     public:
       statement_cache (connection&);
 
-      simple_statement&
+      generic_statement&
       begin_statement () const
       {
         return *begin_;
       }
 
-      simple_statement&
+      generic_statement&
       begin_immediate_statement () const
       {
         if (!begin_immediate_)
@@ -50,7 +50,7 @@ namespace odb
         return *begin_immediate_;
       }
 
-      simple_statement&
+      generic_statement&
       begin_exclusive_statement () const
       {
         if (!begin_exclusive_)
@@ -59,13 +59,13 @@ namespace odb
         return *begin_exclusive_;
       }
 
-      simple_statement&
+      generic_statement&
       commit_statement () const
       {
         return *commit_;
       }
 
-      simple_statement&
+      generic_statement&
       rollback_statement () const
       {
         return *rollback_;
@@ -119,11 +119,11 @@ namespace odb
 
       connection& conn_;
 
-      details::shared_ptr<simple_statement> begin_;
-      mutable details::shared_ptr<simple_statement> begin_immediate_;
-      mutable details::shared_ptr<simple_statement> begin_exclusive_;
-      details::shared_ptr<simple_statement> commit_;
-      details::shared_ptr<simple_statement> rollback_;
+      details::shared_ptr<generic_statement> begin_;
+      mutable details::shared_ptr<generic_statement> begin_immediate_;
+      mutable details::shared_ptr<generic_statement> begin_exclusive_;
+      details::shared_ptr<generic_statement> commit_;
+      details::shared_ptr<generic_statement> rollback_;
 
       map map_;
     };

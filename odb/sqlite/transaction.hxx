@@ -12,6 +12,7 @@
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx>
+#include <odb/sqlite/tracer.hxx>
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
@@ -49,6 +50,25 @@ namespace odb
       //
       static void
       current (transaction&);
+
+      // SQL statement tracing.
+      //
+    public:
+      typedef sqlite::tracer tracer_type;
+
+      void
+      tracer (tracer_type& t)
+      {
+        odb::transaction::tracer (t);
+      }
+
+      void
+      tracer (tracer_type* t)
+      {
+        odb::transaction::tracer (t);
+      }
+
+      using odb::transaction::tracer;
 
     public:
       transaction_impl&
