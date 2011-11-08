@@ -7450,6 +7450,7 @@ person p;
   t.commit ();
 }
 
+cerr &lt;&lt; "enter age for " &lt;&lt; p.first () &lt;&lt; " " &lt;&lt; p.last () &lt;&lt; endl;
 unsigned short age;
 cin >> age;
 p.age (age);
@@ -7512,7 +7513,20 @@ class person
      for optimistic concurrency to function properly, the application
      should not modify the version member after making the object persistent
      or loading it from the database and until deleting the state of this
-     object from the database.</p>
+     object from the database. To avoid any accidental modifications
+     to the version member, we can declare it <code>const</code>, for
+     example:</p>
+
+  <pre class="c++">
+#pragma db object optimistic
+class person
+{
+  ...
+
+  #pragma db version
+  const unsigned long version_;
+};
+  </pre>
 
   <p>When we call the <code>database::update()</code> function
      (<a href="#3.9">Section 3.9, "Updating Persistent Objects"</a>) and pass
@@ -7542,6 +7556,7 @@ person p;
   t.commit ();
 }
 
+cerr &lt;&lt; "enter age for " &lt;&lt; p.first () &lt;&lt; " " &lt;&lt; p.last () &lt;&lt; endl;
 unsigned short age;
 cin >> age;
 p.age (age);
@@ -7574,7 +7589,8 @@ p.age (age);
      more expensive than a successful one. As a result, optimistic
      concurrency works best for situations with low to medium contention
      levels where the majority of the application transactions complete
-     without update conflicts.</p>
+     without update conflicts. This is also the reason why this concurrency
+     model is called optimistic.</p>
 
   <p>In addition to updates, ODB also performs state mismatch detection
      when we are deleting an object from the database
