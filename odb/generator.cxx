@@ -19,7 +19,6 @@
 #include <odb/generator.hxx>
 
 #include <odb/generate.hxx>
-#include <odb/tracer/generate.hxx>
 #include <odb/relational/generate.hxx>
 
 using namespace std;
@@ -110,11 +109,6 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         {
           model = relational::model::generate ();
           break;
-        }
-      case database::tracer:
-        {
-          cerr << "error: the tracer database does not have schema" << endl;
-          throw failed ();
         }
       }
     }
@@ -267,11 +261,6 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           relational::header::generate ();
           break;
         }
-      case database::tracer:
-        {
-          tracer::header::generate ();
-          break;
-        }
       }
 
       hxx << "#include " << ctx->process_include_path (ixx_name) << endl
@@ -319,11 +308,6 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           relational::inline_::generate ();
           break;
         }
-      case database::tracer:
-        {
-          tracer::inline_::generate ();
-          break;
-        }
       }
 
       // Copy epilogue.
@@ -366,11 +350,6 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           relational::source::generate ();
           break;
         }
-      case database::tracer:
-        {
-          tracer::source::generate ();
-          break;
-        }
       }
 
       // Copy epilogue.
@@ -404,11 +383,6 @@ generate (options const& ops, semantics::unit& unit, path const& p)
         {
           relational::schema::generate ();
           break;
-        }
-      case database::tracer:
-        {
-          cerr << "error: the tracer database does not have schema" << endl;
-          throw failed ();
         }
       }
 

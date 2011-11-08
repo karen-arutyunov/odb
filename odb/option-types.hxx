@@ -17,8 +17,7 @@ struct database
     mysql,
     oracle,
     pgsql,
-    sqlite,
-    tracer
+    sqlite
   };
 
   database (value v = value (0)) : v_ (v) {}

@@ -26,13 +26,6 @@ parser.cxx                           \
 plugin.cxx                           \
 pragma.cxx
 
-# Tracer.
-#
-cxx_ptun +=                          \
-tracer/header.cxx                    \
-tracer/inline.cxx                    \
-tracer/source.cxx
-
 # Relational.
 #
 cxx_ptun +=                          \

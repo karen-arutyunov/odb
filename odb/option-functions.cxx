@@ -32,10 +32,6 @@ process_options (options& o)
         f.insert (schema_format::embedded);
         break;
       }
-    case database::tracer:
-      {
-        break;
-      }
     }
 
     o.schema_format (f);

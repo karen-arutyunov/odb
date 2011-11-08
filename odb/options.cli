@@ -49,7 +49,7 @@ class options
   {
     "<db>",
     "Generate code for the <db> database. Valid values are \cb{mysql},
-     \cb{oracle}, \cb{pgsql}, \cb{sqlite}, and \cb{tracer}."
+     \cb{oracle}, \cb{pgsql}, and \cb{sqlite}."
   };
 
   bool --generate-query | -q

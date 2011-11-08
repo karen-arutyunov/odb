@@ -128,11 +128,6 @@ create_context (ostream& os,
       r.reset (new relational::sqlite::context (os, unit, ops, m));
       break;
     }
-  case database::tracer:
-    {
-      r.reset (new context (os, unit, ops));
-      break;
-    }
   }
 
   return r;

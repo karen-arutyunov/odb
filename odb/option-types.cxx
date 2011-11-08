@@ -19,8 +19,7 @@ static const char* database_[] =
   "mysql",
   "oracle",
   "pgsql",
-  "sqlite",
-  "tracer"
+  "sqlite"
 };
 
 const char* database::
