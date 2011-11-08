@@ -1,18 +1,19 @@
 Version 1.7.0
 
- * Support for optimistic concurrency. For more information refer to the
-   'optimistic' example in the odb-examples package.
+ * Support for optimistic concurrency. For more information refer to Chapter
+   11, "Optimistic Concurrency" in the ODB manual as well as the 'optimistic'
+   example in the odb-examples package.
 
  * Support for read-only objects, composite value types, and data members.
    The new readonly pragma can be used to declare one of these entities as
    read-only. Constant data members are automatically treated as read-only.
-   For more information, refer to Section 11.1.4 "readonly (object)",
-   Section 11.3.6 "readonly (composite value)", and Section 11.4.10
+   For more information, refer to Section 12.1.4 "readonly (object)",
+   Section 12.3.6 "readonly (composite value)", and Section 12.4.10
    "readonly (data member)" in the ODB manual.
 
  * Support for persistent classes without object ids. Such objects have to
    be explicitly declared as not having object id and they have limited
-   functionality. For more information, refer to Section 11.1.5 "id", in
+   functionality. For more information, refer to Section 12.1.5 "id", in
    the ODB manual.
 
  * Support for mapping char[N], unsigned char[N], and std::vector<unsigned
