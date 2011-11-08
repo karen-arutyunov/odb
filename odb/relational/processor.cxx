@@ -134,15 +134,16 @@ namespace relational
           wt = &utype (*qwt, whint);
         }
 
-        // If the type is const and the member is not id or inverse, then
-        // mark it as readonly. In case of a wrapper, both the wrapper type
-        // and the wrapped type must be const. To see why, consider these
-        // possibilities:
+        // If the type is const and the member is not id, version, or
+        // inverse, then mark it as readonly. In case of a wrapper,
+        // both the wrapper type and the wrapped type must be const.
+        // To see why, consider these possibilities:
         //
         // auto_ptr<const T> - can modify by setting a new pointer
         // const auto_ptr<T> - can modify by changing the pointed-to value
         //
-        if (const_type (m.type ()) && !(m.count ("id") || m.count ("inverse")))
+        if (const_type (m.type ()) &&
+            !(m.count ("id") || m.count ("version") || m.count ("inverse")))
         {
           if (qwt == 0 || const_type (*qwt))
             m.set ("readonly", true);
