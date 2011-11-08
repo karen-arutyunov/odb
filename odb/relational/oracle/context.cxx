@@ -458,41 +458,38 @@ namespace relational
                 t = l.next ();
                 continue;
               }
-              else
+              else if (!prefix.empty ())
               {
                 // Some prefixes can also be type names if not followed
                 // by the actual type name.
                 //
-                if (!prefix.empty ())
-                {
-                  if (prefix == "CHAR" || prefix == "CHARACTER")
-                  {
-                    r.type = sql_type::CHAR;
-                    r.range = true;
-                    r.range_value = 1;
-                    r.byte_semantics = true;
-                  }
-                  else if (prefix == "NCHAR" ||
-                           prefix == "NATIONAL CHAR" ||
-                           prefix == "NATIONAL CHARACTER")
-                  {
-                    r.type = sql_type::NCHAR;
-                    r.range = true;
-                    r.range_value = 1;
-                    r.byte_semantics = false;
-                  }
-                  else if (prefix == "TIMESTAMP")
-                  {
-                    r.type = sql_type::TIMESTAMP;
-                    r.range = true;
-                    r.range_value = 6;
-                  }
-                }
 
-                if (r.type == sql_type::invalid)
+                if (prefix == "CHAR" || prefix == "CHARACTER")
+                {
+                  r.type = sql_type::CHAR;
+                  r.range = true;
+                  r.range_value = 1;
+                  r.byte_semantics = true;
+                }
+                else if (prefix == "NCHAR" ||
+                         prefix == "NATIONAL CHAR" ||
+                         prefix == "NATIONAL CHARACTER")
+                {
+                  r.type = sql_type::NCHAR;
+                  r.range = true;
+                  r.range_value = 1;
+                  r.byte_semantics = false;
+                }
+                else if (prefix == "TIMESTAMP")
+                {
+                  r.type = sql_type::TIMESTAMP;
+                  r.range = true;
+                  r.range_value = 6;
+                }
+                else
                 {
                   throw invalid_sql_type (
-                    "unknown Oracle type '" + t.identifier () + "'");
+                    "incomplete Oracle type declaration: '" + prefix + "'");
                 }
 
                 // All of the possible types handled in this block can take an
@@ -500,6 +497,14 @@ namespace relational
                 // the parse_range handler.
                 //
                 s = parse_range;
+              }
+              else
+              {
+                assert (r.type == sql_type::invalid);
+
+                throw invalid_sql_type (
+                  "unexepected '" + t.literal () + "' in Oracle "
+                  "type declaration");
               }
 
               // Fall through.
@@ -545,9 +550,10 @@ namespace relational
                   //
                   if (r.type == sql_type::TIMESTAMP ||
                       string (prefix, 0, 8) == "INTERVAL")
+                  {
                     throw invalid_sql_type (
-                      "invalid precision value '" + t.literal () + "' in "
-                      "Oracle type declaration");
+                      "invalid precision in Oracle type declaration");
+                  }
 
                   t = l.next ();
 
@@ -597,13 +603,13 @@ namespace relational
                   t = l.next ();
               }
 
-              s = parse_identifier;
+              s = r.type == sql_type::invalid ? parse_identifier : parse_done;
               continue;
             }
           case parse_done:
             {
               throw invalid_sql_type (
-                "invalid keyword '" + t.literal () + "' in Oracle "
+                "unexepected '" + t.literal () + "' in Oracle "
                 "type declaration");
 
               break;
@@ -614,36 +620,42 @@ namespace relational
         // Some prefixes can also be type names if not followed by the actual
         // type name.
         //
-        if (r.type == sql_type::invalid && !prefix.empty ())
-        {
-          if (prefix == "CHAR" || prefix == "CHARACTER")
-          {
-            r.type = sql_type::CHAR;
-            r.range = true;
-            r.range_value = 1;
-            r.byte_semantics = true;
-          }
-          else if (prefix == "NCHAR" ||
-                   prefix == "NATIONAL CHAR" ||
-                   prefix == "NATIONAL CHARACTER")
-          {
-            r.type = sql_type::NCHAR;
-            r.range = true;
-            r.range_value = 1;
-            r.byte_semantics = false;
-          }
-          else if (prefix == "TIMESTAMP")
-          {
-            r.type = sql_type::TIMESTAMP;
-            r.range = true;
-            r.range_value = 6;
-          }
-        }
-
         if (r.type == sql_type::invalid)
         {
-          throw invalid_sql_type (
-            "incomplete Oracle type declaration: '" + prefix + "'");
+          if (!prefix.empty ())
+          {
+            if (prefix == "CHAR" || prefix == "CHARACTER")
+            {
+              r.type = sql_type::CHAR;
+              r.range = true;
+              r.range_value = 1;
+              r.byte_semantics = true;
+            }
+            else if (prefix == "NCHAR" ||
+                     prefix == "NATIONAL CHAR" ||
+                     prefix == "NATIONAL CHARACTER")
+            {
+              r.type = sql_type::NCHAR;
+              r.range = true;
+              r.range_value = 1;
+              r.byte_semantics = false;
+            }
+            else if (prefix == "TIMESTAMP")
+            {
+              r.type = sql_type::TIMESTAMP;
+              r.range = true;
+              r.range_value = 6;
+            }
+            else
+            {
+              throw invalid_sql_type (
+                "incomplete Oracle type declaration: '" + prefix + "'");
+            }
+          }
+          else
+          {
+            throw invalid_sql_type ("invalid Oracle type declaration");
+          }
         }
 
         return r;
