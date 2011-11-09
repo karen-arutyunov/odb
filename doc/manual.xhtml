@@ -329,7 +329,7 @@ for consistency.
           <tr><th>3.9</th><td><a href="#3.9">Updating Persistent Objects</a></td></tr>
           <tr><th>3.10</th><td><a href="#3.10">Deleting Persistent Objects</a></td></tr>
 	  <tr><th>3.11</th><td><a href="#3.11">Executing Native SQL Statements</a></td></tr>
-          <tr><th>3.12</th><td><a href="#3.12">ODB Exceptions</a></td></tr>
+          <tr><th>3.13</th><td><a href="#3.13">ODB Exceptions</a></td></tr>
         </table>
       </td>
     </tr>
@@ -1436,7 +1436,7 @@ main (int argc, char* argv[])
 
   <p>The final bit of code in our example is the <code>catch</code>
      block that handles the database exceptions. We do this by catching
-     the base ODB exception (<a href="#3.12">Section 3.12, "ODB
+     the base ODB exception (<a href="#3.13">Section 3.13, "ODB
      Exceptions"</a>) and printing the diagnostics.</p>
 
   <p>Let's now compile (<a href="#2.3">Section 2.3, "Compiling and
@@ -1473,7 +1473,45 @@ mysql> select * from person;
 mysql> quit
   </pre>
 
-  <p>In the next section we will see how to access persistent objects
+  <p>Another way to get more insight into what's going on under the hood,
+     is to trace the SQL statements executed by ODB as a result of
+     each database operation. Here is how we can enable tracing just for
+     the duration of our transaction:</p>
+
+  <pre class="c++">
+    // Create a few persistent person objects.
+    //
+    {
+      ...
+
+      transaction t (db->begin ());
+
+      t.tracer (stderr_tracer);
+
+      // Make objects persistent and save their ids for later use.
+      //
+      john_id = db->persist (john);
+      jane_id = db->persist (jane);
+      joe_id = db->persist (joe);
+
+      t.commit ();
+    }
+  </pre>
+
+  <p>With this modification our application now produces the following
+     output:</p>
+
+  <pre class="terminal">
+INSERT INTO `person` (`id`,`first`,`last`,`age`) VALUES (?,?,?,?)
+INSERT INTO `person` (`id`,`first`,`last`,`age`) VALUES (?,?,?,?)
+INSERT INTO `person` (`id`,`first`,`last`,`age`) VALUES (?,?,?,?)
+  </pre>
+
+  <p>Note that we see question marks instead of the actual values
+     because ODB uses prepared statements and sends the data to the
+     database in binary form. For more information on tracing refer
+     to <a href="#3.12">Section 3.12, "Tracing SQL Statement Execution"</a>.
+     In the next section we will see how to access persistent objects
      from our application.</p>
 
   <h2><a name="2.5">2.5 Querying the Database for Objects</a></h2>
@@ -2682,7 +2720,7 @@ c->execute ("SET FOREIGN_KEY_CHECKS = 1");
      instance, by obtaining a valid object id and trying again.
      The hard errors and corresponding ODB exceptions that can be
      thrown by each database function are described in the remainder
-     of this chapter with <a href="#3.12">Section 3.12, "ODB Exceptions"</a>
+     of this chapter with <a href="#3.13">Section 3.13, "ODB Exceptions"</a>
      providing a quick reference for all the ODB exceptions.</p>
 
   <p>The second group of ODB exceptions signify <em>soft</em> or
@@ -3233,7 +3271,175 @@ t.commit ();
      <code>connection::execute()</code> functions as described in
      <a href="#3.5">Section 3.5, "Connections"</a>.</p>
 
-  <h2><a name="3.12">3.12 ODB Exceptions</a></h2>
+  <h2><a name="3.12">3.12 Tracing SQL Statement Execution</a></h2>
+
+  <p>Oftentimes it is useful to understand what SQL statement are
+     executed as a result of high-level database operations. For
+     example, we can use this information to figure out why certain
+     transactions don't produce desired results or why they take
+     longer than expected.</p>
+
+  <p>While this information can usually be obtained from the database
+     logs, ODB provides an application-side SQL statement tracing
+     support that is both more convenient and finer-grained.
+     For example, in a typical situation that calls for tracing
+     we would like to see the SQL statements executed as a result
+     of a specific transaction. While it may be difficult to
+     extract such a subset of statements from the database logs,
+     it is easy to achieve with ODB tracing support:</p>
+
+  <pre class="c++">
+transaction t (db.begin ());
+t.tracer (stderr_tracer);
+
+...
+
+t.commit ();
+  </pre>
+
+  <p>ODB allows us to specify a tracer on the database, connection,
+     and transaction levels. If specified for the database, then
+     all the statements executed on this database will be traced.
+     On the other hand, if a tracer is specified for the
+     connection, then only the SQL statements executed on this
+     connection will be traced. Similarly, a tracer specified
+     for a transaction will only show statements that are
+     executed as part of this transaction. All three classes
+     (<code>odb::database</code>, <code>odb::connection</code>,
+      and <code>odb::transaction</code>) provide the identical
+     tracing API:</p>
+
+  <pre class="c++">
+  void
+  tracer (odb::tracer&amp;);
+
+  void
+  tracer (odb::tracer*);
+
+  odb::tracer*
+  tracer () const;
+  </pre>
+
+  <p>The first two <code>tracer()</code> functions allow us to set
+     the tracer object with the second one allowing us to clear the
+     current tracer by passing a <code>NULL</code> pointer. The
+     last <code>tracer()</code> function allow us to get the
+     current tracer object. It returns a <code>NULL</code> pointer
+     if there is no tracer in effect. Note that the tracing API
+     does not manage the lifetime of the tracer object. The tracer
+     should be valid for as long as it is being used. Furthermore,
+     the tracing API is not thread-safe. Trying to set a tracer
+     from multiple threads simultaneously will result in
+     undefined behavior.</p>
+
+  <p>The <code>odb::tracer</code> class defines a callback interface
+     that can be used to create custom tracer implementations. The
+     <code>odb::stderr_tracer</code> is a built-in tracer implementation
+     provided by the ODB runtime. It prints each executed SQL statement
+     to the standard error stream.</p>
+
+  <p>The <code>odb::tracer</code> class is defined in the
+     <code>&lt;odb/tracer.hxx></code> header file which you will need to
+     include in order to make this class available in your application.
+     The <code>odb::tracer</code> interface provided the following
+     callback functions:</p>
+
+  <pre class="c++">
+namespace odb
+{
+  class tracer
+  {
+  public:
+    virtual void
+    prepare (connection&amp;, const statement&amp;);
+
+    virtual void
+    execute (connection&amp;, const statement&amp;);
+
+    virtual void
+    execute (connection&amp;, const char* statement) = 0;
+
+    virtual void
+    deallocate (connection&amp;, const statement&amp;);
+  };
+}
+  </pre>
+
+  <p>The <code>prepare()</code> and <code>deallocate()</code> functions
+     are called when a prepared statement is created and destroyed,
+     respectively. The first <code>execute()</code> function is called
+     when a prepared statement is executed while the second one is called
+     when a normal statement is executed. The default implementations
+     for the <code>prepare()</code> and <code>deallocate()</code>
+     functions do nothing while the first <code>execute()</code> function
+     calls the second one passing the statement text as the second
+     argument. As a result, if all you are interested in are the
+     SQL statements being executed, that you only need to override the
+     second <code>execute()</code> function.</p>
+
+  <p>In addition to the common <code>odb::tracer</code> interface,
+     each database runtime provides a database-specific version
+     as <code>odb::&lt;database>::tracer</code>. It has exactly
+     the same interface as the common version except that the
+     <code>connection</code> and <code>statement</code> types
+     are database-specific, which gives us access to additional,
+     database-specific information.</p>
+
+  <p>As an example, consider a more elaborate, PostgreSQL-specific
+     tracer implementation. Here we rely on the fact that the PostgreSQL
+     ODB runtime uses names to identify prepared statement and this
+     information can be obtained from the <code>odb::pgsql::statement</code>
+     object:</p>
+
+  <pre class="c++">
+#include &lt;odb/pgsql/tracer.hxx>
+#include &lt;odb/pgsql/database.hxx>
+#include &lt;odb/pgsql/connection.hxx>
+#include &lt;odb/pgsql/statement.hxx>
+
+class pgsql_tracer: public odb::pgsql::tracer
+{
+  virtual void
+  prepare (odb::pgsql::connection&amp; c, const odb::pgsql::statement&amp; s)
+  {
+    cerr &lt;&lt; c.database ().db () &lt;&lt; ": PREPARE " &lt;&lt; s.name ()
+         &lt;&lt; " AS " &lt;&lt; s.text () &lt;&lt; endl;
+  }
+
+  virtual void
+  execute (odb::pgsql::connection&amp; c, const odb::pgsql::statement&amp; s)
+  {
+    cerr &lt;&lt; c.database ().db () &lt;&lt; ": EXECUTE " &lt;&lt; s.name () &lt;&lt; endl;
+  }
+
+  virtual void
+  execute (odb::pgsql::connection&amp; c, const char* statement)
+  {
+    cerr &lt;&lt; c.database ().db () &lt;&lt; ": " &lt;&lt; statement &lt;&lt; endl;
+  }
+
+  virtual void
+  deallocate (odb::pgsql::connection&amp; c, const odb::pgsql::statement&amp; s)
+  {
+    cerr &lt;&lt; c.database ().db () &lt;&lt; ": DEALLOCATE " &lt;&lt; s.name () &lt;&lt; endl;
+  }
+};
+  </pre>
+
+  <p>Note also that you can only set a database-specific tracer object
+     using a database-specific database instance, for example:</p>
+
+  <pre class="c++">
+pgsql_tracer tracer;
+
+odb::database&amp; db = ...;
+db.tracer (tracer); // Compile error.
+
+odb::pgsql::database&amp; db = ...;
+db.tracer (tracer); // Ok.
+  </pre>
+
+  <h2><a name="3.13">3.13 ODB Exceptions</a></h2>
 
   <p>In the previous sections we have already mentioned some of the
      exceptions that can be thrown by the database functions. In this
@@ -11375,7 +11581,7 @@ namespace odb
      SQLite results is the unavailability of the <code>result::size()</code>
      function. If you call this function on an SQLite query result, then
      the <code>odb::result_not_cached</code> exception
-     (<a href="#3.12">Section 3.12, "ODB Exceptions"</a>) is always
+     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>) is always
      thrown. Future versions of the SQLite ODB runtime library may add support
      for result caching.</p>
 
@@ -11474,8 +11680,8 @@ CREATE TABLE Employee (
      to distinguish between the duplicate primary key and other constraint
      violations. As a result, when making an object persistent, The SQLite
      ODB runtime will translate all constraint violation errors to the
-     <code>object_not_persistent</code> exception (<a href="#3.12">Section
-     3.12, "ODB Exceptions"</a>).</p>
+     <code>object_not_persistent</code> exception (<a href="#3.13">Section
+     3.13, "ODB Exceptions"</a>).</p>
 
   <h3><a name="14.5.5">14.5.5 Sharing of Queries</a></h3>
 
@@ -12196,7 +12402,7 @@ odb --profile boost/date-time ...
      system. All such exceptions derive from the
      <code>odb::boost::exception</code> class which in turn derives from
      the root of the ODB exception hierarchy, class <code>odb::exception</code>
-     (<a href="#3.12">Section 3.12, "ODB Exceptions"</a>). The
+     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>). The
      <code>odb::boost::exception</code> class is defined in the
      <code>&lt;odb/boost/exception.hxx></code> header file and has the
      same interface as <code>odb::exception</code>. The concrete exceptions
@@ -12617,7 +12823,7 @@ class person
      system. All such exceptions derive from the
      <code>odb::qt::exception</code> class which in turn derives from
      the root of the ODB exception hierarchy, class <code>odb::exception</code>
-     (<a href="#3.12">Section 3.12, "ODB Exceptions"</a>). The
+     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>). The
      <code>odb::qt::exception</code> class is defined in the
      <code>&lt;odb/qt/exception.hxx></code> header file and has the
      same interface as <code>odb::exception</code>. The concrete exceptions
