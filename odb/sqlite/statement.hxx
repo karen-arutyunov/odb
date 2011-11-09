@@ -11,7 +11,8 @@
 #include <sqlite3.h>
 
 #include <string>
-#include <cstddef>  // std::size_t
+#include <cstddef> // std::size_t
+#include <cstring> // std::strlen, std::memcpy
 #include <cassert>
 
 #include <odb/forward.hxx>
@@ -69,16 +70,22 @@ namespace odb
       }
 
     protected:
-      statement (connection& conn, const std::string& statement)
+      statement (connection& conn, const std::string& text)
         : conn_ (conn)
       {
-        init (statement.c_str (), statement.size () + 1);
+        init (text.c_str (), text.size ());
       }
 
-      statement (connection& conn, const char* statement, std::size_t n)
+      statement (connection& conn, const char* text)
         : conn_ (conn)
       {
-        init (statement, n);
+        init (text, std::strlen (text));
+      }
+
+      statement (connection& conn, const char* text, std::size_t text_size)
+        : conn_ (conn)
+      {
+        init (text, text_size);
       }
 
     protected:
@@ -146,7 +153,7 @@ namespace odb
 
     private:
       void
-      init (const char* statement, std::size_t n);
+      init (const char* text, std::size_t text_size);
 
       // Doubly-linked list of active/uncached statements.
       //
@@ -193,8 +200,9 @@ namespace odb
     class LIBODB_SQLITE_EXPORT generic_statement: public statement
     {
     public:
-      generic_statement (connection&, const std::string& statement);
-      generic_statement (connection&, const char* statement, std::size_t n);
+      generic_statement (connection&, const std::string& text);
+      generic_statement (connection&, const char* text);
+      generic_statement (connection&, const char* text, std::size_t text_size);
 
       unsigned long long
       execute ();
@@ -211,13 +219,20 @@ namespace odb
     {
     public:
       select_statement (connection& conn,
-                        const std::string& statement,
+                        const std::string& text,
                         binding& param,
                         binding& result);
 
       select_statement (connection& conn,
-                        const std::string& statement,
+                        const char* text,
+                        binding& param,
                         binding& result);
+
+      select_statement (connection& conn,
+                        const std::string& text,
+                        binding& result);
+
+      select_statement (connection& conn, const char* text, binding& result);
 
       // Common select interface expected by the generated code.
       //
@@ -284,8 +299,10 @@ namespace odb
     {
     public:
       insert_statement (connection& conn,
-                        const std::string& statement,
+                        const std::string& text,
                         binding& param);
+
+      insert_statement (connection& conn, const char* text, binding& param);
 
       // Return true if successful and false if the row is a duplicate.
       // All other errors are reported by throwing exceptions.
@@ -308,8 +325,10 @@ namespace odb
     {
     public:
       update_statement (connection& conn,
-                        const std::string& statement,
+                        const std::string& text,
                         binding& param);
+
+      update_statement (connection& conn, const char* text, binding& param);
 
       unsigned long long
       execute ();
@@ -326,8 +345,10 @@ namespace odb
     {
     public:
       delete_statement (connection& conn,
-                        const std::string& statement,
+                        const std::string& text,
                         binding& param);
+
+      delete_statement (connection& conn, const char* text, binding& param);
 
       unsigned long long
       execute ();

@@ -3,9 +3,6 @@
 // copyright : Copyright (c) 2005-2011 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#include <cstring> // std::memcpy
-#include <cassert>
-
 #include <odb/tracer.hxx>
 #include <odb/exceptions.hxx> // object_not_persistent
 
@@ -31,13 +28,13 @@ namespace odb
     }
 
     void statement::
-    init (const char* s, std::size_t n)
+    init (const char* text, std::size_t text_size)
     {
       int e;
       sqlite3_stmt* stmt (0);
       while ((e = sqlite3_prepare_v2 (conn_.handle (),
-                                      s,
-                                      static_cast<int> (n),
+                                      text,
+                                      static_cast<int> (text_size),
                                       &stmt,
                                       0)) == SQLITE_LOCKED)
       {
@@ -223,15 +220,24 @@ namespace odb
     //
 
     generic_statement::
-    generic_statement (connection& conn, const string& s)
-        : statement (conn, s),
+    generic_statement (connection& conn, const string& text)
+        : statement (conn, text),
           result_set_ (stmt_ ? sqlite3_column_count (stmt_) != 0: false)
     {
     }
 
     generic_statement::
-    generic_statement (connection& conn, const char* s, std::size_t n)
-        : statement (conn, s, n),
+    generic_statement (connection& conn, const char* text)
+        : statement (conn, text),
+          result_set_ (stmt_ ? sqlite3_column_count (stmt_) != 0: false)
+    {
+    }
+
+    generic_statement::
+    generic_statement (connection& conn,
+                       const char* text,
+                       std::size_t text_size)
+        : statement (conn, text, text_size),
           result_set_ (stmt_ ? sqlite3_column_count (stmt_) != 0: false)
     {
     }
@@ -285,18 +291,31 @@ namespace odb
 
     select_statement::
     select_statement (connection& conn,
-                      const string& s,
+                      const string& text,
                       binding& param,
                       binding& result)
-        : statement (conn, s), param_ (&param), result_ (result)
+        : statement (conn, text), param_ (&param), result_ (result)
     {
     }
 
     select_statement::
     select_statement (connection& conn,
-                      const string& s,
+                      const char* text,
+                      binding& param,
                       binding& result)
-        : statement (conn, s), param_ (0), result_ (result)
+        : statement (conn, text), param_ (&param), result_ (result)
+    {
+    }
+
+    select_statement::
+    select_statement (connection& conn, const string& text, binding& result)
+        : statement (conn, text), param_ (0), result_ (result)
+    {
+    }
+
+    select_statement::
+    select_statement (connection& conn, const char* text, binding& result)
+        : statement (conn, text), param_ (0), result_ (result)
     {
     }
 
@@ -380,8 +399,14 @@ namespace odb
     //
 
     insert_statement::
-    insert_statement (connection& conn, const string& s, binding& param)
-        : statement (conn, s), param_ (param)
+    insert_statement (connection& conn, const string& text, binding& param)
+        : statement (conn, text), param_ (param)
+    {
+    }
+
+    insert_statement::
+    insert_statement (connection& conn, const char* text, binding& param)
+        : statement (conn, text), param_ (param)
     {
     }
 
@@ -438,10 +463,14 @@ namespace odb
     //
 
     update_statement::
-    update_statement (connection& conn,
-                      const string& s,
-                      binding& param)
-        : statement (conn, s), param_ (param)
+    update_statement (connection& conn, const string& text, binding& param)
+        : statement (conn, text), param_ (param)
+    {
+    }
+
+    update_statement::
+    update_statement (connection& conn, const char* text, binding& param)
+        : statement (conn, text), param_ (param)
     {
     }
 
@@ -482,8 +511,14 @@ namespace odb
     //
 
     delete_statement::
-    delete_statement (connection& conn, const string& s, binding& param)
-        : statement (conn, s), param_ (param)
+    delete_statement (connection& conn, const string& text, binding& param)
+        : statement (conn, text), param_ (param)
+    {
+    }
+
+    delete_statement::
+    delete_statement (connection& conn, const char* text, binding& param)
+        : statement (conn, text), param_ (param)
     {
     }
 
