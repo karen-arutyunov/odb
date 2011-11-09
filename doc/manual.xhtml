@@ -2938,7 +2938,7 @@ t.commit ();
 
   <p>The first special property of <code>reload()</code>
      compared to the <code>load()</code> function is that it
-     does not interact with the session object cache
+     does not interact with the session's object cache
      (<a href="#10.1">Section 10.1, "Object Cache"</a>). That is, if
      the object being reloaded is already in the cache, then it will
      remain there after <code>reload()</code> returns. Similarly, if the
@@ -2946,7 +2946,7 @@ t.commit ();
      put it there either.</p>
 
   <p>The second special property of the <code>reload()</code> function
-     only manifests itself when operating on object with optimistic
+     only manifests itself when operating on an object with the optimistic
      concurrency model. In this case, if the states of the object
      in the application memory and in the database are the same, then
      no reloading will occur. For more information on optimistic
@@ -3062,8 +3062,8 @@ t.commit ();
   </pre>
 
   <p>If any of the <code>update()</code> functions are operating on a
-     persistent class with optimistic concurrency model, then they will throw
-     the <code>odb::object_changed</code> exception if the state of the
+     persistent class with the optimistic concurrency model, then they will
+     throw the <code>odb::object_changed</code> exception if the state of the
      object in the database has changed since it was last loaded into the
      application memory. Furthermore, for such classes, <code>update()</code>
      no longer throws the <code>object_not_persistent</code> exception if
@@ -3148,8 +3148,8 @@ db.erase&lt;person> (joe_id);
 t.commit ();
   </pre>
 
-  <p>If any of the <code>erase()</code> functions except the last
-     one are operating on a persistent class with optimistic concurrency
+  <p>If any of the <code>erase()</code> functions except the last one are
+     operating on a persistent class with the optimistic concurrency
      model, then they will throw the <code>odb::object_changed</code> exception
      if the state of the object in the database has changed since it was
      last loaded into the application memory. Furthermore, for such
@@ -3623,7 +3623,7 @@ namespace odb
   <p>The <code>object_changed</code> exception is thrown
      by the <code>update()</code> database function and certain
      <code>erase()</code> database functions when
-     operating on objects with optimistic concurrency model. See
+     operating on objects with the optimistic concurrency model. See
      <a href="#11">Chapter 11, "Optimistic Concurrency"</a> for details.</p>
 
   <p>The <code>result_not_cached</code> exception is thrown by
@@ -7628,8 +7628,8 @@ unsigned long id2 (save (db, p2)); // p2 is cached in s as non-const.
      application-specific functionality. The term <em>database
      transaction</em> refers to the set of database operations
      performed between the ODB <code>begin()</code> and <code>commit()</code>
-     calls. Up until now we treated application transactions and database
-     transactions as essentially the same thing.</p>
+     calls. Up until now we have treated application transactions and
+     database transactions as essentially the same thing.</p>
 
   <p>While this model is easy to understand and straightforward to use,
      it may not be suitable for applications that have long application
@@ -7642,7 +7642,7 @@ unsigned long id2 (save (db, p2)); // p2 is cached in s as non-const.
 
   <p>The solution to this problem is to break up the long-lived
      application transaction into several short-lived database
-     transaction. In our example that would mean loading the object
+     transactions. In our example that would mean loading the object
      in one database transaction, waiting for user input, and then
      updating the object in another database transaction. For example:</p>
 
@@ -7668,7 +7668,7 @@ p.age (age);
 }
   </pre>
 
-  <p>This approach works well if we have only one process/thread that can ever
+  <p>This approach works well if we only have one process/thread that can ever
      update the object. However, if we have multiple processes/threads
      modifying the same object, then this approach does not guarantee
      consistency anymore. Consider what happens in the above example if
@@ -7685,7 +7685,7 @@ p.age (age);
      concurrency, that allows applications to detect and potentially
      recover from such inconsistencies.</p>
 
-  <p>In essence, optimistic concurrency model detects mismatches
+  <p>In essence, the optimistic concurrency model detects mismatches
      between the current object state in the database and the state
      when it was loaded into the application memory. Such a mismatch
      would mean that the object was changed by another process or
@@ -7693,8 +7693,8 @@ p.age (age);
      detection. Currently, ODB uses object versioning while other
      methods, such as timestamps, may be supported in the future.</p>
 
-  <p>To declare a persistent class with optimistic concurrency model we use
-     the <code>optimistic</code> pragma (<a href="#12.1.5">Section 12.1.5,
+  <p>To declare a persistent class with the optimistic concurrency model we
+     use the <code>optimistic</code> pragma (<a href="#12.1.5">Section 12.1.5,
      "<code>optimistic</code>"</a>). We also use the <code>version</code>
      pragma (<a href="#12.4.12">Section 12.4.12, "<code>version</code>"</a>)
      to specify which data member will store the object version. For
@@ -7711,7 +7711,7 @@ class person
 };
   </pre>
 
-  <p>The version data members is managed by ODB. It is initialized to
+  <p>The version data member is managed by ODB. It is initialized to
      <code>1</code> when the object is made persistent and incremented
      by <code>1</code> with each update. The <code>0</code> version value
      is not used by ODB and the application can use it as a special value,
@@ -7736,14 +7736,14 @@ class person
 
   <p>When we call the <code>database::update()</code> function
      (<a href="#3.9">Section 3.9, "Updating Persistent Objects"</a>) and pass
-     an object that has outdated state, the <code>odb::object_changed</code>
+     an object that has an outdated state, the <code>odb::object_changed</code>
      exception is thrown. At this point the application has two
      recovery options: it can abort and potentially restart the
      application transaction or it can reload the new object
      state from the database, re-apply or merge the changes, and call
      <code>update()</code> again. Note that aborting an application
      transaction that performs updates in multiple database transactions
-     may requires reverting changes that has already been committed to
+     may require reverting changes that have already been committed to
      the database. As a result, this strategy works best if all the
      updates are performed in the last database transaction of the
      application transaction. This way the changes can be reverted
@@ -7829,7 +7829,7 @@ if (answer == "yes")
   <p>Consider again what happens if another process or thread updates
      the object by changing the person's age while we are waiting for
      the user input. In this case, the user makes the decision based on
-     certain age while we may delete (or not delete) an object that has
+     a certain age while we may delete (or not delete) an object that has
      a completely different age. Here is how we can  fix this problem
      using optimistic concurrency:</p>
 
@@ -7874,9 +7874,9 @@ for (bool done (false); !done; )
 }
   </pre>
 
-  <p>Note that the state mismatch detection is performed only if we delete
+  <p>Note that state mismatch detection is performed only if we delete
      an object by passing the object instance to the <code>erase()</code>
-     function. If we want to delete an object with optimistic concurrency
+     function. If we want to delete an object with the optimistic concurrency
      model regardless of its state, then we need to use the <code>erase()</code>
      function that deletes an object given its id, for example:</p>
 
@@ -7888,8 +7888,8 @@ for (bool done (false); !done; )
 }
   </pre>
 
-  <p>Finally note that for persistent classes with optimistic concurrency
-     model both the <code>update()</code> function and the
+  <p>Finally, note that for persistent classes with the optimistic concurrency
+     model both the <code>update()</code> function as well as the
      <code>erase()</code> function that accepts an object instance as its
      argument no longer throw the <code>object_not_persistent</code>
      exception if there is no such object in the database. Instead,
@@ -8112,7 +8112,7 @@ class person
 
     <tr>
       <td><code>optimistic</code></td>
-      <td>persistent class with optimistic concurrency model</td>
+      <td>persistent class with the optimistic concurrency model</td>
       <td><a href="#12.1.5">12.1.5</a></td>
     </tr>
 
@@ -8261,9 +8261,9 @@ class person
   <h3><a name="12.1.5">12.1.5 <code>optimistic</code></a></h3>
 
   <p>The <code>optimistic</code> specifier specifies that the persistent class
-     has optimistic concurrency model. A class with optimistic concurrency
-     model must also specify the data member that is used to store the
-     object version using the <code>version</code> pragma
+     has the optimistic concurrency model. A class with the optimistic
+     concurrency model must also specify the data member that is used to
+     store the object version using the <code>version</code> pragma
      (<a href="#12.4.12">Section 12.4.12, "<code>version</code>"</a>).
      For example:</p>
 
@@ -8278,8 +8278,8 @@ class person
 };
   </pre>
 
-  <p>If a base class has optimistic concurrency model then all its derived
-     classes will automatically have optimistic concurrency model. The
+  <p>If a base class has the optimistic concurrency model, then all its derived
+     classes will automatically have the optimistic concurrency model. The
      current implementation also requires that in any given inheritance
      hierarchy the object id and the version data members reside in the
      same class.</p>
@@ -9804,12 +9804,12 @@ class person
 
   <h3><a name="12.4.12">12.4.12 <code>version</code></a></h3>
 
-  <p>The <code>version</code> specifier specifies that the data member
-     stores the object version used to support optimistic concurrency.
-     If a class has a version data member then it must also be declared
-     as having optimistic concurrency model using the <code>optimistic</code>
-     pragma (<a href="#12.1.5">Section 12.1.5, "<code>optimistic</code>"</a>).
-     For example:</p>
+  <p>The <code>version</code> specifier specifies that the data member stores
+     the object version used to support optimistic concurrency.  If a class
+     has a version data member, then it must also be declared as having the
+     optimistic concurrency model using the <code>optimistic</code> pragma
+     (<a href="#12.1.5">Section 12.1.5, "<code>optimistic</code>"</a>). For
+     example:</p>
 
   <pre class="c++">
 #pragma db object optimistic
