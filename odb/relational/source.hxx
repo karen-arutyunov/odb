@@ -107,7 +107,7 @@ namespace relational
         {
           semantics::class_* c (object_pointer (utype (m)));
 
-          if (container_wrapper (utype (*im)))
+          if (container (*im))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name. We don't assign join
@@ -425,7 +425,7 @@ namespace relational
 
         if (semantics::data_member* im = inverse (m))
         {
-          if (container_wrapper (utype (*im)))
+          if (container (*im))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
@@ -937,7 +937,7 @@ namespace relational
             string inv_id;    // Other id column.
             string inv_fid;   // Other foreign id column (ref to us).
 
-            if (container_wrapper (utype (*im)))
+            if (container (*im))
             {
               // many(i)-to-many
               //
@@ -3820,12 +3820,11 @@ namespace relational
               // some sanity checks while at it.
               //
               semantics::class_* c (0);
-              semantics::type& t (utype (m));
 
-              if (semantics::type* cont = container_wrapper (t))
+              if (semantics::type* cont = container (m))
                 c = object_pointer (container_vt (*cont));
               else
-                c = object_pointer (t);
+                c = object_pointer (utype (m));
 
               view_object const* vo (0);
 
@@ -3909,9 +3908,7 @@ namespace relational
               //
               data_member* im (inverse (m));
 
-              semantics::type* cont (
-                container_wrapper (
-                  utype (im != 0 ? *im : m)));
+              semantics::type* cont (container (im != 0 ? *im : m));
 
               // Container table.
               //

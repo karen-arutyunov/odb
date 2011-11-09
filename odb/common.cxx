@@ -208,7 +208,7 @@ traverse (semantics::data_member& m)
 
     om_.member_scope_.pop_back ();
   }
-  else if (semantics::type* c = context::container_wrapper (t))
+  else if (semantics::type* c = context::container (m))
   {
     om_.traverse_container (m, *c);
   }
@@ -426,7 +426,7 @@ traverse (semantics::data_member& m)
 
     oc_.member_scope_.pop_back ();
   }
-  else if (container_wrapper (t))
+  else if (container (m))
   {
     // Container gets its own table, so nothing to do here.
     //

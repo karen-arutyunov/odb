@@ -130,7 +130,7 @@ namespace relational
         virtual bool
         pre (member_info& mi)
         {
-          if (container (mi.t))
+          if (container (mi))
             return false;
 
           image_type = member_image_type_.image_type (mi.m);

@@ -33,9 +33,10 @@ namespace relational
         var = name + (name[name.size () - 1] == '_' ? "" : "_");
       }
 
-      bool cq (type_override_ != 0 ? false: const_type (m.type ()));
+      bool cq (type_override_ != 0 ? false : const_type (m.type ()));
       semantics::type& t (type_override_ != 0 ? *type_override_ : utype (m));
 
+      semantics::type* cont;
       if (semantics::class_* c = composite_wrapper (t))
       {
         // If t is a wrapper, pass the wrapped type. Also pass the
@@ -53,12 +54,14 @@ namespace relational
           post (mi);
         }
       }
-      else if (semantics::type* c = container_wrapper (t))
+      // This cannot be a container if we have a type override.
+      //
+      else if (type_override_ == 0 && (cont = context::container (m)))
       {
         // The same unwrapping logic as for composite values.
         //
         member_info mi (m,
-                        *c,
+                        *cont,
                         (wrapper (t) ? &t : 0),
                         cq,
                         var,

@@ -88,6 +88,14 @@ namespace relational
         }
       };
 
+      bool
+      container (member_info& mi)
+      {
+        // This cannot be a container if we have a type override.
+        //
+        return type_override_ == 0 && context::container (mi.m);
+      }
+
       // The false return value indicates that no further callbacks
       // should be called for this member.
       //

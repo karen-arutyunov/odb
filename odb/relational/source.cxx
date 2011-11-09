@@ -259,10 +259,12 @@ namespace relational
         {
           using semantics::type;
 
-          type* t (&context::utype (*m));
+          type* t;
 
-          if (type* c = context::container_wrapper (*t))
+          if (type* c = context::container (*m))
             t = &context::container_vt (*c);
+          else
+            t = &context::utype (*m);
 
           if (context::object_pointer (*t))
             return e;

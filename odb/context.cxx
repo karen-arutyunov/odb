@@ -1192,19 +1192,17 @@ is_a (data_member_path const& mp,
             test_inverse_container |
             test_readonly_container)) != 0)
   {
-    semantics::type& c (utype (m));
-
     if (f & test_container)
-      r = r || container_wrapper (c);
+      r = r || container (m);
 
     if (f & test_straight_container)
-      r = r || (container_wrapper (c) && !inverse (m, kp));
+      r = r || (container(m) && !inverse (m, kp));
 
     if (f & test_inverse_container)
-      r = r || (container_wrapper (c) && inverse (m, kp));
+      r = r || (container (m) && inverse (m, kp));
 
     if (f & test_readonly_container)
-      r = r || (container_wrapper (c) && readonly (mp, ms));
+      r = r || (container (m) && readonly (mp, ms));
   }
 
   return r;

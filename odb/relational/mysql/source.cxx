@@ -183,7 +183,7 @@ namespace relational
         virtual bool
         pre (member_info& mi)
         {
-          if (container (mi.t))
+          if (container (mi))
             return false;
 
           ostringstream ostr;
@@ -428,7 +428,7 @@ namespace relational
         virtual bool
         pre (member_info& mi)
         {
-          if (container (mi.t))
+          if (container (mi))
             return false;
 
           ostringstream ostr;
@@ -580,7 +580,7 @@ namespace relational
           // Ignore containers (they get their own table) and inverse
           // object pointers (they are not present in this binding).
           //
-          if (container (mi.t) || inverse (mi.m, key_prefix_))
+          if (container (mi) || inverse (mi.m, key_prefix_))
             return false;
 
           if (!member_override_.empty ())
@@ -872,7 +872,7 @@ namespace relational
         virtual bool
         pre (member_info& mi)
         {
-          if (container (mi.t))
+          if (container (mi))
             return false;
 
           if (!member_override_.empty ())

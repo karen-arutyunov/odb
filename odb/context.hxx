@@ -333,27 +333,28 @@ public:
       return 0;
   }
 
-  static bool
-  container (semantics::type& t)
-  {
-    return t.count ("container-kind");
-  }
-
-  // As above but also "sees through" wrappers. Returns the actual
-  // container type or NULL if not a container.
+  // Check if a data member is a container. "Sees through" wrappers and
+  // returns the actual container type or NULL if not a container.
+  //
+  // We require data member as input instead of the type because the
+  // same type (e.g., vector<char>) can be used for both container
+  // and simple value members.
   //
   static semantics::type*
-  container_wrapper (semantics::type& t)
+  container (semantics::data_member& m)
   {
-    if (container (t))
-      return &t;
-    else if (semantics::type* wt = wrapper (t))
-    {
-      wt = &utype (*wt);
-      return container (*wt) ? wt : 0;
-    }
-    else
+    // The same type can be used as both a container and a simple value.
+    // If the member has defines the database type, then it is the latter.
+    //
+    if (m.count ("type") || m.count ("id-type"))
       return 0;
+
+    semantics::type* t (&utype (m));
+
+    if (semantics::type* wt = wrapper (*t))
+      t = &utype (*wt);
+
+    return t->count ("container-kind") ? t : 0;
   }
 
   static semantics::class_*
@@ -620,7 +621,7 @@ public:
     if (m.count ("unordered"))
       return true;
 
-    if (semantics::type* c = container_wrapper (utype (m)))
+    if (semantics::type* c = container (m))
       return c->count ("unordered");
 
     return false;
