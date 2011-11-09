@@ -1509,7 +1509,7 @@ INSERT INTO `person` (`id`,`first`,`last`,`age`) VALUES (?,?,?,?)
 
   <p>Note that we see question marks instead of the actual values
      because ODB uses prepared statements and sends the data to the
-     database in binary form. For more information on tracing refer
+     database in binary form. For more information on tracing, refer
      to <a href="#3.12">Section 3.12, "Tracing SQL Statement Execution"</a>.
      In the next section we will see how to access persistent objects
      from our application.</p>
@@ -3273,7 +3273,7 @@ t.commit ();
 
   <h2><a name="3.12">3.12 Tracing SQL Statement Execution</a></h2>
 
-  <p>Oftentimes it is useful to understand what SQL statement are
+  <p>Oftentimes it is useful to understand what SQL statements are
      executed as a result of high-level database operations. For
      example, we can use this information to figure out why certain
      transactions don't produce desired results or why they take
@@ -3323,7 +3323,7 @@ t.commit ();
   <p>The first two <code>tracer()</code> functions allow us to set
      the tracer object with the second one allowing us to clear the
      current tracer by passing a <code>NULL</code> pointer. The
-     last <code>tracer()</code> function allow us to get the
+     last <code>tracer()</code> function allows us to get the
      current tracer object. It returns a <code>NULL</code> pointer
      if there is no tracer in effect. Note that the tracing API
      does not manage the lifetime of the tracer object. The tracer
@@ -3374,7 +3374,7 @@ namespace odb
      functions do nothing while the first <code>execute()</code> function
      calls the second one passing the statement text as the second
      argument. As a result, if all you are interested in are the
-     SQL statements being executed, that you only need to override the
+     SQL statements being executed, then you only need to override the
      second <code>execute()</code> function.</p>
 
   <p>In addition to the common <code>odb::tracer</code> interface,
@@ -3387,7 +3387,7 @@ namespace odb
 
   <p>As an example, consider a more elaborate, PostgreSQL-specific
      tracer implementation. Here we rely on the fact that the PostgreSQL
-     ODB runtime uses names to identify prepared statement and this
+     ODB runtime uses names to identify prepared statements and this
      information can be obtained from the <code>odb::pgsql::statement</code>
      object:</p>
 
