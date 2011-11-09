@@ -13,8 +13,11 @@ Version 1.7.0
 
  * Support for persistent classes without object ids. Such objects have to
    be explicitly declared as not having object id and they have limited
-   functionality. For more information, refer to Section 12.1.5 "id", in
+   functionality. For more information, refer to Section 12.1.5 "id" in
    the ODB manual.
+
+ * Support for SQL statement execution tracing. For more information, refer
+   to Section 3.2 "Executing Native SQL Statements" in the ODB manual.
 
  * Support for mapping char[N], unsigned char[N], and std::vector<unsigned
    char> to the BLOB (or equivalent) types. For more information, refer to
@@ -23,7 +26,7 @@ Version 1.7.0
 
  * Query result iterator now provides the id() function with allows one to
    get object id without loading the object. For more information, refer to
-   Section 4.4 "Query Result", in the ODB manual.
+   Section 4.4 "Query Result" in the ODB manual.
 
 Version 1.6.0
 
