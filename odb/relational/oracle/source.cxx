@@ -566,21 +566,21 @@ namespace relational
         traverse_timestamp (member_info& mi)
         {
           os << traits << "::set_image (" << endl
-             << "i." << mi.var << "value, is_null," << member << ");";
+             << "i." << mi.var << "value, is_null, " << member << ");";
         }
 
         virtual void
         traverse_interval_ym (member_info& mi)
         {
           os << traits << "::set_image (" << endl
-             << "i." << mi.var << "value, is_null," << member << ");";
+             << "i." << mi.var << "value, is_null, " << member << ");";
         }
 
         virtual void
         traverse_interval_ds (member_info& mi)
         {
           os << traits << "::set_image (" << endl
-             << "i." << mi.var << "value, is_null," << member << ");";
+             << "i." << mi.var << "value, is_null, " << member << ");";
         }
 
         virtual void
