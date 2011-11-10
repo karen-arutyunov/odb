@@ -318,13 +318,8 @@ namespace relational
              << b << ".size = 0;"
              << "}"
              << "else" << endl
-             << "{"
-            //@@ Modify to less than the total size to see what happens
-            //
-             << b << ".capacity = 4096;"
              << b << ".size = reinterpret_cast<ub2*> (&" << arg << "." <<
             mi.var << "position_context);"
-             << "}"
              << endl;
         }
 
