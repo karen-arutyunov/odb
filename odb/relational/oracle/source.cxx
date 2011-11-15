@@ -265,8 +265,6 @@ namespace relational
         {
           os << b << ".type = oracle::bind::timestamp;"
              << b << ".buffer = &" << arg << "." << mi.var << "value;"
-             << b << ".capacity = sizeof (OCIDateTime*);"
-             << b << ".size = 0;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;";
         }
 
@@ -275,8 +273,6 @@ namespace relational
         {
           os << b << ".type = oracle::bind::interval_ym;"
              << b << ".buffer = &" << arg << "." << mi.var << "value;"
-             << b << ".capacity = sizeof (OCIInterval*);"
-             << b << ".size = 0;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;";
         }
 
@@ -285,8 +281,6 @@ namespace relational
         {
           os << b << ".type = oracle::bind::interval_ds;"
              << b << ".buffer = &" << arg << "." << mi.var << "value;"
-             << b << ".capacity = sizeof (OCIInterval*);"
-             << b << ".size = 0;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;";
         }
 
@@ -307,19 +301,13 @@ namespace relational
         {
           os << b << ".type = " <<
             lob_buffer_types[mi.st->type - sql_type::BLOB] << ";"
+             << arg << "." << mi.var << "lob.position_context = &" << arg <<
+            "." << mi.var << "position_context;"
+             << b << ".buffer = &" << arg << "." << mi.var << "lob;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;"
              << b << ".callback = &" << arg << "." << mi.var <<
              "callback;"
              << b << ".context = &" << arg << "." << mi.var << "context;"
-             << "if (sk == statement_select)" << endl
-             << "{"
-             << b << ".buffer = &" << arg << "." << mi.var << "lob;"
-             << b << ".capacity = sizeof (OCILobLocator*);"
-             << b << ".size = 0;"
-             << "}"
-             << "else" << endl
-             << b << ".size = reinterpret_cast<ub2*> (&" << arg << "." <<
-            mi.var << "position_context);"
              << endl;
         }
 
