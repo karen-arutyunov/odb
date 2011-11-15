@@ -808,6 +808,14 @@ namespace relational
         os << statement << ".cache ();";
       }
 
+      // Additional statements that need to be executed follow the call to init
+      // that initializes the query result image can be made here.
+      //
+      virtual void
+      init_value_extra ()
+      {
+      }
+
       virtual void
       traverse_composite (semantics::data_member* m, semantics::class_& c)
       {
@@ -1641,6 +1649,9 @@ namespace relational
             break;
           }
         }
+
+
+        init_value_extra ();
 
         // If we are loading an eager pointer, then the call to init
         // above executes other statements which potentially could
