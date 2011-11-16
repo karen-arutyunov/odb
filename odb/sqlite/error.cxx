@@ -1,4 +1,4 @@
-// file      : odb/sqlite/errors.cxx
+// file      : odb/sqlite/error.cxx
 // author    : Boris Kolpackov <boris@codesynthesis.com>
 // copyright : Copyright (c) 2005-2011 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
