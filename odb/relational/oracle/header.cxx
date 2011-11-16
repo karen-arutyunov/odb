@@ -216,7 +216,6 @@ namespace relational
              << "sb2 " << mi.var << "indicator;"
              << "oracle::lob " << mi.var << "lob;"
              << "mutable oracle::lob_context " << mi.var << "context;"
-             << "ub4 " << mi.var << "position_context;"
              << endl;
         }
 

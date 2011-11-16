@@ -301,12 +301,9 @@ namespace relational
         {
           os << b << ".type = " <<
             lob_buffer_types[mi.st->type - sql_type::BLOB] << ";"
-             << arg << "." << mi.var << "lob.position_context = &" << arg <<
-            "." << mi.var << "position_context;"
              << b << ".buffer = &" << arg << "." << mi.var << "lob;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;"
-             << b << ".callback = &" << arg << "." << mi.var <<
-             "callback;"
+             << b << ".callback = &" << arg << "." << mi.var << "callback;"
              << b << ".context = &" << arg << "." << mi.var << "context;"
              << endl;
         }
@@ -587,7 +584,7 @@ namespace relational
         virtual void
         traverse_lob (member_info& mi)
         {
-          os << "i." << mi.var << "position_context = 0;"
+          os << "i." << mi.var << "lob.position = 0;"
              << traits << "::set_image (" << endl
              << "i." << mi.var << "callback.param," << endl
              << "i." << mi.var << "context.param," << endl
