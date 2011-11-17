@@ -30,7 +30,6 @@ namespace odb
 {
   namespace sqlite
   {
-    class statement;
     class statement_cache;
 
     class connection;
