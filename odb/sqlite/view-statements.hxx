@@ -13,8 +13,6 @@
 #include <odb/forward.hxx>
 #include <odb/traits.hxx>
 
-#include <odb/details/shared-ptr.hxx>
-
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/binding.hxx>
 #include <odb/sqlite/statement.hxx>

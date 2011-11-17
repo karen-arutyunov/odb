@@ -15,7 +15,6 @@
 #include <iosfwd> // std::ostream
 
 #include <odb/database.hxx>
-#include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx>
@@ -23,6 +22,7 @@
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/connection-factory.hxx>
 #include <odb/sqlite/transaction-impl.hxx>
+
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
