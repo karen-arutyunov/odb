@@ -3389,19 +3389,20 @@ namespace relational
             os << "db.execute (";
           }
           else
-            os << endl;
+            os << strlit (line_ + '\n') << endl;
 
-          os << strlit (l);
+          line_ = l;
         }
 
         virtual void
         post ()
         {
           if (!first_) // Ignore empty statements.
-            os << ");" << endl;
+            os << strlit (line_) << ");" << endl;
         }
 
       private:
+        std::string line_;
         bool first_;
         bool empty_;
         bool new_pass_;

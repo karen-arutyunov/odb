@@ -277,7 +277,7 @@ namespace relational
 
             os_ << "CREATE TRIGGER " << quote_id (trg_name) << endl
                 << "  BEFORE INSERT ON " << quote_id (tname) << endl
-                << "  FOR EACH ROW " << endl
+                << "  FOR EACH ROW" << endl
                 << "BEGIN" << endl
                 << "  SELECT " << quote_id (seq_name) << ".nextval " <<
               "INTO :new." << quote_id (cname) << " FROM DUAL;" << endl
