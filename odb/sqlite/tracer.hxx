@@ -10,6 +10,7 @@
 
 #include <odb/tracer.hxx>
 
+#include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx>
 #include <odb/sqlite/details/export.hxx>
 
@@ -17,7 +18,7 @@ namespace odb
 {
   namespace sqlite
   {
-    class LIBODB_EXPORT tracer: private odb::tracer
+    class LIBODB_SQLITE_EXPORT tracer: private odb::tracer
     {
     public:
       virtual
