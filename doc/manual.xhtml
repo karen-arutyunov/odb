@@ -10477,12 +10477,14 @@ aCC +W2161 ...
      it is mapped to <code>TEXT</code>.</p>
 
   <p>The MySQL ODB runtime library also provides support for mapping the
-     <code>std::vector&lt;char></code>,
+     <code>std::string</code> type to the MySQL <code>CHAR</code>,
+     <code>NCHAR</code>, and <code>NVARCHAR</code> types, as well as for
+     mapping the <code>std::vector&lt;char></code>,
      <code>std::vector&lt;unsigned&nbsp;char></code>,
      <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types
-     to the MySQL BLOB types. However, this mapping is not enabled by
+     to the MySQL BLOB types. However, these mappings are not enabled by
      default (in particular, by default, <code>std::vector</code> will
-     be treated as a container). To enable the BLOB mapping for these
+     be treated as a container). To enable the alternative mapping for these
      types we need to specify the database type explicitly using the
      <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section
      12.4.3, "<code>type</code>"</a>), for example:</p>
@@ -10492,6 +10494,9 @@ aCC +W2161 ...
 class object
 {
   ...
+
+  #pragma db type("CHAR(2)")
+  std::string state_;
 
   #pragma db type("BLOB")
   std::vector&lt;char> buf_;
@@ -11849,14 +11854,16 @@ CREATE TABLE Employee (
     </tr>
   </table>
 
-  <p>The PostgreSQL ODB runtime library also provides support for mapping the
+  <p>The PostgreSQL ODB runtime library also provides support for mapping
+     the <code>std::string</code> type to the PostgreSQL <code>CHAR</code>
+     and <code>VARCHAR</code> types, as well as for mapping the
      <code>std::vector&lt;char></code>,
      <code>std::vector&lt;unsigned&nbsp;char></code>,
      <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types to
-     the PostgreSQL <code>BYTEA</code> type. However, this mapping is not
+     the PostgreSQL <code>BYTEA</code> type. However, these mappings are not
      enabled by default (in particular, by default, <code>std::vector</code>
-     will be treated as a container). To enable the <code>BYTEA</code>
-     mapping for these types we need to specify the database type explicitly
+     will be treated as a container). To enable the alternative mappings for
+     these types we need to specify the database type explicitly
      using the <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section
      12.4.3, "<code>type</code>"</a>), for example:</p>
 
@@ -11865,6 +11872,9 @@ CREATE TABLE Employee (
 class object
 {
   ...
+
+  #pragma db type("CHAR(2)")
+  std::string state_;
 
   #pragma db type("BYTEA")
   std::vector&lt;char> buf_;
@@ -12487,7 +12497,7 @@ SHOW integer_datetimes
      the Oracle <code>BLOB</code> and <code>RAW</code> types. However, these
      mappings are not enabled by default (in particular, by default,
      <code>std::vector</code> will be treated as a container). To enable the
-     these alternative mappings for these types we need to specify the
+     alternative mappings for these types we need to specify the
      database type explicitly using the <code>db&nbsp;type</code> pragma
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
      example:</p>
@@ -13740,6 +13750,25 @@ class Person
      to the <code>VARCHAR(255)</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT</code>.</p>
 
+  <p>The <code>basic</code> sub-profile also provides support
+     for mapping <code>QString</code> to the <code>CHAR</code>,
+     <code>NCHAR</code>, and <code>NVARCHAR</code> MySQL types.
+     However, these altenative mappings have to be explicitly
+     requested using the <code>db&nbsp;type</code> pragma
+     (<a href="#12.4.3">Section 12.4.3, "type"</a>), as show in
+     the following example:</p>
+
+  <pre class="c++">
+#pragma db object
+class Person
+{
+  ...
+
+  #pragma db type("CHAR(2)") not_null
+  QString licenseState_;
+};
+  </pre>
+
 
   <h3><a name="19.1.2">19.1.2 SQLite Database Type Mapping</a></h3>
 
@@ -13800,6 +13829,25 @@ class Person
   <p>Instances of the <code>QString</code> and <code>QByteArray</code> types
      are stored as a NULL value if their <code>isNull()</code> member
      function returns <code>true</code>.</p>
+
+  <p>The <code>basic</code> sub-profile also provides support
+     for mapping <code>QString</code> to the <code>CHAR</code>,
+     and <code>VARCHAR</code> PostgreSQL types.
+     However, these altenative mappings have to be explicitly
+     requested using the <code>db&nbsp;type</code> pragma
+     (<a href="#12.4.3">Section 12.4.3, "type"</a>), as show in
+     the following example:</p>
+
+  <pre class="c++">
+#pragma db object
+class Person
+{
+  ...
+
+  #pragma db type("CHAR(2)") not_null
+  QString licenseState_;
+};
+  </pre>
 
   <h3><a name="19.1.4">19.1.4 Oracle Database Type Mapping</a></h3>
 
