@@ -227,6 +227,9 @@ namespace relational
                   //
                   r.type = sql_type::NUMBER;
                   s = parse_range;
+
+                  // If NUMBER has not precision/scale, then it is a floating-
+                  // point number. We indicate this by having no range.
                 }
                 else if ((id == "DEC" || id == "DECIMAL" || id == "NUMERIC" ||
                           id == "INT" || id == "INTEGER" || id == "SMALLINT")

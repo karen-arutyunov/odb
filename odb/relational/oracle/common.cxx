@@ -168,6 +168,8 @@ namespace relational
             }
           }
           else
+            // If there is not range, then this is a floating-point number.
+            //
             traverse_double (mi);
 
           break;
