@@ -304,7 +304,6 @@ namespace relational
              << b << ".buffer = &" << arg << "." << mi.var << "lob;"
              << b << ".indicator = &" << arg << "." << mi.var << "indicator;"
              << b << ".callback = &" << arg << "." << mi.var << "callback;"
-             << b << ".context = &" << arg << "." << mi.var << "context;"
              << endl;
         }
 
@@ -586,8 +585,8 @@ namespace relational
         {
           os << "i." << mi.var << "lob.position = 0;"
              << traits << "::set_image (" << endl
-             << "i." << mi.var << "callback.param," << endl
-             << "i." << mi.var << "context.param," << endl
+             << "i." << mi.var << "callback.callback.param," << endl
+             << "i." << mi.var << "callback.context.param," << endl
              << "is_null," << endl
              << member << ");";
         }
@@ -867,8 +866,8 @@ namespace relational
         {
           os << traits << "::set_value (" << endl
              << member << "," << endl
-             << "i." << mi.var << "callback.result," << endl
-             << "i." << mi.var << "context.result," << endl
+             << "i." << mi.var << "callback.callback.result," << endl
+             << "i." << mi.var << "callback.context.result," << endl
              << "i." << mi.var << "indicator == -1);"
              << endl;
         }

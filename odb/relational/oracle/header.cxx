@@ -213,7 +213,6 @@ namespace relational
         traverse_lob (member_info& mi)
         {
           os << "mutable " << image_type << " " << mi.var << "callback;"
-             << "mutable oracle::lob_context " << mi.var << "context;"
              << "sb2 " << mi.var << "indicator;"
              << "oracle::lob " << mi.var << "lob;"
              << endl;
