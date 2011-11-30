@@ -587,9 +587,10 @@ for consistency.
               <table class="toc">
                 <tr><th>15.5.1</th><td><a href="#15.5.1">Query Result Caching</a></td></tr>
                 <tr><th>15.5.2</th><td><a href="#15.5.2">Foreign Key Constraints</a></td></tr>
-		<tr><th>15.5.3</th><td><a href="#15.5.3">Date-Time Format</a></td></tr>
-		<tr><th>15.5.4</th><td><a href="#15.5.4">Timezones</a></td></tr>
-		<tr><th>15.5.5</th><td><a href="#15.5.5"><code>NUMERIC</code> Type Support</a></td></tr>
+		<tr><th>15.5.3</th><td><a href="#15.5.3">Unique Constraint Violations</a></td></tr>
+		<tr><th>15.5.4</th><td><a href="#15.5.4">Date-Time Format</a></td></tr>
+		<tr><th>15.5.5</th><td><a href="#15.5.5">Timezones</a></td></tr>
+		<tr><th>15.5.6</th><td><a href="#15.5.6"><code>NUMERIC</code> Type Support</a></td></tr>
               </table>
             </td>
           </tr>
@@ -607,9 +608,14 @@ for consistency.
           <tr>
             <th>16.5</th><td><a href="#16.5">Oracle Limitations</a>
               <table class="toc">
-                <tr><th>16.5.1</th><td><a href="#16.5.1">Query Result Caching</a></td></tr>
-		<tr><th>16.5.2</th><td><a href="#16.5.2">Timezones</a></td></tr>
-		<tr><th>16.5.3</th><td><a href="#16.5.3"><code>NUMERIC</code> Type Support</a></td></tr>
+                <tr><th>16.5.1</th><td><a href="#16.5.1">16.5.1 Identifier Truncation</a></td></tr>
+		<tr><th>16.5.2</th><td><a href="#16.5.2">16.5.2 Query Result Caching</a></td></tr>
+		<tr><th>16.5.3</th><td><a href="#16.5.3">16.5.3 Foreign Key Constraints</a></td></tr>
+		<tr><th>16.5.4</th><td><a href="#16.5.4">16.5.4 Unique Constraint Violations</a></td></tr>
+		<tr><th>16.5.5</th><td><a href="#16.5.5">16.5.5 Large <code>FLOAT</code> and
+		      <code>NUMBER</code> Types</a></td></tr>
+		<tr><th>16.5.6</th><td><a href="#16.5.6">16.5.6 Timezones</a></td></tr>
+		<tr><th>16.5.7</th><td><a href="#16.5.7">16.5.7 <code>LONG</code> Types</a></td></tr>
               </table>
             </td>
           </tr>
@@ -10339,6 +10345,7 @@ aCC +W2161 ...
     <tr><th>13</th><td><a href="#13">MySQL Database</a></td></tr>
     <tr><th>14</th><td><a href="#14">SQLite Database</a></td></tr>
     <tr><th>15</th><td><a href="#15">PostgreSQL Database</a></td></tr>
+    <tr><th>16</th><td><a href="#16">Oracle Database</a></td></tr>
   </table>
 
 
@@ -11693,7 +11700,8 @@ odb::database&amp; db = ...
   <pre class="sql">
 CREATE TABLE Employee (
   ...
-  employer BIGINT REFERENCES Employer (name) DEFERRABLE INITIALLY DEFERRED);
+  employer INTEGER REFERENCES Employer(id)
+           DEFERRABLE INITIALLY DEFERRED);
   </pre>
 
 
@@ -12301,10 +12309,19 @@ namespace odb
   <pre class="sql">
 CREATE TABLE Employee (
   ...
-  employer BIGINT REFERENCES Employer (name) INITIALLY DEFERRED);
+  employer BIGINT REFERENCES Employer(id) INITIALLY DEFERRED);
   </pre>
 
-  <h3><a name="15.5.3">15.5.3 Date-Time Format</a></h3>
+  <h3><a name="15.5.3">15.5.3 Unique Constraint Violations</a></h3>
+
+  <p>Due to the granularity of the PostgreSQL error codes, it is impossible
+     to distinguish between the duplicate primary key and other unique
+     constraint violations. As a result, when making an object persistent,
+     The PostgreSQL ODB runtime will translate all unique constraint violation
+     errors to the <code>object_not_persistent</code> exception
+     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>).</p>
+
+  <h3><a name="15.5.4">15.5.4 Date-Time Format</a></h3>
 
   <p>ODB expects the PostgreSQL server to use integers as a binary
      format for the date-time types, which is the default for most
@@ -12319,12 +12336,12 @@ CREATE TABLE Employee (
 SHOW integer_datetimes
   </pre>
 
-  <h3><a name="15.5.4">15.5.4 Timezones</a></h3>
+  <h3><a name="15.5.5">15.5.5 Timezones</a></h3>
 
   <p>ODB does not currently support the PostgreSQL date-time types
      with timezone information.</p>
 
-  <h3><a name="15.5.5">15.5.5 <code>NUMERIC</code> Type Support</a></h3>
+  <h3><a name="15.5.6">15.5.6 <code>NUMERIC</code> Type Support</a></h3>
 
   <p>Support for the PostgreSQL <code>NUMERIC</code> type is limited
      to providing a binary buffer containing the binary representation
@@ -12340,10 +12357,10 @@ SHOW integer_datetimes
   <h1><a name="16">16 Oracle Database</a></h1>
 
   <p>To generate support code for the Oracle database you will need
-     to pass the "<code>&#8209;&#8209;database&nbsp;oracle</code>"
-     (or "<code>&#8209;d&nbsp;oracle</code>") option to the ODB compiler.
+     to pass the "<code>--database&nbsp;oracle</code>"
+     (or "<code>-d&nbsp;oracle</code>") option to the ODB compiler.
      Your application will also need to link to the Oracle ODB runtime
-     library (<code>libodb&#8209;oracle</code>). All Oracle-specific ODB
+     library (<code>libodb-oracle</code>). All Oracle-specific ODB
      classes are defined in the <code>odb::oracle</code> namespace.</p>
 
   <h2><a name="16.1">16.1 Oracle Type Mapping</a></h2>
@@ -12448,22 +12465,30 @@ SHOW integer_datetimes
 
     <tr>
       <td><code>std::string</code></td>
-      <td><code>VARCHAR(4000)</code></td>
-      <td><code>NOT NULL</code></td>
+      <td><code>VARCHAR2(4000)</code></td>
+      <td><code>NULL</code></td>
     </tr>
   </table>
 
+  <p>In Oracle empty <code>VARCHAR2</code> and <code>NVARCHAR2</code>
+     strings are represented as <code>NULL</code> values. As a result,
+     in the generated schema, columns of these types are always
+     declared as <code>NULL</code>, even if explicitly declared as
+     <code>NOT NULL</code> with the <code>db&nbsp;not_null</code> pragma
+     (<a href="#12.4.4">Section 12.4.4, "<code>null/not_null</code>"</a>).</p>
+
   <p>The Oracle ODB runtime library also provides support for mapping the
-     <code>std::string</code> type to the Oracle <code>CLOB</code> and
-     <code>NCLOB</code> types, and for mapping the
+     <code>std::string</code> type to the Oracle <code>CHAR</code>,
+     <code>NCHAR</code>, <code>NVARCHAR2</code>, <code>CLOB</code> and
+     <code>NCLOB</code> types, as well as for mapping the
      <code>std::vector&lt;char></code>,
      <code>std::vector&lt;unsigned&nbsp;char></code>,
      <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types to
      the Oracle <code>BLOB</code> and <code>RAW</code> types. However, these
      mappings are not enabled by default (in particular, by default,
      <code>std::vector</code> will be treated as a container). To enable the
-     non-default mappings for these types we need to specify the database type
-     explicitly using the <code>db&nbsp;type</code> pragma
+     these alternative mappings for these types we need to specify the
+     database type explicitly using the <code>db&nbsp;type</code> pragma
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
      example:</p>
 
@@ -12476,10 +12501,10 @@ class object
   #pragma db type ("CLOB")
   std::string str_;
 
-  #pragma db type("RAW(256)")
+  #pragma db type("BLOB")
   std::vector&lt;char> buf_;
 
-  #pragma db type("BLOB")
+  #pragma db type("RAW(16)")
   unsigned char[16] uuid_;
 };
   </pre>
@@ -12585,22 +12610,22 @@ namespace odb
   <p>You will need to include the <code>&lt;odb/oracle/database.hxx></code>
      header file to make this class available in your application.</p>
 
-  <p>The <code>database</code> class wraps an OCI environment handle, as well
-     as a database connection string and user credentials that can be used to
-     establish a database connection.</p>
+  <p>The Oracle <code>database</code> class contains the OCI environment
+     handle as well as the database connection string and user credentials
+     that are used to establish connections to the database.</p>
 
   <p>The overloaded <code>database</code> constructors allow us to specify the
      Oracle database parameters that should be used when connecting to the
-     database. The <code>database</code> argument in the first constructor is a
+     database. The <code>db</code> argument in the first constructor is a
      connection identifier that specifies the database to connect to. For more
-     information on the format of the connection identifier, please refer to
-     the Oracle Net Services reference.</p>
+     information on the format of the connection identifier, refer to the
+     Oracle documentation.</p>
 
-  <p>The second constructor allows the components of a connection identifier to
-     be specified individually using the <code>service</code>,
-     <code>host</code>, and <code>port</code> arguments. Specifying an empty
-     host string is equivalent to localhost. Specifying a zero port number
-     indicates that the default port should be used.</p>
+  <p>The second constructor allows us to specify the individual components
+     of a connection identifier as the <code>service</code>, <code>host</code>,
+     and <code>port</code> arguments. If the <code>host</code> argument is
+     empty then localhost is used by default. Similarly, if the
+     <code>port</code> argument is zero, then the default port is used.</p>
 
   <p>The last constructor extracts the database parameters
      from the command line. The following options are recognized:</p>
@@ -12608,7 +12633,7 @@ namespace odb
   <pre class="terminal">
   --user &lt;login>
   --password &lt;password>
-  --database &lt;name>
+  --database &lt;connect-id>
   --service &lt;name>
   --host &lt;host>
   --port &lt;integer>
@@ -12618,9 +12643,9 @@ namespace odb
   <p>The <code>--options-file</code> option allows us to specify some
      or all of the database options in a file with each option appearing
      on a separate line followed by a space and an option value. Note that it
-     is invalid to specify the <code>&#8209;&#8209;database</code> option
-     together with any of <code>&#8209;&#8209;service</code>,
-     <code>&#8209;&#8209;host</code>, or <code>&#8209;&#8209;port</code>
+     is invalid to specify the <code>--database</code> option
+     together with any of <code>--service</code>,
+     <code>--host</code>, or <code>--port</code>
      options.</p>
 
   <p>If the <code>erase</code> argument to this constructor is true,
@@ -12638,18 +12663,35 @@ namespace odb
   <p>The static <code>print_usage()</code> function prints the list of options
      with short descriptions that are recognized by this constructor.</p>
 
-  <p>All the constructors take <code>charset</code> and <code>ncharset</code>
-     arguments. These specify the client database character set and client
-     national character set, respectively.</p>
+  <p>Additionally, all the constructs have the <code>charset</code>,
+     <code>ncharset</code>, and <code>environment</code> arguments.
+     The <code>charset</code> argument specifies the client-side database
+     character encoding. Character data corresponding to the <code>CHAR</code>,
+     <code>VARCHAR2</code>, and <code>CLOB</code> types will be delivered
+     to and received from the application in this encoding. Similarly,
+     the <code>ncharset</code> argument specifies the client-side national
+     character encoding. Character data corresponding to the <code>NCHAR</code>,
+     <code>NVARCHAR2</code>, and <code>NCLOB</code> types will be delivered
+     to and received from the application in this encoding. For the complete
+     list of available character encoding values, refer to the Oracle
+     documentation. Commonly used encoding values are <code>873</code>
+     (UTF-8), 31 (ISO-8859-1), and <code>1000</code> (UTF-16). If the
+     database character encoding is not specified, then the <code>NLS_LANG</code>
+     environment/registry variable is used. Similarly, if the national
+     character encoding is not specified, then the <code>NLS_NCHAR</code>
+     environment/registry variable is used. For more information on character
+     encodings, refer to the <code>OCIEnvNlsCreate()</code> function in
+     the Oracle Call Interface (OCI) documentation.</p>
 
-  <p>Additionally, each constructor takes an <code>environment</code> argument
-     which is an OCI environment handle. If the handle is
-     non-<code>NULL</code>, it is used for all OCI function calls made against
-     the <code>database</code> instance that require an environment handle. The
-     <code>database</code> instance does not take ownership of this handle,
-     and it should be released by the user when it is no longer needed. The
-     <code>charset</code> and <code>ncharset</code> arguments are ignored if
-     the <code>environment</code> argument is non-<code>NULL</code>.</p>
+  <p>The <code>environment</code> argument allows us to provide a custom
+     OCI environment handle. If this argument is not <code>NULL</code>,
+     then the passed handle is used in all the OCI function calls made
+     by this <code>database</code> class instance. Note also that the
+     <code>database</code> instance does not assume ownership of the
+     passed environment handle and this handle should be valid for
+     the lifetime of the <code>database</code> instance. If a custom
+     environment handle is used, then the <code>charset</code> and
+     <code>ncharset</code> arguments have no effect.</p>
 
   <p>The last argument to all of the constructors is a pointer to a
      connection factory. If we pass a non-<code>NULL</code> value, the
@@ -12698,28 +12740,27 @@ namespace odb
 
   <p>For more information on the <code>odb::connection</code> interface, refer
      to <a href="#3.5">Section 3.5, "Connections"</a>. The first overloaded
-     <code>oracle::connection</code> constructor creates a new Oracle service
-     context. Statement caching is enabled for the underlying session.
-     Connection pooling and session pooling are not utilized. The second
-     constructor allows us to create a <code>connection</code> instance by
+     <code>oracle::connection</code> constructor creates a new OCI service
+     context. The OCI statement caching is enabled for the underlying session
+     while the OCI connection pooling and session pooling are not used. The
+     second constructor allows us to create a <code>connection</code> instance by
      providing an already connected Oracle service context. Note that the
      <code>connection</code> instance assumes ownership of this handle. The
-     <code>handle()</code> accessor returns the Oracle service context handle
+     <code>handle()</code> accessor returns the OCI service context handle
      associated with the connection.</p>
 
-  <p>An Oracle error handle is allocated for each <code>connection</code>
-     instance. This handle is publicly available via the
-     <code>error_handle()</code> accessor. Its lifetime is managed by, and
-     must remain valid for the entire lifetime of its containing
-     <code>connection</code> instance.</p>
+  <p>An OCI error handle is allocated for each <code>connection</code>
+     instance and is available via the <code>error_handle()</code> accessor
+     function.</p>
 
-  <p>Finally, each <code>connection</code> instance maintains a LOB buffer.
-     This buffer is used as intermediate storage between the OCI and ODB
-     implementations, and allows for piecewise handling of LOB data. The
-     buffer capacity may be optionaly set using the <code>lob_buffer()</code>
-     accessor. If the capacity is not explicitly set, the buffer occupies zero
-     bytes until it is used for the first time, at which point 4096 bytes of
-     space is allocated.</p>
+  <p>Additionally, each <code>connection</code> instance maintains a large
+     object (LOB) buffer. This buffer is used by the Oracle ODB runtime
+     as an intermediate storage for piecewise handling of LOB data.
+     By default, the LOB buffer has zero initial capacity and is
+     expanded to 4096 bytes when the first LOB operation is performed.
+     If your application requires a bigger or smaller LOB buffer, you can
+     specify a custom capacity using the <code>lob_buffer()</code>
+     accessor.</p>
 
   <p>The <code>oracle::connection_factory</code> abstract class has the
      following interface:</p>
@@ -12794,7 +12835,7 @@ namespace odb
       {
       public:
         pooled_connection (database_type&amp;);
-        pooled_connection (database_type&amp;, PGconn*);
+        pooled_connection (database_type&amp;, OCISvcCtx*);
       };
 
       typedef details::shared_ptr&lt;pooled_connection> pooled_connection_ptr;
@@ -12882,11 +12923,29 @@ namespace odb
     class database_exception: odb::database_exception
     {
     public:
-      int
-      error () const;
+      class record
+      {
+      public:
+        sb4
+        error () const;
 
-      const std::string&amp;
-      message () const;
+        const std::string&amp;
+        message () const;
+      };
+
+      typedef std::vector&lt;record> records;
+
+      typedef records::size_type size_type;
+      typedef records::const_iterator iterator;
+
+      iterator
+      begin () const;
+
+      iterator
+      end () const;
+
+      size_type
+      size () const;
 
       virtual const char*
       what () const throw ();
@@ -12914,10 +12973,10 @@ namespace odb
 
   <p>The <code>odb::oracle::database_exception</code> is thrown if
      an Oracle database operation fails. The Oracle-specific error
-     information is accessible via the <code>message()</code> and
-     <code>error()</code> functions. All this information is also
-     combined and returned in a human-readable form by the <code>what()</code>
-     function.</p>
+     information is stores as a series of records, each containing
+     the error code as a signed 4-byte integer and a message string.
+     All this information is also combined and returned in a
+     human-readable form by the <code>what()</code> function.</p>
 
   <p>The <code>odb::oracle::cli_exception</code> is thrown by the
      command line parsing constructor of the <code>odb::oracle::database</code>
@@ -12925,44 +12984,136 @@ namespace odb
      <code>what()</code> function returns a human-readable description
      of an error.</p>
 
-  <p>The <code>odb::oracle::invalid_oci_handle</code> is thrown if an OCI
-     function returns the status code OCI_INVALID_HANDLE. The
-     <code>what()</code> function returns a human-readable description
-     of an error.</p>
+  <p>The <code>odb::oracle::invalid_oci_handle</code> is thrown if an
+     invalid handle is passed to an OCI function or if an OCI function
+     was unable to allocate a handle. The former normally indicates
+     a programming error while the latter indicates an out of memory
+     condition. The <code>what()</code> function returns a human-readable
+     description of an error.</p>
 
   <h2><a name="16.5">16.5 Oracle Limitations</a></h2>
 
   <p>The following sections describe Oracle-specific limitations imposed
      by the current Oracle and ODB runtime versions.</p>
 
-  <h3><a name="16.5.1">16.5.1 Query Result Caching</a></h3>
+  <h3><a name="16.5.1">16.5.1 Identifier Truncation</a></h3>
+
+  <p>Oracle limits the length of database identifiers (table, column, etc.,
+     names) to 30 characters. The ODB compiler automatically truncates
+     any identifier that is longer than 30 character. This, however,
+     can lead to duplicate names. A common symptom of this problem
+     are errors during the database schema creation indicating
+     that a database object with the same name already exists. To
+     resolve this problem you can assign custom, shorter identifiers
+     using the <code>db&nbsp;table</code> and <code>db&nbsp;column</code>
+     pragmas (<a href="#12">Chapter 12, "ODB Pragma Language")</a>. For
+     example:</p>
+
+  <pre class="c++">
+#pragma db object
+class long_class_name
+{
+  ...
+
+  std::vector&lt;int> long_container_x_;
+  std::vector&lt;int> long_container_y_;
+};
+  </pre>
+
+  <p>In the above example, the names of the two container tables will be
+     <code>long_class_name_long_container_x_</code> and
+     <code>long_class_name_long_container_y_</code>. However, when
+     truncated to 30 characters, they both become
+     <code>long_class_name_long_container</code>. To resolve this
+     collision we can assign a custom table name for each container:</p>
+
+  <pre class="c++">
+#pragma db object
+class long_class_name
+{
+  ...
+
+  #pragma db table("long_class_name_cont_x")
+  std::vector&lt;int> long_container_x_;
+
+  #pragma db table("long_class_name_cont_y")
+  std::vector&lt;int> long_container_y_;
+};
+  </pre>
+
+  <h3><a name="16.5.2">16.5.2 Query Result Caching</a></h3>
 
   <p>Oracle ODB runtime implementation does not perform query result caching
-     (Section 4.4, "Query Result") even when explicitly requested. OCI supports
-     supports interleaving execution of multiple prepared statements on a
-     single connection. As a result, with Oracle, it is possible to have
-     multiple uncached results and calls to other database functions do not
-     invalidate them. The only limitation of the uncached Oracle results is
-     the unavailability of the result::size() function. If you call this
-     function on an Oracle query result, then the odb::result_not_cached
-     exception (Section 3.13, "ODB Exceptions") is always thrown. Future
-     versions of the Oracle ODB runtime library may add support for result
-     caching.</p>
+     (<a href="#4.4">Section 4.4, "Query Result"</a>) even when explicitly
+     requested. The OCI API supports interleaving execution of multiple
+     prepared statements on a single connection. As a result, with OCI,
+     it is possible to have multiple uncached results and calls to other
+     database functions do not invalidate them. The only limitation of
+     the uncached Oracle results is the unavailability of the
+     <code>result::size()</code> function. If you call this function on
+     an Oracle query result, then the <code>odb::result_not_cached</code>
+     exception (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>) is
+     always thrown. Future versions of the Oracle ODB runtime library
+     may add support for result caching.</p>
 
-  <h3><a name="16.5.2">16.5.2 Timezones</a></h3>
+  <h3><a name="16.5.3">16.5.3 Foreign Key Constraints</a></h3>
+
+  <p>ODB relies on standard SQL behavior which requires that
+     foreign key constraints checking is deferred until the
+     transaction is committed. Default Oracle behavior is
+     to check such constraints immediately. As a result, when
+     used with ODB, a custom database schema that defines foreign
+     key constraints must declare such constraints as
+     <code>INITIALLY DEFERRED</code>, as shown in the following example.
+     Schemas generated by the ODB compiler meet this requirement
+     automatically.</p>
+
+  <pre class="sql">
+CREATE TABLE Employee (
+  ...
+  employer NUMBER(20) REFERENCES Employer(id)
+           DEFERRABLE INITIALLY DEFERRED);
+  </pre>
+
+  <h3><a name="16.5.4">16.5.4 Unique Constraint Violations</a></h3>
+
+  <p>Due to the granularity of the Oracle error codes, it is impossible
+     to distinguish between the duplicate primary key and other unique
+     constraint violations. As a result, when making an object persistent,
+     The Oracle ODB runtime will translate all unique constraint violation
+     errors to the <code>object_not_persistent</code> exception
+     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>).</p>
+
+  <h3><a name="16.5.5">16.5.5 Large <code>FLOAT</code> and
+      <code>NUMBER</code> Types</a></h3>
+
+  <p>The Oracle <code>FLOAT</code> type with the binary precision greater
+     than 53 and fixed-point <code>NUMBER</code> type with the decimal
+     precision greater than 15 cannot be automatically extracted
+     into the C++ <code>float</code> and <code>double</code> types.
+     Instead, the Oracle ODB runtime uses a 21-byte buffer containing
+     the binary representation of a value as an image type for such
+     <code>FLOAT</code> and <code>NUMBER</code> types. In order to
+     convert them into an application-specific large number representation
+     you will need to provide a suitable <code>value_traits</code>
+     template specialization. For more information on the binary format
+     used to store the <code>FLOAT</code> and <code>NUMBER</code> values,
+     refer to the Oracle Call Interface (OCI) documentation.</p>
+
+  <p>Note that a <code>NUMBER</code> type that is used to represent a
+     floating point number (declared by specifying <code>NUMBER</code>
+     without any range and scale) can be extracted into the C++
+     <code>float</code> and <code>double</code> types.</p>
+
+  <h3><a name="16.5.6">16.5.6 Timezones</a></h3>
 
   <p>ODB does not currently support the Oracle date-time types with timezone
      information.</p>
 
-  <h3><a name="16.5.3">16.5.3 Floating point <code>NUMBER</code> Type
-      Support</a></h3>
+  <h3><a name="16.5.7">16.5.7 <code>LONG</code> Types</a></h3>
 
-  <p>Support for the Oracle <code>NUMBER</code> type when it represents a
-     floating point number (declared by specifying NUMBER without any range or
-     scale) is limited to providing a buffer containing the binary
-     representation of the value. For more information on the binary format
-     used to store <code>NUMBER</code> values refer to the OCI
-     documentation.</p>
+  <p>ODB does not support the deprecated Oracle <code>LONG</code> and
+     <code>LONG RAW</code> data types.</p>
 
 
   <!-- PART -->
@@ -13665,7 +13816,7 @@ class Person
 
     <tr>
       <td><code>QString</code></td>
-      <td><code>VARCHAR(4000)</code></td>
+      <td><code>VARCHAR2(4000)</code></td>
       <td><code>NULL</code></td>
     </tr>
 
@@ -13680,12 +13831,13 @@ class Person
      are stored as a NULL value if their <code>isNull()</code> member
      function returns <code>true</code>.</p>
 
-  <p>The <code>basic</code> sub-profile implementation also provides support
-     for mapping QString to the <code>CLOB</code> and <code>NCLOB</code> Oracle
-     types, and for mapping QByteArray to the <code>RAW</code> Oracle type.
-     However, these mappings need to be explicitly requested using the
-     <code>db type</code> pragma
-     (<a href="#12.4.3">Section 12.4.3, "type"</a>), as show in the
+  <p>The <code>basic</code> sub-profile also provides support
+     for mapping <code>QString</code> to the <code>CHAR</code>,
+     <code>NCHAR</code>, <code>NVARCHAR</code>, <code>CLOB</code> and
+     <code>NCLOB</code> Oracle types, and for mapping <code>QByteArray</code>
+     to the <code>RAW</code> Oracle type. However, these altenative
+     mappings have to be explicitly requested using the <code>db&nbsp;type</code>
+     pragma (<a href="#12.4.3">Section 12.4.3, "type"</a>), as show in the
      following example:</p>
 
   <pre class="c++">
@@ -13694,10 +13846,10 @@ class Person
 {
   ...
 
-  #pragma db type("NCLOB") not_null
-  QString first_name_;
+  #pragma db type("CLOB") not_null
+  QString firstName_;
 
-  #pragma db type("RAW(128)") null
+  #pragma db type("RAW(16)") null
   QByteArray uuid_;
 };
   </pre>
