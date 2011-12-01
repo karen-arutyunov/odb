@@ -10484,7 +10484,7 @@ aCC +W2161 ...
      <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types
      to the MySQL BLOB types. However, these mappings are not enabled by
      default (in particular, by default, <code>std::vector</code> will
-     be treated as a container). To enable the alternative mapping for these
+     be treated as a container). To enable the alternative mappings for these
      types we need to specify the database type explicitly using the
      <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section
      12.4.3, "<code>type</code>"</a>), for example:</p>
@@ -11714,7 +11714,7 @@ CREATE TABLE Employee (
 
   <p>Due to the granularity of the SQLite error codes, it is impossible
      to distinguish between the duplicate primary key and other constraint
-     violations. As a result, when making an object persistent, The SQLite
+     violations. As a result, when making an object persistent, the SQLite
      ODB runtime will translate all constraint violation errors to the
      <code>object_not_persistent</code> exception (<a href="#3.13">Section
      3.13, "ODB Exceptions"</a>).</p>
@@ -12327,7 +12327,7 @@ CREATE TABLE Employee (
   <p>Due to the granularity of the PostgreSQL error codes, it is impossible
      to distinguish between the duplicate primary key and other unique
      constraint violations. As a result, when making an object persistent,
-     The PostgreSQL ODB runtime will translate all unique constraint violation
+     the PostgreSQL ODB runtime will translate all unique constraint violation
      errors to the <code>object_not_persistent</code> exception
      (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>).</p>
 
@@ -12620,7 +12620,7 @@ namespace odb
   <p>You will need to include the <code>&lt;odb/oracle/database.hxx></code>
      header file to make this class available in your application.</p>
 
-  <p>The Oracle <code>database</code> class contains the OCI environment
+  <p>The Oracle <code>database</code> class encapsulates the OCI environment
      handle as well as the database connection string and user credentials
      that are used to establish connections to the database.</p>
 
@@ -12634,7 +12634,7 @@ namespace odb
   <p>The second constructor allows us to specify the individual components
      of a connection identifier as the <code>service</code>, <code>host</code>,
      and <code>port</code> arguments. If the <code>host</code> argument is
-     empty then localhost is used by default. Similarly, if the
+     empty, then localhost is used by default. Similarly, if the
      <code>port</code> argument is zero, then the default port is used.</p>
 
   <p>The last constructor extracts the database parameters
@@ -12654,9 +12654,8 @@ namespace odb
      or all of the database options in a file with each option appearing
      on a separate line followed by a space and an option value. Note that it
      is invalid to specify the <code>--database</code> option
-     together with any of <code>--service</code>,
-     <code>--host</code>, or <code>--port</code>
-     options.</p>
+     together with <code>--service</code>, <code>--host</code>, or
+     <code>--port</code> options.</p>
 
   <p>If the <code>erase</code> argument to this constructor is true,
      then the above options are removed from the <code>argv</code>
@@ -12685,13 +12684,14 @@ namespace odb
      to and received from the application in this encoding. For the complete
      list of available character encoding values, refer to the Oracle
      documentation. Commonly used encoding values are <code>873</code>
-     (UTF-8), 31 (ISO-8859-1), and <code>1000</code> (UTF-16). If the
-     database character encoding is not specified, then the <code>NLS_LANG</code>
-     environment/registry variable is used. Similarly, if the national
-     character encoding is not specified, then the <code>NLS_NCHAR</code>
-     environment/registry variable is used. For more information on character
-     encodings, refer to the <code>OCIEnvNlsCreate()</code> function in
-     the Oracle Call Interface (OCI) documentation.</p>
+     (UTF-8), <code>31</code> (ISO-8859-1), and <code>1000</code> (UTF-16).
+     If the database character encoding is not specified, then the
+     <code>NLS_LANG</code> environment/registry variable is used. Similarly,
+     if the national character encoding is not specified, then the
+     <code>NLS_NCHAR</code> environment/registry variable is used. For more
+     information on character encodings, refer to the
+     <code>OCIEnvNlsCreate()</code> function in the Oracle Call Interface
+     (OCI) documentation.</p>
 
   <p>The <code>environment</code> argument allows us to provide a custom
      OCI environment handle. If this argument is not <code>NULL</code>,
@@ -12983,8 +12983,8 @@ namespace odb
 
   <p>The <code>odb::oracle::database_exception</code> is thrown if
      an Oracle database operation fails. The Oracle-specific error
-     information is stores as a series of records, each containing
-     the error code as a signed 4-byte integer and a message string.
+     information is stored as a series of records, each containing
+     the error code as a signed 4-byte integer and the message string.
      All this information is also combined and returned in a
      human-readable form by the <code>what()</code> function.</p>
 
@@ -13010,11 +13010,11 @@ namespace odb
 
   <p>Oracle limits the length of database identifiers (table, column, etc.,
      names) to 30 characters. The ODB compiler automatically truncates
-     any identifier that is longer than 30 character. This, however,
+     any identifier that is longer than 30 characters. This, however,
      can lead to duplicate names. A common symptom of this problem
      are errors during the database schema creation indicating
      that a database object with the same name already exists. To
-     resolve this problem you can assign custom, shorter identifiers
+     resolve this problem we can assign custom, shorter identifiers
      using the <code>db&nbsp;table</code> and <code>db&nbsp;column</code>
      pragmas (<a href="#12">Chapter 12, "ODB Pragma Language")</a>. For
      example:</p>
@@ -13090,21 +13090,21 @@ CREATE TABLE Employee (
   <p>Due to the granularity of the Oracle error codes, it is impossible
      to distinguish between the duplicate primary key and other unique
      constraint violations. As a result, when making an object persistent,
-     The Oracle ODB runtime will translate all unique constraint violation
+     the Oracle ODB runtime will translate all unique constraint violation
      errors to the <code>object_not_persistent</code> exception
      (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>).</p>
 
   <h3><a name="16.5.5">16.5.5 Large <code>FLOAT</code> and
       <code>NUMBER</code> Types</a></h3>
 
-  <p>The Oracle <code>FLOAT</code> type with the binary precision greater
-     than 53 and fixed-point <code>NUMBER</code> type with the decimal
+  <p>The Oracle <code>FLOAT</code> type with a binary precision greater
+     than 53 and fixed-point <code>NUMBER</code> type with a decimal
      precision greater than 15 cannot be automatically extracted
      into the C++ <code>float</code> and <code>double</code> types.
      Instead, the Oracle ODB runtime uses a 21-byte buffer containing
      the binary representation of a value as an image type for such
      <code>FLOAT</code> and <code>NUMBER</code> types. In order to
-     convert them into an application-specific large number representation
+     convert them into an application-specific large number representation,
      you will need to provide a suitable <code>value_traits</code>
      template specialization. For more information on the binary format
      used to store the <code>FLOAT</code> and <code>NUMBER</code> values,
@@ -13655,7 +13655,7 @@ class person
 
   <p>Some valid Boost date-time values cannot be stored in an Oracle database.
      An attempt to persist a <code>gregorian::date</code>,
-     <code>posix_time::time_duration</code>, or
+     <code>posix_time::ptime</code>, or
      <code>posix_time::time_duration</code> value representing any special
      value other than <code>date_time::not_a_date_time</code> will result in
      the <code>special_value</code> exception.</p>
@@ -13755,7 +13755,7 @@ class Person
      <code>NCHAR</code>, and <code>NVARCHAR</code> MySQL types.
      However, these alternative mappings have to be explicitly
      requested using the <code>db&nbsp;type</code> pragma
-     (<a href="#12.4.3">Section 12.4.3, "type"</a>), as show in
+     (<a href="#12.4.3">Section 12.4.3, "type"</a>), as shown in
      the following example:</p>
 
   <pre class="c++">
@@ -13831,11 +13831,11 @@ class Person
      function returns <code>true</code>.</p>
 
   <p>The <code>basic</code> sub-profile also provides support
-     for mapping <code>QString</code> to the <code>CHAR</code>,
+     for mapping <code>QString</code> to the <code>CHAR</code>
      and <code>VARCHAR</code> PostgreSQL types.
      However, these alternative mappings have to be explicitly
      requested using the <code>db&nbsp;type</code> pragma
-     (<a href="#12.4.3">Section 12.4.3, "type"</a>), as show in
+     (<a href="#12.4.3">Section 12.4.3, "type"</a>), as shown in
      the following example:</p>
 
   <pre class="c++">
@@ -13881,11 +13881,11 @@ class Person
 
   <p>The <code>basic</code> sub-profile also provides support
      for mapping <code>QString</code> to the <code>CHAR</code>,
-     <code>NCHAR</code>, <code>NVARCHAR</code>, <code>CLOB</code> and
+     <code>NCHAR</code>, <code>NVARCHAR</code>, <code>CLOB</code>, and
      <code>NCLOB</code> Oracle types, and for mapping <code>QByteArray</code>
      to the <code>RAW</code> Oracle type. However, these alternative
      mappings have to be explicitly requested using the <code>db&nbsp;type</code>
-     pragma (<a href="#12.4.3">Section 12.4.3, "type"</a>), as show in the
+     pragma (<a href="#12.4.3">Section 12.4.3, "type"</a>), as shown in the
      following example:</p>
 
   <pre class="c++">
