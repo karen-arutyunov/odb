@@ -34,6 +34,10 @@ Version 1.7.0
     get object id without loading the object. For more information, refer to
     Section 4.4 "Query Result" in the ODB manual.
 
+  * Support for microsecond precision in the Boost and Qt date-time types
+    mapping to PostgreSQL date-time data types. Additionally, Qt QDateTime
+    values stored in a PostgreSQL database can now be before UNIX epoch.
+
 Version 1.6.0
 
   * New concept, view, is a C++ class that embodies a light-weight, read-

@@ -14206,13 +14206,6 @@ class Person
      <code>QDateTime</code> types are stored as a NULL value if their
      <code>isNull()</code> member function returns true.</p>
 
-  <p>Some valid Qt date-time values cannot be stored in a PostgreSQL database.
-     An attempt to persist a <code>QDateTime</code> value representing a
-     negative UNIX time (any point in time prior to the
-     1970-01-01&nbsp;00:00:00 UNIX time epoch) as a PostgreSQL
-     <code>TIMESTAMP</code> will result in the <code>out_of_range</code>
-     exception.</p>
-
   <h3><a name="19.4.4">19.4.4 Oracle Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
