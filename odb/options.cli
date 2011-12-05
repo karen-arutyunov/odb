@@ -69,9 +69,9 @@ class options
      Depending on the database being used (\cb{--database} option), the
      schema is generated either as a standalone SQL file or embedded into
      the generated C++ code. By default the SQL file is generated for
-     the MySQL and PostgreSQL databases and the schema is embedded into the
-     C++ code for the SQLite database. Use the \cb{--schema-format} option
-     to alter the default schema format."
+     the MySQL, PostgreSQL, and Oracle databases and the schema is embedded
+     into the C++ code for the SQLite database. Use the \cb{--schema-format}
+     option to alter the default schema format."
   };
 
   std::set< ::schema_format> --schema-format
