@@ -225,14 +225,13 @@ namespace relational
     {
       struct sql_parser
       {
+        typedef context::invalid_sql_type invalid_sql_type;
+
         sql_parser (std::string const& sql)
             : l_ (sql)
         {
         }
 
-        // Issues diagnostics and throws operation_failed in case of
-        // an error.
-        //
         sql_type
         parse ()
         {
@@ -272,20 +271,20 @@ namespace relational
               }
               else
               {
-                throw context::invalid_sql_type (
-                  "expected SQLite type name instead of '" + t.string ()
-                  + "'");
+                throw invalid_sql_type (
+                  "expected SQLite type name instead of '" + t.string () +
+                  "'");
               }
             }
           }
           catch (sql_lexer::invalid_input const& e)
           {
-            throw context::invalid_sql_type (
+            throw invalid_sql_type (
               "invalid SQLite type declaration: " + e.message);
           }
 
           if (ids_.empty ())
-            throw context::invalid_sql_type ("expected SQLite type name");
+            throw invalid_sql_type ("expected SQLite type name");
 
           sql_type r;
 
@@ -318,8 +317,7 @@ namespace relational
               r.type = sql_type::TEXT;
             else
             {
-              throw context::invalid_sql_type (
-                "unknown SQLite type '" + id + "'");
+              throw invalid_sql_type ("unknown SQLite type '" + id + "'");
             }
           }
 
@@ -338,7 +336,7 @@ namespace relational
 
             if (t.type () == sql_token::t_eos)
             {
-              throw context::invalid_sql_type (
+              throw invalid_sql_type (
                 "missing ')' in SQLite type declaration");
             }
           }
