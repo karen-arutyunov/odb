@@ -102,6 +102,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
       switch (ops.database ())
       {
+      case database::mssql:
       case database::mysql:
       case database::oracle:
       case database::pgsql:
@@ -253,6 +254,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
       switch (ops.database ())
       {
+      case database::mssql:
       case database::mysql:
       case database::oracle:
       case database::pgsql:
@@ -300,6 +302,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
       switch (ops.database ())
       {
+      case database::mssql:
       case database::mysql:
       case database::oracle:
       case database::pgsql:
@@ -342,6 +345,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
       switch (ops.database ())
       {
+      case database::mssql:
       case database::mysql:
       case database::oracle:
       case database::pgsql:
@@ -376,6 +380,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
       switch (ops.database ())
       {
+      case database::mssql:
       case database::mysql:
       case database::oracle:
       case database::pgsql:

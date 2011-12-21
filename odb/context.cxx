@@ -12,6 +12,7 @@
 #include <odb/common.hxx>
 #include <odb/pragma.hxx>
 
+#include <odb/relational/mssql/context.hxx>
 #include <odb/relational/mysql/context.hxx>
 #include <odb/relational/oracle/context.hxx>
 #include <odb/relational/pgsql/context.hxx>
@@ -128,6 +129,11 @@ create_context (ostream& os,
 
   switch (ops.database ())
   {
+  case database::mssql:
+    {
+      r.reset (new relational::mssql::context (os, unit, ops, m));
+      break;
+    }
   case database::mysql:
     {
       r.reset (new relational::mysql::context (os, unit, ops, m));

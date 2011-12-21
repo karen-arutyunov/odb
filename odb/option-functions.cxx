@@ -20,6 +20,7 @@ process_options (options& o)
 
     switch (o.database ())
     {
+    case database::mssql:
     case database::mysql:
     case database::oracle:
     case database::pgsql:

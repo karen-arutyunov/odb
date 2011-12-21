@@ -8,6 +8,7 @@
 
 #include <map>
 #include <set>
+#include <list>
 #include <vector>
 #include <sstream>
 
@@ -22,11 +23,31 @@ namespace relational
 {
   namespace source
   {
+    // Column literal in a statement (e.g., in select-list, etc).
+    //
+    struct statement_column
+    {
+      statement_column (): member (0) {}
+      statement_column (std::string const& c,
+                        semantics::data_member& m,
+                        std::string const& kp = "")
+          : column (c), member (&m), key_prefix (kp)
+      {
+      }
+
+      std::string column;
+      semantics::data_member* member;
+      std::string key_prefix;
+    };
+
+    typedef std::list<statement_column> statement_columns;
+
     // Query parameter generator. A new instance is created for each
     // query, so the customized version can have a counter to implement,
     // for example, numbered parameters (e.g., $1, $2, etc). The auto_id()
     // function is called instead of next() for the automatically-assigned
-    // object id member when generating the persist statement.
+    // object id member when generating the persist statement. If empty
+    // string is returned, then parameter is ignored.
     //
     struct query_parameters: virtual context
     {
@@ -50,23 +71,21 @@ namespace relational
       typedef object_columns base;
 
       object_columns (statement_kind sk,
-                      bool last = true,
+                      statement_columns& sc,
                       query_parameters* param = 0)
-          : sk_ (sk), param_ (param), last_ (last)
+          : sk_ (sk), sc_ (sc), param_ (param)
       {
       }
 
       object_columns (std::string const& table_qname,
                       statement_kind sk,
-                      bool last = true)
-          : sk_ (sk), param_ (0), table_name_ (table_qname), last_ (last)
+                      statement_columns& sc)
+          : sk_ (sk), sc_ (sc), param_ (0), table_name_ (table_qname)
       {
       }
 
       virtual bool
-      traverse_column (semantics::data_member& m,
-                       string const& name,
-                       bool first)
+      traverse_column (semantics::data_member& m, string const& name, bool)
       {
         semantics::data_member* im (inverse (m));
 
@@ -82,25 +101,6 @@ namespace relational
             sk_ == statement_update)
           return false;
 
-        if (!first)
-        {
-          line_ += ',';
-          os << strlit (line_) << endl;
-        }
-
-        line_.clear ();
-
-        // Version column (optimistic concurrency) requires special
-        // handling in the UPDATE statement.
-        //
-        //
-        if (sk_ == statement_update && version (m))
-        {
-          string const& qname (quote_id (name));
-          line_ = qname + "=" + qname + "+1";
-          return true;
-        }
-
         // Inverse object pointers come from a joined table.
         //
         if (im != 0)
@@ -114,12 +114,12 @@ namespace relational
             // aliases for container tables so use the actual table name.
             //
             column (
-              *im, "id",
+              *im,
+              "id",
               table_name_.empty ()
               ? table_name_
               : table_qname (*im, table_prefix (table_name (*c) + "_", 1)),
               column_qname (*im, "id", "object_id"));
-
           }
           else
           {
@@ -128,65 +128,64 @@ namespace relational
             // Use the join alias (column name) instead of the actual
             // table name unless we are handling a container.
             //
-            column (id, "",
-                    table_name_.empty () ? table_name_ : quote_id (name),
-                    column_qname (id));
+            column (
+              id,
+              "",
+              table_name_.empty () ? table_name_ : quote_id (name),
+              column_qname (id));
           }
         }
         else
           column (m, "", table_name_, quote_id (name));
 
-        if (param_ != 0)
-        {
-          line_ += '=';
-          line_ += param_->next ();
-        }
-
         return true;
       }
 
       virtual void
-      column (semantics::data_member&,
-              string const& /*key_prefix*/,
+      column (semantics::data_member& m,
+              string const& key_prefix,
               string const& table,
               string const& column)
       {
+        string r;
+
         if (!table.empty ())
         {
-          line_ += table;
-          line_ += '.';
+          r += table; // Already quoted.
+          r += '.';
         }
 
-        line_ += column; // Already quoted.
-      }
+        r += column; // Already quoted.
 
-      virtual void
-      flush ()
-      {
-        if (!last_)
-          line_ += ',';
+        // Version column (optimistic concurrency) requires special
+        // handling in the UPDATE statement.
+        //
+        //
+        if (sk_ == statement_update && version (m))
+        {
+          r += "=" + r + "+1";
+        }
+        else if (param_ != 0)
+        {
+          r += '=';
+          r += param_->next ();
+        }
 
-        if (!line_.empty ())
-          os << strlit (line_);
-
-        os << endl;
+        sc_.push_back (statement_column (r, m, key_prefix));
       }
 
     protected:
       statement_kind sk_;
+      statement_columns& sc_;
       query_parameters* param_;
-      string line_;
       string table_name_;
-
-    private:
-      bool last_;
     };
 
     struct view_columns: object_columns_base, virtual context
     {
       typedef view_columns base;
 
-      view_columns (): in_composite_ (false) {}
+      view_columns (statement_columns& sc): sc_ (sc), in_composite_ (false) {}
 
       virtual void
       traverse_composite (semantics::data_member* pm, semantics::class_& c)
@@ -261,18 +260,8 @@ namespace relational
       }
 
       virtual bool
-      traverse_column (semantics::data_member& m,
-                       string const& name,
-                       bool first)
+      traverse_column (semantics::data_member& m, string const& name, bool)
       {
-        if (!first)
-        {
-          line_ += ',';
-          os << strlit (line_) << endl;
-        }
-
-        line_.clear ();
-
         string col;
 
         // If we are inside a composite value, use the standard
@@ -346,7 +335,6 @@ namespace relational
         }
 
         column (m, col);
-
         return true;
       }
 
@@ -354,20 +342,13 @@ namespace relational
       // expression.
       //
       virtual void
-      column (semantics::data_member&, string const& column)
+      column (semantics::data_member& m, string const& column)
       {
-        line_ += column;
-      }
-
-      virtual void
-      flush ()
-      {
-        if (!line_.empty ())
-          os << strlit (line_) << endl;
+        sc_.push_back (statement_column (column, m));
       }
 
     protected:
-      string line_;
+      statement_columns& sc_;
       bool in_composite_;
       string table_prefix_; // Table corresponding to column_prefix_;
     };
@@ -810,11 +791,16 @@ namespace relational
         os << statement << ".cache ();";
       }
 
-      // Additional statements that need to be executed follow the call to init
-      // that initializes the query result image can be made here.
+      // Additional code that need to be executed following the call to
+      // init_value.
       //
       virtual void
       init_value_extra ()
+      {
+      }
+
+      virtual void
+      process_statement_columns (statement_columns&, statement_kind)
       {
       }
 
@@ -946,6 +932,7 @@ namespace relational
             string inv_table; // Other table name.
             string inv_id;    // Other id column.
             string inv_fid;   // Other foreign id column (ref to us).
+            statement_columns sc;
 
             if (container (*im))
             {
@@ -959,22 +946,39 @@ namespace relational
               inv_table = table_qname (*im, tp);
               inv_id = column_qname (*im, "id", "object_id");
               inv_fid = column_qname (*im, "value", "value");
+
+              sc.push_back (statement_column (
+                              inv_table + "." + inv_fid, *im, "value"));
+              sc.push_back (statement_column (
+                              inv_table + "." + inv_id, *im, "id"));
             }
             else
             {
               // many(i)-to-one
               //
+              semantics::data_member& id (*id_member (*c));
+
               inv_table = table_qname (*c);
-              inv_id = column_qname (*id_member (*c));
+              inv_id = column_qname (id);
               inv_fid = column_qname (*im);
+
+              sc.push_back (statement_column (inv_table + "." + inv_fid, *im));
+              sc.push_back (statement_column (inv_table + "." + inv_id, id));
+            }
+
+            process_statement_columns (sc, statement_select);
+
+            os << strlit ("SELECT ") << endl;
+
+            for (statement_columns::const_iterator i (sc.begin ()),
+                   e (sc.end ()); i != e;)
+            {
+              string const& c (i->column);
+              os << strlit (c + (++i != e ? "," : "")) << endl;
             }
 
             instance<query_parameters> qp;
-
-            os << strlit ("SELECT ") << endl
-               << strlit (inv_table + "." + inv_fid + ',') << endl
-               << strlit (inv_table + "." + inv_id) << endl
-               << strlit (" FROM " + inv_table +
+            os << strlit (" FROM " + inv_table +
                           " WHERE " + inv_table + "." + inv_fid + "=" +
                           qp->next ());
           }
@@ -982,8 +986,11 @@ namespace relational
           {
             string const& id_col (column_qname (m, "id", "object_id"));
 
-            os << strlit ("SELECT ") << endl
-               << strlit (table + "." + id_col + ',') << endl;
+            statement_columns sc;
+            sc.push_back (statement_column (table + "." + id_col, m, "id"));
+
+            statement_kind sk (statement_select); // Imperfect forwarding.
+            instance<object_columns> t (table, sk, sc);
 
             switch (ck)
             {
@@ -991,25 +998,20 @@ namespace relational
               {
                 if (ordered)
                 {
-                  instance<object_columns> t (table, statement_select, false);
                   string const& col (column_qname (m, "index", "index"));
                   t->column (m, "index", table, col);
-                  t->flush ();
                 }
                 break;
               }
             case ck_map:
             case ck_multimap:
               {
-                instance<object_columns> t (table, statement_select, false);
-
                 if (semantics::class_* ckt = composite_wrapper (*kt))
                   t->traverse (m, *ckt, "key", "key");
                 else
                 {
                   string const& col (column_qname (m, "key", "key"));
                   t->column (m, "key", table, col);
-                  t->flush ();
                 }
                 break;
               }
@@ -1020,15 +1022,23 @@ namespace relational
               }
             }
 
-            instance<object_columns> t (table, statement_select);
-
             if (semantics::class_* cvt = composite_wrapper (vt))
               t->traverse (m, *cvt, "value", "value");
             else
             {
               string const& col (column_qname (m, "value", "value"));
               t->column (m, "value", table, col);
-              t->flush ();
+            }
+
+            process_statement_columns (sc, statement_select);
+
+            os << strlit ("SELECT ") << endl;
+
+            for (statement_columns::const_iterator i (sc.begin ()),
+                   e (sc.end ()); i != e;)
+            {
+              string const& c (i->column);
+              os << strlit (c + (++i != e ? "," : "")) << endl;
             }
 
             instance<query_parameters> qp;
@@ -1059,33 +1069,30 @@ namespace relational
                << endl;
           else
           {
-            os << strlit ("INSERT INTO " + table + " (") << endl
-               << strlit (column_qname (m, "id", "object_id") + ',') << endl;
+            statement_columns sc;
+            sc.push_back (
+              statement_column (
+                column_qname (m, "id", "object_id"), m, "id"));
+
+            statement_kind sk (statement_insert); // Imperfect forwarding.
+            instance<object_columns> t (sk, sc);
 
             switch (ck)
             {
             case ck_ordered:
               {
                 if (ordered)
-                {
-                  instance<object_columns> t (statement_insert, false);
-                  t->column (m, "index", "", column_qname (m, "index", "index"));
-                  t->flush ();
-                }
+                  t->column (
+                    m, "index", "", column_qname (m, "index", "index"));
                 break;
               }
             case ck_map:
             case ck_multimap:
               {
-                instance<object_columns> t (statement_insert, false);
-
                 if (semantics::class_* ckt = composite_wrapper (*kt))
                   t->traverse (m, *ckt, "key", "key");
                 else
-                {
                   t->column (m, "key", "", column_qname (m, "key", "key"));
-                  t->flush ();
-                }
                 break;
               }
             case ck_set:
@@ -1095,14 +1102,20 @@ namespace relational
               }
             }
 
-            instance<object_columns> t (statement_insert);
-
             if (semantics::class_* cvt = composite_wrapper (vt))
               t->traverse (m, *cvt, "value", "value");
             else
-            {
               t->column (m, "value", "", column_qname (m, "value", "value"));
-              t->flush ();
+
+            process_statement_columns (sc, statement_insert);
+
+            os << strlit ("INSERT INTO " + table + " (") << endl;
+
+            for (statement_columns::const_iterator i (sc.begin ()),
+                   e (sc.end ()); i != e;)
+            {
+              string const& c (i->column);
+              os << strlit (c + (++i != e ? "," : ")")) << endl;
             }
 
             string values;
@@ -1116,7 +1129,7 @@ namespace relational
               values += qp->next ();
             }
 
-            os << strlit (") VALUES (" + values + ")") << ";"
+            os << strlit (" VALUES (" + values + ")") << ";"
                << endl;
           }
 
@@ -2108,15 +2121,22 @@ namespace relational
       {
         if (!inverse (m))
         {
-          if (count_++ != 0)
-            params_ += ',';
+          string p;
 
           if (version (m))
-            params_ += "1";
-          else if (m.count ("id") && m.count ("auto"))
-            params_ += qp_.auto_id ();
+            p = "1";
+          else if (id (m) && auto_ (m))
+            p = qp_.auto_id ();
           else
-            params_ += qp_.next ();
+            p = qp_.next ();
+
+          if (!p.empty ())
+          {
+            if (count_++ != 0)
+              params_ += ',';
+
+            params_ += p;
+          }
         }
       }
 
@@ -2247,8 +2267,14 @@ namespace relational
       // statements
       //
 
+      enum persist_position
+      {
+        persist_after_columns,
+        persist_after_values
+      };
+
       virtual void
-      persist_stmt_extra (type&, query_parameters&)
+      persist_statement_extra (type&, query_parameters&, persist_position)
       {
       }
 
@@ -2261,6 +2287,11 @@ namespace relational
       {
       }
 
+      virtual void
+      process_statement_columns (statement_columns&, statement_kind)
+      {
+      }
+
       //
       // object
       //
@@ -2268,6 +2299,12 @@ namespace relational
       virtual void
       object_extra (type&)
       {
+      }
+
+      virtual void
+      free_statement_result ()
+      {
+        os << "st.free_result ();";
       }
 
       virtual void
@@ -2575,21 +2612,43 @@ namespace relational
         // persist_statement
         //
         {
+          statement_columns sc;
+          {
+            statement_kind sk (statement_insert); // Imperfect forwarding.
+            instance<object_columns> ct (sk, sc);
+            ct->traverse (c);
+            process_statement_columns (sc, statement_insert);
+          }
+
+          bool dv (sc.empty ()); // The DEFAULT VALUES syntax.
+
           os << "const char " << traits << "::persist_statement[] " <<
             "=" << endl
-             << strlit ("INSERT INTO " + table_qname(c) + " (") << endl;
+             << strlit ("INSERT INTO " + table_qname(c) +
+                        (dv ? "" : " (")) << endl;
 
-          instance<object_columns> ct (statement_insert);
-          ct->traverse (c);
+          for (statement_columns::const_iterator i (sc.begin ()),
+                 e (sc.end ()); i != e;)
+          {
+            string const& c (i->column);
+            os << strlit (c + (++i != e ? "," : ")")) << endl;
+          }
 
-          string values;
           instance<query_parameters> qp;
-          instance<persist_statement_params> pt (values, *qp);
-          pt->traverse (c);
 
-          os << strlit (") VALUES (" + values + ")");
+          persist_statement_extra (c, *qp, persist_after_columns);
 
-          persist_stmt_extra (c, *qp);
+          if (!dv)
+          {
+            string values;
+            instance<persist_statement_params> pt (values, *qp);
+            pt->traverse (c);
+            os << strlit (" VALUES (" + values + ")");
+          }
+          else
+            os << strlit (" DEFAULT VALUES");
+
+          persist_statement_extra (c, *qp, persist_after_values);
 
           os << ";"
              << endl;
@@ -2602,11 +2661,23 @@ namespace relational
           // find_statement
           //
           {
+            statement_columns sc;
+            {
+              statement_kind sk (statement_select); // Imperfect forwarding.
+              instance<object_columns> t (table, sk, sc);
+              t->traverse (c);
+              process_statement_columns (sc, statement_select);
+            }
+
             os << "const char " << traits << "::find_statement[] =" << endl
                << strlit ("SELECT ") << endl;
 
-            instance<object_columns> t (table, statement_select);
-            t->traverse (c);
+            for (statement_columns::const_iterator i (sc.begin ()),
+                   e (sc.end ()); i != e;)
+            {
+              string const& c (i->column);
+              os << strlit (c + (++i != e ? "," : "")) << endl;
+            }
 
             os << strlit (" FROM " + table) << endl;
 
@@ -2625,13 +2696,27 @@ namespace relational
           //
           if (cc.total != cc.id + cc.inverse + cc.readonly)
           {
+            instance<query_parameters> qp;
+
+            statement_columns sc;
+            {
+              query_parameters* p (qp.get ()); // Imperfect forwarding.
+              statement_kind sk (statement_update); // Imperfect forwarding.
+              instance<object_columns> t (sk, sc, p);
+              t->traverse (c);
+              process_statement_columns (sc, statement_update);
+            }
+
             os << "const char " << traits << "::update_statement[] " <<
               "=" << endl
                << strlit ("UPDATE " + table + " SET ") << endl;
 
-            instance<query_parameters> qp;
-            instance<object_columns> t (statement_update, true, qp.get ());
-            t->traverse (c);
+            for (statement_columns::const_iterator i (sc.begin ()),
+                   e (sc.end ()); i != e;)
+            {
+              string const& c (i->column);
+              os << strlit (c + (++i != e ? "," : "")) << endl;
+            }
 
             string where (" WHERE " + id_col + "=" + qp->next ());
 
@@ -2672,6 +2757,14 @@ namespace relational
         {
           // query_statement
           //
+          statement_columns sc;
+          {
+            statement_kind sk (statement_select); // Imperfect forwarding.
+            instance<object_columns> oc (table, sk, sc);
+            oc->traverse (c);
+            process_statement_columns (sc, statement_select);
+          }
+
           bool t (true);
           instance<object_joins> oj (c, t); //@@ (im)perfect forwarding
           oj->traverse (c);
@@ -2679,9 +2772,11 @@ namespace relational
           os << "const char " << traits << "::query_statement[] =" << endl
              << strlit ("SELECT ") << endl;
 
+          for (statement_columns::const_iterator i (sc.begin ()),
+                 e (sc.end ()); i != e;)
           {
-            instance<object_columns> oc (table, statement_select);
-            oc->traverse (c);
+            string const& c (i->column);
+            os << strlit (c + (++i != e ? "," : "")) << endl;
           }
 
           os << strlit (" FROM " + table) << endl;
@@ -3235,8 +3330,9 @@ namespace relational
                << "}"
                << "}";
 
-          os << "st.free_result ();"
-             << "return r != select_statement::no_data;"
+          free_statement_result ();
+
+          os << "return r != select_statement::no_data;"
              << "}";
         }
 
@@ -3695,14 +3791,21 @@ namespace relational
           }
           else // vq.kind == view_query::condition
           {
+            statement_columns sc;
+            {
+              instance<view_columns> t (sc);
+              t->traverse (c);
+              process_statement_columns (sc, statement_select);
+            }
+
             os << "query_base_type r (" << endl
                << strlit ("SELECT ") << endl;
 
-            // Generate select-list.
-            //
+            for (statement_columns::const_iterator i (sc.begin ()),
+                   e (sc.end ()); i != e;)
             {
-              instance<view_columns> t;
-              t->traverse (c);
+              string const& c (i->column);
+              os << strlit (c + (++i != e ? "," : "")) << endl;
             }
 
             os << ");"

@@ -993,8 +993,13 @@ namespace relational
         }
 
         virtual void
-        persist_stmt_extra (type& c, relational::query_parameters&)
+        persist_statement_extra (type& c,
+                                 relational::query_parameters&,
+                                 persist_position p)
         {
+          if (p != persist_after_values)
+            return;
+
           semantics::data_member* id (id_member (c));
 
           if (id != 0 && id->count ("auto"))

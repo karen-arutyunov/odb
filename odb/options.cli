@@ -48,8 +48,8 @@ class options
   ::database --database | -d
   {
     "<db>",
-    "Generate code for the <db> database. Valid values are \cb{mysql},
-     \cb{oracle}, \cb{pgsql}, and \cb{sqlite}."
+    "Generate code for the <db> database. Valid values are \cb{mssql},
+     \cb{mysql}, \cb{oracle}, \cb{pgsql}, and \cb{sqlite}."
   };
 
   bool --generate-query | -q
@@ -69,9 +69,9 @@ class options
      Depending on the database being used (\cb{--database} option), the
      schema is generated either as a standalone SQL file or embedded into
      the generated C++ code. By default the SQL file is generated for
-     the MySQL, PostgreSQL, and Oracle databases and the schema is embedded
-     into the C++ code for the SQLite database. Use the \cb{--schema-format}
-     option to alter the default schema format."
+     the MySQL, PostgreSQL, Oracle, and Microsoft SQL Server databases
+     and the schema is embedded into the C++ code for the SQLite database.
+     Use the \cb{--schema-format} option to alter the default schema format."
   };
 
   std::set< ::schema_format> --schema-format
@@ -427,6 +427,26 @@ class options
   bool --trace {"Trace the compilation process."};
 
   //
+  // SQL Server-specific options.
+  //
+
+  unsigned int --mssql-short-limit = 256
+  {
+    "<size>",
+    "Specify the short data size limit. If character, national character,
+     or binary data type has a maximum length (in bytes) less than this
+     limit, then it is treated as \i{short data}, otherwise it is \i{long
+     data}. For short data ODB pre-allocates an intermediate buffer of
+     the maximum size and binds it directly to a parameter or result
+     column. This way the underlying API (ODBC) can read/write directly
+     from/to this buffer. In the case of long data, the data is read/written
+     in chunks using the \cb{SQLGetData()}/\cb{SQLPutData()} ODBC functions.
+     While the long data approach reduces the amount of memory used by the
+     application, it may require greater CPU resources. The default short
+     data limit is 256 bytes."
+  };
+
+  //
   // MySQL-specific options.
   //
 
@@ -441,19 +461,6 @@ class options
   };
 
   //
-  // SQLite-specific options.
-  //
-
-  bool --sqlite-lax-auto-id
-  {
-    "Do not force monotonically increasing automatically-assigned
-     object ids. In this mode the generated database schema omits the
-     \cb{AUTOINCREMENT} keyword which results in faster object persistence
-     but may lead to automatically-assigned ids not being in a strictly
-     ascending order. Refer to the SQLite documentation for details."
-  };
-
-  //
   // Oracle-specific options.
   //
 
@@ -464,5 +471,18 @@ class options
      generated C++ code will be linked. This information is used to enable
      version-specific optimizations in the generated C++ code. The version
      must be in the \c{\i{major}\b{.}\i{minor}} form, for example, \cb{11.2}."
+  };
+
+  //
+  // SQLite-specific options.
+  //
+
+  bool --sqlite-lax-auto-id
+  {
+    "Do not force monotonically increasing automatically-assigned
+     object ids. In this mode the generated database schema omits the
+     \cb{AUTOINCREMENT} keyword which results in faster object persistence
+     but may lead to automatically-assigned ids not being in a strictly
+     ascending order. Refer to the SQLite documentation for details."
   };
 };

@@ -118,26 +118,30 @@ namespace relational
             return;
           }
 
-          line_ += "CONCAT(";
+          string r;
+
+          r += "CONCAT(";
 
           if (!table.empty ())
           {
-            line_ += table;
-            line_ += '.';
+            r += table;
+            r += '.';
           }
 
-          line_ += column;
-          line_ += "+0,' ',";
+          r += column;
+          r += "+0,' ',";
 
           if (!table.empty ())
           {
-            line_ += table;
-            line_ += '.';
+            r += table;
+            r += '.';
           }
 
-          line_ += column;
+          r += column;
 
-          line_ += ")";
+          r += ")";
+
+          sc_.push_back (relational::statement_column (r, m, key_prefix));
         }
       };
       entry<object_columns> object_columns_;
@@ -157,11 +161,15 @@ namespace relational
             return;
           }
 
-          line_ += "CONCAT(";
-          line_ += column;
-          line_ += "+0,' ',";
-          line_ += column;
-          line_ += ")";
+          string r;
+
+          r += "CONCAT(";
+          r += column;
+          r += "+0,' ',";
+          r += column;
+          r += ")";
+
+          sc_.push_back (relational::statement_column (r, m));
         }
       };
       entry<view_columns> view_columns_;

@@ -38,6 +38,16 @@ relational/source.cxx                \
 relational/model.cxx                 \
 relational/schema.cxx
 
+# Relational/MSSQL.
+#
+cxx_ptun +=                          \
+relational/mssql/common.cxx          \
+relational/mssql/context.cxx         \
+relational/mssql/header.cxx          \
+relational/mssql/source.cxx          \
+relational/mssql/model.cxx           \
+relational/mssql/schema.cxx
+
 # Relational/MySQL.
 #
 cxx_ptun +=                          \

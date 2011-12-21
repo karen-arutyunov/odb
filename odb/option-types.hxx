@@ -14,6 +14,7 @@ struct database
   {
     // Keep in alphabetic order.
     //
+    mssql,
     mysql,
     oracle,
     pgsql,
