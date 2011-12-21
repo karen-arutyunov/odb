@@ -10,7 +10,6 @@
 #include <odb/sql-lexer.hxx>
 
 #include <odb/relational/oracle/context.hxx>
-#include <odb/relational/oracle/common.hxx>
 
 using namespace std;
 

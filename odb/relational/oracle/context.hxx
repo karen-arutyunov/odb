@@ -6,8 +6,6 @@
 #ifndef ODB_RELATIONAL_ORACLE_CONTEXT_HXX
 #define ODB_RELATIONAL_ORACLE_CONTEXT_HXX
 
-#include <vector>
-
 #include <odb/relational/context.hxx>
 
 namespace relational
@@ -30,7 +28,7 @@ namespace relational
         BINARY_FLOAT,
         BINARY_DOUBLE,
 
-        // Data-time types.
+        // Date-time types.
         //
         DATE,
         TIMESTAMP,

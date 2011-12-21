@@ -189,7 +189,7 @@ namespace relational
         traverse_int32 (member_info& mi)
         {
           os << b << ".type = oracle::bind::" <<
-            (unsigned_integer (mi.t) ? "uinteger;" : "integer;")
+            (unsigned_integer (mi.t) ? "uinteger" : "integer") << ";"
              << b << ".buffer = &" << arg << "." << mi.var << "value;"
              << b << ".capacity = 4;"
              << b << ".size = 0;"
@@ -200,7 +200,7 @@ namespace relational
         traverse_int64 (member_info& mi)
         {
           os << b << ".type = oracle::bind::" <<
-            (unsigned_integer (mi.t) ? "uinteger;" : "integer;")
+            (unsigned_integer (mi.t) ? "uinteger" : "integer") << ";"
              << b << ".buffer= &" << arg << "." << mi.var << "value;"
              << b << ".capacity = 8;"
              << b << ".size = 0;"

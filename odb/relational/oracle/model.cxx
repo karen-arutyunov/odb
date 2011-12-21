@@ -53,11 +53,6 @@ namespace relational
 
           return ostr.str ();
         }
-
-        virtual void
-        reference (semantics::data_member&)
-        {
-        }
       };
       entry<object_columns> object_columns_;
     }
