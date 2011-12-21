@@ -63,7 +63,6 @@ namespace relational
 
       //
       //
-      //
       struct object_columns: relational::object_columns, context
       {
         object_columns (base const& x): base (x) {}

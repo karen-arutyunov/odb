@@ -216,23 +216,20 @@ namespace relational
     // member_image_type
     //
 
-    namespace
+    static const char* integer_types[] =
     {
-      const char* integer_types[] =
-      {
-        "char",
-        "short",
-        "int",
-        "int",
-        "long long"
-      };
+      "char",
+      "short",
+      "int",
+      "int",
+      "long long"
+    };
 
-      const char* float_types[] =
-      {
-        "float",
-        "double"
-      };
-    }
+    static const char* float_types[] =
+    {
+      "float",
+      "double"
+    };
 
     member_image_type::
     member_image_type (semantics::type* type,
@@ -321,53 +318,50 @@ namespace relational
     // member_database_type
     //
 
-    namespace
+    static const char* integer_database_id[] =
     {
-      const char* integer_database_id[] =
-      {
-        "id_tiny",
-        "id_utiny",
-        "id_short",
-        "id_ushort",
-        "id_long",   // INT24
-        "id_ulong",  // INT24 UNSIGNED
-        "id_long",
-        "id_ulong",
-        "id_longlong",
-        "id_ulonglong"
-      };
+      "id_tiny",
+      "id_utiny",
+      "id_short",
+      "id_ushort",
+      "id_long",   // INT24
+      "id_ulong",  // INT24 UNSIGNED
+      "id_long",
+      "id_ulong",
+      "id_longlong",
+      "id_ulonglong"
+    };
 
-      const char* float_database_id[] =
-      {
-        "id_float",
-        "id_double"
-      };
+    static const char* float_database_id[] =
+    {
+      "id_float",
+      "id_double"
+    };
 
-      const char* date_time_database_id[] =
-      {
-        "id_date",
-        "id_time",
-        "id_datetime",
-        "id_timestamp",
-        "id_year"
-      };
+    static const char* date_time_database_id[] =
+    {
+      "id_date",
+      "id_time",
+      "id_datetime",
+      "id_timestamp",
+      "id_year"
+    };
 
-      const char* char_bin_database_id[] =
-      {
-        "id_string", // CHAR
-        "id_blob",   // BINARY,
-        "id_string", // VARCHAR
-        "id_blob",   // VARBINARY
-        "id_string", // TINYTEXT
-        "id_blob",   // TINYBLOB
-        "id_string", // TEXT
-        "id_blob",   // BLOB
-        "id_string", // MEDIUMTEXT
-        "id_blob",   // MEDIUMBLOB
-        "id_string", // LONGTEXT
-        "id_blob"    // LONGBLOB
-      };
-    }
+    static const char* char_bin_database_id[] =
+    {
+      "id_string", // CHAR
+      "id_blob",   // BINARY,
+      "id_string", // VARCHAR
+      "id_blob",   // VARBINARY
+      "id_string", // TINYTEXT
+      "id_blob",   // TINYBLOB
+      "id_string", // TEXT
+      "id_blob",   // BLOB
+      "id_string", // MEDIUMTEXT
+      "id_blob",   // MEDIUMBLOB
+      "id_string", // LONGTEXT
+      "id_blob"    // LONGBLOB
+    };
 
     member_database_type_id::
     member_database_type_id (semantics::type* type,
