@@ -378,6 +378,12 @@ public:
     return m.count ("id");
   }
 
+  static bool
+  auto_ (semantics::data_member& m)
+  {
+    return m.count ("auto");
+  }
+
   // The member scope is used to override readonly status when a readonly
   // class (object or composite value) inherits from a readwrite base.
   //
