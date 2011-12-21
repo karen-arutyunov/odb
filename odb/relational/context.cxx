@@ -85,7 +85,7 @@ namespace relational
   quote_id_impl (string const& id) const
   {
     string r;
-    r.reserve (id.size ());
+    r.reserve (id.size () + 2);
     r += '"';
     r += id;
     r += '"';
