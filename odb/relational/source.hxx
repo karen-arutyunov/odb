@@ -948,8 +948,6 @@ namespace relational
               inv_fid = column_qname (*im, "value", "value");
 
               sc.push_back (statement_column (
-                              inv_table + "." + inv_fid, *im, "value"));
-              sc.push_back (statement_column (
                               inv_table + "." + inv_id, *im, "id"));
             }
             else
@@ -962,7 +960,6 @@ namespace relational
               inv_id = column_qname (id);
               inv_fid = column_qname (*im);
 
-              sc.push_back (statement_column (inv_table + "." + inv_fid, *im));
               sc.push_back (statement_column (inv_table + "." + inv_id, id));
             }
 
@@ -984,11 +981,7 @@ namespace relational
           }
           else
           {
-            string const& id_col (column_qname (m, "id", "object_id"));
-
             statement_columns sc;
-            sc.push_back (statement_column (table + "." + id_col, m, "id"));
-
             statement_kind sk (statement_select); // Imperfect forwarding.
             instance<object_columns> t (table, sk, sc);
 
@@ -1042,6 +1035,7 @@ namespace relational
             }
 
             instance<query_parameters> qp;
+            string const& id_col (column_qname (m, "id", "object_id"));
 
             os << strlit (" FROM " + table +
                           " WHERE " + table + "." + id_col + "=" +
@@ -1597,6 +1591,7 @@ namespace relational
                << "bind (b.bind, 0, sts.id_binding ().count, di);"
                << "sts.data_image_version (di.version);"
                << "b.version++;"
+               << "sts.select_image_binding ().version++;"
                << "}"
                << "if (!sts.insert_one_statement ().execute ())" << endl
                << "throw object_already_persistent ();";
@@ -1684,6 +1679,7 @@ namespace relational
              << "sts.data_image_version (di.version);"
              << "sts.data_id_binding_version (idb.version);"
              << "b.version++;"
+             << "sts.select_image_binding ().version++;"
              << "}";
         }
 
@@ -1704,6 +1700,7 @@ namespace relational
              << "bind (b.bind, 0, sts.id_binding ().count, di);"
              << "sts.data_image_version (di.version);"
              << "b.version++;"
+             << "sts.select_image_binding ().version++;"
              << "st.refetch ();"
              << "}"
              << "}";
@@ -1748,6 +1745,7 @@ namespace relational
              << "bind (b.bind, id.bind, id.count, sts.data_image ());"
              << "sts.data_id_binding_version (id.version);"
              << "b.version++;"
+             << "sts.select_image_binding ().version++;"
              << "}"
              << "sts.id_binding (id);"
              << "functions_type& fs (sts.functions ());";
@@ -1775,6 +1773,7 @@ namespace relational
            << "bind (db.bind, id.bind, id.count, sts.data_image ());"
            << "sts.data_id_binding_version (id.version);"
            << "db.version++;"
+           << "sts.select_image_binding ().version++;"
            << "}"
            << "binding& cb (sts.cond_image_binding ());"
            << "if (id.version != sts.cond_id_binding_version () || " <<
@@ -1807,6 +1806,7 @@ namespace relational
              << "bind (db.bind, 0, id.count, sts.data_image ());"
              << "sts.data_image_version (di.version);"
              << "db.version++;"
+             << "sts.select_image_binding ().version++;"
              << "st.refetch ();"
              << "}"
              << "}";
@@ -1843,6 +1843,7 @@ namespace relational
              << "bind (db.bind, id.bind, id.count, sts.data_image ());"
              << "sts.data_id_binding_version (id.version);"
              << "db.version++;"
+             << "sts.select_image_binding ().version++;"
              << "}"
             //
             // We may need cond if the specialization calls delete_all.

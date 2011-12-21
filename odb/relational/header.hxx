@@ -406,16 +406,18 @@ namespace relational
 
         // Figure out column counts.
         //
-        size_t data_columns, cond_columns;
+        size_t id_columns, data_columns, cond_columns;
 
         if (!abst)
         {
           type& idt (container_idt (m));
 
           if (class_* idc = composite_wrapper (idt))
-            data_columns = cond_columns = column_count (*idc).total;
+            id_columns = column_count (*idc).total;
           else
-            data_columns = cond_columns = 1;
+            id_columns = 1;
+
+          data_columns = cond_columns = id_columns;
 
           switch (ck)
           {
@@ -476,6 +478,7 @@ namespace relational
 
           // Store column counts for the source generator.
           //
+          m.set ("id-column-count", id_columns);
           m.set ("cond-column-count", cond_columns);
           m.set ("data-column-count", data_columns);
         }
@@ -504,7 +507,9 @@ namespace relational
         {
           // column_count
           //
-          os << "static const std::size_t cond_column_count = " <<
+          os << "static const std::size_t id_column_count = " <<
+            id_columns << "UL;"
+             << "static const std::size_t cond_column_count = " <<
             cond_columns << "UL;"
              << "static const std::size_t data_column_count = " <<
             data_columns << "UL;"
