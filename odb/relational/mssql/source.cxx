@@ -569,11 +569,13 @@ namespace relational
             //
             if (object_pointer (member_utype (mi.m, key_prefix_)))
             {
-              os << "}";
+              os << "}"
+                 << "else" << endl;
 
               if (!null (mi.m, key_prefix_))
-                os << "else" << endl
-                   << "throw null_pointer ();";
+                os << "throw null_pointer ();";
+              else
+                os << "i." << mi.var << "size_ind = SQL_NULL_DATA;";
             }
 
             os << "}";
@@ -879,7 +881,7 @@ namespace relational
                  << "typedef pointer_traits< " << mi.fq_type () <<
                 " > ptr_traits;"
                  << endl
-                 << "if (i." << mi.var << "indicator == -1)" << endl;
+                 << "if (i." << mi.var << "size_ind == SQL_NULL_DATA)" << endl;
 
               if (null (mi.m, key_prefix_))
                 os << member << " = ptr_traits::pointer_type ();";
