@@ -1279,12 +1279,11 @@ namespace relational
         virtual void
         init_value_extra ()
         {
-          os << "sts.find_statement ().stream_result ();"
-             << "sts.find_statement ().free_result ();";
+          os << "sts.find_statement ().stream_result ();";
         }
 
         virtual void
-        free_statement_result ()
+        free_statement_result_immediate ()
         {
           // Only free the result if there are no rows. Otherwise we
           // need to keep the result alive until after we are done
@@ -1293,6 +1292,12 @@ namespace relational
           os << "if (r == select_statement::no_data)" << endl
              << "st.free_result ();"
              << endl;
+        }
+
+        virtual void
+        free_statement_result_delayed ()
+        {
+          os << "sts.find_statement ().free_result ();";
         }
 
         virtual void

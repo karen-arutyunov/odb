@@ -2302,10 +2302,17 @@ namespace relational
       {
       }
 
+      // By default we free statement result immediately after fetch.
+      //
       virtual void
-      free_statement_result ()
+      free_statement_result_immediate ()
       {
         os << "st.free_result ();";
+      }
+
+      virtual void
+      free_statement_result_delayed ()
+      {
       }
 
       virtual void
@@ -2987,11 +2994,13 @@ namespace relational
             // will run the SELECT query using the find_() function.
             //
             os << "if (!find_ (sts, obj." << id->name () << "))" << endl
-               << "throw object_not_persistent ();";
+               << "throw object_not_persistent ();"
+               << endl;
+
+            free_statement_result_delayed ();
 
             if (straight_readwrite_containers)
-              os << endl
-                 << "binding& idb (sts.id_image_binding ());"
+              os << "binding& idb (sts.id_image_binding ());"
                  << endl;
           }
 
@@ -3128,9 +3137,15 @@ namespace relational
             // have been more efficient but it would complicated and bloat
             // things significantly.
             //
-            os << "if (!find_ (sts, obj." << id->name () << ") ||" << endl
-               << "version (sts.image ()) != obj." << optimistic->name () <<
-              ")" << endl
+
+            os << "if (!find_ (sts, obj." << id->name () << "))" << endl
+               << "throw object_changed ();"
+               << endl;
+
+            free_statement_result_delayed ();
+
+            os << "if (version (sts.image ()) != obj." <<
+              optimistic->name () << ")" << endl
                << "throw object_changed ();"
                << endl;
 
@@ -3177,6 +3192,7 @@ namespace relational
              << "init (obj, sts.image (), db);";
 
           init_value_extra ();
+          free_statement_result_delayed ();
 
           os << "load_ (sts, obj);"
              << "sts.load_delayed ();"
@@ -3222,6 +3238,7 @@ namespace relational
              << "init (obj, sts.image (), db);";
 
           init_value_extra ();
+          free_statement_result_delayed ();
 
           os << "load_ (sts, obj);"
              << "sts.load_delayed ();"
@@ -3256,15 +3273,22 @@ namespace relational
              << endl;
 
           if (optimistic != 0)
+          {
             os << "if (version (sts.image ()) == obj." <<
-              optimistic->name () << ")" << endl
-               << "return true;"
-               << endl;
+              optimistic->name () << ")"
+               << "{";
+
+            free_statement_result_delayed ();
+
+            os << "return true;"
+               << "}";
+          }
 
           os << "callback (db, obj, callback_event::pre_load);"
              << "init (obj, sts.image (), db);";
 
           init_value_extra ();
+          free_statement_result_delayed ();
 
           os << "load_ (sts, obj);"
              << "sts.load_delayed ();"
@@ -3331,7 +3355,7 @@ namespace relational
                << "}"
                << "}";
 
-          free_statement_result ();
+          free_statement_result_immediate ();
 
           os << "return r != select_statement::no_data;"
              << "}";
