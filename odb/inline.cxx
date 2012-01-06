@@ -9,102 +9,10 @@
 
 using namespace std;
 
-namespace
-{
-  struct data_member: traversal::data_member, context
-  {
-    data_member (semantics::class_& cl) //@@ context::{cur,top}_object
-    {
-      scope_ = "access::value_traits< " + cl.fq_name () + " >";
-    }
-
-    virtual void
-    traverse (semantics::data_member& m)
-    {
-      if (transient (m))
-        return;
-
-      semantics::type& t (m.type ());
-
-      string const& name (public_name (m));
-
-      semantics::names* hint;
-      semantics::type& ut (utype (m, hint));
-      string const& type (ut.fq_name (hint));
-
-      os << "inline" << endl
-         << type << "& " << scope_ << "::" << endl
-         << name << " (value_type& v)"
-         << "{";
-
-      if (const_type (t))
-        os << "return const_cast< " << type << "& > (v." << m.name () << ");";
-      else
-        os << "return v." << m.name () << ";";
-
-      os << "}";
-
-      os << "inline" << endl
-         << "const " << type << "& " << scope_ << "::" << endl
-         << name << " (const value_type& v)"
-         << "{"
-         << "return v." << m.name () << ";"
-         << "}";
-    }
-
-  private:
-    string scope_;
-  };
-
-  struct class_: traversal::class_, context
-  {
-    virtual void
-    traverse (type& c)
-    {
-      if (c.file () != unit.file ())
-        return;
-
-      if (!composite (c))
-        return;
-
-      os << "// " << c.name () << endl
-         << "//" << endl;
-
-      data_member member (c);
-      traversal::names member_names (member);
-      names (c, member_names);
-    }
-  };
-}
-
 namespace inline_
 {
   void
   generate ()
   {
-    /*
-    context ctx;
-    ostream& os (ctx.os);
-
-    traversal::unit unit;
-    traversal::defines unit_defines;
-    traversal::namespace_ ns;
-    class_ c;
-
-    unit >> unit_defines >> ns;
-    unit_defines >> c;
-
-    traversal::defines ns_defines;
-
-    ns >> ns_defines >> ns;
-    ns_defines >> c;
-
-    os << "namespace odb"
-       << "{";
-
-    unit.dispatch (ctx.unit);
-
-    os << "}";
-    */
   }
 }

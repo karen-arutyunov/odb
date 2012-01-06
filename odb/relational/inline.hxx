@@ -366,15 +366,6 @@ namespace relational
       virtual void
       traverse_composite (type&)
       {
-        /*
-          string const& type (c.fq_name ());
-          string traits ("access::composite_value_traits< " + type + " >");
-
-          os << "// " << c.name () << endl
-          << "//" << endl
-          << endl;
-
-        */
       }
 
     private:

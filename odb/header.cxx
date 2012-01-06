@@ -9,74 +9,6 @@
 
 using namespace std;
 
-namespace
-{
-  struct data_member: traversal::data_member, context
-  {
-    virtual void
-    traverse (semantics::data_member& m)
-    {
-      if (transient (m))
-        return;
-
-      string const& name (public_name (m));
-
-      semantics::names* hint;
-      semantics::type& t (utype (m, hint));
-      string const& type (t.fq_name (hint));
-
-      os << "static " << type << "&" << endl
-         << name << " (value_type&);"
-         << endl;
-
-      os << "static const " << type << "&" << endl
-         << name << " (const value_type&);"
-         << endl;
-    }
-  };
-
-  struct class_: traversal::class_, context
-  {
-    class_ ()
-    {
-      member_names_ >> member_;
-    }
-
-    virtual void
-    traverse (type& c)
-    {
-      if (c.file () != unit.file ())
-        return;
-
-      if (!composite (c))
-        return;
-
-      string const& type (c.fq_name ());
-
-      os << "// " << c.name () << endl
-         << "//" << endl;
-
-      os << "template <>" << endl
-         << "class access::value_traits< " << type << " >"
-         << "{"
-         << "public:" << endl;
-
-      // value_type
-      //
-      os << "typedef " << type << " value_type;"
-         << endl;
-
-      names (c, member_names_);
-
-      os << "};";
-    }
-
-  private:
-    data_member member_;
-    traversal::names member_names_;
-  };
-}
-
 namespace header
 {
   void
@@ -121,27 +53,5 @@ namespace header
       os << "#include <odb/result.hxx>" << endl;
 
     os << endl;
-
-    /*
-      traversal::unit unit;
-      traversal::defines unit_defines;
-      traversal::namespace_ ns;
-      class_ c;
-
-      unit >> unit_defines >> ns;
-      unit_defines >> c;
-
-      traversal::defines ns_defines;
-
-      ns >> ns_defines >> ns;
-      ns_defines >> c;
-
-      os << "namespace odb"
-         << "{";
-
-      unit.dispatch (ctx.unit);
-
-      os << "}";
-    */
   }
 }
