@@ -107,6 +107,12 @@ gate_callback (void*, void*)
 
   try
   {
+    // Post process pragmas.
+    //
+    post_process_pragmas ();
+
+    // Parse the GCC tree to semantic graph.
+    //
     parser p (*options_, loc_pragmas_, decl_pragmas_);
     auto_ptr<unit> u (p.parse (global_namespace, file_));
 
@@ -128,6 +134,12 @@ gate_callback (void*, void*)
     //
     generator g;
     g.generate (*options_, *u, file_);
+  }
+  catch (pragmas_failed const&)
+  {
+    // Diagnostics has aready been issued.
+    //
+    r = 1;
   }
   catch (parser::failed const&)
   {

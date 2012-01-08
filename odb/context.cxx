@@ -3,11 +3,14 @@
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <odb/gcc.hxx>
+
 #include <cctype> // std::toupper
 #include <cassert>
 
 #include <odb/context.hxx>
 #include <odb/common.hxx>
+#include <odb/pragma.hxx>
 
 #include <odb/relational/mysql/context.hxx>
 #include <odb/relational/oracle/context.hxx>
@@ -15,6 +18,23 @@
 #include <odb/relational/sqlite/context.hxx>
 
 using namespace std;
+
+//
+// view_object
+//
+
+string view_object::
+name () const
+{
+  if (!alias.empty ())
+    return alias;
+
+  return kind == object ? context::class_name (*obj) : orig_name;
+}
+
+//
+// context
+//
 
 namespace
 {
@@ -388,6 +408,30 @@ class_kind (semantics::class_& c)
 }
 
 string context::
+class_name (semantics::class_& c)
+{
+  return c.is_a<semantics::class_instantiation> ()
+    ? c.get<semantics::names*> ("tree-hint")->name ()
+    : c.name ();
+}
+
+string context::
+class_fq_name (semantics::class_& c)
+{
+  return c.is_a<semantics::class_instantiation> ()
+    ? c.fq_name (c.get<semantics::names*> ("tree-hint"))
+    : c.fq_name ();
+}
+
+semantics::path context::
+class_file (semantics::class_& c)
+{
+  return c.is_a<semantics::class_instantiation> ()
+    ? semantics::path (LOCATION_FILE (c.get<location_t> ("location")))
+    : c.file ();
+}
+
+string context::
 upcase (string const& s)
 {
   string r;
@@ -491,34 +535,20 @@ composite_ (semantics::class_& c)
 {
   bool r (true);
 
-  // List of pragmas that disqualify a value type from being treated as
-  // composite.
-  //
-  //@@ Did we add new simple value pragmas and forgot to account for
-  //   them here?
-  //
-  r = r && c.count ("value");
-  r = r && !c.count ("table");
-  r = r && !c.count ("type");
-  r = r && !c.count ("id-type");
-  r = r && !c.count ("value-type");
-  r = r && !c.count ("index-type");
-  r = r && !c.count ("key-type");
-  r = r && !c.count ("value-column");
-  r = r && !c.count ("index-column");
-  r = r && !c.count ("key-column");
-  r = r && !c.count ("id-column");
-  r = r && !c.count ("default");
-  r = r && !c.count ("null");
-  r = r && !c.count ("not-null");
-  r = r && !c.count ("value-null");
-  r = r && !c.count ("value-not-null");
-  r = r && !c.count ("options");
-  r = r && !c.count ("value-options");
-  r = r && !c.count ("index-options");
-  r = r && !c.count ("key-options");
-  r = r && !c.count ("id-options");
-  r = r && !c.count ("unordered");
+  if (c.count ("value"))
+  {
+    for (pragma_name_set::const_iterator i (simple_value_pragmas_.begin ()),
+           e (simple_value_pragmas_.end ()); i != e; ++i)
+    {
+      if (c.count (*i))
+      {
+        r = false;
+        break;
+      }
+    }
+  }
+  else
+    r = false;
 
   c.set ("composite-value", r);
   return r;
@@ -532,7 +562,7 @@ table_name (semantics::class_& c) const
   if (c.count ("table"))
     name += c.get<string> ("table");
   else
-    name += c.name ();
+    name += class_name (c);
 
   return name;
 }

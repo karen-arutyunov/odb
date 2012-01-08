@@ -290,7 +290,7 @@ namespace
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ": "
                << "error: unable to resolve member function '" << name << "' "
                << "specified with '#pragma db callback' for class '"
-               << c.name () << "'" << endl;
+               << context::class_name (c) << "'" << endl;
 
           valid_ = false;
         }
@@ -331,7 +331,7 @@ namespace
         {
           // @@ Should we use hint here?
           //
-          string name (b.fq_name ());
+          string name (context::class_fq_name (b));
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " error: base class '" << name << "' is a view or value type"
@@ -540,7 +540,7 @@ namespace
         {
           // @@ Should we use hint here?
           //
-          string name (b.fq_name ());
+          string name (context::class_fq_name (b));
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " error: base class '" << name << "' is an object, "
@@ -619,7 +619,7 @@ namespace
         {
           // @@ Should we use hint here?
           //
-          string name (b.fq_name ());
+          string name (context::class_fq_name (b));
 
           cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
                << " error: base class '" << name << "' is a view or object "
@@ -687,6 +687,26 @@ namespace
 
     data_member member_;
     traversal::names names_;
+  };
+
+  struct typedefs1: typedefs
+  {
+    typedefs1 (traversal::declares& d)
+        : typedefs (true), declares_ (d)
+    {
+    }
+
+    void
+    traverse (semantics::typedefs& t)
+    {
+      if (check (t))
+        traversal::typedefs::traverse (t);
+      else
+        declares_.traverse (t);
+    }
+
+  private:
+    traversal::declares& declares_;
   };
 
   //
@@ -875,6 +895,7 @@ validate (options const& ops,
     traversal::unit unit;
     traversal::defines unit_defines;
     traversal::declares unit_declares;
+    typedefs1 unit_typedefs (unit_declares);
     traversal::namespace_ ns;
     value_type vt (valid);
     class1 c (valid, ops, u, vt);
@@ -882,13 +903,16 @@ validate (options const& ops,
     unit >> unit_defines >> ns;
     unit_defines >> c;
     unit >> unit_declares >> vt;
+    unit >> unit_typedefs >> c;
 
     traversal::defines ns_defines;
     traversal::declares ns_declares;
+    typedefs1 ns_typedefs (ns_declares);
 
     ns >> ns_defines >> ns;
     ns_defines >> c;
     ns >> ns_declares >> vt;
+    ns >> ns_typedefs >> c;
 
     unit.dispatch (u);
   }
@@ -896,17 +920,20 @@ validate (options const& ops,
   {
     traversal::unit unit;
     traversal::defines unit_defines;
+    typedefs unit_typedefs (true);
     traversal::namespace_ ns;
-    value_type vt (valid);
     class2 c (valid, ops, u);
 
     unit >> unit_defines >> ns;
     unit_defines >> c;
+    unit >> unit_typedefs >> c;
 
     traversal::defines ns_defines;
+    typedefs ns_typedefs (true);
 
     ns >> ns_defines >> ns;
     ns_defines >> c;
+    ns >> ns_typedefs >> c;
 
     unit.dispatch (u);
   }

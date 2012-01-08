@@ -28,7 +28,7 @@ namespace relational
   query_columns_base (semantics::class_& c) //@@ context::{cur,top}_object
       : decl_ (false)
   {
-    scope_ = "query_columns_base< " + c.fq_name () + " >";
+    scope_ = "query_columns_base< " + class_fq_name (c) + " >";
   }
 
   void query_columns_base::
@@ -102,7 +102,7 @@ namespace relational
         os << "typedef" << endl
            << "odb::query_pointer<" << endl
            << "  odb::pointer_query_columns<" << endl
-           << "    " << ptr->fq_name () << "," << endl
+           << "    " << class_fq_name (*ptr) << "," << endl
            << "    " << name << "_alias_ > >" << endl
            << name << "_type_ ;"
            << endl
@@ -142,7 +142,7 @@ namespace relational
       : ptr_ (ptr), decl_ (false)
   {
     scope_ = ptr ? "pointer_query_columns" : "query_columns";
-    scope_ += "< " + c.fq_name () + ", table >";
+    scope_ += "< " + class_fq_name (c) + ", table >";
   }
 
   void query_columns::
@@ -263,7 +263,7 @@ namespace relational
            << "typedef" << endl
            << "odb::query_pointer<" << endl
            << "  odb::pointer_query_columns<" << endl
-           << "    " << ptr->fq_name () << "," << endl
+           << "    " << class_fq_name (*ptr) << "," << endl
            << "    " << name << "_alias_ > >" << endl
            << name << "_pointer_type_;"
            << endl;

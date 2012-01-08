@@ -442,3 +442,58 @@ traverse (semantics::data_member& m)
 
   oc_.member_path_.pop_back ();
 }
+
+//
+// typedefs
+//
+
+void typedefs::
+traverse (semantics::typedefs& t)
+{
+  if (check (t))
+    traversal::typedefs::traverse (t);
+}
+
+bool typedefs::
+check (semantics::typedefs& t)
+{
+  // This typedef must be for a class template instantiation.
+  //
+  using semantics::class_instantiation;
+  class_instantiation* ci (dynamic_cast<class_instantiation*> (&t.type ()));
+
+  if (ci == 0)
+    return false;
+
+  // It must be a composite value.
+  //
+  if (!composite (*ci))
+    return false;
+
+  // This typedef name should be the one that was used in the pragma.
+  //
+  using semantics::names;
+  tree type (ci->get<tree> ("tree-node"));
+
+  names* hint;
+  if (ci->count ("tree-hint"))
+    hint = ci->get<names*> ("tree-hint");
+  else
+  {
+    hint = unit.find_hint (type);
+    ci->set ("tree-hint", hint); // Cache it.
+  }
+
+  if (hint != &t)
+    return false;
+
+  // And the pragma may have to be in the file we are compiling.
+  //
+  if (!included_)
+  {
+    if (class_file (*ci) != unit.file ())
+      return false;
+  }
+
+  return true;
+}

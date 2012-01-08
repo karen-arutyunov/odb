@@ -555,7 +555,7 @@ namespace relational
         if (!(obj || composite (c)))
           return;
 
-        os << "// " << c.name () << " base" << endl
+        os << "// " << class_name (c) << " base" << endl
            << "//" << endl;
 
         // If the derived class is readonly, then we will never be
@@ -569,7 +569,7 @@ namespace relational
              << "{";
 
         os << (obj ? "object" : "composite_value") << "_traits< " <<
-          c.fq_name () << " >::bind (b + n, i, sk);";
+          class_fq_name (c) << " >::bind (b + n, i, sk);";
 
         column_count_type const& cc (column_count (c));
 
@@ -653,11 +653,11 @@ namespace relational
         if (!(obj || composite (c)))
           return;
 
-        os << "// " << c.name () << " base" << endl
+        os << "// " << class_name (c) << " base" << endl
            << "//" << endl;
 
         os << "if (" << (obj ? "object" : "composite_value") << "_traits< " <<
-          c.fq_name () << " >::grow (i, t + " << index_ << "UL))" << endl
+          class_fq_name (c) << " >::grow (i, t + " << index_ << "UL))" << endl
            << "grew = true;"
            << endl;
 
@@ -711,7 +711,7 @@ namespace relational
         if (!(obj || composite (c)))
           return;
 
-        os << "// " << c.name () << " base" << endl
+        os << "// " << class_name (c) << " base" << endl
            << "//" << endl;
 
         // If the derived class is readonly, then we will never be
@@ -724,7 +724,7 @@ namespace relational
              << "{";
 
         os << "if (" << (obj ? "object" : "composite_value") << "_traits< " <<
-          c.fq_name () << " >::init (i, o, sk))" << endl
+          class_fq_name (c) << " >::init (i, o, sk))" << endl
            << "grew = true;";
 
         if (check)
@@ -776,10 +776,10 @@ namespace relational
         if (!(obj || composite (c)))
           return;
 
-        os << "// " << c.name () << " base" << endl
+        os << "// " << class_name (c) << " base" << endl
            << "//" << endl
            << (obj ? "object" : "composite_value") << "_traits< " <<
-          c.fq_name () << " >::init (o, i, db);"
+          class_fq_name (c) << " >::init (o, i, db);"
            << endl;
       }
     };
@@ -793,10 +793,12 @@ namespace relational
       container_traits (semantics::class_& c)
           : object_members_base (true, true, false), c_ (c)
       {
+        string const& type (class_fq_name (c));
+
         if (object (c))
-          scope_ = "access::object_traits< " + c.fq_name () + " >";
+          scope_ = "access::object_traits< " + type + " >";
         else
-          scope_ = "access::composite_value_traits< " + c.fq_name () + " >";
+          scope_ = "access::composite_value_traits< " + type + " >";
       }
 
       // Unless the database system can execute several interleaving
@@ -1992,7 +1994,7 @@ namespace relational
         }
         else if (call_ == load_call && const_type (m->type ()))
         {
-          obj_prefix_ = "const_cast< " + c.fq_name () + "& > (\n" +
+          obj_prefix_ = "const_cast< " + class_fq_name (c) + "& > (\n" +
             obj_prefix_ + ")";
         }
 
@@ -2226,7 +2228,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (c.file () != unit.file ())
+        if (class_file (c) != unit.file ())
           return;
 
         context::top_object = context::cur_object = &c;
@@ -2289,7 +2291,7 @@ namespace relational
       traverse_object (type& c)
       {
         bool abstract (context::abstract (c));
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
         string traits ("access::object_traits< " + type + " >");
 
         bool has_ptr (has_a (c, test_pointer));
@@ -2312,7 +2314,7 @@ namespace relational
 
         column_count_type const& cc (column_count (c));
 
-        os << "// " << c.name () << endl
+        os << "// " << class_name (c) << endl
            << "//" << endl
            << endl;
 
@@ -3423,7 +3425,7 @@ namespace relational
 
         ++end; // Transform the range from [begin, end] to [begin, end).
 
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
         string traits ("access::object_traits< " + type + " >");
 
         // create_schema ()
@@ -3522,10 +3524,10 @@ namespace relational
       virtual void
       traverse_view (type& c)
       {
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
         string traits ("access::view_traits< " + type + " >");
 
-        os << "// " << c.name () << endl
+        os << "// " << class_name (c) << endl
            << "//" << endl
            << endl;
 
@@ -3870,7 +3872,7 @@ namespace relational
                   if (!ambig)
                   {
                     error (i->loc)
-                      << "pointed-to object '" << c->name () <<  "' is "
+                      << "pointed-to object '" << class_name (*c) <<  "' is "
                       << "ambiguous" << endl;
 
                     info (i->loc)
@@ -3898,7 +3900,7 @@ namespace relational
                 if (vo == 0)
                 {
                   error (i->loc)
-                    << "pointed-to object '" << c->name () << "' "
+                    << "pointed-to object '" << class_name (*c) << "' "
                     << "specified in the join condition has not been "
                     << "previously associated with this view" << endl;
 
@@ -4257,10 +4259,10 @@ namespace relational
       virtual void
       traverse_composite (type& c)
       {
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
         string traits ("access::composite_value_traits< " + type + " >");
 
-        os << "// " << c.name () << endl
+        os << "// " << class_name (c) << endl
            << "//" << endl
            << endl;
 

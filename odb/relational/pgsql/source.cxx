@@ -555,7 +555,7 @@ namespace relational
               // Handle NULL pointers and extract the id.
               //
               os << "{"
-                 << "typedef object_traits< " << c->fq_name () <<
+                 << "typedef object_traits< " << class_fq_name (*c) <<
                 " > obj_traits;";
 
               if (weak_pointer (mt))
@@ -803,7 +803,7 @@ namespace relational
               // Handle NULL pointers and extract the id.
               //
               os << "{"
-                 << "typedef object_traits< " << c->fq_name () <<
+                 << "typedef object_traits< " << class_fq_name (*c) <<
                 " > obj_traits;"
                  << "typedef pointer_traits< " << mi.fq_type () <<
                 " > ptr_traits;"
@@ -1014,7 +1014,7 @@ namespace relational
           semantics::data_member* optimistic (context::optimistic (c));
           column_count_type const& cc (column_count (c));
 
-          string const& n (c.fq_name ());
+          string const& n (class_fq_name (c));
           string traits ("access::object_traits< " + n + " >::");
           string const& fn (flat_name (n));
           string name_decl ("const char " + traits);
@@ -1158,7 +1158,7 @@ namespace relational
         virtual void
         view_extra (type& c)
         {
-          string const& n (c.fq_name ());
+          string const& n (class_fq_name (c));
           string traits ("access::view_traits< " + n + " >::");
           string const& fn (flat_name (n));
           string name_decl ("const char " + traits);
@@ -1231,7 +1231,7 @@ namespace relational
           // Prefix top-object name to avoid conflicts with inherited
           // member statement names.
           //
-          string stmt_prefix (top_object->fq_name () +  m.fq_name ());
+          string stmt_prefix (class_fq_name (*top_object) +  m.fq_name ());
 
           os << stmt_decl << endl
              << "select_all_name[] = " <<

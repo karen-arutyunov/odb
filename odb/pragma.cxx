@@ -43,6 +43,7 @@ accumulate (compiler::context& ctx, string const& k, any const& v, location_t)
 //
 loc_pragmas loc_pragmas_;
 decl_pragmas decl_pragmas_;
+pragma_name_set simple_value_pragmas_;
 
 static bool
 parse_expression (tree& t,
@@ -214,22 +215,9 @@ resolve_scoped_name (tree& token,
     cpp_ttype ptt; // Not used.
     string st (lex.start (token, type));
 
-    tree decl (
+    return
       lookup::resolve_scoped_name (
-        st, type, ptt, lex, current_scope (), name, is_type));
-
-    // Get the actual type if this is a TYPE_DECL.
-    //
-    if (is_type)
-    {
-      if (TREE_CODE (decl) == TYPE_DECL)
-        decl = TREE_TYPE (decl);
-
-      if (TYPE_P (decl)) // Can be a template.
-        decl = TYPE_MAIN_VARIANT (decl);
-    }
-
-    return decl;
+        st, type, ptt, lex, current_scope (), name, is_type);
   }
   catch (lookup::invalid_name const&)
   {
@@ -292,6 +280,23 @@ check_qual_decl_type (tree d,
   }
 
   return true;
+}
+
+static void
+add_qual_entry (compiler::context& ctx,
+                string const& k,
+                any const& v,
+                location_t l)
+{
+  // Store the TYPE_DECL node that was referred to in the pragma. This
+  // can be used later as a name hint in case the type is a template
+  // instantiation. Also store the pragma location which is used as
+  // the "definition point" for this instantiation.
+  //
+  ctx.set ("tree-node", v);
+  ctx.set ("location", l);
+
+  ctx.set (k, true);
 }
 
 static bool
@@ -837,6 +842,14 @@ handle_pragma (cpp_reader* reader,
 
     if (vo.node == 0)
       return; // Diagnostics has already been issued.
+
+    // Get the actual type if this is a TYPE_DECL. Also get the main variant.
+    //
+    if (TREE_CODE (vo.node) == TYPE_DECL)
+      vo.node = TREE_TYPE (vo.node);
+
+    if (TYPE_P (vo.node)) // Can be a template.
+      vo.node = TYPE_MAIN_VARIANT (vo.node);
 
     if (tt == CPP_EQ)
     {
@@ -1519,6 +1532,13 @@ handle_pragma (cpp_reader* reader,
   if (adder == 0 && val.empty ())
     val = true;
 
+  // Convert '_' to '-' in the context name so we get foo-bar instead
+  // of foo_bar (that's the convention used).
+  //
+  for (size_t i (0); i < name.size (); ++i)
+    if (name[i] == '_')
+      name[i] = '-';
+
   // Record this pragma.
   //
   add_pragma (pragma (p, name, val, loc, &check_spec_decl_type, adder), decl);
@@ -1539,7 +1559,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
   tree t;
   cpp_ttype tt;
 
-  tree decl (0);
+  tree decl (0), orig_decl (0);
   string decl_name;
   location_t loc (input_location);
 
@@ -1562,10 +1582,21 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
       if (tt == CPP_NAME || tt == CPP_SCOPE)
       {
-        decl = resolve_scoped_name (t, tt, decl_name, true, p);
+        orig_decl = resolve_scoped_name (t, tt, decl_name, true, p);
 
-        if (decl == 0)
+        if (orig_decl == 0)
           return; // Diagnostics has already been issued.
+
+        // Get the actual type if this is a TYPE_DECL. Also get the main
+        // variant.
+        //
+        if (TREE_CODE (orig_decl) == TYPE_DECL)
+          orig_decl = TREE_TYPE (orig_decl);
+
+        if (TYPE_P (orig_decl)) // Can be a template.
+          decl = TYPE_MAIN_VARIANT (orig_decl);
+        else
+          decl = orig_decl;
 
         // Make sure we've got the correct declaration type.
         //
@@ -1668,7 +1699,12 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
   // Record this pragma.
   //
-  pragma prag (p, p, any (true), loc, &check_qual_decl_type, 0);
+  pragma prag (p,
+               p, // For now no need to translate '_' to '-'.
+               any (orig_decl),
+               loc,
+               &check_qual_decl_type,
+               &add_qual_entry);
 
   if (decl)
     decl_pragmas_[decl].insert (prag);
@@ -1905,6 +1941,34 @@ handle_pragma_db (cpp_reader* r)
 extern "C" void
 register_odb_pragmas (void*, void*)
 {
+  // Initialize the list of simple value pragmas.
+  //
+  //@@ Did we add new simple value pragmas and forgot to account for
+  //   them here?
+  //
+  simple_value_pragmas_.insert ("table");
+  simple_value_pragmas_.insert ("type");
+  simple_value_pragmas_.insert ("id-type");
+  simple_value_pragmas_.insert ("value-type");
+  simple_value_pragmas_.insert ("index-type");
+  simple_value_pragmas_.insert ("key-type");
+  simple_value_pragmas_.insert ("value-column");
+  simple_value_pragmas_.insert ("index-column");
+  simple_value_pragmas_.insert ("key-column");
+  simple_value_pragmas_.insert ("id-column");
+  simple_value_pragmas_.insert ("default");
+  simple_value_pragmas_.insert ("null");
+  simple_value_pragmas_.insert ("not-null");
+  simple_value_pragmas_.insert ("value-null");
+  simple_value_pragmas_.insert ("value-not-null");
+  simple_value_pragmas_.insert ("options");
+  simple_value_pragmas_.insert ("value-options");
+  simple_value_pragmas_.insert ("index-options");
+  simple_value_pragmas_.insert ("key-options");
+  simple_value_pragmas_.insert ("id-options");
+  simple_value_pragmas_.insert ("unordered");
+
+
   // GCC has a limited number of pragma slots and we have exhausted them.
   // A workaround is to make 'db' a pragma rather than a namespace. This
   // way we only have one pragma but the drawback of this approach is the
@@ -1949,4 +2013,67 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
   c_register_pragma_with_expansion ("db", "version", handle_pragma_db_version);
   */
+}
+
+void
+post_process_pragmas ()
+{
+  // Make sure composite class template instantiations are fully
+  // instantiated.
+  //
+  for (decl_pragmas::iterator i (decl_pragmas_.begin ()),
+         e (decl_pragmas_.end ()); i != e; ++i)
+  {
+    tree type (i->first);
+
+    if (!(CLASS_TYPE_P (type) && CLASSTYPE_TEMPLATE_INSTANTIATION (type)))
+      continue;
+
+    // Check whether this is a composite value type. We don't want to
+    // instantiate simple values since they may be incomplete.
+    //
+    pragma const* p;
+
+    for (pragma_set::iterator j (i->second.begin ()), e (i->second.end ());
+         j != e; ++j)
+    {
+      string const& name (j->context_name);
+
+      if (name == "value")
+        p = &*j;
+      else
+      {
+        // Make sure it is not one of the simple value pragmas.
+        //
+        if (simple_value_pragmas_.find (name) != simple_value_pragmas_.end ())
+        {
+          p = 0;
+          break;
+        }
+      }
+    }
+
+    if (p == 0)
+      continue;
+
+    // Make sure it is instantiated.
+    //
+    tree decl (TYPE_NAME (p->value.value<tree> ()));
+    location_t loc (DECL_SOURCE_LOCATION (decl));
+
+    // Reset input location so that we get nice diagnostics in case
+    // of an error.
+    //
+    input_location = loc;
+
+    if (instantiate_class_template (type) == error_mark_node ||
+        errorcount != 0 ||
+        !COMPLETE_TYPE_P (type))
+    {
+      error (loc) << "unable to instantiate composite value class template"
+                  << endl;
+
+      throw pragmas_failed ();
+    }
+  }
 }

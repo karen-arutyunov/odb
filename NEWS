@@ -1,3 +1,10 @@
+Version 1.8.0
+
+  * Support for defining composite value types as C++ class template
+    instantiations. For more information, refer to Section 7.2, "Composite
+    Value Types" in the ODB manual as well as the 'composite' example in the
+    odb-examples package.
+
 Version 1.7.0
 
   * Support for the Oracle database. The provided connection factories

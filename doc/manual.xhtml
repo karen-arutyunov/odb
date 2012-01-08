@@ -5665,7 +5665,7 @@ class basic_name
   </pre>
 
   <p>The complete version of the above code fragment and the other code
-     samples presented in this chapter can be found in the <code>composite</code>
+     samples presented in this section can be found in the <code>composite</code>
      example in the <code>odb-examples</code> package.</p>
 
   <p>A composite value type does not have to define a default constructor,
@@ -5746,6 +5746,53 @@ class person
   ...
 
   name name_;
+};
+</pre>
+
+  <p>A composite value type can also be defined as an instantiation
+     of a C++ class template, for example:</p>
+
+<pre class="c++">
+template &lt;typename T>
+struct point
+{
+  T x;
+  T y;
+  T z;
+};
+
+typedef point&lt;int> int_point;
+#pragma db value(int_point)
+
+#pragma db object
+class object
+{
+  ...
+
+  int_point center_;
+};
+</pre>
+
+  <p>Note that the database support code for such a composite value type
+     is generated when compiling the header containing the
+     <code>db&nbsp;value</code> pragma and not the header containing
+     the template definition or the <code>typedef</code> name. This
+     allows us to use templates defined in other files, such as
+     <code>std::pair</code> defined in the <code>utility</code>
+     standard header file:</p>
+
+<pre class="c++">
+#include &lt;utility> // std::pair
+
+typedef std::pair&lt;std::string, std::string> phone_numbers;
+#pragma db value(phone_numbers)
+
+#pragma db object
+class person
+{
+  ...
+
+  phone_numbers phone_;
 };
 </pre>
 

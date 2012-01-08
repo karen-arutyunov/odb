@@ -74,11 +74,6 @@ namespace
     virtual void
     traverse (type& c)
     {
-      // Not interested in classes that we are generating.
-      //
-      if (c.file () == unit.file ())
-        return;
-
       // We only generate things for objects and composite value types. In
       // particular, we don't care about views since they cannot be used in
       // definitions of other views, objects, or composite values.
@@ -86,12 +81,36 @@ namespace
       if (!(object (c) || composite (c)))
         return;
 
+      // Not interested in classes that we are generating.
+      //
+      // If this is a class template instantiation, then get the file
+      // corresponding to the pragma, not the instantiation itself,
+      // since that's where we are generation the code for this class.
+      // While at it, also get the location.
+      //
+      using semantics::path;
+
+      path f;
+      location_t l;
+
+      if (c.is_a<semantics::class_instantiation> ())
+      {
+        l = c.get<location_t> ("location");
+        f = path (LOCATION_FILE (l));
+      }
+      else
+      {
+        f = c.file ();
+        tree decl (TYPE_NAME (c.tree_node ()));
+        l = DECL_SOURCE_LOCATION (decl);
+      }
+
+      if (f == unit.file ())
+        return;
+
       // This is a persistent object or composite value type declared in
       // another header file. Include its -odb header.
       //
-      tree decl (TYPE_NAME (c.tree_node ()));
-      location_t l (DECL_SOURCE_LOCATION (decl));
-
       if (l > BUILTINS_LOCATION)
       {
         line_map const* lm (linemap_lookup (line_table, l));
@@ -450,16 +469,20 @@ namespace include
 
     traversal::unit unit;
     traversal::defines unit_defines;
+    typedefs unit_typedefs (true);
     traversal::namespace_ ns;
     class_ c (imap);
 
     unit >> unit_defines >> ns;
     unit_defines >> c;
+    unit >> unit_typedefs >> c;
 
     traversal::defines ns_defines;
+    typedefs ns_typedefs (true);
 
     ns >> ns_defines >> ns;
     ns_defines >> c;
+    ns >> ns_typedefs >> c;
 
     unit.dispatch (ctx.unit);
 

@@ -62,10 +62,12 @@ namespace relational
              << "  ";
         }
 
+        string const& type (class_fq_name (c));
+
         if (obj)
-          os << "object_traits< " << c.fq_name () << " >::image_type";
+          os << "object_traits< " << type << " >::image_type";
         else
-          os << "composite_value_traits< " << c.fq_name () << " >::image_type";
+          os << "composite_value_traits< " << type << " >::image_type";
       }
 
     private:
@@ -155,7 +157,7 @@ namespace relational
         }
 
         os  << (ptr_ ? "pointer_query_columns" : "query_columns") <<
-          "< " << c.fq_name () << ", table >";
+          "< " << class_fq_name (c) << ", table >";
       }
 
     private:
@@ -180,11 +182,13 @@ namespace relational
         if (!object (c))
           return;
 
-        os  << "// " << c.name () << endl
+        string const& name (class_name (c));
+
+        os  << "// " << name << endl
             << "//" << endl
           << "typedef " <<
           (ptr_ ? "pointer_query_columns" : "query_columns") <<
-          "< " << c.fq_name () << ", table > " << c.name () << ";"
+          "< " << class_fq_name (c) << ", table > " << name << ";"
             << endl;
       }
 
@@ -205,7 +209,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
 
         if (ptr_)
         {
@@ -483,13 +487,13 @@ namespace relational
         if (base)
         {
           semantics::class_& b (dynamic_cast<semantics::class_&> (m.scope ()));
+          string const& type (class_fq_name (b));
 
           if (object (b))
-            os << ": access::object_traits< " << b.fq_name () << " >::" <<
-              name;
+            os << ": access::object_traits< " << type << " >::" << name;
           else
-            os << ": access::composite_value_traits< " << b.fq_name () <<
-              " >::" << public_name (m) << "_traits"; // No prefix_.
+            os << ": access::composite_value_traits< " << type << " >::" <<
+              public_name (m) << "_traits"; // No prefix_.
         }
 
         os << "{";
@@ -911,7 +915,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (c.file () != unit.file ())
+        if (class_file (c) != unit.file ())
           return;
 
         if (object (c))
@@ -936,7 +940,7 @@ namespace relational
       traverse_object (type& c)
       {
         bool abstract (context::abstract (c));
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
 
         semantics::data_member* id (id_member (c));
         bool auto_id (id ? id->count ("auto") : false);
@@ -946,7 +950,7 @@ namespace relational
 
         column_count_type const& cc (column_count (c));
 
-        os << "// " << c.name () << endl
+        os << "// " << class_name (c) << endl
            << "//" << endl;
 
         // class_traits
@@ -994,19 +998,21 @@ namespace relational
         {
           if (base_id)
           {
-            string const& base (id->scope ().fq_name ());
+            semantics::class_& b (
+              dynamic_cast<semantics::class_&> (id->scope ()));
+            string const& type (class_fq_name (b));
 
-            os << "typedef object_traits< " << base << " >::id_type id_type;";
+            os << "typedef object_traits< " << type << " >::id_type id_type;";
 
             if (optimistic != 0)
-              os << "typedef object_traits< " << base << " >::version_type " <<
+              os << "typedef object_traits< " << type << " >::version_type " <<
                 "version_type;";
 
             os << endl
-               << "static const bool auto_id = object_traits< " << base <<
+               << "static const bool auto_id = object_traits< " << type <<
               " >::auto_id;"
                << endl
-               << "typedef object_traits< " << base << " >::id_image_type " <<
+               << "typedef object_traits< " << type << " >::id_image_type " <<
               "id_image_type;"
                << endl;
           }
@@ -1335,9 +1341,9 @@ namespace relational
       virtual void
       traverse_view (type& c)
       {
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
 
-        os << "// " << c.name () << endl
+        os << "// " << class_name (c) << endl
            << "//" << endl;
 
         os << "template <>" << endl
@@ -1394,8 +1400,8 @@ namespace relational
 
               bool alias (!i->alias.empty ());
               semantics::class_& o (*i->obj);
-              string const& name (alias ? i->alias : o.name ());
-              string const& type (o.fq_name ());
+              string const& name (alias ? i->alias : class_name (o));
+              string const& type (class_fq_name (o));
 
               os << "// " << name << endl
                  << "//" << endl;
@@ -1438,7 +1444,7 @@ namespace relational
 
             bool alias (!vo->alias.empty ());
             semantics::class_& o (*vo->obj);
-            string const& type (o.fq_name ());
+            string const& type (class_fq_name (o));
 
             if (alias && vo->alias != table_name (o))
               os << "static const char query_alias[];"
@@ -1535,9 +1541,9 @@ namespace relational
       virtual void
       traverse_composite (type& c)
       {
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
 
-        os << "// " << c.name () << endl
+        os << "// " << class_name (c) << endl
            << "//" << endl;
 
         os << "template <>" << endl
@@ -1626,7 +1632,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (c.file () != unit.file ())
+        if (class_file (c) != unit.file ())
           return;
 
         if (object (c))
@@ -1641,14 +1647,14 @@ namespace relational
       traverse_object (type& c)
       {
         bool abst (abstract (c));
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
 
         if (options.generate_query ())
         {
           bool has_ptr (has_a (c, test_pointer));
 
           if (has_ptr || !abst)
-            os << "// " << c.name () << endl
+            os << "// " << class_name (c) << endl
                << "//" << endl;
 
           // query_columns

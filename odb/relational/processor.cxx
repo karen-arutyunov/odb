@@ -825,11 +825,12 @@ namespace relational
         if (!c->complete ())
         {
           os << m.file () << ":" << m.line () << ":" << m.column () << ": "
-             << "error: pointed-to class '" << c->fq_name () << "' "
+             << "error: pointed-to class '" << class_fq_name (*c) << "' "
              << "is incomplete" << endl;
 
           os << c->file () << ":" << c->line () << ":" << c->column () << ": "
-             << "info: class '" << c->name () << "' is declared here" << endl;
+             << "info: class '" << class_name (*c) << "' is declared here"
+             << endl;
 
           os << c->file () << ":" << c->line () << ":" << c->column () << ": "
              << "info: consider including its definition with the "
@@ -843,11 +844,12 @@ namespace relational
         if (context::abstract (*c))
         {
           os << m.file () << ":" << m.line () << ":" << m.column () << ": "
-             << "error: pointed-to class '" << c->fq_name () << "' "
+             << "error: pointed-to class '" << class_fq_name (*c) << "' "
              << "is abstract" << endl;
 
           os << c->file () << ":" << c->line () << ":" << c->column () << ": "
-             << "info: class '" << c->name () << "' is defined here" << endl;
+             << "info: class '" << class_name (*c) << "' is defined here"
+             << endl;
 
           throw operation_failed ();
         }
@@ -857,11 +859,12 @@ namespace relational
         if (context::id_member (*c) == 0)
         {
           os << m.file () << ":" << m.line () << ":" << m.column () << ": "
-             << "error: pointed-to class '" << c->fq_name () << "' "
+             << "error: pointed-to class '" << class_fq_name (*c) << "' "
              << "has no object id" << endl;
 
           os << c->file () << ":" << c->line () << ":" << c->column () << ": "
-             << "info: class '" << c->name () << "' is defined here" << endl;
+             << "info: class '" << class_name (*c) << "' is defined here"
+             << endl;
 
           throw operation_failed ();
         }
@@ -881,7 +884,7 @@ namespace relational
             os << m.file () << ":" << m.line () << ":" << m.column () << ": "
                << "error: unable to resolve data member '" << name << "' "
                << "specified with '#pragma db inverse' in class '"
-               << c->fq_name () << "'" << endl;
+               << class_fq_name (*c) << "'" << endl;
             throw operation_failed ();
           }
 
@@ -891,8 +894,8 @@ namespace relational
           {
             os << m.file () << ":" << m.line () << ":" << m.column () << ": "
                << "ice: unable to find semantic graph node corresponding to "
-               << "data member '" << name << "' in class '" << c->fq_name ()
-               << "'" << endl;
+               << "data member '" << name << "' in class '"
+               << class_fq_name (*c) << "'" << endl;
             throw operation_failed ();
           }
 
@@ -1691,7 +1694,7 @@ namespace relational
         if (vq.kind == view_query::condition && !has_o)
         {
           error (c.file (), c.line (), c.column ())
-            << "view '" << c.fq_name () << "' has an incomplete query "
+            << "view '" << class_fq_name (c) << "' has an incomplete query "
             << "template and no associated objects" << endl;
 
           info (c.file (), c.line (), c.column ())
@@ -1886,7 +1889,7 @@ namespace relational
               relationship const& r (rs.back ());
 
               string name (r.pointer->alias.empty ()
-                           ? r.pointer->obj->fq_name ()
+                           ? class_fq_name (*r.pointer->obj)
                            : r.pointer->alias);
               name += "::";
               name += r.name;
@@ -2004,7 +2007,7 @@ namespace relational
         try
         {
           string ptr;
-          string const& name (c.fq_name ());
+          string const& type (class_fq_name (c));
 
           tree decl (0);          // Resolved template node.
           string decl_name;       // User-provided template name.
@@ -2016,7 +2019,7 @@ namespace relational
             string const& p (cp.name);
 
             if (p == "*")
-              ptr = name + "*";
+              ptr = type + "*";
             else if (p[p.size () - 1] == '*')
               ptr = p;
             else if (p.find ('<') != string::npos)
@@ -2054,7 +2057,7 @@ namespace relational
               }
               else if (tc == TEMPLATE_DECL && DECL_CLASS_TEMPLATE_P (decl))
               {
-                ptr = p + "< " + name + " >";
+                ptr = p + "< " + type + " >";
                 decl_name = p;
               }
               else
@@ -2079,10 +2082,10 @@ namespace relational
             string const& p (options.default_pointer ());
 
             if (p == "*")
-              ptr = name + "*";
+              ptr = type + "*";
             else
             {
-              ptr = p + "< " + name + " >";
+              ptr = p + "< " + type + " >";
               decl_name = p;
             }
 
@@ -2315,16 +2318,20 @@ namespace relational
 
     traversal::unit unit;
     traversal::defines unit_defines;
+    typedefs unit_typedefs (true);
     traversal::namespace_ ns;
     class_ c;
 
     unit >> unit_defines >> ns;
     unit_defines >> c;
+    unit >> unit_typedefs >> c;
 
     traversal::defines ns_defines;
+    typedefs ns_typedefs (true);
 
     ns >> ns_defines >> ns;
     ns_defines >> c;
+    ns >> ns_typedefs >> c;
 
     unit.dispatch (ctx.unit);
   }

@@ -866,7 +866,6 @@ emit_type_decl (tree decl)
   tree decl_name (DECL_NAME (decl));
   char const* name (IDENTIFIER_POINTER (decl_name));
 
-
   if (DECL_ARTIFICIAL (decl) &&
       (tc == RECORD_TYPE || tc == UNION_TYPE || tc == ENUMERAL_TYPE))
   {
@@ -1967,13 +1966,7 @@ add_pragma (node& n, pragma const& p)
   if (trace)
     ts << "\t\t pragma " << p.pragma_name << endl;
 
-  // Convert '_' to '-' in the pragma name so we get foo-bar instead
-  // of foo_bar (that's the convention used).
-  //
-  string k (p.context_name);
-  for (size_t i (0); i < k.size (); ++i)
-    if (k[i] == '_')
-      k[i] = '-';
+  string const& k (p.context_name);
 
   if (p.add == 0)
   {

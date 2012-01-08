@@ -46,7 +46,7 @@ namespace relational
           // (unqualified) name.
           //
           string t (id_prefix_);
-          id_prefix_ = c.name () + "::";
+          id_prefix_ = class_name (c) + "::";
           object_columns_base::traverse_object (c);
           id_prefix_ = t;
         }
@@ -69,7 +69,7 @@ namespace relational
         else
           // Composite base. Add its unqualified name to id_prefix.
           //
-          id_prefix_ += c.name () + "::";
+          id_prefix_ += class_name (c) + "::";
 
         object_columns_base::traverse_composite (m, c);
 
@@ -273,7 +273,7 @@ namespace relational
           // (unqualified) name.
           //
           string t (id_prefix_);
-          id_prefix_ = c.name () + "::";
+          id_prefix_ = class_name (c) + "::";
           object_members_base::traverse_object (c);
           id_prefix_ = t;
         }
@@ -281,7 +281,7 @@ namespace relational
         {
           // Top-level object. Set its id as a prefix.
           //
-          id_prefix_ = string (c.fq_name (), 2) + "::";
+          id_prefix_ = string (class_fq_name (c), 2) + "::";
           object_members_base::traverse_object (c);
         }
       }
@@ -298,7 +298,7 @@ namespace relational
         else
           // Composite base. Add its unqualified name to id_prefix.
           //
-          id_prefix_ += c.name () + "::";
+          id_prefix_ += class_name (c) + "::";
 
         object_members_base::traverse_composite (m, c);
 
@@ -469,7 +469,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (c.file () != unit.file ())
+        if (class_file (c) != unit.file ())
           return;
 
         if (!object (c) || abstract (c))
@@ -487,7 +487,7 @@ namespace relational
           return;
         }
 
-        string id (c.fq_name (), 2); // Remove leading '::'.
+        string id (class_fq_name (c), 2); // Remove leading '::'.
 
         sema_rel::object_table& t(
           model_.new_node<sema_rel::object_table> (id));

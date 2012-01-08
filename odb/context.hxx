@@ -132,13 +132,7 @@ struct view_object
   // Return an alias or unqualified object name.
   //
   std::string
-  name () const
-  {
-    if (!alias.empty ())
-      return alias;
-
-    return kind == object ? obj->name () : orig_name;
-  }
+  name () const;
 
   enum kind_type { object, table };
 
@@ -429,6 +423,23 @@ public:
 
   static class_kind_type
   class_kind (semantics::class_&);
+
+  // Return class names. For ordinary classes, this will be the class
+  // name itself. For class template instantiations this will be the
+  // typedef name used in the pragma.
+  //
+  static string
+  class_name (semantics::class_&);
+
+  static string
+  class_fq_name (semantics::class_&);
+
+  // Return the class file. For ordinary classes, this will be the file
+  // where the class is defined. For class template instantiations this
+  // will be the file containing the pragma.
+  //
+  static semantics::path
+  class_file (semantics::class_&);
 
   // Database names and types.
   //

@@ -250,4 +250,25 @@ private:
   traversal::inherits inherits_;
 };
 
+// Traverse composite values that are class template instantiations.
+//
+struct typedefs: traversal::typedefs, context
+{
+  typedefs (bool traverse_included)
+      : included_ (traverse_included)
+  {
+  }
+
+  virtual void
+  traverse (semantics::typedefs&);
+
+  // Returns true if we should traverse this typedef.
+  //
+  bool
+  check (semantics::typedefs&);
+
+private:
+  bool included_;
+};
+
 #endif // ODB_COMMON_HXX

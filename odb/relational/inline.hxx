@@ -55,15 +55,16 @@ namespace relational
           // In case of the const instance, we only generate the call if
           // there is a const callback.
           //
+          string const& type (class_fq_name (c));
+
           if (const_)
           {
             if (c.count ("callback-const"))
-              os << "static_cast< const " << c.fq_name () << "& > (x)." <<
+              os << "static_cast< const " << type << "& > (x)." <<
                 name << " (e, db);";
           }
           else
-            os << "static_cast< " << c.fq_name () << "& > (x)." <<
-              name << " (e, db);";
+            os << "static_cast< " << type << "& > (x)." << name << " (e, db);";
         }
         else if (obj)
           inherits (c);
@@ -83,7 +84,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (c.file () != unit.file ())
+        if (class_file (c) != unit.file ())
           return;
 
         if (object (c))
@@ -103,7 +104,7 @@ namespace relational
       traverse_object (type& c)
       {
         bool abstract (context::abstract (c));
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
         string traits ("access::object_traits< " + type + " >");
 
         semantics::data_member* id (id_member (c));
@@ -111,7 +112,15 @@ namespace relational
 
         semantics::data_member* optimistic (context::optimistic (c));
 
-        os << "// " << c.name () << endl
+        // Base class the contains the object id and version for optimistic
+        // concurrency.
+        //
+        semantics::class_* base (
+          id != 0 && base_id
+          ? dynamic_cast<semantics::class_*> (&id->scope ())
+          : 0);
+
+        os << "// " << class_name (c) << endl
            << "//" << endl
            << endl;
 
@@ -130,7 +139,7 @@ namespace relational
           if (id != 0)
           {
             if (base_id)
-              os << "return object_traits< " << id->scope ().fq_name () <<
+              os << "return object_traits< " << class_fq_name (*base) <<
                 " >::id (obj);";
             else
               os << "return obj." << id->name () << ";";
@@ -150,7 +159,7 @@ namespace relational
                << traits << "::" << endl
                << "id (const image_type& i)"
                << "{"
-               << "return object_traits< " << id->scope ().fq_name () <<
+               << "return object_traits< " << class_fq_name (*base) <<
               " >::id (i);"
                << "}";
           }
@@ -164,8 +173,8 @@ namespace relational
                << traits << "::" << endl
                << "version (const image_type& i)"
                << "{"
-               << "return object_traits< " <<
-              optimistic->scope ().fq_name () << " >::version (i);"
+               << "return object_traits< " << class_fq_name (*base) <<
+              " >::version (i);"
                << "}";
           }
 
@@ -177,7 +186,7 @@ namespace relational
                << "void " << traits << "::" << endl
                << "bind (" << bind_vector << " b, id_image_type& i)"
                << "{"
-               << "object_traits< " << id->scope ().fq_name () <<
+               << "object_traits< " << class_fq_name (*base) <<
               " >::bind (b, i);"
                << "}";
           }
@@ -189,7 +198,7 @@ namespace relational
                << "init (id_image_type& i, const id_type& id" <<
               (optimistic != 0 ? ", const version_type* v" : "") << ")"
                << "{"
-               << "object_traits< " << id->scope ().fq_name () <<
+               << "object_traits< " << class_fq_name (*base) <<
               " >::init (i, id" << (optimistic != 0 ? ", v" : "") << ");"
                << "}";
           }
@@ -298,10 +307,10 @@ namespace relational
       virtual void
       traverse_view (type& c)
       {
-        string const& type (c.fq_name ());
+        string const& type (class_fq_name (c));
         string traits ("access::view_traits< " + type + " >");
 
-        os << "// " << c.name () << endl
+        os << "// " << class_name (c) << endl
            << "//" << endl
            << endl;
 

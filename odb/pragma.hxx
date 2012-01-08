@@ -101,15 +101,25 @@ struct pragma_set: std::set<pragma>
 // namespace case is the global_namespace node.
 //
 typedef std::map<tree, pragma_list> loc_pragmas;
+extern loc_pragmas loc_pragmas_;
 
 // Pragmas associated with this declaration.
 //
 typedef std::map<tree, pragma_set> decl_pragmas;
-
-extern loc_pragmas loc_pragmas_;
 extern decl_pragmas decl_pragmas_;
+
+// List of pragma names (in context name form) that disqualify a value
+// type from being treated as composite (i.e., simple value pragmas).
+//
+typedef std::set<std::string> pragma_name_set;
+extern pragma_name_set simple_value_pragmas_;
 
 extern "C" void
 register_odb_pragmas (void*, void*);
+
+struct pragmas_failed {};
+
+void
+post_process_pragmas ();
 
 #endif // ODB_PRAGMA_HXX
