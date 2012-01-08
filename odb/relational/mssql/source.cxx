@@ -504,7 +504,7 @@ namespace relational
               // Handle NULL pointers and extract the id.
               //
               os << "{"
-                 << "typedef object_traits< " << c->fq_name () <<
+                 << "typedef object_traits< " << class_fq_name (*c) <<
                 " > obj_traits;";
 
               if (weak_pointer (mt))
@@ -876,7 +876,7 @@ namespace relational
               // Handle NULL pointers and extract the id.
               //
               os << "{"
-                 << "typedef object_traits< " << c->fq_name () <<
+                 << "typedef object_traits< " << class_fq_name (*c) <<
                 " > obj_traits;"
                  << "typedef pointer_traits< " << mi.fq_type () <<
                 " > ptr_traits;"
