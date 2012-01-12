@@ -25,12 +25,6 @@ namespace relational
         object_columns (base const& x): base (x) {}
 
         virtual string
-        default_bool (semantics::data_member&, bool v)
-        {
-          return v ? "TRUE" : "FALSE";
-        }
-
-        virtual string
         default_enum (semantics::data_member& m, tree en, string const&)
         {
           // Make sure the column is mapped to an integer or DECIMAL type.
