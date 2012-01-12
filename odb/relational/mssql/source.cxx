@@ -733,8 +733,9 @@ namespace relational
           os << traits << "::set_image (" << endl
              << "i." << mi.var << "value, " << mi.st->scale << ", " <<
             "is_null, " << member << ");"
-             << "i." << mi.var << "size_ind = is_null ? " <<
-            "SQL_NULL_DATA : sizeof (i." << mi.var << "value);";
+             << "i." << mi.var << "size_ind = is_null" << endl
+             << "  ? SQL_NULL_DATA" << endl
+             << "  : static_cast<SQLLEN> (sizeof (i." << mi.var << "value));";
         }
 
         virtual void
@@ -780,8 +781,9 @@ namespace relational
           os << traits << "::set_image (" << endl
              << "i." << mi.var << "value, " << mi.st->scale << ", " <<
             "is_null, " << member << ");"
-             << "i." << mi.var << "size_ind = is_null ? " <<
-            "SQL_NULL_DATA : sizeof (i." << mi.var << "value);";
+             << "i." << mi.var << "size_ind = is_null" << endl
+             << "  ? SQL_NULL_DATA" << endl
+             << "  : static_cast<SQLLEN> (sizeof (i." << mi.var << "value));";
         }
 
         virtual void
