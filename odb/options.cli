@@ -430,7 +430,7 @@ class options
   // SQL Server-specific options.
   //
 
-  unsigned int --mssql-short-limit = 900
+  unsigned int --mssql-short-limit = 1024
   {
     "<size>",
     "Specify the short data size limit. If character, national character,
@@ -443,9 +443,9 @@ class options
      in chunks using the \cb{SQLGetData()}/\cb{SQLPutData()} ODBC functions.
      While the long data approach reduces the amount of memory used by the
      application, it may require greater CPU resources. The default short
-     data limit is 900 bytes. When setting a custom short data limit make
-     sure that it is sufficiently large so that no character object id
-     in the application is treated as long data."
+     data limit is 1024 bytes. When setting a custom short data limit make
+     sure that it is sufficiently large so that no character object id in
+     the application is treated as long data."
   };
 
   //

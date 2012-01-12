@@ -49,7 +49,8 @@ namespace relational
         {"float", "REAL", 0},
         {"double", "FLOAT", 0},
 
-        {"::std::string", "VARCHAR(8000)", "VARCHAR(900)"},
+        {"::std::string", "VARCHAR(512)", "VARCHAR(256)"},
+        {"::std::wstring", "NVARCHAR(512)", "NVARCHAR(256)"},
 
         {"::size_t", "BIGINT", 0},
         {"::std::size_t", "BIGINT", 0},
