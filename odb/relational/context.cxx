@@ -26,6 +26,7 @@ namespace relational
         model (current ().model),
         generate_grow (current ().generate_grow),
         need_alias_as (current ().need_alias_as),
+        insert_send_auto_id (current ().insert_send_auto_id),
         bind_vector (data_->bind_vector_),
         truncated_vector (data_->truncated_vector_)
   {

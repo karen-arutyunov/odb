@@ -83,6 +83,7 @@ namespace relational
 
       generate_grow = false;
       need_alias_as = true;
+      insert_send_auto_id = false;
       data_->bind_vector_ = "mssql::bind*";
 
       // Populate the C++ type to DB type map.

@@ -576,8 +576,14 @@ namespace relational
               os << " + ";
 
             os << "(" << endl
-               << "sk == statement_insert ? 0 : " <<
-              cc.id + cc.readonly << "UL)";
+               << "sk == statement_insert ? ";
+
+            if (insert_send_auto_id || !auto_ (*id_member (c)))
+              os << "0";
+            else
+              os << cc.id << "UL";
+
+            os << " : " << cc.id + cc.readonly << "UL)";
           }
 
           os << ")";
@@ -2233,7 +2239,8 @@ namespace relational
       init_auto_id (semantics::data_member&, // id member
                     string const&)           // image variable prefix
       {
-        assert (false);
+        if (insert_send_auto_id)
+          assert (false);
       }
 
       virtual void
@@ -2839,7 +2846,7 @@ namespace relational
            << "im.version++;"
            << endl;
 
-        if (auto_id)
+        if (auto_id && insert_send_auto_id)
         {
           string const& n (id->name ());
           string var ("im." + n + (n[n.size () - 1] == '_' ? "" : "_"));
