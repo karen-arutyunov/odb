@@ -40,8 +40,7 @@ namespace relational
             else
               os << "return 0;";
 
-            os << "}"
-               << endl;
+            os << "}";
           }
         }
       };
