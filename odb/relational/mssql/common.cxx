@@ -551,6 +551,18 @@ namespace relational
       }
 
       virtual void
+      column_ctor (string const& type, string const& base)
+      {
+        os << type << " (const char* t," << endl
+           << "const char* c," << endl
+           << "unsigned short p = 0," << endl
+           << "unsigned short s = 0xFFFF)" << endl
+           << "  : " << base << " (t, c, p, s)"
+           << "{"
+           << "}";
+      }
+
+      virtual void
       column_ctor_extra (semantics::data_member& m)
       {
         // For some types we need to pass precision and scale.

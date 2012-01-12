@@ -208,6 +208,15 @@ namespace relational
     }
   }
 
+  void query_columns::
+  column_ctor (string const& type, string const& base)
+  {
+    os << type << " (const char* t, const char* c)" << endl
+       << "  : " << base << " (t, c)"
+       << "{"
+       << "}";
+  }
+
   bool query_columns::
   traverse_column (semantics::data_member& m, string const& column, bool)
   {
@@ -276,12 +285,11 @@ namespace relational
         //
         os << "struct " << name << "_type_: " <<
           name << "_pointer_type_, " << name << "_column_type_"
-           << "{"
-           << name << "_type_ (const char* t, const char* c)" << endl
-           << "  : " << name << "_column_type_ (t, c)"
-           << "{"
-           << "}"
-           << "};";
+           << "{";
+
+        column_ctor (name + "_type_", name + "_column_type_");
+
+        os << "};";
       }
 
       os << "static const " << name << "_type_ " << name << ";"

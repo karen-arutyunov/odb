@@ -91,6 +91,9 @@ namespace relational
     }
 
     virtual void
+    column_ctor (string const& type, string const& base);
+
+    virtual void
     column_ctor_extra (semantics::data_member&)
     {
     }
