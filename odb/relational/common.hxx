@@ -91,6 +91,11 @@ namespace relational
     }
 
     virtual void
+    column_ctor_extra (semantics::data_member&)
+    {
+    }
+
+    virtual void
     traverse_object (semantics::class_&);
 
     virtual void

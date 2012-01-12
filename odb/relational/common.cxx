@@ -291,8 +291,11 @@ namespace relational
     {
       os << "template <const char* table>" << endl
          << "const typename " << scope_ << "::" << name << "_type_" << endl
-         << scope_ << "::" << name << " (" <<
-         "table, " << strlit (column) << ");"
+         << scope_ << "::" << name << " (" << "table, " << strlit (column);
+
+      column_ctor_extra (m);
+
+      os << ");"
          << endl;
     }
 

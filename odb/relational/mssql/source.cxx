@@ -1260,22 +1260,12 @@ namespace relational
         class_ (base const& x): base (x) {}
 
         virtual void
-        init_auto_id (semantics::data_member&, string const&)
+        init_image_pre (type& c)
         {
-          // We are not sending anything for IDENTITY columns.
-        }
-
-        virtual void
-        init_image_pre (type& /*c*/)
-        {
-          /*
-            @@ TODO
-
           if (options.generate_query () && !(composite (c) || abstract (c)))
             os << "if (i.change_callback_.callback != 0)" << endl
                << "(i.change_callback_.callback) (i.change_callback_.context);"
                << endl;
-          */
         }
 
         virtual void

@@ -550,6 +550,84 @@ namespace relational
         return member_database_type_id_.database_type_id (m);
       }
 
+      virtual void
+      column_ctor_extra (semantics::data_member& m)
+      {
+        // For some types we need to pass precision and scale.
+        //
+        sql_type const& st (column_sql_type (m));
+
+        switch (st.type)
+        {
+        case sql_type::DECIMAL:
+          {
+            os << ", " << st.prec << ", " << st.scale;
+            break;
+          }
+        case sql_type::FLOAT:
+          {
+            os << ", " << st.prec;
+            break;
+          }
+        case sql_type::CHAR:
+        case sql_type::VARCHAR:
+          {
+            os << ", " << st.prec;
+            break;
+          }
+        case sql_type::TEXT:
+          {
+            os << ", 0"; // Unlimited.
+            break;
+          }
+        case sql_type::NCHAR:
+        case sql_type::NVARCHAR:
+          {
+            os << ", " << st.prec; // In 2-byte characters.
+            break;
+          }
+        case sql_type::NTEXT:
+          {
+            os << ", 0"; // Unlimited.
+            break;
+          }
+        case sql_type::BINARY:
+        case sql_type::VARBINARY:
+          {
+            os << ", " << st.prec;
+            break;
+          }
+        case sql_type::IMAGE:
+          {
+            os << ", 0"; // Unlimited.
+            break;
+          }
+          // Date-time types.
+          //
+        case sql_type::TIME:
+        case sql_type::DATETIME2:
+        case sql_type::DATETIMEOFFSET:
+          {
+            os << ", 0, " << st.scale; // Fractional seconds (scale).
+            break;
+          }
+        case sql_type::DATETIME:
+          {
+            os << ", 0, 3";
+            break;
+          }
+        case sql_type::SMALLDATETIME:
+          {
+            os << ", 0, 8";
+            break;
+          }
+        default:
+          {
+            break;
+          }
+        }
+      }
+
     private:
       member_database_type_id member_database_type_id_;
     };

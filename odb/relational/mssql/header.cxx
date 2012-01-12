@@ -25,9 +25,6 @@ namespace relational
         {
           if (!(composite (c) || abstract (c)))
           {
-            /*
-              @@ TODO
-
             bool gc (options.generate_query ());
 
             if (gc)
@@ -43,9 +40,7 @@ namespace relational
             else
               os << "return 0;";
 
-            os << "}"
-               << endl;
-            */
+            os << "}";
           }
         }
       };
