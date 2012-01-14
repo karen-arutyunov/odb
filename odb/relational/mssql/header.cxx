@@ -133,7 +133,7 @@ namespace relational
         {
           // Extra character for the null-terminator that ODBC always adds.
           //
-          os << "char " << mi.var << "value[" << mi.st->prec << " + 1];"
+          os << "char " << mi.var << "value[" << mi.st->prec + 1 << "];"
              << "SQLLEN " << mi.var << "size_ind;"
              << endl;
         }
@@ -152,7 +152,7 @@ namespace relational
           // Extra character for the null-terminator that ODBC always adds.
           //
           os << "mssql::ucs2_char " << mi.var << "value[" <<
-            mi.st->prec << " + 1];"
+            mi.st->prec + 1 << "];"
              << "SQLLEN " << mi.var << "size_ind;"
              << endl;
         }
