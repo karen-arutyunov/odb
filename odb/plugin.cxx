@@ -194,17 +194,25 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
       {
         plugin_argument& a (plugin_info->argv[i]);
 
+        // A value cannot contain '=' so it is passed as the backspace
+        // character.
+        //
+        string v (a.value != 0 ? a.value : "");
+        for (size_t i (0); i < v.size (); ++i)
+          if (v[i] == '\b')
+            v[i] = '=';
+
         // Handle service options.
         //
         if (strcmp (a.key, "svc-path") == 0)
         {
-          profile_paths_.push_back (path (a.value));
+          profile_paths_.push_back (path (v));
           continue;
         }
 
         if (strcmp (a.key, "svc-file") == 0)
         {
-          file_ = path (a.value);
+          file_ = path (v);
           continue;
         }
 
@@ -214,9 +222,9 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
         argv_str.push_back (opt);
         argv.push_back (const_cast<char*> (argv_str.back ().c_str ()));
 
-        if (a.value != 0)
+        if (!v.empty ())
         {
-          argv_str.push_back (a.value);
+          argv_str.push_back (v);
           argv.push_back (const_cast<char*> (argv_str.back ().c_str ()));
         }
       }

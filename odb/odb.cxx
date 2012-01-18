@@ -800,6 +800,14 @@ encode_plugin_option (string const& k, string const& cv)
   if (!v.empty ())
   {
     o += '=';
+
+    // A value cannot contain '='. Encode it as the backspace
+    // character.
+    //
+    for (size_t i (0); i < v.size (); ++i)
+      if (v[i] == '=')
+        v[i] = '\b';
+
     o += v;
   }
 
