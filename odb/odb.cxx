@@ -225,6 +225,7 @@ main (int argc, char* argv[])
     // Parse the default options file if we have one.
     //
     strings def_inc_dirs;
+    strings def_defines;
 #ifdef DEFAULT_OPTIONS_FILE
     {
       path file (DEFAULT_OPTIONS_FILE);
@@ -264,6 +265,57 @@ main (int argc, char* argv[])
             def_inc_dirs.push_back (a);
           }
         }
+        // -framework (Mac OS X)
+        //
+        else if (a == "-framework")
+        {
+          def_inc_dirs.push_back (a);
+
+          if (!s.more () || (a = s.next ()).empty ())
+          {
+            e << file << ": error: expected argument for the -framework "
+              << "option" << endl;
+            return 1;
+          }
+
+          def_inc_dirs.push_back (a);
+        }
+        // -D
+        //
+        else if (n > 1 && a[0] == '-' && a[1] == 'D')
+        {
+          def_defines.push_back (a);
+
+          if (n == 2) // -D macro
+          {
+            if (!s.more () || (a = s.next ()).empty ())
+            {
+              e << file << ": error: expected argument for the -D option"
+                << endl;
+              return 1;
+            }
+
+            def_defines.push_back (a);
+          }
+        }
+        // -U
+        //
+        else if (n > 1 && a[0] == '-' && a[1] == 'U')
+        {
+          def_defines.push_back (a);
+
+          if (n == 2) // -U macro
+          {
+            if (!s.more () || (a = s.next ()).empty ())
+            {
+              e << file << ": error: expected argument for the -U option"
+                << endl;
+              return 1;
+            }
+
+            def_defines.push_back (a);
+          }
+        }
         else
           plugin_args.push_back (a);
       }
@@ -277,6 +329,11 @@ main (int argc, char* argv[])
     args.push_back ("-S");
     args.push_back ("-Wunknown-pragmas");
     args.push_back ("-fplugin=" + plugin.string ());
+
+    // Add the default preprocessor defines (-D/-U) before the user-supplied
+    // ones.
+    //
+    args.insert (args.end (), def_defines.begin (), def_defines.end ());
 
     // Parse driver options.
     //
