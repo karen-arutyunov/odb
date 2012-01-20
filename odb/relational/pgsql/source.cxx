@@ -108,7 +108,7 @@ namespace relational
 
         virtual bool
         traverse_column (semantics::data_member& m,
-                         std::string const&,
+                         string const&,
                          bool first)
         {
           // Ignore certain columns depending on what kind statement we are
