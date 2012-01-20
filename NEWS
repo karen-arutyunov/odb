@@ -1,5 +1,12 @@
 Version 1.8.0
 
+  * Support for the Microsoft SQL Server database. The provided connection
+    factories include 'new' (a new connection is created every time one is
+    requested) and 'pool' (a pool of connections is maintained). The Boost
+    and Qt profiles have been updated to support this database. For more
+    information, refer to Chapter 17, "Microsoft SQL Server Database" in
+    the ODB manual.
+
   * Support for defining composite value types as C++ class template
     instantiations. For more information, refer to Section 7.2, "Composite
     Value Types" in the ODB manual as well as the 'composite' example in the
