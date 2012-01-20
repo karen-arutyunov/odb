@@ -12,8 +12,10 @@
 
 using namespace std;
 
+//
 // database
 //
+
 static const char* database_[] =
 {
   "mssql",
@@ -55,8 +57,10 @@ operator<< (ostream& os, database db)
   return os << db.string ();
 }
 
+//
 // schema_format
 //
+
 static const char* schema_format_[] =
 {
   "embedded",
@@ -95,8 +99,10 @@ operator<< (ostream& os, schema_format sf)
   return os << sf.string ();
 }
 
+//
 // oracle_version
 //
+
 istream&
 operator>> (istream& is, oracle_version& v)
 {
@@ -131,6 +137,48 @@ operator>> (istream& is, oracle_version& v)
 
 ostream&
 operator<< (ostream& os, oracle_version v)
+{
+  return os << v.ver_major () << '.' << v.ver_minor ();
+}
+
+//
+// mssql_version
+//
+
+istream&
+operator>> (istream& is, mssql_version& v)
+{
+  unsigned short major, minor;
+
+  // Extract the major version.
+  //
+  is >> major;
+
+  if (!is.fail ())
+  {
+    // Extract the decimal point.
+    //
+    char p;
+    is >> p;
+
+    if (!is.fail () && p == '.')
+    {
+      // Extract the minor version.
+      //
+      is >> minor;
+
+      if (!is.fail ())
+        v = mssql_version (major, minor);
+    }
+    else
+      is.setstate (istream::failbit);
+  }
+
+  return is;
+}
+
+ostream&
+operator<< (ostream& os, mssql_version v)
 {
   return os << v.ver_major () << '.' << v.ver_minor ();
 }

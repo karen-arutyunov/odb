@@ -357,6 +357,69 @@ namespace relational
     private:
       string type_id_;
     };
+
+    struct has_long_data: object_columns_base, context
+    {
+      has_long_data (bool& r): r_ (r) {}
+
+      virtual bool
+      traverse_column (semantics::data_member& m, string const&, bool)
+      {
+        if (inverse (m))
+          return false;
+
+        sql_type const& st (column_sql_type (m));
+
+        switch (st.type)
+        {
+        case sql_type::CHAR:
+        case sql_type::VARCHAR:
+          {
+            // Zero precision means max in VARCHAR(max).
+            //
+            if (st.prec == 0 || st.prec > options.mssql_short_limit ())
+              r_ = true;
+
+            break;
+          }
+        case sql_type::NCHAR:
+        case sql_type::NVARCHAR:
+          {
+            // Zero precision means max in NVARCHAR(max). Note that
+            // the precision is in 2-byte UCS-2 characters, not bytes.
+            //
+            if (st.prec == 0 || st.prec * 2 > options.mssql_short_limit ())
+              r_ = true;
+
+            break;
+          }
+        case sql_type::BINARY:
+        case sql_type::VARBINARY:
+          {
+            // Zero precision means max in VARCHAR(max).
+            //
+            if (st.prec == 0 || st.prec > options.mssql_short_limit ())
+              r_ = true;
+
+            break;
+          }
+        case sql_type::TEXT:
+        case sql_type::NTEXT:
+        case sql_type::IMAGE:
+          {
+            r_ = true;
+            break;
+          }
+        default:
+          break;
+        }
+
+        return true;
+      }
+
+    private:
+      bool& r_;
+    };
   }
 }
 #endif // ODB_RELATIONAL_MSSQL_COMMON_HXX

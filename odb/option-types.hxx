@@ -69,8 +69,6 @@ operator<< (std::ostream&, schema_format);
 //
 struct oracle_version
 {
-  oracle_version (): major_ (0), minor_ (0) {}
-
   oracle_version (unsigned short major, unsigned short minor)
       : major_ (major), minor_ (minor)
   {
@@ -138,5 +136,77 @@ operator>> (std::istream&, oracle_version&);
 
 std::ostream&
 operator<< (std::ostream&, oracle_version);
+
+//
+//
+struct mssql_version
+{
+  mssql_version (unsigned short major, unsigned short minor)
+      : major_ (major), minor_ (minor)
+  {
+  }
+
+  unsigned short
+  ver_major () const
+  {
+    return major_;
+  }
+
+  unsigned short
+  ver_minor () const
+  {
+    return minor_;
+  }
+
+private:
+  unsigned short major_;
+  unsigned short minor_;
+};
+
+inline bool
+operator== (const mssql_version& x, const mssql_version& y)
+{
+  return x.ver_major () == y.ver_major ();
+}
+
+inline bool
+operator!= (const mssql_version& x, const mssql_version& y)
+{
+  return !(x == y);
+}
+
+inline bool
+operator< (const mssql_version& x, const mssql_version& y)
+{
+  return x.ver_major () < y.ver_major () ||
+    (x.ver_major () == y.ver_major () &&
+     x.ver_minor () <  y.ver_minor ());
+}
+
+inline bool
+operator> (const mssql_version& x, const mssql_version& y)
+{
+  return x.ver_major () > y.ver_major () ||
+    (x.ver_major () == y.ver_major () &&
+     x.ver_minor () > y.ver_minor ());
+}
+
+inline bool
+operator<= (const mssql_version& x, const mssql_version& y)
+{
+  return !(x > y);
+}
+
+inline bool
+operator>= (const mssql_version& x, const mssql_version& y)
+{
+  return !(x < y);
+}
+
+std::istream&
+operator>> (std::istream&, mssql_version&);
+
+std::ostream&
+operator<< (std::ostream&, mssql_version);
 
 #endif // ODB_OPTION_TYPES_HXX

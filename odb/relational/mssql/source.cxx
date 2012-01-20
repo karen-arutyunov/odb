@@ -1297,12 +1297,41 @@ namespace relational
                                  relational::query_parameters&,
                                  persist_position p)
         {
-          if (p != persist_after_columns)
-            return;
-
           semantics::data_member* id (id_member (c));
 
-          if (id != 0 && id->count ("auto"))
+          if (id == 0 || !auto_ (*id))
+            return;
+
+          // SQL Server 2005 has a bug that causes it to fail on an
+          // INSERT statement with the OUTPUT clause if data for one
+          // of the inserted columns is supplied at execution (long
+          // data). To work around this problem we use the less
+          // efficient batch of INSERT and SELECT statements.
+          //
+          if (options.mssql_server_version () <= mssql_version (9, 0))
+          {
+            bool ld (false);
+
+            if (c.count ("mssql-has-long-data"))
+              ld = c.get<bool> ("mssql-has-long-data");
+            else
+            {
+              has_long_data t (ld);
+              t.traverse (c);
+              c.set ("mssql-has-long-data", ld);
+            }
+
+            if (ld)
+            {
+              if (p == persist_after_values)
+                os << endl
+                   << strlit ("; SELECT SCOPE_IDENTITY()");
+
+              return;
+            }
+          }
+
+          if (p == persist_after_columns)
             os << strlit (" OUTPUT INSERTED." + column_qname (*id)) << endl;
         }
 
