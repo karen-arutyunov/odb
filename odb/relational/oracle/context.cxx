@@ -49,7 +49,7 @@ namespace relational
         {"float", "BINARY_FLOAT", 0},
         {"double", "BINARY_DOUBLE", 0},
 
-        {"::std::string", "VARCHAR2(4000)", 0},
+        {"::std::string", "VARCHAR2(512)", 0},
 
         {"::size_t", "NUMBER(20)", 0},
         {"::std::size_t", "NUMBER(20)", 0}
