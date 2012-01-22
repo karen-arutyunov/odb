@@ -311,12 +311,18 @@ namespace relational
                 {
                   prefix += " ";
                   prefix += id;
+
+                  r.prec = true;
+                  r.prec_value = 2;
                   s = parse_prec;
                 }
                 else if (id == "DAY" && prefix == "INTERVAL")
                 {
                   prefix += " ";
                   prefix += id;
+
+                  r.prec = true;
+                  r.prec_value = 2;
                   s = parse_prec;
                 }
                 else if (id == "TO" &&
@@ -329,11 +335,17 @@ namespace relational
                 else if (id == "MONTH" && prefix == "INTERVAL YEAR TO")
                 {
                   r.type = sql_type::INTERVAL_YM;
-                  s = parse_prec;
+                  s = parse_done;
                 }
                 else if (id == "SECOND" && prefix == "INTERVAL DAY TO")
                 {
                   r.type = sql_type::INTERVAL_DS;
+
+                  // Store seconds precision in scale since prec holds
+                  // the days precision.
+                  //
+                  r.scale = true;
+                  r.scale_value = 6;
                   s = parse_prec;
                 }
                 //
@@ -530,8 +542,19 @@ namespace relational
                       "type declaration");
                   }
 
-                  r.prec = true;
-                  r.prec_value = v;
+                  // Store seconds precision in scale since prec holds
+                  // the days precision for INTERVAL DAY TO SECOND.
+                  //
+                  if (r.type == sql_type::INTERVAL_DS)
+                  {
+                    r.scale = true;
+                    r.scale_value = static_cast<short> (v);
+                  }
+                  else
+                  {
+                    r.prec = true;
+                    r.prec_value = v;
+                  }
 
                   t = l.next ();
                 }
@@ -540,14 +563,12 @@ namespace relational
                 //
                 if (t.punctuation () == sql_token::p_comma)
                 {
-                  // If we are parsing the precision of a TIMESTAMP or INTERVAL
-                  // type, there should be no scale present.
+                  // Scale can only be specified for NUMBER.
                   //
-                  if (r.type == sql_type::TIMESTAMP ||
-                      string (prefix, 0, 8) == "INTERVAL")
+                  if (r.type != sql_type::NUMBER)
                   {
                     throw invalid_sql_type (
-                      "invalid precision in Oracle type declaration");
+                      "invalid scale in Oracle type declaration");
                   }
 
                   t = l.next ();
