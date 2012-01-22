@@ -115,9 +115,9 @@ namespace relational
         {
           const sql_type& st (*mi.st);
 
-          if (st.range)
+          if (st.prec)
           {
-            unsigned short r (st.range_value);
+            unsigned short r (st.prec_value);
 
             if (!st.scale)
             {
@@ -137,10 +137,10 @@ namespace relational
             {
               // We can calculate the decimal exponent of the normalised
               // floating point equivalent of the fixed point number using
-              // e = r - s, where r is the range, s is the scale, and e the
-              // exponent. We can then use this to determine whether or not a
-              // value of Oracle SQL type NUMBER can be completely stored in
-              // the native floating point type.
+              // e = p - s, where p is the precision, s is the scale, and
+              // e the exponent. We can then use this to determine whether
+              // or not a value of Oracle SQL type NUMBER can be completely
+              // stored in the native floating point type.
               //
 
               // The maximum decimal precision of a float is 7 significant
@@ -168,7 +168,7 @@ namespace relational
             }
           }
           else
-            // If there is not range, then this is a floating-point number.
+            // If there is no precision, then this is a floating-point number.
             //
             traverse_double (mi);
 
@@ -180,9 +180,9 @@ namespace relational
           // seeing that in 99% of cases it is the precision that is the
           // limiting factor and not the exponent.
           //
-          if (mi.st->range_value <= 24)
+          if (mi.st->prec_value <= 24)
             traverse_float (mi);
-          else if (mi.st->range_value <= 53)
+          else if (mi.st->prec_value <= 53)
             traverse_double (mi);
           else
             traverse_big_float (mi);

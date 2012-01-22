@@ -55,14 +55,14 @@ namespace relational
       };
 
       sql_type () :
-          type (invalid), range (false), scale (false), byte_semantics (true)
+          type (invalid), prec (false), scale (false), byte_semantics (true)
       {
       }
 
       core_type type;
 
-      bool range;
-      unsigned short range_value; // Oracle max value is 4000.
+      bool prec;
+      unsigned short prec_value; // Oracle max value is 4000.
 
       bool scale;
       short scale_value; // Oracle min value is -84. Max value is 127.

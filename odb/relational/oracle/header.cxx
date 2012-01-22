@@ -105,8 +105,8 @@ namespace relational
           //
           size_t n (19);
 
-          if (mi.st->range)
-            n = mi.st->range_value / 2 + mi.st->range_value % 2;
+          if (mi.st->prec)
+            n = mi.st->prec_value / 2 + mi.st->prec_value % 2;
 
           // We require an additional byte for each of the exponent and
           // negative value terminator values.
@@ -182,7 +182,7 @@ namespace relational
         virtual void
         traverse_string (member_info& mi)
         {
-          size_t n (mi.st->range ? mi.st->range_value : 1);
+          size_t n (mi.st->prec ? mi.st->prec_value : 1);
 
           // National characters can be either UTF-8 or UTF-16 encoded, both
           // of which have a maximum character encoding size of 4 bytes.

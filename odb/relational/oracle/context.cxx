@@ -197,7 +197,7 @@ namespace relational
         enum state
         {
           parse_identifier,
-          parse_range,
+          parse_prec,
           parse_done
         };
 
@@ -223,10 +223,10 @@ namespace relational
                 if ((id == "NUMBER") && prefix.empty ())
                 {
                   // If NUMBER has no precision/scale, then it is a floating-
-                  // point number. We indicate this by having no range.
+                  // point number. We indicate this by having no precision.
                   //
                   r.type = sql_type::NUMBER;
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 else if ((id == "DEC" || id == "DECIMAL" || id == "NUMERIC")
                          && prefix.empty ())
@@ -236,17 +236,17 @@ namespace relational
                   // point number. The scale defaults to zero.
                   //
                   r.type = sql_type::NUMBER;
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 else if ((id == "INT" || id == "INTEGER" || id == "SMALLINT")
                          && prefix.empty ())
                 {
                   // INT, INTEGER, and SMALLINT map to NUMBER(38). They may not
-                  // have range or scale explicitly specified.
+                  // have precision or scale explicitly specified.
                   //
                   r.type = sql_type::NUMBER;
-                  r.range = true;
-                  r.range_value = 38;
+                  r.prec = true;
+                  r.prec_value = 38;
 
                   s = parse_done;
                 }
@@ -256,10 +256,10 @@ namespace relational
                 else if (id == "FLOAT" && prefix.empty ())
                 {
                   r.type = sql_type::FLOAT;
-                  r.range = true;
-                  r.range_value = 126;
+                  r.prec = true;
+                  r.prec_value = 126;
 
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 else if (id == "DOUBLE" && prefix.empty ())
                 {
@@ -268,16 +268,16 @@ namespace relational
                 else if (id == "PRECISION" && prefix == "DOUBLE")
                 {
                   r.type = sql_type::FLOAT;
-                  r.range = true;
-                  r.range_value = 126;
+                  r.prec = true;
+                  r.prec_value = 126;
 
                   s = parse_done;
                 }
                 else if (id == "REAL" && prefix.empty ())
                 {
                   r.type = sql_type::FLOAT;
-                  r.range = true;
-                  r.range_value = 63;
+                  r.prec = true;
+                  r.prec_value = 63;
 
                   s = parse_done;
                 }
@@ -311,13 +311,13 @@ namespace relational
                 {
                   prefix += " ";
                   prefix += id;
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 else if (id == "DAY" && prefix == "INTERVAL")
                 {
                   prefix += " ";
                   prefix += id;
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 else if (id == "TO" &&
                          (prefix == "INTERVAL YEAR" ||
@@ -329,12 +329,12 @@ namespace relational
                 else if (id == "MONTH" && prefix == "INTERVAL YEAR TO")
                 {
                   r.type = sql_type::INTERVAL_YM;
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 else if (id == "SECOND" && prefix == "INTERVAL DAY TO")
                 {
                   r.type = sql_type::INTERVAL_DS;
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 //
                 // Timestamp with time zone (not supported).
@@ -388,12 +388,12 @@ namespace relational
                   // However, this may change in future versions.
                   //
                   r.type = sql_type::VARCHAR2;
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 else if (id == "NVARCHAR2")
                 {
                   r.type = sql_type::NVARCHAR2;
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 else if (id == "VARYING")
                 {
@@ -406,7 +406,7 @@ namespace relational
                            prefix == "NATIONAL CHARACTER")
                     r.type = sql_type::NVARCHAR2;
 
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 else if (id == "NATIONAL" && prefix.empty ())
                 {
@@ -415,7 +415,7 @@ namespace relational
                 else if (id == "RAW" && prefix.empty ())
                 {
                   r.type = sql_type::RAW;
-                  s = parse_range;
+                  s = parse_prec;
                 }
                 //
                 // LOB types.
@@ -461,8 +461,8 @@ namespace relational
                 if (prefix == "CHAR" || prefix == "CHARACTER")
                 {
                   r.type = sql_type::CHAR;
-                  r.range = true;
-                  r.range_value = 1;
+                  r.prec = true;
+                  r.prec_value = 1;
                   r.byte_semantics = true;
                 }
                 else if (prefix == "NCHAR" ||
@@ -470,15 +470,15 @@ namespace relational
                          prefix == "NATIONAL CHARACTER")
                 {
                   r.type = sql_type::NCHAR;
-                  r.range = true;
-                  r.range_value = 1;
+                  r.prec = true;
+                  r.prec_value = 1;
                   r.byte_semantics = false;
                 }
                 else if (prefix == "TIMESTAMP")
                 {
                   r.type = sql_type::TIMESTAMP;
-                  r.range = true;
-                  r.range_value = 6;
+                  r.prec = true;
+                  r.prec_value = 6;
                 }
                 else
                 {
@@ -486,11 +486,11 @@ namespace relational
                     "incomplete Oracle type declaration: '" + prefix + "'");
                 }
 
-                // All of the possible types handled in this block can take an
-                // optional range specifier. Set the state and fall through to
-                // the parse_range handler.
+                // All of the possible types handled in this block can take
+                // an optional precision specifier. Set the state and fall
+                // through to the parse_prec handler.
                 //
-                s = parse_range;
+                s = parse_prec;
               }
               else
               {
@@ -504,7 +504,7 @@ namespace relational
               // Fall through.
               //
             }
-          case parse_range:
+          case parse_prec:
             {
               if (t.punctuation () == sql_token::p_lparen)
               {
@@ -513,10 +513,11 @@ namespace relational
                 if (t.type () != sql_token::t_int_lit)
                 {
                   throw invalid_sql_type (
-                    "integer range expected in Oracle type declaration");
+                    "integer size/precision expected in Oracle type "
+                    "declaration");
                 }
 
-                // Parse the range.
+                // Parse the precision.
                 //
                 {
                   unsigned short v;
@@ -525,12 +526,12 @@ namespace relational
                   if (!(is >> v && is.eof ()))
                   {
                     throw invalid_sql_type (
-                      "invalid range value '" + t.literal () + "' in Oracle "
+                      "invalid prec value '" + t.literal () + "' in Oracle "
                       "type declaration");
                   }
 
-                  r.range = true;
-                  r.range_value = v;
+                  r.prec = true;
+                  r.prec_value = v;
 
                   t = l.next ();
                 }
@@ -621,8 +622,8 @@ namespace relational
             if (prefix == "CHAR" || prefix == "CHARACTER")
             {
               r.type = sql_type::CHAR;
-              r.range = true;
-              r.range_value = 1;
+              r.prec = true;
+              r.prec_value = 1;
               r.byte_semantics = true;
             }
             else if (prefix == "NCHAR" ||
@@ -630,15 +631,15 @@ namespace relational
                      prefix == "NATIONAL CHARACTER")
             {
               r.type = sql_type::NCHAR;
-              r.range = true;
-              r.range_value = 1;
+              r.prec = true;
+              r.prec_value = 1;
               r.byte_semantics = false;
             }
             else if (prefix == "TIMESTAMP")
             {
               r.type = sql_type::TIMESTAMP;
-              r.range = true;
-              r.range_value = 6;
+              r.prec = true;
+              r.prec_value = 6;
             }
             else
             {
