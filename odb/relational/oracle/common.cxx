@@ -215,7 +215,6 @@ namespace relational
         {
           traverse_interval_ym (mi);
           break;
-
         }
       case sql_type::INTERVAL_DS:
         {
@@ -478,6 +477,89 @@ namespace relational
     struct query_columns: relational::query_columns, context
     {
       query_columns (base const& x): base (x) {}
+
+      virtual void
+      column_ctor (string const& type, string const& base)
+      {
+        os << type << " (const char* t," << endl
+           << "const char* c," << endl
+           << "unsigned short p = 0xFFF," << endl
+           << "short s = 0xFFF)" << endl
+           << "  : " << base << " (t, c, p, s)"
+           << "{"
+           << "}";
+      }
+
+      virtual void
+      column_ctor_extra (semantics::data_member& m)
+      {
+        // For some types we need to pass precision and scale.
+        //
+        sql_type const& st (column_sql_type (m));
+
+        switch (st.type)
+        {
+        case sql_type::NUMBER:
+          {
+            if (st.prec)
+            {
+              os << ", " << st.prec_value;
+
+              if (st.scale)
+                os << ", " << st.scale_value;
+            }
+            break;
+          }
+        case sql_type::FLOAT:
+          {
+            os << ", " << st.prec_value;
+            break;
+          }
+        case sql_type::TIMESTAMP:
+          {
+            os << ", " << st.prec_value;
+            break;
+          }
+        case sql_type::INTERVAL_YM:
+          {
+            os << ", " << st.prec_value;
+            break;
+          }
+        case sql_type::INTERVAL_DS:
+          {
+            // INTERVAL DAY TO SECOND has two precisions.
+            //
+            os << ", " << st.prec_value << ", " << st.scale_value;
+            break;
+          }
+        case sql_type::CHAR:
+        case sql_type::NCHAR:
+        case sql_type::VARCHAR2:
+        case sql_type::NVARCHAR2:
+        case sql_type::RAW:
+          {
+            // The same logic as in header.cxx.
+            //
+            size_t n (st.prec ? st.prec_value : 1);
+
+            if (!st.byte_semantics)
+              n *= 4;
+
+            if (st.type == sql_type::VARCHAR2 ||
+                st.type == sql_type::NVARCHAR2)
+              n = n > 4000 ? 4000 : n;
+            else
+              n = n > 2000 ? 2000 : n;
+
+            os << ", " << n;
+            break;
+          }
+        default:
+          {
+            break;
+          }
+        }
+      }
 
       virtual string
       database_type_id (semantics::data_member& m)

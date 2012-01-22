@@ -400,11 +400,13 @@ namespace relational
                   // However, this may change in future versions.
                   //
                   r.type = sql_type::VARCHAR2;
+                  r.byte_semantics = true;
                   s = parse_prec;
                 }
                 else if (id == "NVARCHAR2")
                 {
                   r.type = sql_type::NVARCHAR2;
+                  r.byte_semantics = false;
                   s = parse_prec;
                 }
                 else if (id == "VARYING")
@@ -412,11 +414,17 @@ namespace relational
                   // VARYING always appears at the end of an identifier.
                   //
                   if (prefix == "CHAR" || prefix == "CHARACTER")
+                  {
                     r.type = sql_type::VARCHAR2;
+                    r.byte_semantics = true;
+                  }
                   else if (prefix == "NCHAR" ||
                            prefix == "NATIONAL CHAR" ||
                            prefix == "NATIONAL CHARACTER")
+                  {
                     r.type = sql_type::NVARCHAR2;
+                    r.byte_semantics = false;
+                  }
 
                   s = parse_prec;
                 }
@@ -473,18 +481,18 @@ namespace relational
                 if (prefix == "CHAR" || prefix == "CHARACTER")
                 {
                   r.type = sql_type::CHAR;
+                  r.byte_semantics = true;
                   r.prec = true;
                   r.prec_value = 1;
-                  r.byte_semantics = true;
                 }
                 else if (prefix == "NCHAR" ||
                          prefix == "NATIONAL CHAR" ||
                          prefix == "NATIONAL CHARACTER")
                 {
                   r.type = sql_type::NCHAR;
+                  r.byte_semantics = false;
                   r.prec = true;
                   r.prec_value = 1;
-                  r.byte_semantics = false;
                 }
                 else if (prefix == "TIMESTAMP")
                 {
@@ -643,18 +651,18 @@ namespace relational
             if (prefix == "CHAR" || prefix == "CHARACTER")
             {
               r.type = sql_type::CHAR;
+              r.byte_semantics = true;
               r.prec = true;
               r.prec_value = 1;
-              r.byte_semantics = true;
             }
             else if (prefix == "NCHAR" ||
                      prefix == "NATIONAL CHAR" ||
                      prefix == "NATIONAL CHARACTER")
             {
               r.type = sql_type::NCHAR;
+              r.byte_semantics = false;
               r.prec = true;
               r.prec_value = 1;
-              r.byte_semantics = false;
             }
             else if (prefix == "TIMESTAMP")
             {

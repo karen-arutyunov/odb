@@ -184,23 +184,20 @@ namespace relational
         {
           size_t n (mi.st->prec ? mi.st->prec_value : 1);
 
-          // National characters can be either UTF-8 or UTF-16 encoded, both
-          // of which have a maximum character encoding size of 4 bytes.
-          // Assume the database character set uses a single byte fixed width
-          // encoding.
+          // National characters can be either UTF-8 or UTF-16 encoded,
+          // both of which have a maximum character encoding size of 4
+          // bytes. Database character set can also be UTF-8 so if the
+          // size is specified in characters, then conservatively assume
+          // each character can take up to 4 bytes.
           //
-          sql_type::core_type t (mi.st->type);
-
-          if ((t == sql_type::NCHAR || t == sql_type::NVARCHAR2) &&
-              !mi.st->byte_semantics)
+          if (!mi.st->byte_semantics) // N*CHAR always has CHAR semantics.
             n *= 4;
 
-          if (t == sql_type::CHAR  ||
-              t == sql_type::NCHAR ||
-              t == sql_type::RAW)
-            n = n > 2000 ? 2000 : n;
-          else if (t == sql_type::VARCHAR2 || t == sql_type::NVARCHAR2)
+          if (mi.st->type == sql_type::VARCHAR2 ||
+              mi.st->type == sql_type::NVARCHAR2)
             n = n > 4000 ? 4000 : n;
+          else
+            n = n > 2000 ? 2000 : n;
 
           os << "char " << mi.var << "value[" << n << "];"
              << "ub2 " << mi.var << "size;"
