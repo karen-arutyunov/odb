@@ -220,35 +220,26 @@ namespace relational
                 //
                 // Numeric types.
                 //
-                if ((id == "NUMBER" || id == "DEC" || id == "DECIMAL") &&
-                    prefix.empty ())
+                if ((id == "NUMBER") && prefix.empty ())
                 {
-                  // DEC and DECIMAL are equivalent to NUMBER.
+                  // If NUMBER has no precision/scale, then it is a floating-
+                  // point number. We indicate this by having no range.
                   //
                   r.type = sql_type::NUMBER;
                   s = parse_range;
-
-                  // If NUMBER has not precision/scale, then it is a floating-
-                  // point number. We indicate this by having no range.
                 }
-                else if ((id == "DEC" || id == "DECIMAL" || id == "NUMERIC" ||
-                          id == "INT" || id == "INTEGER" || id == "SMALLINT")
+                else if ((id == "DEC" || id == "DECIMAL" || id == "NUMERIC")
                          && prefix.empty ())
                 {
-                  // DEC, DECIMAL, and NUMERIC are equivalent. They are
-                  // equivalent to NUMBER in all ways except that they may not
-                  // represent a floating point number. The scale defaults to
-                  // zero.
+                  // DEC, DECIMAL, and NUMERIC are equivalent to NUMBER in
+                  // all ways except that they may not represent a floating
+                  // point number. The scale defaults to zero.
                   //
                   r.type = sql_type::NUMBER;
-                  r.range = true;
-                  r.range = 38;
-
                   s = parse_range;
                 }
-                else if ((id == "INT" ||
-                          id == "INTEGER" ||
-                          id == "SMALLINT") && prefix.empty ())
+                else if ((id == "INT" || id == "INTEGER" || id == "SMALLINT")
+                         && prefix.empty ())
                 {
                   // INT, INTEGER, and SMALLINT map to NUMBER(38). They may not
                   // have range or scale explicitly specified.
