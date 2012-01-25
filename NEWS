@@ -12,6 +12,9 @@ Version 1.8.0
     Value Types" in the ODB manual as well as the 'composite' example in the
     odb-examples package.
 
+  * The --default-schema option has been renamed to --schema-name. The
+    --default-schema option is now used to specify the database schema.
+
   * Default Oracle mapping for std::string has changed from VARCHAR2(4000)
     to VARCHAR2(512).
 

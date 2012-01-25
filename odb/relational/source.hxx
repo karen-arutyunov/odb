@@ -3626,7 +3626,7 @@ namespace relational
 
         os << "static const schema_catalog_entry" << endl
            << "schema_catalog_entry_" << flat_name (type) << "_ (" << endl
-           << strlit (options.default_schema ()) << "," << endl
+           << strlit (options.schema_name ()) << "," << endl
            << "&" << traits << "::create_schema);"
            << endl;
       }

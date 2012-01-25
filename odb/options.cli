@@ -84,13 +84,13 @@ class options
      formats."
   };
 
-  std::string --default-schema = ""
+  std::string --schema-name = ""
   {
     "<name>",
-    "Use <name> as the default database schema name. Schema names are
-     primarily used for distinguishing between multiple embedded schemas in
-     the schema catalog. If this option is not specified, the empty name,
-     which corresponds to the default schema, is used."
+    "Use <name> as the database schema name. Schema names are primarily
+     used for distinguishing between multiple embedded schemas in the
+     schema catalog. If this option is not specified, the empty name,
+     which is the default schema name, is used."
   };
 
   std::string --default-pointer = "*"
