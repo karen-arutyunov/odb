@@ -181,23 +181,7 @@ operator< (tree_decl const& y) const
 {
   location_t xloc (decl ? DECL_SOURCE_LOCATION (decl) : prag->loc);
   location_t yloc (y.decl ? DECL_SOURCE_LOCATION (y.decl) : y.prag->loc);
-
-  if (xloc != yloc)
-    return xloc < yloc;
-
-  size_t xl (LOCATION_LINE (xloc));
-  size_t yl (LOCATION_LINE (yloc));
-
-  if (xl != yl)
-    return xl < yl;
-
-  size_t xc (LOCATION_COLUMN (xloc));
-  size_t yc (LOCATION_COLUMN (yloc));
-
-  if (xc != yc)
-    return xc < yc;
-
-  return false;
+  return xloc < yloc;
 }
 
 //
