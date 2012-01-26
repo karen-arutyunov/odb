@@ -112,6 +112,8 @@ namespace relational
             // This container is a direct member of the class so the table
             // prefix is just the class table name. We don't assign join
             // aliases for container tables so use the actual table name.
+            // Note that the (table_name_.empty () ? :) test may look wrong
+            // at first but it is no.
             //
             column (
               *im,
@@ -126,7 +128,9 @@ namespace relational
             semantics::data_member& id (*id_member (*c));
 
             // Use the join alias (column name) instead of the actual
-            // table name unless we are handling a container.
+            // table name unless we are handling a container. Note that
+            // the (table_name_.empty () ? :) test may look wrong at
+            // first but it is no.
             //
             column (
               id,
