@@ -1407,11 +1407,12 @@ namespace relational
               semantics::class_& o (*i->obj);
               string const& name (alias ? i->alias : class_name (o));
               string const& type (class_fq_name (o));
+              qname const& table (table_name (o));
 
               os << "// " << name << endl
                  << "//" << endl;
 
-              if (alias && i->alias != table_name (o))
+              if (alias && (table.qualified () || i->alias != table.uname ()))
                 os << "static const char " << name << "_alias_[];"
                    << endl
                    << "typedef" << endl
@@ -1450,8 +1451,9 @@ namespace relational
             bool alias (!vo->alias.empty ());
             semantics::class_& o (*vo->obj);
             string const& type (class_fq_name (o));
+            qname const& table (table_name (o));
 
-            if (alias && vo->alias != table_name (o))
+            if (alias && (table.qualified () || vo->alias != table.uname ()))
               os << "static const char query_alias[];"
                  << endl
                  << "struct query_type:" << endl

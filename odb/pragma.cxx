@@ -43,7 +43,112 @@ accumulate (compiler::context& ctx, string const& k, any const& v, location_t)
 //
 loc_pragmas loc_pragmas_;
 decl_pragmas decl_pragmas_;
+ns_loc_pragmas ns_loc_pragmas_;
 pragma_name_set simple_value_pragmas_;
+
+// Parse a qualified string. It can be in one of the following formats:
+//
+// "foo.bar.baz"     (can have empty leading component, e.g., ".bar.baz")
+// "foo"."bar"."baz" (can have empty leading component, e.g., ""."bar"."baz")
+// ."foo.bar"        (used to specify unqualifed names with periods)
+//
+// Empty leading components means fully qualified (similar to ::foo in C++).
+//
+static bool
+parse_qname (tree& t,
+             cpp_ttype& tt,
+             string const& p, // Pragma name for diagnostic.
+             qname& name,
+             bool* expr = 0,       // If specified, detect an expression
+             string* expr_str = 0) // and store it here.
+{
+  assert (tt == CPP_STRING || tt == CPP_DOT);
+
+  // Handle the special case of unqualified name which can contain periods.
+  //
+  if (tt == CPP_DOT)
+  {
+    tt = pragma_lex (&t);
+
+    if (tt != CPP_STRING)
+    {
+      error () << "name expected after '.' in db pragma " << p << endl;
+      return false;
+    }
+
+    name = TREE_STRING_POINTER (t);
+    tt = pragma_lex (&t);
+    return true;
+  }
+
+  name.clear ();
+  string str (TREE_STRING_POINTER (t));
+
+  // See what comes after the string.
+  //
+  tt = pragma_lex (&t);
+
+  if (tt == CPP_DOT)
+  {
+    name.append (str);
+
+    for (; tt == CPP_DOT; tt = pragma_lex (&t))
+    {
+      tt = pragma_lex (&t);
+
+      if (tt != CPP_STRING)
+      {
+        error () << "name expected after '.' in db pragma " << p << endl;
+        return false;
+      }
+
+      name.append (TREE_STRING_POINTER (t));
+    }
+
+    return true;
+  }
+
+  if (expr != 0 && tt == CPP_PLUS)
+  {
+    *expr = true;
+    *expr_str = str;
+    return true;
+  }
+
+  // Scan the string looking for '.' as well as for non-identifier
+  // characters if we need to detect expressions.
+  //
+  string::size_type prev (string::npos);
+
+  for (size_t i (0); i < str.size (); ++i)
+  {
+    char c (str[i]);
+
+    if (c == '.')
+    {
+      if (prev == string::npos)
+        name.append (string (str, 0, i));
+      else
+        name.append (string (str, prev + 1, i - prev - 1));
+
+      prev  = i;
+    }
+    else if (expr != 0 && !(isalnum (c) || c == '_'))
+    {
+      *expr = true;
+      *expr_str = str;
+      return true;
+    }
+  }
+
+  if (prev == string::npos)
+    name.append (str);
+  else
+    name.append (string (str, prev + 1, string::npos));
+
+  return true;
+}
+
 
 static bool
 parse_expression (tree& t,
@@ -245,12 +350,12 @@ check_qual_decl_type (tree d,
 {
   int tc (TREE_CODE (d));
 
-  if (p == "member")
+  if (p == "namespace")
   {
-    if (tc != FIELD_DECL)
+    if (tc != NAMESPACE_DECL)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
-                << "not refer to a data member" << endl;
+                << "not refer to a namespace" << endl;
       return false;
     }
   }
@@ -270,6 +375,15 @@ check_qual_decl_type (tree d,
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a type" << endl;
+      return false;
+    }
+  }
+  else if (p == "member")
+  {
+    if (tc != FIELD_DECL)
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a data member" << endl;
       return false;
     }
   }
@@ -359,13 +473,24 @@ check_spec_decl_type (tree d,
   }
   else if (p == "table")
   {
-    // Table can be used for both members (container) and types (container
+    // Table can be used for both members (container) and types (container,
     // object, or view).
     //
     if (tc != FIELD_DECL && !TYPE_P (d))
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a type or data member" << endl;
+      return false;
+    }
+  }
+  else if (p == "schema")
+  {
+    // For now schema can be used only for namespaces and objects.
+    //
+    if (tc != NAMESPACE_DECL && !CLASS_TYPE_P (d))
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a namespace or class" << endl;
       return false;
     }
   }
@@ -472,7 +597,7 @@ check_spec_decl_type (tree d,
 }
 
 static void
-add_pragma (pragma const& prag, tree decl)
+add_pragma (pragma const& prag, tree decl, bool ns)
 {
   if (decl)
     decl_pragmas_[decl].insert (prag);
@@ -480,10 +605,15 @@ add_pragma (pragma const& prag, tree decl)
   {
     tree scope (current_scope ());
 
-    if (!CLASS_TYPE_P (scope))
-      scope = global_namespace;
+    if (!ns)
+    {
+      if (!CLASS_TYPE_P (scope))
+        scope = global_namespace;
 
-    loc_pragmas_[scope].push_back (prag);
+      loc_pragmas_[scope].push_back (prag);
+    }
+    else
+      ns_loc_pragmas_.push_back (ns_loc_pragma (scope, prag));
   }
 }
 
@@ -492,7 +622,8 @@ handle_pragma (cpp_reader* reader,
                string const& p,
                string const& qualifier,
                tree decl,
-               string const& decl_name)
+               string const& decl_name,
+               bool ns) // True is this is a position namespace pragma.
 {
   tree t;
   cpp_ttype tt;
@@ -504,8 +635,10 @@ handle_pragma (cpp_reader* reader,
 
   if (p == "table")
   {
-    // table ("<name>")
-    // table ("<name>" [= "<alias>"] [: "<cond>"]  (view only)
+    // table (<name>)
+    // table (<name> [= "<alias>"] [: "<cond>"]  (view only)
+    //
+    // <name> := "name" | "name.name" | "name"."name"
     //
 
     // Make sure we've got the correct declaration type.
@@ -521,7 +654,7 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
 
-    if (tt != CPP_STRING)
+    if (tt != CPP_STRING && tt != CPP_DOT)
     {
       error () << "table name expected in db pragma " << p << endl;
       return;
@@ -536,9 +669,9 @@ handle_pragma (cpp_reader* reader,
     //
     view_object vo;
     vo.kind = view_object::table;
-    vo.orig_name = TREE_STRING_POINTER (t);
 
-    tt = pragma_lex (&t);
+    if (!parse_qname (t, tt, p, vo.tbl_name))
+      return; // Diagnostics has already been issued.
 
     if (tt == CPP_EQ)
     {
@@ -582,7 +715,9 @@ handle_pragma (cpp_reader* reader,
     //
     if (vo.alias.empty () && vo.cond.empty ())
       add_pragma (
-        pragma (p, name, vo.orig_name, loc, &check_spec_decl_type, 0), decl);
+        pragma (p, name, vo.tbl_name, loc, &check_spec_decl_type, 0),
+        decl,
+        ns);
 
     vo.scope = current_scope ();
     vo.loc = loc;
@@ -590,6 +725,45 @@ handle_pragma (cpp_reader* reader,
     name = "objects";
     adder = &accumulate<view_object>;
 
+    tt = pragma_lex (&t);
+  }
+  else if (p == "schema")
+  {
+    // schema (<name>)
+    //
+    // <name> := "name" | "name.name" | "name"."name"
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (pragma_lex (&t) != CPP_OPEN_PAREN)
+    {
+      error () << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    tt = pragma_lex (&t);
+
+    if (tt != CPP_STRING && tt != CPP_DOT)
+    {
+      error () << "table name expected in db pragma " << p << endl;
+      return;
+    }
+
+    qname s;
+    if (!parse_qname (t, tt, p, s))
+      return; // Diagnostics has already been issued.
+
+    if (tt != CPP_CLOSE_PAREN)
+    {
+      error () << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    val = s;
     tt = pragma_lex (&t);
   }
   else if (p == "pointer")
@@ -838,18 +1012,18 @@ handle_pragma (cpp_reader* reader,
 
     view_object vo;
     vo.kind = view_object::object;
-    vo.node = resolve_scoped_name (t, tt, vo.orig_name, true, p);
+    vo.obj_node = resolve_scoped_name (t, tt, vo.obj_name, true, p);
 
-    if (vo.node == 0)
+    if (vo.obj_node == 0)
       return; // Diagnostics has already been issued.
 
     // Get the actual type if this is a TYPE_DECL. Also get the main variant.
     //
-    if (TREE_CODE (vo.node) == TYPE_DECL)
-      vo.node = TREE_TYPE (vo.node);
+    if (TREE_CODE (vo.obj_node) == TYPE_DECL)
+      vo.obj_node = TREE_TYPE (vo.obj_node);
 
-    if (TYPE_P (vo.node)) // Can be a template.
-      vo.node = TYPE_MAIN_VARIANT (vo.node);
+    if (TYPE_P (vo.obj_node)) // Can be a template.
+      vo.obj_node = TYPE_MAIN_VARIANT (vo.obj_node);
 
     if (tt == CPP_EQ)
     {
@@ -951,8 +1125,8 @@ handle_pragma (cpp_reader* reader,
   else if (p == "column")
   {
     // column ("<name>")
-    // column ("<name>.<name>")
-    // column ("<name>"."<name>")
+    // column ("<name>.<name>")     (view only)
+    // column ("<name>"."<name>")   (view only)
     // column (fq-name)             (view only)
     // column (expr)                (view only)
     //
@@ -970,111 +1144,49 @@ handle_pragma (cpp_reader* reader,
 
     tt = pragma_lex (&t);
 
-    bool s (false);
-    string str;
-
-    // String can be just the column name, a table name followed by the
-    // column name, or part of an expression, depending on what comes
-    // after the string.
-    //
-    if (tt == CPP_STRING)
+    bool expr (false);
+    string expr_str;
+    if (tt == CPP_STRING || tt == CPP_DOT)
     {
-      s = true;
-      str = TREE_STRING_POINTER (t);
-      tt = pragma_lex (&t);
-    }
+      qname qn;
 
-    if (tt == CPP_CLOSE_PAREN)
-    {
-      if (s)
+      if (!parse_qname (t, tt, p, qn, &expr, &expr_str))
+        return; // Diagnostics has already been issued.
+
+      if (tt == CPP_CLOSE_PAREN)
       {
-        // "<name>" or "<name>.<name>"
-        //
         table_column tc;
-        tc.expr = false;
+        tc.expr = expr;
 
-        // Scan the string and see if we have any non-identifier
-        // characters. If so, assume it is an expression. While
-        // at it also see if there is '.'.
-        //
-        string::size_type p (string::npos);
-
-        for (size_t i (0); i < str.size (); ++i)
-        {
-          char c (str[i]);
-
-          if (c == '.')
-          {
-            if (p != string::npos)
-            {
-              // Second '.' -- something fishy is going on.
-              tc.expr = true;
-              break;
-            }
-
-            p  = i;
-          }
-          else if (!(isalnum (c) || c == '_'))
-          {
-            tc.expr = true;
-            break;
-          }
-        }
-
-        if (!tc.expr && p != string::npos)
-        {
-          tc.table.assign (str, 0, p);
-          tc.column.assign (str, p + 1, string::npos);
-        }
+        if (expr)
+          tc.column = expr_str;
         else
-          tc.column = str;
-
-        val = tc;
-      }
-      else
-      {
-        error () << "column name expected in db pragma " << p << endl;
-        return;
-      }
-    }
-    else if (tt == CPP_DOT)
-    {
-      if (s)
-      {
-        // "<name>"."<name>"
-        //
-        table_column tc;
-        tc.expr = false;
-
-        if (pragma_lex (&t) != CPP_STRING)
         {
-          error () << "column name expected after '.' in db pragma " << p
-                   << endl;
-          return;
+          tc.table = qn.qualifier ();
+          tc.column = qn.uname ();
         }
 
-        tc.table = str;
-        tc.column = TREE_STRING_POINTER (t);
         val = tc;
-        tt = pragma_lex (&t);
       }
-      else
+      else if (!expr)
       {
-        error () << "column name expected in db pragma " << p << endl;
+        error () << "column name, expression, or data member name expected "
+                 << "in db pragma " << p << endl;
         return;
       }
     }
-    else
+
+    if (val.empty ())
     {
       // We have an expression.
       //
       column_expr e;
 
-      if (s)
+      if (expr)
       {
         e.push_back (column_expr_part ());
         e.back ().kind = column_expr_part::literal;
-        e.back ().value = str;
+        e.back ().value = expr_str;
 
         if (tt != CPP_PLUS)
         {
@@ -1124,8 +1236,8 @@ handle_pragma (cpp_reader* reader,
         }
         else
         {
-          error () << "string literal or name expected in db pragma " << p
-                   << endl;
+          error () << "column name, expression, or data member name expected "
+                   << "in db pragma " << p << endl;
           return;
         }
 
@@ -1143,12 +1255,6 @@ handle_pragma (cpp_reader* reader,
       e.loc = loc;
       val = e;
       name = "column-expr";
-    }
-
-    if (tt != CPP_CLOSE_PAREN)
-    {
-      error () << "')' expected at the end of db pragma " << p << endl;
-      return;
     }
 
     tt = pragma_lex (&t);
@@ -1541,13 +1647,15 @@ handle_pragma (cpp_reader* reader,
 
   // Record this pragma.
   //
-  add_pragma (pragma (p, name, val, loc, &check_spec_decl_type, adder), decl);
+  add_pragma (
+    pragma (p, name, val, loc, &check_spec_decl_type, adder), decl, ns);
 
   // See if there are any more pragmas.
   //
   if (tt == CPP_NAME)
   {
-    handle_pragma (reader, IDENTIFIER_POINTER (t), qualifier, decl, decl_name);
+    handle_pragma (
+      reader, IDENTIFIER_POINTER (t), qualifier, decl, decl_name, ns);
   }
   else if (tt != CPP_EOF)
     error () << "unexpected text after " << p << " in db pragma" << endl;
@@ -1562,12 +1670,73 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
   tree decl (0), orig_decl (0);
   string decl_name;
   location_t loc (input_location);
+  bool ns (false); // Namespace location pragma.
 
   // Pragma qualifiers.
   //
-  if (p == "object" ||
-      p == "view" ||
-      p == "value")
+  if (p == "namespace")
+  {
+    // namespace [(<identifier>)]
+    // namespace ()                (refers to global namespace)
+    //
+
+    tt = pragma_lex (&t);
+
+    if (tt == CPP_OPEN_PAREN)
+    {
+      tt = pragma_lex (&t);
+
+      if (tt == CPP_NAME || tt == CPP_SCOPE)
+      {
+        decl = resolve_scoped_name (t, tt, decl_name, false, p);
+
+        if (decl == 0)
+          return; // Diagnostics has already been issued.
+
+        // Make sure we've got the correct declaration type.
+        //
+        if (!check_qual_decl_type (decl, decl_name, p, loc))
+          return;
+
+        // Resolve namespace aliases if any.
+        //
+        decl = ORIGINAL_NAMESPACE (decl);
+
+        if (tt != CPP_CLOSE_PAREN)
+        {
+          error () << "')' expected at the end of db pragma " << p << endl;
+          return;
+        }
+
+        tt = pragma_lex (&t);
+      }
+      else if (tt == CPP_CLOSE_PAREN)
+      {
+        decl = global_namespace;
+        tt = pragma_lex (&t);
+      }
+      else
+      {
+        error () << "data member name expected in db pragma " << p << endl;
+        return;
+      }
+    }
+    else
+    {
+      // Make sure we are in a namespace scope.
+      //
+      if (TREE_CODE (current_scope ()) != NAMESPACE_DECL)
+      {
+        error() << "db pragma " << p << " is not in a namespace scope" << endl;
+        return;
+      }
+
+      ns = true;
+    }
+  }
+  else if (p == "object" ||
+           p == "view" ||
+           p == "value")
   {
     // object [(<identifier>)]
     // view [(<identifier>)]
@@ -1688,7 +1857,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "transient" ||
            p == "version")
   {
-    handle_pragma (reader, p, "member", 0, "");
+    handle_pragma (reader, p, "member", 0, "", false);
     return;
   }
   else
@@ -1712,20 +1881,31 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
   {
     tree scope (current_scope ());
 
-    if (!CLASS_TYPE_P (scope))
-      scope = global_namespace;
+    if (!ns)
+    {
+      if (!CLASS_TYPE_P (scope))
+        scope = global_namespace;
 
-    loc_pragmas_[scope].push_back (prag);
+      loc_pragmas_[scope].push_back (prag);
+    }
+    else
+      ns_loc_pragmas_.push_back (ns_loc_pragma (scope, prag));
   }
 
   // See if there are any more pragmas.
   //
   if (tt == CPP_NAME)
   {
-    handle_pragma (reader, IDENTIFIER_POINTER (t), p, decl, decl_name);
+    handle_pragma (reader, IDENTIFIER_POINTER (t), p, decl, decl_name, ns);
   }
   else if (tt != CPP_EOF)
     error () << "unexpected text after " << p << " in db pragma" << endl;
+}
+
+extern "C" void
+handle_pragma_db_namespace (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "namespace");
 }
 
 extern "C" void
@@ -1980,6 +2160,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion (0, "db", handle_pragma_db);
 
   /*
+  c_register_pragma_with_expansion ("db", "namespace", handle_pragma_db_namespace);
   c_register_pragma_with_expansion ("db", "object", handle_pragma_db_object);
   c_register_pragma_with_expansion ("db", "view", handle_pragma_db_view);
   c_register_pragma_with_expansion ("db", "value", handle_pragma_db_value);

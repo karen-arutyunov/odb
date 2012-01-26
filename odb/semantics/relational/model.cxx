@@ -25,7 +25,7 @@ namespace semantics
           //
           {
             type_info ti (typeid (model));
-            ti.add_base (typeid (scope));
+            ti.add_base (typeid (qscope));
             insert (ti);
           }
         }

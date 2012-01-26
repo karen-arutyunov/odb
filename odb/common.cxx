@@ -120,7 +120,7 @@ traverse (semantics::class_& c)
     if (table_prefix_.level == 0)
     {
       table_prefix_.prefix = table_name (c);
-      table_prefix_.prefix += '_';
+      table_prefix_.prefix += "_";
       table_prefix_.level = 1;
       tb = true;
     }
@@ -170,7 +170,8 @@ traverse (semantics::data_member& m)
     om_.member_scope_.push_back (class_inheritance_chain ());
     om_.member_scope_.back ().push_back (comp);
 
-    string old_flat_prefix, old_table_prefix, old_member_prefix;
+    qname old_table_prefix;
+    string old_flat_prefix, old_member_prefix;
 
     if (om_.build_flat_prefix_)
     {
@@ -225,15 +226,27 @@ append (semantics::data_member& m, table_prefix& tp)
 {
   context& ctx (context::current ());
 
-  // If the user provided a table prefix, then use it verbatim. Also
-  // drop the top-level table prefix in this case.
+  // If a custom table prefix was specified, then ignore the top-level
+  // table prefix (this corresponds to a container directly inside an
+  // object) but keep the schema unless the alternative schema is fully
+  // qualified.
   //
   if (m.count ("table"))
   {
-    if (tp.level <= 1)
-      tp.prefix = ctx.options.table_prefix ();
+    qname p, n (m.get<qname> ("table"));
 
-    tp.prefix += m.get<string> ("table");
+    if (n.fully_qualified ())
+      p = n.qualifier ();
+    else
+    {
+      p = tp.prefix.qualifier ();
+      p.append (n.qualifier ());
+    }
+
+    p.append (tp.level <= 1 ? ctx.options.table_prefix () : tp.prefix.uname ());
+    p += n.uname ();
+
+    tp.prefix.swap (p);
   }
   // Otherwise use the member name and add an underscore unless it is
   // already there.
@@ -244,12 +257,12 @@ append (semantics::data_member& m, table_prefix& tp)
     size_t n (name.size ());
 
     if (tp.prefix.empty ())
-      tp.prefix = ctx.options.table_prefix ();
+      tp.prefix.append (ctx.options.table_prefix ());
 
     tp.prefix += name;
 
     if (n != 0 && name[n - 1] != '_')
-      tp.prefix += '_';
+      tp.prefix += "_";
   }
 
   tp.level++;

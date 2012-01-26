@@ -7,13 +7,13 @@
 #define ODB_SEMANTICS_RELATIONAL_KEY_HXX
 
 #include <odb/semantics/relational/elements.hxx>
-#include <odb/semantics/relational/column.hxx>
 
 namespace semantics
 {
   namespace relational
   {
     class key;
+    class column;
 
     class contains: public edge
     {
@@ -51,7 +51,7 @@ namespace semantics
       column_type* column_;
     };
 
-    class key: public nameable
+    class key: public virtual node
     {
       typedef std::vector<contains*> contains_list;
 
@@ -83,12 +83,6 @@ namespace semantics
       add_edge_left (contains& e)
       {
         contains_.push_back (&e);
-      }
-
-    protected:
-      key (string const& id)
-          : nameable (id)
-      {
       }
 
     private:

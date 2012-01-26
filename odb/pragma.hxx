@@ -103,6 +103,23 @@ struct pragma_set: std::set<pragma>
 typedef std::map<tree, pragma_list> loc_pragmas;
 extern loc_pragmas loc_pragmas_;
 
+// Position pragmas for namespaces. Because re-opened namespaces do
+// not have any representation in the GCC tree, these are handled in
+// a special way. They are stored as a list of pragmas and their outer
+// namespaces.
+//
+struct ns_loc_pragma
+{
+  typedef ::pragma pragma_type;
+  ns_loc_pragma (tree n, pragma_type const& p): ns (n), pragma (p) {}
+
+  tree ns;
+  pragma_type pragma;
+};
+
+typedef std::vector<ns_loc_pragma> ns_loc_pragmas;
+extern ns_loc_pragmas ns_loc_pragmas_;
+
 // Pragmas associated with this declaration.
 //
 typedef std::map<tree, pragma_set> decl_pragmas;

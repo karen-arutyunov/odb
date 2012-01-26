@@ -94,7 +94,8 @@ namespace traversal
     // Edges
     //
 
-    struct names: edge<semantics::relational::names>
+    template <typename N>
+    struct names: edge<semantics::relational::names<N> >
     {
       names ()
       {
@@ -102,18 +103,28 @@ namespace traversal
 
       names (node_dispatcher& n)
       {
-        node_traverser (n);
+        this->node_traverser (n);
       }
 
       virtual void
-      traverse (type&);
+      traverse (semantics::relational::names<N>& e)
+      {
+        dispatch (e.nameable ());
+      }
     };
+
+    typedef names<semantics::relational::uname> unames;
+    typedef names<semantics::relational::qname> qnames;
 
     //
     // Nodes
     //
 
-    struct nameable: node<semantics::relational::nameable> {};
+    template <typename N>
+    struct nameable: node<semantics::relational::nameable<N> > {};
+
+    typedef nameable<semantics::relational::uname> unameable;
+    typedef nameable<semantics::relational::qname> qnameable;
 
     //
     //
@@ -140,7 +151,11 @@ namespace traversal
       }
     };
 
-    struct scope: scope_template<semantics::relational::scope> {};
+    template <typename N>
+    struct scope: scope_template<semantics::relational::scope<N> > {};
+
+    typedef scope<semantics::relational::uname> uscope;
+    typedef scope<semantics::relational::qname> qscope;
   }
 }
 

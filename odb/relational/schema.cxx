@@ -44,7 +44,7 @@ namespace relational
       {
 
         instance<drop_model> model (*em, emos, f);
-        trav_rel::names names;
+        trav_rel::qnames names;
         instance<drop_table> table (*em, emos, f);
         instance<drop_index> index (*em, emos, f);
 
@@ -70,7 +70,7 @@ namespace relational
       //
       {
         instance<create_model> model (*em, emos, f);
-        trav_rel::names names;
+        trav_rel::qnames names;
         instance<create_table> table (*em, emos, f);
         instance<create_index> index (*em, emos, f);
 

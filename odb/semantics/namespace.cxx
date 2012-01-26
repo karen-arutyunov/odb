@@ -10,12 +10,13 @@ namespace semantics
 {
   namespace_::
   namespace_ (path const& file, size_t line, size_t column, tree tn)
-      : node (file, line, column, tn)
+      : node (file, line, column, tn), original_ (0)
   {
   }
 
   namespace_::
   namespace_ ()
+      : original_ (0)
   {
   }
 

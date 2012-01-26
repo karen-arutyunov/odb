@@ -19,7 +19,7 @@ class parser
 public:
   class failed {};
 
-  parser (options const&, loc_pragmas const&, decl_pragmas const&);
+  parser (options const&, loc_pragmas&, ns_loc_pragmas&, decl_pragmas&);
 
   std::auto_ptr<semantics::unit>
   parse (tree global_scope, semantics::path const& main_file);

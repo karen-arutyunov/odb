@@ -25,7 +25,7 @@ namespace semantics
           //
           {
             type_info ti (typeid (column));
-            ti.add_base (typeid (nameable));
+            ti.add_base (typeid (unameable));
             insert (ti);
           }
         }

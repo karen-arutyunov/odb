@@ -34,6 +34,36 @@ namespace relational
         }
       };
       entry<create_column> create_column_;
+
+      struct create_foreign_key: relational::create_foreign_key, context
+      {
+        create_foreign_key (base const& x): base (x) {}
+
+        virtual string
+        table_name (sema_rel::foreign_key& fk)
+        {
+          // In SQLite, the referenced table cannot be qualified with the
+          // database name (it has to be in the same database anyway).
+          //
+          return quote_id (fk.referenced_table ().uname ());
+        }
+      };
+      entry<create_foreign_key> create_foreign_key_;
+
+      struct create_index: relational::create_index, context
+      {
+        create_index (base const& x): base (x) {}
+
+        virtual string
+        table_name (sema_rel::index& in)
+        {
+          // In SQLite, the index table cannot be qualified with the
+          // database name (it has to be in the same database anyway).
+          //
+          return quote_id (in.table ().name ().uname ());
+        }
+      };
+      entry<create_index> create_index_;
     }
   }
 }

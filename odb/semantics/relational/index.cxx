@@ -25,6 +25,7 @@ namespace semantics
           //
           {
             type_info ti (typeid (index));
+            ti.add_base (typeid (qnameable));
             ti.add_base (typeid (key));
             insert (ti);
           }

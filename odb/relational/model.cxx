@@ -144,17 +144,17 @@ namespace relational
       }
       catch (sema_rel::duplicate_name const& e)
       {
-        semantics::node& n (*e.nameable.get<semantics::node*> ("cxx-node"));
-        semantics::node& d (*e.duplicate.get<semantics::node*> ("cxx-node"));
+        semantics::node& o (*e.orig.get<semantics::node*> ("cxx-node"));
+        semantics::node& d (*e.dup.get<semantics::node*> ("cxx-node"));
 
         cerr << d.file () << ":" << d.line () << ":" << d.column ()
-             << ": error: " << e.duplicate.kind () << " name '"
-             << e.nameable.name () << "' conflicts with an already defined "
-             << e.nameable.kind () << " name"
+             << ": error: " << e.dup.kind () << " name '" << e.orig_name
+             << "' conflicts with an already defined " << e.orig.kind ()
+             << " name"
              << endl;
 
-        cerr << n.file () << ":" << n.line () << ":" << n.column ()
-             << ": info: conflicting " << e.nameable.kind () << " is "
+        cerr << o.file () << ":" << o.line () << ":" << o.column ()
+             << ": info: conflicting " << e.orig.kind () << " is "
              << "defined here"
              << endl;
 

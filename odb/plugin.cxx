@@ -113,7 +113,7 @@ gate_callback (void*, void*)
 
     // Parse the GCC tree to semantic graph.
     //
-    parser p (*options_, loc_pragmas_, decl_pragmas_);
+    parser p (*options_, loc_pragmas_, ns_loc_pragmas_, decl_pragmas_);
     auto_ptr<unit> u (p.parse (global_namespace, file_));
 
     // Validate, pass 1.

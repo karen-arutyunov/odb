@@ -112,11 +112,11 @@ namespace relational
     }
     else
     {
-      // For now use column name as table alias. This will become problematic
-      // when we add support for composite ids.
+      // For now use column name as table alias.
+      // @@ This will become problematic when we add support for composite ids.
       //
       os << "const char " << scope_ <<  "::" << name << "_alias_[] = " <<
-         strlit (column) << ";"
+        strlit (quote_id (column)) << ";"
          << endl;
 
       if (inv)
@@ -299,7 +299,8 @@ namespace relational
     {
       os << "template <const char* table>" << endl
          << "const typename " << scope_ << "::" << name << "_type_" << endl
-         << scope_ << "::" << name << " (" << "table, " << strlit (column);
+         << scope_ << "::" << name << " (" << "table, " <<
+        strlit (quote_id (column));
 
       column_ctor_extra (m);
 

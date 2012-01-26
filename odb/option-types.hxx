@@ -8,6 +8,10 @@
 
 #include <iosfwd>
 
+#include <odb/semantics/relational/name.hxx>
+
+using semantics::relational::qname;
+
 struct database
 {
   enum value

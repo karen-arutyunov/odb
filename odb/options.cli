@@ -143,6 +143,12 @@ class options
      profile."
   };
 
+  qname --default-schema
+  {
+    "<schema>",
+    "Place database objects (tables, indexes, etc) into <schema>."
+  };
+
   std::string --table-prefix
   {
     "<prefix>",

@@ -25,8 +25,8 @@ namespace semantics
           //
           {
             type_info ti (typeid (table));
-            ti.add_base (typeid (nameable));
-            ti.add_base (typeid (scope));
+            ti.add_base (typeid (qnameable));
+            ti.add_base (typeid (uscope));
             insert (ti);
           }
 

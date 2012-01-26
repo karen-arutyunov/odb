@@ -32,6 +32,12 @@ namespace relational
   inline context::string context::
   quote_id (string const& id) const
   {
+    return current ().quote_id_impl (qname (id));
+  }
+
+  inline context::string context::
+  quote_id (qname const& id) const
+  {
     return current ().quote_id_impl (id);
   }
 }

@@ -12,11 +12,11 @@ namespace semantics
 {
   namespace relational
   {
-    class table: public nameable, public scope
+    class table: public qnameable, public uscope
     {
     protected:
       table (string const& id)
-          : nameable (id)
+          : qnameable (id)
       {
       }
     };

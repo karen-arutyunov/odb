@@ -98,7 +98,7 @@ namespace relational
 
     protected:
       virtual string
-      quote_id_impl (string const&) const;
+      quote_id_impl (qname const&) const;
 
     protected:
       virtual string

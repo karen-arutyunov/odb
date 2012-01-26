@@ -25,7 +25,7 @@ class parser::impl
 public:
   typedef parser::failed failed;
 
-  impl (options const&, loc_pragmas const&, decl_pragmas const&);
+  impl (options const&, loc_pragmas&, ns_loc_pragmas&, decl_pragmas&);
 
   auto_ptr<unit>
   parse (tree global_scope, path const& main_file);
@@ -159,8 +159,9 @@ private:
 
 private:
   options const& ops_;
-  loc_pragmas const& loc_pragmas_;
-  decl_pragmas const& decl_pragmas_;
+  loc_pragmas& loc_pragmas_;
+  ns_loc_pragmas& ns_loc_pragmas_;
+  decl_pragmas& decl_pragmas_;
 
   bool trace;
   ostream& ts;
@@ -170,6 +171,9 @@ private:
   size_t error_;
 
   decl_set decls_;
+
+  typedef map<location_t, tree> decl_map;
+  decl_map all_decls_;
 };
 
 bool parser::impl::tree_decl::
@@ -638,9 +642,13 @@ emit_union (tree u, path const& file, size_t line, size_t clmn, bool stub)
 //
 
 parser::impl::
-impl (options const& ops, loc_pragmas const& lp, decl_pragmas const& dp)
+impl (options const& ops,
+      loc_pragmas & lp,
+      ns_loc_pragmas& nslp,
+      decl_pragmas& dp)
     : ops_ (ops),
       loc_pragmas_ (lp),
+      ns_loc_pragmas_ (nslp),
       decl_pragmas_ (dp),
       trace (ops.trace ()),
       ts (cerr)
@@ -652,6 +660,7 @@ parse (tree global_scope, path const& main_file)
 {
   auto_ptr<unit> u (new unit (main_file));
   u->insert (global_namespace, *u);
+  process_named_pragmas (global_namespace, *u);
 
   unit_ = u.get ();
   scope_ = unit_;
@@ -683,7 +692,7 @@ parse (tree global_scope, path const& main_file)
   //
   collect (global_scope);
 
-  // Add namespace-level location pragmas if any.
+  // Add namespace-level position pragmas if any.
   //
   {
     loc_pragmas::const_iterator i (loc_pragmas_.find (global_namespace));
@@ -692,9 +701,68 @@ parse (tree global_scope, path const& main_file)
       decls_.insert (i->second.begin (), i->second.end ());
   }
 
+  // Convert position namespace pragmas to name pragmas.
+  //
+  for (ns_loc_pragmas::const_iterator i (ns_loc_pragmas_.begin ());
+       i != ns_loc_pragmas_.end (); ++i)
+  {
+    pragma const& p (i->pragma);
+
+    decl_map::const_iterator j (all_decls_.lower_bound (p.loc));
+
+    if (j == all_decls_.end ())
+    {
+      error (p.loc)
+        << "db pragma '" << p.pragma_name << "' is not associated with a "
+        << "namespace declaration" << endl;
+      error_++;
+      continue;
+    }
+
+    // Find the "namespace difference" between this declaration and
+    // the pragma's namespace. The outermost namespace in the result
+    // is what we are looking for.
+    //
+    tree ns (0);
+
+    for (tree prev (j->second), scope (CP_DECL_CONTEXT (prev));;
+         scope = CP_DECL_CONTEXT (scope))
+    {
+      if (scope == i->ns)
+      {
+        ns = prev;
+        break;
+      }
+
+      if (scope == global_namespace)
+        break;
+
+      prev = scope;
+    }
+
+    if (ns == 0 || TREE_CODE (ns) != NAMESPACE_DECL)
+    {
+      error (p.loc)
+        << "db pragma '" << p.pragma_name << "' is not associated with a "
+        << "namespace declaration" << endl;
+      error_++;
+      continue;
+    }
+
+    pragma_set& s (decl_pragmas_[ns]);
+    pragma_set::iterator it (s.find (p));
+
+    // Make sure we override only if this pragma came after the one
+    // already in the set.
+    //
+    if (it == s.end () || it->loc < p.loc)
+      s.insert (p);
+  }
+
   // Construct the semantic graph.
   //
-  emit ();
+  if (error_ == 0)
+    emit ();
 
   if (error_ > 0)
     throw failed ();
@@ -712,6 +780,8 @@ collect (tree ns)
   //
   for (; decl != NULL_TREE; decl = TREE_CHAIN (decl))
   {
+    all_decls_[DECL_SOURCE_LOCATION (decl)] = decl;
+
     if (DECL_IS_BUILTIN (decl))
       continue;
 
@@ -739,7 +809,7 @@ collect (tree ns)
 
   // Traverse namespaces.
   //
-  for(decl = level->namespaces; decl != NULL_TREE; decl = TREE_CHAIN (decl))
+  for (decl = level->namespaces; decl != NULL_TREE; decl = TREE_CHAIN (decl))
   {
     if (!DECL_IS_BUILTIN (decl) || DECL_NAMESPACE_STD_P (decl))
     {
@@ -813,7 +883,24 @@ emit ()
 
         namespace_& node (unit_->new_node<namespace_> (f, l, c, tree_node));
         unit_->new_edge<defines> (*scope_, node, n);
-        unit_->insert (tree_node, node);
+
+        if (namespace_* orig =
+            dynamic_cast<namespace_*> (unit_->find (tree_node)))
+        {
+          // This is an extension.
+          //
+          node.original (*orig);
+        }
+        else
+        {
+          // This is the original. Add it to the map and process any
+          // pragmas it might have (at this stage namespaces can only
+          // have name pragmas).
+          //
+          unit_->insert (tree_node, node);
+          process_named_pragmas (tree_node, node);
+        }
+
         scope_ = &node;
 
         if (e == string::npos)
@@ -2019,8 +2106,11 @@ fq_scope (tree decl)
 //
 
 parser::
-parser (options const& ops, loc_pragmas const& lp, decl_pragmas const& dp)
-    : impl_ (new impl (ops, lp, dp))
+parser (options const& ops,
+        loc_pragmas& lp,
+        ns_loc_pragmas& nslp,
+        decl_pragmas& dp)
+    : impl_ (new impl (ops, lp, nslp, dp))
 {
 }
 

@@ -13,6 +13,25 @@ namespace semantics
   class namespace_: public scope
   {
   public:
+    bool
+    extension () const
+    {
+      return original_ != 0;
+    }
+
+    namespace_&
+    original ()
+    {
+      return *original_;
+    }
+
+    void
+    original (namespace_& ns)
+    {
+      original_ = &ns;
+    }
+
+  public:
     namespace_ (path const&, size_t line, size_t column, tree);
 
     // Resolve conflict between scope::scope and nameable::scope.
@@ -21,6 +40,9 @@ namespace semantics
 
   protected:
     namespace_ ();
+
+  private:
+    namespace_* original_;
   };
 }
 

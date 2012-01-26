@@ -1431,7 +1431,7 @@ namespace relational
           ep.kind = column_expr_part::reference;
           ep.table = am.vo->alias.empty ()
             ? table_name (*am.vo->obj)
-            : am.vo->alias;
+            : qname (am.vo->alias);
           ep.member_path.push_back (am.m);
 
           src_m = am.m;
@@ -1745,12 +1745,12 @@ namespace relational
             else
               obj_count++;
 
-            tree n (TYPE_MAIN_VARIANT (i->node));
+            tree n (TYPE_MAIN_VARIANT (i->obj_node));
 
             if (TREE_CODE (n) != RECORD_TYPE)
             {
               error (i->loc)
-                << "name '" << i->orig_name << "' in db pragma object does "
+                << "name '" << i->obj_name << "' in db pragma object does "
                 << "not name a class" << endl;
 
               throw operation_failed ();
@@ -1761,11 +1761,11 @@ namespace relational
             if (!object (o))
             {
               error (i->loc)
-                << "name '" << i->orig_name << "' in db pragma object does "
+                << "name '" << i->obj_name << "' in db pragma object does "
                 << "not name a persistent class" << endl;
 
               info (o.file (), o.line (), o.column ())
-                << "class '" << i->orig_name << "' is defined here" << endl;
+                << "class '" << i->obj_name << "' is defined here" << endl;
 
               throw operation_failed ();
             }
@@ -1777,7 +1777,7 @@ namespace relational
               if (!omap.insert (view_object_map::value_type (n, &*i)).second)
               {
                 error (i->loc)
-                  << "persistent class '" << i->orig_name << "' is used in "
+                  << "persistent class '" << i->obj_name << "' is used in "
                   << "the view more than once" << endl;
 
                 info (i->loc)

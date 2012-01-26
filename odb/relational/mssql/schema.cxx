@@ -46,15 +46,13 @@ namespace relational
         drop_table (base const& x): base (x) {}
 
         virtual void
-        drop (string const& table)
+        drop (sema_rel::qname const& table)
         {
           // SQL Server has no IF EXISTS conditional for dropping table.
           // The following approach appears to be the recommended way to
           // drop a table if it exists.
           //
-          string const& qt ();
-
-          os << "IF OBJECT_ID(" << quote_string (table) <<
+          os << "IF OBJECT_ID(" << quote_string (table.string ()) <<
             ", " << quote_string ("U") << ") IS NOT NULL" << endl
              << "  DROP TABLE " << quote_id (table) << endl;
         }
@@ -88,7 +86,7 @@ namespace relational
 
       private:
         friend class create_foreign_key;
-        set<string> tables_; // Set of tables we have already defined.
+        set<qname> tables_; // Set of tables we have already defined.
       };
       entry<create_table> create_table_;
 
@@ -145,10 +143,12 @@ namespace relational
         name (sema_rel::foreign_key& fk)
         {
           // In SQL Server, foreign key names are schema-global. Make them
-          // unique by prefixing the key name with table name.
+          // unique by prefixing the key name with table name. Note, however,
+          // that they cannot have a schema.
           //
-          return static_cast<sema_rel::table&> (fk.scope ()).name () +
-            '_' + fk.name ();
+          return quote_id (
+            static_cast<sema_rel::table&> (fk.scope ()).name ().uname ()
+            + "_" + fk.name ());
         }
 
         virtual void
@@ -216,9 +216,23 @@ namespace relational
         // Add foreign keys.
         //
         instance<add_foreign_key> fk (format_, *this);
-        trav_rel::names n (*fk);
+        trav_rel::unames n (*fk);
         names (t, n);
       }
+
+      struct create_index: relational::create_index, context
+      {
+        create_index (base const& x): base (x) {}
+
+        virtual string
+        name (sema_rel::index& in)
+        {
+          // In SQL Server indexes cannot have a schema.
+          //
+          return quote_id (in.name ().uname ());
+        }
+      };
+      entry<create_index> create_index_;
     }
   }
 }

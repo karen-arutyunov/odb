@@ -121,7 +121,7 @@ namespace relational
       }
 
       virtual void
-      drop (string const& table)
+      drop (sema_rel::qname const& table)
       {
         os << "DROP TABLE IF EXISTS " << quote_id (table) << endl;
       }
@@ -161,7 +161,7 @@ namespace relational
       }
 
       virtual void
-      drop (string const& /*index*/)
+      drop (sema_rel::qname const& /*index*/)
       {
         // Most database systems drop indexes together with the table.
         //
@@ -418,7 +418,7 @@ namespace relational
       {
         using sema_rel::foreign_key;
 
-        os << "  CONSTRAINT " << quote_id (name (fk)) << endl
+        os << "  CONSTRAINT " << name (fk) << endl
            << "    FOREIGN KEY (";
 
         for (foreign_key::contains_iterator i (fk.contains_begin ());
@@ -438,7 +438,7 @@ namespace relational
         }
 
         os << ")" << endl
-           << "    REFERENCES " << quote_id (fk.referenced_table ()) << " (";
+           << "    REFERENCES " << table_name (fk) << " (";
 
         foreign_key::columns const& refs (fk.referenced_columns ());
 
@@ -470,7 +470,13 @@ namespace relational
       virtual string
       name (sema_rel::foreign_key& fk)
       {
-        return fk.name ();
+        return quote_id (fk.name ());
+      }
+
+      virtual string
+      table_name (sema_rel::foreign_key& fk)
+      {
+        return quote_id (fk.referenced_table ());
       }
 
       virtual void
@@ -513,7 +519,7 @@ namespace relational
       }
 
       virtual void
-      create_pre (string const& table)
+      create_pre (sema_rel::qname const& table)
       {
         os << "CREATE TABLE " << quote_id (table) << " (" << endl;
       }
@@ -539,7 +545,7 @@ namespace relational
         instance<create_column> c (format_, *this);
         instance<create_primary_key> pk (format_, *this);
         instance<create_foreign_key> fk (format_, *this);
-        trav_rel::names n;
+        trav_rel::unames n;
 
         n >> c;
         n >> pk;
@@ -585,13 +591,25 @@ namespace relational
         post_statement ();
       }
 
+      virtual string
+      name (sema_rel::index& in)
+      {
+        return quote_id (in.name ());
+      }
+
+      virtual string
+      table_name (sema_rel::index& in)
+      {
+        return quote_id (in.table ().name ());
+      }
+
       virtual void
       create (sema_rel::index& in)
       {
         using sema_rel::index;
 
-        os << "CREATE INDEX " << quote_id (in.name ()) << endl
-           << "  ON " << quote_id (in.table ().name ()) << " (";
+        os << "CREATE INDEX " << name (in) << endl
+           << "  ON " << table_name (in) << " (";
 
         for (index::contains_iterator i (in.contains_begin ());
              i != in.contains_end ();

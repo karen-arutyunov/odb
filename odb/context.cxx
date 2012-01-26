@@ -30,7 +30,7 @@ name () const
   if (!alias.empty ())
     return alias;
 
-  return kind == object ? context::class_name (*obj) : orig_name;
+  return kind == object ? context::class_name (*obj) : tbl_name.string ();
 }
 
 //
@@ -560,20 +560,93 @@ composite_ (semantics::class_& c)
   return r;
 }
 
-string context::
+qname context::
 table_name (semantics::class_& c) const
 {
-  string name (options.table_prefix ());
+  if (c.count ("qualified-table"))
+    return c.get<qname> ("qualified-table");
+
+  qname r;
+
+  bool sf (c.count ("schema"));
 
   if (c.count ("table"))
-    name += c.get<string> ("table");
-  else
-    name += class_name (c);
+  {
+    r = c.get<qname> ("table");
 
-  return name;
+    if (sf)
+    {
+      // If we have both schema and qualified table, see which takes
+      // precedence based on order. If the table is unqualifed, then
+      // add the schema.
+      //
+      sf = !r.qualified () ||
+        c.get<location_t> ("table-location") <
+        c.get<location_t> ("schema-location");
+    }
+  }
+  else
+    r = class_name (c);
+
+  if (sf)
+  {
+    qname n (c.get<qname> ("schema"));
+    n.append (r.uname ());
+    n.swap (r);
+  }
+
+  // Unless we are fully qualified, add any schemas that were
+  // specified on the namespaces.
+  //
+  if (!r.fully_qualified ())
+  {
+    for (semantics::scope* s (&c.scope ());; s = &s->scope_ ())
+    {
+      using semantics::namespace_;
+
+      namespace_* ns (dynamic_cast<namespace_*> (s));
+
+      if (ns == 0)
+        continue; // Some other scope.
+
+      if (ns->extension ())
+        ns = &ns->original ();
+
+      if (ns->count ("schema"))
+      {
+        qname n (ns->get<qname> ("schema"));
+        n.append (r);
+        n.swap (r);
+
+        if (r.fully_qualified ())
+          break;
+      }
+
+      if (ns->global_scope ())
+        break;
+    }
+  }
+
+  // Finally, if we are still not fully qualified, add the schema
+  // that was specified on the command line.
+  //
+  if (!r.fully_qualified () && options.default_schema_specified ())
+  {
+    qname n (options.default_schema ());
+    n.append (r);
+    n.swap (r);
+  }
+
+  // Add the table prefix if specified.
+  //
+  if (options.table_prefix_specified ())
+    r.uname () = options.table_prefix () + r.uname ();
+
+  c.set ("qualified-table", r);
+  return r;
 }
 
-string context::
+qname context::
 table_name (semantics::class_& obj, data_member_path const& mp) const
 {
   table_prefix tp (table_name (obj) + "_", 1);
@@ -597,36 +670,44 @@ table_name (semantics::class_& obj, data_member_path const& mp) const
   }
 }
 
-string context::
+qname context::
 table_name (semantics::data_member& m, table_prefix const& p) const
 {
   // The table prefix passed as the second argument must include
   // the table prefix specified with the --table-prefix option.
   //
   string const& gp (options.table_prefix ());
-  assert (p.prefix.compare (0, gp.size (), gp) == 0);
+  assert (p.prefix.uname ().compare (0, gp.size (), gp) == 0);
 
-  string name;
+  qname r;
 
   // If a custom table name was specified, then ignore the top-level
-  // table prefix.
+  // table prefix (this corresponds to a container directly inside an
+  // object) but keep the schema unless the container table is fully
+  // qualified.
   //
   if (m.count ("table"))
   {
-    if (p.level != 1)
-      name = p.prefix;
-    else
-      name = gp;
+    qname n (m.get<qname> ("table"));
 
-    name += m.get<string> ("table");
+    if (n.fully_qualified ())
+      r = n.qualifier ();
+    else
+    {
+      r = p.prefix.qualifier ();
+      r.append (n.qualifier ());
+    }
+
+    r.append (p.level == 1 ? gp : p.prefix.uname ());
+    r += n.uname ();
   }
   else
   {
-    name = p.prefix;
-    name += public_name_db (m);
+    r = p.prefix;
+    r += public_name_db (m);
   }
 
-  return name;
+  return r;
 }
 
 string context::

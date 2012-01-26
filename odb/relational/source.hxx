@@ -350,7 +350,7 @@ namespace relational
     protected:
       statement_columns& sc_;
       bool in_composite_;
-      string table_prefix_; // Table corresponding to column_prefix_;
+      qname table_prefix_; // Table corresponding to column_prefix_;
     };
 
     struct object_joins: object_columns_base, virtual context
@@ -411,7 +411,7 @@ namespace relational
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
             //
-            string const& ct (table_name (*c));
+            qname const& ct (table_name (*c));
             table_prefix tp (ct + "_", 1);
             t = table_qname (*im, tp);
             string const& val (column_qname (*im, "value", "value"));
@@ -2818,7 +2818,7 @@ namespace relational
           // table_name
           //
           os << "const char " << traits << "::table_name[] =" << endl
-             << strlit (table_name (c)) << ";" // Use unquoted name.
+             << strlit (table_qname (c)) << ";" // Use quoted name.
              << endl;
         }
 
@@ -3682,9 +3682,13 @@ namespace relational
               if (i->kind != view_object::object)
                 continue; // Skip tables.
 
-              if (!i->alias.empty () && i->alias != table_name (*i->obj))
+              qname const& t (table_name (*i->obj));
+
+              if (!i->alias.empty () &&
+                  (t.qualified () || i->alias != t.uname ()))
                 os << "const char " << traits << "::query_columns::" << endl
-                   << i->alias << "_alias_[] = " << strlit (i->alias) << ";"
+                   << i->alias << "_alias_[] = " <<
+                  strlit (quote_id (i->alias)) << ";"
                    << endl;
             }
           }
@@ -3702,9 +3706,12 @@ namespace relational
                 vo = &*i;
             }
 
-            if (!vo->alias.empty () && vo->alias != table_name (*vo->obj))
+            qname const& t (table_name (*vo->obj));
+
+            if (!vo->alias.empty () &&
+                (t.qualified () || vo->alias != t.uname ()))
               os << "const char " << traits << "::" << endl
-                 << "query_alias[] = " << strlit (vo->alias) << ";"
+                 << "query_alias[] = " << strlit (quote_id (vo->alias)) << ";"
                  << endl;
           }
         }
@@ -3863,7 +3870,7 @@ namespace relational
                 if (first)
                 {
                   l = "FROM ";
-                  l += quote_id (i->orig_name);
+                  l += quote_id (i->tbl_name);
 
                   if (!i->alias.empty ())
                     l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
@@ -3875,7 +3882,7 @@ namespace relational
                 }
 
                 l = "LEFT JOIN ";
-                l += quote_id (i->orig_name);
+                l += quote_id (i->tbl_name);
 
                 if (!i->alias.empty ())
                   l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
@@ -4045,13 +4052,13 @@ namespace relational
 
               // Left and right-hand side table names.
               //
-              string lt (e.vo->alias.empty ()
-                         ? table_name (*e.vo->obj)
-                         : e.vo->alias);
+              qname lt (e.vo->alias.empty ()
+                        ? table_name (*e.vo->obj)
+                        : qname (e.vo->alias));
 
-              string rt (vo->alias.empty ()
-                         ? table_name (*vo->obj)
-                         : vo->alias);
+              qname rt (vo->alias.empty ()
+                        ? table_name (*vo->obj)
+                        : qname (vo->alias));
 
               // First join the container table if necessary.
               //
@@ -4532,12 +4539,12 @@ namespace relational
       schema_emitter emitter_;
       emitter_ostream stream_;
 
-      trav_rel::names drop_names_;
+      trav_rel::qnames drop_names_;
       instance<schema::drop_model> drop_model_;
       instance<schema::drop_table> drop_table_;
       instance<schema::drop_index> drop_index_;
 
-      trav_rel::names create_names_;
+      trav_rel::qnames create_names_;
       instance<schema::create_model> create_model_;
       instance<schema::create_table> create_table_;
       instance<schema::create_index> create_index_;

@@ -29,7 +29,7 @@ namespace relational
         drop_table (base const& x): base (x) {}
 
         virtual void
-        drop (string const& table)
+        drop (sema_rel::qname const& table)
         {
           os << "DROP TABLE IF EXISTS " << quote_id (table) <<
             " CASCADE" << endl;
@@ -52,7 +52,7 @@ namespace relational
 
       private:
         friend class create_foreign_key;
-        set<string> tables_; // Set of tables we have already defined.
+        set<qname> tables_; // Set of tables we have already defined.
       };
       entry<create_table> create_table_;
 
@@ -163,9 +163,23 @@ namespace relational
         // Add foreign keys.
         //
         instance<add_foreign_key> fk (format_, *this);
-        trav_rel::names n (*fk);
+        trav_rel::unames n (*fk);
         names (t, n);
       }
+
+      struct create_index: relational::create_index, context
+      {
+        create_index (base const& x): base (x) {}
+
+        virtual string
+        name (sema_rel::index& in)
+        {
+          // In PostgreSQL indexes cannot have a schema.
+          //
+          return quote_id (in.name ().uname ());
+        }
+      };
+      entry<create_index> create_index_;
     }
   }
 }

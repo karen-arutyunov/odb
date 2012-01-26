@@ -16,6 +16,8 @@
 #include <cutl/container/pointer-iterator.hxx>
 #include <cutl/compiler/context.hxx>
 
+#include <odb/semantics/relational/name.hxx>
+
 namespace semantics
 {
   namespace relational
@@ -84,18 +86,23 @@ namespace semantics
 
     //
     //
+    template <typename N>
     class scope;
+
+    template <typename N>
     class nameable;
 
     //
     //
+    template <typename N>
     class names: public edge
     {
     public:
-      typedef relational::scope scope_type;
-      typedef relational::nameable nameable_type;
+      typedef N name_type;
+      typedef relational::scope<N> scope_type;
+      typedef relational::nameable<N> nameable_type;
 
-      string const&
+      name_type const&
       name () const
       {
         return name_;
@@ -114,7 +121,7 @@ namespace semantics
       }
 
     public:
-      names (string const& name): name_ (name) {}
+      names (name_type const& name): name_ (name) {}
 
       void
       set_left_node (scope_type& n)
@@ -129,19 +136,25 @@ namespace semantics
       }
 
     protected:
-      string name_;
+      name_type name_;
       scope_type* scope_;
       nameable_type* nameable_;
     };
 
+    typedef names<uname> unames;
+    typedef names<qname> qnames;
+
     //
     //
+    template <typename N>
     class nameable: public virtual node
     {
     public:
-      typedef relational::scope scope_type;
+      typedef N name_type;
+      typedef relational::names<N> names_type;
+      typedef relational::scope<N> scope_type;
 
-      string const&
+      name_type const&
       name () const
       {
         return named_->name ();
@@ -153,7 +166,7 @@ namespace semantics
         return named ().scope ();
       }
 
-      names&
+      names_type&
       named () const
       {
         return *named_;
@@ -170,7 +183,7 @@ namespace semantics
       nameable (string const& id): id_ (id), named_ (0) {}
 
       void
-      add_edge_right (names& e)
+      add_edge_right (names_type& e)
       {
         assert (named_ == 0);
         named_ = &e;
@@ -180,38 +193,48 @@ namespace semantics
 
     private:
       string id_;
-      names* named_;
+      names_type* named_;
     };
+
+    typedef nameable<uname> unameable;
+    typedef nameable<qname> qnameable;
 
 
     //
     //
     struct duplicate_name
     {
-      typedef relational::scope scope_type;
-      typedef relational::nameable nameable_type;
+      template <typename N>
+      duplicate_name (relational::scope<N>&,
+                      relational::nameable<N>& orig,
+                      relational::nameable<N>& dup);
 
-      duplicate_name (scope_type& s, nameable_type& n, nameable_type& d)
-          : scope (s), nameable (n), duplicate (d)
-      {
-      }
+      node& scope;
+      node& orig;
+      node& dup;
 
-      scope_type& scope;
-      nameable_type& nameable;
-      nameable_type& duplicate;
+      string orig_name;
+      string dup_name;
     };
 
+    template <typename N>
     class scope: public virtual node
     {
     protected:
-      typedef std::list<names*> names_list;
-      typedef std::map<string, names_list::iterator> names_map;
-      typedef std::map<names const*, names_list::iterator> names_iterator_map;
+      typedef N name_type;
+      typedef relational::names<N> names_type;
+      typedef relational::nameable<N> nameable_type;
+
+      typedef std::list<names_type*> names_list;
+      typedef std::map<name_type, typename names_list::iterator> names_map;
+      typedef
+      std::map<names_type const*, typename names_list::iterator>
+      names_iterator_map;
 
     public:
-      typedef pointer_iterator<names_list::iterator> names_iterator;
+      typedef pointer_iterator<typename names_list::iterator> names_iterator;
       typedef
-      pointer_iterator<names_list::const_iterator>
+      pointer_iterator<typename names_list::const_iterator>
       names_const_iterator;
 
     public:
@@ -244,16 +267,16 @@ namespace semantics
       // Find.
       //
       names_iterator
-      find (string const& name);
+      find (name_type const&);
 
       names_const_iterator
-      find (string const& name) const;
+      find (name_type const&) const;
 
       names_iterator
-      find (names const&);
+      find (names_type const&);
 
       names_const_iterator
-      find (names const&) const;
+      find (names_type const&) const;
 
     public:
       scope ()
@@ -262,16 +285,21 @@ namespace semantics
       }
 
       void
-      add_edge_left (names&);
+      add_edge_left (names_type&);
 
     private:
       names_list names_;
       names_map names_map_;
       names_iterator_map iterator_map_;
 
-      names_list::iterator first_key_;
+      typename names_list::iterator first_key_;
     };
+
+    typedef scope<uname> uscope;
+    typedef scope<qname> qscope;
   }
 }
+
+#include <odb/semantics/relational/elements.txx>
 
 #endif // ODB_SEMANTICS_RELATIONAL_ELEMENTS_HXX

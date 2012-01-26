@@ -126,18 +126,17 @@ traversal/enum.cxx                   \
 traversal/template.cxx               \
 traversal/union-template.cxx
 
-# Traversal.
-#
-cxx_ptun +=                          \
-traversal/relational/elements.cxx
-
 # Driver units.
 #
 cxx_dtun := odb.cxx
 
 # Common units.
 #
-cxx_ctun := option-types.cxx option-functions.cxx profile.cxx
+cxx_ctun :=                          \
+option-types.cxx                     \
+option-functions.cxx                 \
+profile.cxx                          \
+semantics/relational/name.cxx
 
 # Options file.
 #

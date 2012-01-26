@@ -108,13 +108,26 @@ namespace relational
     }
 
     string context::
-    quote_id_impl (string const& id) const
+    quote_id_impl (qname const& id) const
     {
       string r;
-      r.reserve (130); // Max MSSQL identifier length is 128.
-      r += '[';
-      r.append (id, 0, 128);
-      r += ']';
+
+      bool f (true);
+      for (qname::iterator i (id.begin ()); i < id.end (); ++i)
+      {
+        if (i->empty ())
+          continue;
+
+        if (f)
+          f = false;
+        else
+          r += '.';
+
+        r += '[';
+        r.append (*i, 0, 128); // Max identifier length is 128.
+        r += ']';
+      }
+
       return r;
     }
 

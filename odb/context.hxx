@@ -24,6 +24,7 @@
 #include <odb/options.hxx>
 #include <odb/cxx-token.hxx>
 #include <odb/semantics.hxx>
+#include <odb/semantics/relational/name.hxx>
 #include <odb/semantics/relational/model.hxx>
 #include <odb/traversal.hxx>
 
@@ -125,11 +126,17 @@ struct default_value
   tree node;
 };
 
+// Database potentially-qualified name.
+//
+using semantics::relational::qname;
+
 // Object or table associated with the view.
 //
 struct view_object
 {
-  // Return an alias or unqualified object name.
+  // Return a diagnostic name for this association. It is either the
+  // alias, unqualified object name, or string representation of the
+  // table name.
   //
   std::string
   name () const;
@@ -137,8 +144,9 @@ struct view_object
   enum kind_type { object, table };
 
   kind_type kind;
-  tree node;              // Tree node if kind is object.
-  std::string orig_name;  // Original name as specified in the pragma.
+  tree obj_node;         // Tree node if kind is object.
+  std::string obj_name;  // Name as specified in the pragma if kind is object.
+  qname tbl_name;        // Table name if kind is table.
   std::string alias;
   tree scope;
   location_t loc;
@@ -176,7 +184,7 @@ struct view_query
 //
 struct table_column
 {
-  std::string table;
+  qname table;
   std::string column;
   bool expr; // True if column is an expression, and therefore should not
              // be quoted.
@@ -194,7 +202,7 @@ struct column_expr_part
 
   kind_type kind;
   std::string value;
-  std::string table;            // Table name/alias for references.
+  qname table;                  // Table name/alias for references.
   data_member_path member_path; // Path to member for references.
 
   // Scope and location of this pragma. Used to resolve the member name.
@@ -450,18 +458,18 @@ public:
   // Database names and types.
   //
 public:
-  string
+  qname
   table_name (semantics::class_&) const;
 
-  string
+  qname
   table_name (semantics::class_&, data_member_path const&) const;
 
   struct table_prefix
   {
     table_prefix (): level (0) {}
-    table_prefix (string const& p, size_t l): prefix (p), level (l) {}
+    table_prefix (qname const& p, size_t l): prefix (p), level (l) {}
 
-    string prefix;
+    qname prefix;
     size_t level;
   };
 
@@ -469,7 +477,7 @@ public:
   // second argument must include the table prefix specified with the
   // --table-prefix option.
   //
-  string
+  qname
   table_name (semantics::data_member&, table_prefix const&) const;
 
   string

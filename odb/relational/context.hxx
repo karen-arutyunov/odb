@@ -52,6 +52,9 @@ namespace relational
     string
     quote_id (string const&) const;
 
+    string
+    quote_id (qname const&) const;
+
     // Quoted column and table names.
     //
     string
@@ -118,7 +121,7 @@ namespace relational
     // The default implementation uses the ISO quoting ("").
     //
     virtual string
-    quote_id_impl (string const&) const;
+    quote_id_impl (qname const&) const;
 
   public:
     virtual

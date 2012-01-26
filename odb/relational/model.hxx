@@ -21,7 +21,7 @@ namespace relational
 {
   namespace model
   {
-    typedef std::set<std::string> tables;
+    typedef std::set<qname> tables;
 
     struct object_columns: object_columns_base, virtual context
     {
@@ -111,7 +111,7 @@ namespace relational
             id, column_type (m, prefix_), context::null (m, prefix_)));
         c.set ("cxx-node", static_cast<semantics::node*> (&m));
 
-        model_.new_edge<sema_rel::names> (table_, c, name);
+        model_.new_edge<sema_rel::unames> (table_, c, name);
 
         // An id member cannot have a default value.
         //
@@ -205,7 +205,7 @@ namespace relational
         // primary key manipulation, then the database-specific code will
         // have to come up with a suitable name.
         //
-        model_.new_edge<sema_rel::names> (table_, pk, "");
+        model_.new_edge<sema_rel::unames> (table_, pk, "");
       }
 
       virtual void
@@ -240,7 +240,7 @@ namespace relational
         // up-to-and-including composite member prefix? Though it can be
         // empty.
         //
-        model_.new_edge<sema_rel::names> (table_, fk, name + "_fk");
+        model_.new_edge<sema_rel::unames> (table_, fk, name + "_fk");
       }
 
     protected:
@@ -319,7 +319,7 @@ namespace relational
         container_kind_type ck (container_kind (ct));
         type& vt (container_vt (ct));
 
-        string const& name (table_name (m, table_prefix_));
+        qname const& name (table_name (m, table_prefix_));
 
         // Add the [] decorator to distinguish this id from non-container
         // ids (we don't want to ever end up comparing, for example, an
@@ -331,7 +331,7 @@ namespace relational
           model_.new_node<sema_rel::container_table> (id));
         t.set ("cxx-node", static_cast<semantics::node*> (&m));
 
-        model_.new_edge<sema_rel::names> (model_, t, name);
+        model_.new_edge<sema_rel::qnames> (model_, t, name);
 
         // object_id (simple value, for now)
         //
@@ -369,7 +369,7 @@ namespace relational
           // Derive the constraint name. See the comment for the other
           // foreign key code above.
           //
-          model_.new_edge<sema_rel::names> (t, fk, id_name + "_fk");
+          model_.new_edge<sema_rel::unames> (t, fk, id_name + "_fk");
         }
 
         // index (simple value)
@@ -433,8 +433,8 @@ namespace relational
           //@@ Once id can be composite, we need to revise this (see
           //   a comment for the foreign key generation above).
           //
-          model_.new_edge<sema_rel::names> (
-            model_, i, name + '_' + id_name + "_i");
+          model_.new_edge<sema_rel::qnames> (
+            model_, i, name + "_" + id_name + "_i");
         }
 
         if (ordered)
@@ -447,8 +447,8 @@ namespace relational
 
           // This is always a single column (simple value).
           //
-          model_.new_edge<sema_rel::names> (
-            model_, i, name + '_' + index_name + "_i");
+          model_.new_edge<sema_rel::qnames> (
+            model_, i, name + "_" + index_name + "_i");
         }
       }
 
@@ -475,7 +475,7 @@ namespace relational
         if (!object (c) || abstract (c))
           return;
 
-        string const& name (table_name (c));
+        qname const& name (table_name (c));
 
         // If the table with this name was already created, assume the
         // user knows what they are doing and skip it.
@@ -494,7 +494,7 @@ namespace relational
 
         t.set ("cxx-node", static_cast<semantics::node*> (&c));
 
-        model_.new_edge<sema_rel::names> (model_, t, name);
+        model_.new_edge<sema_rel::qnames> (model_, t, name);
 
         sema_rel::model::names_iterator begin (--model_.names_end ());
 

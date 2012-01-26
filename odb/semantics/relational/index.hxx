@@ -7,6 +7,7 @@
 #define ODB_SEMANTICS_RELATIONAL_INDEX_HXX
 
 #include <odb/semantics/relational/elements.hxx>
+#include <odb/semantics/relational/column.hxx>
 #include <odb/semantics/relational/key.hxx>
 #include <odb/semantics/relational/table.hxx>
 
@@ -17,7 +18,7 @@ namespace semantics
     // Note that unlike other keys, indexes are defined in the model
     // scope, not table scope.
     //
-    class index: public key
+    class index: public qnameable, public key
     {
     public:
       relational::table&
@@ -28,7 +29,7 @@ namespace semantics
 
     public:
       index (string const& id)
-          : key (id)
+          : qnameable (id)
       {
       }
 

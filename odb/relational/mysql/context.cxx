@@ -105,13 +105,26 @@ namespace relational
     }
 
     string context::
-    quote_id_impl (string const& id) const
+    quote_id_impl (qname const& id) const
     {
       string r;
-      r.reserve (id.size () + 2);
-      r += '`';
-      r += id;
-      r += '`';
+
+      bool f (true);
+      for (qname::iterator i (id.begin ()); i < id.end (); ++i)
+      {
+        if (i->empty ())
+          continue;
+
+        if (f)
+          f = false;
+        else
+          r += '.';
+
+        r += '`';
+        r += *i;
+        r += '`';
+      }
+
       return r;
     }
 

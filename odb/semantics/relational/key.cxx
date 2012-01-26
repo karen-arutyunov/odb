@@ -33,7 +33,7 @@ namespace semantics
           //
           {
             type_info ti (typeid (key));
-            ti.add_base (typeid (nameable));
+            ti.add_base (typeid (node));
             insert (ti);
           }
         }

@@ -94,7 +94,7 @@ namespace relational
         drop_table (base const& x): base (x) {}
 
         virtual void
-        drop (string const& table)
+        drop (sema_rel::qname const& table)
         {
           // Oracle has no IF EXISTS conditional for dropping objects. The
           // PL/SQL approach below seems to be the least error-prone and the
@@ -142,7 +142,7 @@ namespace relational
 
       private:
         friend class create_foreign_key;
-        set<string> tables_; // Set of tables we have already defined.
+        set<qname> tables_; // Set of tables we have already defined.
       };
       entry<create_table> create_table_;
 
@@ -203,10 +203,12 @@ namespace relational
         name (sema_rel::foreign_key& fk)
         {
           // In Oracle, foreign key names are schema-global. Make them
-          // unique by prefixing the key name with table name.
+          // unique by prefixing the key name with table name. Note,
+          // however, that they cannot have a schema.
           //
-          return static_cast<sema_rel::table&> (fk.scope ()).name () +
-            '_' + fk.name ();
+          return quote_id (
+            static_cast<sema_rel::table&> (fk.scope ()).name ().uname ()
+            + "_" + fk.name ());
         }
       };
       entry<create_foreign_key> create_foreign_key_;
@@ -256,11 +258,11 @@ namespace relational
 
           if (pk != 0 && pk->auto_ ())
           {
-            string const& tname (t.name ());
+            qname const& tname (t.name ());
             string const& cname (pk->contains_begin ()->column ().name ());
 
-            string seq_name (tname + "_seq");
-            string trg_name (tname + "_trg");
+            qname seq_name (tname + "_seq");
+            qname trg_name (tname + "_trg");
 
             // Sequence.
             //
@@ -292,7 +294,7 @@ namespace relational
         // Add foreign keys.
         //
         instance<add_foreign_key> fk (format_, *this);
-        trav_rel::names n (*fk);
+        trav_rel::unames n (*fk);
         names (t, n);
       }
     }

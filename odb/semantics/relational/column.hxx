@@ -15,13 +15,13 @@ namespace semantics
   {
     class contains;
 
-    class column: public nameable
+    class column: public unameable
     {
       typedef std::vector<contains*> contained_list;
 
     public:
       column (string const& id, string const& type, bool null)
-          : nameable (id), type_ (type), null_ (null)
+          : unameable (id), type_ (type), null_ (null)
       {
       }
 
@@ -96,7 +96,7 @@ namespace semantics
         contained_.push_back (&e);
       }
 
-      using nameable::add_edge_right;
+      using unameable::add_edge_right;
 
       virtual string
       kind () const

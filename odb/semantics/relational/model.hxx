@@ -12,7 +12,7 @@ namespace semantics
 {
   namespace relational
   {
-    class model: public graph<node, edge>, public scope
+    class model: public graph<node, edge>, public qscope
     {
     public:
       model ()
@@ -26,8 +26,8 @@ namespace semantics
       }
 
     public:
-      using scope::add_edge_left;
-      using scope::add_edge_right;
+      using qscope::add_edge_left;
+      using qscope::add_edge_right;
 
     private:
       model (model const&);
