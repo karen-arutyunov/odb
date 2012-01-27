@@ -143,7 +143,7 @@ class options
      profile."
   };
 
-  qname --default-schema
+  qname --schema
   {
     "<schema>",
     "Place database objects (tables, indexes, etc) into <schema>."

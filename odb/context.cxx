@@ -597,9 +597,9 @@ schema (semantics::scope& s) const
   // If we are still not fully qualified, add the schema that was
   // specified on the command line.
   //
-  if (!r.fully_qualified () && options.default_schema_specified ())
+  if (!r.fully_qualified () && options.schema_specified ())
   {
-    qname n (options.default_schema ());
+    qname n (options.schema ());
     n.append (r);
     n.swap (r);
   }
