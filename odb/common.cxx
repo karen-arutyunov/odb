@@ -119,6 +119,7 @@ traverse (semantics::class_& c)
 
     if (table_prefix_.level == 0)
     {
+      table_prefix_.schema = schema (c.scope ());
       table_prefix_.prefix = table_name (c);
       table_prefix_.prefix += "_";
       table_prefix_.level = 1;
@@ -134,6 +135,7 @@ traverse (semantics::class_& c)
     {
       table_prefix_.level = 0;
       table_prefix_.prefix.clear ();
+      table_prefix_.schema.clear ();
     }
   }
   else
@@ -239,8 +241,13 @@ append (semantics::data_member& m, table_prefix& tp)
       p = n.qualifier ();
     else
     {
-      p = tp.prefix.qualifier ();
-      p.append (n.qualifier ());
+      if (n.qualified ())
+      {
+        p = tp.schema;
+        p.append (n.qualifier ());
+      }
+      else
+        p = tp.prefix.qualifier ();
     }
 
     p.append (tp.level <= 1 ? ctx.options.table_prefix () : tp.prefix.uname ());

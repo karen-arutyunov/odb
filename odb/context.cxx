@@ -561,6 +561,54 @@ composite_ (semantics::class_& c)
 }
 
 qname context::
+schema (semantics::scope& s) const
+{
+  if (s.count ("qualified-schema"))
+    return s.get<qname> ("qualified-schema");
+
+  qname r;
+
+  for (semantics::scope* ps (&s);; ps = &ps->scope_ ())
+  {
+    using semantics::namespace_;
+
+    namespace_* ns (dynamic_cast<namespace_*> (ps));
+
+    if (ns == 0)
+      continue; // Some other scope.
+
+    if (ns->extension ())
+      ns = &ns->original ();
+
+    if (ns->count ("schema"))
+    {
+      qname n (ns->get<qname> ("schema"));
+      n.append (r);
+      n.swap (r);
+
+      if (r.fully_qualified ())
+        break;
+    }
+
+    if (ns->global_scope ())
+      break;
+  }
+
+  // If we are still not fully qualified, add the schema that was
+  // specified on the command line.
+  //
+  if (!r.fully_qualified () && options.default_schema_specified ())
+  {
+    qname n (options.default_schema ());
+    n.append (r);
+    n.swap (r);
+  }
+
+  s.set ("qualified-schema", r);
+  return r;
+}
+
+qname context::
 table_name (semantics::class_& c) const
 {
   if (c.count ("qualified-table"))
@@ -596,43 +644,12 @@ table_name (semantics::class_& c) const
   }
 
   // Unless we are fully qualified, add any schemas that were
-  // specified on the namespaces.
+  // specified on the namespaces and/or with the command line
+  // option.
   //
   if (!r.fully_qualified ())
   {
-    for (semantics::scope* s (&c.scope ());; s = &s->scope_ ())
-    {
-      using semantics::namespace_;
-
-      namespace_* ns (dynamic_cast<namespace_*> (s));
-
-      if (ns == 0)
-        continue; // Some other scope.
-
-      if (ns->extension ())
-        ns = &ns->original ();
-
-      if (ns->count ("schema"))
-      {
-        qname n (ns->get<qname> ("schema"));
-        n.append (r);
-        n.swap (r);
-
-        if (r.fully_qualified ())
-          break;
-      }
-
-      if (ns->global_scope ())
-        break;
-    }
-  }
-
-  // Finally, if we are still not fully qualified, add the schema
-  // that was specified on the command line.
-  //
-  if (!r.fully_qualified () && options.default_schema_specified ())
-  {
-    qname n (options.default_schema ());
+    qname n (schema (c.scope ()));
     n.append (r);
     n.swap (r);
   }
@@ -649,7 +666,7 @@ table_name (semantics::class_& c) const
 qname context::
 table_name (semantics::class_& obj, data_member_path const& mp) const
 {
-  table_prefix tp (table_name (obj) + "_", 1);
+  table_prefix tp (schema (obj.scope ()), table_name (obj) + "_", 1);
 
   if (mp.size () == 1)
   {
@@ -683,8 +700,10 @@ table_name (semantics::data_member& m, table_prefix const& p) const
 
   // If a custom table name was specified, then ignore the top-level
   // table prefix (this corresponds to a container directly inside an
-  // object) but keep the schema unless the container table is fully
-  // qualified.
+  // object). If the container table is unqualifed, then we use the
+  // object schema. If it is fully qualified, then we use that name.
+  // Finally, if it is qualified by not fully qualifed, then we
+  // append the object's namespace schema.
   //
   if (m.count ("table"))
   {
@@ -694,8 +713,13 @@ table_name (semantics::data_member& m, table_prefix const& p) const
       r = n.qualifier ();
     else
     {
-      r = p.prefix.qualifier ();
-      r.append (n.qualifier ());
+      if (n.qualified ())
+      {
+        r = p.schema;
+        r.append (n.qualifier ());
+      }
+      else
+        r = p.prefix.qualifier ();
     }
 
     r.append (p.level == 1 ? gp : p.prefix.uname ());

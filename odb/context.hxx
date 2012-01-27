@@ -458,6 +458,13 @@ public:
   // Database names and types.
   //
 public:
+  // Schema name for a namespace.
+  //
+  qname
+  schema (semantics::scope&) const;
+
+  //
+  //
   qname
   table_name (semantics::class_&) const;
 
@@ -467,8 +474,10 @@ public:
   struct table_prefix
   {
     table_prefix (): level (0) {}
-    table_prefix (qname const& p, size_t l): prefix (p), level (l) {}
+    table_prefix (qname const& s, qname const& p, size_t l)
+        : schema (s), prefix (p), level (l) {}
 
+    qname schema; // Object's namespace schema.
     qname prefix;
     size_t level;
   };

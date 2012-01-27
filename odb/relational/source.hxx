@@ -120,7 +120,10 @@ namespace relational
               "id",
               table_name_.empty ()
               ? table_name_
-              : table_qname (*im, table_prefix (table_name (*c) + "_", 1)),
+              : table_qname (*im,
+                             table_prefix (schema (c->scope ()),
+                                           table_name (*c) + "_",
+                                           1)),
               column_qname (*im, "id", "object_id"));
           }
           else
@@ -416,7 +419,7 @@ namespace relational
             // prefix is just the class table name.
             //
             qname const& ct (table_name (*c));
-            table_prefix tp (ct + "_", 1);
+            table_prefix tp (schema (c->scope ()), ct + "_", 1);
             t = table_qname (*im, tp);
             string const& val (column_qname (*im, "value", "value"));
 
@@ -952,7 +955,7 @@ namespace relational
               // This other container is a direct member of the class so the
               // table prefix is just the class table name.
               //
-              table_prefix tp (table_name (*c) + "_", 1);
+              table_prefix tp (schema (c->scope ()), table_name (*c) + "_", 1);
               inv_table = table_qname (*im, tp);
               inv_id = column_qname (*im, "id", "object_id");
               inv_fid = column_qname (*im, "value", "value");
@@ -4082,7 +4085,9 @@ namespace relational
                   // function would have to return a member path instead
                   // of just a single member.
                   //
-                  table_prefix tp (table_name (*vo->obj) + "_", 1);
+                  table_prefix tp (context::schema (vo->obj->scope ()),
+                                   table_name (*vo->obj) + "_",
+                                   1);
                   ct = table_qname (*im, tp);
                 }
                 else
