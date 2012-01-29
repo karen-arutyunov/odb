@@ -1,5 +1,5 @@
 # file      : build/import/libsqlite/configuration-rules.make
-# copyright : Copyright (c) 2009-2011 Boris Kolpackov
+# copyright : Copyright (c) 2009-2012 Boris Kolpackov
 # license   : GNU GPL v2; see accompanying LICENSE file
 
 $(dcf_root)/import/libsqlite/configuration-dynamic.make: | $(dcf_root)/import/libsqlite/.
