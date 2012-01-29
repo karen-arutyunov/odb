@@ -12,6 +12,12 @@ Version 1.8.0
     Value Types" in the ODB manual as well as the 'composite' example in the
     odb-examples package.
 
+  * Support for database schemas ("database namespaces"). A schema can be
+    specified for a persistent class, for a C++ namespace (the schema then
+    applies to all the persistent classes within this namespace), and for a
+    file with the --schema ODB compiler option. For more information, refer
+    to Section 12.1.8, "schema" in the ODB manual.
+
   * The --default-schema option has been renamed to --schema-name.
 
   * Default Oracle mapping for std::string has changed from VARCHAR2(4000)

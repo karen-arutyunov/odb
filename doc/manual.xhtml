@@ -446,6 +446,7 @@ for consistency.
 		<tr><th>12.1.5</th><td><a href="#12.1.5"><code>optimistic</code></a></td></tr>
 		<tr><th>12.1.6</th><td><a href="#12.1.6"><code>id</code></a></td></tr>
 		<tr><th>12.1.7</th><td><a href="#12.1.7"><code>callback</code></a></td></tr>
+		<tr><th>12.1.8</th><td><a href="#12.1.8"><code>schema</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -517,14 +518,21 @@ for consistency.
               </table>
             </td>
           </tr>
-          <tr>
-            <th>12.5</th><td><a href="#12.5">C++ Compiler Warnings</a>
+	  <tr>
+            <th>12.5</th><td><a href="#12.5">Namespace Pragmas</a>
               <table class="toc">
-                <tr><th>12.5.1</th><td><a href="#12.5.1">GNU C++</a></td></tr>
-                <tr><th>12.5.2</th><td><a href="#12.5.2">Visual C++</a></td></tr>
-                <tr><th>12.5.3</th><td><a href="#12.5.3">Sun C++</a></td></tr>
-		<tr><th>12.5.4</th><td><a href="#12.5.4">IBM XL C++</a></td></tr>
-		<tr><th>12.5.5</th><td><a href="#12.5.5">HP aC++</a></td></tr>
+                <tr><th>12.5.1</th><td><a href="#12.5.1"><code>schema</code></a></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <th>12.6</th><td><a href="#12.6">C++ Compiler Warnings</a>
+              <table class="toc">
+                <tr><th>12.6.1</th><td><a href="#12.6.1">GNU C++</a></td></tr>
+                <tr><th>12.6.2</th><td><a href="#12.6.2">Visual C++</a></td></tr>
+                <tr><th>12.6.3</th><td><a href="#12.6.3">Sun C++</a></td></tr>
+		<tr><th>12.6.4</th><td><a href="#12.6.4">IBM XL C++</a></td></tr>
+		<tr><th>12.6.5</th><td><a href="#12.6.5">HP aC++</a></td></tr>
               </table>
             </td>
           </tr>
@@ -7045,6 +7053,22 @@ struct employee_max_vacation
 };
   </pre>
 
+  <p>Both the asociated table names and the column names can be qualified
+     with a database schema, for example:</p>
+
+  <pre>
+#pragma db view table("hr.employee_extra")
+struct employee_max_vacation
+{
+  #pragma db column("hr.employee_extra.vacation_days") type("INTEGER")
+  unsigned short vacation_days;
+};
+  </pre>
+
+  <p>For more information on database schemas and the format of the
+     qualified names, refer to <a href="#12.1.8">Section 12.1.8,
+     "<code>schema</code>"</a>.</p>
+
   <p>Note also that in the above examples we specified the SQL type
      for each of the columns to make sure that the ODB compiler
      has knowledge of the actual types as specified in the database
@@ -8023,14 +8047,17 @@ for (bool done (false); !done; )
 
   <p>The <em>qualifier</em> tells the ODB compiler what kind of C++ construct
      this pragma describes. Valid qualifiers are <code>object</code>,
-     <code>view</code>, <code>value</code>, and <code>member</code>.
-     A pragma with the <code>object</code> qualifier describes a persistent
-     object type. It tells the ODB compiler that the C++ class it
-     describes is a persistent class. Similarly, pragmas with the
-     <code>view</code> qualifier describe view types, the <code>value</code>
-     qualifier describes value types and the <code>member</code>
-     qualifier is used to describe data members of persistent object,
-     view, and value types.</p>
+     <code>view</code>, <code>value</code>, <code>member</code>, and
+     <code>namespace</code>. A pragma with the <code>object</code>
+     qualifier describes a persistent object type. It tells the ODB
+     compiler that the C++ class it describes is a persistent class.
+     Similarly, pragmas with the <code>view</code> qualifier describe
+     view types, the <code>value</code> qualifier describes value types
+     and the <code>member</code> qualifier is used to describe data
+     members of persistent object, view, and value types. The
+     <code>namespace</code> qualifier is used to describe common
+     properties of objects, views, and value types that belong to
+     a C++ namespace.</p>
 
   <p>The <em>specifier</em> informs the ODB compiler about a particular
      database-related property of the C++ declaration. For example, the
@@ -8171,7 +8198,7 @@ class person
      the C++ compiler to build the application. Some C++ compilers
      issue warnings about pragmas that they do not recognize. There
      are several ways to deal with this problem which are covered
-     at the end of this chapter in <a href="#12.5">Section 12.5,
+     at the end of this chapter in <a href="#12.6">Section 12.6,
      "C++ Compiler Warnings"</a>.</p>
 
   <h2><a name="12.1">12.1 Object Type Pragmas</a></h2>
@@ -8230,6 +8257,12 @@ class person
       <td><a href="#12.1.7">12.1.7</a></td>
     </tr>
 
+    <tr>
+      <td><code>schema</code></td>
+      <td>database schema for a persistent class</td>
+      <td><a href="#12.1.8">12.1.8</a></td>
+    </tr>
+
   </table>
 
   <h3><a name="12.1.1">12.1.1 <code>table</code></a></h3>
@@ -8247,7 +8280,20 @@ class person
   </pre>
 
   <p>If the table name is not specified, the class name is used as the
-     table name.</p>
+     table name. The table name can be qualified with a database
+     schema, for example:</p>
+
+  <pre class="c++">
+#pragma db object table("census.people")
+class person
+{
+  ...
+};
+  </pre>
+
+  <p>For more information on database schemas and the format of the
+     qualified names, refer to <a href="#12.1.8">Section 12.1.8,
+     "<code>schema</code>"</a>.</p>
 
   <h3><a name="12.1.2">12.1.2 <code>pointer</code></a></h3>
 
@@ -8545,6 +8591,237 @@ private:
   }
 };
  </pre>
+
+  <h3><a name="12.1.8">12.1.8 <code>schema</code></a></h3>
+
+  <p>The <code>schema</code> specifier specifies a database schema
+     that should be used for a persistent class.</p>
+
+  <p>In relational databases the term schema can refer to two related
+     but ultimately different concepts. Normally it means a collection
+     of tables, indexes, sequences, etc., that are created in the
+     database or the actual DDL statements that create these
+     database objects. Some database implementations support what
+     would be more accurately called a <em>database namespace</em>
+     but is also called a schema. In this sense, a schema is a
+     separate namespace in which tables, indexes, sequences, etc.,
+     can be created. For example, two tables that have the same
+     name can coexist in the same database if they belong to
+     different schemas. In this section when we talk about a
+     schema, we refer to the <em>database namespace</em> meaning
+     of this term. </p>
+
+  <p>When schemas are in use, a database object name is qualified
+     with a schema. For example:</p>
+
+  <pre class="sql">
+CREATE TABLE accounting.employee (...)
+
+SELECT ... FROM accounting.employee WHERE ...
+  </pre>
+
+  <p>In the above example <code>accounting</code> is the schema
+     and the <code>employee</code> table belongs to this
+     schema.</p>
+
+  <p>Not all database implementations support schemas. Some
+     implementation that don't support schemas (for example,
+     MySQL, SQLite) allow the use of the above syntax to specify
+     the database name. Yet others may support several levels
+     of qualification. For example, Microsoft SQL Server has
+     three levels starting with the linked database server,
+     followed by the database, and then followed by
+     the schema:
+     <code>server1.company1.accounting.employee</code>.
+     While the actual meaning of the qualifier in a qualified name
+     vary from one database implementation to another, here we
+     refer to all of them collectively as a schema.</p>
+
+  <p>In ODB, a schema for a table of a persistent class can be
+     specified at the class level, C++ namespace level, or the
+     file level. To assign a schema to a specific persistent class
+     we can use the <code>schema</code> specifier, for example:</p>
+
+  <pre class="c++">
+#pragma db object schema("accounting")
+class employee
+{
+  ...
+};
+  </pre>
+
+  <p>If we are also assigning a table name, then we can use
+     a shorter notation by specifying both the schema and
+     the table name in the <code>table</code> specifier:</p>
+
+  <pre class="c++">
+#pragma db object table("accounting.employee")
+class employee
+{
+  ...
+};
+  </pre>
+
+  <p>If we want to assign a schema to all the persistent classes
+     in a C++ namespace, then, instead of specifying the schema
+     for each class, we can specify it once at the C++ namespace level.
+     For example:</p>
+
+  <pre class="c++">
+#pragma db namespace schema("accounting")
+namespace accounting
+{
+  #pragma db object
+  class employee
+  {
+    ...
+  };
+
+  #pragma db object
+  class employer
+  {
+    ...
+  };
+}
+  </pre>
+
+  <p>Similar to other qualifiers, the <code>namespace</code> qualifier
+     can also refer to a named C++ namespace, for example:</p>
+
+  <pre class="c++">
+namespace accounting
+{
+  ...
+}
+#pragma db namespace(accounting) schema("accounting")
+  </pre>
+
+  <p>If we want to assign a schema to all the persistent classes in
+     a file, then we can use the <code>--schema</code>
+     ODB compiler option. For example:</p>
+
+  <pre class="terminal">
+odb ... --schema accounting ...
+  </pre>
+
+  <p>The alternative to this approach with the same effect is to
+     assign a schema to the global namespace. To refer to the global
+     namespace in the <code>namespace</code> qualifier we use
+     the following special syntax:</p>
+
+  <pre class="c++">
+#pragma db namespace() schema("accounting")
+  </pre>
+
+  <p>By default schema qualifications are accumulated starting from
+     the persistent class, continuing with the namespace hierarchy
+     to which this class belongs, and finishing with the schema
+     specified with the <code>--schema</code> option. For
+     example:</p>
+
+  <pre class="c++">
+#pragma db namespace schema("audit_db")
+namespace audit
+{
+  #pragma db namespace schema("accounting")
+  namespace accounting
+  {
+    #pragma db object
+    class employee
+    {
+      ...
+    };
+  }
+}
+  </pre>
+
+  <p>If we compile the above code fragment with the
+     <code>--schema&nbsp;server1</code> option, then the
+     <code>employee</code> table will have the
+     <code>server1.audit_db.accounting.employee</code> qualified
+     name.</p>
+
+  <p>In some situations we may want to prevent such accumulation
+     of the qualifications. To accomplish this we can use the
+     so-called fully-qualified names, which have the empty leading
+     name component. This is analogous to the C++ fully-qualified
+     names in the <code>::accounting::employee</code> form. For
+     example:</p>
+
+  <pre class="c++">
+#pragma db namespace schema("accounting")
+namespace accounting
+{
+  #pragma db object schema(".hr")
+  class employee
+  {
+    ...
+  };
+
+  #pragma db object
+  class employer
+  {
+    ...
+  };
+}
+  </pre>
+
+  <p>In the above code fragment, the <code>employee</code> table will
+     have the <code>hr.employee</code> qualified name while the
+     <code>employer</code> &mdash; <code>accounting.employer</code>.
+     Note also that the empty leading name component is a special
+     ODB syntax and is not propagated to the actual database names
+     (using a name like <code>.hr.employee</code> to refer to a table
+     will most likely result in an error).</p>
+
+  <p>Auxiliary database objects for a persistent class, such as indexes,
+     sequences, triggers, etc., are all created in the same schema
+     as the class table. By default, this is also true for the
+     container tables. However, if you need to store a container
+     table in a different schema, then you can provide a qualified
+     name using the <code>table</code> specifier, for example:</p>
+
+  <pre class="c++">
+#pragma db object table("accounting.employee")
+class employee
+{
+  ...
+
+  #pragma db object table("operations.projects")
+  std::vector&lt;std::string> projects_;
+};
+  </pre>
+
+  <p>The standard syntax for qualified names used in the
+     <code>schema</code> and <code>table</code> specifiers as well
+     as the view <code>column</code> specifier (<a href="#12.4.8">Section
+     12.4.8, "<code>column</code> (view)"</a>) has the
+     <code>"</code><i>name</i><code>.</code><i>name</i>...<code>"</code>
+     form where, as discussed above, the leading name component
+     can be empty to denote a fully qualified name. This form, however,
+     doesn't work if one of the name components contains periods. To
+     support such cases the alternative form is available:
+     <code>"</code><i>name</i><code>"."</code><i>name</i><code>"</code>...
+     For example:</p>
+
+  <pre class="c++">
+#pragma db object table("accounting_1.2"."employee")
+class employee
+{
+  ...
+};
+  </pre>
+
+  <p>Finally, to specify an unqualified name that contains periods
+     we can use the following special syntax:</p>
+
+  <pre class="c++">
+#pragma db object schema(."accounting_1.2") table("employee")
+class employee
+{
+  ...
+};
+  </pre>
 
   <h2><a name="12.2">12.2 View Type Pragmas</a></h2>
 
@@ -9987,6 +10264,24 @@ class person
      to <a href="#7.2.1">Section 7.2.1, "Composite Value Column and Table
      Names"</a> for details.</p>
 
+  <p>The container table name can be qualified with a database
+     schema, for example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db table("extras.nicknames")
+  std::vector&lt;std::string> nicknames_;
+};
+  </pre>
+
+  <p>For more information on database schemas and the format of the
+     qualified names, refer to <a href="#12.1.8">Section 12.1.8,
+     "<code>schema</code>"</a>.</p>
+
   <h3><a name="12.4.15">12.4.15 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
@@ -10268,7 +10563,37 @@ class person
   <p>If the column name is not specified, then <code>value</code>
      is used by default.</p>
 
-  <h2><a name="12.5">12.5 C++ Compiler Warnings</a></h2>
+  <h2><a name="12.5">12.5 Namespace Pragmas</a></h2>
+
+  <p>A pragma with the <code>namespace</code> qualifier describes a
+     C++ namespace. The qualifier can be optionally followed,
+     in any order, by one or more specifiers summarized in the
+     table below:</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table class="specifiers" border="1">
+    <tr>
+      <th>Specifier</th>
+      <th>Summary</th>
+      <th>Section</th>
+    </tr>
+
+    <tr>
+      <td><code>schema</code></td>
+      <td>database schema for persistent classes inside a namespace</td>
+      <td><a href="#12.5.1">12.5.1</a></td>
+    </tr>
+
+  </table>
+
+  <h3><a name="12.5.1">12.5.1 <code>schema</code></a></h3>
+
+  <p>The <code>schema</code> specifier specifies a database schema
+     that should be used for persistent classes inside a namespace.
+     For more information on specifying a database schema refer to
+     <a href="#12.1.8">Section 12.1.8, "<code>schema</code>"</a>.</p>
+
+  <h2><a name="12.6">12.6 C++ Compiler Warnings</a></h2>
 
   <p>When a C++ header file defining persistent classes and containing
      ODB pragmas is used to build the application, the C++ compiler may
@@ -10321,7 +10646,7 @@ class person
   <p>The disadvantage of this approach is that it can quickly become
      overly verbose when positioned pragmas are used.</p>
 
-  <h3><a name="12.5.1">12.5.1 GNU C++</a></h3>
+  <h3><a name="12.6.1">12.6.1 GNU C++</a></h3>
 
   <p>GNU g++ does not issue warnings about unknown pragmas
      unless requested with the <code>-Wall</code> command line option.
@@ -10333,7 +10658,7 @@ class person
 g++ -Wall -Wno-unknown-pragmas ...
   </pre>
 
-  <h3><a name="12.5.2">12.5.2 Visual C++</a></h3>
+  <h3><a name="12.6.2">12.6.2 Visual C++</a></h3>
 
   <p>Microsoft Visual C++ issues an unknown pragma warning (C4068) at
      warning level 1 or higher. This means that unless we have disabled
@@ -10367,7 +10692,7 @@ class person
 #pragma warning (pop)
   </pre>
 
-  <h3><a name="12.5.3">12.5.3 Sun C++</a></h3>
+  <h3><a name="12.6.3">12.6.3 Sun C++</a></h3>
 
   <p>The Sun C++ compiler does not issue warnings about unknown pragmas
      unless the <code>+w</code> or <code>+w2</code> option is specified.
@@ -10379,7 +10704,7 @@ class person
 CC +w -erroff=unknownpragma ...
   </pre>
 
-  <h3><a name="12.5.4">12.5.4 IBM XL C++</a></h3>
+  <h3><a name="12.6.4">12.6.4 IBM XL C++</a></h3>
 
   <p>IBM XL C++ issues an unknown pragma warning (1540-1401) by default.
      To disable this warning we can add the <code>-qsuppress=1540-1401</code>
@@ -10389,7 +10714,7 @@ CC +w -erroff=unknownpragma ...
 xlC -qsuppress=1540-1401 ...
   </pre>
 
-  <h3><a name="12.5.5">12.5.5 HP aC++</a></h3>
+  <h3><a name="12.6.5">12.6.5 HP aC++</a></h3>
 
   <p>HP aC++ (aCC) issues an unknown pragma warning (2161) by default.
      To disable this warning we can add the <code>+W2161</code>

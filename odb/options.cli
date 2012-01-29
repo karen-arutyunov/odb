@@ -88,9 +88,11 @@ class options
   {
     "<name>",
     "Use <name> as the database schema name. Schema names are primarily
-     used for distinguishing between multiple embedded schemas in the
-     schema catalog. If this option is not specified, the empty name,
-     which is the default schema name, is used."
+     used to distinguish between multiple embedded schemas in the schema
+     catalog. They are not to be confused with database schemas (database
+     namespaces) which are specified with the \cb{--schema} option. If
+     this option is not specified, the empty name, which is the default
+     schema name, is used."
   };
 
   std::string --default-pointer = "*"
@@ -146,7 +148,11 @@ class options
   qname --schema
   {
     "<schema>",
-    "Place database objects (tables, indexes, etc) into <schema>."
+    "Specify a database schema (database namespace) that should be
+     assigned to the persistent classes in a file being compiled.
+     Database schemas are not to be confused with database schema
+     names (schema catalog names) which are specified with the
+     \cb{--schema-name} option."
   };
 
   std::string --table-prefix
