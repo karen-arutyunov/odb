@@ -13788,7 +13788,7 @@ t.commit ();
      persisted. Similarly, because there is no signed version of the
      <code>TINYINT</code> SQL Server type, by default, <code>char</code>
      and <code>signed char</code> C++ types are mapped to
-     <code>TINYINT</code>. As result, the most significant bit of
+     <code>TINYINT</code>. As a result, the most significant bit of
      the value stored by the database for these types will contain the
      sign bit of the actual signed value being persisted.</p>
 
@@ -14036,7 +14036,7 @@ odb::mssql::database dbA ("test",
   </pre>
 
 
-  <p>The forth constructor allows us to pass a custom ODBC connection
+  <p>The fourth constructor allows us to pass a custom ODBC connection
      string that provides all the information necessary to connect to
      the database. Note also that all the other constructors have the
      <code>extra_connect_string</code> argument which can be used to
@@ -15025,7 +15025,7 @@ class person
   <p>Note that the <code>DATE</code>, <code>TIME</code>, and
      <code>DATETIME2</code> types are only available in SQL Server 2008 and
      later. SQL Server 2005 only supports the <code>DATETIME</code> and
-     <code>SMALLDATETIME</code> date-time types and the new types are
+     <code>SMALLDATETIME</code> date-time types. The new types are
      also unavailable when connecting to an SQL Server 2008 or
      later with the SQL Server 2005 Native Client ODBC driver.</p>
 
@@ -15739,7 +15739,7 @@ class Person
   <p>Note that the <code>DATE</code>, <code>TIME</code>, and
      <code>DATETIME2</code> types are only available in SQL Server 2008 and
      later. SQL Server 2005 only supports the <code>DATETIME</code> and
-     <code>SMALLDATETIME</code> date-time types and the new types are
+     <code>SMALLDATETIME</code> date-time types. The new types are
      also unavailable when connecting to an SQL Server 2008 or
      later with the SQL Server 2005 Native Client ODBC driver.</p>
 
