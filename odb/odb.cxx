@@ -1,5 +1,5 @@
 // file      : odb/odb.cxx
-// copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
+// copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <errno.h>
@@ -506,7 +506,7 @@ main (int argc, char* argv[])
       {
         e << "ODB object-relational mapping (ORM) compiler for C++ "
           ODB_COMPILER_VERSION_STR << endl
-          << "Copyright (c) 2009-2011 Code Synthesis Tools CC" << endl;
+          << "Copyright (c) 2009-2012 Code Synthesis Tools CC" << endl;
 
         e << "This is free software; see the source for copying conditions. "
           << "There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS "

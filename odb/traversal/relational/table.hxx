@@ -1,5 +1,5 @@
 // file      : odb/traversal/relational/table.hxx
-// copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
+// copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #ifndef ODB_TRAVERSAL_RELATIONAL_TABLE_HXX

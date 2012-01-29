@@ -1,5 +1,5 @@
 // file      : odb/semantics/relational/elements.hxx
-// copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
+// copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #ifndef ODB_SEMANTICS_RELATIONAL_ELEMENTS_HXX
