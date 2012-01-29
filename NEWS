@@ -20,7 +20,7 @@ Version 1.8.0
 
   * The --default-schema option has been renamed to --schema-name.
 
-  * Default Oracle mapping for std::string has changed from VARCHAR2(4000)
+  * The default Oracle mapping for std::string has changed from VARCHAR2(4000)
     to VARCHAR2(512).
 
 Version 1.7.0
