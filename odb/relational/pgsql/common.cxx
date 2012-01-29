@@ -1,5 +1,4 @@
 // file      : odb/relational/pgsql/common.cxx
-// author    : Constantin Michael <constantin@codesynthesis.com>
 // copyright : Copyright (c) 2009-2011 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
