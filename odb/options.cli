@@ -148,7 +148,7 @@ class options
   {
     "<schema>",
     "Specify a database schema (database namespace) that should be
-     assigned to the persistent classes in a file being compiled.
+     assigned to the persistent classes in the file being compiled.
      Database schemas are not to be confused with database schema
      names (schema catalog names) which are specified with the
      \cb{--schema-name} option."
