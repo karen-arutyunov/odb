@@ -149,12 +149,6 @@ namespace odb
         return data_image_binding_;
       }
 
-      bool*
-      data_image_truncated ()
-      {
-        return data_image_truncated_;
-      }
-
       binding&
       select_image_binding ()
       {
@@ -239,7 +233,6 @@ namespace odb
       std::size_t data_id_binding_version_;
 
       binding data_image_binding_;
-      bool* data_image_truncated_;
 
       // Skips the id from data_image_binding.
       //
@@ -274,7 +267,8 @@ namespace odb
     private:
       bind cond_image_bind_[traits::cond_column_count];
       bind data_image_bind_[traits::data_column_count];
-      bool data_image_truncated_array_[traits::data_column_count];
+      bool select_image_truncated_array_[traits::data_column_count-
+                                         traits::id_column_count];
     };
   }
 }
