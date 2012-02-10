@@ -1704,7 +1704,7 @@ namespace relational
           os << endl
              << "if (r == select_statement::truncated)"
              << "{"
-             << "grow (di, sts.data_image_truncated ());"
+             << "grow (di, sts.select_image_truncated ());"
              << endl
              << "if (di.version != sts.data_image_version ())"
              << "{"
@@ -1811,7 +1811,7 @@ namespace relational
              << "if (r == select_statement::truncated)"
              << "{"
              << "data_image_type& di (sts.data_image ());"
-             << "grow (di, sts.data_image_truncated ());"
+             << "grow (di, sts.select_image_truncated ());"
              << endl
              << "if (di.version != sts.data_image_version ())"
              << "{"
