@@ -35,7 +35,7 @@ namespace relational
         {
           // Make sure the column is mapped to an ENUM or integer type.
           //
-          sql_type const& t (column_sql_type (m));
+          sql_type const& t (parse_sql_type (column_type (), m));
 
           switch (t.type)
           {

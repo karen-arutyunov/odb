@@ -390,7 +390,8 @@ for consistency.
 	  <tr>
             <th>7.2</th><td><a href="#7.2">Composite Value Types</a>
               <table class="toc">
-                <tr><th>7.2.1</th><td><a href="#7.2.1">Composite Value Column and Table Names</a></td></tr>
+		<tr><th>7.2.1</th><td><a href="#7.2.1">Composite Object Ids</a></td></tr>
+                <tr><th>7.2.2</th><td><a href="#7.2.2">Composite Value Column and Table Names</a></td></tr>
               </table>
             </td>
           </tr>
@@ -492,29 +493,30 @@ for consistency.
                 <tr><th>12.4.1</th><td><a href="#12.4.1"><code>id</code></a></td></tr>
                 <tr><th>12.4.2</th><td><a href="#12.4.2"><code>auto</code></a></td></tr>
                 <tr><th>12.4.3</th><td><a href="#12.4.3"><code>type</code></a></td></tr>
-		<tr><th>12.4.4</th><td><a href="#12.4.4"><code>null</code>/<code>not_null</code></a></td></tr>
-		<tr><th>12.4.5</th><td><a href="#12.4.5"><code>default</code></a></td></tr>
-		<tr><th>12.4.6</th><td><a href="#12.4.6"><code>options</code></a></td></tr>
-		<tr><th>12.4.7</th><td><a href="#12.4.7"><code>column</code> (object, composite value)</a></td></tr>
-		<tr><th>12.4.8</th><td><a href="#12.4.8"><code>column</code> (view)</a></td></tr>
-		<tr><th>12.4.9</th><td><a href="#12.4.9"><code>transient</code></a></td></tr>
-		<tr><th>12.4.10</th><td><a href="#12.4.10"><code>readonly</code></a></td></tr>
-		<tr><th>12.4.11</th><td><a href="#12.4.11"><code>inverse</code></a></td></tr>
-		<tr><th>12.4.12</th><td><a href="#12.4.12"><code>version</code></a></td></tr>
-		<tr><th>12.4.13</th><td><a href="#12.4.13"><code>unordered</code></a></td></tr>
-		<tr><th>12.4.14</th><td><a href="#12.4.14"><code>table</code></a></td></tr>
-		<tr><th>12.4.15</th><td><a href="#12.4.15"><code>index_type</code></a></td></tr>
-		<tr><th>12.4.16</th><td><a href="#12.4.16"><code>key_type</code></a></td></tr>
-		<tr><th>12.4.17</th><td><a href="#12.4.17"><code>value_type</code></a></td></tr>
-		<tr><th>12.4.18</th><td><a href="#12.4.18"><code>value_null</code>/<code>value_not_null</code></a></td></tr>
-		<tr><th>12.4.19</th><td><a href="#12.4.19"><code>id_options</code></a></td></tr>
-		<tr><th>12.4.20</th><td><a href="#12.4.20"><code>index_options</code></a></td></tr>
-		<tr><th>12.4.21</th><td><a href="#12.4.21"><code>key_options</code></a></td></tr>
-		<tr><th>12.4.22</th><td><a href="#12.4.22"><code>value_options</code></a></td></tr>
-		<tr><th>12.4.23</th><td><a href="#12.4.23"><code>id_column</code></a></td></tr>
-		<tr><th>12.4.24</th><td><a href="#12.4.24"><code>index_column</code></a></td></tr>
-		<tr><th>12.4.25</th><td><a href="#12.4.25"><code>key_column</code></a></td></tr>
-		<tr><th>12.4.26</th><td><a href="#12.4.26"><code>value_column</code></a></td></tr>
+		<tr><th>12.4.4</th><td><a href="#12.4.4"><code>id_type</code></a></td></tr>
+		<tr><th>12.4.5</th><td><a href="#12.4.5"><code>null</code>/<code>not_null</code></a></td></tr>
+		<tr><th>12.4.6</th><td><a href="#12.4.6"><code>default</code></a></td></tr>
+		<tr><th>12.4.7</th><td><a href="#12.4.7"><code>options</code></a></td></tr>
+		<tr><th>12.4.8</th><td><a href="#12.4.8"><code>column</code> (object, composite value)</a></td></tr>
+		<tr><th>12.4.9</th><td><a href="#12.4.9"><code>column</code> (view)</a></td></tr>
+		<tr><th>12.4.10</th><td><a href="#12.4.10"><code>transient</code></a></td></tr>
+		<tr><th>12.4.11</th><td><a href="#12.4.11"><code>readonly</code></a></td></tr>
+		<tr><th>12.4.12</th><td><a href="#12.4.12"><code>inverse</code></a></td></tr>
+		<tr><th>12.4.13</th><td><a href="#12.4.13"><code>version</code></a></td></tr>
+		<tr><th>12.4.14</th><td><a href="#12.4.14"><code>unordered</code></a></td></tr>
+		<tr><th>12.4.15</th><td><a href="#12.4.15"><code>table</code></a></td></tr>
+		<tr><th>12.4.16</th><td><a href="#12.4.16"><code>index_type</code></a></td></tr>
+		<tr><th>12.4.17</th><td><a href="#12.4.17"><code>key_type</code></a></td></tr>
+		<tr><th>12.4.18</th><td><a href="#12.4.18"><code>value_type</code></a></td></tr>
+		<tr><th>12.4.19</th><td><a href="#12.4.19"><code>value_null</code>/<code>value_not_null</code></a></td></tr>
+		<tr><th>12.4.20</th><td><a href="#12.4.20"><code>id_options</code></a></td></tr>
+		<tr><th>12.4.21</th><td><a href="#12.4.21"><code>index_options</code></a></td></tr>
+		<tr><th>12.4.22</th><td><a href="#12.4.22"><code>key_options</code></a></td></tr>
+		<tr><th>12.4.23</th><td><a href="#12.4.23"><code>value_options</code></a></td></tr>
+		<tr><th>12.4.24</th><td><a href="#12.4.24"><code>id_column</code></a></td></tr>
+		<tr><th>12.4.25</th><td><a href="#12.4.25"><code>index_column</code></a></td></tr>
+		<tr><th>12.4.26</th><td><a href="#12.4.26"><code>key_column</code></a></td></tr>
+		<tr><th>12.4.27</th><td><a href="#12.4.27"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -870,7 +872,7 @@ for consistency.
      object state in binary format instead of text which reduces
      the load on the application and the database server. Extensive
      caching of connections, prepared statements, and buffers saves
-     time and resources on connection establishment, statement parsing
+     time and resources on connection establishment, statement parsing,
      and memory allocations. For each supported database system the
      native C API is used instead of ODBC or higher-level wrapper
      APIs to reduce overhead and provide the most efficient implementation
@@ -2157,8 +2159,11 @@ class person
      without the default constructor. However, in this case, the database
      operations can only load the persistent state into an existing instance
      (<a href="#3.8">Section 3.8, "Loading Persistent Objects"</a>,
-     <a href="#4.4">Section 4.4, "Query Result"</a>). <p>The object id type
-     should be default-constructible.</p></p>
+     <a href="#4.4">Section 4.4, "Query Result"</a>).</p>
+
+  <p>The object id can be of a simple or composite (<a href="#7.2.1">Section
+     7.2.1, "Composite Object Ids"</a>) value type which should be
+     default-constructible.</p>
 
   <p>If an object class has private or protected non-transient data
      members or if its default constructor is not public, then the
@@ -3140,7 +3145,7 @@ t.commit ();
      data members can be declared read-only (see <a href="#12.1.4">Section
      12.1.4, "<code>readonly</code> (object)"</a>, <a href="#12.3.6">Section
      12.3.6, "<code>readonly</code> (composite value)"</a>, and
-     <a href="#12.4.10">Section 12.4.10, "<code>readonly</code>
+     <a href="#12.4.11">Section 12.4.11, "<code>readonly</code>
      (data member)"</a>).</p>
 
   <p>If an individual data member is declared read-only, then
@@ -4446,7 +4451,7 @@ private:
      of person's nicknames is probably not important. To instruct the ODB
      compiler to ignore the order in ordered containers we can use the
      <code>db&nbsp;unordered</code> pragma (<a href="#12.3.7">Section 12.3.7,
-     "<code>unordered</code>"</a>, <a href="#12.4.13">Section 12.4.13,
+     "<code>unordered</code>"</a>, <a href="#12.4.14">Section 12.4.14,
      "<code>unordered</code>"</a>). For example:</p>
 
   <pre class="c++">
@@ -4696,11 +4701,11 @@ class employee
 
   <p>By default, an object pointer can be <code>NULL</code>. To
      specify that a pointer always points to a valid object we can
-     use the <code>not_null</code> pragma (<a href="#12.4.4">Section
-     12.4.4, "<code>null</code>/<code>not_null</code>"</a>) for
+     use the <code>not_null</code> pragma (<a href="#12.4.5">Section
+     12.4.5, "<code>null</code>/<code>not_null</code>"</a>) for
      single object pointers and the <code>value_not_null</code> pragma
-     (<a href="#12.4.18">Section
-     12.4.18, "<code>value_null</code>/<code>value_not_null</code>"</a>)
+     (<a href="#12.4.19">Section
+     12.4.19, "<code>value_null</code>/<code>value_not_null</code>"</a>)
      for containers of object pointers. For example:</p>
 
   <pre class="c++">
@@ -5069,7 +5074,7 @@ CREATE TABLE employee (
      of these references.</p>
 
   <p>To eliminate redundant database schema references we can use the
-     <code>inverse</code> pragma (<a href="#12.4.11">Section 12.4.11,
+     <code>inverse</code> pragma (<a href="#12.4.12">Section 12.4.12,
      "<code>inverse</code>"</a>) which tells the ODB compiler that
      a pointer is the inverse side of a bidirectional relationship.
      Either side of a relationship can be made inverse. For example:</p>
@@ -5113,7 +5118,7 @@ CREATE TABLE employee (
      pointer. Also note that an ordered container (<a href="#5.1">Section
      5.1, "Ordered Containers"</a>) of pointers that is an inverse side
      of a bidirectional relationship is always treated as unordered
-     (<a href="#12.4.13">Section 12.4.13, "<code>unordered</code>"</a>)
+     (<a href="#12.4.14">Section 12.4.14, "<code>unordered</code>"</a>)
      because the contents of such a container are implicitly built from
      the direct side of the relationship which does not contain the
      element order (index).</p>
@@ -5859,12 +5864,42 @@ result r (db.query&lt;person> (
 t.commit ();
   </pre>
 
-  <h3><a name="7.2.1">7.2.1 Composite Value Column and Table Names</a></h3>
+  <h3><a name="7.2.1">7.2.1 Composite Object Ids</a></h3>
+
+  <p>An object id can be of a composite value type, for example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id
+  name name_;
+};
+  </pre>
+
+  <p>However, a value type that can be used as an object id has a number
+     of restrictions. Such a value type cannot have container, object
+     pointer, or read-only data members. It also must be
+     default-constructible and implement the less-than comparison operator
+     (<code>operator&lt;</code>).</p>
+
+  <h3><a name="7.2.2">7.2.2 Composite Value Column and Table Names</a></h3>
 
   <p>Customizing a column name for a data member of a simple value
      type is straightforward: we simply specify the desired name with
-     the <code>db&nbsp;column</code> pragma (<a href="#12.4.7">Section
-     12.4.7, "<code>column</code>"</a>). For composite value
+     the <code>db&nbsp;column</code> pragma (<a href="#12.4.8">Section
+     12.4.8, "<code>column</code>"</a>). For composite value
      types things are slightly more complex since they are mapped to
      multiple columns. Consider the following example:</p>
 
@@ -5965,9 +6000,9 @@ CREATE TABLE person (
   <p>The same principle applies when a composite value type is used
      as an element of a container, except that instead of
      <code>db&nbsp;column</code>, either the <code>db&nbsp;value_column</code>
-     (<a href="#12.4.26">Section 12.4.26, "<code>value_column</code>"</a>) or
+     (<a href="#12.4.27">Section 12.4.27, "<code>value_column</code>"</a>) or
      <code>db&nbsp;key_column</code>
-     (<a href="#12.4.25">Section 12.4.25, "<code>key_column</code>"</a>)
+     (<a href="#12.4.26">Section 12.4.26, "<code>key_column</code>"</a>)
      pragmas are used to specify the column prefix.</p>
 
   <p>When a composite value type contains a container, an extra table
@@ -6011,8 +6046,8 @@ CREATE TABLE person (
   </pre>
 
   <p>To customize the container table name we can use the
-     <code>db&nbsp;table</code> pragma (<a href="#12.4.14">Section
-     12.4.14, "<code>table</code>"</a>), for example:</p>
+     <code>db&nbsp;table</code> pragma (<a href="#12.4.15">Section
+     12.4.15, "<code>table</code>"</a>), for example:</p>
 
   <pre class="c++">
 #pragma db value
@@ -6053,7 +6088,7 @@ CREATE TABLE person_nickname (
      of a valid value in a column. While by default ODB maps
      values to columns that do not allow <code>NULL</code> values,
      it is possible to change that with the <code>db&nbsp;null</code>
-     pragma (<a href="#12.4.4">Section 12.4.4,
+     pragma (<a href="#12.4.5">Section 12.4.5,
      "<code>null</code>/<code>not_null</code>"</a>).</p>
 
   <p>To properly support the <code>NULL</code> semantics, the
@@ -6804,7 +6839,7 @@ struct employee_birth_code
      or the match is ambiguous, the ODB compiler will issue an error.
      To associate two differently-named members or to resolve an ambiguity,
      we can explicitly specify the member association using the
-     <code>db&nbsp;column</code> pragma (<a href="#12.4.7">Section 12.4.7,
+     <code>db&nbsp;column</code> pragma (<a href="#12.4.8">Section 12.4.8,
      "<code>column</code>"</a>). For example:</p>
 
   <pre>
@@ -7822,7 +7857,7 @@ p.age (age);
   <p>To declare a persistent class with the optimistic concurrency model we
      use the <code>optimistic</code> pragma (<a href="#12.1.5">Section 12.1.5,
      "<code>optimistic</code>"</a>). We also use the <code>version</code>
-     pragma (<a href="#12.4.12">Section 12.4.12, "<code>version</code>"</a>)
+     pragma (<a href="#12.4.13">Section 12.4.13, "<code>version</code>"</a>)
      to specify which data member will store the object version. For
      example:</p>
 
@@ -8402,7 +8437,7 @@ class person
      read-only while the rest is treated as read-write.</p>
 
   <p>Note that it is also possible to declare individual data members
-    (<a href="#12.4.10">Section 12.4.10, "<code>readonly</code>"</a>)
+    (<a href="#12.4.11">Section 12.4.11, "<code>readonly</code>"</a>)
      as well as composite value types (<a href="#12.3.6">Section 12.3.6,
      "<code>readonly</code>"</a>) as read-only.</p>
 
@@ -8412,7 +8447,7 @@ class person
      has the optimistic concurrency model. A class with the optimistic
      concurrency model must also specify the data member that is used to
      store the object version using the <code>version</code> pragma
-     (<a href="#12.4.12">Section 12.4.12, "<code>version</code>"</a>).
+     (<a href="#12.4.13">Section 12.4.13, "<code>version</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -8794,8 +8829,8 @@ class employee
 
   <p>The standard syntax for qualified names used in the
      <code>schema</code> and <code>table</code> specifiers as well
-     as the view <code>column</code> specifier (<a href="#12.4.8">Section
-     12.4.8, "<code>column</code> (view)"</a>) has the
+     as the view <code>column</code> specifier (<a href="#12.4.9">Section
+     12.4.9, "<code>column</code> (view)"</a>) has the
      <code>"</code><i>name</i><code>.</code><i>name</i>...<code>"</code>
      form where, as discussed above, the leading name component
      can be empty to denote a fully qualified name. This form, however,
@@ -9181,7 +9216,7 @@ typedef shared_ptr&lt;person> person_ptr;
   </pre>
 
   <p>The <code>NULL</code> semantics can also be specified on the
-     per-member basis (<a href="#12.4.4">Section 12.4.4,
+     per-member basis (<a href="#12.4.5">Section 12.4.5,
      "<code>null</code>/<code>not_null</code>"</a>). If both a type and
      a member have <code>null</code>/<code>not_null</code> specifiers,
      then the member specifier takes precedence. If a member specifier
@@ -9234,7 +9269,7 @@ class person
 
   <p>The semantics of the <code>default</code> specifier for a value type
      are similar to those of the <code>default</code> specifier for a
-     data member (<a href="#12.4.5">Section 12.4.5,
+     data member (<a href="#12.4.6">Section 12.4.6,
      "<code>default</code>"</a>).</p>
 
   <h3><a name="12.3.5">12.3.5 <code>options</code></a></h3>
@@ -9257,7 +9292,7 @@ class person
 
   <p>The semantics of the <code>options</code> specifier for a value type
      are similar to those of the <code>options</code> specifier for a
-     data member (<a href="#12.4.6">Section 12.4.6,
+     data member (<a href="#12.4.7">Section 12.4.7,
      "<code>options</code>"</a>).</p>
 
   <h3><a name="12.3.6">12.3.6 <code>readonly</code></a></h3>
@@ -9286,7 +9321,7 @@ class person_name
      read-only while the rest is treated as read-write.</p>
 
   <p>Note that it is also possible to declare individual data members
-     (<a href="#12.4.10">Section 12.4.10, "<code>readonly</code>"</a>)
+     (<a href="#12.4.11">Section 12.4.11, "<code>readonly</code>"</a>)
      as well as whole objects (<a href="#12.1.4">Section 12.1.4,
      "<code>readonly</code>"</a>) as read-only.</p>
 
@@ -9395,7 +9430,7 @@ typedef std::vector&lt;std::string> nicknames;
 
   <p>The semantics of the <code>id_options</code> specifier for a container
      type are similar to those of the <code>id_options</code> specifier for
-     a container data member (<a href="#12.4.19">Section 12.4.19,
+     a container data member (<a href="#12.4.20">Section 12.4.20,
      "<code>id_options</code>"</a>).</p>
 
 
@@ -9412,7 +9447,7 @@ typedef std::vector&lt;std::string> nicknames;
 
   <p>The semantics of the <code>index_options</code> specifier for a container
      type are similar to those of the <code>index_options</code> specifier for
-     a container data member (<a href="#12.4.20">Section 12.4.20,
+     a container data member (<a href="#12.4.21">Section 12.4.21,
      "<code>index_options</code>"</a>).</p>
 
 
@@ -9429,7 +9464,7 @@ typedef std::map&lt;std::string, std::string> properties;
 
   <p>The semantics of the <code>key_options</code> specifier for a container
      type are similar to those of the <code>key_options</code> specifier for
-     a container data member (<a href="#12.4.21">Section 12.4.21,
+     a container data member (<a href="#12.4.22">Section 12.4.22,
      "<code>key_options</code>"</a>).</p>
 
 
@@ -9446,7 +9481,7 @@ typedef std::set&lt;std::string> nicknames;
 
   <p>The semantics of the <code>value_options</code> specifier for a container
      type are similar to those of the <code>value_options</code> specifier for
-     a container data member (<a href="#12.4.22">Section 12.4.22,
+     a container data member (<a href="#12.4.23">Section 12.4.23,
      "<code>value_options</code>"</a>).</p>
 
 
@@ -9543,141 +9578,147 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
     </tr>
 
     <tr>
+      <td><code>id_type</code></td>
+      <td>database type for a member when used as an object id</td>
+      <td><a href="#12.4.4">12.4.4</a></td>
+    </tr>
+
+    <tr>
       <td><code>null</code>/<code>not_null</code></td>
       <td>member can/cannot be <code>NULL</code></td>
-      <td><a href="#12.4.4">12.4.4</a></td>
+      <td><a href="#12.4.5">12.4.5</a></td>
     </tr>
 
     <tr>
       <td><code>default</code></td>
       <td>default value for a member</td>
-      <td><a href="#12.4.5">12.4.5</a></td>
+      <td><a href="#12.4.6">12.4.6</a></td>
     </tr>
 
     <tr>
       <td><code>options</code></td>
       <td>database options for a member</td>
-      <td><a href="#12.4.6">12.4.6</a></td>
-    </tr>
-
-    <tr>
-      <td><code>column</code></td>
-      <td>column name for a member of an object or composite value</td>
       <td><a href="#12.4.7">12.4.7</a></td>
     </tr>
 
     <tr>
       <td><code>column</code></td>
-      <td>column name for a member of a view</td>
+      <td>column name for a member of an object or composite value</td>
       <td><a href="#12.4.8">12.4.8</a></td>
+    </tr>
+
+    <tr>
+      <td><code>column</code></td>
+      <td>column name for a member of a view</td>
+      <td><a href="#12.4.9">12.4.9</a></td>
     </tr>
 
     <tr>
       <td><code>transient</code></td>
       <td>member is not stored in the database</td>
-      <td><a href="#12.4.9">12.4.9</a></td>
+      <td><a href="#12.4.10">12.4.10</a></td>
     </tr>
 
     <tr>
       <td><code>readonly</code></td>
       <td>member is read-only</td>
-      <td><a href="#12.4.10">12.4.10</a></td>
+      <td><a href="#12.4.11">12.4.11</a></td>
     </tr>
 
     <tr>
       <td><code>inverse</code></td>
       <td>member is an inverse side of a bidirectional relationship</td>
-      <td><a href="#12.4.11">12.4.11</a></td>
+      <td><a href="#12.4.12">12.4.12</a></td>
     </tr>
 
     <tr>
       <td><code>version</code></td>
       <td>member stores object version</td>
-      <td><a href="#12.4.12">12.4.12</a></td>
+      <td><a href="#12.4.13">12.4.13</a></td>
     </tr>
 
     <tr>
       <td><code>unordered</code></td>
       <td>ordered container should be stored unordered</td>
-      <td><a href="#12.4.13">12.4.13</a></td>
+      <td><a href="#12.4.14">12.4.14</a></td>
     </tr>
 
     <tr>
       <td><code>table</code></td>
       <td>table name for a container</td>
-      <td><a href="#12.4.14">12.4.14</a></td>
+      <td><a href="#12.4.15">12.4.15</a></td>
     </tr>
 
     <tr>
       <td><code>index_type</code></td>
       <td>database type for a container's index type</td>
-      <td><a href="#12.4.15">12.4.15</a></td>
+      <td><a href="#12.4.16">12.4.16</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
       <td>database type for a container's key type</td>
-      <td><a href="#12.4.16">12.4.16</a></td>
+      <td><a href="#12.4.17">12.4.17</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
       <td>database type for a container's value type</td>
-      <td><a href="#12.4.17">12.4.17</a></td>
+      <td><a href="#12.4.18">12.4.18</a></td>
     </tr>
 
     <tr>
       <td><code>value_null</code>/<code>value_not_null</code></td>
       <td>container's value can/cannot be <code>NULL</code></td>
-      <td><a href="#12.4.18">12.4.18</a></td>
+      <td><a href="#12.4.19">12.4.19</a></td>
     </tr>
 
     <tr>
       <td><code>id_options</code></td>
       <td>database options for a container's id column</td>
-      <td><a href="#12.4.19">12.4.19</a></td>
+      <td><a href="#12.4.20">12.4.20</a></td>
     </tr>
 
     <tr>
       <td><code>index_options</code></td>
       <td>database options for a container's index column</td>
-      <td><a href="#12.4.20">12.4.20</a></td>
+      <td><a href="#12.4.21">12.4.21</a></td>
     </tr>
 
     <tr>
       <td><code>key_options</code></td>
       <td>database options for a container's key column</td>
-      <td><a href="#12.4.21">12.4.21</a></td>
+      <td><a href="#12.4.22">12.4.22</a></td>
     </tr>
 
     <tr>
       <td><code>value_options</code></td>
       <td>database options for a container's value column</td>
-      <td><a href="#12.4.22">12.4.22</a></td>
+      <td><a href="#12.4.23">12.4.23</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
       <td>column name for a container's object id</td>
-      <td><a href="#12.4.23">12.4.23</a></td>
+      <td><a href="#12.4.24">12.4.24</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>column name for a container's index</td>
-      <td><a href="#12.4.24">12.4.24</a></td>
+      <td><a href="#12.4.25">12.4.25</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>column name for a container's key</td>
-      <td><a href="#12.4.25">12.4.25</a></td>
+      <td><a href="#12.4.26">12.4.26</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>column name for a container's value</td>
-      <td><a href="#12.4.26">12.4.26</a></td>
+      <td><a href="#12.4.27">12.4.27</a></td>
     </tr>
 
   </table>
@@ -9764,11 +9805,44 @@ class person
 };
   </pre>
 
-  <p>The <code>null</code> and <code>not_null</code> (<a href="#12.4.4">Section
-     12.4.4, "<code>null</code>/<code>not_null</code>"</a>) specifiers
+  <p>The <code>null</code> and <code>not_null</code> (<a href="#12.4.5">Section
+     12.4.5, "<code>null</code>/<code>not_null</code>"</a>) specifiers
      can be used to control the NULL semantics of a data member.</p>
 
-  <h3><a name="12.4.4">12.4.4 <code>null</code>/<code>not_null</code></a></h3>
+  <h3><a name="12.4.4">12.4.4 <code>id_type</code></a></h3>
+
+  <p>The <code>type</code> specifier specifies the native database type
+     that should be used for a data member when it is part of an
+     object identifier. This specifier only makes sense when applied to
+     a member of a composite value type that is used for both id and
+     non-id members. For example:</p>
+
+  <pre class="c++">
+#pragma db value
+class name
+{
+  ...
+
+  #pragma db type("VARCHAR(256)") id_type("VARCHAR(64)")
+  std::string first_;
+
+  #pragma db type("VARCHAR(256)") id_type("VARCHAR(64)")
+  std::string last_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id
+  name name_;  // name_.first_, name_.last_ mapped to VARCHAR(64)
+
+  name alias_; // alias_.first_, alias_.last_ mapped to VARCHAR(256)
+};
+  </pre>
+
+  <h3><a name="12.4.5">12.4.5 <code>null</code>/<code>not_null</code></a></h3>
 
   <p>The <code>null</code> and <code>not_null</code> specifiers specify that
      a data member can or cannot be <code>NULL</code>, respectively.
@@ -9823,7 +9897,7 @@ class account
      discussion of the <code>NULL</code> semantics for object pointers,
      refer to <a href="#6">Chapter 6, "Relationships"</a>.</p>
 
-  <h3><a name="12.4.5">12.4.5 <code>default</code></a></h3>
+  <h3><a name="12.4.6">12.4.6 <code>default</code></a></h3>
 
   <p>The <code>default</code> specifier specifies the database default value
      that should be used for a data member. For example:</p>
@@ -9844,8 +9918,8 @@ class person
      an integer literal, a floating point literal, a string literal, or
      an enumerator name. If you need to specify a default value that is
      an expression, for example an SQL function call, then you can use
-     the <code>options</code> specifier (<a href="#12.4.6">Section
-     12.4.6, "<code>options</code>"</a>) instead. For example:</p>
+     the <code>options</code> specifier (<a href="#12.4.7">Section
+     12.4.7, "<code>options</code>"</a>) instead. For example:</p>
 
   <pre class="c++">
 enum gender {male, female, undisclosed};
@@ -9931,7 +10005,7 @@ class person
   <p>Additionally, the <code>default</code> specifier cannot be specified
      for view data members.</p>
 
-  <h3><a name="12.4.6">12.4.6 <code>options</code></a></h3>
+  <h3><a name="12.4.7">12.4.7 <code>options</code></a></h3>
 
   <p>The <code>options</code> specifier specifies additional column
      definition options that should be used for a data member. For
@@ -9979,9 +10053,9 @@ class person
 
   <p>ODB provides dedicated specifiers for specifying column types
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>),
-     <code>NULL</code> constraints (<a href="#12.4.4">Section 12.4.4,
+     <code>NULL</code> constraints (<a href="#12.4.5">Section 12.4.5,
      "<code>null</code>/<code>not_null</code>"</a>), and default
-     values (<a href="#12.4.5">Section 12.4.5, "<code>default</code>"</a>).
+     values (<a href="#12.4.6">Section 12.4.6, "<code>default</code>"</a>).
      For ODB to function correctly these specifiers should always be
      used instead of the opaque <code>options</code> specifier for
      these components of a column definition.</p>
@@ -9989,7 +10063,7 @@ class person
   <p>Note also that the <code>options</code> specifier cannot be specified
      for view data members.</p>
 
-  <h3><a name="12.4.7">12.4.7 <code>column</code> (object, composite value)</a></h3>
+  <h3><a name="12.4.8">12.4.8 <code>column</code> (object, composite value)</a></h3>
 
   <p>The <code>column</code> specifier specifies the column name
      that should be used to store a data member of a persistent class
@@ -10007,7 +10081,7 @@ class person
   </pre>
 
   <p>For a member of a composite value type, the <code>column</code> specifier
-     specifies the column name prefix. Refer to <a href="#7.2.1">Section 7.2.1,
+     specifies the column name prefix. Refer to <a href="#7.2.2">Section 7.2.2,
      "Composite Value Column and Table Names"</a> for details.</p>
 
   <p>If the column name is not specified, it is derived from the member's
@@ -10015,7 +10089,7 @@ class person
      the common data member name decorations, such as leading and trailing
      underscores, the <code>m_</code> prefix, etc.</p>
 
-  <h3><a name="12.4.8">12.4.8 <code>column</code> (view)</a></h3>
+  <h3><a name="12.4.9">12.4.9 <code>column</code> (view)</a></h3>
 
   <p>The <code>column</code> specifier can be used to specify the associated
      object data member, the potentially qualified column name, or the column
@@ -10023,7 +10097,7 @@ class person
      refer to <a href="#9.1">Section 9.1, "Object Views"</a> and
      <a href="#9.2">Section 9.2, "Table Views"</a>.</p>
 
-  <h3><a name="12.4.9">12.4.9 <code>transient</code></a></h3>
+  <h3><a name="12.4.10">12.4.10 <code>transient</code></a></h3>
 
   <p>The <code>transient</code> specifier instructs the ODB compiler
      not to store a data member in the database. For example:</p>
@@ -10045,7 +10119,7 @@ class person
      references that are only meaningful in the application's
      memory, as well as utility members such as mutexes, etc.</p>
 
-  <h3><a name="12.4.10">12.4.10 <code>readonly</code></a></h3>
+  <h3><a name="12.4.11">12.4.11 <code>readonly</code></a></h3>
 
   <p>The <code>readonly</code> specifier specifies that a data member of
      an object or composite value type is read-only. Changes to a read-only
@@ -10054,7 +10128,7 @@ class person
      containing such a member. Since views are read-only, it is not
      necessary to use this specifier for view data members. Object id
      (<a href="#12.4.1">Section 12.4.1, "<code>id</code>"</a>)
-     and inverse (<a href="#12.4.11">Section 12.4.11,
+     and inverse (<a href="#12.4.12">Section 12.4.12,
      "<code>inverse</code>"</a>) data members are automatically treated
      as read-only and must not be explicitly declared as such. For
      example:</p>
@@ -10138,7 +10212,7 @@ class person
      as well as whole objects (<a href="#12.1.4">Section 12.1.4,
      "<code>readonly</code>"</a>) as read-only.</p>
 
-  <h3><a name="12.4.11">12.4.11 <code>inverse</code></a></h3>
+  <h3><a name="12.4.12">12.4.12 <code>inverse</code></a></h3>
 
   <p>The <code>inverse</code> specifier specifies that a data member of
      an object pointer or a container of object pointers type is an
@@ -10176,12 +10250,12 @@ class person
      relationship information. Only ordered and set containers can be used
      for inverse members. If an inverse member is of an ordered container
      type, it is automatically marked as unordered
-     (<a href="#12.4.13">Section 12.4.13, "<code>unordered</code>"</a>).</p>
+     (<a href="#12.4.14">Section 12.4.14, "<code>unordered</code>"</a>).</p>
 
   <p>For a more detailed discussion of inverse members, refer to
      <a href="#6.2">Section 6.2, "Bidirectional Relationships"</a>.</p>
 
-  <h3><a name="12.4.12">12.4.12 <code>version</code></a></h3>
+  <h3><a name="12.4.13">12.4.13 <code>version</code></a></h3>
 
   <p>The <code>version</code> specifier specifies that the data member stores
      the object version used to support optimistic concurrency.  If a class
@@ -10211,7 +10285,7 @@ class person
   <p>For a more detailed discussion of optimistic concurrency, refer to
      <a href="#11">Chapter 11, "Optimistic Concurrency"</a>.</p>
 
-  <h3><a name="12.4.13">12.4.13 <code>unordered</code></a></h3>
+  <h3><a name="12.4.14">12.4.14 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that a member of
      an ordered container type should be stored unordered in the database.
@@ -10234,7 +10308,7 @@ class person
      storage in the database, refer to <a href="#5.1">Section 5.1,
      "Ordered Containers"</a>.</p>
 
-  <h3><a name="12.4.14">12.4.14 <code>table</code></a></h3>
+  <h3><a name="12.4.15">12.4.15 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies the table name that should
      be used to store the contents of a container member. For example:</p>
@@ -10261,7 +10335,7 @@ class person
   <p>The <code>table</code> specifier can also be used for members of
      composite value types. In this case it specifies the table name
      prefix for container members inside the composite value type. Refer
-     to <a href="#7.2.1">Section 7.2.1, "Composite Value Column and Table
+     to <a href="#7.2.2">Section 7.2.2, "Composite Value Column and Table
      Names"</a> for details.</p>
 
   <p>The container table name can be qualified with a database
@@ -10282,7 +10356,7 @@ class person
      qualified names, refer to <a href="#12.1.8">Section 12.1.8,
      "<code>schema</code>"</a>.</p>
 
-  <h3><a name="12.4.15">12.4.15 <code>index_type</code></a></h3>
+  <h3><a name="12.4.16">12.4.16 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
      database type that should be used for an ordered container's
@@ -10302,7 +10376,7 @@ class person
 };
   </pre>
 
-  <h3><a name="12.4.16">12.4.16 <code>key_type</code></a></h3>
+  <h3><a name="12.4.17">12.4.17 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
      database type that should be used for a map container's
@@ -10322,7 +10396,7 @@ class person
 };
   </pre>
 
-  <h3><a name="12.4.17">12.4.17 <code>value_type</code></a></h3>
+  <h3><a name="12.4.18">12.4.18 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
      database type that should be used for a container's
@@ -10343,18 +10417,18 @@ class person
   </pre>
 
   <p>The <code>value_null</code> and <code>value_not_null</code>
-     (<a href="#12.4.18">Section 12.4.18,
+     (<a href="#12.4.19">Section 12.4.19,
      "<code>value_null</code>/<code>value_not_null</code>"</a>) specifiers
      can be used to control the NULL semantics of a value column.</p>
 
-  <h3><a name="12.4.18">12.4.18 <code>value_null</code>/<code>value_not_null</code></a></h3>
+  <h3><a name="12.4.19">12.4.19 <code>value_null</code>/<code>value_not_null</code></a></h3>
 
   <p>The <code>value_null</code> and <code>value_not_null</code> specifiers
      specify that a container's element value for a data member can or
      cannot be <code>NULL</code>, respectively. The semantics of
      <code>value_null</code> and <code>value_not_null</code> are similar
      to those of the <code>null</code> and <code>not_null</code> specifiers
-     (<a href="#12.4.4">Section 12.4.4, "<code>null</code>/<code>not_null</code>"</a>).
+     (<a href="#12.4.5">Section 12.4.5, "<code>null</code>/<code>not_null</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -10380,7 +10454,7 @@ class account
      Multiset Containers"</a>) the element value is automatically treated
      as not allowing a <code>NULL</code> value.</p>
 
-  <h3><a name="12.4.19">12.4.19 <code>id_options</code></a></h3>
+  <h3><a name="12.4.20">12.4.20 <code>id_options</code></a></h3>
 
   <p>The <code>id_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -10401,10 +10475,10 @@ class person
   </pre>
 
   <p>The semantics of <code>id_options</code> are similar to those
-     of the <code>options</code> specifier (<a href="#12.4.6">Section
-     12.4.6, "<code>options</code>"</a>).</p>
+     of the <code>options</code> specifier (<a href="#12.4.7">Section
+     12.4.7, "<code>options</code>"</a>).</p>
 
-  <h3><a name="12.4.20">12.4.20 <code>index_options</code></a></h3>
+  <h3><a name="12.4.21">12.4.21 <code>index_options</code></a></h3>
 
   <p>The <code>index_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -10422,10 +10496,10 @@ class person
   </pre>
 
   <p>The semantics of <code>index_options</code> are similar to those
-     of the <code>options</code> specifier (<a href="#12.4.6">Section
-     12.4.6, "<code>options</code>"</a>).</p>
+     of the <code>options</code> specifier (<a href="#12.4.7">Section
+     12.4.7, "<code>options</code>"</a>).</p>
 
-  <h3><a name="12.4.21">12.4.21 <code>key_options</code></a></h3>
+  <h3><a name="12.4.22">12.4.22 <code>key_options</code></a></h3>
 
   <p>The <code>key_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -10443,10 +10517,10 @@ class person
   </pre>
 
   <p>The semantics of <code>key_options</code> are similar to those
-     of the <code>options</code> specifier (<a href="#12.4.6">Section
-     12.4.6, "<code>options</code>"</a>).</p>
+     of the <code>options</code> specifier (<a href="#12.4.7">Section
+     12.4.7, "<code>options</code>"</a>).</p>
 
-  <h3><a name="12.4.22">12.4.22 <code>value_options</code></a></h3>
+  <h3><a name="12.4.23">12.4.23 <code>value_options</code></a></h3>
 
   <p>The <code>value_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -10464,17 +10538,17 @@ class person
   </pre>
 
   <p>The semantics of <code>value_options</code> are similar to those
-     of the <code>options</code> specifier (<a href="#12.4.6">Section
-     12.4.6, "<code>options</code>"</a>).</p>
+     of the <code>options</code> specifier (<a href="#12.4.7">Section
+     12.4.7, "<code>options</code>"</a>).</p>
 
-  <h3><a name="12.4.23">12.4.23 <code>id_column</code></a></h3>
+  <h3><a name="12.4.24">12.4.24 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in a
      container's table for a data member. The semantics of
      <code>id_column</code> are similar to those of the
      <code>column</code> specifier
-     (<a href="#12.4.7">Section 12.4.7, "<code>column</code>"</a>).
+     (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -10491,14 +10565,14 @@ class person
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="12.4.24">12.4.24 <code>index_column</code></a></h3>
+  <h3><a name="12.4.25">12.4.25 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in an
      ordered container's table for a data member. The semantics of
      <code>index_column</code> are similar to those of the
      <code>column</code> specifier
-     (<a href="#12.4.7">Section 12.4.7, "<code>column</code>"</a>).
+     (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -10515,14 +10589,14 @@ class person
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="12.4.25">12.4.25 <code>key_column</code></a></h3>
+  <h3><a name="12.4.26">12.4.26 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in a map
      container's table for a data member. The semantics of
      <code>key_column</code> are similar to those of the
      <code>column</code> specifier
-     (<a href="#12.4.7">Section 12.4.7, "<code>column</code>"</a>).
+     (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -10539,14 +10613,14 @@ class person
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="12.4.26">12.4.26 <code>value_column</code></a></h3>
+  <h3><a name="12.4.27">12.4.27 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in a
      container's table for a data member. The semantics of
      <code>value_column</code> are similar to those of the
      <code>column</code> specifier
-     (<a href="#12.4.7">Section 12.4.7, "<code>column</code>"</a>).
+     (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="c++">
@@ -12885,7 +12959,7 @@ SHOW integer_datetimes
      in the generated schema, columns of these types are always
      declared as <code>NULL</code>, even if explicitly declared as
      <code>NOT NULL</code> with the <code>db&nbsp;not_null</code> pragma
-     (<a href="#12.4.4">Section 12.4.4, "<code>null/not_null</code>"</a>).</p>
+     (<a href="#12.4.5">Section 12.4.5, "<code>null/not_null</code>"</a>).</p>
 
   <p>The Oracle ODB runtime library also provides support for mapping the
      <code>std::string</code> type to the Oracle <code>CHAR</code>,

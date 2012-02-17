@@ -557,17 +557,20 @@ namespace relational
     }
 
     sql_type const& context::
-    column_sql_type (semantics::data_member& m, string const& kp)
+    parse_sql_type (string const& t, semantics::data_member& m)
     {
-      string key (kp.empty ()
-                  ? string ("mssql-column-sql-type")
-                  : "mssql-" + kp + "-column-sql-type");
+      // If this proves to be too expensive, we can maintain a
+      // cache of parsed types.
+      //
+      data::sql_type_cache::iterator i (data_->sql_type_cache_.find (t));
 
-      if (!m.count (key))
+      if (i != data_->sql_type_cache_.end ())
+        return i->second;
+      else
       {
         try
         {
-          m.set (key, parse_sql_type (column_type (m, kp)));
+          return (data_->sql_type_cache_[t] = parse_sql_type (t));
         }
         catch (invalid_sql_type const& e)
         {
@@ -577,8 +580,6 @@ namespace relational
           throw operation_failed ();
         }
       }
-
-      return m.get<sql_type> (key);
     }
 
     sql_type context::

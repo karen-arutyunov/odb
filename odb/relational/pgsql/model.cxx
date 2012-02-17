@@ -34,7 +34,7 @@ namespace relational
         {
           // Make sure the column is mapped to an integer type.
           //
-          switch (column_sql_type (m).type)
+          switch (parse_sql_type (column_type (), m).type)
           {
           case sql_type::SMALLINT:
           case sql_type::INTEGER:

@@ -28,13 +28,15 @@ namespace relational
     {
       statement_column (): member (0) {}
       statement_column (std::string const& c,
+                        std::string const& t,
                         semantics::data_member& m,
                         std::string const& kp = "")
-          : column (c), member (&m), key_prefix (kp)
+          : column (c), type (t), member (&m), key_prefix (kp)
       {
       }
 
-      std::string column;
+      std::string column;             // Column name.
+      std::string type;               // Column SQL type.
       semantics::data_member* member;
       std::string key_prefix;
     };
@@ -83,73 +85,108 @@ namespace relational
       {
       }
 
-      virtual bool
-      traverse_column (semantics::data_member& m, string const& name, bool)
+      virtual void
+      traverse_pointer (semantics::data_member& m, semantics::class_& c)
       {
-        semantics::data_member* im (inverse (m));
+        semantics::data_member* im (inverse (m, key_prefix_));
 
         // Ignore certain columns depending on what kind statement we are
         // generating. Columns corresponding to the inverse members are
-        // only present in the select statements while the id and readonly
-        // columns are not present in the update statements.
+        // only present in the select statements.
         //
         if (im != 0 && sk_ != statement_select)
-          return false;
-
-        if ((id (m) || readonly (member_path_, member_scope_)) &&
-            sk_ == statement_update)
-          return false;
+          return;
 
         // Inverse object pointers come from a joined table.
         //
         if (im != 0)
         {
-          semantics::class_* c (object_pointer (utype (m)));
+          semantics::data_member& id (*id_member (c));
+          semantics::type& idt (utype (id));
 
           if (container (*im))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name. We don't assign join
             // aliases for container tables so use the actual table name.
-            // Note that the (table_name_.empty () ? :) test may look wrong
-            // at first but it is no.
+            // Note that the if(!table_name_.empty ()) test may look wrong
+            // at first but it is not; if table_name_ is empty then we are
+            // generating a container table where we don't qualify columns
+            // with tables.
             //
-            column (
-              *im,
-              "id",
-              table_name_.empty ()
-              ? table_name_
-              : table_qname (*im,
-                             table_prefix (schema (c->scope ()),
-                                           table_name (*c) + "_",
-                                           1)),
-              column_qname (*im, "id", "object_id"));
+            string table;
+
+            if (!table_name_.empty ())
+            {
+              table_prefix tp (schema (c.scope ()), table_name (c) + "_", 1);
+              table = table_qname (*im, tp);
+            }
+
+            instance<object_columns> oc (table, sk_, sc_);
+            oc->traverse (*im, idt, "id", "object_id", &c);
           }
           else
           {
-            semantics::data_member& id (*id_member (*c));
-
-            // Use the join alias (column name) instead of the actual
-            // table name unless we are handling a container. Note that
-            // the (table_name_.empty () ? :) test may look wrong at
-            // first but it is no.
+            // Use the join alias instead of the actual table name unless we
+            // are handling a container. Generally, we want the join alias
+            // to be based on the column name. This is straightforward for
+            // single-column references. In case of a composite id, we will
+            // need to use the column prefix which is based on the data
+            // member name, unless overridden by the user. In the latter
+            // case the prefix can be empty, in which case we will just
+            // fall back on the member's public name. Note that the
+            // if(!table_name_.empty ()) test may look wrong at first but
+            // it is not; if table_name_ is empty then we are generating a
+            // container table where we don't qualify columns with tables.
             //
-            column (
-              id,
-              "",
-              table_name_.empty () ? table_name_ : quote_id (name),
-              column_qname (id));
+            string table;
+
+            if (!table_name_.empty ())
+            {
+              if (composite_wrapper (idt))
+              {
+                string p (column_prefix (m, key_prefix_, default_name_));
+
+                if (p.empty ())
+                  p = public_name_db (m);
+                else
+                  p.resize (p.size () - 1); // Remove trailing underscore.
+
+                table = column_prefix_ + p;
+              }
+              else
+                table = column_prefix_ +
+                  column_name (m, key_prefix_, default_name_);
+
+              table = quote_id (table);
+            }
+
+            instance<object_columns> oc (table, sk_, sc_);
+            oc->traverse (id);
           }
         }
         else
-          column (m, "", table_name_, quote_id (name));
+          object_columns_base::traverse_pointer (m, c);
+      }
+
+      virtual bool
+      traverse_column (semantics::data_member& m, string const& name, bool)
+      {
+        // Ignore certain columns depending on what kind statement we are
+        // generating. Id and readonly columns are not present in the update
+        // statements.
+        //
+        if ((id () || readonly (member_path_, member_scope_)) &&
+            sk_ == statement_update)
+          return false;
+
+        column (m, table_name_, quote_id (name));
 
         return true;
       }
 
       virtual void
       column (semantics::data_member& m,
-              string const& key_prefix,
               string const& table,
               string const& column)
       {
@@ -177,7 +214,7 @@ namespace relational
           r += param_->next ();
         }
 
-        sc_.push_back (statement_column (r, m, key_prefix));
+        sc_.push_back (statement_column (r, column_type (), m, key_prefix_));
       }
 
     protected:
@@ -350,7 +387,7 @@ namespace relational
       virtual void
       column (semantics::data_member& m, string const& column)
       {
-        sc_.push_back (statement_column (column, m));
+        sc_.push_back (statement_column (column, column_type (), m));
       }
 
     protected:
@@ -370,6 +407,7 @@ namespace relational
             table_ (table_qname (scope)),
             id_ (*id_member (scope))
       {
+        id_cols_->traverse (id_);
       }
 
       size_t
@@ -399,31 +437,63 @@ namespace relational
         }
       }
 
-      virtual bool
-      traverse_column (semantics::data_member& m, string const& column, bool)
+      virtual void
+      traverse_pointer (semantics::data_member& m, semantics::class_& c)
       {
-        semantics::class_* c (object_pointer (utype (m)));
-
-        if (c == 0)
-          return false;
-
         string t, a, dt, da;
         std::ostringstream cond, dcond; // @@ diversion?
 
-        if (semantics::data_member* im = inverse (m))
+        // Derive table alias for this member. Generally, we want the
+        // alias to be based on the column name. This is straightforward
+        // for single-column references. In case of a composite id, we
+        // will need to use the column prefix which is based on the data
+        // member name, unless overridden by the user. In the latter
+        // case the prefix can be empty, in which case we will just
+        // fall back on the member's public name.
+        //
+        string alias;
+
+        if (composite_wrapper (utype (*id_member (c))))
+        {
+          string p (column_prefix (m, key_prefix_, default_name_));
+
+          if (p.empty ())
+            p = public_name_db (m);
+          else
+            p.resize (p.size () - 1); // Remove trailing underscore.
+
+          alias = column_prefix_ + p;
+        }
+        else
+          alias = column_prefix_ +
+            column_name (m, key_prefix_, default_name_);
+
+        if (semantics::data_member* im = inverse (m, key_prefix_))
         {
           if (container (*im))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
             //
-            qname const& ct (table_name (*c));
-            table_prefix tp (schema (c->scope ()), ct + "_", 1);
+            qname const& ct (table_name (c));
+            table_prefix tp (schema (c.scope ()), ct + "_", 1);
             t = table_qname (*im, tp);
-            string const& val (column_qname (*im, "value", "value"));
 
-            cond << t << '.' << val << " = " <<
-              table_ << "." << column_qname (id_);
+            // Container's value is our id.
+            //
+            instance<object_columns_list> id_cols;
+            id_cols->traverse (*im, utype (id_), "value", "value");
+
+            for (object_columns_list::iterator b (id_cols->begin ()), i (b),
+                   j (id_cols_->begin ()); i != id_cols->end (); ++i, ++j)
+            {
+
+              if (i != b)
+                cond << " AND ";
+
+              cond << t << '.' << quote_id (i->name) << '=' <<
+                table_ << '.' << quote_id (j->name);
+            }
 
             // Add the join for the object itself so that we are able to
             // use it in the WHERE clause.
@@ -431,21 +501,44 @@ namespace relational
             if (query_)
             {
               dt = quote_id (ct);
-              da = quote_id (column);
+              da = quote_id (alias);
 
-              string const& id (column_qname (*im, "id", "object_id"));
+              semantics::data_member& id (*id_member (c));
 
-              dcond << da << '.' << column_qname (*id_member (*c)) << " = " <<
-                t << '.' << id;
+              instance<object_columns_list> oid_cols, cid_cols;
+              oid_cols->traverse (id);
+              cid_cols->traverse (*im, utype (id), "id", "object_id", &c);
+
+              for (object_columns_list::iterator b (cid_cols->begin ()), i (b),
+                   j (oid_cols->begin ()); i != cid_cols->end (); ++i, ++j)
+              {
+
+                if (i != b)
+                  dcond << " AND ";
+
+                dcond << da << '.' << quote_id (j->name) << '=' <<
+                  t << '.' << quote_id (i->name);
+              }
             }
           }
           else
           {
-            t = table_qname (*c);
-            a = quote_id (column);
+            t = table_qname (c);
+            a = quote_id (alias);
 
-            cond << a << '.' << column_qname (*im) << " = " <<
-              table_ << "." << column_qname (id_);
+            instance<object_columns_list> id_cols;
+            id_cols->traverse (*im);
+
+            for (object_columns_list::iterator b (id_cols->begin ()), i (b),
+                   j (id_cols_->begin ()); i != id_cols->end (); ++i, ++j)
+            {
+
+              if (i != b)
+                cond << " AND ";
+
+              cond << a << '.' << quote_id (i->name) << '=' <<
+                table_ << '.' << quote_id (j->name);
+            }
           }
         }
         else if (query_)
@@ -453,11 +546,25 @@ namespace relational
           // We need the join to be able to use the referenced object
           // in the WHERE clause.
           //
-          t = table_qname (*c);
-          a = quote_id (column);
+          t = table_qname (c);
+          a = quote_id (alias);
 
-          cond << a << '.' << column_qname (*id_member (*c)) << " = " <<
-            table_ << "." << quote_id (column);
+          instance<object_columns_list> oid_cols (column_prefix_);
+          oid_cols->traverse (m);
+
+          instance<object_columns_list> pid_cols;
+          pid_cols->traverse (*id_member (c));
+
+          for (object_columns_list::iterator b (pid_cols->begin ()), i (b),
+                   j (oid_cols->begin ()); i != pid_cols->end (); ++i, ++j)
+          {
+
+            if (i != b)
+              cond << " AND ";
+
+            cond << a << '.' << quote_id (i->name) << '=' <<
+              table_ << '.' << quote_id (j->name);
+          }
         }
 
         if (!t.empty ())
@@ -478,14 +585,13 @@ namespace relational
           joins_.back ().alias = da;
           joins_.back ().cond = dcond.str ();
         }
-
-        return true;
       }
 
     private:
       bool query_;
       string table_;
       semantics::data_member& id_;
+      instance<object_columns_list> id_cols_;
 
       struct join
       {
@@ -690,6 +796,207 @@ namespace relational
       string member_override_;
     };
 
+    template <typename T>
+    struct init_image_member_impl: init_image_member,
+                                   virtual member_base_impl<T>
+    {
+      typedef init_image_member_impl base_impl;
+
+      init_image_member_impl (base const& x)
+          : base (x),
+            member_database_type_id_ (base::type_override_,
+                                      base::fq_type_override_,
+                                      base::key_prefix_)
+      {
+      }
+
+      typedef typename member_base_impl<T>::member_info member_info;
+
+      virtual void
+      set_null (member_info&) = 0;
+
+      virtual bool
+      pre (member_info& mi)
+      {
+        // Ignore containers (they get their own table) and inverse
+        // object pointers (they are not present in this binding).
+        //
+        if (container (mi) || inverse (mi.m, key_prefix_))
+          return false;
+
+        if (!member_override_.empty ())
+          member = member_override_;
+        else
+        {
+          // If we are generating standard init() and this member
+          // contains version, ignore it.
+          //
+          if (version (mi.m))
+            return false;
+
+          // If we don't send auto id in INSERT statement, ignore this
+          // member altogether (we never send auto id in UPDATE).
+          //
+          if (!insert_send_auto_id && id (mi.m) && auto_ (mi.m))
+            return false;
+
+          string const& name (mi.m.name ());
+          member = "o." + name;
+
+          os << "// " << name << endl
+             << "//" << endl;
+
+          // If the whole class is readonly, then we will never be
+          // called with sk == statement_update.
+          //
+          if (!readonly (*context::top_object))
+          {
+            semantics::class_* c;
+
+            if (id (mi.m) ||
+                readonly (mi.m) ||
+                ((c = composite (mi.t)) && readonly (*c))) // Can't be id.
+              os << "if (sk == statement_insert)";
+          }
+        }
+
+        bool comp (composite (mi.t));
+
+        // If this is a wrapped composite value, then we need to "unwrap"
+        // it. For simple values this is taken care of by the value_traits
+        // specializations.
+        //
+        if (mi.wrapper != 0 && comp)
+        {
+          // Here we need the wrapper type, not the wrapped type.
+          //
+          member = "wrapper_traits< " + mi.fq_type (false) + " >::" +
+            "get_ref (" + member + ")";
+        }
+
+        if (mi.ptr != 0)
+        {
+          // When handling a pointer, mi.t is the id type of the referenced
+          // object.
+          //
+          semantics::type& pt (member_utype (mi.m, key_prefix_));
+
+          type = "obj_traits::id_type";
+
+          // Handle NULL pointers and extract the id.
+          //
+          os << "{"
+             << "typedef object_traits< " << class_fq_name (*mi.ptr) <<
+            " > obj_traits;";
+
+          if (weak_pointer (pt))
+          {
+            os << "typedef pointer_traits< " << mi.ptr_fq_type () <<
+              " > wptr_traits;"
+               << "typedef pointer_traits< wptr_traits::" <<
+              "strong_pointer_type > ptr_traits;"
+               << endl
+               << "wptr_traits::strong_pointer_type sp (" <<
+              "wptr_traits::lock (" << member << "));";
+
+            member = "sp";
+          }
+          else
+            os << "typedef pointer_traits< " << mi.ptr_fq_type () <<
+              " > ptr_traits;"
+               << endl;
+
+          os << "bool is_null (ptr_traits::null_ptr (" << member << "));"
+             << "if (!is_null)"
+             << "{"
+             << "const " << type << "& id (" << endl;
+
+          if (lazy_pointer (pt))
+            os << "ptr_traits::object_id< ptr_traits::element_type  > (" <<
+              member << ")";
+          else
+            os << "obj_traits::id (ptr_traits::get_ref (" << member << "))";
+
+          os << ");"
+             << endl;
+
+          member = "id";
+        }
+        else if (comp)
+        {
+          type = mi.fq_type ();
+
+          os << "{";
+        }
+        else
+        {
+          type = mi.fq_type ();
+
+          os << "{"
+             << "bool is_null;";
+        }
+
+        if (comp)
+          traits = "composite_value_traits< " + type + " >";
+        else
+        {
+          db_type_id = member_database_type_id_->database_type_id (mi.m);
+          traits = string (db.string ()) + "::value_traits<\n    "
+            + type + ",\n    "
+            + db_type_id + " >";
+        }
+
+        return true;
+      }
+
+      virtual void
+      post (member_info& mi)
+      {
+        if (mi.ptr != 0)
+        {
+          os << "}"
+             << "else" << endl;
+
+          // @@ Composite value currently cannot be NULL.
+          //
+          if (!null (mi.m, key_prefix_) || composite (mi.t))
+            os << "throw null_pointer ();";
+          else
+            set_null (mi);
+        }
+
+        os << "}";
+      }
+
+      virtual void
+      traverse_composite (member_info& mi)
+      {
+        bool grow (generate_grow && context::grow (mi.m, mi.t, key_prefix_));
+
+        if (grow)
+          os << "if (";
+
+        os << traits << "::init (" << endl
+           << "i." << mi.var << "value," << endl
+           << member << "," << endl
+           << "sk)";
+
+        if (grow)
+          os << ")" << endl
+             << "grew = true";
+
+        os << ";";
+      }
+
+    protected:
+      string type;
+      string db_type_id;
+      string member;
+      string traits;
+
+      instance<member_database_type_id> member_database_type_id_;
+    };
+
     struct init_image_base: traversal::class_, virtual context
     {
       typedef init_image_base base;
@@ -753,6 +1060,171 @@ namespace relational
 
     protected:
       string member_override_;
+    };
+
+    template <typename T>
+    struct init_value_member_impl: init_value_member,
+                                   virtual member_base_impl<T>
+    {
+      typedef init_value_member_impl base_impl;
+
+      init_value_member_impl (base const& x)
+          : base (x),
+            member_database_type_id_ (base::type_override_,
+                                      base::fq_type_override_,
+                                      base::key_prefix_)
+      {
+      }
+
+      typedef typename member_base_impl<T>::member_info member_info;
+
+      virtual void
+      get_null (member_info&) = 0;
+
+      virtual bool
+      pre (member_info& mi)
+      {
+        if (container (mi))
+          return false;
+
+        if (!member_override_.empty ())
+          member = member_override_;
+        else
+        {
+          string const& name (mi.m.name ());
+          member = "o." + name;
+
+          if (mi.cq)
+          {
+            string t (mi.ptr == 0 ? mi.fq_type (false) : mi.ptr_fq_type ());
+            member = "const_cast< " + t + "& > (" + member + ")";
+          }
+
+          os << "// " << name << endl
+             << "//" << endl;
+        }
+
+        bool comp (composite (mi.t));
+
+        // If this is a wrapped composite value, then we need to
+        // "unwrap" it. For simple values this is taken care of
+        // by the value_traits specializations.
+        //
+        if (mi.wrapper != 0 && comp)
+        {
+          // Here we need the wrapper type, not the wrapped type.
+          //
+          member = "wrapper_traits< " + mi.fq_type (false) + " >::" +
+            "set_ref (\n" + member + ")";
+        }
+
+        if (mi.ptr != 0)
+        {
+          type = "obj_traits::id_type";
+
+          // Handle NULL pointers and extract the id.
+          //
+          os << "{"
+             << "typedef object_traits< " << class_fq_name (*mi.ptr) <<
+            " > obj_traits;"
+             << "typedef pointer_traits< " << mi.ptr_fq_type () <<
+            " > ptr_traits;"
+             << endl;
+
+          // @@ Composite value currently cannot be NULL.
+          //
+          if (!comp)
+          {
+            os << "if (";
+            get_null (mi);
+            os << ")" << endl;
+
+            if (!null (mi.m, key_prefix_) )
+              os << "throw null_pointer ();";
+            else
+              os << member << " = ptr_traits::pointer_type ();";
+
+            os << "else"
+               << "{";
+          }
+
+          os << type << " id;";
+
+          member = "id";
+        }
+        else
+          type = mi.fq_type ();
+
+        if (comp)
+          traits = "composite_value_traits< " + type + " >";
+        else
+        {
+          db_type_id = member_database_type_id_->database_type_id (mi.m);
+          traits = string (db.string ()) + "::value_traits<\n    "
+            + type + ",\n    "
+            + db_type_id + " >";
+        }
+
+        return true;
+      }
+
+      virtual void
+      post (member_info& mi)
+      {
+        if (mi.ptr != 0)
+        {
+          if (!member_override_.empty ())
+            member = member_override_;
+          else
+          {
+            member = "o." + mi.m.name ();
+
+            if (mi.cq)
+              member = "const_cast< " + mi.ptr_fq_type () +
+                "& > (" + member + ")";
+          }
+
+          // When handling a pointer, mi.t is the id type of the referenced
+          // object.
+          //
+          semantics::type& pt (member_utype (mi.m, key_prefix_));
+
+          if (lazy_pointer (pt))
+            os << member << " = ptr_traits::pointer_type (*db, id);";
+          else
+            os << "// If a compiler error points to the line below, then" << endl
+               << "// it most likely means that a pointer used in a member" << endl
+               << "// cannot be initialized from an object pointer." << endl
+               << "//" << endl
+               << member << " = ptr_traits::pointer_type (" << endl
+               << "db->load< obj_traits::object_type > (id));";
+
+          // @@ Composite value currently cannot be NULL.
+          //
+          if (!composite (mi.t))
+            os << "}";
+
+          os << "}";
+        }
+      }
+
+      virtual void
+      traverse_composite (member_info& mi)
+      {
+        os << traits << "::init (" << endl
+           << member << "," << endl
+           << "i." << mi.var << "value," << endl
+           << "db);"
+           << endl;
+      }
+
+    protected:
+      string type;
+      string db_type_id;
+      string traits;
+      string member;
+
+      instance<member_database_type_id> member_database_type_id_;
     };
 
     struct init_value_base: traversal::class_, virtual context
@@ -930,7 +1402,10 @@ namespace relational
         //
         if (!abst)
         {
+          semantics::type& idt (container_idt (m));
+
           string table (table_qname (m, table_prefix_));
+          instance<object_columns_list> id_cols;
 
           // select_all_statement
           //
@@ -940,10 +1415,12 @@ namespace relational
           if (inverse)
           {
             semantics::class_* c (object_pointer (vt));
+            semantics::data_member& inv_id (*id_member (*c));
 
-            string inv_table; // Other table name.
-            string inv_id;    // Other id column.
-            string inv_fid;   // Other foreign id column (ref to us).
+            string inv_table;                           // Other table name.
+            instance<object_columns_list> inv_id_cols;  // Other id column.
+            instance<object_columns_list> inv_fid_cols; // Other foreign id
+                                                        // column (ref to us).
             statement_columns sc;
 
             if (container (*im))
@@ -956,23 +1433,42 @@ namespace relational
               //
               table_prefix tp (schema (c->scope ()), table_name (*c) + "_", 1);
               inv_table = table_qname (*im, tp);
-              inv_id = column_qname (*im, "id", "object_id");
-              inv_fid = column_qname (*im, "value", "value");
 
-              sc.push_back (statement_column (
-                              inv_table + "." + inv_id, *im, "id"));
+              inv_id_cols->traverse (*im, utype (inv_id), "id", "object_id", c);
+              inv_fid_cols->traverse (*im, idt, "value", "value");
+
+              for (object_columns_list::iterator i (inv_id_cols->begin ());
+                   i != inv_id_cols->end (); ++i)
+              {
+                // If this is a simple id, then pass the "id" key prefix. If
+                // it is a composite id, then the members have no prefix.
+                //
+                sc.push_back (
+                  statement_column (
+                    inv_table + "." + quote_id (i->name),
+                    i->type,
+                    *i->member,
+                    inv_id_cols->size () == 1 ? "id" : ""));
+              }
             }
             else
             {
               // many(i)-to-one
               //
-              semantics::data_member& id (*id_member (*c));
-
               inv_table = table_qname (*c);
-              inv_id = column_qname (id);
-              inv_fid = column_qname (*im);
 
-              sc.push_back (statement_column (inv_table + "." + inv_id, id));
+              inv_id_cols->traverse (inv_id);
+              inv_fid_cols->traverse (*im);
+
+              for (object_columns_list::iterator i (inv_id_cols->begin ());
+                   i != inv_id_cols->end (); ++i)
+              {
+                sc.push_back (
+                  statement_column (
+                    inv_table + "." + quote_id (i->name),
+                    i->type,
+                    *i->member));
+              }
             }
 
             process_statement_columns (sc, statement_select);
@@ -987,12 +1483,20 @@ namespace relational
             }
 
             instance<query_parameters> qp;
-            os << strlit (" FROM " + inv_table +
-                          " WHERE " + inv_table + "." + inv_fid + "=" +
-                          qp->next ());
+            os << strlit (" FROM " + inv_table);
+
+            for (object_columns_list::iterator b (inv_fid_cols->begin ()),
+                   i (b); i != inv_fid_cols->end (); ++i)
+            {
+              os << endl
+                 << strlit ((i == b ? " WHERE " : " AND ") + inv_table + "." +
+                            quote_id (i->name) + "=" + qp->next ());
+            }
           }
           else
           {
+            id_cols->traverse (m, idt, "id", "object_id");
+
             statement_columns sc;
             statement_kind sk (statement_select); // Imperfect forwarding.
             instance<object_columns> t (table, sk, sc);
@@ -1002,22 +1506,13 @@ namespace relational
             case ck_ordered:
               {
                 if (ordered)
-                {
-                  string const& col (column_qname (m, "index", "index"));
-                  t->column (m, "index", table, col);
-                }
+                  t->traverse (m, *it, "index", "index");
                 break;
               }
             case ck_map:
             case ck_multimap:
               {
-                if (semantics::class_* ckt = composite_wrapper (*kt))
-                  t->traverse (m, *ckt, "key", "key");
-                else
-                {
-                  string const& col (column_qname (m, "key", "key"));
-                  t->column (m, "key", table, col);
-                }
+                t->traverse (m, *kt, "key", "key");
                 break;
               }
             case ck_set:
@@ -1027,13 +1522,7 @@ namespace relational
               }
             }
 
-            if (semantics::class_* cvt = composite_wrapper (vt))
-              t->traverse (m, *cvt, "value", "value");
-            else
-            {
-              string const& col (column_qname (m, "value", "value"));
-              t->column (m, "value", table, col);
-            }
+            t->traverse (m, vt, "value", "value");
 
             process_statement_columns (sc, statement_select);
 
@@ -1047,18 +1536,22 @@ namespace relational
             }
 
             instance<query_parameters> qp;
-            string const& id_col (column_qname (m, "id", "object_id"));
+            os << strlit (" FROM " + table);
 
-            os << strlit (" FROM " + table +
-                          " WHERE " + table + "." + id_col + "=" +
-                          qp->next ());
+            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
+                 i != id_cols->end (); ++i)
+            {
+              os << endl
+                 << strlit ((i == b ? " WHERE " : " AND ") + table + "." +
+                            quote_id (i->name) + "=" + qp->next ());
+            }
 
             if (ordered)
             {
               string const& col (column_qname (m, "index", "index"));
 
               os << endl
-                 << strlit (" ORDER BY " + table + "." + col) << endl;
+                 << strlit (" ORDER BY " + table + "." + col);
             }
           }
 
@@ -1076,29 +1569,23 @@ namespace relational
           else
           {
             statement_columns sc;
-            sc.push_back (
-              statement_column (
-                column_qname (m, "id", "object_id"), m, "id"));
-
             statement_kind sk (statement_insert); // Imperfect forwarding.
             instance<object_columns> t (sk, sc);
+
+            t->traverse (m, idt, "id", "object_id");
 
             switch (ck)
             {
             case ck_ordered:
               {
                 if (ordered)
-                  t->column (
-                    m, "index", "", column_qname (m, "index", "index"));
+                  t->traverse (m, *it, "index", "index");
                 break;
               }
             case ck_map:
             case ck_multimap:
               {
-                if (semantics::class_* ckt = composite_wrapper (*kt))
-                  t->traverse (m, *ckt, "key", "key");
-                else
-                  t->column (m, "key", "", column_qname (m, "key", "key"));
+                t->traverse (m, *kt, "key", "key");
                 break;
               }
             case ck_set:
@@ -1108,10 +1595,7 @@ namespace relational
               }
             }
 
-            if (semantics::class_* cvt = composite_wrapper (vt))
-              t->traverse (m, *cvt, "value", "value");
-            else
-              t->column (m, "value", "", column_qname (m, "value", "value"));
+            t->traverse (m, vt, "value", "value");
 
             process_statement_columns (sc, statement_insert);
 
@@ -1151,9 +1635,17 @@ namespace relational
           {
             instance<query_parameters> qp;
 
-            os << strlit ("DELETE FROM " + table) << endl
-               << strlit (" WHERE " + column_qname (m, "id", "object_id") +
-                          "=" + qp->next ()) << ";"
+            os << strlit ("DELETE FROM " + table);
+
+            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
+                 i != id_cols->end (); ++i)
+            {
+              os << endl
+                 << strlit ((i == b ? " WHERE " : " AND ") +
+                            quote_id (i->name) + "=" + qp->next ());
+            }
+
+            os << ";"
                << endl;
           }
         }
@@ -1462,10 +1954,10 @@ namespace relational
           {
             if (ordered)
               os << "init (index_type& j, value_type& v, " <<
-                "const data_image_type& i, database& db)";
+                "const data_image_type& i, database* db)";
             else
               os << "init (value_type& v, const data_image_type& i, " <<
-                "database& db)";
+                "database* db)";
 
             os << "{"
                << "ODB_POTENTIALLY_UNUSED (db);"
@@ -1487,7 +1979,7 @@ namespace relational
         case ck_multimap:
           {
             os << "init (key_type& k, value_type& v, " <<
-              "const data_image_type& i, database& db)"
+              "const data_image_type& i, database* db)"
                << "{"
                << "ODB_POTENTIALLY_UNUSED (db);"
                << endl
@@ -1504,7 +1996,7 @@ namespace relational
         case ck_multiset:
           {
             os << "init (value_type& v, const data_image_type& i, " <<
-              "database& db)"
+              "database* db)"
                << "{"
                << "ODB_POTENTIALLY_UNUSED (db);"
                << endl;
@@ -1652,21 +2144,21 @@ namespace relational
         case ck_ordered:
           {
             os << "init (" << (ordered ? "i, " : "") <<
-              "v, di, sts.connection ().database ());"
+              "v, di, &sts.connection ().database ());"
                << endl;
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "init (k, v, di, sts.connection ().database ());"
+            os << "init (k, v, di, &sts.connection ().database ());"
                << endl;
             break;
           }
         case ck_set:
         case ck_multiset:
           {
-            os << "init (v, di, sts.connection ().database ());"
+            os << "init (v, di, &sts.connection ().database ());"
                << endl;
             break;
           }
@@ -2130,26 +2622,30 @@ namespace relational
       }
 
       virtual void
-      traverse_simple (semantics::data_member& m)
+      traverse_pointer (semantics::data_member& m, semantics::class_& c)
       {
         if (!inverse (m))
+          object_members_base::traverse_pointer (m, c);
+      }
+
+      virtual void
+      traverse_simple (semantics::data_member& m)
+      {
+        string p;
+
+        if (version (m))
+          p = "1";
+        else if (context::id (m) && auto_ (m)) // Only simple id can be auto.
+          p = qp_.auto_id ();
+        else
+          p = qp_.next ();
+
+        if (!p.empty ())
         {
-          string p;
+          if (count_++ != 0)
+            params_ += ',';
 
-          if (version (m))
-            p = "1";
-          else if (id (m) && auto_ (m))
-            p = qp_.auto_id ();
-          else
-            p = qp_.next ();
-
-          if (!p.empty ())
-          {
-            if (count_++ != 0)
-              params_ += ',';
-
-            params_ += p;
-          }
+          params_ += p;
         }
       }
 
@@ -2434,6 +2930,9 @@ namespace relational
              << traits << "::" << endl
              << "id (const image_type& i)"
              << "{"
+             << db << "::database* db (0);"
+             << "ODB_POTENTIALLY_UNUSED (db);"
+             << endl
              << "id_type id;";
           init_id_value_member_->traverse (*id);
           os << "return id;"
@@ -2505,11 +3004,14 @@ namespace relational
              << "{"
              << "std::size_t n (0);";
 
+          if (composite_wrapper (utype (*id)))
+            os << db << "::statement_kind sk (" << db << "::statement_select);";
+
           bind_id_member_->traverse (*id);
 
           if (optimistic != 0)
           {
-            os << "n++;" //@@ composite id
+            os << "n += " << column_count (c).id << ";"
                << endl;
 
             bind_version_member_->traverse (*optimistic);
@@ -2549,7 +3051,7 @@ namespace relational
         // init (object, image)
         //
         os << "void " << traits << "::" << endl
-           << "init (object_type& o, const image_type& i, database& db)"
+           << "init (object_type& o, const image_type& i, database* db)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (o);"
            << "ODB_POTENTIALLY_UNUSED (i);"
@@ -2571,8 +3073,10 @@ namespace relational
              << "{";
 
           if (grow_id)
-            os << "bool grew (false);"
-               << endl;
+            os << "bool grew (false);";
+
+          if (composite_wrapper (utype (*id)))
+            os << db << "::statement_kind sk (" << db << "::statement_select);";
 
           init_id_image_member_->traverse (*id);
 
@@ -2677,7 +3181,8 @@ namespace relational
 
         if (id != 0)
         {
-          string const& id_col (column_qname (*id));
+          instance<object_columns_list> id_cols;
+          id_cols->traverse (*id);
 
           // find_statement
           //
@@ -2702,14 +3207,23 @@ namespace relational
 
             os << strlit (" FROM " + table) << endl;
 
-            bool f (false);
+            bool f (false); // @@ (im)perfect forwarding
             instance<object_joins> j (c, f); // @@ (im)perfect forwarding
             j->traverse (c);
             j->write ();
 
             instance<query_parameters> qp;
-            os << strlit (" WHERE " + table + "." + id_col + "=" +
-                          qp->next ()) << ";"
+            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
+                 i != id_cols->end (); ++i)
+            {
+              if (i != b)
+                os << endl;
+
+              os << strlit ((i == b ? " WHERE " : " AND ") + table + "." +
+                            quote_id (i->name) + "=" + qp->next ());
+            }
+
+            os << ";"
                << endl;
           }
 
@@ -2739,13 +3253,22 @@ namespace relational
               os << strlit (c + (++i != e ? "," : "")) << endl;
             }
 
-            string where (" WHERE " + id_col + "=" + qp->next ());
+            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
+                 i != id_cols->end (); ++i)
+            {
+              if (i != b)
+                os << endl;
+
+              os << strlit ((i == b ? " WHERE " : " AND ") +
+                            quote_id (i->name) + "=" + qp->next ());
+            }
 
             if (optimistic != 0)
-              where += " AND " + column_qname (*optimistic) + "=" +
-                qp->next ();
+              os << endl
+                 << strlit (" AND " + column_qname (*optimistic) +
+                            "=" + qp->next ());
 
-            os << strlit (where) << ";"
+            os << ";"
                << endl;
           }
 
@@ -2754,8 +3277,18 @@ namespace relational
           {
             instance<query_parameters> qp;
             os << "const char " << traits << "::erase_statement[] =" << endl
-               << strlit ("DELETE FROM " + table) << endl
-               << strlit (" WHERE " + id_col + "=" + qp->next ()) << ";"
+               << strlit ("DELETE FROM " + table);
+
+            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
+                 i != id_cols->end (); ++i)
+            {
+
+              os << endl
+                 << strlit ((i == b ? " WHERE " : " AND ") +
+                            quote_id (i->name) + "=" + qp->next ());
+            }
+
+            os << ";"
                << endl;
           }
 
@@ -2763,13 +3296,21 @@ namespace relational
           {
             instance<query_parameters> qp;
 
-            string where (" WHERE " + id_col + "=" + qp->next ());
-            where += " AND " + column_qname (*optimistic) + "=" + qp->next ();
-
             os << "const char " << traits <<
               "::optimistic_erase_statement[] =" << endl
-               << strlit ("DELETE FROM " + table) << endl
-               << strlit (where) << ";"
+               << strlit ("DELETE FROM " + table);
+
+            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
+                 i != id_cols->end (); ++i)
+            {
+              os << endl
+                 << strlit ((i == b ? " WHERE " : " AND ") +
+                            quote_id (i->name) + "=" + qp->next ());
+            }
+
+            os << endl
+               << strlit (" AND " + column_qname (*optimistic) +
+                          "=" + qp->next ()) << ";"
                << endl;
           }
         }
@@ -2786,10 +3327,6 @@ namespace relational
             process_statement_columns (sc, statement_select);
           }
 
-          bool t (true);
-          instance<object_joins> oj (c, t); //@@ (im)perfect forwarding
-          oj->traverse (c);
-
           os << "const char " << traits << "::query_statement[] =" << endl
              << strlit ("SELECT ") << endl;
 
@@ -2801,7 +3338,15 @@ namespace relational
           }
 
           os << strlit (" FROM " + table) << endl;
-          oj->write ();
+
+          if (id != 0)
+          {
+            bool t (true); //@@ (im)perfect forwarding
+            instance<object_joins> oj (c, t); //@@ (im)perfect forwarding
+            oj->traverse (c);
+            oj->write ();
+          }
+
           os << strlit (" ") << ";"
              << endl;
 
@@ -3202,7 +3747,7 @@ namespace relational
              << "if (l.locked ())"
              << "{"
              << "callback (db, obj, callback_event::pre_load);"
-             << "init (obj, sts.image (), db);";
+             << "init (obj, sts.image (), &db);";
 
           init_value_extra ();
           free_statement_result_delayed ();
@@ -3248,7 +3793,7 @@ namespace relational
              << "reference_cache_traits< object_type >::insert (db, id, obj));"
              << endl
              << "callback (db, obj, callback_event::pre_load);"
-             << "init (obj, sts.image (), db);";
+             << "init (obj, sts.image (), &db);";
 
           init_value_extra ();
           free_statement_result_delayed ();
@@ -3298,7 +3843,7 @@ namespace relational
           }
 
           os << "callback (db, obj, callback_event::pre_load);"
-             << "init (obj, sts.image (), db);";
+             << "init (obj, sts.image (), &db);";
 
           init_value_extra ();
           free_statement_result_delayed ();
@@ -3766,7 +4311,7 @@ namespace relational
         // init (view, image)
         //
         os << "void " << traits << "::" << endl
-           << "init (view_type& o, const image_type& i, database& db)"
+           << "init (view_type& o, const image_type& i, database* db)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (o);"
            << "ODB_POTENTIALLY_UNUSED (i);"
@@ -4080,7 +4625,7 @@ namespace relational
                 if (im != 0)
                 {
                   // For now a direct member can only be directly in
-                  // the object scope. When this changes, the inverse()
+                  // the object scope. If this changes, the inverse()
                   // function would have to return a member path instead
                   // of just a single member.
                   //
@@ -4102,34 +4647,36 @@ namespace relational
 
                 // If we are the pointed-to object, then we have to turn
                 // things around. This is necessary to have the proper
-                // JOIN order. There seems to be a pattern there but
-                // it is not yet intuitively clear what it means.
+                // JOIN order. There seems to be a pattern there but it
+                // is not yet intuitively clear what it means.
                 //
+                instance<object_columns_list> c_cols; // Container columns.
+                instance<object_columns_list> o_cols; // Object columns.
+
+                qname* ot; // Object table (either lt or rt).
+
                 if (im != 0)
                 {
                   if (i->obj == c)
                   {
                     // container.value = pointer.id
                     //
-                    l  = ct;
-                    l += '.';
-                    l += column_qname (*im, "value", "value");
-                    l += "=";
-                    l += quote_id (lt);
-                    l += '.';
-                    l += column_qname (*id_member (*e.vo->obj));
+                    semantics::data_member& id (*id_member (*e.vo->obj));
+
+                    c_cols->traverse (*im, utype (id), "value", "value");
+                    o_cols->traverse (id);
+                    ot = &lt;
                   }
                   else
                   {
                     // container.id = pointed-to.id
                     //
-                    l  = ct;
-                    l += '.';
-                    l += column_qname (*im, "id", "object_id");
-                    l += "=";
-                    l += quote_id (rt);
-                    l += '.';
-                    l += column_qname (*id_member (*vo->obj));
+                    semantics::data_member& id (*id_member (*vo->obj));
+
+                    c_cols->traverse (
+                      *im, utype (id), "id", "object_id", vo->obj);
+                    o_cols->traverse (id);
+                    ot = &rt;
                   }
                 }
                 else
@@ -4138,29 +4685,43 @@ namespace relational
                   {
                     // container.id = pointer.id
                     //
-                    l  = ct;
-                    l += '.';
-                    l += column_qname (m, "id", "object_id");
-                    l += "=";
-                    l += quote_id (lt);
-                    l += '.';
-                    l += column_qname (*id_member (*e.vo->obj));
+                    semantics::data_member& id (*id_member (*e.vo->obj));
+
+                    c_cols->traverse (
+                      m, utype (id), "id", "object_id", e.vo->obj);
+                    o_cols->traverse (id);
+                    ot = &lt;
                   }
                   else
                   {
                     // container.value = pointed-to.id
                     //
-                    l  = ct;
-                    l += '.';
-                    l += column_qname (m, "value", "value");
-                    l += "=";
-                    l += quote_id (rt);
-                    l += '.';
-                    l += column_qname (*id_member (*vo->obj));
+                    semantics::data_member& id (*id_member (*vo->obj));
+
+                    c_cols->traverse (m, utype (id), "value", "value");
+                    o_cols->traverse (id);
+                    ot = &rt;
                   }
                 }
 
-                os << "r += " << strlit (l) << ";";
+                for (object_columns_list::iterator b (c_cols->begin ()), i (b),
+                       j (o_cols->begin ()); i != c_cols->end (); ++i, ++j)
+                {
+                  l.clear ();
+
+                  if (i != b)
+                    l += "AND ";
+
+                  l += ct;
+                  l += '.';
+                  l += quote_id (i->name);
+                  l += '=';
+                  l += quote_id (*ot);
+                  l += '.';
+                  l += quote_id (j->name);
+
+                  os << "r += " << strlit (l) << ";";
+                }
               }
 
               l = "LEFT JOIN ";
@@ -4174,31 +4735,33 @@ namespace relational
 
               if (cont != 0)
               {
+                instance<object_columns_list> c_cols; // Container columns.
+                instance<object_columns_list> o_cols; // Object columns.
+
+                qname* ot; // Object table (either lt or rt).
+
                 if (im != 0)
                 {
                   if (i->obj == c)
                   {
                     // container.id = pointed-to.id
                     //
-                    l  = ct;
-                    l += '.';
-                    l += column_qname (*im, "id", "object_id");
-                    l += "=";
-                    l += quote_id (rt);
-                    l += '.';
-                    l += column_qname (*id_member (*vo->obj));
+                    semantics::data_member& id (*id_member (*vo->obj));
+
+                    c_cols->traverse (
+                      *im, utype (id), "id", "object_id", vo->obj);
+                    o_cols->traverse (id);
+                    ot = &rt;
                   }
                   else
                   {
                     // container.value = pointer.id
                     //
-                    l  = ct;
-                    l += '.';
-                    l += column_qname (*im, "value", "value");
-                    l += "=";
-                    l += quote_id (lt);
-                    l += '.';
-                    l += column_qname (*id_member (*e.vo->obj));
+                    semantics::data_member& id (*id_member (*e.vo->obj));
+
+                    c_cols->traverse (*im, utype (id), "value", "value");
+                    o_cols->traverse (id);
+                    ot = &lt;
                   }
                 }
                 else
@@ -4207,58 +4770,91 @@ namespace relational
                   {
                     // container.value = pointed-to.id
                     //
-                    l  = ct;
-                    l += '.';
-                    l += column_qname (m, "value", "value");
-                    l += "=";
-                    l += quote_id (rt);
-                    l += '.';
-                    l += column_qname (*id_member (*vo->obj));
+                    semantics::data_member& id (*id_member (*vo->obj));
+
+                    c_cols->traverse (m, utype (id), "value", "value");
+                    o_cols->traverse (id);
+                    ot = &rt;
                   }
                   else
                   {
                     // container.id = pointer.id
                     //
-                    l  = ct;
-                    l += '.';
-                    l += column_qname (m, "id", "object_id");
-                    l += "=";
-                    l += quote_id (lt);
-                    l += '.';
-                    l += column_qname (*id_member (*e.vo->obj));
+                    semantics::data_member& id (*id_member (*e.vo->obj));
+
+                    c_cols->traverse (
+                      m, utype (id), "id", "object_id", e.vo->obj);
+                    o_cols->traverse (id);
+                    ot = &lt;
                   }
+                }
+
+                for (object_columns_list::iterator b (c_cols->begin ()), i (b),
+                       j (o_cols->begin ()); i != c_cols->end (); ++i, ++j)
+                {
+                  l.clear ();
+
+                  if (i != b)
+                    l += "AND ";
+
+                  l += ct;
+                  l += '.';
+                  l += quote_id (i->name);
+                  l += '=';
+                  l += quote_id (*ot);
+                  l += '.';
+                  l += quote_id (j->name);
+
+                  os << "r += " << strlit (l) << ";";
                 }
               }
               else
               {
+                string col_prefix;
+
+                if (im == 0)
+                  col_prefix =
+                    object_columns_base::column_prefix (e.member_path);
+
+                instance<object_columns_list> l_cols (col_prefix);
+                instance<object_columns_list> r_cols;
+
                 if (im != 0)
                 {
                   // our.id = pointed-to.pointer
                   //
-                  l  = quote_id (lt);
-                  l += '.';
-                  l += column_qname (*id_member (*e.vo->obj));
-                  l += " = ";
-                  l += quote_id (rt);
-                  l += '.';
-                  l += column_qname (*im);
+                  l_cols->traverse (*id_member (*e.vo->obj));
+                  r_cols->traverse (*im);
                 }
                 else
                 {
                   // our.pointer = pointed-to.id
                   //
-                  l  = quote_id (lt);
+                  l_cols->traverse (*e.member_path.back ());
+                  r_cols->traverse (*id_member (*vo->obj));
+                }
+
+                for (object_columns_list::iterator b (l_cols->begin ()), i (b),
+                       j (r_cols->begin ()); i != l_cols->end (); ++i, ++j)
+                {
+                  l.clear ();
+
+                  if (i != b)
+                    l += "AND ";
+
+                  l += quote_id (lt);
                   l += '.';
-                  l += column_qname (e.member_path);
-                  l += " = ";
+                  l += quote_id (i->name);
+                  l += '=';
                   l += quote_id (rt);
                   l += '.';
-                  l += column_qname (*id_member (*vo->obj));
+                  l += quote_id (j->name);
+
+                  os << "r += " << strlit (l) << ";";
                 }
               }
 
-              os << "r += " << strlit (l) << ";"
-                 << endl;
+              os << endl;
             }
 
             // Generate the query condition.
@@ -4499,7 +5095,7 @@ namespace relational
         // init (value, image)
         //
         os << "void " << traits << "::" << endl
-           << "init (value_type& o, const image_type&  i, database& db)"
+           << "init (value_type& o, const image_type&  i, database* db)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (o);"
            << "ODB_POTENTIALLY_UNUSED (i);"
@@ -4588,8 +5184,12 @@ namespace relational
            << "#include <odb/" << db << "/connection.hxx>" << endl
            << "#include <odb/" << db << "/statement.hxx>" << endl
            << "#include <odb/" << db << "/statement-cache.hxx>" << endl
-           << "#include <odb/" << db << "/object-statements.hxx>" << endl
-           << "#include <odb/" << db << "/container-statements.hxx>" << endl
+           << "#include <odb/" << db << "/object-statements.hxx>" << endl;
+
+        if (options.generate_query ())
+          os << "#include <odb/" << db << "/view-statements.hxx>" << endl;
+
+        os << "#include <odb/" << db << "/container-statements.hxx>" << endl
            << "#include <odb/" << db << "/exceptions.hxx>" << endl;
 
         if (options.generate_query ())

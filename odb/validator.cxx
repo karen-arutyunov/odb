@@ -42,7 +42,7 @@ namespace
   // Pass 1.
   //
 
-  struct data_member: traversal::data_member
+  struct data_member: traversal::data_member, context
   {
     data_member (bool& valid)
         : valid_ (valid)
@@ -52,45 +52,42 @@ namespace
     virtual void
     traverse (type& m)
     {
-      if (context::transient (m))
+      if (transient (m))
         return;
 
       count_++;
       semantics::names* hint;
-      semantics::type& t (context::utype (m, hint));
+      semantics::type& t (utype (m, hint));
 
       if (t.fq_anonymous (hint))
       {
-        cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-             << " error: unnamed type in data member declaration" << endl;
+        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+           << " error: unnamed type in data member declaration" << endl;
 
-        cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-             << " info: use 'typedef' to name this type" << endl;
+        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+           << " info: use 'typedef' to name this type" << endl;
 
         valid_ = false;
       }
 
       // Make sure id or inverse member is not marked readonly since we
-      // depend on these three sets not having overlaps. Once we support
-      // composite ids, we will also need to make sure there are no
-      // nested readonly members (probably move it to pass 2 and use
-      // column_count()).
+      // depend on these three sets not having overlaps.
       //
-      if (m.count ("readonly"))
+      if (readonly (m))
       {
-        if (m.count ("id"))
+        if (id (m))
         {
-          cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-               << " error: object id should not be declared readonly" << endl;
+          os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+             << " error: object id should not be declared readonly" << endl;
 
           valid_ = false;
         }
 
-        if (m.count ("inverse"))
+        if (inverse (m))
         {
-          cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-               << " error: inverse object pointer should not be declared "
-               << "readonly" << endl;
+          os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+             << " error: inverse object pointer should not be declared "
+             << "readonly" << endl;
 
           valid_ = false;
         }
@@ -108,9 +105,9 @@ namespace
 
   // Find special members (id, version).
   //
-  struct special_members: traversal::class_
+  struct special_members: traversal::class_, context
   {
-    special_members (class_kind kind,
+    special_members (class_kind_type kind,
                      bool& valid,
                      semantics::data_member*& id,
                      semantics::data_member*& optimistic)
@@ -131,7 +128,7 @@ namespace
       {
       case class_object:
         {
-          if (!context::object (c))
+          if (!object (c))
             return;
           break;
         }
@@ -141,7 +138,7 @@ namespace
         }
       case class_composite:
         {
-          if (!context::composite (c))
+          if (!composite (c))
             return;
           break;
         }
@@ -161,7 +158,7 @@ namespace
     }
 
   private:
-    struct member: traversal::data_member
+    struct member: traversal::data_member, context
     {
       member (bool& valid,
               semantics::data_member*& id,
@@ -173,17 +170,15 @@ namespace
       virtual void
       traverse (semantics::data_member& m)
       {
-        if (m.count ("id"))
+        if (id (m))
         {
           if (id_ != 0)
           {
-            cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-                 << " error: multiple object id members" << endl;
+            os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+               << " error: multiple object id members" << endl;
 
-            semantics::data_member& i (*id_);
-
-            cerr << i.file () << ":" << i.line () << ":" << i.column ()
-                 << ": info: previous id member is declared here" << endl;
+            os << id_->file () << ":" << id_->line () << ":" << id_->column ()
+               << ": info: previous id member is declared here" << endl;
 
             valid_ = false;
           }
@@ -191,17 +186,17 @@ namespace
             id_ = &m;
         }
 
-        if (m.count ("version"))
+        if (version (m))
         {
           if (optimistic_ != 0)
           {
-            cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-                 << " error: multiple version members" << endl;
+            os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+               << " error: multiple version members" << endl;
 
             semantics::data_member& o (*optimistic_);
 
-            cerr << o.file () << ":" << o.line () << ":" << o.column ()
-                 << ": info: previous version member is declared here" << endl;
+            os << o.file () << ":" << o.line () << ":" << o.column ()
+               << ": info: previous version member is declared here" << endl;
 
             valid_ = false;
           }
@@ -215,7 +210,7 @@ namespace
       semantics::data_member*& optimistic_;
     };
 
-    class_kind kind_;
+    class_kind_type kind_;
     member member_;
     traversal::names names_;
     traversal::inherits inherits_;
@@ -223,7 +218,7 @@ namespace
 
   //
   //
-  struct value_type: traversal::type
+  struct value_type: traversal::type, context
   {
     value_type (bool& valid): valid_ (valid) {}
 
@@ -241,17 +236,10 @@ namespace
 
   //
   //
-  struct class1: traversal::class_
+  struct class1: traversal::class_, context
   {
-    class1 (bool& valid,
-            options const& ops,
-            semantics::unit& unit,
-            value_type& vt)
-        : valid_ (valid),
-          options_ (ops),
-          unit_ (unit),
-          vt_ (vt),
-          member_ (valid)
+    class1 (bool& valid, value_type& vt)
+        : valid_ (valid), vt_ (vt), member_ (valid)
     {
       *this >> names_ >> member_;
     }
@@ -259,13 +247,13 @@ namespace
     virtual void
     traverse (type& c)
     {
-      if (context::object (c))
+      if (object (c))
         traverse_object (c);
-      else if (context::view (c))
+      else if (view (c))
         traverse_view (c);
       else
       {
-        if (context::composite (c))
+        if (composite (c))
           traverse_composite (c);
 
         vt_.dispatch (c);
@@ -286,10 +274,10 @@ namespace
 
         if (decl == error_mark_node || TREE_CODE (decl) != BASELINK)
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ": "
-               << "error: unable to resolve member function '" << name << "' "
-               << "specified with '#pragma db callback' for class '"
-               << context::class_name (c) << "'" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ": "
+             << "error: unable to resolve member function '" << name << "' "
+             << "specified with '#pragma db callback' for class '"
+             << class_name (c) << "'" << endl;
 
           valid_ = false;
         }
@@ -324,25 +312,25 @@ namespace
       {
         type& b (i->base ());
 
-        if (context::object (b))
+        if (object (b))
           base = true;
-        else if (context::view (b) || context::composite (b))
+        else if (view (b) || composite (b))
         {
           // @@ Should we use hint here?
           //
-          string name (context::class_fq_name (b));
+          string name (class_fq_name (b));
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: base class '" << name << "' is a view or value type"
-               << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: base class '" << name << "' is a view or value type"
+             << endl;
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: object types cannot derive from view or value "
-               << "types"
-               << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " info: object types cannot derive from view or value "
+             << "types"
+             << endl;
 
-          cerr << b.file () << ":" << b.line () << ":" << b.column () << ":"
-               << " info: class '" << name << "' is defined here" << endl;
+          os << b.file () << ":" << b.line () << ":" << b.column () << ":"
+             << " info: class '" << name << "' is defined here" << endl;
 
           valid_ = false;
         }
@@ -359,21 +347,21 @@ namespace
 
       if (id == 0)
       {
-        // An object without an id should either be abstract or
-        // explicitly marked as such.
+        // An object without an id should either be abstract or explicitly
+        // marked as such.
         //
-        if (!(c.count ("id") || context::abstract (c)))
+        if (!(c.count ("id") || abstract (c)))
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: no data member designated as an object id" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: no data member designated as an object id" << endl;
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: use '#pragma db id' to specify an object id member"
-               << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " info: use '#pragma db id' to specify an object id member"
+             << endl;
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: or explicitly declare that this persistent class "
-               << "has no object id" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " info: or explicitly declare that this persistent class "
+             << "has no object id" << endl;
 
           valid_ = false;
         }
@@ -387,9 +375,9 @@ namespace
         //
         if (id->count ("default"))
         {
-          cerr << id->file () << ":" << id->line () << ":" << id->column ()
-               << ": error: object id member cannot have default value"
-               << endl;
+          os << id->file () << ":" << id->line () << ":" << id->column ()
+             << ": error: object id member cannot have default value"
+             << endl;
 
           valid_ = false;
         }
@@ -399,8 +387,8 @@ namespace
         //
         if (id->count ("null"))
         {
-          cerr << id->file () << ":" << id->line () << ":" << id->column ()
-               << ": error: object id member cannot be null" << endl;
+          os << id->file () << ":" << id->line () << ":" << id->column ()
+             << ": error: object id member cannot be null" << endl;
 
           valid_ = false;
         }
@@ -416,13 +404,13 @@ namespace
         //
         if (&optimistic->scope () == &c && !c.count ("optimistic"))
         {
-          cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-               << " error: version data member in a class not declared "
-               << "optimistic" << endl;
+          os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+             << " error: version data member in a class not declared "
+             << "optimistic" << endl;
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: use '#pragma db optimistic' to declare this "
-               << "class optimistic" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " info: use '#pragma db optimistic' to declare this "
+             << "class optimistic" << endl;
 
           valid_ = false;
         }
@@ -431,8 +419,8 @@ namespace
         //
         if (id == 0)
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: optimistic class without an object id" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: optimistic class without an object id" << endl;
 
           valid_ = false;
         }
@@ -442,33 +430,32 @@ namespace
         //
         if (id != 0 && &id->scope () != &optimistic->scope ())
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: object id and version members are in different "
-               << "classes" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: object id and version members are in different "
+             << "classes" << endl;
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: object id and version members must be in the same "
-               << "class" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " info: object id and version members must be in the same "
+             << "class" << endl;
 
-          cerr << id->file () << ":" << id->line () << ":" << id->column ()
-               << ": info: object id member is declared here" << endl;
+          os << id->file () << ":" << id->line () << ":" << id->column ()
+             << ": info: object id member is declared here" << endl;
 
-          cerr << m.file () << ":" << m.line () << ":" << m.column () << ":"
-               << " error: version member is declared here" << endl;
+          os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+             << " error: version member is declared here" << endl;
 
           valid_ = false;
         }
 
         // Make sure this class is not readonly.
         //
-        if (c.count ("readonly"))
+        if (readonly (c))
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: optimistic class cannot be readonly" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: optimistic class cannot be readonly" << endl;
 
           valid_ = false;
         }
-
 
         // This takes care of also marking derived classes as optimistic.
         //
@@ -481,12 +468,12 @@ namespace
         //
         if (c.count ("optimistic"))
         {
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: optimistic class without a version member" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: optimistic class without a version member" << endl;
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: use '#pragma db version' to declare on of the "
-               << "data members as a version" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " info: use '#pragma db version' to declare on of the "
+             << "data members as a version" << endl;
 
           valid_ = false;
         }
@@ -499,8 +486,8 @@ namespace
 
       if (member_.count_ == 0 && !base)
       {
-        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-             << " error: no persistent data members in the class" << endl;
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " error: no persistent data members in the class" << endl;
 
         valid_ = false;
       }
@@ -511,16 +498,16 @@ namespace
     {
       // Views require query support.
       //
-      if (!options_.generate_query ())
+      if (!options.generate_query ())
       {
-        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-             << " error: query support is required when using views"
-             << endl;
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " error: query support is required when using views"
+           << endl;
 
-        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-             << " info: use the --generate-query option to enable query "
-             << "support"
-             << endl;
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " info: use the --generate-query option to enable query "
+           << "support"
+           << endl;
 
         valid_ = false;
       }
@@ -533,26 +520,24 @@ namespace
       {
         type& b (i->base ());
 
-        if (context::object (b) ||
-            context::view (b) ||
-            context::composite (b))
+        if (object (b) || view (b) || composite (b))
         {
           // @@ Should we use hint here?
           //
-          string name (context::class_fq_name (b));
+          string name (class_fq_name (b));
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: base class '" << name << "' is an object, "
-               << "view, or value type"
-               << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: base class '" << name << "' is an object, "
+             << "view, or value type"
+             << endl;
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: view types cannot derive from view, object or "
-               << "value types"
-               << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " info: view types cannot derive from view, object or "
+             << "value types"
+             << endl;
 
-          cerr << b.file () << ":" << b.line () << ":" << b.column () << ":"
-               << " info: class '" << name << "' is defined here" << endl;
+          os << b.file () << ":" << b.line () << ":" << b.column () << ":"
+             << " info: class '" << name << "' is defined here" << endl;
 
           valid_ = false;
         }
@@ -569,9 +554,9 @@ namespace
 
       if (id != 0)
       {
-        cerr << id->file () << ":" << id->line () << ":" << id->column ()
-             << ": error: view type data member cannot be designated as an "
-             << "object id" << endl;
+        os << id->file () << ":" << id->line () << ":" << id->column ()
+           << ": error: view type data member cannot be designated as an "
+           << "object id" << endl;
 
         valid_ = false;
       }
@@ -580,9 +565,9 @@ namespace
       {
         semantics::data_member& o (*optimistic);
 
-        cerr << o.file () << ":" << o.line () << ":" << o.column ()
-             << ": error: view type data member cannot be designated as a "
-             << "version" << endl;
+        os << o.file () << ":" << o.line () << ":" << o.column ()
+           << ": error: view type data member cannot be designated as a "
+           << "version" << endl;
 
         valid_ = false;
       }
@@ -594,8 +579,8 @@ namespace
 
       if (member_.count_ == 0)
       {
-        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-             << " error: no persistent data members in the class" << endl;
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " error: no persistent data members in the class" << endl;
 
         valid_ = false;
       }
@@ -612,25 +597,25 @@ namespace
       {
         type& b (i->base ());
 
-        if (context::composite (b))
+        if (composite (b))
           base = true;
-        else if (context::object (b) || context::view (b))
+        else if (object (b) || view (b))
         {
           // @@ Should we use hint here?
           //
-          string name (context::class_fq_name (b));
+          string name (class_fq_name (b));
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " error: base class '" << name << "' is a view or object "
-               << "type"
-               << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: base class '" << name << "' is a view or object "
+             << "type"
+             << endl;
 
-          cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-               << " info: composite value types cannot derive from object "
-               << "or view types" << endl;
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " info: composite value types cannot derive from object "
+             << "or view types" << endl;
 
-          cerr << b.file () << ":" << b.line () << ":" << b.column () << ":"
-               << " info: class '" << name << "' is defined here" << endl;
+          os << b.file () << ":" << b.line () << ":" << b.column () << ":"
+             << " info: class '" << name << "' is defined here" << endl;
 
           valid_ = false;
         }
@@ -647,9 +632,9 @@ namespace
 
       if (id != 0)
       {
-        cerr << id->file () << ":" << id->line () << ":" << id->column ()
-             << ": error: value type data member cannot be designated as an "
-             << "object id" << endl;
+        os << id->file () << ":" << id->line () << ":" << id->column ()
+           << ": error: value type data member cannot be designated as an "
+           << "object id" << endl;
 
         valid_ = false;
       }
@@ -658,9 +643,9 @@ namespace
       {
         semantics::data_member& o (*optimistic);
 
-        cerr << o.file () << ":" << o.line () << ":" << o.column ()
-             << ": error: value type data member cannot be designated as a "
-             << "version" << endl;
+        os << o.file () << ":" << o.line () << ":" << o.column ()
+           << ": error: value type data member cannot be designated as a "
+           << "version" << endl;
 
         valid_ = false;
       }
@@ -672,16 +657,14 @@ namespace
 
       if (member_.count_ == 0 && !base)
       {
-        cerr << c.file () << ":" << c.line () << ":" << c.column () << ":"
-             << " error: no persistent data members in the class" << endl;
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " error: no persistent data members in the class" << endl;
 
         valid_ = false;
       }
     }
 
     bool& valid_;
-    options const& options_;
-    semantics::unit& unit_;
     value_type& vt_;
 
     data_member member_;
@@ -720,15 +703,15 @@ namespace
     }
 
     virtual void
-    traverse_simple (semantics::data_member& m)
+    traverse_pointer (semantics::data_member& m, semantics::class_&)
     {
-      if (m.count ("inverse"))
+      if (inverse (m))
       {
         semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
 
-        cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-             << " error: inverse object pointer member '" << member_prefix_
-             << m.name () << "' in an object without an object id" << endl;
+        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << " error: inverse object pointer member '" << member_prefix_
+           << m.name () << "' in an object without an object id" << endl;
 
         valid_ = false;
       }
@@ -739,9 +722,9 @@ namespace
     {
       semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
 
-      cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-           << " error: container member '" << member_prefix_ << m.name ()
-           << "' in an object without an object id" << endl;
+      os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+         << " error: container member '" << member_prefix_ << m.name ()
+         << "' in an object without an object id" << endl;
 
       valid_ = false;
     }
@@ -761,7 +744,72 @@ namespace
 
   private:
     bool& valid_;
-    semantics::data_member* dm_; // Direct view data member.
+    semantics::data_member* dm_; // Direct object data member.
+  };
+
+  struct composite_id_members: object_members_base
+  {
+    composite_id_members (bool& valid)
+        : object_members_base (false, false, true), valid_ (valid), dm_ (0)
+    {
+    }
+
+    virtual void
+    traverse_pointer (semantics::data_member& m, semantics::class_&)
+    {
+      semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+      os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+         << " error: object pointer member '" << member_prefix_ << m.name ()
+         << "' in a composite value type that is used as an object id" << endl;
+
+      valid_ = false;
+    }
+
+    virtual void
+    traverse_simple (semantics::data_member& m)
+    {
+      if (readonly (member_path_, member_scope_))
+      {
+        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << " error: readonly member '" << member_prefix_ << m.name ()
+           << "' in a composite value type that is used as an object id"
+           << endl;
+
+        valid_ = false;
+      }
+    }
+
+    virtual void
+    traverse_container (semantics::data_member& m, semantics::type&)
+    {
+      semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+      os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+         << " error: container member '" << member_prefix_ << m.name ()
+         << "' in a composite value type that is used as an object id" << endl;
+
+      valid_ = false;
+    }
+
+    virtual void
+    traverse_composite (semantics::data_member* m, semantics::class_& c)
+    {
+      semantics::data_member* old_dm (dm_);
+
+      if (dm_ == 0)
+        dm_ = m;
+
+      object_members_base::traverse_composite (m, c);
+
+      dm_ = old_dm;
+    }
+
+  private:
+    bool& valid_;
+    semantics::data_member* dm_; // Direct composite member.
   };
 
   struct view_members: object_members_base
@@ -774,16 +822,16 @@ namespace
     virtual void
     traverse_simple (semantics::data_member& m)
     {
-      if (context::object_pointer (utype (m)))
+      if (object_pointer (utype (m)))
       {
         semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
 
-        cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-             << " error: view data member '" << member_prefix_ << m.name ()
-             << "' is an object pointer" << endl;
+        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << " error: view data member '" << member_prefix_ << m.name ()
+           << "' is an object pointer" << endl;
 
-        cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-             << ": info: views cannot contain object pointers" << endl;
+        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << ": info: views cannot contain object pointers" << endl;
 
         valid_ = false;
       }
@@ -794,12 +842,12 @@ namespace
     {
       semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
 
-      cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-           << " error: view data member '" << member_prefix_ << m.name ()
-           << "' is a container" << endl;
+      os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+         << " error: view data member '" << member_prefix_ << m.name ()
+         << "' is a container" << endl;
 
-      cerr << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-           << ": info: views cannot contain containers" << endl;
+      os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+         << ": info: views cannot contain containers" << endl;
 
       valid_ = false;
     }
@@ -824,36 +872,175 @@ namespace
 
   //
   //
-  struct class2: traversal::class_
+  struct class2: traversal::class_, context
   {
-    class2 (bool& valid, options const& ops, semantics::unit& unit)
+    class2 (bool& valid)
         : valid_ (valid),
-          options_ (ops),
-          unit_ (unit),
           object_no_id_members_ (valid),
+          composite_id_members_ (valid),
           view_members_ (valid)
     {
+      // Find the has_lt_operator function template..
+      //
+      has_lt_operator_ = 0;
+
+      tree odb (
+        lookup_qualified_name (
+          global_namespace, get_identifier ("odb"), false, false));
+
+      if (odb != error_mark_node)
+      {
+        tree compiler (
+          lookup_qualified_name (
+            odb, get_identifier ("compiler"), false, false));
+
+        if (compiler != error_mark_node)
+        {
+          has_lt_operator_ = lookup_qualified_name (
+            compiler, get_identifier ("has_lt_operator"), false, false);
+
+          if (has_lt_operator_ != error_mark_node)
+            has_lt_operator_ = OVL_CURRENT (has_lt_operator_);
+          else
+          {
+            os << unit.file () << ": error: unable to resolve has_lt_operator "
+               << "function template inside odb::compiler" << endl;
+            has_lt_operator_ = 0;
+          }
+        }
+        else
+          os << unit.file () << ": error: unable to resolve compiler "
+             << "namespace inside odb" << endl;
+      }
+      else
+        os << unit.file () << ": error: unable to resolve odb namespace"
+           << endl;
+
+      if (has_lt_operator_ == 0)
+        valid_ = false;
     }
 
     virtual void
     traverse (type& c)
     {
-      if (context::object (c))
+      if (object (c))
         traverse_object (c);
-      else if (context::view (c))
+      else if (view (c))
         traverse_view (c);
-      else if (context::composite (c))
+      else if (composite (c))
         traverse_composite (c);
     }
 
     virtual void
     traverse_object (type& c)
     {
-      if (context::id_member (c) == 0 && !context::abstract (c))
+      semantics::data_member* id (id_member (c));
+
+      if (id != 0)
       {
-        // Make sure we don't have any containers or inverse pointers.
-        //
-        object_no_id_members_.traverse (c);
+        if (semantics::class_* c = composite_wrapper (utype (*id)))
+        {
+          // Composite id cannot be auto.
+          //
+          if (auto_ (*id))
+          {
+            os << id->file () << ":" << id->line () << ":" << id->column ()
+               << ": error: composite id cannot be automatically assigned"
+               << endl;
+
+            valid_ = false;
+          }
+
+          // Make sure we don't have any containers or pointers in this
+          // composite value type.
+          //
+          if (valid_)
+          {
+            composite_id_members_.traverse (*c);
+
+            if (!valid_)
+              os << id->file () << ":" << id->line () << ":" << id->column ()
+                 << ": info: composite id is defined here" << endl;
+          }
+
+          // Check that the composite value type is default-constructible.
+          //
+          if (!c->default_ctor ())
+          {
+            os << c->file () << ":" << c->line () << ":" << c->column ()
+               << ": error: composite value type that is used as object id "
+               << "is not default-constructible" << endl;
+
+              os << c->file () << ":" << c->line () << ":" << c->column ()
+                 << ": info: provide default constructor for this value type"
+                 << endl;
+
+              os << id->file () << ":" << id->line () << ":" << id->column ()
+                 << ": info: composite id is defined here" << endl;
+
+              valid_ = false;
+          }
+
+          // Check that composite values can be compared (used in session).
+          //
+          if (has_lt_operator_ != 0)
+          {
+            tree args (make_tree_vec (1));
+            TREE_VEC_ELT (args, 0) = c->tree_node ();
+
+            tree inst (
+              instantiate_template (
+                has_lt_operator_, args, tf_none));
+
+            bool v (inst != error_mark_node);
+
+            if (v &&
+                DECL_TEMPLATE_INSTANTIATION (inst) &&
+                !DECL_TEMPLATE_INSTANTIATED (inst))
+            {
+              // Instantiate this function template to see if the value type
+              // provides operator<. Unfortunately, GCC instantiate_decl()
+              // does not provide any control over the diagnostics it issues
+              // in case of an error. To work around this, we are going to
+              // temporarily redirect diagnostics to /dev/null, which is
+              // where asm_out_file points to (see plugin.cxx).
+              //
+              int ec (errorcount);
+              FILE* s (global_dc->printer->buffer->stream);
+              global_dc->printer->buffer->stream = asm_out_file;
+
+              instantiate_decl (inst, false, false);
+
+              global_dc->printer->buffer->stream = s;
+              v = (ec == errorcount);
+            }
+
+            if (!v)
+            {
+              os << c->file () << ":" << c->line () << ":" << c->column ()
+                 << ": error: composite value type that is used as object id "
+                 << "does not support the less than (<) comparison"
+                 << endl;
+
+              os << c->file () << ":" << c->line () << ":" << c->column ()
+                 << ": info: provide operator< for this value type" << endl;
+
+              os << id->file () << ":" << id->line () << ":" << id->column ()
+                 << ": info: composite id is defined here" << endl;
+
+              valid_ = false;
+            }
+          }
+        }
+      }
+      else
+      {
+        if (!abstract (c))
+        {
+          // Make sure we don't have any containers or inverse pointers.
+          //
+          object_no_id_members_.traverse (c);
+        }
       }
     }
 
@@ -871,10 +1058,10 @@ namespace
     }
 
     bool& valid_;
-    options const& options_;
-    semantics::unit& unit_;
+    tree has_lt_operator_;
 
     object_no_id_members object_no_id_members_;
+    composite_id_members composite_id_members_;
     view_members view_members_;
   };
 }
@@ -897,7 +1084,7 @@ validate (options const& ops,
     typedefs1 unit_typedefs (unit_declares);
     traversal::namespace_ ns;
     value_type vt (valid);
-    class1 c (valid, ops, u, vt);
+    class1 c (valid, vt);
 
     unit >> unit_defines >> ns;
     unit_defines >> c;
@@ -921,7 +1108,7 @@ validate (options const& ops,
     traversal::defines unit_defines;
     typedefs unit_typedefs (true);
     traversal::namespace_ ns;
-    class2 c (valid, ops, u);
+    class2 c (valid);
 
     unit >> unit_defines >> ns;
     unit_defines >> c;

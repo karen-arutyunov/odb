@@ -78,16 +78,11 @@ namespace relational
     }
   }
 
-  bool query_columns_base::
-  traverse_column (semantics::data_member& m, string const& column, bool)
+  void query_columns_base::
+  traverse_pointer (semantics::data_member& m, semantics::class_& c)
   {
-    semantics::class_* ptr (object_pointer (utype (m)));
-
-    if (ptr == 0)
-      return false;
-
     string name (public_name (m));
-    bool inv (inverse (m));
+    bool inv (inverse (m, key_prefix_));
 
     if (decl_)
     {
@@ -101,7 +96,7 @@ namespace relational
         os << "typedef" << endl
            << "odb::query_pointer<" << endl
            << "  odb::pointer_query_columns<" << endl
-           << "    " << class_fq_name (*ptr) << "," << endl
+           << "    " << class_fq_name (c) << "," << endl
            << "    " << name << "_alias_ > >" << endl
            << name << "_type_ ;"
            << endl
@@ -111,11 +106,32 @@ namespace relational
     }
     else
     {
-      // For now use column name as table alias.
-      // @@ This will become problematic when we add support for composite ids.
+      // Come up with a table alias. Generally, we want it to be based
+      // on the column name. This is straightforward for single-column
+      // references. In case of a composite id, we will need to use the
+      // column prefix which is based on the data member name, unless
+      // overridden by the user. In the latter case the prefix can be
+      // empty, in which case we will just fall back on the member's
+      // public name.
       //
+      string alias;
+
+      if (composite_wrapper (utype ((*id_member (c)))))
+      {
+        string p (column_prefix (m, key_prefix_, default_name_));
+
+        if (p.empty ())
+          p = public_name_db (m);
+        else
+          p.resize (p.size () - 1); // Remove trailing underscore.
+
+        alias = column_prefix_ + p;
+      }
+      else
+        alias = column_prefix_ + column_name (m, key_prefix_, default_name_);
+
       os << "const char " << scope_ <<  "::" << name << "_alias_[] = " <<
-        strlit (quote_id (column)) << ";"
+        strlit (quote_id (alias)) << ";"
          << endl;
 
       if (inv)
@@ -123,8 +139,6 @@ namespace relational
            << scope_ << "::" << name << ";"
            << endl;
     }
-
-    return true;
   }
 
   // query_columns
@@ -132,13 +146,13 @@ namespace relational
 
   query_columns::
   query_columns (bool ptr)
-      : ptr_ (ptr), decl_ (true)
+      : ptr_ (ptr), decl_ (true), in_ptr_ (false)
   {
   }
 
   query_columns::
   query_columns (bool ptr, semantics::class_& c) //@@ context::{cur,top}_object
-      : ptr_ (ptr), decl_ (false)
+      : ptr_ (ptr), decl_ (false), in_ptr_ (false)
   {
     scope_ = ptr ? "pointer_query_columns" : "query_columns";
     scope_ += "< " + class_fq_name (c) + ", table >";
@@ -164,12 +178,13 @@ namespace relational
     }
 
     string name (public_name (*m));
+    string suffix (in_ptr_ ? "_column_type_" : "_type_");
 
     if (decl_)
     {
       os << "// " << name << endl
          << "//" << endl
-         << "struct " << name << "_type_";
+         << "struct " << name << suffix;
 
       // Derive from the base in query_columns_base. It contains columns
       // data for the pointer members.
@@ -178,27 +193,29 @@ namespace relational
         os << ": " << name << "_base_";
 
       os << "{"
-         << name << "_type_ (){}"; // For some reason GCC needs this c-tor
-                                   // if we make the static member const.
+         << name << suffix << " (){}"; // For some reason GCC needs this c-tor
+                                       // if we make the static member const.
 
       object_columns_base::traverse_composite (m, c);
 
-      os << "};"
-         << "static const " << name << "_type_ " << name << ";"
-         << endl;
+      os << "};";
+
+      if (!in_ptr_)
+        os << "static const " << name << "_type_ " << name << ";"
+           << endl;
     }
     else
     {
       // Handle nested members first.
       //
       string old_scope (scope_);
-      scope_ += "::" + name + "_type_";
+      scope_ += "::" + name + suffix;
 
       object_columns_base::traverse_composite (m, c);
 
       scope_ = old_scope;
 
-      // Composite member.
+      // Composite member. Note that here we don't use suffix.
       //
       os << "template <const char* table>" << endl
          << "const typename " << scope_ << "::" << name << "_type_" << endl
@@ -216,39 +233,16 @@ namespace relational
        << "}";
   }
 
-  bool query_columns::
-  traverse_column (semantics::data_member& m, string const& column, bool)
+  void query_columns::
+  column_common (semantics::data_member& m,
+                 string const& type,
+                 string const& column,
+                 string const& suffix)
   {
-    semantics::names* hint;
-    semantics::type& t (utype (m, hint));
-    semantics::class_* ptr (object_pointer (t));
-
-    if (ptr != 0)
-    {
-      // If this is for the pointer_query_columns and the member is not
-      // inverse, then create the normal member corresponding to the id
-      // column. This will allow the user to check it for NULL or to
-      // compare ids. In case this is for query_columns, then for the
-      // inverse member everything has been generated in query_columns_base.
-      //
-      if (inverse (m))
-        return false;
-    }
-
     string name (public_name (m));
 
     if (decl_)
     {
-      string type;
-      if (ptr != 0)
-      {
-        semantics::data_member& id (*id_member (*ptr));
-        semantics::type& t (utype (id, hint));
-        type = t.fq_name (hint);
-      }
-      else
-        type = t.fq_name (hint);
-
       string type_id (database_type_id (m));
 
       os << "// " << name << endl
@@ -259,43 +253,14 @@ namespace relational
          << "  " << db << "::value_traits<" << endl
          << "    " << type << "," << endl
          << "    " << type_id << " >::query_type," << endl
-         << "  " << type_id << " >" << endl;
-
-      if (ptr == 0 || ptr_)
-        os << name << "_type_;"
-           << endl;
-      else
-      {
-        os << name << "_column_type_;"
-           << endl
-           << "typedef" << endl
-           << "odb::query_pointer<" << endl
-           << "  odb::pointer_query_columns<" << endl
-           << "    " << class_fq_name (*ptr) << "," << endl
-           << "    " << name << "_alias_ > >" << endl
-           << name << "_pointer_type_;"
-           << endl;
-
-        // If this is a non-inverse relationship, then make the column have
-        // a dual interface: that of an object pointer and of an id column.
-        // The latter allows the user to, for example, use the is_null()
-        // test in a natural way. For inverse relationships there is no
-        // column and so the column interface is not available.
-        //
-        os << "struct " << name << "_type_: " <<
-          name << "_pointer_type_, " << name << "_column_type_"
-           << "{";
-
-        column_ctor (name + "_type_", name + "_column_type_");
-
-        os << "};";
-      }
-
-      os << "static const " << name << "_type_ " << name << ";"
+         << "  " << type_id << " >" << endl
+         << name << suffix << ";"
          << endl;
     }
     else
     {
+      // Note that here we don't use suffix.
+      //
       os << "template <const char* table>" << endl
          << "const typename " << scope_ << "::" << name << "_type_" << endl
          << scope_ << "::" << name << " (" << "table, " <<
@@ -306,8 +271,132 @@ namespace relational
       os << ");"
          << endl;
     }
+  }
+
+  bool query_columns::
+  traverse_column (semantics::data_member& m, string const& column, bool)
+  {
+    semantics::names* hint;
+    semantics::type& t (utype (m, hint));
+
+    column_common (m, t.fq_name (hint), column);
+
+    if (decl_)
+    {
+      string name (public_name (m));
+
+      os << "static const " << name << "_type_ " << name << ";"
+         << endl;
+    }
 
     return true;
+  }
+
+  void query_columns::
+  traverse_pointer (semantics::data_member& m, semantics::class_& c)
+  {
+    // If this is for the pointer_query_columns and the member is not
+    // inverse, then create the normal member corresponding to the id
+    // column. This will allow the user to check it for NULL or to
+    // compare ids. In case this is for query_columns, then for the
+    // inverse member everything has been generated in query_columns_base.
+    //
+    if (inverse (m, key_prefix_))
+      return;
+
+    string name (public_name (m));
+
+    semantics::data_member& id (*id_member (c));
+    semantics::names* hint;
+    semantics::type& t (utype (id, hint));
+
+    if (composite_wrapper (t))
+    {
+      // Composite id.
+      //
+
+      // For pointer_query_columns generate normal composite mapping.
+      //
+      if (ptr_)
+        object_columns_base::traverse_pointer (m, c);
+      else
+      {
+        // If this is a non-inverse relationship, then make the column have
+        // a dual interface: that of an object pointer and of an id column.
+        // The latter allows the user to, for example, use the is_null()
+        // test in a natural way. For inverse relationships there is no
+        // column and so the column interface is not available.
+        //
+        in_ptr_ = true;
+        object_columns_base::traverse_pointer (m, c);
+        in_ptr_ = false;
+
+        if (decl_)
+        {
+          os << "typedef" << endl
+             << "odb::query_pointer<" << endl
+             << "  odb::pointer_query_columns<" << endl
+             << "    " << class_fq_name (c) << "," << endl
+             << "    " << name << "_alias_ > >" << endl
+             << name << "_pointer_type_;"
+             << endl;
+
+          os << "struct " << name << "_type_: " <<
+            name << "_pointer_type_, " << name << "_column_type_"
+             << "{"
+             << "};";
+
+          os << "static const " << name << "_type_ " << name << ";"
+             << endl;
+        }
+      }
+    }
+    else
+    {
+      // Simple id.
+      //
+      string type (t.fq_name (hint));
+      string column (column_prefix_ +
+                     column_name (m, key_prefix_, default_name_));
+
+      // For pointer_query_columns generate normal column mapping.
+      //
+      if (ptr_)
+        column_common (m, type, column);
+      else
+      {
+        // If this is a non-inverse relationship, then make the column have
+        // a dual interface: that of an object pointer and of an id column.
+        // The latter allows the user to, for example, use the is_null()
+        // test in a natural way. For inverse relationships there is no
+        // column and so the column interface is not available.
+        //
+        column_common (m, type, column, "_column_type_");
+
+        if (decl_)
+        {
+          os << "typedef" << endl
+             << "odb::query_pointer<" << endl
+             << "  odb::pointer_query_columns<" << endl
+             << "    " << class_fq_name (c) << "," << endl
+             << "    " << name << "_alias_ > >" << endl
+             << name << "_pointer_type_;"
+             << endl;
+
+          os << "struct " << name << "_type_: " <<
+            name << "_pointer_type_, " << name << "_column_type_"
+             << "{";
+
+          column_ctor (name + "_type_", name + "_column_type_");
+
+          os << "};";
+        }
+      }
+
+      if (decl_)
+        os << "static const " << name << "_type_ " << name << ";"
+           << endl;
+    }
   }
 
   //

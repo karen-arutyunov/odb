@@ -5,6 +5,7 @@
 #ifndef ODB_RELATIONAL_MYSQL_CONTEXT_HXX
 #define ODB_RELATIONAL_MYSQL_CONTEXT_HXX
 
+#include <map>
 #include <vector>
 
 #include <odb/relational/context.hxx>
@@ -80,8 +81,7 @@ namespace relational
     {
     public:
       sql_type const&
-      column_sql_type (semantics::data_member&,
-                       string const& key_prefix = string ());
+      parse_sql_type (string const&, semantics::data_member&);
 
     public:
       struct invalid_sql_type
@@ -138,6 +138,9 @@ namespace relational
       struct data: base_context::data
       {
         data (std::ostream& os): base_context::data (os) {}
+
+        typedef std::map<string, sql_type> sql_type_cache;
+        sql_type_cache sql_type_cache_;
       };
       data* data_;
     };

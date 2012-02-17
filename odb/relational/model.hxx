@@ -26,12 +26,10 @@ namespace relational
     {
       typedef object_columns base;
 
-      object_columns (sema_rel::model& model,
-                      sema_rel::table& table,
-                      string const& prefix = string ())
+      object_columns (sema_rel::model& model, sema_rel::table& table)
           : model_ (model),
             table_ (table),
-            prefix_ (prefix),
+            pkey_ (0),
             id_override_ (false)
       {
       }
@@ -77,20 +75,25 @@ namespace relational
 
       virtual void
       traverse (semantics::data_member& m,
-                semantics::class_& c,
-                std::string const& kp,
-                std::string const& dn)
+                semantics::type& t,
+                string const& kp,
+                string const& dn,
+                semantics::class_* to = 0)
       {
         // This overrides the member name for a composite container value
         // or key.
         //
         if (!kp.empty ())
         {
-          id_prefix_ = kp + ".";
-          id_override_ = true;
+          semantics::class_* c (object_pointer (t));
+          if (composite_wrapper (c == 0 ? t : utype (*id_member (*c))))
+          {
+            id_prefix_ = kp + ".";
+            id_override_ = true;
+          }
         }
 
-        object_columns_base::traverse (m, c, kp, dn);
+        object_columns_base::traverse (m, t, kp, dn, to);
       }
 
       using object_columns_base::traverse;
@@ -98,23 +101,22 @@ namespace relational
       virtual bool
       traverse_column (semantics::data_member& m, string const& name, bool)
       {
-        // Ignore inverse object pointers.
-        //
-        if (inverse (m))
-          return false;
+        bool id (object_columns_base::id ());             // Id or part of.
+        bool null (!id && context::null (m, key_prefix_));
 
-        string id (id_prefix_ + (prefix_.empty () ? m.name () : prefix_));
+        string col_id (id_prefix_ +
+                       (key_prefix_.empty () ? m.name () : key_prefix_));
 
         sema_rel::column& c (
-          model_.new_node<sema_rel::column> (
-            id, column_type (m, prefix_), context::null (m, prefix_)));
+          model_.new_node<sema_rel::column> (col_id, column_type (), null));
+
         c.set ("cxx-node", static_cast<semantics::node*> (&m));
 
         model_.new_edge<sema_rel::unames> (table_, c, name);
 
         // An id member cannot have a default value.
         //
-        if (!context::id (m))
+        if (!id)
         {
           string const& d (default_ (m));
 
@@ -124,14 +126,12 @@ namespace relational
 
         // If we have options, add them.
         //
-        string const& o (column_options (m, prefix_));
+        string const& o (column_options (m, key_prefix_));
 
         if (!o.empty ())
           c.options (o);
 
-        constraints (m, name, id, c);
-        reference (m, name, id, c);
-
+        constraints (m, name, col_id, c);
         return true;
       }
 
@@ -188,58 +188,129 @@ namespace relational
                    string const& /* id */,
                    sema_rel::column& c)
       {
-        if (!id (m))
-          return;
+        if (table_.is_a<sema_rel::object_table> ())
+        {
+          if (semantics::data_member* idm = id ())
+          {
+            if (pkey_ == 0)
+            {
+              pkey_ = &model_.new_node<sema_rel::primary_key> (
+                m.count ("auto"));
+              pkey_->set ("cxx-node", static_cast<semantics::node*> (idm));
 
-        sema_rel::primary_key& pk (
-          model_.new_node<sema_rel::primary_key> (m.count ("auto")));
-        pk.set ("cxx-node", static_cast<semantics::node*> (&m));
+              // In most databases the primary key constraint can be
+              // manipulated without an explicit name. So we use the special
+              // empty name for primary keys in order not to clash with
+              // columns and other constraints. If the target database does
+              // not support unnamed primary key manipulation, then the
+              // database-specific code will have to come up with a suitable
+              // name.
+              //
+              model_.new_edge<sema_rel::unames> (table_, *pkey_, "");
+            }
 
-        model_.new_edge<sema_rel::contains> (pk, c);
-
-        // In most databases the primary key constraint can be manipulated
-        // without an explicit name. So we use the special empty name for
-        // primary keys in order not to clash with columns and other
-        // constraints. If the target database does not support unnamed
-        // primary key manipulation, then the database-specific code will
-        // have to come up with a suitable name.
-        //
-        model_.new_edge<sema_rel::unames> (table_, pk, "");
+            model_.new_edge<sema_rel::contains> (*pkey_, c);
+          }
+        }
       }
 
       virtual void
-      reference (semantics::data_member& m,
-                 string const& name,
-                 string const& id,
-                 sema_rel::column& c)
+      traverse_pointer (semantics::data_member& m, semantics::class_& c)
       {
-        semantics::class_* p (object_pointer (member_utype (m, prefix_)));
+        using sema_rel::column;
 
-        if (p == 0)
+        // Ignore inverse object pointers.
+        //
+        if (inverse (m, key_prefix_))
           return;
+
+        string id (id_prefix_ +
+                   (key_prefix_.empty () ? m.name () : key_prefix_));
 
         sema_rel::foreign_key& fk (
           model_.new_node<sema_rel::foreign_key> (
             id,
-            table_name (*p),
+            table_name (c),
             true)); // deferred
 
         fk.set ("cxx-node", static_cast<semantics::node*> (&m));
 
-        fk.referenced_columns ().push_back (column_name (*id_member (*p)));
+        bool simple;
 
-        model_.new_edge<sema_rel::contains> (fk, c);
+        // Get referenced columns.
+        //
+        {
+          semantics::data_member& idm (*id_member (c));
+
+          instance<object_columns_list> ocl;
+          ocl->traverse (idm);
+
+          for (object_columns_list::iterator i (ocl->begin ());
+               i != ocl->end (); ++i)
+            fk.referenced_columns ().push_back (i->name);
+
+          simple = (fk.referenced_columns ().size () == 1);
+        }
+
+        // Get the position of the last column.
+        //
+        sema_rel::table::names_iterator i (table_.names_end ());
+
+        while (i != table_.names_begin ())
+        {
+          --i;
+
+          if (i->nameable ().is_a<column> ())
+            break;
+        }
+
+        // Traverse the object pointer as columns.
+        //
+        object_columns_base::traverse_pointer (m, c);
+
+        // Add the newly added columns to the foreign key.
+        //
+        if (i != table_.names_end ())
+          ++i;
+        else
+          i = table_.names_begin ();
+
+        for (; i != table_.names_end (); ++i)
+        {
+          if (column* c = dynamic_cast<column*> (&i->nameable ()))
+            model_.new_edge<sema_rel::contains> (fk, *c);
+          else
+            break;
+        }
 
         // Derive the constraint name. Generally, we want it to be based
-        // on the column name. This is straightforward for single column
-        // references. In case of the composite ids, we will need to use
-        // the column prefix which is based on the data member name,
-        // unless overridden (see how the column pragma works for members
-        // of composite value types). @@ This is a TODO. Perhaps use the
-        // up-to-and-including composite member prefix? Though it can be
-        // empty.
+        // on the column name. This is straightforward for single-column
+        // references. In case of a composite id, we will need to use the
+        // column prefix which is based on the data member name, unless
+        // overridden by the user. In the latter case the prefix can be
+        // empty, in which case we will just fall back on the member's
+        // public name.
         //
-        model_.new_edge<sema_rel::unames> (table_, fk, name + "_fk");
+        string name;
+
+        if (simple)
+          name = fk.contains_begin ()->column ().name ();
+        else
+        {
+          string p (column_prefix (m, key_prefix_, default_name_));
+
+          if (p.empty ())
+            p = public_name_db (m);
+
+          name = column_prefix_ + p;
+        }
+
+        // Add an underscore unless we already have one.
+        //
+        if (name[name.size () - 1] != '_')
+          name += '_';
+
+        model_.new_edge<sema_rel::unames> (table_, fk, name + "fk");
       }
 
     protected:
@@ -249,7 +320,7 @@ namespace relational
     protected:
       sema_rel::model& model_;
       sema_rel::table& table_;
-      string prefix_;
+      sema_rel::primary_key* pkey_;
       string id_prefix_;
       bool id_override_;
     };
@@ -310,13 +381,15 @@ namespace relational
         using semantics::type;
         using semantics::data_member;
 
+        using sema_rel::index;
+        using sema_rel::column;
+
         // Ignore inverse containers of object pointers.
         //
         if (inverse (m, "value"))
           return;
 
         container_kind_type ck (container_kind (ct));
-        type& vt (container_vt (ct));
 
         qname const& name (table_name (m, table_prefix_));
 
@@ -332,15 +405,14 @@ namespace relational
 
         model_.new_edge<sema_rel::qnames> (model_, t, name);
 
-        // object_id (simple value, for now)
+        // object_id
         //
-        string id_name (column_name (m, "id", "object_id"));
         {
-          instance<object_columns> oc (model_, t, "id");
-          oc->traverse_column (m, id_name, true);
+          instance<object_columns> oc (model_, t);
+          oc->traverse (m, container_idt (m), "id", "object_id");
         }
 
-        // Foreign key for the object id.
+        // Foreign key and index for the object id.
         //
         {
           sema_rel::foreign_key& fk (
@@ -349,105 +421,91 @@ namespace relational
               table_name (*context::top_object),
               false, // immediate
               sema_rel::foreign_key::cascade));
-
           fk.set ("cxx-node", static_cast<semantics::node*> (&m));
 
-          fk.referenced_columns ().push_back (
-            column_name (
-              *id_member (*context::top_object)));
+          index& in (model_.new_node<index> (id + ".id"));
+          in.set ("cxx-node", static_cast<semantics::node*> (&m));
+
+          // Get referenced columns.
+          //
+          {
+            data_member& idm (*id_member (*context::top_object));
+
+            instance<object_columns_list> ocl;
+            ocl->traverse (idm);
+
+            for (object_columns_list::iterator i (ocl->begin ());
+                 i != ocl->end (); ++i)
+              fk.referenced_columns ().push_back (i->name);
+          }
 
           // All the columns we have in this table so far are for the
-          // object id.
+          // object id. Add them to the foreign key and the index.
           //
           for (sema_rel::table::names_iterator i (t.names_begin ());
                i != t.names_end ();
                ++i)
-            model_.new_edge<sema_rel::contains> (
-              fk, dynamic_cast<sema_rel::column&> (i->nameable ()));
+          {
+            column& c (dynamic_cast<column&> (i->nameable ()));
 
-          // Derive the constraint name. See the comment for the other
-          // foreign key code above.
+            model_.new_edge<sema_rel::contains> (fk, c);
+            model_.new_edge<sema_rel::contains> (in, c);
+          }
+
+          // Derive the names. See the comment for the other foreign key
+          // code above.
           //
-          model_.new_edge<sema_rel::unames> (t, fk, id_name + "_fk");
+          // Note also that id_name can be a column prefix (if id is
+          // composite), in which case it can be empty and if not, then
+          // it will most likely already contain a trailing underscore.
+          //
+          string id_name (column_name (m, "id", "object_id"));
+
+          if (id_name.empty ())
+            id_name = "object_id";
+
+          if (id_name[id_name.size () - 1] != '_')
+            id_name += '_';
+
+          model_.new_edge<sema_rel::unames> (t, fk, id_name + "fk");
+
+          model_.new_edge<sema_rel::qnames> (
+            model_, in, name + "_" + id_name + "i");
         }
 
         // index (simple value)
         //
-        string index_name;
         bool ordered (ck == ck_ordered && !unordered (m));
         if (ordered)
         {
-          instance<object_columns> oc (model_, t, "index");
-          index_name = column_name (m, "index", "index");
-          oc->traverse_column (m, index_name, true);
+          instance<object_columns> oc (model_, t);
+          oc->traverse (m, container_it (ct), "index", "index");
+
+          string col_name (column_name (m, "index", "index"));
+
+          index& in (model_.new_node<index> (id + ".index"));
+          in.set ("cxx-node", static_cast<semantics::node*> (&m));
+
+          model_.new_edge<sema_rel::contains> (
+            in, dynamic_cast<column&> (t.find (col_name)->nameable ()));
+
+          model_.new_edge<sema_rel::qnames> (
+            model_, in, name + "_" + col_name + "_i");
         }
 
-        // key (simple or composite value)
+        // key
         //
         if (ck == ck_map || ck == ck_multimap)
         {
-          type& kt (container_kt (ct));
-
-          if (semantics::class_* ckt = composite_wrapper (kt))
-          {
-            instance<object_columns> oc (model_, t);
-            oc->traverse (m, *ckt, "key", "key");
-          }
-          else
-          {
-            instance<object_columns> oc (model_, t, "key");
-            string const& name (column_name (m, "key", "key"));
-            oc->traverse_column (m, name, true);
-          }
+          instance<object_columns> oc (model_, t);
+          oc->traverse (m, container_kt (ct), "key", "key");
         }
 
-        // value (simple or composite value)
+        // value
         //
         {
-          if (semantics::class_* cvt = composite_wrapper (vt))
-          {
-            instance<object_columns> oc (model_, t);
-            oc->traverse (m, *cvt, "value", "value");
-          }
-          else
-          {
-            instance<object_columns> oc (model_, t, "value");
-            string const& name (column_name (m, "value", "value"));
-            oc->traverse_column (m, name, true);
-          }
-        }
-
-        // Create indexes.
-        //
-        using sema_rel::index;
-        using sema_rel::column;
-
-        {
-          index& i (model_.new_node<index> (id + ".id"));
-          i.set ("cxx-node", static_cast<semantics::node*> (&m));
-
-          model_.new_edge<sema_rel::contains> (
-            i, dynamic_cast<column&> (t.find (id_name)->nameable ()));
-
-          //@@ Once id can be composite, we need to revise this (see
-          //   a comment for the foreign key generation above).
-          //
-          model_.new_edge<sema_rel::qnames> (
-            model_, i, name + "_" + id_name + "_i");
-        }
-
-        if (ordered)
-        {
-          index& i (model_.new_node<index> (id + ".index"));
-          i.set ("cxx-node", static_cast<semantics::node*> (&m));
-
-          model_.new_edge<sema_rel::contains> (
-            i, dynamic_cast<column&> (t.find (index_name)->nameable ()));
-
-          // This is always a single column (simple value).
-          //
-          model_.new_edge<sema_rel::qnames> (
-            model_, i, name + "_" + index_name + "_i");
+          instance<object_columns> oc (model_, t);
+          oc->traverse (m, container_vt (ct), "value", "value");
         }
       }
 

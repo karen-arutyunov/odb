@@ -493,18 +493,8 @@ check_spec_decl_type (tree d,
       return false;
     }
   }
-  else if (p == "id_type")
-  {
-    // Id type can only be used for types.
-    //
-    if (!TYPE_P (d))
-    {
-      error (l) << "name '" << name << "' in db pragma " << p << " does "
-                << "not refer to a type" << endl;
-      return false;
-    }
-  }
   else if (p == "type" ||
+           p == "id_type" ||
            p == "value_type" ||
            p == "index_type" ||
            p == "key_type")
@@ -1841,6 +1831,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "key_options" ||
            p == "id_options" ||
            p == "type" ||
+           p == "id_type" ||
            p == "value_type" ||
            p == "index_type" ||
            p == "key_type" ||

@@ -16,91 +16,10 @@ namespace relational
     // member_base
     //
 
-    void member_base::
-    traverse (semantics::data_member& m)
+    sql_type const& member_base::
+    member_sql_type (semantics::data_member& m)
     {
-      if (transient (m))
-        return;
-
-      string var;
-
-      if (!var_override_.empty ())
-        var = var_override_;
-      else
-      {
-        string const& name (m.name ());
-        var = name + (name[name.size () - 1] == '_' ? "" : "_");
-      }
-
-      bool cq (type_override_ != 0 ? false : const_type (m.type ()));
-      semantics::type& t (type_override_ != 0 ? *type_override_ : utype (m));
-
-      semantics::type* cont;
-      if (semantics::class_* c = composite_wrapper (t))
-      {
-        // If t is a wrapper, pass the wrapped type. Also pass the
-        // original, wrapper type.
-        //
-        member_info mi (m,
-                        *c,
-                        (wrapper (t) ? &t : 0),
-                        cq,
-                        var,
-                        fq_type_override_);
-        if (pre (mi))
-        {
-          traverse_composite (mi);
-          post (mi);
-        }
-      }
-      // This cannot be a container if we have a type override.
-      //
-      else if (type_override_ == 0 && (cont = context::container (m)))
-      {
-        // The same unwrapping logic as for composite values.
-        //
-        member_info mi (m,
-                        *cont,
-                        (wrapper (t) ? &t : 0),
-                        cq,
-                        var,
-                        fq_type_override_);
-        if (pre (mi))
-        {
-          traverse_container (mi);
-          post (mi);
-        }
-      }
-      else
-      {
-        sql_type const& st (column_sql_type (m, key_prefix_));
-
-        if (semantics::class_* c = object_pointer (t))
-        {
-          member_info mi (m,
-                          utype (*id_member (*c)),
-                          0,
-                          cq,
-                          var,
-                          fq_type_override_);
-          mi.st = &st;
-          if (pre (mi))
-          {
-            traverse_object_pointer (mi);
-            post (mi);
-          }
-        }
-        else
-        {
-          member_info mi (m, t, 0, cq, var, fq_type_override_);
-          mi.st = &st;
-          if (pre (mi))
-          {
-            traverse_simple (mi);
-            post (mi);
-          }
-        }
-      }
+      return parse_sql_type (column_type (m, key_prefix_), m);
     }
 
     void member_base::
@@ -374,10 +293,18 @@ namespace relational
    }
 
     member_database_type_id::
+    member_database_type_id (base const& x)
+        : member_base::base (x), // virtual base
+          base (x)
+    {
+    }
+
+    member_database_type_id::
     member_database_type_id (semantics::type* type,
                              string const& fq_type,
                              string const& key_prefix)
-        : relational::member_base (type, fq_type, key_prefix)
+        : member_base::base (type, fq_type, key_prefix), // virtual base
+          base (type, fq_type, key_prefix)
     {
     }
 
@@ -469,6 +396,8 @@ namespace relational
         lob_database_id[mi.st->type - sql_type::BLOB];
     }
 
+    entry<member_database_type_id> member_database_type_id_;
+
     //
     // query_columns
     //
@@ -494,7 +423,7 @@ namespace relational
       {
         // For some types we need to pass precision and scale.
         //
-        sql_type const& st (column_sql_type (m));
+        sql_type const& st (parse_sql_type (column_type (), m));
 
         switch (st.type)
         {

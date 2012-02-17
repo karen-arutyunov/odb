@@ -12,118 +12,18 @@ namespace relational
 {
   namespace pgsql
   {
-    struct member_base: virtual relational::member_base, context
+    struct member_base: virtual relational::member_base_impl<sql_type>, context
     {
-      member_base (base const& x): base (x) {}
+      member_base (base const& x): base (x), base_impl (x) {}
 
       // This c-tor is for the direct use inside the pgsql namespace.
       // If you do use this c-tor, you should also explicitly call
-      // relational::member_base.
+      // relational::member_base (aka base).
       //
       member_base () {}
 
-      virtual void
-      traverse (semantics::data_member& m);
-
-      struct member_info
-      {
-        semantics::data_member& m; // Member.
-        semantics::type& t;        // Cvr-unqualified member C++ type, note
-                                   // that m.type () may not be the same as t.
-        semantics::type* wrapper;  // Wrapper type if member is a composite or
-                                   // container wrapper, also cvr-unqualified.
-                                   // In this case t is the wrapped type.
-        bool cq;                   // True if the original (wrapper) type
-                                   // is const-qualified.
-        sql_type const* st;        // Member SQL type (only simple values).
-        string& var;               // Member variable name with trailing '_'.
-
-        // C++ type fq-name.
-        //
-        string
-        fq_type (bool unwrap = true) const
-        {
-          semantics::names* hint;
-
-          if (wrapper != 0 && unwrap)
-          {
-            // Use the hint from the wrapper unless the wrapped type
-            // is qualified.
-            //
-            hint = wrapper->get<semantics::names*> ("wrapper-hint");
-            utype (*context::wrapper (*wrapper), hint);
-            return t.fq_name (hint);
-          }
-
-          // Use the original type from 'm' instead of 't' since the hint
-          // may be invalid for a different type. Plus, if a type is
-          // overriden, then the fq_type must be as well.
-          //
-          if (fq_type_.empty ())
-          {
-            semantics::type& t (utype (m, hint));
-            return t.fq_name (hint);
-          }
-          else
-            return fq_type_;
-        }
-
-        string const& fq_type_;
-
-        member_info (semantics::data_member& m_,
-                     semantics::type& t_,
-                     semantics::type* wrapper_,
-                     bool cq_,
-                     string& var_,
-                     string const& fq_type)
-            : m (m_),
-              t (t_),
-              wrapper (wrapper_),
-              cq (cq_),
-              st (0),
-              var (var_),
-              fq_type_ (fq_type)
-        {
-        }
-      };
-
-      bool
-      container (member_info& mi)
-      {
-        // This cannot be a container if we have a type override.
-        //
-        return type_override_ == 0 && context::container (mi.m);
-      }
-
-      // The false return value indicates that no further callbacks
-      // should be called for this member.
-      //
-      virtual bool
-      pre (member_info&)
-      {
-        return true;
-      }
-
-      virtual void
-      post (member_info&)
-      {
-      }
-
-      virtual void
-      traverse_composite (member_info&)
-      {
-      }
-
-      virtual void
-      traverse_container (member_info&)
-      {
-      }
-
-      virtual void
-      traverse_object_pointer (member_info& mi)
-      {
-        traverse_simple (mi);
-      }
+      virtual sql_type const&
+      member_sql_type (semantics::data_member&);
 
       virtual void
       traverse_simple (member_info&);
@@ -208,12 +108,16 @@ namespace relational
       string type_;
     };
 
-    struct member_database_type_id: member_base
+    struct member_database_type_id: relational::member_database_type_id,
+                                    member_base
     {
+      member_database_type_id (base const&);
+
       member_database_type_id (semantics::type* type = 0,
                                string const& fq_type = string (),
                                string const& key_prefix = string ());
-      string
+
+      virtual string
       database_type_id (type&);
 
       virtual void

@@ -692,6 +692,26 @@ main (int argc, char* argv[])
            << "#endif" << endl
            << endl;
 
+        // Add ODB compiler metaprogramming tests.
+        //
+        os << "namespace odb" << endl
+           << "{" << endl
+           << "namespace compiler" << endl
+           << "{" << endl;
+
+        // operator< test, used in validator.
+        //
+        os << "template <typename T>" << endl
+           << "bool" << endl
+           << "has_lt_operator (T const& x, T const& y)" << endl
+           << "{"  << endl
+           << "bool r (x < y);"  << endl
+           << "return r;"  << endl
+           << "}" << endl;
+
+        os << "}" << endl
+           << "}" << endl;
+
         // Add custom prologue if any.
         //
         // NOTE: if you change the format, you also need to update code

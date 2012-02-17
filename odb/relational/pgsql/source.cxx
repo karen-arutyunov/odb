@@ -103,7 +103,21 @@ namespace relational
 
       struct statement_oids: object_columns_base, context
       {
-        statement_oids (statement_kind sk): sk_ (sk) {}
+        statement_oids (statement_kind sk, bool first = true)
+            : object_columns_base (first), sk_ (sk)
+        {
+        }
+
+        virtual void
+        traverse_pointer (semantics::data_member& m, semantics::class_& c)
+        {
+          // Ignore certain columns depending on what kind statement we are
+          // generating. See object_columns in common source generator for
+          // details.
+          //
+          if (!(inverse (m, key_prefix_) && sk_ != statement_select))
+            object_columns_base::traverse_pointer (m, c);
+        }
 
         virtual bool
         traverse_column (semantics::data_member& m,
@@ -114,10 +128,7 @@ namespace relational
           // generating. See object_columns in common source generator for
           // details.
           //
-          if (inverse (m) && sk_ != statement_select)
-            return false;
-
-          if ((id (m) || readonly (member_path_, member_scope_)) &&
+          if ((id () || readonly (member_path_, member_scope_)) &&
               sk_ == statement_update)
             return false;
 
@@ -128,7 +139,7 @@ namespace relational
           if (!first)
             os << ',' << endl;
 
-          os << oids[column_sql_type (m).type];
+          os << oids[parse_sql_type (column_type (), m).type];
 
           return true;
         }
@@ -471,188 +482,37 @@ namespace relational
       // init image
       //
 
-      struct init_image_member: relational::init_image_member, member_base
+      struct init_image_member: relational::init_image_member_impl<sql_type>,
+                                member_base
       {
         init_image_member (base const& x)
-            : member_base::base (x), // virtual base
-              base (x),
-              member_base (x),
-              member_database_type_id_ (base::type_override_,
-                                        base::fq_type_override_,
-                                        base::key_prefix_)
+            : member_base::base (x),      // virtual base
+              member_base::base_impl (x), // virtual base
+              base_impl (x),
+              member_base (x)
         {
-        }
-
-        virtual bool
-        pre (member_info& mi)
-        {
-          // Ignore containers (they get their own table) and inverse
-          // object pointers (they are not present in this binding).
-          //
-          if (container (mi) || inverse (mi.m, key_prefix_))
-            return false;
-
-          if (!member_override_.empty ())
-            member = member_override_;
-          else
-          {
-            // If we are generating standard init() and this member
-            // contains version, ignore it.
-            //
-            if (version (mi.m))
-              return false;
-
-            string const& name (mi.m.name ());
-            member = "o." + name;
-
-            os << "// " << name << endl
-               << "//" << endl;
-
-            // If the whole class is readonly, then we will never be
-            // called with sk == statement_update.
-            //
-            if (!readonly (*context::top_object))
-            {
-              semantics::class_* c;
-
-              if (id (mi.m) ||
-                  readonly (mi.m) ||
-                  ((c = composite (mi.t)) && readonly (*c)))
-                os << "if (sk == statement_insert)";
-            }
-          }
-
-          // If this is a wrapped composite value, then we need to
-          // "unwrap" it. For simple values this is taken care of
-          // by the value_traits specializations.
-          //
-          if (mi.wrapper != 0 && composite (mi.t))
-          {
-            // Here we need the wrapper type, not the wrapped type.
-            //
-            member = "wrapper_traits< " + mi.fq_type (false) + " >::" +
-              "get_ref (" + member + ")";
-          }
-
-          if (composite (mi.t))
-          {
-            os << "{";
-            traits = "composite_value_traits< " + mi.fq_type () + " >";
-          }
-          else
-          {
-            // When handling a pointer, mi.t is the id type of the referenced
-            // object.
-            //
-            semantics::type& mt (member_utype (mi.m, key_prefix_));
-
-            if (semantics::class_* c = object_pointer (mt))
-            {
-              type = "obj_traits::id_type";
-              db_type_id = member_database_type_id_.database_type_id (mi.m);
-
-              // Handle NULL pointers and extract the id.
-              //
-              os << "{"
-                 << "typedef object_traits< " << class_fq_name (*c) <<
-                " > obj_traits;";
-
-              if (weak_pointer (mt))
-              {
-                os << "typedef pointer_traits< " << mi.fq_type () <<
-                  " > wptr_traits;"
-                   << "typedef pointer_traits< wptr_traits::" <<
-                  "strong_pointer_type > ptr_traits;"
-                   << endl
-                   << "wptr_traits::strong_pointer_type sp (" <<
-                  "wptr_traits::lock (" << member << "));";
-
-                member = "sp";
-              }
-              else
-                os << "typedef pointer_traits< " << mi.fq_type () <<
-                  " > ptr_traits;"
-                   << endl;
-
-              os << "bool is_null (ptr_traits::null_ptr (" << member << "));"
-                 << "if (!is_null)"
-                 << "{"
-                 << "const " << type << "& id (" << endl;
-
-              if (lazy_pointer (mt))
-                os << "ptr_traits::object_id< ptr_traits::element_type  > (" <<
-                  member << ")";
-              else
-                os << "obj_traits::id (ptr_traits::get_ref (" << member << "))";
-
-              os << ");"
-                 << endl;
-
-              member = "id";
-            }
-            else
-            {
-              type = mi.fq_type ();
-              db_type_id = member_database_type_id_.database_type_id (mi.m);
-
-              os << "{"
-                 << "bool is_null;";
-            }
-
-            traits = "pgsql::value_traits<\n    "
-              + type + ",\n    "
-              + db_type_id + " >";
-          }
-
-          return true;
         }
 
         virtual void
-        post (member_info& mi)
+        set_null (member_info& mi)
         {
-          if (composite (mi.t))
-            os << "}";
-          else
-          {
-            // When handling a pointer, mi.t is the id type of the referenced
-            // object.
-            //
-            if (object_pointer (member_utype (mi.m, key_prefix_)))
-            {
-              os << "}";
-
-              if (!null (mi.m, key_prefix_))
-                os << "else" << endl
-                   << "throw null_pointer ();";
-            }
-
-            os << "i." << mi.var << "null = is_null;"
-               << "}";
-          }
-        }
-
-        virtual void
-        traverse_composite (member_info& mi)
-        {
-          os << "if (" << traits << "::init (" << endl
-             << "i." << mi.var << "value," << endl
-             << member << "," << endl
-             << "sk))" << endl
-             << "grew = true;";
+          os << "i." << mi.var << "null = true;";
         }
 
         virtual void
         traverse_integer (member_info& mi)
         {
           os << traits << "::set_image (" << endl
-             << "i." << mi.var << "value, is_null, " << member << ");";
+             << "i." << mi.var << "value, is_null, " << member << ");"
+             << "i." << mi.var << "null = is_null;";
         }
 
         virtual void
         traverse_float (member_info& mi)
         {
           os << traits << "::set_image (" << endl
-             << "i." << mi.var << "value, is_null, " << member << ");";
+             << "i." << mi.var << "value, is_null, " << member << ");"
+             << "i." << mi.var << "null = is_null;";
         }
 
         virtual void
@@ -667,6 +527,7 @@ namespace relational
              << "size," << endl
              << "is_null," << endl
              << member << ");"
+             << "i." << mi.var << "null = is_null;"
              << "i." << mi.var << "size = size;"
              << "grew = grew || (cap != i." << mi.var << "value.capacity ());";
         }
@@ -675,7 +536,8 @@ namespace relational
         traverse_date_time (member_info& mi)
         {
           os << traits << "::set_image (" << endl
-             << "i." << mi.var << "value, is_null, " << member << ");";
+             << "i." << mi.var << "value, is_null, " << member << ");"
+             << "i." << mi.var << "null = is_null;";
         }
 
         virtual void
@@ -688,6 +550,7 @@ namespace relational
              << "size," << endl
              << "is_null," << endl
              << member << ");"
+             << "i." << mi.var << "null = is_null;"
              << "i." << mi.var << "size = size;"
              << "grew = grew || (cap != i." << mi.var << "value.capacity ());";
         }
@@ -702,6 +565,7 @@ namespace relational
              << "size," << endl
              << "is_null," << endl
              << member << ");"
+             << "i." << mi.var << "null = is_null;"
              << "i." << mi.var << "size = size;";
         }
 
@@ -715,6 +579,7 @@ namespace relational
              << "size," << endl
              << "is_null," << endl
              << member << ");"
+             << "i." << mi.var << "null = is_null;"
              << "i." << mi.var << "size = size;"
              << "grew = grew || (cap != i." << mi.var << "value.capacity ());";
         }
@@ -723,16 +588,9 @@ namespace relational
         traverse_uuid (member_info& mi)
         {
           os << traits << "::set_image (" << endl
-             << "i." << mi.var << "value, is_null, " << member << ");";
+             << "i." << mi.var << "value, is_null, " << member << ");"
+             << "i." << mi.var << "null = is_null;";
         }
-
-      private:
-        string type;
-        string db_type_id;
-        string member;
-        string traits;
-
-        member_database_type_id member_database_type_id_;
       };
       entry<init_image_member> init_image_member_;
 
@@ -740,147 +598,21 @@ namespace relational
       // init value
       //
 
-      struct init_value_member: relational::init_value_member, member_base
+      struct init_value_member: relational::init_value_member_impl<sql_type>,
+                                member_base
       {
         init_value_member (base const& x)
-            : member_base::base (x), // virtual base
-              base (x),
-              member_base (x),
-              member_database_type_id_ (base::type_override_,
-                                        base::fq_type_override_,
-                                        base::key_prefix_)
+            : member_base::base (x),      // virtual base
+              member_base::base_impl (x), // virtual base
+              base_impl (x),
+              member_base (x)
         {
-        }
-
-        virtual bool
-        pre (member_info& mi)
-        {
-          if (container (mi))
-            return false;
-
-          if (!member_override_.empty ())
-            member = member_override_;
-          else
-          {
-            string const& name (mi.m.name ());
-            member = "o." + name;
-
-            if (mi.cq)
-              member = "const_cast< " + mi.fq_type (false) + "& > (" +
-                member + ")";
-
-            os << "// " << name << endl
-               << "//" << endl;
-          }
-
-          // If this is a wrapped composite value, then we need to
-          // "unwrap" it. For simple values this is taken care of
-          // by the value_traits specializations.
-          //
-          if (mi.wrapper != 0 && composite (mi.t))
-          {
-            // Here we need the wrapper type, not the wrapped type.
-            //
-            member = "wrapper_traits< " + mi.fq_type (false) + " >::" +
-              "set_ref (\n" + member + ")";
-          }
-
-          if (composite (mi.t))
-            traits = "composite_value_traits< " + mi.fq_type () + " >";
-          else
-          {
-            // When handling a pointer, mi.t is the id type of the referenced
-            // object.
-            //
-            semantics::type& mt (member_utype (mi.m, key_prefix_));
-
-            if (semantics::class_* c = object_pointer (mt))
-            {
-              type = "obj_traits::id_type";
-              db_type_id = member_database_type_id_.database_type_id (mi.m);
-
-              // Handle NULL pointers and extract the id.
-              //
-              os << "{"
-                 << "typedef object_traits< " << class_fq_name (*c) <<
-                " > obj_traits;"
-                 << "typedef pointer_traits< " << mi.fq_type () <<
-                " > ptr_traits;"
-                 << endl
-                 << "if (i." << mi.var << "null)" << endl;
-
-              if (null (mi.m, key_prefix_))
-                os << member << " = ptr_traits::pointer_type ();";
-              else
-                os << "throw null_pointer ();";
-
-              os << "else"
-                 << "{"
-                 << type << " id;";
-
-              member = "id";
-            }
-            else
-            {
-              type = mi.fq_type ();
-              db_type_id = member_database_type_id_.database_type_id (mi.m);
-            }
-
-            traits = "pgsql::value_traits<\n    "
-              + type + ",\n    "
-              + db_type_id + " >";
-          }
-
-          return true;
         }
 
         virtual void
-        post (member_info& mi)
+        get_null (member_info& mi)
         {
-          if (composite (mi.t))
-            return;
-
-          // When handling a pointer, mi.t is the id type of the referenced
-          // object.
-          //
-          semantics::type& mt (member_utype (mi.m, key_prefix_));
-
-          if (object_pointer (mt))
-          {
-            if (!member_override_.empty ())
-              member = member_override_;
-            else
-            {
-              member = "o." + mi.m.name ();
-
-              if (mi.cq)
-                member = "const_cast< " + mi.fq_type (false) + "& > (" +
-                  member + ")";
-            }
-
-            if (lazy_pointer (mt))
-              os << member << " = ptr_traits::pointer_type (db, id);";
-            else
-              os << "// If a compiler error points to the line below, then" << endl
-                 << "// it most likely means that a pointer used in a member" << endl
-                 << "// cannot be initialized from an object pointer." << endl
-                 << "//" << endl
-                 << member << " = ptr_traits::pointer_type (" << endl
-                 << "db.load< obj_traits::object_type > (id));";
-
-            os << "}"
-               << "}";
-          }
-        }
-
-        virtual void
-        traverse_composite (member_info& mi)
-        {
-          os << traits << "::init (" << endl
-             << member << "," << endl
-             << "i." << mi.var << "value," << endl
-             << "db);"
-             << endl;
+          os << "i." << mi.var << "null";
         }
 
         virtual void
@@ -970,14 +702,6 @@ namespace relational
              << "i." << mi.var << "null);"
              << endl;
         }
-
-      private:
-        string type;
-        string db_type_id;
-        string traits;
-        string member;
-
-        member_database_type_id member_database_type_id_;
       };
       entry<init_value_member> init_value_member_;
 
@@ -1090,7 +814,7 @@ namespace relational
                << "{";
 
             instance<statement_oids> st (statement_select);
-            st->traverse_column (*id, "", true);
+            st->traverse (*id);
 
             os << "};";
           }
@@ -1111,16 +835,11 @@ namespace relational
             bool first (cc.total == cc.id + cc.inverse + cc.readonly +
                         cc.optimistic_managed);
 
-            {
-              instance<statement_oids> st (statement_where);
-              st->traverse_column (*id, "", first);
-            }
+            instance<statement_oids> st (statement_where, first);
+            st->traverse (*id);
 
             if (optimistic != 0)
-            {
-              instance<statement_oids> st (statement_where);
-              st->traverse_column (*optimistic, "", false);
-            }
+              st->traverse (*optimistic);
 
             os << "};";
           }
@@ -1134,7 +853,7 @@ namespace relational
                << "{";
 
             instance<statement_oids> st (statement_where);
-            st->traverse_column (*id, "", true);
+            st->traverse (*id);
 
             os << "};";
           }
@@ -1145,15 +864,9 @@ namespace relational
                << "optimistic_erase_statement_types[] ="
                << "{";
 
-            {
-              instance<statement_oids> st (statement_where);
-              st->traverse_column (*id, "", true);
-            }
-
-            {
-              instance<statement_oids> st (statement_where);
-              st->traverse_column (*optimistic, "", false);
-            }
+            instance<statement_oids> st (statement_where);
+            st->traverse (*id);
+            st->traverse (*optimistic);
 
             os << "};";
           }
@@ -1258,8 +971,7 @@ namespace relational
           bool inv (inv_m != 0);
 
           semantics::type& vt (container_vt (t));
-
-          string id_oid (oids[column_sql_type (m, "id").type]);
+          semantics::type& idt (container_idt (m));
 
           // select_all statement types.
           //
@@ -1268,20 +980,22 @@ namespace relational
                << "select_all_types[] ="
                << "{";
 
+            instance<statement_oids> so (statement_where);
+
             if (inv)
             {
               // many(i)-to-many
               //
               if (container (*inv_m))
-                os << oids[column_sql_type (*inv_m, "value").type];
+                so->traverse (*inv_m, idt, "value", "value");
 
               // many(i)-to-one
               //
               else
-                os << oids[column_sql_type (*inv_m).type];
+                so->traverse (*inv_m);
             }
             else
-              os << id_oid;
+              so->traverse (m, idt, "id", "object_id");
 
             os << "};";
           }
@@ -1295,30 +1009,22 @@ namespace relational
 
             if (!inv)
             {
-              os << id_oid << ",";
+              instance<statement_oids> so (statement_insert);
+
+              so->traverse (m, idt, "id", "object_id");
 
               switch (container_kind (t))
               {
               case ck_ordered:
                 {
                   if (!unordered (m))
-                    os << oids[column_sql_type (m, "index").type] << ",";
-
+                    so->traverse (m, container_it (t), "index", "index");
                   break;
                 }
               case ck_map:
               case ck_multimap:
                 {
-                  if (semantics::class_* ktc =
-                      composite_wrapper (container_kt (t)))
-                  {
-                    instance<statement_oids> st (statement_insert);
-                    st->traverse (m, *ktc, "key", "key");
-                    os << ",";
-                  }
-                  else
-                    os << oids[column_sql_type (m, "key").type] << ",";
-
+                  so->traverse (m, container_kt (t), "key", "key");
                   break;
                 }
               case ck_set:
@@ -1328,14 +1034,7 @@ namespace relational
                 }
               }
 
-              if (semantics::class_* vtc = composite_wrapper (vt))
-              {
-                instance <statement_oids> st (statement_insert);
-                st->traverse (m, *vtc, "value", "value");
-              }
-              else
-                os << oids[column_sql_type (m, "value").type];
-
+              so->traverse (m, vt, "value", "value");
             }
             else
               // MSVC does not allow zero length arrays or uninitialized
@@ -1354,7 +1053,10 @@ namespace relational
                << "{";
 
             if (!inv)
-              os << id_oid;
+            {
+              instance<statement_oids> so (statement_where);
+              so->traverse (m, idt, "id", "object_id");
+            }
             else
               os << "0";
 

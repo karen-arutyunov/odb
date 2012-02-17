@@ -142,7 +142,7 @@ namespace relational
         // const auto_ptr<T> - can modify by changing the pointed-to value
         //
         if (const_type (m.type ()) &&
-            !(m.count ("id") || m.count ("version") || m.count ("inverse")))
+            !(id (m) || version (m) || m.count ("inverse")))
         {
           if (qwt == 0 || const_type (*qwt))
             m.set ("readonly", true);
@@ -153,10 +153,18 @@ namespace relational
         if (composite_wrapper (t))
           return;
 
-        string type, ref_type;
+        string type, id_type;
+
+        if (m.count ("id-type"))
+          id_type = m.get<string> ("id-type");
 
         if (m.count ("type"))
+        {
           type = m.get<string> ("type");
+
+          if (id_type.empty ())
+            id_type = type;
+        }
 
         if (semantics::class_* c = process_object_pointer (m, t))
         {
@@ -168,26 +176,55 @@ namespace relational
           semantics::names* idhint;
           semantics::type& idt (utype (id, idhint));
 
+          semantics::type* wt (0);
+          semantics::names* whint (0);
+          if (process_wrapper (idt))
+          {
+            whint = idt.get<semantics::names*> ("wrapper-hint");
+            wt = &utype (*idt.get<semantics::type*> ("wrapper-type"), whint);
+          }
+
+          // Nothing to do if this is a composite value type.
+          //
+          if (composite_wrapper (idt))
+            return;
+
+          if (type.empty () && id.count ("id-type"))
+            type = id.get<string> ("id-type");
+
           if (type.empty () && id.count ("type"))
             type = id.get<string> ("type");
 
+          // The rest should be identical to the code for the id_type in
+          // the else block.
+          //
           if (type.empty () && idt.count ("id-type"))
             type = idt.get<string> ("id-type");
+
+          if (type.empty () && wt != 0 && wt->count ("id-type"))
+            type = wt->get<string> ("id-type");
 
           if (type.empty () && idt.count ("type"))
             type = idt.get<string> ("type");
 
+          if (type.empty () && wt != 0 && wt->count ("type"))
+            type = wt->get<string> ("type");
+
           if (type.empty ())
             type = database_type (idt, idhint, true);
+
+          if (type.empty () && wt != 0)
+            type = database_type (*wt, whint, true);
+
+          id_type = type;
         }
         else
         {
-          if (type.empty () && m.count ("id") && t.count ("id-type"))
-            type = t.get<string> ("id-type");
+          if (id_type.empty () && t.count ("id-type"))
+            id_type = t.get<string> ("id-type");
 
-          if (type.empty () && wt != 0 && m.count ("id") &&
-              wt->count ("id-type"))
-            type = wt->get<string> ("id-type");
+          if (id_type.empty () && wt != 0 && wt->count ("id-type"))
+            id_type = wt->get<string> ("id-type");
 
           if (type.empty () && t.count ("type"))
             type = t.get<string> ("type");
@@ -195,16 +232,29 @@ namespace relational
           if (type.empty () && wt != 0 && wt->count ("type"))
             type = wt->get<string> ("type");
 
+          if (id_type.empty ())
+            id_type = type;
+
+          if (id_type.empty ())
+            id_type = database_type (t, hint, true);
+
           if (type.empty ())
-            type = database_type (t, hint, m.count ("id"));
+            type = database_type (t, hint, false);
+
+          if (id_type.empty () && wt != 0)
+            id_type = database_type (*wt, whint, true);
 
           if (type.empty () && wt != 0)
-            type = database_type (*wt, whint, m.count ("id"));
+            type = database_type (*wt, whint, false);
+
+          if (id (m))
+            type = id_type;
         }
 
         if (!type.empty ())
         {
           m.set ("column-type", type);
+          m.set ("column-id-type", id_type);
 
           // Issue a warning if we are relaxing null-ness.
           //
@@ -274,24 +324,53 @@ namespace relational
         if (obj_ptr && (c = process_object_pointer (m, t, prefix)))
         {
           // This is an object pointer. The column type is the pointed-to
-          // object id type. Except by default it can be NULL.
+          // object id type.
           //
           semantics::data_member& id (*id_member (*c));
 
-          semantics::names* hint;
-          semantics::type& idt (utype (id, hint));
+          semantics::names* idhint;
+          semantics::type& idt (utype (id, idhint));
+
+          semantics::type* wt (0);
+          semantics::names* whint (0);
+          if (process_wrapper (idt))
+          {
+            whint = idt.get<semantics::names*> ("wrapper-hint");
+            wt = &utype (*idt.get<semantics::type*> ("wrapper-type"), whint);
+          }
+
+          // Nothing to do if this is a composite value type.
+          //
+          if (composite_wrapper (idt))
+            return;
+
+          if (type.empty () && id.count ("id-type"))
+            type = id.get<string> ("id-type");
 
           if (type.empty () && id.count ("type"))
             type = id.get<string> ("type");
 
+          // The rest of the code is identical to the else block except here
+          // we have to check for "id-type" before checking for "type".
+          //
+
           if (type.empty () && idt.count ("id-type"))
             type = idt.get<string> ("id-type");
+
+          if (type.empty () && wt != 0 && wt->count ("id-type"))
+            type = wt->get<string> ("id-type");
 
           if (type.empty () && idt.count ("type"))
             type = idt.get<string> ("type");
 
+          if (type.empty () && wt != 0 && wt->count ("type"))
+            type = wt->get<string> ("type");
+
           if (type.empty ())
-            type = database_type (idt, hint, true);
+            type = database_type (idt, idhint, true);
+
+          if (type.empty () && wt != 0)
+            type = database_type (*wt, whint, true);
         }
         else
         {
@@ -311,6 +390,7 @@ namespace relational
         if (!type.empty ())
         {
           m.set (prefix + "-column-type", type);
+          m.set (prefix + "-column-id-type", type);
           return;
         }
 
@@ -1094,7 +1174,7 @@ namespace relational
         TREE_VEC_ELT (args, 0) = arg;
 
         // This step should succeed regardles of whether there is a
-        // container traits specialization for this type.
+        // specialization for this type.
         //
         tree inst (
           lookup_template_class (t, args, 0, 0, 0, tf_warning_or_error));
@@ -1939,30 +2019,27 @@ namespace relational
         }
 
         virtual void
-        traverse_simple (semantics::data_member& m)
+        traverse_pointer (semantics::data_member& m, semantics::class_& c)
         {
-          if (semantics::class_* c = object_pointer (utype (m)))
+          // Ignore inverse sides of the same relationship to avoid
+          // phony conflicts caused by the direct side that will end
+          // up in the relationship list as well.
+          //
+          if (inverse (m))
+            return;
+
+          // Ignore self-pointers if requested.
+          //
+          if (!self_pointer_ && pointer_->obj == &c)
+            return;
+
+          if (pointee_.obj == &c)
           {
-            // Ignore inverse sides of the same relationship to avoid
-            // phony conflicts caused by the direct side that will end
-            // up in the relationship list as well.
-            //
-            if (inverse (m))
-              return;
-
-            // Ignore self-pointers if requested.
-            //
-            if (!self_pointer_ && pointer_->obj == c)
-              return;
-
-            if (pointee_.obj == c)
-            {
-              relationships_.push_back (relationship ());
-              relationships_.back ().member = &m;
-              relationships_.back ().name = member_prefix_ + m.name ();
-              relationships_.back ().pointer = pointer_;
-              relationships_.back ().pointee = &pointee_;
-            }
+            relationships_.push_back (relationship ());
+            relationships_.back ().member = &m;
+            relationships_.back ().name = member_prefix_ + m.name ();
+            relationships_.back ().pointer = pointer_;
+            relationships_.back ().pointee = &pointee_;
           }
         }
 

@@ -1,3 +1,10 @@
+Version 1.9.0
+
+  * Support for composite object ids. Now a composite value type can be used
+    to declare an object id member. For more information, refer to Section
+    7.2.1, "Composite Object Ids" in the ODB manual as well as the 'composite'
+    example in the odb-examples package.
+
 Version 1.8.0
 
   * Support for the Microsoft SQL Server database. The provided connection

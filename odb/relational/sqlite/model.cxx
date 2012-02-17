@@ -28,7 +28,7 @@ namespace relational
         {
           // Make sure the column is mapped to INTEGER.
           //
-          if (column_sql_type (m).type != sql_type::INTEGER)
+          if (parse_sql_type (column_type (), m).type != sql_type::INTEGER)
           {
             cerr << m.file () << ":" << m.line () << ":" << m.column ()
                  << ": error: column with default value specified as C++ "

@@ -441,8 +441,11 @@ namespace relational
               //
               size_t n;
 
-              if (class_* kc = composite_wrapper (*kt))
-                n = column_count (*kc).total;
+              class_* ptr (object_pointer (*kt));
+              semantics::type& t (ptr == 0 ? *kt : utype (*id_member (*ptr)));
+
+              if (class_* comp = composite_wrapper (t))
+                n = column_count (*comp).total;
               else
                 n = 1;
 
@@ -461,19 +464,27 @@ namespace relational
               //
               // Value is also a key.
               //
-              //if (class_* vc = composite_wrapper (vt))
-              //  cond_columns += column_count (*vc).total;
-              //else
-              //  cond_columns++;
-
+              // class_* ptr (object_pointer (vt));
+              // semantics::type& t (ptr == 0 ? vt : utype (*id_member (*ptr)));
+              //
+              // if (class_* comp = composite_wrapper (t))
+              //   cond_columns += column_count (*comp).total;
+              // else
+              //   cond_columns++;
+              //
               break;
             }
           }
 
-          if (class_* vc = composite_wrapper (vt))
-            data_columns += column_count (*vc).total;
-          else
-            data_columns++;
+          {
+            class_* ptr (object_pointer (vt));
+            semantics::type& t (ptr == 0 ? vt : utype (*id_member (*ptr)));
+
+            if (class_* comp = composite_wrapper (t))
+              data_columns += column_count (*comp).total;
+            else
+              data_columns++;
+          }
 
           // Store column counts for the source generator.
           //
@@ -786,7 +797,7 @@ namespace relational
           }
         }
 
-        os << "const data_image_type&, database&);"
+        os << "const data_image_type&, database*);"
            << endl;
 
         // insert_one
@@ -1138,7 +1149,7 @@ namespace relational
         // init (object, image)
         //
         os << "static void" << endl
-           << "init (object_type&, const image_type&, database&);"
+           << "init (object_type&, const image_type&, database*);"
            << endl;
 
         // init (id_image, id)
@@ -1503,7 +1514,7 @@ namespace relational
         // init (view, image)
         //
         os << "static void" << endl
-           << "init (view_type&, const image_type&, database&);"
+           << "init (view_type&, const image_type&, database*);"
            << endl;
 
         // column_count
@@ -1605,7 +1616,7 @@ namespace relational
         // init (value, image)
         //
         os << "static void" << endl
-           << "init (value_type&, const image_type&, database&);"
+           << "init (value_type&, const image_type&, database*);"
            << endl;
 
         os << "};";

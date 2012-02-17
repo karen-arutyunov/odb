@@ -210,6 +210,32 @@ context ()
 
 context* context::current_;
 
+semantics::data_member* context::
+id (data_member_path const& mp)
+{
+  for (data_member_path::const_reverse_iterator i (mp.rbegin ());
+       i != mp.rend (); ++i)
+  {
+    if (id (**i))
+      return *i;
+  }
+
+  return 0;
+}
+
+semantics::data_member* context::
+object_pointer (data_member_path const& mp)
+{
+  for (data_member_path::const_reverse_iterator i (mp.rbegin ());
+       i != mp.rend (); ++i)
+  {
+    if (object_pointer (utype (**i)))
+      return *i;
+  }
+
+  return 0;
+}
+
 bool context::
 readonly (data_member_path const& mp, data_member_scope const& ms)
 {
@@ -767,6 +793,9 @@ column_name (data_member_path const& mp) const
 string context::
 column_name (semantics::data_member& m, string const& p, string const& d) const
 {
+  if (p.empty () && d.empty ())
+    return column_name (m);
+
   // A container column name can be specified for the member or for the
   // container type.
   //
@@ -783,6 +812,23 @@ column_name (semantics::data_member& m, string const& p, string const& d) const
   }
 
   return d;
+}
+
+string context::
+column_type (const data_member_path& mp, string const& kp, bool id)
+{
+  if (kp.empty ())
+  {
+    // Return the id type if this member is or is a part of an object id
+    // or pointer to object.
+    //
+    return mp.back ()->get<string> (
+      id || context::id (mp) || object_pointer (mp)
+      ? "column-id-type"
+      : "column-type");
+  }
+  else
+    return indirect_value<string> (*mp.back (), kp + "-column-type");
 }
 
 string context::
@@ -1221,14 +1267,23 @@ namespace
   struct column_count_impl: object_members_base
   {
     virtual void
+    traverse_pointer (semantics::data_member& m, semantics::class_& c)
+    {
+      size_t t (c_.total);
+
+      object_members_base::traverse_pointer (m, c);
+
+      if (context::inverse (m))
+        c_.inverse += (c_.total - t);
+    }
+
+    virtual void
     traverse_simple (semantics::data_member& m)
     {
       c_.total++;
 
-      if (m.count ("id"))
+      if (id ())
         c_.id++;
-      else if (context::inverse (m))
-        c_.inverse++;
       else if (context::readonly (member_path_, member_scope_))
         c_.readonly++;
       else if (context::version (m))
@@ -1265,6 +1320,15 @@ namespace
     result () const
     {
       return r_;
+    }
+
+    virtual void
+    traverse_pointer (semantics::data_member&, semantics::class_&)
+    {
+      if (context::is_a (member_path_, member_scope_, flags_))
+        r_++;
+
+      // No need to go inside.
     }
 
     virtual void

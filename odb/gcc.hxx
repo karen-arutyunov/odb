@@ -42,6 +42,7 @@ extern "C"
 #endif
 
 #include <diagnostic.h>
+#include <output.h>
 }
 
 #ifndef LOCATION_COLUMN

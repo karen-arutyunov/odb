@@ -6,7 +6,9 @@
 #define ODB_COMMON_HXX
 
 #include <string>
+#include <vector>
 #include <cstddef> // std::size_t
+#include <cassert>
 
 #include <odb/context.hxx>
 
@@ -17,6 +19,14 @@ struct object_members_base: traversal::class_, virtual context
 {
   virtual void
   traverse_simple (semantics::data_member&);
+
+  // Traverse object pointer. The second argument is the pointed-to
+  // class. When overriding this function, you will most likely want
+  // to call the base in order to traverse the pointer as a simple
+  // member (simple object id) or as composite (composite object id).
+  //
+  virtual void
+  traverse_pointer (semantics::data_member&, semantics::class_&);
 
   // If you override this function, you can call the base to traverse
   // bases and members. The first argument is the data member and can
@@ -81,11 +91,6 @@ public:
   virtual void
   traverse (semantics::class_&);
 
-  // Composite value with data member.
-  //
-  virtual void
-  traverse (semantics::data_member&, semantics::class_& comp);
-
 public:
   // Append composite member prefix.
   //
@@ -93,12 +98,20 @@ public:
   append (semantics::data_member&, table_prefix&);
 
 protected:
-  std::string flat_prefix_;
+  string flat_prefix_;
   table_prefix table_prefix_;
-  std::string member_prefix_;
+  string member_prefix_;
 
   data_member_path member_path_;
   data_member_scope member_scope_;
+
+protected:
+  semantics::data_member*
+  id () const
+  {
+    assert (!member_path_.empty ());
+    return context::id (member_path_);
+  }
 
 private:
   void
@@ -115,6 +128,9 @@ private:
   }
 
 private:
+  virtual void
+  traverse_member (semantics::data_member&, semantics::type&);
+
   struct member: traversal::data_member
   {
     member (object_members_base& om)
@@ -148,8 +164,16 @@ struct object_columns_base: traversal::class_, virtual context
   //
   virtual bool
   traverse_column (semantics::data_member&,
-                   std::string const& name,
-                   bool first) = 0;
+                   string const& name,
+                   bool first);
+
+  // Traverse object pointer. The second argument is the pointed-to
+  // class. When overriding this function, you will most likely want
+  // to call the base in order to traverse the member as a column
+  // (simple object id) or columns (composite object id).
+  //
+  virtual void
+  traverse_pointer (semantics::data_member&, semantics::class_&);
 
   // If you override this function, you can call the base to traverse
   // bases and members. The first argument is the data member and can
@@ -179,14 +203,22 @@ struct object_columns_base: traversal::class_, virtual context
   flush ();
 
 public:
-  object_columns_base ()
-      : top_level_ (true), member_ (*this)
+  object_columns_base (bool first = true,
+                       string const& column_prefix = string ())
+      : column_prefix_ (column_prefix),
+        root_ (0),
+        first_ (first),
+        top_level_ (true),
+        member_ (*this)
   {
     init ();
   }
 
-  object_columns_base (object_columns_base const&)
+  object_columns_base (object_columns_base const& x)
       : context (), //@@ -Wextra
+        column_prefix_ (x.column_prefix_),
+        root_ (0),
+        first_ (x.first_),
         top_level_ (true),
         member_ (*this)
   {
@@ -196,27 +228,75 @@ public:
   virtual void
   traverse (semantics::class_&);
 
-  // Composite value with data member.
+  // Traverse a data member with type, which can be a simple or composite
+  // value type, or an object pointer (with a simple or composite id).
   //
   virtual void
+  traverse (semantics::data_member& m)
+  {
+    traverse (m, utype (m), string (), string ());
+  }
+
+  virtual void
   traverse (semantics::data_member&,
-            semantics::class_& comp,
-            std::string const& key_prefix,
-            std::string const& default_name);
+            semantics::type&,
+            string const& key_prefix,
+            string const& default_name,
+            semantics::class_* top_object = 0); // If not 0, switch top object.
 
 public:
   // Return column prefix for composite data member.
   //
   static string
   column_prefix (semantics::data_member&,
-                 std::string const& key_prefix = std::string (),
-                 std::string const& default_name = std::string ());
+                 string const& key_prefix = string (),
+                 string const& default_name = string ());
+
+  // Return column prefix up to (but not including) the last member
+  // in the path.
+  //
+  static string
+  column_prefix (data_member_path const&);
 
 protected:
+  string key_prefix_;
+  string default_name_;
+
   string column_prefix_;
 
   data_member_path member_path_;
   data_member_scope member_scope_;
+
+protected:
+  semantics::data_member*
+  id () const
+  {
+    if (root_ != 0)
+      return root_id_ ? root_ : 0; // Cannot have ids below root.
+    else
+    {
+      assert (!member_path_.empty ());
+      return context::id (member_path_);
+    }
+  }
+
+  string
+  column_type ()
+  {
+    if (member_path_.empty ())
+    {
+      assert (root_ != 0);
+      return context::column_type (*root_, key_prefix_);
+    }
+    else
+      return context::column_type (
+        member_path_, key_prefix_, (root_ != 0 && (root_id_ || root_op_)));
+  }
+
+private:
+  semantics::data_member* root_; // Root member if traversing from a member.
+  bool root_id_;                 // True if traversing root as object id.
+  bool root_op_;                 // True if traversing root as object pointer.
 
 private:
   void
@@ -227,26 +307,76 @@ private:
   }
 
 private:
+  virtual void
+  traverse_member (semantics::data_member&, semantics::type&);
+
   struct member: traversal::data_member, context
   {
-    member (object_columns_base& oc)
-        : oc_ (oc), first_ (true)
-    {
-    }
+    member (object_columns_base& oc): oc_ (oc) {}
 
     virtual void
     traverse (semantics::data_member&);
 
   public:
     object_columns_base& oc_;
-    bool first_;
   };
 
+  bool first_;
   bool top_level_;
 
   member member_;
   traversal::names names_;
   traversal::inherits inherits_;
+};
+
+struct object_columns_list: object_columns_base
+{
+  object_columns_list (bool ignore_inverse = true)
+      : ignore_inverse_ (ignore_inverse)
+  {
+  }
+
+  object_columns_list (string const& column_prefix, bool ignore_inverse = true)
+      : object_columns_base (true, column_prefix),
+        ignore_inverse_ (ignore_inverse)
+  {
+  }
+
+  struct column
+  {
+    column (std::string const& n,
+            std::string const& t,
+            semantics::data_member& m)
+        : name (n), type (t), member (&m)
+    {
+    }
+
+    std::string name;
+    std::string type;
+    semantics::data_member* member;
+  };
+
+  typedef std::vector<column> columns;
+  typedef columns::const_iterator iterator;
+
+  iterator
+  begin () const {return columns_.begin ();}
+
+  iterator
+  end () const {return columns_.end ();}
+
+  columns::size_type
+  size () const {return columns_.size ();}
+
+  virtual void
+  traverse_pointer (semantics::data_member&, semantics::class_&);
+
+  virtual bool
+  traverse_column (semantics::data_member&, string const&, bool);
+
+private:
+  bool ignore_inverse_;
+  columns columns_;
 };
 
 // Traverse composite values that are class template instantiations.

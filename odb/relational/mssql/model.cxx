@@ -28,7 +28,7 @@ namespace relational
         {
           // Make sure the column is mapped to an integer or DECIMAL type.
           //
-          switch (column_sql_type (m).type)
+          switch (parse_sql_type (column_type (), m).type)
           {
           case sql_type::BIT:
           case sql_type::TINYINT:

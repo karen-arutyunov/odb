@@ -364,6 +364,12 @@ public:
     return t.get<semantics::class_*> ("element-type", 0);
   }
 
+  // If this data member is or is part of an object pointer, then
+  // return the member that is the pointer. Otherwise, return 0.
+  //
+  static semantics::data_member*
+  object_pointer (data_member_path const&);
+
   static bool
   abstract (semantics::class_& c)
   {
@@ -384,6 +390,12 @@ public:
   {
     return m.count ("id");
   }
+
+  // If this data member is or is part of an id member, then return
+  // the member that is marked as the id. Otherwise, return 0.
+  //
+  static semantics::data_member*
+  id (data_member_path const&);
 
   static bool
   auto_ (semantics::data_member& m)
@@ -499,6 +511,11 @@ public:
                string const& key_prefix,
                string const& default_name) const;
 
+  string
+  column_type (const data_member_path&,
+               string const& key_prefix = string (),
+               bool id = false); // Pass true if this type is object id other
+                                 // than because of the members in the path.
   string
   column_type (semantics::data_member&, string const& key_prefix = string ());
 
