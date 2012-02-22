@@ -97,7 +97,7 @@ namespace odb
         // loads being added to the delayed_ vector. We need to process
         // those before we call the post callback.
         //
-        object_traits::init (*l.obj, image (), db);
+        object_traits::init (*l.obj, image (), &db);
         object_traits::load_ (*this, *l.obj); // Load containers, etc.
 
         if (!delayed_.empty ())
