@@ -532,12 +532,12 @@ main (int argc, char* argv[])
       {
       case cxx_version::cxx98:
         {
-          args[3] = "-std=c++98";
+          args[3] = "-std=gnu++98";
           break;
         }
       case cxx_version::cxx11:
         {
-          args[3] = "-std=c++0x"; // c++11 was only added in GCC 4.7.0.
+          args[3] = "-std=gnu++0x"; // gnu++11 was only added in GCC 4.7.0.
           break;
         }
       }
