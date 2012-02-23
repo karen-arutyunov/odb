@@ -325,6 +325,7 @@ main (int argc, char* argv[])
     //
     args.push_back ("-x");
     args.push_back ("c++");
+    args.push_back (""); // Reserve space for -std=c++XX.
     args.push_back ("-S");
     args.push_back ("-Wunknown-pragmas");
     args.push_back ("-fplugin=" + plugin.string ());
@@ -459,21 +460,8 @@ main (int argc, char* argv[])
     //
     args.insert (args.end (), def_inc_dirs.begin (), def_inc_dirs.end ());
 
-    // Obtain profile (-I) search paths.
-    //
-    paths prof_paths (profile_paths (args, argv[0]));
-
-    if (v)
-    {
-      e << "Profile search paths:" << endl;
-
-      for (paths::const_iterator i (prof_paths.begin ());
-           i != prof_paths.end (); ++i)
-        e << " " << *i << endl;
-    }
-
     // Parse plugin options. We have to do it twice to get the target
-    // database which is need while loading profiles.
+    // database which is needed while loading profiles.
     //
     vector<char*> av;
     av.push_back (argv[0]);
@@ -537,8 +525,39 @@ main (int argc, char* argv[])
       }
 
       db = ops.database ();
+
+      // Translate some ODB options to GCC options.
+      //
+      switch (ops.std ())
+      {
+      case cxx_version::cxx98:
+        {
+          args[3] = "-std=c++98";
+          break;
+        }
+      case cxx_version::cxx11:
+        {
+          args[3] = "-std=c++0x"; // c++11 was only added in GCC 4.7.0.
+          break;
+        }
+      }
     }
 
+    // Obtain profile (-I) search paths.
+    //
+    paths prof_paths (profile_paths (args, argv[0]));
+
+    if (v)
+    {
+      e << "Profile search paths:" << endl;
+
+      for (paths::const_iterator i (prof_paths.begin ());
+           i != prof_paths.end (); ++i)
+        e << " " << *i << endl;
+    }
+
+    // Second parse.
+    //
     profile_data pd (prof_paths, db, argv[0]);
     oi[1].search_func = &profile_search;
     oi[2].search_func = &profile_search;
@@ -576,10 +595,19 @@ main (int argc, char* argv[])
       string k, v;
       string a (plugin_args[i]);
 
+      // Ignore certain options.
+      //
       if (a == "--")
       {
         // Ignore the option seperator since GCC doesn't understand it.
         //
+        continue;
+      }
+      else if (a == "--std")
+      {
+        // Translated to GCC -std=.
+        //
+        ++i;
         continue;
       }
 

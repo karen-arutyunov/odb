@@ -11,6 +11,29 @@
 
 using semantics::relational::qname;
 
+struct cxx_version
+{
+  enum value
+  {
+    cxx98,
+    cxx11
+  };
+
+  cxx_version (value v = value (0)) : v_ (v) {}
+  operator value () const {return v_;}
+
+  const char*
+  string () const;
+
+private:
+  value v_;
+};
+
+std::istream&
+operator>> (std::istream&, cxx_version&);
+
+//
+//
 struct database
 {
   enum value

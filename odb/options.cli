@@ -164,6 +164,17 @@ class options
      then you should include it into the prefix value."
   };
 
+  // Language.
+  //
+  cxx_version --std = cxx_version::cxx98
+  {
+    "<version>",
+    "Specify the C++ standard that should be used during compilation.
+     Valid values are \cb{c++98} (default) and \cb{c++11}."
+  };
+
+  // Output.
+  //
   std::string --output-dir | -o
   {
     "<dir>",
