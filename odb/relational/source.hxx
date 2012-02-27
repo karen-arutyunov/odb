@@ -118,7 +118,9 @@ namespace relational
 
             if (!table_name_.empty ())
             {
-              table_prefix tp (schema (c.scope ()), table_name (c) + "_", 1);
+              table_prefix tp (schema (c.scope ()),
+                               table_name_prefix (c.scope ()),
+                               table_name (c) + "_");
               table = table_qname (*im, tp);
             }
 
@@ -476,7 +478,9 @@ namespace relational
             // prefix is just the class table name.
             //
             qname const& ct (table_name (c));
-            table_prefix tp (schema (c.scope ()), ct + "_", 1);
+            table_prefix tp (schema (c.scope ()),
+                             table_name_prefix (c.scope ()),
+                             ct + "_");
             t = table_qname (*im, tp);
 
             // Container's value is our id.
@@ -1256,7 +1260,11 @@ namespace relational
       typedef container_traits base;
 
       container_traits (semantics::class_& c)
-          : object_members_base (true, true, false), c_ (c)
+          : object_members_base (
+            true,
+            object (c), // Only build table prefix for objects.
+            false),
+            c_ (c)
       {
         string const& type (class_fq_name (c));
 
@@ -1431,7 +1439,9 @@ namespace relational
               // This other container is a direct member of the class so the
               // table prefix is just the class table name.
               //
-              table_prefix tp (schema (c->scope ()), table_name (*c) + "_", 1);
+              table_prefix tp (schema (c->scope ()),
+                               table_name_prefix (c->scope ()),
+                               table_name (*c) + "_");
               inv_table = table_qname (*im, tp);
 
               inv_id_cols->traverse (*im, utype (inv_id), "id", "object_id", c);
@@ -4629,9 +4639,10 @@ namespace relational
                   // function would have to return a member path instead
                   // of just a single member.
                   //
-                  table_prefix tp (context::schema (vo->obj->scope ()),
-                                   table_name (*vo->obj) + "_",
-                                   1);
+                  table_prefix tp (
+                    context::schema (vo->obj->scope ()),
+                    context::table_name_prefix (vo->obj->scope ()),
+                    table_name (*vo->obj) + "_");
                   ct = table_qname (*im, tp);
                 }
                 else

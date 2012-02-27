@@ -474,6 +474,11 @@ public:
   qname
   schema (semantics::scope&) const;
 
+  // Table name prefix for a namespace.
+  //
+  string
+  table_name_prefix (semantics::scope&) const;
+
   //
   //
   qname
@@ -485,10 +490,11 @@ public:
   struct table_prefix
   {
     table_prefix (): level (0) {}
-    table_prefix (qname const& s, qname const& p, size_t l)
-        : schema (s), prefix (p), level (l) {}
+    table_prefix (qname const& ns_s, string const& ns_p, qname const& p)
+        : ns_schema (ns_s), ns_prefix (ns_p), prefix (p), level (1) {}
 
-    qname schema; // Object's namespace schema.
+    qname ns_schema;  // Object's namespace schema.
+    string ns_prefix; // Object's namespace table prefix.
     qname prefix;
     size_t level;
   };

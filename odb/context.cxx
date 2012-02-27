@@ -605,17 +605,39 @@ schema (semantics::scope& s) const
     if (ns->extension ())
       ns = &ns->original ();
 
-    if (ns->count ("schema"))
-    {
-      qname n (ns->get<qname> ("schema"));
-      n.append (r);
-      n.swap (r);
+    bool sf (ns->count ("schema"));
+    bool tf (ns->count ("table"));
 
-      if (r.fully_qualified ())
-        break;
+    if (tf)
+    {
+      qname n (ns->get<qname> ("table"));
+      tf = n.qualified ();
+
+      // If we have both schema and qualified table prefix, see which
+      // takes precedence based on order.
+      //
+
+      if (tf && sf)
+      {
+        if (ns->get<location_t> ("table-location") >
+            ns->get<location_t> ("schema-location"))
+          sf = false;
+        else
+          tf = false;
+      }
     }
 
-    if (ns->global_scope ())
+    if (sf || tf)
+    {
+      qname n (
+        sf
+        ? ns->get<qname> ("schema")
+        : ns->get<qname> ("table").qualifier ());
+      n.append (r);
+      n.swap (r);
+    }
+
+    if (r.fully_qualified () || ns->global_scope ())
       break;
   }
 
@@ -630,6 +652,45 @@ schema (semantics::scope& s) const
   }
 
   s.set ("qualified-schema", r);
+  return r;
+}
+
+string context::
+table_name_prefix (semantics::scope& s) const
+{
+  if (s.count ("table-prefix"))
+    return s.get<string> ("table-prefix");
+
+  string r;
+
+  for (semantics::scope* ps (&s);; ps = &ps->scope_ ())
+  {
+    using semantics::namespace_;
+
+    namespace_* ns (dynamic_cast<namespace_*> (ps));
+
+    if (ns == 0)
+      continue; // Some other scope.
+
+    if (ns->extension ())
+      ns = &ns->original ();
+
+    if (ns->count ("table"))
+    {
+      qname n (ns->get<qname> ("table"));
+      r = n.uname () + r;
+    }
+
+    if (ns->global_scope ())
+      break;
+  }
+
+  // Add the prefix that was specified on the command line.
+  //
+  if (options.table_prefix_specified ())
+    r = options.table_prefix () + r;
+
+  s.set ("table-prefix", r);
   return r;
 }
 
@@ -679,10 +740,9 @@ table_name (semantics::class_& c) const
     n.swap (r);
   }
 
-  // Add the table prefix if specified.
+  // Add the table prefix if any.
   //
-  if (options.table_prefix_specified ())
-    r.uname () = options.table_prefix () + r.uname ();
+  r.uname () = table_name_prefix (c.scope ()) + r.uname ();
 
   c.set ("qualified-table", r);
   return r;
@@ -691,7 +751,9 @@ table_name (semantics::class_& c) const
 qname context::
 table_name (semantics::class_& obj, data_member_path const& mp) const
 {
-  table_prefix tp (schema (obj.scope ()), table_name (obj) + "_", 1);
+  table_prefix tp (schema (obj.scope ()),
+                   table_name_prefix (obj.scope ()),
+                   table_name (obj) + "_");
 
   if (mp.size () == 1)
   {
@@ -712,15 +774,13 @@ table_name (semantics::class_& obj, data_member_path const& mp) const
   }
 }
 
+// The table prefix passed as the second argument must include the table
+// prefix specified on namespaces and with the --table-prefix option.
+//
 qname context::
 table_name (semantics::data_member& m, table_prefix const& p) const
 {
-  // The table prefix passed as the second argument must include
-  // the table prefix specified with the --table-prefix option.
-  //
-  string const& gp (options.table_prefix ());
-  assert (p.prefix.uname ().compare (0, gp.size (), gp) == 0);
-
+  assert (p.level > 0);
   qname r;
 
   // If a custom table name was specified, then ignore the top-level
@@ -740,14 +800,14 @@ table_name (semantics::data_member& m, table_prefix const& p) const
     {
       if (n.qualified ())
       {
-        r = p.schema;
+        r = p.ns_schema;
         r.append (n.qualifier ());
       }
       else
         r = p.prefix.qualifier ();
     }
 
-    r.append (p.level == 1 ? gp : p.prefix.uname ());
+    r.append (p.level == 1 ? p.ns_prefix : p.prefix.uname ());
     r += n.uname ();
   }
   else

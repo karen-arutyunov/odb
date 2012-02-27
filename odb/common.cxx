@@ -104,7 +104,8 @@ traverse (semantics::class_& c)
 
     if (table_prefix_.level == 0)
     {
-      table_prefix_.schema = schema (c.scope ());
+      table_prefix_.ns_schema = schema (c.scope ());
+      table_prefix_.ns_prefix = table_name_prefix (c.scope ());
       table_prefix_.prefix = table_name (c);
       table_prefix_.prefix += "_";
       table_prefix_.level = 1;
@@ -120,7 +121,8 @@ traverse (semantics::class_& c)
     {
       table_prefix_.level = 0;
       table_prefix_.prefix.clear ();
-      table_prefix_.schema.clear ();
+      table_prefix_.ns_prefix.clear ();
+      table_prefix_.ns_schema.clear ();
     }
   }
   else
@@ -218,6 +220,8 @@ append (semantics::data_member& m, table_prefix& tp)
 {
   context& ctx (context::current ());
 
+  assert (tp.level > 0);
+
   // If a custom table prefix was specified, then ignore the top-level
   // table prefix (this corresponds to a container directly inside an
   // object) but keep the schema unless the alternative schema is fully
@@ -233,14 +237,14 @@ append (semantics::data_member& m, table_prefix& tp)
     {
       if (n.qualified ())
       {
-        p = tp.schema;
+        p = tp.ns_schema;
         p.append (n.qualifier ());
       }
       else
         p = tp.prefix.qualifier ();
     }
 
-    p.append (tp.level <= 1 ? ctx.options.table_prefix () : tp.prefix.uname ());
+    p.append (tp.level == 1 ? tp.ns_prefix : tp.prefix.uname ());
     p += n.uname ();
 
     tp.prefix.swap (p);
@@ -252,9 +256,6 @@ append (semantics::data_member& m, table_prefix& tp)
   {
     string name (ctx.public_name_db (m));
     size_t n (name.size ());
-
-    if (tp.prefix.empty ())
-      tp.prefix.append (ctx.options.table_prefix ());
 
     tp.prefix += name;
 

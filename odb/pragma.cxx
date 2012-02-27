@@ -472,13 +472,13 @@ check_spec_decl_type (tree d,
   }
   else if (p == "table")
   {
-    // Table can be used for both members (container) and types (container,
-    // object, or view).
+    // Table can be used for namespaces, members (container), and types
+    // (container, object, or view).
     //
-    if (tc != FIELD_DECL && !TYPE_P (d))
+    if (tc != NAMESPACE_DECL && tc != FIELD_DECL && !TYPE_P (d))
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
-                << "not refer to a type or data member" << endl;
+                << "not refer to a namespace, type, or data member" << endl;
       return false;
     }
   }
@@ -612,7 +612,7 @@ handle_pragma (cpp_reader* reader,
                string const& qualifier,
                tree decl,
                string const& decl_name,
-               bool ns) // True is this is a position namespace pragma.
+               bool ns) // True if this is a position namespace pragma.
 {
   tree t;
   cpp_ttype tt;
