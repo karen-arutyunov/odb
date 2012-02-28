@@ -328,6 +328,7 @@ main (int argc, char* argv[])
     args.push_back (""); // Reserve space for -std=c++XX.
     args.push_back ("-S");
     args.push_back ("-Wunknown-pragmas");
+    args.push_back ("-Wno-deprecated");
     args.push_back ("-fplugin=" + plugin.string ());
 
     // Add the default preprocessor defines (-D/-U) before the user-supplied
