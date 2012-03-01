@@ -18,6 +18,8 @@ namespace odb
 {
   namespace sqlite
   {
+    using odb::details::transfer_ptr;
+
     database::
     ~database ()
     {
@@ -27,11 +29,11 @@ namespace odb
     database (const string& name,
               int flags,
               bool foreign_keys,
-              auto_ptr<connection_factory> factory)
+              transfer_ptr<connection_factory> factory)
         : name_ (name),
           flags_ (flags),
           foreign_keys_ (foreign_keys),
-          factory_ (factory)
+          factory_ (factory.transfer ())
     {
       if (factory_.get () == 0)
         factory_.reset (new connection_pool_factory ());
@@ -45,8 +47,10 @@ namespace odb
               bool erase,
               int flags,
               bool foreign_keys,
-              std::auto_ptr<connection_factory> factory)
-        : flags_ (flags), foreign_keys_ (foreign_keys), factory_ (factory)
+              transfer_ptr<connection_factory> factory)
+        : flags_ (flags),
+          foreign_keys_ (foreign_keys),
+          factory_ (factory.transfer ())
     {
       using namespace details;
 

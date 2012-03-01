@@ -10,10 +10,12 @@
 #include <sqlite3.h>
 
 #include <string>
-#include <memory> // std::auto_ptr
+#include <memory> // std::auto_ptr, std::unique_ptr
 #include <iosfwd> // std::ostream
 
 #include <odb/database.hxx>
+#include <odb/details/config.hxx>       // ODB_CXX11
+#include <odb/details/transfer-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx>
@@ -36,8 +38,8 @@ namespace odb
       database (const std::string& name,
                 int flags = SQLITE_OPEN_READWRITE,
                 bool foreign_keys = true,
-                std::auto_ptr<connection_factory> =
-                  std::auto_ptr<connection_factory> (0));
+                details::transfer_ptr<connection_factory> =
+                  details::transfer_ptr<connection_factory> ());
 
       // Extract the database parameters from the command line. The
       // following options are recognized:
@@ -58,8 +60,8 @@ namespace odb
                 bool erase = false,
                 int flags = SQLITE_OPEN_READWRITE,
                 bool foreign_keys = true,
-                std::auto_ptr<connection_factory> =
-                  std::auto_ptr<connection_factory> (0));
+                details::transfer_ptr<connection_factory> =
+                  details::transfer_ptr<connection_factory> ());
 
       static void
       print_usage (std::ostream&);
@@ -131,7 +133,12 @@ namespace odb
       std::string name_;
       int flags_;
       bool foreign_keys_;
+
+#ifdef ODB_CXX11
+      std::unique_ptr<connection_factory> factory_;
+#else
       std::auto_ptr<connection_factory> factory_;
+#endif
     };
   }
 }
