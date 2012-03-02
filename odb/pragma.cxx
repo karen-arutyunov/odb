@@ -2203,7 +2203,7 @@ post_process_pragmas ()
     // Check whether this is a composite value type. We don't want to
     // instantiate simple values since they may be incomplete.
     //
-    pragma const* p;
+    pragma const* p (0);
 
     for (pragma_set::iterator j (i->second.begin ()), e (i->second.end ());
          j != e; ++j)

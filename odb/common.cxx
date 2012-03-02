@@ -364,7 +364,7 @@ traverse (semantics::class_& c)
   if (top_level_)
     top_level_ = false;
 
-  semantics::class_* prev;
+  semantics::class_* prev (0);
   if (k == class_object || k == class_view)
   {
     prev = context::cur_object;
