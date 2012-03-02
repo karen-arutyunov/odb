@@ -14,7 +14,7 @@
 #include <iosfwd> // std::ostream
 
 #include <odb/database.hxx>
-#include <odb/details/config.hxx>       // ODB_CXX11
+#include <odb/details/unique-ptr.hxx>
 #include <odb/details/transfer-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
@@ -133,12 +133,7 @@ namespace odb
       std::string name_;
       int flags_;
       bool foreign_keys_;
-
-#ifdef ODB_CXX11
-      std::unique_ptr<connection_factory> factory_;
-#else
-      std::auto_ptr<connection_factory> factory_;
-#endif
+      details::unique_ptr<connection_factory> factory_;
     };
   }
 }

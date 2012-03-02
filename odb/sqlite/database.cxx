@@ -35,7 +35,7 @@ namespace odb
           foreign_keys_ (foreign_keys),
           factory_ (factory.transfer ())
     {
-      if (factory_.get () == 0)
+      if (!factory_)
         factory_.reset (new connection_pool_factory ());
 
       factory_->database (*this);
@@ -74,7 +74,7 @@ namespace odb
         throw cli_exception (ostr.str ());
       }
 
-      if (factory_.get () == 0)
+      if (!factory_)
         factory_.reset (new connection_pool_factory ());
 
       factory_->database (*this);
