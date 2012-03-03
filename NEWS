@@ -1,5 +1,25 @@
 Version 1.9.0
 
+  * Support for C++11. Some of the newly supported C++11 standard library
+    components include:
+      - std::unique_ptr as object pointer or value wrapper
+      - odb::lazy_unique_ptr lazy counterpart
+      - std::shared_ptr/weak_ptr as object pointer or value wrapper
+      - odb::lazy_shared_ptr/lazy_weak_ptr lazy counterparts
+      - support for array, forward_list, and unordered containers
+      - connection factory can be passed to the database constructor as
+        std::unique_ptr instead of std::auto_ptr
+
+    The ODB compiler now recognizes the --std option. Valid values for this
+    option are 'c++98' (default) and 'c++11'. In the runtime libraries the
+    C++11 support is header-only which means that the same build of a runtime
+    library can be used in both the C++98 and C++11 modes. On UNIX, the tests
+    and examples can be compiled in the C++11 mode by passing the necessary
+    options to turn the C++ compiler into this mode (e.g., -std=c++0x GCC
+    option). On Windows, the tests and examples are always built in the C++11
+    mode with VC++ 10 and later. The new 'c++11' example shows ODB support
+    for some of the C++11 features.
+
   * Support for composite object ids. Now a composite value type can be used
     to declare an object id member. For more information, refer to Section
     7.2.1, "Composite Object Ids" in the ODB manual as well as the 'composite'
