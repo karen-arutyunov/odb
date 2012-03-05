@@ -2153,21 +2153,96 @@ namespace relational
           }
           else
           {
-            // Use the default pointer.
+            // See if any of the namespaces containing this class specify
+            // a pointer.
             //
-            string const& p (options.default_pointer ());
-
-            if (p == "*")
-              ptr = type + "*";
-            else
+            for (semantics::scope* s (&c.scope ());; s = &s->scope_ ())
             {
-              ptr = p + "< " + type + " >";
-              decl_name = p;
+              using semantics::namespace_;
+
+              namespace_* ns (dynamic_cast<namespace_*> (s));
+
+              if (ns == 0)
+                continue; // Some other scope.
+
+              if (ns->extension ())
+                ns = &ns->original ();
+
+              if (!ns->count ("pointer"))
+              {
+                if (ns->global_scope ())
+                  break;
+                else
+                  continue;
+              }
+
+              class_pointer const& cp (ns->get<class_pointer> ("pointer"));
+              string const& p (cp.name);
+
+              // Namespace-specified pointer can only be '*' or are template.
+              //
+              if (p == "*")
+                ptr = type + "*";
+              else if (p[p.size () - 1] == '*')
+              {
+                error (cp.loc)
+                  << "name '" << p << "' specified with db pragma pointer "
+                  << "at namespace level cannot be a raw pointer" << endl;
+              }
+              else if (p.find ('<') != string::npos)
+              {
+                error (cp.loc)
+                  << "name '" << p << "' specified with db pragma pointer "
+                  << "at namespace level cannot be a template-id" << endl;
+              }
+              else
+              {
+                // Resolve this name and make sure it is a template.
+                //
+                decl = resolve_name (p, cp.scope, true);
+                int tc (TREE_CODE (decl));
+
+                if (tc == TEMPLATE_DECL && DECL_CLASS_TEMPLATE_P (decl))
+                {
+                  ptr = p + "< " + type + " >";
+                  decl_name = p;
+                }
+                else
+                {
+                  error (cp.loc)
+                    << "name '" << p << "' specified with db pragma pointer "
+                    << "does not name a template" << endl;
+                }
+              }
+
+              if (ptr.empty ())
+                throw operation_failed ();
+
+              // Resolve scope is the scope of the pragma.
+              //
+              resolve_scope = cp.scope;
+              loc = cp.loc;
+              break;
             }
 
-            // Resolve scope is the scope of the class.
+            // Use the default pointer.
             //
-            resolve_scope = c.scope ().tree_node ();
+            if (ptr.empty ())
+            {
+              string const& p (options.default_pointer ());
+
+              if (p == "*")
+                ptr = type + "*";
+              else
+              {
+                ptr = p + "< " + type + " >";
+                decl_name = p;
+              }
+
+              // Resolve scope is the scope of the class.
+              //
+              resolve_scope = c.scope ().tree_node ();
+            }
           }
 
           // Check if we are using TR1.

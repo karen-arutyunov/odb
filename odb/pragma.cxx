@@ -456,14 +456,24 @@ check_spec_decl_type (tree d,
       return false;
     }
   }
-  else if (p == "pointer" ||
-           p == "abstract" ||
+  else if (p == "abstract" ||
            p == "callback" ||
            p == "query" ||
            p == "object" ||
            p == "optimistic")
   {
     if (tc != RECORD_TYPE)
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a class" << endl;
+      return false;
+    }
+  }
+  else if (p == "pointer")
+  {
+    // Table can be used for namespaces and classes (object or view).
+    //
+    if (tc != NAMESPACE_DECL && tc != RECORD_TYPE)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a class" << endl;
