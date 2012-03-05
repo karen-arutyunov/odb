@@ -25,6 +25,12 @@ Version 1.9.0
     7.2.1, "Composite Object Ids" in the ODB manual as well as the 'composite'
     example in the odb-examples package.
 
+  * New schema format (--schema-format), 'separate', allows the generation
+    of the schema creation code into a separate C++ source file (called
+    'name-schema.cxx' by default). This value is primarily useful if you
+    want to place the schema creation functionality into a separate program
+    or library.
+
 Version 1.8.0
 
   * Support for the Microsoft SQL Server database. The provided connection

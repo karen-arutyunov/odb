@@ -179,6 +179,8 @@ context (ostream& os_,
       include_regex (data_->include_regex_),
       embedded_schema (ops.generate_schema () &&
                        ops.schema_format ().count (schema_format::embedded)),
+      separate_schema (ops.generate_schema () &&
+                       ops.schema_format ().count (schema_format::separate)),
       top_object (data_->top_object_),
       cur_object (data_->cur_object_)
 {
@@ -203,6 +205,7 @@ context ()
     keyword_set (current ().keyword_set),
     include_regex (current ().include_regex),
     embedded_schema (current ().embedded_schema),
+    separate_schema (current ().separate_schema),
     top_object (current ().top_object),
     cur_object (current ().cur_object)
 {

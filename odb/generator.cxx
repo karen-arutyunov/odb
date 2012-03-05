@@ -123,11 +123,13 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     string hxx_name (base + ops.odb_file_suffix () + ops.hxx_suffix ());
     string ixx_name (base + ops.odb_file_suffix () + ops.ixx_suffix ());
     string cxx_name (base + ops.odb_file_suffix () + ops.cxx_suffix ());
+    string sch_name (base + ops.schema_file_suffix () + ops.cxx_suffix ());
     string sql_name (base + ops.sql_suffix ());
 
     path hxx_path (hxx_name);
     path ixx_path (ixx_name);
     path cxx_path (cxx_name);
+    path sch_path (sch_name);
     path sql_path (sql_name);
 
     if (!ops.output_dir ().empty ())
@@ -136,6 +138,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       hxx_path = dir / hxx_path;
       ixx_path = dir / ixx_path;
       cxx_path = dir / cxx_path;
+      sch_path = dir / sch_path;
       sql_path = dir / sql_path;
     }
 
@@ -198,11 +201,35 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       auto_rm.add (sql_path);
     }
 
+    //
+    //
+    bool sep_schema (ops.generate_schema () &&
+                     ops.schema_format ().count (schema_format::separate));
+
+    ofstream sch;
+
+    if (sep_schema)
+    {
+      sch.open (sch_path.string ().c_str (), ios_base::out);
+
+      if (!sch.is_open ())
+      {
+        cerr << "error: unable to open '" << sch_path << "' in write mode"
+             << endl;
+        throw failed ();
+      }
+
+      auto_rm.add (sch_path);
+    }
+
     // Print C++ headers.
     //
     hxx << file_header;
     ixx << file_header;
     cxx << file_header;
+
+    if (sep_schema)
+      sch << file_header;
 
     typedef compiler::ostream_filter<compiler::cxx_indenter, char> cxx_filter;
 
@@ -365,6 +392,55 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << endl;
 
       cxx << "#include <odb/post.hxx>" << endl;
+    }
+
+    // SCH
+    //
+    if (sep_schema)
+    {
+      cxx_filter filt (sch);
+      auto_ptr<context> ctx (create_context (sch, unit, ops, model.get ()));
+
+      // Copy prologue.
+      //
+      sch << "#include <odb/pre.hxx>" << endl
+          << endl;
+
+      // Copy prologue.
+      //
+      sch << "// Begin prologue." << endl
+          << "//" << endl;
+      append (sch, ops.schema_prologue (), ops.schema_prologue_file ());
+      sch << "//" << endl
+          << "// End prologue." << endl
+          << endl;
+
+      sch << "#include " << ctx->process_include_path (hxx_name) << endl
+          << endl;
+
+      switch (ops.database ())
+      {
+      case database::mssql:
+      case database::mysql:
+      case database::oracle:
+      case database::pgsql:
+      case database::sqlite:
+        {
+          relational::schema_source::generate ();
+          break;
+        }
+      }
+
+      // Copy epilogue.
+      //
+      sch << "// Begin epilogue." << endl
+          << "//" << endl;
+      append (sch, ops.schema_epilogue (), ops.schema_epilogue_file ());
+      sch << "//" << endl
+          << "// End epilogue." << endl
+          << endl;
+
+      sch << "#include <odb/post.hxx>" << endl;
     }
 
     // SQL

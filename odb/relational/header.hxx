@@ -1308,7 +1308,7 @@ namespace relational
 
         // create_schema ()
         //
-        if (embedded_schema)
+        if (embedded_schema || separate_schema)
         {
           os << "static bool" << endl
              << "create_schema (database&, unsigned short pass, bool drop);"

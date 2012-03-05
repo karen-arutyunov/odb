@@ -19,9 +19,9 @@ namespace relational
     {
       namespace relational = relational::schema;
 
-      struct schema_emitter: relational::schema_emitter
+      struct sql_emitter: relational::sql_emitter
       {
-        schema_emitter (const base& x): base (x) {}
+        sql_emitter (const base& x): base (x) {}
 
         virtual void
         post ()
@@ -34,7 +34,7 @@ namespace relational
           }
         }
       };
-      entry<schema_emitter> schema_emitter_;
+      entry<sql_emitter> sql_emitter_;
 
       //
       // Drop.

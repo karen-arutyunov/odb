@@ -35,7 +35,8 @@ relational/header.cxx                \
 relational/inline.cxx                \
 relational/source.cxx                \
 relational/model.cxx                 \
-relational/schema.cxx
+relational/schema.cxx                \
+relational/schema-source.cxx
 
 # Relational/MSSQL.
 #

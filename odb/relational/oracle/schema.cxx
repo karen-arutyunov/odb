@@ -19,9 +19,9 @@ namespace relational
     {
       namespace relational = relational::schema;
 
-      struct schema_emitter: relational::schema_emitter
+      struct sql_emitter: relational::sql_emitter
       {
-        schema_emitter (const base& x): base (x) {}
+        sql_emitter (const base& x): base (x) {}
 
         virtual void
         line (const std::string& l)
@@ -54,15 +54,15 @@ namespace relational
       private:
         string last_;
       };
-      entry<schema_emitter> schema_emitter_;
+      entry<sql_emitter> sql_emitter_;
 
       //
       // File.
       //
 
-      struct schema_file: relational::schema_file, context
+      struct sql_file: relational::sql_file, context
       {
-        schema_file (const base& x): base (x) {}
+        sql_file (const base& x): base (x) {}
 
         virtual void
         prologue ()
@@ -82,7 +82,7 @@ namespace relational
           os << "EXIT;" << endl;
         }
       };
-      entry<schema_file> schema_file_;
+      entry<sql_file> sql_file_;
 
       //
       // Drop.

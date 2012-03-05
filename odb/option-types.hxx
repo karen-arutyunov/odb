@@ -72,6 +72,7 @@ struct schema_format
     // Keep in alphabetic order.
     //
     embedded,
+    separate,
     sql
   };
 

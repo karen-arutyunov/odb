@@ -98,6 +98,7 @@ operator<< (ostream& os, database db)
 static const char* schema_format_[] =
 {
   "embedded",
+  "separate",
   "sql"
 };
 

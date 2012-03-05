@@ -54,58 +54,6 @@ namespace relational
       ostream& os_;
     };
 
-    struct schema_emitter: emitter, virtual context
-    {
-      typedef schema_emitter base;
-
-      virtual void
-      pre ()
-      {
-        first_ = true;
-      }
-
-      virtual void
-      line (const std::string& l)
-      {
-        if (first_ && !l.empty ())
-          first_ = false;
-        else
-          os << endl;
-
-        os << l;
-      }
-
-      virtual void
-      post ()
-      {
-        if (!first_) // Ignore empty statements.
-          os << ';' << endl
-             << endl;
-      }
-
-    protected:
-      bool first_;
-    };
-
-    //
-    // File prologue/epilogue.
-    //
-
-    struct schema_file: virtual context
-    {
-      typedef schema_file base;
-
-      virtual void
-      prologue ()
-      {
-      }
-
-      virtual void
-      epilogue ()
-      {
-      }
-    };
-
     //
     // Drop.
     //
@@ -674,6 +622,298 @@ namespace relational
     protected:
       schema_format format_;
       unsigned short pass_;
+    };
+
+    //
+    // SQL output.
+    //
+
+    struct sql_emitter: emitter, virtual context
+    {
+      typedef sql_emitter base;
+
+      virtual void
+      pre ()
+      {
+        first_ = true;
+      }
+
+      virtual void
+      line (const std::string& l)
+      {
+        if (first_ && !l.empty ())
+          first_ = false;
+        else
+          os << endl;
+
+        os << l;
+      }
+
+      virtual void
+      post ()
+      {
+        if (!first_) // Ignore empty statements.
+          os << ';' << endl
+             << endl;
+      }
+
+    protected:
+      bool first_;
+    };
+
+    struct sql_file: virtual context
+    {
+      typedef sql_file base;
+
+      virtual void
+      prologue ()
+      {
+      }
+
+      virtual void
+      epilogue ()
+      {
+      }
+    };
+
+    //
+    // C++ output.
+    //
+
+    struct cxx_emitter: emitter, virtual context
+    {
+      typedef cxx_emitter base;
+
+      void
+      pass (unsigned short p)
+      {
+        empty_ = true;
+        pass_ = p;
+        new_pass_ = true;
+      }
+
+      // Did this pass produce anything?
+      //
+      bool
+      empty () const
+      {
+        return empty_;
+      }
+
+      virtual void
+      pre ()
+      {
+        first_ = true;
+      }
+
+      virtual void
+      line (const string& l)
+      {
+        if (l.empty ())
+          return; // Ignore empty lines.
+
+        if (first_)
+        {
+          first_ = false;
+
+          // If this line starts a new pass, then output the
+          // switch/case blocks.
+          //
+          if (new_pass_)
+          {
+            new_pass_ = false;
+            empty_ = false;
+
+            if (pass_ == 1)
+            {
+              os << "switch (pass)"
+                 << "{"
+                 << "case 1:" << endl
+                 << "{";
+            }
+            else
+            {
+              os << "return true;" // One more pass.
+                 << "}"
+                 << "case " << pass_ << ":" << endl
+                 << "{";
+            }
+          }
+
+          os << "db.execute (";
+        }
+        else
+          os << strlit (line_ + '\n') << endl;
+
+        line_ = l;
+      }
+
+      virtual void
+      post ()
+      {
+        if (!first_) // Ignore empty statements.
+          os << strlit (line_) << ");" << endl;
+      }
+
+    private:
+      std::string line_;
+      bool first_;
+      bool empty_;
+      bool new_pass_;
+      unsigned short pass_;
+    };
+
+    struct cxx_object: virtual context
+    {
+      typedef cxx_object base;
+
+      //@@ (im)-perfect forwarding.
+      //
+      static schema_format format_embedded;
+
+      cxx_object ()
+          : stream_ (*emitter_),
+            drop_model_ (*emitter_, stream_, format_embedded),
+            drop_table_ (*emitter_, stream_, format_embedded),
+            drop_index_ (*emitter_, stream_, format_embedded),
+            create_model_ (*emitter_, stream_, format_embedded),
+            create_table_ (*emitter_, stream_, format_embedded),
+            create_index_ (*emitter_, stream_, format_embedded)
+      {
+        init ();
+      }
+
+      cxx_object (cxx_object const&)
+          : root_context (), //@@ -Wextra
+            context (),
+            stream_ (*emitter_),
+            drop_model_ (*emitter_, stream_, format_embedded),
+            drop_table_ (*emitter_, stream_, format_embedded),
+            drop_index_ (*emitter_, stream_, format_embedded),
+            create_model_ (*emitter_, stream_, format_embedded),
+            create_table_ (*emitter_, stream_, format_embedded),
+            create_index_ (*emitter_, stream_, format_embedded)
+      {
+        init ();
+      }
+
+      void
+      init ()
+      {
+        drop_model_ >> drop_names_;
+        drop_names_ >> drop_table_;
+        drop_names_ >> drop_index_;
+
+        create_model_ >> create_names_;
+        create_names_ >> create_table_;
+        create_names_ >> create_index_;
+      }
+
+      void
+      traverse (semantics::class_& c)
+      {
+        typedef sema_rel::model::names_iterator iterator;
+
+        iterator begin (c.get<iterator> ("model-range-first"));
+        iterator end (c.get<iterator> ("model-range-last"));
+
+        if (begin == model->names_end ())
+          return; // This class doesn't have any model entities (e.g.,
+                  // a second class mapped to the same table).
+
+        ++end; // Transform the range from [begin, end] to [begin, end).
+
+        string const& type (class_fq_name (c));
+        string traits ("access::object_traits< " + type + " >");
+
+        // create_schema ()
+        //
+        os << "bool " << traits << "::" << endl
+           << "create_schema (database& db, unsigned short pass, bool drop)"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (db);"
+           << "ODB_POTENTIALLY_UNUSED (pass);"
+           << endl;
+
+        // Drop.
+        //
+        {
+          bool close (false);
+
+          os << "if (drop)"
+             << "{";
+
+          for (unsigned short pass (1); pass < 3; ++pass)
+          {
+            emitter_->pass (pass);
+            drop_model_->pass (pass);
+            drop_table_->pass (pass);
+            drop_index_->pass (pass);
+
+            drop_model_->traverse (begin, end);
+
+            close = close || !emitter_->empty ();
+          }
+
+          if (close) // Close the last case and the switch block.
+            os << "return false;"
+               << "}"  // case
+               << "}";  // switch
+
+          os << "}";
+        }
+
+        // Create.
+        //
+        {
+          bool close (false);
+
+          os << "else"
+             << "{";
+
+          for (unsigned short pass (1); pass < 3; ++pass)
+          {
+            emitter_->pass (pass);
+            create_model_->pass (pass);
+            create_table_->pass (pass);
+            create_index_->pass (pass);
+
+            create_model_->traverse (begin, end);
+
+            close = close || !emitter_->empty ();
+          }
+
+          if (close) // Close the last case and the switch block.
+            os << "return false;"
+               << "}"  // case
+               << "}"; // switch
+
+          os << "}";
+        }
+
+        os << "return false;"
+           << "}";
+
+        os << "static const schema_catalog_entry" << endl
+           << "schema_catalog_entry_" << flat_name (type) << "_ (" << endl
+           << strlit (options.schema_name ()) << "," << endl
+           << "&" << traits << "::create_schema);"
+           << endl;
+      }
+
+    private:
+      instance<cxx_emitter> emitter_;
+      emitter_ostream stream_;
+
+      trav_rel::qnames drop_names_;
+      instance<drop_model> drop_model_;
+      instance<drop_table> drop_table_;
+      instance<drop_index> drop_index_;
+
+      trav_rel::qnames create_names_;
+      instance<create_model> create_model_;
+      instance<create_table> create_table_;
+      instance<create_index> create_index_;
     };
   }
 }

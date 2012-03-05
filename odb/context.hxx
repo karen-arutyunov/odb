@@ -818,6 +818,7 @@ public:
   regex_mapping const& include_regex;
 
   bool embedded_schema;
+  bool separate_schema;
 
   // Outermost object or view currently being traversed.
   //

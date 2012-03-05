@@ -79,6 +79,10 @@ class options
     "Generate the database schema in the specified format. Pass \cb{sql} as
      <format> to generate the database schema as a standalone SQL file or
      pass \cb{embedded} to embed the schema into the generated C++ code.
+     The \cb{separate} value is similar to \cb{embedded} except the schema
+     creation code is generated into a separate C++ file (\cb{name-schema.cxx}
+     by default). This value is primarily useful if you want to place the
+     schema creation functionality into a separate program or library.
      Repeat this option to generate the same database schema in multiple
      formats."
   };
@@ -188,6 +192,14 @@ class options
      of the generated C++ files."
   };
 
+  std::string --schema-file-suffix = "-schema"
+  {
+    "<suffix>",
+    "Use <suffix> instead of the default \cb{-schema} to construct the name
+     of the generated schema C++ source file. See the \cb{--schema-format}
+     option for details."
+  };
+
   std::string --hxx-suffix = ".hxx"
   {
     "<suffix>",
@@ -236,6 +248,12 @@ class options
     "Insert <text> at the beginning of the generated C++ source file."
   };
 
+  std::vector<std::string> --schema-prologue
+  {
+    "<text>",
+    "Insert <text> at the beginning of the generated schema C++ source file."
+  };
+
   std::vector<std::string> --sql-prologue
   {
     "<text>",
@@ -260,6 +278,12 @@ class options
   {
     "<text>",
     "Insert <text> at the end of the generated C++ source file."
+  };
+
+  std::vector<std::string> --schema-epilogue
+  {
+    "<text>",
+    "Insert <text> at the end of the generated schema C++ source file."
   };
 
   std::vector<std::string> --sql-epilogue
@@ -291,6 +315,13 @@ class options
      source file."
   };
 
+  std::string --schema-prologue-file
+  {
+    "<file>",
+    "Insert the content of <file> at the beginning of the generated schema
+     C++ source file."
+  };
+
   std::string --sql-prologue-file
   {
     "<file>",
@@ -319,6 +350,13 @@ class options
     "<file>",
     "Insert the content of <file> at the end of the generated C++ source
      file."
+  };
+
+  std::string --schema-epilogue-file
+  {
+    "<file>",
+    "Insert the content of <file> at the end of the generated schema C++
+     source file."
   };
 
   std::string --sql-epilogue-file
@@ -454,7 +492,7 @@ class options
 
   ::mssql_version --mssql-server-version (10, 0)
   {
-    "<v>",
+    "<ver>",
     "Specify the minimum SQL Server server version with which the generated
      C++ code will be used. This information is used to enable
      version-specific optimizations and workarounds in the generated C++
@@ -502,7 +540,7 @@ class options
 
   ::oracle_version --oracle-client-version (10, 1)
   {
-    "<v>",
+    "<ver>",
     "Specify the minimum Oracle client library (OCI) version with which the
      generated C++ code will be linked. This information is used to enable
      version-specific optimizations and workarounds in the generated C++

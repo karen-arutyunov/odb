@@ -29,6 +29,12 @@ namespace relational
     generate ();
   }
 
+  namespace schema_source
+  {
+    void
+    generate ();
+  }
+
   namespace model
   {
     cutl::shared_ptr<semantics::relational::model>

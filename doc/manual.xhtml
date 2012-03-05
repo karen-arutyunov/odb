@@ -2394,16 +2394,16 @@ auto_ptr&lt;odb::database> db (
   <p>There are several ways to create the database schema. The easiest is to
      instruct the ODB compiler to generate the corresponding schema from the
      persistent classes (<code>--generate-schema</code> option). The ODB
-     compiler can generate the schema either as a standalone SQL file or
-     embedded into the generated C++ code (<code>--schema-format</code>
-     option).  If we are using the SQL file to create the database schema, then
-     this file should be executed, normally only once, before the application
-     is started.</p>
+     compiler can generate the schema as a standalone SQL file,
+     embedded into the generated C++ code, or as a separate C++ source file
+     (<code>--schema-format</code> option). If we are using the SQL file
+     to create the database schema, then this file should be executed,
+     normally only once, before the application is started.</p>
 
-  <p>Alternatively, the schema can be embedded directly into the generated
-     code and we can use the <code>odb::schema_catalog</code> class to
-     create it in the database from within our application,
-     for example:</p>
+  <p>Alternatively, if the schema is embedded directly into the generated
+     code or produced as a separate C++ source file, then we can use the
+     <code>odb::schema_catalog</code> class to create it in the database
+     from within our application, for example:</p>
 
   <pre class="c++">
 #include &lt;odb/schema-catalog.hxx>
