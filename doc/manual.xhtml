@@ -524,7 +524,9 @@ for consistency.
 	  <tr>
             <th>12.5</th><td><a href="#12.5">Namespace Pragmas</a>
               <table class="toc">
-                <tr><th>12.5.1</th><td><a href="#12.5.1"><code>schema</code></a></td></tr>
+		<tr><th>12.5.1</th><td><a href="#12.5.1"><code>pointer</code></a></td></tr>
+		<tr><th>12.5.2</th><td><a href="#12.5.2"><code>table</code></a></td></tr>
+                <tr><th>12.5.3</th><td><a href="#12.5.3"><code>schema</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -2298,28 +2300,15 @@ class name
      to use a smart pointer for a returned object or view, as well as to
      simplify the use of more advanced ODB functionality, such as sessions
      and bidirectional object relationships, it is recommended that you use
-     smart pointers with the sharing semantics as object and view pointers.
+     smart pointers with the sharing semantics as object pointers.
      The <code>shared_ptr</code> smart pointer from TR1, C++11, or Boost
      is a good default choice. However, if sharing is not required and
      sessions are not used, then <code>std::unique_ptr</code> or
      <code>std::auto_ptr</code> can be used just as well.</p>
 
-  <p>ODB provides two mechanisms for changing the object or view pointer
-     type. We can use the <code>--default-pointer</code> option to specify
-     the default pointer. All objects and views that don't have the pointer
-     type explicitly specified with the <code>db&nbsp;pointer</code>
-     pragma (see below) will use the default pointer type. Refer to the
-     <a href="http://www.codesynthesis.com/products/odb/doc/odb.xhtml">ODB
-     Compiler Command Line Manual</a> for details on this option's argument.
-     The typical usage is shown below:</p>
-
-  <pre class="terminal">
---default-pointer std::tr1::shared_ptr
-  </pre>
-
-  <p>The second mechanism allows us to specify the pointer type on
-     the per object and per view basis using the
-     <code>db&nbsp;pointer</code> pragma, for example:</p>
+  <p>ODB provides several mechanisms for changing the object or view pointer
+     type. To specify the pointer type on the per object or per view basis
+     we can use the <code>db&nbsp;pointer</code> pragma, for example:</p>
 
   <pre class="c++">
 #pragma db object pointer(std::tr1::shared_ptr)
@@ -2329,9 +2318,71 @@ class person
 };
   </pre>
 
+  <p>We can also specify the default pointer for a group of objects or
+     views at the namespace level:</p>
+
+  <pre class="c++">
+#pragma db namespace pointer(std::tr1::shared_ptr)
+namespace accounting
+{
+  #pragma db object
+  class employee
+  {
+    ...
+  };
+
+  #pragma db object
+  class employer
+  {
+    ...
+  };
+}
+  </pre>
+
+  <p>Finally, we can use the <code>--default-pointer</code> option to specify
+     the default pointer for the whole file. Refer to the
+     <a href="http://www.codesynthesis.com/products/odb/doc/odb.xhtml">ODB
+     Compiler Command Line Manual</a> for details on this option's argument.
+     The typical usage is shown below:</p>
+
+  <pre class="terminal">
+--default-pointer std::tr1::shared_ptr
+  </pre>
+
+  <p>An alternative to this method with the same effect is to specify the
+     default pointer for the  global namespace:</p>
+
+  <pre class="terminal">
+#pragma db namespace() pointer(std::tr1::shared_ptr)
+  </pre>
+
+  <p>Note that we can always override the default pointer specified
+     at the namespace level or with the command line option using
+     the <code>db&nbsp;pointer</code> object or view pragma. For
+     example:</p>
+
+  <pre class="c++">
+#pragma db object pointer(std::shared_ptr)
+namespace accounting
+{
+  #pragma db object
+  class employee
+  {
+    ...
+  };
+
+  #pragma db object pointer(std::unique_ptr)
+  class employer
+  {
+    ...
+  };
+}
+  </pre>
+
   <p>Refer to <a href="#12.1.2">Section 12.1.2, "<code>pointer</code>
-     (object)"</a> and <a href="#12.2.4">Section 12.2.4, "<code>pointer</code>
-     (view)"</a> for more information on this pragma.</p>
+     (object)"</a>, <a href="#12.2.4">Section 12.2.4, "<code>pointer</code>
+     (view)"</a>, and <a href="#12.5.1">Section 12.5.1, "<code>pointer</code>
+     (namespace)"</a> for more information on these mechanisms.</p>
 
   <p>Built-in support that is provided by the ODB runtime library allows us
      to use <code>shared_ptr</code> (TR1 or C++11),
@@ -8427,10 +8478,11 @@ class person
 };
   </pre>
 
-  <p>If a pointer type is not explicitly specified, the default
-     pointer, specified with the <code>--default-pointer</code>
-     ODB compiler option, is used. If this option is not specified
-     either, then the raw pointer is used by default.</p>
+  <p>If a pointer type is not explicitly specified, the default pointer,
+     specified at the namespace level (<a href="#12.5.1">Section 12.5.1,
+     "<code>pointer</code>"</a>) or with the <code>--default-pointer</code>
+     ODB compiler option, is used. If neither of these two mechanisms is
+     used to specify the pointer, then the raw pointer is used by default.</p>
 
   <p>For a more detailed discussion of object pointers, refer to
      <a href="#3.2">Section 3.2, "Object and View Pointers"</a>.</p>
@@ -8775,29 +8827,16 @@ namespace accounting
 }
   </pre>
 
-  <p>Similar to other qualifiers, the <code>namespace</code> qualifier
-     can also refer to a named C++ namespace, for example:</p>
-
-  <pre class="c++">
-namespace accounting
-{
-  ...
-}
-#pragma db namespace(accounting) schema("accounting")
-  </pre>
-
   <p>If we want to assign a schema to all the persistent classes in
-     a file, then we can use the <code>--schema</code>
-     ODB compiler option. For example:</p>
+     a file, then we can use the <code>--schema</code> ODB compiler
+     option. For example:</p>
 
   <pre class="terminal">
 odb ... --schema accounting ...
   </pre>
 
-  <p>The alternative to this approach with the same effect is to
-     assign a schema to the global namespace. To refer to the global
-     namespace in the <code>namespace</code> qualifier we use
-     the following special syntax:</p>
+  <p>An alternative to this approach with the same effect is to
+     assign a schema to the global namespace:</p>
 
   <pre class="c++">
 #pragma db namespace() schema("accounting")
@@ -8912,6 +8951,10 @@ class employee
   ...
 };
   </pre>
+
+  <p>Table prefixes (<a href="#12.5.2">Section 12.5.2, "<code>table</code>"</a>)
+     can be used as an alternative to database schemas if the target
+     database system does not support schemas.</p>
 
   <h2><a name="12.2">12.2 View Type Pragmas</a></h2>
 
@@ -10695,7 +10738,26 @@ class person
   <h2><a name="12.5">12.5 Namespace Pragmas</a></h2>
 
   <p>A pragma with the <code>namespace</code> qualifier describes a
-     C++ namespace. The qualifier can be optionally followed,
+     C++ namespace. Similar to other qualifiers, <code>namespace</code>
+     can also refer to a named C++ namespace, for example:</p>
+
+  <pre class="c++">
+namespace test
+{
+  ...
+}
+
+#pragma db namespace(test) ...
+  </pre>
+
+  <p>To refer to the global namespace in the <code>namespace</code>
+     qualifier the following special syntax is used:</p>
+
+  <pre class="c++">
+#pragma db namespace() ....
+  </pre>
+
+  <p>The <code>namespace</code> qualifier can be optionally followed,
      in any order, by one or more specifiers summarized in the
      table below:</p>
 
@@ -10708,14 +10770,144 @@ class person
     </tr>
 
     <tr>
+      <td><code>pointer</code></td>
+      <td>pointer type for persistent classes and views inside a namespace</td>
+      <td><a href="#12.5.1">12.5.1</a></td>
+    </tr>
+
+    <tr>
+      <td><code>table</code></td>
+      <td>table name prefix for persistent classes inside a namespace</td>
+      <td><a href="#12.5.2">12.5.2</a></td>
+    </tr>
+
+    <tr>
       <td><code>schema</code></td>
       <td>database schema for persistent classes inside a namespace</td>
-      <td><a href="#12.5.1">12.5.1</a></td>
+      <td><a href="#12.5.3">12.5.3</a></td>
     </tr>
 
   </table>
 
-  <h3><a name="12.5.1">12.5.1 <code>schema</code></a></h3>
+  <h3><a name="12.5.1">12.5.1 <code>pointer</code></a></h3>
+
+  <p>The <code>pointer</code> specifier specifies the default pointer
+     type for persistent classes and views inside a namespace. For
+     example:</p>
+
+  <pre class="c++">
+#pragma db namespace pointer(std::tr1::shared_ptr)
+namespace accounting
+{
+  #pragma db object
+  class employee
+  {
+    ...
+  };
+
+  #pragma db object
+  class employer
+  {
+    ...
+  };
+}
+  </pre>
+
+  <p>There are only two valid ways to specify a pointer with the
+     <code>pointer</code> specifier at the namespace level. We can
+     specify the template name of a smart pointer in which
+     case the ODB compiler will automatically append the class
+     name as a template argument. Or we can use <code>*</code>
+     to denote a raw pointer.</p>
+
+  <p>Note also that we can always override the default pointer
+     specified at the namespace level for any persistent class
+     or view inside this namespace. For example:</p>
+
+  <pre class="c++">
+#pragma db namespace pointer(std::unique_ptr)
+namespace accounting
+{
+  #pragma db object pointer(std::shared_ptr)
+  class employee
+  {
+    ...
+  };
+
+  #pragma db object
+  class employer
+  {
+    ...
+  };
+}
+  </pre>
+
+  <p>For a more detailed discussion of object and view pointers, refer
+     to <a href="#3.2">Section 3.2, "Object and View Pointers"</a>.</p>
+
+  <h3><a name="12.5.2">12.5.2 <code>table</code></a></h3>
+
+  <p>The <code>table</code> specifier specifies a table prefix
+     that should be added to table names of persistent classes inside
+     a namespace. For example:</p>
+
+  <pre class="c++">
+#pragma db namespace table("acc_")
+namespace accounting
+{
+  #pragma db object table("employees")
+  class employee
+  {
+    ...
+  };
+
+  #pragma db object table("employers")
+  class employer
+  {
+    ...
+  };
+}
+  </pre>
+
+  <p>In the above example the resulting table names will be
+     <code>acc_employees</code> and <code>acc_employers</code>.</p>
+
+  <p>The table name prefix can also be specified with the
+     <code>--table-prefix</code> ODB compiler option. Note
+     that table prefixes specified at the namespace level as well
+     as with the command line option are accumulated. For example:</p>
+
+  <pre class="c++">
+#pragma db namespace() table("audit_")
+
+#pragma db namespace table("hr_")
+namespace hr
+{
+  #pragma db object table("employees")
+  class employee
+  {
+    ...
+  };
+}
+
+#pragma db object table("employers")
+class employer
+{
+  ...
+};
+  </pre>
+
+  <p>If we compile the above example with the
+     <code>--table-prefix&nbsp;test_</code> option, then the
+     <code>employee</code> class table will be called
+     <code>test_audit_hr_employees</code> and <code>employer</code> &mdash;
+     <code>test_audit_employers</code>.</p>
+
+  <p>Table prefixes can be used as an alternative to database schemas
+     (<a href="#12.1.8">Section 12.1.8, "<code>schema</code>"</a>) if
+     the target database system does not support schemas.</p>
+
+  <h3><a name="12.5.3">12.5.3 <code>schema</code></a></h3>
 
   <p>The <code>schema</code> specifier specifies a database schema
      that should be used for persistent classes inside a namespace.

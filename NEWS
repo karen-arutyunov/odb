@@ -31,6 +31,13 @@ Version 1.9.0
     want to place the schema creation functionality into a separate program
     or library.
 
+  * New namespace-level pragmas: table, pointer. The table pragma specifies
+    the table prefix that is added to table names for all the persistent
+    classes inside a namespace. The pointer pragma specifies the default
+    pointer type to be used for persistent classes and views inside a
+    namespace. For more information, refer to Section 12.5.1, "pointer" and
+    Section 12.5.2, "table" in the ODB manual.
+
 Version 1.8.0
 
   * Support for the Microsoft SQL Server database. The provided connection
