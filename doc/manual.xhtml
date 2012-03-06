@@ -3648,6 +3648,12 @@ namespace odb
     what () const throw ();
   };
 
+  struct session_required: exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
   // Database operations exceptions.
   //
   struct recoverable: exception
@@ -3728,6 +3734,12 @@ namespace odb
   <p>The next two exceptions (<code>already_in_session</code>, and
      <code>not_in_session</code>) are thrown by the <code>odb::session</code>
      class and are discussed in <a href="#10">Chapter 10, "Session"</a>.</p>
+
+  <p>The <code>session_required</code> exception is thrown when ODB detects
+     that correctly loading a bidirectional object relationship requires a
+     session but one is not used. See <a href="#6.2">Section 6.2,
+     "Bidirectional Relationships"</a> for more information on this
+     exception.</p>
 
   <p>The <code>recoverable</code> exception serves as a common base
      for all the recoverable exceptions, which are: <code>connection_lost</code>,
@@ -5143,6 +5155,50 @@ private:
 };
   </pre>
 
+  <p>At the beginning of this chapter we examined how to use a session
+     to make sure a single object is shared among all other objects pointing
+     to it. With bidirectional relationships involving weak pointers the
+     use of a session becomes even more crucial. Consider the following
+     transaction that tries to load the <code>position</code> object
+     from the above example without using a session:</p>
+
+  <pre class="c++">
+transaction t (db.begin ())
+shared_ptr&lt;position> p (db.load&lt;position> (1));
+...
+t.commit ();
+  </pre>
+
+  <p>When we load the <code>position</code> object, the <code>employee</code>
+     object, which it points to, is also loaded. While <code>employee</code>
+     is initially stored as <code>shared_ptr</code>, it is then assigned to
+     the <code>employee_</code> member which is <code>weak_ptr</code>. Once
+     the assignment is complete, the shared pointer goes out of scope
+     and the only pointer that points to the newly loaded
+     <code>employee</code> object is the <code>employee_</code> weak
+     pointer. And that means the <code>employee</code> object is deleted
+     immediately after being loaded. To help avoid such pathological
+     situations ODB detects cases where a newly loaded object will
+     immediately be deleted and throws the <code>odb::session_required</code>
+     exception.</p>
+
+  <p>As the exception name suggests, the easiest way to resolve this
+     problem is to use a session:</p>
+
+  <pre class="c++">
+session s;
+transaction t (db.begin ())
+shared_ptr&lt;position> p (db.load&lt;position> (1));
+...
+t.commit ();
+  </pre>
+
+  <p>In our example, the session will maintain a shared pointer to the
+     loaded <code>employee</code> object preventing its immediate
+     deletion. Another way to resolve this problem is to avoid
+     immediate loading of the pointed-to objects using lazy weak
+     pointers. Lazy pointers are discussed in <a href="#6.3">Section 6.3,
+     "Lazy Pointers"</a> later in this chapter.</p>
 
   <p>Above, to model a bidirectional relationship in persistent classes,
      we used two pointers, one in each object. While this is a natural

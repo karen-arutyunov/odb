@@ -1195,12 +1195,30 @@ namespace relational
           if (lazy_pointer (pt))
             os << member << " = ptr_traits::pointer_type (*db, id);";
           else
+          {
             os << "// If a compiler error points to the line below, then" << endl
                << "// it most likely means that a pointer used in a member" << endl
                << "// cannot be initialized from an object pointer." << endl
                << "//" << endl
                << member << " = ptr_traits::pointer_type (" << endl
                << "db->load< obj_traits::object_type > (id));";
+
+            // If we are loading into an eager weak pointer, make sure there
+            // is someone else holding a strong pointer to it (normally a
+            // session). Otherwise, the object will be loaded and immediately
+            // deleted. Besides not making much sense, this also breaks the
+            // delayed loading machinery which expects the object to be around
+            // at least until the top-level load() returns.
+            //
+            if (weak_pointer (pt))
+            {
+              os << endl
+                 << "if (pointer_traits< ptr_traits::strong_pointer_type >" <<
+                "::null_ptr (" << endl
+                 << "ptr_traits::lock (" << member << ")))" << endl
+                 << "throw session_required ();";
+            }
+          }
 
           // @@ Composite value currently cannot be NULL.
           //

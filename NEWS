@@ -38,6 +38,11 @@ Version 1.9.0
     namespace. For more information, refer to Section 12.5.1, "pointer" and
     Section 12.5.2, "table" in the ODB manual.
 
+  * New exception, odb::session_required, is thrown when ODB detects that
+    correctly loading a bidirectional object relationship requires a session
+    but one is not used. For more information, refer to Section 6.2,
+    "Bidirectional Relationships" in the ODB manual.
+
 Version 1.8.0
 
   * Support for the Microsoft SQL Server database. The provided connection
