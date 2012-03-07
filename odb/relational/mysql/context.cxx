@@ -80,6 +80,7 @@ namespace relational
       generate_grow = true;
       need_alias_as = true;
       insert_send_auto_id = true;
+      delay_freeing_statement_result = false;
       data_->bind_vector_ = "MYSQL_BIND*";
       data_->truncated_vector_ = "my_bool*";
 

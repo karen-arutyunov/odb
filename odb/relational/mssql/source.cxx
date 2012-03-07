@@ -971,24 +971,6 @@ namespace relational
         }
 
         virtual void
-        free_statement_result_immediate ()
-        {
-          // Only free the result if there are no rows. Otherwise we
-          // need to keep the result alive until after we are done
-          // streaming long data.
-          //
-          os << "if (r == select_statement::no_data)" << endl
-             << "st.free_result ();"
-             << endl;
-        }
-
-        virtual void
-        free_statement_result_delayed ()
-        {
-          os << "sts.find_statement ().free_result ();";
-        }
-
-        virtual void
         persist_statement_extra (type& c,
                                  relational::query_parameters&,
                                  persist_position p)

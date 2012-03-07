@@ -158,6 +158,7 @@ namespace relational
     bool generate_grow;
     bool need_alias_as;
     bool insert_send_auto_id;
+    bool delay_freeing_statement_result;
 
     string const& bind_vector;
     string const& truncated_vector;

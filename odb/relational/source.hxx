@@ -2191,7 +2191,6 @@ namespace relational
           }
         }
 
-
         init_value_extra ();
 
         // If we are loading an eager pointer, then the call to init
@@ -2236,12 +2235,7 @@ namespace relational
              << "}"
              << "}";
 
-        os << "if (r == select_statement::no_data)"
-           << "{"
-           << "st.free_result ();"
-           << "return false;"
-           << "}"
-           << "return true;"
+        os << "return r != select_statement::no_data;"
            << "}";
 
         // delete_all
@@ -2315,7 +2309,8 @@ namespace relational
            << "cb.version++;"
            << "}"
            << "select_statement& st (sts.select_all_statement ());"
-           << "st.execute ();";
+           << "st.execute ();"
+           << "auto_result ar (st);";
 
         // If we are loading eager object pointers, we may need to cache
         // the result since we will be loading other objects.
@@ -2343,9 +2338,6 @@ namespace relational
              << "}";
 
         os << "bool more (r != select_statement::no_data);"
-           << endl
-           << "if (!more)" << endl
-           << "st.free_result ();"
            << endl
            << "sts.id_binding (id);"
            << "functions_type& fs (sts.functions ());";
@@ -2806,19 +2798,6 @@ namespace relational
 
       virtual void
       object_extra (type&)
-      {
-      }
-
-      // By default we free statement result immediately after fetch.
-      //
-      virtual void
-      free_statement_result_immediate ()
-      {
-        os << "st.free_result ();";
-      }
-
-      virtual void
-      free_statement_result_delayed ()
       {
       }
 
@@ -3553,7 +3532,8 @@ namespace relational
                << "throw object_not_persistent ();"
                << endl;
 
-            free_statement_result_delayed ();
+            if (delay_freeing_statement_result)
+              os << "sts.find_statement ().free_result ();";
 
             if (straight_readwrite_containers)
               os << "binding& idb (sts.id_image_binding ());"
@@ -3698,7 +3678,8 @@ namespace relational
                << "throw object_changed ();"
                << endl;
 
-            free_statement_result_delayed ();
+            if (delay_freeing_statement_result)
+              os << "sts.find_statement ().free_result ();";
 
             os << "if (version (sts.image ()) != obj." <<
               optimistic->name () << ")" << endl
@@ -3728,13 +3709,22 @@ namespace relational
              << db << "::transaction::current ().connection ());"
              << object_statements_type << "& sts (" << endl
              << "conn.statement_cache ().find_object<object_type> ());"
-             << object_statements_type << "::auto_lock l (sts);"
-             << endl
+             << object_statements_type << "::auto_lock l (sts);";
+
+          if (delay_freeing_statement_result)
+            os << "auto_result ar;";
+
+          os << endl
              << "if (l.locked ())"
              << "{"
              << "if (!find_ (sts, id))" << endl
-             << "return pointer_type ();"
-             << "}"
+             << "return pointer_type ();";
+
+          if (delay_freeing_statement_result)
+            os << endl
+               << "ar.set (sts.find_statement ());";
+
+          os << "}"
              << "pointer_type p (" << endl
              << "access::object_factory< object_type, pointer_type  >::create ());"
              << "pointer_traits< pointer_type >::guard pg (p);"
@@ -3748,7 +3738,9 @@ namespace relational
              << "init (obj, sts.image (), &db);";
 
           init_value_extra ();
-          free_statement_result_delayed ();
+
+          if (delay_freeing_statement_result)
+            os << "ar.free ();";
 
           os << "load_ (sts, obj);"
              << "sts.load_delayed ();"
@@ -3786,15 +3778,21 @@ namespace relational
 
           os << "if (!find_ (sts, id))" << endl
              << "return false;"
-             << endl
-             << "reference_cache_traits< object_type >::insert_guard ig (" << endl
+             << endl;
+
+          if (delay_freeing_statement_result)
+            os << "auto_result ar (sts.find_statement ());";
+
+          os << "reference_cache_traits< object_type >::insert_guard ig (" << endl
              << "reference_cache_traits< object_type >::insert (db, id, obj));"
              << endl
              << "callback (db, obj, callback_event::pre_load);"
              << "init (obj, sts.image (), &db);";
 
           init_value_extra ();
-          free_statement_result_delayed ();
+
+          if (delay_freeing_statement_result)
+            os << "ar.free ();";
 
           os << "load_ (sts, obj);"
              << "sts.load_delayed ();"
@@ -3828,23 +3826,24 @@ namespace relational
              << "return false;"
              << endl;
 
+          if (delay_freeing_statement_result)
+            os << "auto_result ar (sts.find_statement ());"
+               << endl;
+
           if (optimistic != 0)
           {
             os << "if (version (sts.image ()) == obj." <<
-              optimistic->name () << ")"
-               << "{";
-
-            free_statement_result_delayed ();
-
-            os << "return true;"
-               << "}";
+              optimistic->name () << ")" << endl
+               << "return true;";
           }
 
           os << "callback (db, obj, callback_event::pre_load);"
              << "init (obj, sts.image (), &db);";
 
           init_value_extra ();
-          free_statement_result_delayed ();
+
+          if (delay_freeing_statement_result)
+            os << "ar.free ();";
 
           os << "load_ (sts, obj);"
              << "sts.load_delayed ();"
@@ -3893,11 +3892,12 @@ namespace relational
              << "}"
              << "select_statement& st (sts.find_statement ());"
              << "st.execute ();"
-             << "select_statement::result r (st.fetch ());";
+             << "auto_result ar (st);"
+             << "select_statement::result r (st.fetch ());"
+             << endl;
 
           if (grow)
-            os << endl
-               << "if (r == select_statement::truncated)"
+            os << "if (r == select_statement::truncated)"
                << "{"
                << "if (grow (im, sts.select_image_truncated ()))" << endl
                << "im.version++;"
@@ -3911,10 +3911,20 @@ namespace relational
                << "}"
                << "}";
 
-          free_statement_result_immediate ();
+          // If we are delaying, only free the result if it is empty.
+          //
+          if (delay_freeing_statement_result)
+            os << "if (r != select_statement::no_data)"
+               << "{"
+               << "ar.release ();"
+               << "return true;"
+               << "}"
+               << "else" << endl
+               << "return false;";
+          else
+            os << "return r != select_statement::no_data;";
 
-          os << "return r != select_statement::no_data;"
-             << "}";
+          os << "}";
         }
 
         // load_()
