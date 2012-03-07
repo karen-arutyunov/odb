@@ -15,6 +15,8 @@ namespace odb
     view_result_impl<T>::
     ~view_result_impl ()
     {
+      if (!this->end_)
+        statement_->free_result ();
     }
 
     template <typename T>
@@ -76,7 +78,10 @@ namespace odb
       this->current (pointer_type ());
 
       if (!statement_->next ())
+      {
+        statement_->free_result ();
         this->end_ = true;
+      }
     }
 
     template <typename T>
