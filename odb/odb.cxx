@@ -493,13 +493,13 @@ main (int argc, char* argv[])
       //
       if (ops.version ())
       {
-        e << "ODB object-relational mapping (ORM) compiler for C++ "
+        cout << "ODB object-relational mapping (ORM) compiler for C++ "
           ODB_COMPILER_VERSION_STR << endl
-          << "Copyright (c) 2009-2012 Code Synthesis Tools CC" << endl;
+             << "Copyright (c) 2009-2012 Code Synthesis Tools CC" << endl;
 
-        e << "This is free software; see the source for copying conditions. "
-          << "There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS "
-          << "FOR A PARTICULAR PURPOSE." << endl;
+        cout << "This is free software; see the source for copying "
+             << "conditions. There is NO\nwarranty; not even for "
+             << "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << endl;
 
         return 0;
       }
@@ -508,11 +508,10 @@ main (int argc, char* argv[])
       //
       if (ops.help ())
       {
-        e << "Usage: " << argv[0] << " [options] file [file ...]"
-          << endl
-          << "Options:" << endl;
+        cout << "Usage: " << argv[0] << " [options] file [file ...]" << endl
+             << "Options:" << endl;
 
-        options::print_usage (e);
+        options::print_usage (cout);
         return 0;
       }
 
