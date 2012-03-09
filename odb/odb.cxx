@@ -992,8 +992,8 @@ encode_plugin_option (string const& k, string const& cv)
 static paths
 profile_paths (strings const& sargs, char const* name)
 {
-  // Copy some of the arguments from the passed list. We only need
-  // the g++ executable and the -I options.
+  // Copy some of the arguments from the passed list. We also need
+  // the g++ executable.
   //
   strings args;
 
@@ -1009,16 +1009,28 @@ profile_paths (strings const& sargs, char const* name)
   {
     string const& a (*i);
 
+    // -I
+    //
     if (a.size () > 1 && a[0] == '-' && a[1] == 'I')
     {
       args.push_back (a);
 
       if (a.size () == 2) // -I /path
       {
-        ++i;
-        args.push_back (*i);
+        args.push_back (*(++i));
       }
     }
+    // -framework
+    //
+    else if (a == "-framework")
+    {
+      args.push_back (a);
+      args.push_back (*(++i));
+    }
+    // -std
+    //
+    else if (a.compare (0, 5, "-std=") == 0)
+      args.push_back (a);
   }
 
   // Create an execvp-compatible argument array.
