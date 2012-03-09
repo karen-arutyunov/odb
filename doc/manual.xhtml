@@ -13261,10 +13261,13 @@ SHOW integer_datetimes
 
   <p>In Oracle empty <code>VARCHAR2</code> and <code>NVARCHAR2</code>
      strings are represented as <code>NULL</code> values. As a result,
-     in the generated schema, columns of these types are always
-     declared as <code>NULL</code>, even if explicitly declared as
+     in the generated schema, columns of these types are declared as
+     <code>NULL</code> even if explicitly declared as
      <code>NOT NULL</code> with the <code>db&nbsp;not_null</code> pragma
-     (<a href="#12.4.5">Section 12.4.5, "<code>null/not_null</code>"</a>).</p>
+     (<a href="#12.4.5">Section 12.4.5, "<code>null/not_null</code>"</a>),
+     except for primary key columns. This also means that for object ids
+     that are mapped to these Oracle types, an empty string is an invalid
+     value.</p>
 
   <p>The Oracle ODB runtime library also provides support for mapping the
      <code>std::string</code> type to the Oracle <code>CHAR</code>,

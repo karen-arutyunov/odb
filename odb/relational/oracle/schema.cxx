@@ -153,9 +153,9 @@ namespace relational
         null (sema_rel::column& c)
         {
           // Oracle interprets empty VARCHAR2 and NVARCHAR2 strings as
-          // NULL. As an empty string is always valid within the C++
-          // context, VARCHAR2 and NVARCHAR2 columns are always
-          // specified as nullable.
+          // NULL. As an empty string is valid within the C++ context,
+          // VARCHAR2 and NVARCHAR2 columns are always specified as
+          // nullable, except when are a part of a primary key.
           //
           if (!c.null ())
           {
@@ -164,7 +164,24 @@ namespace relational
             sql_type const& t (parse_sql_type (c.type ()));
 
             if (t.type == sql_type::VARCHAR2 || t.type == sql_type::NVARCHAR2)
-              return;
+            {
+              // See if this column is a part of a primary key.
+              //
+              bool pk (false);
+
+              for (sema_rel::column::contained_iterator i (
+                     c.contained_begin ()); i != c.contained_end (); ++i)
+              {
+                if (i->key ().is_a<sema_rel::primary_key> ())
+                {
+                  pk = true;
+                  break;
+                }
+              }
+
+              if (!pk)
+                return;
+            }
           }
 
           base::null (c);
