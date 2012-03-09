@@ -83,7 +83,8 @@ struct process_info
 #endif
 
   int out_fd;
-  int in_fd;
+  int in_efd;
+  int in_ofd;
 };
 
 struct process_failure {};
@@ -95,7 +96,10 @@ struct process_failure {};
 // name argument is the name of the current process for diagnostics.
 //
 static process_info
-start_process (char const* args[], char const* name, bool connect_out = false);
+start_process (char const* args[],
+               char const* name,
+               bool connect_stderr = false,
+               bool connect_stdout = false);
 
 // Wait for the process to terminate. Return true if the process terminated
 // normally and with the zero exit status. Issue diagnostics and throw
@@ -670,6 +674,8 @@ main (int argc, char* argv[])
 
     // Iterate over the input files and compile each of them.
     //
+    size_t sloc_total (0);
+
     for (; end < plugin_args.size (); ++end)
     {
       path input (plugin_args[end]);
@@ -700,7 +706,7 @@ main (int argc, char* argv[])
         }
       }
 
-      process_info pi (start_process (&exec_args[0], argv[0]));
+      process_info pi (start_process (&exec_args[0], argv[0], false, true));
 
       {
         __gnu_cxx::stdio_filebuf<char> fb (
@@ -866,8 +872,73 @@ main (int argc, char* argv[])
         os << "#include <odb/container-traits.hxx>" << endl;
       }
 
+      // Filter the output stream looking for communication from the
+      // plugin.
+      //
+      {
+        __gnu_cxx::stdio_filebuf<char> fb (pi.in_ofd, ios_base::in);
+        istream is (&fb);
+
+        for (bool first (true); !is.eof (); )
+        {
+          string line;
+          getline (is, line);
+
+          if (is.fail () && !is.eof ())
+          {
+            e << argv[0] << ": error: io failure while parsing output" << endl;
+            wait_process (pi, argv[0]);
+            return 1;
+          }
+
+          if (line.compare (0, 9, "odb:sloc:") == 0)
+          {
+            if (ops.show_sloc () || ops.sloc_limit_specified ())
+            {
+              size_t n;
+              istringstream is (string (line, 9, string::npos));
+
+              if (!(is >> n && is.eof ()))
+              {
+                e << argv[0] << ": error: invalid odb:sloc value" << endl;
+                wait_process (pi, argv[0]);
+                return 1;
+              }
+
+              sloc_total += n;
+            }
+
+            continue;
+          }
+
+          if (first)
+            first = false;
+          else
+            cout << endl;
+
+          cout << line;
+        }
+      }
+
       if (!wait_process (pi, argv[0]))
         return 1;
+    }
+
+    // Handle SLOC.
+    //
+    if (ops.show_sloc ())
+      e << "total: " << sloc_total << endl;
+
+    if (ops.sloc_limit_specified () && ops.sloc_limit () < sloc_total)
+    {
+      e << argv[0] << ": error: SLOC limit of " << ops.sloc_limit ()
+        << " lines has been exceeded" << endl;
+
+      if (!ops.show_sloc ())
+        e << argv[0] << ": info: use the --show-sloc option to see the "
+          << "current total" << endl;
+
+      return 1;
     }
   }
   catch (profile_failure const&)
@@ -974,7 +1045,7 @@ profile_paths (strings const& sargs, char const* name)
   //
   stringstream ss;
   {
-    __gnu_cxx::stdio_filebuf<char> fb (pi.in_fd, ios_base::in);
+    __gnu_cxx::stdio_filebuf<char> fb (pi.in_efd, ios_base::in);
     istream is (&fb);
 
     for (bool first (true); !is.eof (); )
@@ -1179,6 +1250,7 @@ driver_path (path const& drv)
   return drv.directory ().empty () ? path_search (drv) : drv;
 }
 
+#ifndef STATIC_PLUGIN
 static path
 plugin_path (path const& drv)
 {
@@ -1215,6 +1287,7 @@ plugin_path (path const& drv)
 
   return path ();
 }
+#endif
 
 //
 // Process manipulation.
@@ -1223,12 +1296,15 @@ plugin_path (path const& drv)
 #ifndef _WIN32
 
 static process_info
-start_process (char const* args[], char const* name, bool out)
+start_process (char const* args[], char const* name, bool err, bool out)
 {
   int out_fd[2];
-  int in_fd[2];
+  int in_efd[2];
+  int in_ofd[2];
 
-  if (pipe (out_fd) == -1 || (out && pipe (in_fd) == -1))
+  if (pipe (out_fd) == -1 ||
+      (err && pipe (in_efd) == -1) ||
+      (out && pipe (in_ofd) == -1))
   {
     char const* err (strerror (errno));
     cerr << name << ": error: " <<  err << endl;
@@ -1258,14 +1334,27 @@ start_process (char const* args[], char const* name, bool out)
       throw process_failure ();
     }
 
-    // Do the same for the out if requested.
+    // Do the same for the stderr if requested.
+    //
+    if (err)
+    {
+      if (close (in_efd[0]) == -1 ||
+          dup2 (in_efd[1], STDERR_FILENO) == -1 ||
+          close (in_efd[1]) == -1)
+      {
+        char const* err (strerror (errno));
+        cerr << name << ": error: " <<  err << endl;
+        throw process_failure ();
+      }
+    }
+
+    // Do the same for the stdout if requested.
     //
     if (out)
     {
-      if (close (in_fd[0]) == -1 ||
-          dup2 (in_fd[1], STDOUT_FILENO) == -1 ||
-          dup2 (in_fd[1], STDERR_FILENO) == -1 ||
-          close (in_fd[1]) == -1)
+      if (close (in_ofd[0]) == -1 ||
+          dup2 (in_ofd[1], STDOUT_FILENO) == -1 ||
+          close (in_ofd[1]) == -1)
       {
         char const* err (strerror (errno));
         cerr << name << ": error: " <<  err << endl;
@@ -1284,7 +1373,9 @@ start_process (char const* args[], char const* name, bool out)
   {
     // Parent. Close the other ends of the pipes.
     //
-    if (close (out_fd[0]) == -1 || (out && close (in_fd[1]) == -1))
+    if (close (out_fd[0]) == -1 ||
+        (err && close (in_efd[1]) == -1) ||
+        (out && close (in_ofd[1]) == -1))
     {
       char const* err (strerror (errno));
       cerr << name << ": error: " <<  err << endl;
@@ -1295,7 +1386,8 @@ start_process (char const* args[], char const* name, bool out)
   process_info r;
   r.id = pid;
   r.out_fd = out_fd[1];
-  r.in_fd = out ? in_fd[0] : 0;
+  r.in_efd = err ? in_efd[0] : 0;
+  r.in_ofd = out ? in_ofd[0] : 0;
   return r;
 }
 
@@ -1342,10 +1434,11 @@ print_error (char const* name)
 }
 
 static process_info
-start_process (char const* args[], char const* name, bool out)
+start_process (char const* args[], char const* name, bool err, bool out)
 {
   HANDLE out_h[2];
-  HANDLE in_h[2];
+  HANDLE in_eh[2];
+  HANDLE in_oh[2];
   SECURITY_ATTRIBUTES sa;
 
   sa.nLength = sizeof (SECURITY_ATTRIBUTES);
@@ -1359,10 +1452,20 @@ start_process (char const* args[], char const* name, bool out)
     throw process_failure ();
   }
 
+  if (err)
+  {
+    if (!CreatePipe (&in_eh[0], &in_eh[1], &sa, 0) ||
+        !SetHandleInformation (in_eh[0], HANDLE_FLAG_INHERIT, 0))
+    {
+      print_error (name);
+      throw process_failure ();
+    }
+  }
+
   if (out)
   {
-    if (!CreatePipe (&in_h[0], &in_h[1], &sa, 0) ||
-        !SetHandleInformation (in_h[0], HANDLE_FLAG_INHERIT, 0))
+    if (!CreatePipe (&in_oh[0], &in_oh[1], &sa, 0) ||
+        !SetHandleInformation (in_oh[0], HANDLE_FLAG_INHERIT, 0))
     {
       print_error (name);
       throw process_failure ();
@@ -1424,16 +1527,17 @@ start_process (char const* args[], char const* name, bool out)
   memset (&pi, 0, sizeof (PROCESS_INFORMATION));
 
   si.cb = sizeof(STARTUPINFO);
-  if (out)
-  {
-    si.hStdError = in_h[1];
-    si.hStdOutput = in_h[1];
-  }
+
+  if (err)
+    si.hStdError = in_eh[1];
   else
-  {
     si.hStdError = GetStdHandle (STD_ERROR_HANDLE);
+
+  if (out)
+    si.hStdOutput = in_oh[1];
+  else
     si.hStdOutput = GetStdHandle (STD_OUTPUT_HANDLE);
-  }
+
   si.hStdInput = out_h[0];
   si.dwFlags |= STARTF_USESTDHANDLES;
 
@@ -1456,8 +1560,11 @@ start_process (char const* args[], char const* name, bool out)
   CloseHandle (pi.hThread);
   CloseHandle (out_h[0]);
 
+  if (err)
+    CloseHandle (in_eh[1]);
+
   if (out)
-    CloseHandle (in_h[1]);
+    CloseHandle (in_oh[1]);
 
   process_info r;
   r.id = pi.hProcess;
@@ -1469,20 +1576,35 @@ start_process (char const* args[], char const* name, bool out)
     throw process_failure ();
   }
 
-  if (out)
+  if (err)
   {
     // Pass _O_TEXT to get newline translation.
     //
-    r.in_fd = _open_osfhandle ((intptr_t) (in_h[0]), _O_TEXT);
+    r.in_efd = _open_osfhandle ((intptr_t) (in_eh[0]), _O_TEXT);
 
-    if (r.in_fd == -1)
+    if (r.in_efd == -1)
     {
       cerr << name << ": error: unable to obtain C file handle" << endl;
       throw process_failure ();
     }
   }
   else
-    r.in_fd = 0;
+    r.in_efd = 0;
+
+  if (out)
+  {
+    // Pass _O_TEXT to get newline translation.
+    //
+    r.in_ofd = _open_osfhandle ((intptr_t) (in_oh[0]), _O_TEXT);
+
+    if (r.in_ofd == -1)
+    {
+      cerr << name << ": error: unable to obtain C file handle" << endl;
+      throw process_failure ();
+    }
+  }
+  else
+    r.in_ofd = 0;
 
   return r;
 }

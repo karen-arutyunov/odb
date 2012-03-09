@@ -5,6 +5,7 @@
 include <set>;
 include <vector>;
 include <string>;
+include <cstddef>;
 
 include <odb/option-types.hxx>;
 
@@ -449,6 +450,18 @@ class options
     "Add <prefix> to the generated header inclusion guards. The prefix is
      transformed to upper case and characters that are illegal in a
      preprocessor macro name are replaced with underscores."
+  };
+
+  bool --show-sloc
+  {
+    "Print the number of generated physical source lines of code (SLOC)."
+  };
+
+  std::size_t --sloc-limit
+  {
+    "<num>",
+    "Check that the number of generated physical source lines of code (SLOC)
+     does not exceed <num>."
   };
 
   // The following option is "fake" in that it is actually handled by

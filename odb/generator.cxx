@@ -12,6 +12,7 @@
 
 #include <cutl/compiler/code-stream.hxx>
 #include <cutl/compiler/cxx-indenter.hxx>
+#include <cutl/compiler/sloc-counter.hxx>
 
 #include <odb/version.hxx>
 #include <odb/context.hxx>
@@ -231,7 +232,10 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     if (sep_schema)
       sch << file_header;
 
-    typedef compiler::ostream_filter<compiler::cxx_indenter, char> cxx_filter;
+    typedef compiler::ostream_filter<compiler::cxx_indenter, char> ind_filter;
+    typedef compiler::ostream_filter<compiler::sloc_counter, char> sloc_filter;
+
+    size_t sloc_total (0);
 
     // Include settings.
     //
@@ -242,7 +246,9 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     // HXX
     //
     {
-      cxx_filter filt (hxx);
+      sloc_filter sloc (hxx);
+      ind_filter ind (hxx);
+
       auto_ptr<context> ctx (create_context (hxx, unit, ops, model.get ()));
 
       string guard (make_guard (gp + hxx_name, *ctx));
@@ -307,12 +313,21 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << endl;
 
       hxx << "#endif // " << guard << endl;
+
+      ind.stream ().unbuffer (); // Flush buffers to get correct SLOC.
+
+      if (ops.show_sloc ())
+        cerr << hxx_name << ": " << sloc.stream ().count () << endl;
+
+      sloc_total += sloc.stream ().count ();
     }
 
     // IXX
     //
     {
-      cxx_filter filt (ixx);
+      sloc_filter sloc (ixx);
+      ind_filter ind (ixx);
+
       auto_ptr<context> ctx (create_context (ixx, unit, ops, model.get ()));
 
       // Copy prologue.
@@ -346,12 +361,21 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       append (ixx, ops.ixx_epilogue (), ops.ixx_epilogue_file ());
       ixx << "//" << endl
           << "// End epilogue." << endl;
+
+      ind.stream ().unbuffer (); // Flush buffers to get correct SLOC.
+
+      if (ops.show_sloc ())
+        cerr << ixx_name << ": " << sloc.stream ().count () << endl;
+
+      sloc_total += sloc.stream ().count ();
     }
 
     // CXX
     //
     {
-      cxx_filter filt (cxx);
+      sloc_filter sloc (cxx);
+      ind_filter ind (cxx);
+
       auto_ptr<context> ctx (create_context (cxx, unit, ops, model.get ()));
 
       cxx << "#include <odb/pre.hxx>" << endl
@@ -392,13 +416,22 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << endl;
 
       cxx << "#include <odb/post.hxx>" << endl;
+
+      ind.stream ().unbuffer (); // Flush buffers to get correct SLOC.
+
+      if (ops.show_sloc ())
+        cerr << cxx_name << ": " << sloc.stream ().count () << endl;
+
+      sloc_total += sloc.stream ().count ();
     }
 
     // SCH
     //
     if (sep_schema)
     {
-      cxx_filter filt (sch);
+      sloc_filter sloc (sch);
+      ind_filter ind (sch);
+
       auto_ptr<context> ctx (create_context (sch, unit, ops, model.get ()));
 
       // Copy prologue.
@@ -441,6 +474,13 @@ generate (options const& ops, semantics::unit& unit, path const& p)
           << endl;
 
       sch << "#include <odb/post.hxx>" << endl;
+
+      ind.stream ().unbuffer (); // Flush buffers to get correct SLOC.
+
+      if (ops.show_sloc ())
+        cerr << sch_name << ": " << sloc.stream ().count () << endl;
+
+      sloc_total += sloc.stream ().count ();
     }
 
     // SQL
@@ -470,6 +510,13 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       //
       append (sql, ops.sql_epilogue (), ops.sql_epilogue_file ());
     }
+
+    // Communicate the sloc count to the driver. This is necessary to
+    // correctly handle the total if we are compiling multiple files in
+    // one invocation.
+    //
+    if (ops.show_sloc () || ops.sloc_limit_specified ())
+      cout << "odb:sloc:" << sloc_total << endl;
 
     auto_rm.cancel ();
   }
