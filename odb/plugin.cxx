@@ -17,6 +17,7 @@
 #include <odb/parser.hxx>
 #include <odb/options.hxx>
 #include <odb/option-functions.hxx>
+#include <odb/features.hxx>
 #include <odb/profile.hxx>
 #include <odb/version.hxx>
 #include <odb/validator.hxx>
@@ -115,24 +116,26 @@ gate_callback (void*, void*)
     parser p (*options_, loc_pragmas_, ns_loc_pragmas_, decl_pragmas_);
     auto_ptr<unit> u (p.parse (global_namespace, file_));
 
+    features f;
+
     // Validate, pass 1.
     //
     validator v;
-    v.validate (*options_, *u, file_, 1);
+    v.validate (*options_, f, *u, file_, 1);
 
     // Process.
     //
     processor pr;
-    pr.process (*options_, *u, file_);
+    pr.process (*options_, f, *u, file_);
 
     // Validate, pass 2.
     //
-    v.validate (*options_, *u, file_, 2);
+    v.validate (*options_, f, *u, file_, 2);
 
     // Generate.
     //
     generator g;
-    g.generate (*options_, *u, file_);
+    g.generate (*options_, f, *u, file_);
   }
   catch (pragmas_failed const&)
   {

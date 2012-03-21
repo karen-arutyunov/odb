@@ -73,8 +73,9 @@ namespace relational
     context (ostream& os,
              semantics::unit& u,
              options_type const& ops,
+             features_type& f,
              sema_rel::model* m)
-        : root_context (os, u, ops, data_ptr (new (shared) data (os))),
+        : root_context (os, u, ops, f, data_ptr (new (shared) data (os))),
           base_context (static_cast<data*> (root_context::data_.get ()), m),
           data_ (static_cast<data*> (base_context::data_))
     {
@@ -85,6 +86,7 @@ namespace relational
       need_alias_as = true;
       insert_send_auto_id = false;
       delay_freeing_statement_result = true;
+      need_image_clone = true;
       data_->bind_vector_ = "mssql::bind*";
 
       // Populate the C++ type to DB type map.

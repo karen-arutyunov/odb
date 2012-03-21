@@ -12,13 +12,16 @@
 using namespace std;
 
 void processor::
-process (options const& ops, semantics::unit& unit, semantics::path const&)
+process (options const& ops,
+         features& f,
+         semantics::unit& unit,
+         semantics::path const&)
 {
   try
   {
     // Process types.
     //
-    auto_ptr<context> ctx (create_context (cerr, unit, ops, 0));
+    auto_ptr<context> ctx (create_context (cerr, unit, ops, f, 0));
     relational::process ();
   }
   catch (operation_failed const&)

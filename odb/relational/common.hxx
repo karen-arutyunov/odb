@@ -6,6 +6,7 @@
 #define ODB_RELATIONAL_COMMON_HXX
 
 #include <map>
+#include <set>
 #include <cstddef> // std::size_t
 #include <cassert>
 #include <typeinfo>
@@ -219,6 +220,35 @@ namespace relational
     {
       assert (false);
     }
+  };
+
+  // Generate alias tags and alias_traits specializations for pointers
+  // in this objects.
+  //
+  struct query_alias_traits: object_columns_base, virtual context
+  {
+    typedef query_alias_traits base;
+
+    query_alias_traits (std::set<string>& tags, std::set<string>& specs)
+        : tags_ (tags), specs_ (specs) {}
+
+    virtual void
+    traverse_object (semantics::class_&);
+
+    virtual void
+    traverse_pointer (semantics::data_member&, semantics::class_&);
+
+    virtual void
+    generate (string const& alias, semantics::class_&);
+
+  private:
+    void
+    generate_specialization (string const& alias,
+                             string const& tag,
+                             semantics::class_&);
+
+    std::set<string>& tags_;
+    std::set<string>& specs_;
   };
 
   //

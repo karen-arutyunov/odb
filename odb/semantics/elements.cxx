@@ -322,8 +322,25 @@ namespace semantics
   void scope::
   add_edge_left (names& e)
   {
-    names_list::iterator it (names_.insert (names_.end (), &e));
-    iterator_map_[&e] = it;
+    names_list::iterator i (names_.insert (names_.end (), &e));
+    iterator_map_[&e] = i;
+    names_map_[e.name ()].push_back (&e);
+  }
+
+  void scope::
+  add_edge_left (names& e, names_iterator after)
+  {
+    names_list::iterator i;
+
+    if (after.base () == names_.end ())
+      i = names_.insert (names_.begin (), &e);
+    else
+    {
+      names_list::iterator j (after.base ());
+      i = names_.insert (++j, &e);
+    }
+
+    iterator_map_[&e] = i;
     names_map_[e.name ()].push_back (&e);
   }
 
@@ -423,6 +440,14 @@ namespace semantics
           type_info ti (typeid (data_member));
           ti.add_base (typeid (nameable));
           ti.add_base (typeid (instance));
+          insert (ti);
+        }
+
+        // virtual_data_member
+        //
+        {
+          type_info ti (typeid (virtual_data_member));
+          ti.add_base (typeid (data_member));
           insert (ti);
         }
 

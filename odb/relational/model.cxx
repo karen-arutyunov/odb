@@ -147,7 +147,7 @@ namespace relational
         semantics::node& d (*e.dup.get<semantics::node*> ("cxx-node"));
 
         cerr << d.file () << ":" << d.line () << ":" << d.column ()
-             << ": error: " << e.dup.kind () << " name '" << e.orig_name
+             << ": error: " << e.dup.kind () << " name '" << e.name
              << "' conflicts with an already defined " << e.orig.kind ()
              << " name"
              << endl;

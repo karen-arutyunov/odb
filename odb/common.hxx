@@ -67,25 +67,33 @@ struct object_members_base: traversal::class_, virtual context
   traverse_view (semantics::class_&);
 
 public:
-  object_members_base ()
-      : member_ (*this)
+  object_members_base (bool traverse_poly_base = false)
+      : top_level_ (true), member_ (*this)
   {
-    init (false, false, false);
+    init (false, false, false, traverse_poly_base);
   }
 
   object_members_base (bool build_flat_prefix,
                        bool build_table_prefix,
-                       bool build_member_prefix)
-      : member_ (*this)
+                       bool build_member_prefix,
+                       bool traverse_poly_base = false)
+      : top_level_ (true), member_ (*this)
   {
-    init (build_flat_prefix, build_table_prefix, build_member_prefix);
+    init (build_flat_prefix,
+          build_table_prefix,
+          build_member_prefix,
+          traverse_poly_base);
   }
 
   object_members_base (object_members_base const& x)
       : context (), //@@ -Wextra
+        top_level_ (true),
         member_ (*this)
   {
-    init (x.build_flat_prefix_, x.build_table_prefix_, x.build_member_prefix_);
+    init (x.build_flat_prefix_,
+          x.build_table_prefix_,
+          x.build_member_prefix_,
+          x.traverse_poly_base_);
   }
 
   virtual void
@@ -117,11 +125,13 @@ private:
   void
   init (bool build_flat_prefix,
         bool build_table_prefix,
-        bool build_member_prefix)
+        bool build_member_prefix,
+        bool traverse_poly_base)
   {
     build_flat_prefix_ = build_flat_prefix;
     build_table_prefix_ = build_table_prefix;
     build_member_prefix_ = build_member_prefix;
+    traverse_poly_base_ = traverse_poly_base;
 
     *this >> names_ >> member_;
     *this >> inherits_ >> *this;
@@ -148,6 +158,10 @@ private:
   bool build_flat_prefix_;
   bool build_table_prefix_;
   bool build_member_prefix_;
+
+  bool traverse_poly_base_;
+
+  bool top_level_;
 
   member member_;
   traversal::names names_;
@@ -204,9 +218,11 @@ struct object_columns_base: traversal::class_, virtual context
 
 public:
   object_columns_base (bool first = true,
-                       string const& column_prefix = string ())
+                       string const& column_prefix = string (),
+                       bool traverse_poly_base = false)
       : column_prefix_ (column_prefix),
         root_ (0),
+        traverse_poly_base_ (traverse_poly_base),
         first_ (first),
         top_level_ (true),
         member_ (*this)
@@ -218,6 +234,7 @@ public:
       : context (), //@@ -Wextra
         column_prefix_ (x.column_prefix_),
         root_ (0),
+        traverse_poly_base_ (x.traverse_poly_base_),
         first_ (x.first_),
         top_level_ (true),
         member_ (*this)
@@ -320,6 +337,8 @@ private:
   public:
     object_columns_base& oc_;
   };
+
+  bool traverse_poly_base_;
 
   bool first_;
   bool top_level_;

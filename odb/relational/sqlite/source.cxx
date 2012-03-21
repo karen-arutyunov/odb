@@ -21,125 +21,15 @@ namespace relational
       // bind
       //
 
-      struct bind_member: relational::bind_member, member_base
+      struct bind_member: relational::bind_member_impl<sql_type>,
+                          member_base
       {
         bind_member (base const& x)
-            : member_base::base (x), // virtual base
-              base (x),
+            : member_base::base (x),      // virtual base
+              member_base::base_impl (x), // virtual base
+              base_impl (x),
               member_base (x)
         {
-        }
-
-        virtual bool
-        pre (member_info& mi)
-        {
-          if (container (mi))
-            return false;
-
-          ostringstream ostr;
-          ostr << "b[n]";
-          b = ostr.str ();
-
-          arg = arg_override_.empty () ? string ("i") : arg_override_;
-
-          if (var_override_.empty ())
-          {
-            os << "// " << mi.m.name () << endl
-               << "//" << endl;
-
-            if (inverse (mi.m, key_prefix_) || version (mi.m))
-              os << "if (sk == statement_select)"
-                 << "{";
-            // If the whole class is readonly, then we will never be
-            // called with sk == statement_update.
-            //
-            else if (!readonly (*context::top_object))
-            {
-              semantics::class_* c;
-
-              if (id (mi.m) ||
-                  readonly (mi.m) ||
-                  ((c = composite (mi.t)) && readonly (*c)))
-                os << "if (sk != statement_update)"
-                   << "{";
-            }
-          }
-
-          return true;
-        }
-
-        virtual void
-        post (member_info& mi)
-        {
-          if (var_override_.empty ())
-          {
-            semantics::class_* c;
-
-            if ((c = composite (mi.t)))
-            {
-              bool ro (readonly (*c));
-              column_count_type const& cc (column_count (*c));
-
-              os << "n += " << cc.total << "UL";
-
-              // select = total
-              // insert = total - inverse
-              // update = total - inverse - readonly
-              //
-              if (cc.inverse != 0 || (!ro && cc.readonly != 0))
-              {
-                os << " - (" << endl
-                   << "sk == statement_select ? 0 : ";
-
-                if (cc.inverse != 0)
-                  os << cc.inverse << "UL";
-
-                if (!ro && cc.readonly != 0)
-                {
-                  if (cc.inverse != 0)
-                    os << " + ";
-
-                  os << "(" << endl
-                     << "sk == statement_insert ? 0 : " <<
-                    cc.readonly << "UL)";
-                }
-
-                os << ")";
-              }
-
-              os << ";";
-            }
-            else
-              os << "n++;";
-
-            bool block (false);
-
-            // The same logic as in pre().
-            //
-            if (inverse (mi.m, key_prefix_) || version (mi.m))
-              block = true;
-            else if (!readonly (*context::top_object))
-            {
-              semantics::class_* c;
-
-              if (id (mi.m) ||
-                  readonly (mi.m) ||
-                  ((c = composite (mi.t)) && readonly (*c)))
-                block = true;
-            }
-
-            if (block)
-              os << "}";
-            else
-              os << endl;
-          }
-        }
-
-        virtual void
-        traverse_composite (member_info& mi)
-        {
-          os << "composite_value_traits< " << mi.fq_type () <<
-            " >::bind (b + n, " << arg << "." << mi.var << "value, sk);";
         }
 
         virtual void
@@ -179,10 +69,6 @@ namespace relational
             "value.capacity ();"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
-
-      private:
-        string b;
-        string arg;
       };
       entry<bind_member> bind_member_;
 

@@ -73,7 +73,7 @@ namespace
       // Make sure id or inverse member is not marked readonly since we
       // depend on these three sets not having overlaps.
       //
-      if (readonly (m))
+      if (m.count ("readonly")) // context::readonly() also checks the class.
       {
         if (id (m))
         {
@@ -172,7 +172,9 @@ namespace
       {
         if (id (m))
         {
-          if (id_ != 0)
+          if (id_ == 0)
+            id_ = &m;
+          else
           {
             os << m.file () << ":" << m.line () << ":" << m.column () << ":"
                << " error: multiple object id members" << endl;
@@ -182,13 +184,13 @@ namespace
 
             valid_ = false;
           }
-          else
-            id_ = &m;
         }
 
         if (version (m))
         {
-          if (optimistic_ != 0)
+          if (optimistic_ == 0)
+            optimistic_ = &m;
+          else
           {
             os << m.file () << ":" << m.line () << ":" << m.column () << ":"
                << " error: multiple version members" << endl;
@@ -200,8 +202,6 @@ namespace
 
             valid_ = false;
           }
-          else
-            optimistic_ = &m;
         }
       }
 
@@ -305,6 +305,7 @@ namespace
       // Check bases.
       //
       bool base (false);
+      type* poly_root (0);
 
       for (type::inherits_iterator i (c.inherits_begin ());
            i != c.inherits_end ();
@@ -313,7 +314,37 @@ namespace
         type& b (i->base ());
 
         if (object (b))
+        {
           base = true;
+
+          if (type* r = polymorphic (b))
+          {
+            if (poly_root == 0)
+            {
+              poly_root = r;
+              c.set ("polymorphic-base", &static_cast<semantics::class_&> (b));
+            }
+            // If poly_root and r are the same, then we have virtual
+            // inheritance. Though we don't support it at the moment.
+            //
+            else //if (poly_root != r)
+            {
+              os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+                 << " error: persistent class '" << class_name (c) << "' "
+                 << "derives from multiple polymorphic bases" << endl;
+
+              type& a (*poly_root);
+              os << a.file () << ":" << a.line () << ":" << a.column () << ":"
+                 << " info: first polymorphic base defined here" << endl;
+
+              type& b (*r);
+              os << b.file () << ":" << b.line () << ":" << b.column () << ":"
+                 << " info: second polymorphic base defined here" << endl;
+
+              valid_ = false;
+            }
+          }
+        }
         else if (view (b) || composite (b))
         {
           // @@ Should we use hint here?
@@ -347,8 +378,9 @@ namespace
 
       if (id == 0)
       {
-        // An object without an id should either be abstract or explicitly
-        // marked as such.
+        // An object without an id should either be reuse-abstract
+        // or explicitly marked as such. We check that it is not
+        // polymorphic below.
         //
         if (!(c.count ("id") || abstract (c)))
         {
@@ -479,6 +511,36 @@ namespace
         }
       }
 
+      // Polymorphic inheritance.
+      //
+      if (c.count ("polymorphic") && poly_root == 0)
+      {
+        // Root of the hierarchy.
+        //
+
+        if (id == 0)
+        {
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: polymorphic class without an object id" << endl;
+
+          valid_ = false;
+        }
+
+        if (!TYPE_POLYMORPHIC_P (c.tree_node ()))
+        {
+          os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+             << " error: non-polymorphic class (class without virtual "
+             << "functions) cannot be declared polymorphic" << endl;
+
+          valid_ = false;
+        }
+
+        poly_root = &c;
+      }
+
+      if (poly_root != 0)
+        c.set ("polymorphic-root", poly_root);
+
       // Check members.
       //
       member_.count_ = 0;
@@ -490,6 +552,18 @@ namespace
            << " error: no persistent data members in the class" << endl;
 
         valid_ = false;
+      }
+
+      // Update features set based on this object.
+      //
+      if (class_file (c) == unit.file ())
+      {
+        if (poly_root != 0)
+          features.polymorphic_object = true;
+        else if (id == 0 && !abstract (c))
+          features.no_id_object = true;
+        else
+          features.simple_object = true;
       }
     }
 
@@ -510,6 +584,34 @@ namespace
            << endl;
 
         valid_ = false;
+      }
+
+      // Check that the callback function exist.
+      //
+      if (c.count ("callback"))
+      {
+        string name (c.get<string> ("callback"));
+        tree decl (
+          lookup_qualified_name (
+            c.tree_node (), get_identifier (name.c_str ()), false, false));
+
+        if (decl == error_mark_node || TREE_CODE (decl) != BASELINK)
+        {
+          os << c.file () << ":" << c.line () << ":" << c.column () << ": "
+             << "error: unable to resolve member function '" << name << "' "
+             << "specified with '#pragma db callback' for class '"
+             << class_name (c) << "'" << endl;
+
+          valid_ = false;
+        }
+
+        // No const version for views.
+
+        //@@ Would be nice to check the signature of the function(s)
+        //   instead of postponing it until the C++ compilation. Though
+        //   we may still get C++ compilation errors because of const
+        //   mismatch.
+        //
       }
 
       // Check bases.
@@ -583,6 +685,13 @@ namespace
            << " error: no persistent data members in the class" << endl;
 
         valid_ = false;
+      }
+
+      // Update features set based on this view.
+      //
+      if (class_file (c) == unit.file ())
+      {
+        features.view = true;
       }
     }
 
@@ -1068,11 +1177,12 @@ namespace
 
 void validator::
 validate (options const& ops,
+          features& f,
           semantics::unit& u,
           semantics::path const&,
           unsigned short pass)
 {
-  auto_ptr<context> ctx (create_context (cerr, u, ops, 0));
+  auto_ptr<context> ctx (create_context (cerr, u, ops, f, 0));
 
   bool valid (true);
 

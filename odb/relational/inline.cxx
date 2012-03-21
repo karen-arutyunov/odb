@@ -17,6 +17,9 @@ namespace relational
       context ctx;
       ostream& os (ctx.os);
 
+      instance<include> i;
+      i->generate ();
+
       traversal::unit unit;
       traversal::defines unit_defines;
       typedefs unit_typedefs (false);

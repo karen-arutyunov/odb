@@ -152,125 +152,15 @@ namespace relational
       // bind
       //
 
-      struct bind_member: relational::bind_member, member_base
+      struct bind_member: relational::bind_member_impl<sql_type>,
+                          member_base
       {
         bind_member (base const& x)
-            : member_base::base (x), // virtual base
-              base (x),
+            : member_base::base (x),      // virtual base
+              member_base::base_impl (x), // virtual base
+              base_impl (x),
               member_base (x)
         {
-        }
-
-        virtual bool
-        pre (member_info& mi)
-        {
-          if (container (mi))
-            return false;
-
-          ostringstream ostr;
-          ostr << "b[n]";
-          b = ostr.str ();
-
-          arg = arg_override_.empty () ? string ("i") : arg_override_;
-
-          if (var_override_.empty ())
-          {
-            os << "// " << mi.m.name () << endl
-               << "//" << endl;
-
-            if (inverse (mi.m, key_prefix_) || version (mi.m))
-              os << "if (sk == statement_select)"
-                 << "{";
-            // If the whole class is readonly, then we will never be
-            // called with sk == statement_update.
-            //
-            else if (!readonly (*context::top_object))
-            {
-              semantics::class_* c;
-
-              if (id (mi.m) ||
-                  readonly (mi.m) ||
-                  ((c = composite (mi.t)) && readonly (*c)))
-                os << "if (sk != statement_update)"
-                   << "{";
-            }
-          }
-
-          return true;
-        }
-
-        virtual void
-        post (member_info& mi)
-        {
-          if (var_override_.empty ())
-          {
-            semantics::class_* c;
-
-            if ((c = composite (mi.t)))
-            {
-              bool ro (readonly (*c));
-              column_count_type const& cc (column_count (*c));
-
-              os << "n += " << cc.total << "UL";
-
-              // select = total
-              // insert = total - inverse
-              // update = total - inverse - readonly
-              //
-              if (cc.inverse != 0 || (!ro && cc.readonly != 0))
-              {
-                os << " - (" << endl
-                   << "sk == statement_select ? 0 : ";
-
-                if (cc.inverse != 0)
-                  os << cc.inverse << "UL";
-
-                if (!ro && cc.readonly != 0)
-                {
-                  if (cc.inverse != 0)
-                    os << " + ";
-
-                  os << "(" << endl
-                     << "sk == statement_insert ? 0 : " <<
-                    cc.readonly << "UL)";
-                }
-
-                os << ")";
-              }
-
-              os << ";";
-            }
-            else
-              os << "n++;";
-
-            bool block (false);
-
-            // The same logic as in pre().
-            //
-            if (inverse (mi.m, key_prefix_) || version (mi.m))
-              block = true;
-            else if (!readonly (*context::top_object))
-            {
-              semantics::class_* c;
-
-              if (id (mi.m) ||
-                  readonly (mi.m) ||
-                  ((c = composite (mi.t)) && readonly (*c)))
-                block = true;
-            }
-
-            if (block)
-              os << "}";
-            else
-              os << endl;
-          }
-        }
-
-        virtual void
-        traverse_composite (member_info& mi)
-        {
-          os << "composite_value_traits< " << mi.fq_type () <<
-            " >::bind (b + n, " << arg << "." << mi.var << "value, sk);";
         }
 
         virtual void
@@ -351,10 +241,6 @@ namespace relational
              << b << ".buffer = " << arg << "." << mi.var << "value;"
              << b << ".is_null = &" << arg << "." << mi.var << "null;";
         }
-
-      private:
-        string b;
-        string arg;
       };
       entry<bind_member> bind_member_;
 
@@ -735,7 +621,13 @@ namespace relational
         virtual void
         object_extra (type& c)
         {
-          if (abstract (c))
+          bool abst (abstract (c));
+
+          type* poly_root (polymorphic (c));
+          bool poly (poly_root != 0);
+          bool poly_derived (poly && poly_root != &c);
+
+          if (abst && !poly)
             return;
 
           semantics::data_member* id (id_member (c));
@@ -743,33 +635,58 @@ namespace relational
           column_count_type const& cc (column_count (c));
 
           string const& n (class_fq_name (c));
-          string traits ("access::object_traits< " + n + " >::");
           string const& fn (flat_name (n));
-          string name_decl ("const char " + traits);
+          string traits ("access::object_traits< " + n + " >");
 
-          os << name_decl << endl
-             << "persist_statement_name[] = " << strlit (fn + "_persist") <<
-            ";"
+          os << "const char " << traits << "::" << endl
+             << "persist_statement_name[] = " << strlit (fn + "_persist") << ";"
              << endl;
 
           if (id != 0)
           {
-            os << name_decl << endl
-               << "find_statement_name[] = " << strlit (fn + "_find") << ";"
-               << endl;
+            if (poly_derived)
+            {
+              os << "const char* const " << traits << "::" << endl
+                 << "find_statement_names[] ="
+                 << "{";
+
+              for (size_t i (0), n (abst ? 1 : polymorphic_depth (c));
+                   i < n;
+                   ++i)
+              {
+                if (i != 0)
+                  os << "," << endl;
+
+                ostringstream ostr;
+                ostr << fn << "_find_" << i;
+                os << strlit (ostr.str ());
+              }
+
+              os << "};";
+            }
+            else
+              os << "const char " << traits << "::" << endl
+                 << "find_statement_name[] = " << strlit (fn + "_find") << ";"
+                 << endl;
+
+            if (poly && !poly_derived)
+              os << "const char " << traits << "::" << endl
+                 << "find_discriminator_statement_name[] = " <<
+                strlit (fn + "_find_discriminator") << ";"
+                 << endl;
 
             if (cc.total != cc.id + cc.inverse + cc.readonly)
-              os << name_decl << endl
+              os << "const char " << traits << "::" << endl
                  << "update_statement_name[] = " << strlit (fn + "_update") <<
                 ";"
                  << endl;
 
-            os << name_decl << endl
+            os << "const char " << traits << "::" << endl
                << "erase_statement_name[] = " << strlit (fn + "_erase") << ";"
                << endl;
 
             if (optimistic != 0)
-              os << name_decl << endl
+              os << "const char " << traits << "::" << endl
                  << "optimistic_erase_statement_name[] = " <<
                 strlit (fn + "_optimistic_erase") << ";"
                  << endl;
@@ -779,10 +696,10 @@ namespace relational
           //
           if (options.generate_query ())
           {
-            os << name_decl << endl
+            os << "const char " << traits << "::" << endl
                << "query_statement_name[] = " << strlit (fn + "_query") << ";"
                << endl
-               << name_decl << endl
+               << "const char " << traits << "::" << endl
                << "erase_query_statement_name[] = " <<
               strlit (fn + "_erase_query") << ";"
                << endl;
@@ -790,12 +707,11 @@ namespace relational
 
           // Statement types.
           //
-          string oid_decl ("const unsigned int " + traits);
 
           // persist_statement_types.
           //
           {
-            os << oid_decl << endl
+            os << "const unsigned int " << traits << "::" << endl
                << "persist_statement_types[] ="
                << "{";
 
@@ -809,7 +725,7 @@ namespace relational
           //
           if (id != 0)
           {
-            os << oid_decl << endl
+            os << "const unsigned int " << traits << "::" << endl
                << "find_statement_types[] ="
                << "{";
 
@@ -823,7 +739,7 @@ namespace relational
           //
           if (id != 0 && cc.total != cc.id + cc.inverse + cc.readonly)
           {
-            os << oid_decl << endl
+            os << "const unsigned int " << traits << "::" << endl
                << "update_statement_types[] ="
                << "{";
 
@@ -844,23 +760,9 @@ namespace relational
             os << "};";
           }
 
-          // erase_statement_types.
-          //
-          if (id != 0)
-          {
-            os << oid_decl << endl
-               << "erase_statement_types[] ="
-               << "{";
-
-            instance<statement_oids> st (statement_where);
-            st->traverse (*id);
-
-            os << "};";
-          }
-
           if (id != 0 && optimistic != 0)
           {
-            os << oid_decl << endl
+            os << "const unsigned int " << traits << "::" << endl
                << "optimistic_erase_statement_types[] ="
                << "{";
 
@@ -876,11 +778,10 @@ namespace relational
         view_extra (type& c)
         {
           string const& n (class_fq_name (c));
-          string traits ("access::view_traits< " + n + " >::");
           string const& fn (flat_name (n));
-          string name_decl ("const char " + traits);
+          string traits ("access::view_traits< " + n + " >");
 
-          os << name_decl << endl
+          os << "const char " << traits << "::" << endl
              << "query_statement_name[] = " << strlit (fn + "_query") << ";"
              << endl;
         }
@@ -935,7 +836,7 @@ namespace relational
         virtual void
         container_extra (semantics::data_member& m, semantics::type& t)
         {
-          if (!object (c_) || abstract (c_))
+          if (!object (c_) || (abstract (c_) && !polymorphic (c_)))
             return;
 
           string scope (scope_ + "::" + flat_prefix_ + public_name (m) +
@@ -943,29 +844,24 @@ namespace relational
 
           // Statment names.
           //
-          string stmt_decl ("const char " + scope + "::");
 
           // Prefix top-object name to avoid conflicts with inherited
           // member statement names.
           //
-          string stmt_prefix (class_fq_name (*top_object) +  m.fq_name ());
+          string fn (flat_name (class_fq_name (*top_object) + m.fq_name ()));
 
-          os << stmt_decl << endl
-             << "select_all_name[] = " <<
-             strlit (stmt_prefix + "_select_all") << ";"
+          os << "const char " << scope << "::" << endl
+             << "select_all_name[] = " << strlit (fn + "_select_all") << ";"
              << endl
-             << stmt_decl << endl
-             << "insert_one_name[] = " <<
-             strlit (stmt_prefix + "_insert_one") << ";"
+             << "const char " << scope << "::" << endl
+             << "insert_one_name[] = " << strlit (fn + "_insert_one") << ";"
              << endl
-             << stmt_decl << endl
-             << "delete_all_name[] = " <<
-             strlit (stmt_prefix + "_delete_all") << ";"
+             << "const char " << scope << "::" << endl
+             << "delete_all_name[] = " << strlit (fn + "_delete_all") << ";"
              << endl;
 
           // Statement types.
           //
-          string type_decl ("const unsigned int " + scope + "::");
 
           semantics::data_member* inv_m (inverse (m, "value"));
           bool inv (inv_m != 0);
@@ -976,7 +872,7 @@ namespace relational
           // select_all statement types.
           //
           {
-            os << type_decl << endl
+            os << "const unsigned int " << scope << "::" << endl
                << "select_all_types[] ="
                << "{";
 
@@ -1003,7 +899,7 @@ namespace relational
           // insert_one statement types.
           //
           {
-            os << type_decl << endl
+            os << "const unsigned int " << scope << "::" << endl
                << "insert_one_types[] ="
                << "{";
 
@@ -1048,7 +944,7 @@ namespace relational
           // delete_all statement types.
           //
           {
-            os << type_decl << endl
+            os << "const unsigned int " << scope << "::" << endl
                << "delete_all_types[] ="
                << "{";
 

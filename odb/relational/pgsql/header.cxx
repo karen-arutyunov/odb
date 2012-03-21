@@ -22,7 +22,13 @@ namespace relational
         virtual void
         object_public_extra_post (type& c)
         {
-          if (abstract (c))
+          bool abst (abstract (c));
+
+          type* poly_root (polymorphic (c));
+          bool poly (poly_root != 0);
+          bool poly_derived (poly && poly_root != &c);
+
+          if (abst && !poly)
             return;
 
           semantics::data_member* id (id_member (c));
@@ -36,7 +42,14 @@ namespace relational
 
           if (id != 0)
           {
-            os << "static const char find_statement_name[];";
+            if (poly_derived)
+              os << "static const char* const find_statement_names[" <<
+                (abst ? "1" : "depth") << "];";
+            else
+              os << "static const char find_statement_name[];";
+
+            if (poly && !poly_derived)
+              os << "static const char find_discriminator_statement_name[];";
 
             if (cc.total != cc.id + cc.inverse + cc.readonly)
               os << "static const char update_statement_name[];";
@@ -66,8 +79,6 @@ namespace relational
             if (cc.total != cc.id + cc.inverse + cc.readonly)
               os << "static const unsigned int update_statement_types[];";
 
-            os << "static const unsigned int erase_statement_types[];";
-
             if (optimistic != 0)
               os << "static const unsigned int " <<
                 "optimistic_erase_statement_types[];";
@@ -94,7 +105,7 @@ namespace relational
         virtual void
         container_public_extra_pre (semantics::data_member&)
         {
-          if (!object (c_) || abstract (c_))
+          if (!object (c_) || (abstract (c_) && !polymorphic (c_)))
             return;
 
           // Container statement names.

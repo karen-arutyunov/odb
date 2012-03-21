@@ -2,8 +2,6 @@
 // copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <sstream>
-
 #include <odb/relational/source.hxx>
 
 #include <odb/relational/mssql/common.hxx>
@@ -69,132 +67,15 @@ namespace relational
         "mssql::bind::bigint"
       };
 
-      struct bind_member: relational::bind_member, member_base
+      struct bind_member: relational::bind_member_impl<sql_type>,
+                          member_base
       {
         bind_member (base const& x)
-            : member_base::base (x), // virtual base
-              base (x),
+            : member_base::base (x),      // virtual base
+              member_base::base_impl (x), // virtual base
+              base_impl (x),
               member_base (x)
         {
-        }
-
-        virtual bool
-        pre (member_info& mi)
-        {
-          if (container (mi))
-            return false;
-
-          ostringstream ostr;
-          ostr << "b[n]";
-          b = ostr.str ();
-
-          arg = arg_override_.empty () ? string ("i") : arg_override_;
-
-          if (var_override_.empty ())
-          {
-            os << "// " << mi.m.name () << endl
-               << "//" << endl;
-
-            if (id (mi.m) && auto_ (mi.m))
-              // For SQL Server we don't send auto id in INSERT.
-              //
-              os << "if (sk != statement_insert && sk != statement_update)"
-                 << "{";
-            else if (inverse (mi.m, key_prefix_) || version (mi.m))
-              os << "if (sk == statement_select)"
-                 << "{";
-            // If the whole class is readonly, then we will never be
-            // called with sk == statement_update.
-            //
-            else if (!readonly (*context::top_object))
-            {
-              semantics::class_* c;
-
-              if (id (mi.m) ||
-                  readonly (mi.m) ||
-                  ((c = composite (mi.t)) && readonly (*c)))
-                os << "if (sk != statement_update)"
-                   << "{";
-            }
-          }
-
-          return true;
-        }
-
-        virtual void
-        post (member_info& mi)
-        {
-          if (var_override_.empty ())
-          {
-            semantics::class_* c;
-
-            if ((c = composite (mi.t)))
-            {
-              bool ro (readonly (*c));
-              column_count_type const& cc (column_count (*c));
-
-              os << "n += " << cc.total << "UL";
-
-              // select = total
-              // insert = total - inverse
-              // update = total - inverse - readonly
-              //
-              if (cc.inverse != 0 || (!ro && cc.readonly != 0))
-              {
-                os << " - (" << endl
-                   << "sk == statement_select ? 0 : ";
-
-                if (cc.inverse != 0)
-                  os << cc.inverse << "UL";
-
-                if (!ro && cc.readonly != 0)
-                {
-                  if (cc.inverse != 0)
-                    os << " + ";
-
-                  os << "(" << endl
-                     << "sk == statement_insert ? 0 : " <<
-                    cc.readonly << "UL)";
-                }
-
-                os << ")";
-              }
-
-              os << ";";
-            }
-            else
-              os << "n++;";
-
-            bool block (false);
-
-            // The same logic as in pre().
-            //
-            if (id (mi.m) && auto_ (mi.m))
-              block = true;
-            else if (inverse (mi.m, key_prefix_) || version (mi.m))
-              block = true;
-            else if (!readonly (*context::top_object))
-            {
-              semantics::class_* c;
-
-              if (id (mi.m) ||
-                  readonly (mi.m) ||
-                  ((c = composite (mi.t)) && readonly (*c)))
-                block = true;
-            }
-
-            if (block)
-              os << "}";
-            else
-              os << endl;
-          }
-        }
-
-        virtual void
-        traverse_composite (member_info& mi)
-        {
-          os << "composite_value_traits< " << mi.fq_type () <<
-            " >::bind (b + n, " << arg << "." << mi.var << "value, sk);";
         }
 
         virtual void
@@ -401,10 +282,6 @@ namespace relational
              << b << ".buffer = &" << arg << "." << mi.var << "value;"
              << b << ".size_ind = &" << arg << "." << mi.var << "size_ind;";
         }
-
-      private:
-        string b;
-        string arg;
       };
       entry<bind_member> bind_member_;
 
@@ -958,16 +835,34 @@ namespace relational
         virtual void
         init_image_pre (type& c)
         {
-          if (options.generate_query () && !(composite (c) || abstract (c)))
-            os << "if (i.change_callback_.callback != 0)" << endl
-               << "(i.change_callback_.callback) (i.change_callback_.context);"
-               << endl;
+          if (options.generate_query () &&
+              !(composite (c) || (abstract (c) && !polymorphic (c))))
+          {
+            type* poly_root (polymorphic (c));
+            bool poly_derived (poly_root != 0 && poly_root != &c);
+
+            if (poly_derived)
+              os << "{"
+                 << "root_traits::image_type& ri (root_image (i));"
+                 << endl;
+
+            string i (poly_derived ? "ri" : "i");
+
+            os << "if (" << i << ".change_callback_.callback != 0)" << endl
+               << "(" << i << ".change_callback_.callback) (" <<
+              i << ".change_callback_.context);";
+
+            if (poly_derived)
+              os << "}";
+            else
+              os << endl;
+          }
         }
 
         virtual void
         init_value_extra ()
         {
-          os << "sts.find_statement ().stream_result ();";
+          os << "st.stream_result ();";
         }
 
         virtual void
@@ -979,6 +874,13 @@ namespace relational
 
           if (id == 0 || !auto_ (*id))
             return;
+
+          // If we are a derived type in a polymorphic hierarchy, then
+          // auto id is handled by the root.
+          //
+          if (type* root = polymorphic (c))
+            if (root != &c)
+              return;
 
           // SQL Server 2005 has a bug that causes it to fail on an
           // INSERT statement with the OUTPUT clause if data for one

@@ -21,18 +21,20 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (class_file (c) != unit.file () || !object (c) || abstract (c))
+        if (class_file (c) != unit.file ())
           return;
 
-        context::top_object = context::cur_object = &c;
+        if (!object (c))
+          return;
+
+        if (abstract (c) && !polymorphic (c))
+          return;
 
         os << "// " << class_name (c) << endl
            << "//" << endl
            << endl;
 
         schema_->traverse (c);
-
-        context::top_object = context::cur_object = 0;
       }
 
     private:

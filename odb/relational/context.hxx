@@ -159,6 +159,7 @@ namespace relational
     bool need_alias_as;
     bool insert_send_auto_id;
     bool delay_freeing_statement_result;
+    bool need_image_clone;
 
     string const& bind_vector;
     string const& truncated_vector;

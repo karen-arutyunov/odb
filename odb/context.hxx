@@ -21,6 +21,7 @@
 #include <cutl/shared-ptr.hxx>
 
 #include <odb/options.hxx>
+#include <odb/features.hxx>
 #include <odb/cxx-token.hxx>
 #include <odb/semantics.hxx>
 #include <odb/semantics/relational/name.hxx>
@@ -442,6 +443,42 @@ public:
     return m.count ("version");
   }
 
+  // Polymorphic inheritance. Return root of the hierarchy or NULL if
+  // not polymorphic.
+  //
+  static semantics::class_*
+  polymorphic (semantics::class_& c)
+  {
+    // Set by the validator.
+    //
+    return c.get<semantics::class_*> ("polymorphic-root", 0);
+  }
+
+  static semantics::class_&
+  polymorphic_base (semantics::class_& c)
+  {
+    // Set by the validator.
+    //
+    return *c.get<semantics::class_*> ("polymorphic-base");
+  }
+
+  static size_t
+  polymorphic_depth (semantics::class_&);
+
+  static bool
+  discriminator (semantics::data_member& m)
+  {
+    return m.count ("discriminator");
+  }
+
+  static semantics::data_member*
+  discriminator (semantics::class_& c)
+  {
+    // Set by type processor.
+    //
+    return c.get<semantics::data_member*> ("discriminator", 0);
+  }
+
   //
   //
   typedef ::class_kind class_kind_type;
@@ -556,6 +593,12 @@ public:
   string
   escape (string const&) const;
 
+  // Make C++ include guard name by split words, e.g., "FooBar" to
+  // "Foo_Bar" and converting everything to upper case.
+  //
+  string
+  make_guard (string const&) const;
+
   // Return a string literal that can be used in C++ source code. It
   // includes "".
   //
@@ -572,7 +615,8 @@ public:
           id (0),
           inverse (0),
           readonly (0),
-          optimistic_managed (0)
+          optimistic_managed (0),
+          discriminator (0)
     {
     }
 
@@ -581,6 +625,7 @@ public:
     size_t inverse;
     size_t readonly;
     size_t optimistic_managed;
+    size_t discriminator;
   };
 
   static column_count_type
@@ -589,7 +634,8 @@ public:
   static semantics::data_member*
   id_member (semantics::class_& c)
   {
-    // Set by the validator. May not be there for abstract objects.
+    // Set by the validator. May not be there for reuse-abstract
+    // classes or classes without object id.
     //
     return c.get<semantics::data_member*> ("id-member", 0);
   }
@@ -695,7 +741,12 @@ public:
   static unsigned short const test_inverse_container = 0x20;
   static unsigned short const test_readonly_container = 0x40;
 
-  static unsigned short const exclude_base = 0x8000;
+  // By default the test goes into bases for non-polymorphic
+  // hierarchies and doesn't go for polymorphic. The following
+  // flags can be used to alter this behavior.
+  //
+  static unsigned short const exclude_base = 0x4000;
+  static unsigned short const include_base = 0x8000;
 
   bool
   is_a (data_member_path const& mp,
@@ -808,9 +859,12 @@ protected:
   data_ptr data_;
 
 public:
+  typedef ::features features_type;
+
   std::ostream& os;
   semantics::unit& unit;
   options_type const& options;
+  features_type& features;
   database const db;
 
   keyword_set_type const& keyword_set;
@@ -855,6 +909,7 @@ public:
   context (std::ostream&,
            semantics::unit&,
            options_type const&,
+           features_type&,
            data_ptr = data_ptr ());
 
   static context&
@@ -877,6 +932,7 @@ std::auto_ptr<context>
 create_context (std::ostream&,
                 semantics::unit&,
                 options const&,
+                features&,
                 semantics::relational::model*);
 
 // Checks if scope Y names any of X.

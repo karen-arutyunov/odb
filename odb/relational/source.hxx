@@ -26,15 +26,17 @@ namespace relational
     struct statement_column
     {
       statement_column (): member (0) {}
-      statement_column (std::string const& c,
+      statement_column (std::string const& tbl,
+                        std::string const& col,
                         std::string const& t,
                         semantics::data_member& m,
                         std::string const& kp = "")
-          : column (c), type (t), member (&m), key_prefix (kp)
+          : table (tbl), column (col), type (t), member (&m), key_prefix (kp)
       {
       }
 
-      std::string column;             // Column name.
+      std::string table;              // Schema-qualifed and quoted table name.
+      std::string column;             // Table-qualifed and quoted column expr.
       std::string type;               // Column SQL type.
       semantics::data_member* member;
       std::string key_prefix;
@@ -73,20 +75,55 @@ namespace relational
       object_columns (statement_kind sk,
                       statement_columns& sc,
                       query_parameters* param = 0)
-          : sk_ (sk), sc_ (sc), param_ (param)
+          : object_columns_base (true, "", true),
+            sk_ (sk), sc_ (sc), param_ (param), depth_ (1)
       {
       }
 
       object_columns (std::string const& table_qname,
                       statement_kind sk,
-                      statement_columns& sc)
-          : sk_ (sk), sc_ (sc), param_ (0), table_name_ (table_qname)
+                      statement_columns& sc,
+                      size_t depth = 1)
+          : object_columns_base (true, "", true),
+            sk_ (sk),
+            sc_ (sc),
+            param_ (0),
+            table_name_ (table_qname),
+            depth_ (depth)
       {
+      }
+
+      virtual void
+      traverse_object (semantics::class_& c)
+      {
+        // If we are generating a select statement and this is a derived
+        // type in a polymorphic hierarchy, then we need to include base
+        // columns, but do it in reverse order as well as switch the table
+        // name (base columns come from different tables).
+        //
+        semantics::class_* poly_root (polymorphic (c));
+        if (poly_root != 0 && poly_root != &c)
+        {
+          names (c);
+
+          if (sk_ == statement_select && --depth_ != 0)
+          {
+            table_name_ = table_qname (polymorphic_base (c));
+            inherits (c);
+          }
+        }
+        else
+          object_columns_base::traverse_object (c);
       }
 
       virtual void
       traverse_pointer (semantics::data_member& m, semantics::class_& c)
       {
+        // Ignore polymorphic id references for select statements.
+        //
+        if (sk_ == statement_select && m.count ("polymorphic-ref"))
+          return;
+
         semantics::data_member* im (inverse (m, key_prefix_));
 
         // Ignore certain columns depending on what kind statement we are
@@ -215,7 +252,9 @@ namespace relational
           r += param_->next ();
         }
 
-        sc_.push_back (statement_column (r, column_type (), m, key_prefix_));
+        sc_.push_back (
+          statement_column (
+            table, r, column_type (), m, key_prefix_));
       }
 
     protected:
@@ -223,6 +262,7 @@ namespace relational
       statement_columns& sc_;
       query_parameters* param_;
       string table_name_;
+      size_t depth_;
     };
 
     struct view_columns: object_columns_base, virtual context
@@ -306,6 +346,7 @@ namespace relational
       virtual bool
       traverse_column (semantics::data_member& m, string const& name, bool)
       {
+        string tbl;
         string col;
 
         // If we are inside a composite value, use the standard
@@ -315,7 +356,8 @@ namespace relational
         {
           if (!table_prefix_.empty ())
           {
-            col += quote_id (table_prefix_);
+            tbl = quote_id (table_prefix_);
+            col += tbl;
             col += '.';
           }
 
@@ -331,7 +373,8 @@ namespace relational
           {
             if (!tc.table.empty ())
             {
-              col += quote_id (tc.table);
+              tbl = quote_id (tc.table);
+              col += tbl;
               col += '.';
             }
 
@@ -357,7 +400,8 @@ namespace relational
               }
             case column_expr_part::reference:
               {
-                col += quote_id (i->table);
+                tbl = quote_id (i->table);
+                col += tbl;
                 col += '.';
                 col += quote_id (column_name (i->member_path));
                 break;
@@ -378,7 +422,7 @@ namespace relational
           throw operation_failed ();
         }
 
-        column (m, col);
+        column (m, tbl, col);
         return true;
       }
 
@@ -386,9 +430,11 @@ namespace relational
       // expression.
       //
       virtual void
-      column (semantics::data_member& m, string const& column)
+      column (semantics::data_member& m,
+              string const& table,
+              string const& column)
       {
-        sc_.push_back (statement_column (column, column_type (), m));
+        sc_.push_back (statement_column (table, column, column_type (), m));
       }
 
     protected:
@@ -397,50 +443,132 @@ namespace relational
       qname table_prefix_; // Table corresponding to column_prefix_;
     };
 
+    struct polymorphic_object_joins: object_columns_base, virtual context
+    {
+      typedef polymorphic_object_joins base;
+
+      polymorphic_object_joins (semantics::class_& obj,
+                                size_t depth,
+                                string const& alias = "",
+                                string const prefix = "",
+                                string const& suffix = "\n")
+          : object_columns_base (true, "", true),
+            obj_ (obj),
+            depth_ (depth),
+            alias_ (alias),
+            prefix_ (prefix),
+            suffix_ (suffix)
+      {
+      }
+
+      virtual void
+      traverse_object (semantics::class_& c)
+      {
+        if (&c == &obj_)
+        {
+          // Get the table and id columns.
+          //
+          table_ = alias_.empty ()
+            ? table_qname (c)
+            : quote_id (alias_ + "_" + table_name (c).uname ());
+
+          cols_->traverse (*id_member (c));
+
+          if (--depth_ != 0)
+            inherits (c);
+          return;
+        }
+
+        semantics::class_* poly_root ();
+        std::ostringstream cond;
+
+        qname table (table_name (c));
+        string alias (alias_.empty ()
+                      ? quote_id (table)
+                      : quote_id (alias_ + "_" + table.uname ()));
+
+        for (object_columns_list::iterator b (cols_->begin ()), i (b);
+             i != cols_->end ();
+             ++i)
+        {
+          if (i != b)
+            cond << " AND ";
+
+          string qn (quote_id (i->name));
+          cond << alias << '.' << qn << '=' << table_ << '.' << qn;
+        }
+
+        string line (" LEFT JOIN " + quote_id (table));
+
+        if (!alias_.empty ())
+          line += (need_alias_as ? " AS " : " ") + alias;
+
+        line += " ON " + cond.str ();
+
+        os << prefix_ << strlit (line) << suffix_;
+
+        if (&c != polymorphic (c) && --depth_ != 0)
+          inherits (c);
+      }
+
+    private:
+      semantics::class_& obj_;
+      size_t depth_;
+      string alias_;
+      string prefix_;
+      string suffix_;
+      string table_;
+      instance<object_columns_list> cols_;
+    };
+
     struct object_joins: object_columns_base, virtual context
     {
       typedef object_joins base;
 
       //@@ context::{cur,top}_object; might have to be created every time.
       //
-      object_joins (semantics::class_& scope, bool query)
-          : query_ (query),
+      object_joins (semantics::class_& scope, bool query, size_t depth = 1)
+          : object_columns_base (true, "", true),
+            query_ (query),
+            depth_ (depth),
             table_ (table_qname (scope)),
             id_ (*id_member (scope))
       {
         id_cols_->traverse (id_);
       }
 
-      size_t
-      count () const
+      virtual void
+      traverse_object (semantics::class_& c)
       {
-        return joins_.size ();
-      }
-
-      void
-      write ()
-      {
-        for (joins::iterator i (joins_.begin ()); i != joins_.end (); ++i)
+        // If this is a derived type in a polymorphic hierarchy, then we
+        // need to include base joins, but do it in reverse order as well
+        // as switch the table name (base columns come from different
+        // tables).
+        //
+        semantics::class_* poly_root (polymorphic (c));
+        if (poly_root != 0 && poly_root != &c)
         {
-          if (i->table.empty ())
-            continue;
+          names (c);
 
-          string line (" LEFT JOIN ");
-          line += i->table;
-
-          if (!i->alias.empty ())
-            line += (need_alias_as ? " AS " : " ") + i->alias;
-
-          line += " ON ";
-          line += i->cond;
-
-          os << strlit (line) << endl;
+          if (query_ || --depth_ != 0)
+          {
+            table_ = table_qname (polymorphic_base (c));
+            inherits (c);
+          }
         }
+        else
+          object_columns_base::traverse_object (c);
       }
 
       virtual void
       traverse_pointer (semantics::data_member& m, semantics::class_& c)
       {
+        // Ignore polymorphic id references; they are joined by
+        // polymorphic_object_joins in a special way.
+        //
+        if (m.count ("polymorphic-ref"))
+          return;
+
         string t, a, dt, da;
         std::ostringstream cond, dcond; // @@ diversion?
 
@@ -466,8 +594,13 @@ namespace relational
           alias = column_prefix_ + p;
         }
         else
-          alias = column_prefix_ +
-            column_name (m, key_prefix_, default_name_);
+          alias = column_prefix_ + column_name (m, key_prefix_, default_name_);
+
+        semantics::class_* poly_root (polymorphic (c));
+        bool poly (poly_root != 0);
+        bool poly_derived (poly && poly_root != &c);
+
+        bool obj_joined (false);
 
         if (semantics::data_member* im = inverse (m, key_prefix_))
         {
@@ -503,8 +636,10 @@ namespace relational
             //
             if (query_)
             {
-              dt = quote_id (ct);
-              da = quote_id (alias);
+              qname const& table (table_name (c));
+
+              dt = quote_id (table);
+              da = quote_id (poly ? alias + "_" + table.uname () : alias);
 
               semantics::data_member& id (*id_member (c));
 
@@ -522,12 +657,16 @@ namespace relational
                 dcond << da << '.' << quote_id (j->name) << '=' <<
                   t << '.' << quote_id (i->name);
               }
+
+              obj_joined = true;
             }
           }
           else
           {
-            t = table_qname (c);
-            a = quote_id (alias);
+            qname const& table (table_name (c));
+
+            t = quote_id (table);
+            a = quote_id (poly ? alias + "_" + table.uname () : alias);
 
             instance<object_columns_list> id_cols;
             id_cols->traverse (*im);
@@ -542,6 +681,8 @@ namespace relational
               cond << a << '.' << quote_id (i->name) << '=' <<
                 table_ << '.' << quote_id (j->name);
             }
+
+            obj_joined = true;
           }
         }
         else if (query_)
@@ -549,8 +690,10 @@ namespace relational
           // We need the join to be able to use the referenced object
           // in the WHERE clause.
           //
-          t = table_qname (c);
-          a = quote_id (alias);
+          qname const& table (table_name (c));
+
+          t = quote_id (table);
+          a = quote_id (poly ? alias + "_" + table.uname () : alias);
 
           instance<object_columns_list> oid_cols (column_prefix_);
           oid_cols->traverse (m);
@@ -568,14 +711,22 @@ namespace relational
             cond << a << '.' << quote_id (i->name) << '=' <<
               table_ << '.' << quote_id (j->name);
           }
+
+          obj_joined = true;
         }
 
         if (!t.empty ())
         {
-          joins_.push_back (join ());
-          joins_.back ().table = t;
-          joins_.back ().alias = a;
-          joins_.back ().cond = cond.str ();
+          string line (" LEFT JOIN ");
+          line += t;
+
+          if (!a.empty ())
+            line += (need_alias_as ? " AS " : " ") + a;
+
+          line += " ON ";
+          line += cond.str ();
+
+          os << strlit (line) << endl;
         }
 
         // Add dependent join (i.e., an object table join via the
@@ -583,29 +734,35 @@ namespace relational
         //
         if (!dt.empty ())
         {
-          joins_.push_back (join ());
-          joins_.back ().table = dt;
-          joins_.back ().alias = da;
-          joins_.back ().cond = dcond.str ();
+          string line (" LEFT JOIN ");
+          line += dt;
+
+          if (!da.empty ())
+            line += (need_alias_as ? " AS " : " ") + da;
+
+          line += " ON ";
+          line += dcond.str ();
+
+          os << strlit (line) << endl;
+        }
+
+        // If we joined the object and it is a derived type in a
+        // polymorphic hierarchy, then join its bases as well.
+        //
+        if (obj_joined && poly_derived)
+        {
+          size_t depth (polymorphic_depth (c));
+          instance<polymorphic_object_joins> t (c, depth, alias);
+          t->traverse (c);
         }
       }
 
     private:
       bool query_;
+      size_t depth_;
       string table_;
       semantics::data_member& id_;
       instance<object_columns_list> id_cols_;
-
-      struct join
-      {
-        string table;
-        string alias;
-        string cond;
-      };
-
-      typedef std::vector<join> joins;
-
-      joins joins_;
     };
 
     //
@@ -635,6 +792,146 @@ namespace relational
 
     protected:
       string arg_override_;
+    };
+
+    template <typename T>
+    struct bind_member_impl: bind_member, virtual member_base_impl<T>
+    {
+      typedef bind_member_impl base_impl;
+
+      bind_member_impl (base const& x)
+          : base (x)
+      {
+      }
+
+      typedef typename member_base_impl<T>::member_info member_info;
+
+      virtual bool
+      pre (member_info& mi)
+      {
+        if (container (mi))
+          return false;
+
+        // Ignore polymorphic id references; they are bound in a special
+        // way.
+        //
+        if (mi.ptr != 0 && mi.m.count ("polymorphic-ref"))
+          return false;
+
+        std::ostringstream ostr;
+        ostr << "b[n]";
+        b = ostr.str ();
+
+        arg = arg_override_.empty () ? string ("i") : arg_override_;
+
+        if (var_override_.empty ())
+        {
+          os << "// " << mi.m.name () << endl
+             << "//" << endl;
+
+          if (!insert_send_auto_id && id (mi.m) && auto_ (mi.m))
+            os << "if (sk != statement_insert && sk != statement_update)"
+               << "{";
+          else if (inverse (mi.m, key_prefix_) || version (mi.m))
+            os << "if (sk == statement_select)"
+               << "{";
+          // If the whole class is readonly, then we will never be
+          // called with sk == statement_update.
+          //
+          else if (!readonly (*context::top_object))
+          {
+            semantics::class_* c;
+
+            if (id (mi.m) ||
+                readonly (mi.m) ||
+                ((c = composite (mi.t)) && readonly (*c)))
+              os << "if (sk != statement_update)"
+                 << "{";
+          }
+        }
+
+        return true;
+      }
+
+      virtual void
+      post (member_info& mi)
+      {
+        if (var_override_.empty ())
+        {
+          semantics::class_* c;
+
+          if ((c = composite (mi.t)))
+          {
+            bool ro (readonly (*c));
+            column_count_type const& cc (column_count (*c));
+
+            os << "n += " << cc.total << "UL";
+
+            // select = total
+            // insert = total - inverse
+            // update = total - inverse - readonly
+            //
+            if (cc.inverse != 0 || (!ro && cc.readonly != 0))
+            {
+              os << " - (" << endl
+                 << "sk == statement_select ? 0 : ";
+
+              if (cc.inverse != 0)
+                os << cc.inverse << "UL";
+
+              if (!ro && cc.readonly != 0)
+              {
+                if (cc.inverse != 0)
+                  os << " + ";
+
+                os << "(" << endl
+                   << "sk == statement_insert ? 0 : " <<
+                  cc.readonly << "UL)";
+              }
+
+              os << ")";
+            }
+
+            os << ";";
+          }
+          else
+            os << "n++;";
+
+          bool block (false);
+
+          // The same logic as in pre().
+          //
+          if (!insert_send_auto_id && id (mi.m) && auto_ (mi.m))
+            block = true;
+          else if (inverse (mi.m, key_prefix_) || version (mi.m))
+            block = true;
+          else if (!readonly (*context::top_object))
+          {
+            semantics::class_* c;
+
+            if (id (mi.m) ||
+                readonly (mi.m) ||
+                ((c = composite (mi.t)) && readonly (*c)))
+              block = true;
+          }
+
+          if (block)
+            os << "}";
+          else
+            os << endl;
+        }
+      }
+
+      virtual void
+      traverse_composite (member_info& mi)
+      {
+        os << "composite_value_traits< " << mi.fq_type () <<
+          " >::bind (b + n, " << arg << "." << mi.var << "value, sk);";
+      }
+
+    protected:
+      string b;
+      string arg;
     };
 
     struct bind_base: traversal::class_, virtual context
@@ -721,8 +1018,8 @@ namespace relational
     {
       typedef grow_member base;
 
-      grow_member (size_t& index)
-          : member_base (string (), 0, string (), string ()), index_ (index)
+      grow_member (size_t& index, string const& var = string ())
+          : member_base (var, 0, string (), string ()), index_ (index)
       {
       }
 
@@ -827,6 +1124,12 @@ namespace relational
         if (container (mi) || inverse (mi.m, key_prefix_))
           return false;
 
+        // Ignore polymorphic id references; they are initialized in a
+        // special way.
+        //
+        if (mi.ptr != 0 && mi.m.count ("polymorphic-ref"))
+          return false;
+
         if (!member_override_.empty ())
           member = member_override_;
         else
@@ -844,7 +1147,6 @@ namespace relational
             return false;
 
           string const& name (mi.m.name ());
-          member = "o." + name;
 
           os << "// " << name << endl
              << "//" << endl;
@@ -861,7 +1163,18 @@ namespace relational
                 ((c = composite (mi.t)) && readonly (*c))) // Can't be id.
               os << "if (sk == statement_insert)";
           }
+
+          if (discriminator (mi.m))
+            member = "di.discriminator";
+          else
+            member = "o." + name;
         }
+
+        os << "{";
+
+        if (discriminator (mi.m))
+          os << "const info_type& di (map->find (typeid (o)));"
+             << endl;
 
         bool comp (composite (mi.t));
 
@@ -888,15 +1201,14 @@ namespace relational
 
           // Handle NULL pointers and extract the id.
           //
-          os << "{"
-             << "typedef object_traits< " << class_fq_name (*mi.ptr) <<
+          os << "typedef object_traits< " << class_fq_name (*mi.ptr) <<
             " > obj_traits;";
 
           if (weak_pointer (pt))
           {
-            os << "typedef pointer_traits< " << mi.ptr_fq_type () <<
+            os << "typedef odb::pointer_traits< " << mi.ptr_fq_type () <<
               " > wptr_traits;"
-               << "typedef pointer_traits< wptr_traits::" <<
+               << "typedef odb::pointer_traits< wptr_traits::" <<
               "strong_pointer_type > ptr_traits;"
                << endl
                << "wptr_traits::strong_pointer_type sp (" <<
@@ -905,7 +1217,7 @@ namespace relational
             member = "sp";
           }
           else
-            os << "typedef pointer_traits< " << mi.ptr_fq_type () <<
+            os << "typedef odb::pointer_traits< " << mi.ptr_fq_type () <<
               " > ptr_traits;"
                << endl;
 
@@ -926,17 +1238,11 @@ namespace relational
           member = "id";
         }
         else if (comp)
-        {
           type = mi.fq_type ();
-
-          os << "{";
-        }
         else
         {
           type = mi.fq_type ();
-
-          os << "{"
-             << "bool is_null;";
+          os << "bool is_null;";
         }
 
         if (comp)
@@ -1045,9 +1351,12 @@ namespace relational
     {
       typedef init_value_member base;
 
-      init_value_member (string const& member = string ())
-          : member_base (string (), 0, string (), string ()),
-            member_override_ (member)
+      init_value_member (string const& member = string (),
+                         string const& var = string (),
+                         bool ignore_implicit_discriminator = true)
+          : member_base (var, 0, string (), string ()),
+            member_override_ (member),
+            ignore_implicit_discriminator_ (ignore_implicit_discriminator)
       {
       }
 
@@ -1057,12 +1366,14 @@ namespace relational
                          string const& fq_type,
                          string const& key_prefix)
           : member_base (var, &t, fq_type, key_prefix),
-            member_override_ (member)
+            member_override_ (member),
+            ignore_implicit_discriminator_ (true)
       {
       }
 
     protected:
       string member_override_;
+      bool ignore_implicit_discriminator_;
     };
 
     template <typename T>
@@ -1088,6 +1399,17 @@ namespace relational
       pre (member_info& mi)
       {
         if (container (mi))
+          return false;
+
+        // Ignore polymorphic id references; they are initialized in a
+        // special way.
+        //
+        if (mi.ptr != 0 && mi.m.count ("polymorphic-ref"))
+          return false;
+
+        // Ignore implicit discriminators.
+        //
+        if (ignore_implicit_discriminator_ && discriminator (mi.m))
           return false;
 
         if (!member_override_.empty ())
@@ -1130,7 +1452,7 @@ namespace relational
           os << "{"
              << "typedef object_traits< " << class_fq_name (*mi.ptr) <<
             " > obj_traits;"
-             << "typedef pointer_traits< " << mi.ptr_fq_type () <<
+             << "typedef odb::pointer_traits< " << mi.ptr_fq_type () <<
             " > ptr_traits;"
              << endl;
 
@@ -1213,8 +1535,8 @@ namespace relational
             if (weak_pointer (pt))
             {
               os << endl
-                 << "if (pointer_traits< ptr_traits::strong_pointer_type >" <<
-                "::null_ptr (" << endl
+                 << "if (odb::pointer_traits<" <<
+                "ptr_traits::strong_pointer_type>::null_ptr (" << endl
                  << "ptr_traits::lock (" << member << ")))" << endl
                  << "throw session_required ();";
             }
@@ -1339,20 +1661,20 @@ namespace relational
         using semantics::type;
 
         // Figure out if this member is from a base object or composite
-        // value and whether it is abstract.
+        // value and if it's from an object, whether it is reuse-abstract.
         //
-        bool base, abst;
+        bool base, reuse_abst;
 
         if (object (c_))
         {
           base = cur_object != &c_ ||
             !object (dynamic_cast<type&> (m.scope ()));
-          abst = abstract (c_);
+          reuse_abst = abstract (c_) && !polymorphic (c_);
         }
         else
         {
-          base = false; // We don't go into bases.
-          abst = true;  // Always abstract.
+          base = false;      // We don't go into bases.
+          reuse_abst = true; // Always abstract.
         }
 
         container_kind_type ck (container_kind (t));
@@ -1425,7 +1747,7 @@ namespace relational
         //
         // Statements.
         //
-        if (!abst)
+        if (!reuse_abst)
         {
           semantics::type& idt (container_idt (m));
 
@@ -1434,8 +1756,8 @@ namespace relational
 
           // select_all_statement
           //
-          os << "const char " << scope <<
-            "::select_all_statement[] =" << endl;
+          os << "const char " << scope << "::" << endl
+             << "select_all_statement[] =" << endl;
 
           if (inverse)
           {
@@ -1472,6 +1794,7 @@ namespace relational
                 //
                 sc.push_back (
                   statement_column (
+                    inv_table,
                     inv_table + "." + quote_id (i->name),
                     i->type,
                     *i->member,
@@ -1492,6 +1815,7 @@ namespace relational
               {
                 sc.push_back (
                   statement_column (
+                    inv_table,
                     inv_table + "." + quote_id (i->name),
                     i->type,
                     *i->member));
@@ -1587,8 +1911,8 @@ namespace relational
 
           // insert_one_statement
           //
-          os << "const char " << scope <<
-            "::insert_one_statement[] =" << endl;
+          os << "const char " << scope << "::" << endl
+             << "insert_one_statement[] =" << endl;
 
           if (inverse)
             os << strlit ("") << ";"
@@ -1652,8 +1976,8 @@ namespace relational
 
           // delete_all_statement
           //
-          os << "const char " << scope <<
-            "::delete_all_statement[] =" << endl;
+          os << "const char " << scope << "::" << endl
+             << "delete_all_statement[] =" << endl;
 
           if (inverse)
             os << strlit ("") << ";"
@@ -2683,12 +3007,19 @@ namespace relational
       class_ ()
           : grow_base_ (index_),
             grow_member_ (index_),
+            grow_version_member_ (index_, "version_"),
+            grow_discriminator_member_ (index_, "discriminator_"),
             bind_id_member_ ("id_"),
             bind_version_member_ ("version_"),
+            bind_discriminator_member_ ("discriminator_"),
             init_id_image_member_ ("id_", "id"),
             init_version_image_member_ ("version_", "(*v)"),
             init_id_value_member_ ("id"),
-            init_version_value_member_ ("v")
+            init_version_value_member_ ("v"),
+            init_named_version_value_member_ ("v", "version_"),
+            init_discriminator_value_member_ ("d", "", false),
+            init_named_discriminator_value_member_ (
+              "d", "discriminator_", false)
       {
         init ();
       }
@@ -2698,12 +3029,19 @@ namespace relational
             context (),
             grow_base_ (index_),
             grow_member_ (index_),
+            grow_version_member_ (index_, "version_"),
+            grow_discriminator_member_ (index_, "discriminator_"),
             bind_id_member_ ("id_"),
             bind_version_member_ ("version_"),
+            bind_discriminator_member_ ("discriminator_"),
             init_id_image_member_ ("id_", "id"),
             init_version_image_member_ ("version_", "(*v)"),
             init_id_value_member_ ("id"),
-            init_version_value_member_ ("v")
+            init_version_value_member_ ("v"),
+            init_named_version_value_member_ ("v", "version_"),
+            init_discriminator_value_member_ ("d", "", false),
+            init_named_discriminator_value_member_ (
+              "d", "discriminator_", false)
       {
         init ();
       }
@@ -2819,1203 +3157,7 @@ namespace relational
       }
 
       virtual void
-      traverse_object (type& c)
-      {
-        bool abstract (context::abstract (c));
-        string const& type (class_fq_name (c));
-        string traits ("access::object_traits< " + type + " >");
-
-        bool has_ptr (has_a (c, test_pointer));
-
-        semantics::data_member* id (id_member (c));
-        bool auto_id (id ? id->count ("auto") : false);
-        bool base_id (id ? &id->scope () != &c : false); // Comes from base.
-
-        semantics::data_member* optimistic (context::optimistic (c));
-
-        bool grow (false);
-        bool grow_id (false);
-
-        if (generate_grow)
-        {
-          grow = context::grow (c);
-          grow_id = (id ? context::grow (*id) : false) ||
-            (optimistic ? context::grow (*optimistic) : false);
-        }
-
-        column_count_type const& cc (column_count (c));
-
-        os << "// " << class_name (c) << endl
-           << "//" << endl
-           << endl;
-
-        object_extra (c);
-
-        //
-        // Query.
-        //
-
-        if (options.generate_query ())
-        {
-          // query_columns_base
-          //
-          if (has_ptr)
-          {
-            instance<query_columns_base> t (c);
-            t->traverse (c);
-          }
-        }
-
-        //
-        // Containers (abstract and concrete).
-        //
-        bool containers (has_a (c, test_container));
-        bool straight_containers (false);
-        bool straight_readwrite_containers (false);
-
-        if (containers)
-        {
-          containers = true;
-          size_t scn (has_a (c, test_straight_container));
-
-          if (scn != 0)
-          {
-            straight_containers = true;
-
-            // Inverse containers cannot be marked readonly.
-            //
-            straight_readwrite_containers =
-              scn > has_a (c, test_readonly_container);
-          }
-        }
-
-        if (containers)
-        {
-          instance<container_traits> t (c);
-          t->traverse (c);
-        }
-
-        //
-        // Functions (abstract and concrete).
-        //
-
-        // id (image_type)
-        //
-        if (id != 0 && options.generate_query () && !base_id)
-        {
-          os << traits << "::id_type" << endl
-             << traits << "::" << endl
-             << "id (const image_type& i)"
-             << "{"
-             << db << "::database* db (0);"
-             << "ODB_POTENTIALLY_UNUSED (db);"
-             << endl
-             << "id_type id;";
-          init_id_value_member_->traverse (*id);
-          os << "return id;"
-             << "}";
-        }
-
-        if (id != 0 && optimistic != 0 && !base_id)
-        {
-          os << traits << "::version_type" << endl
-             << traits << "::" << endl
-             << "version (const image_type& i)"
-             << "{"
-             << "version_type v;";
-          init_version_value_member_->traverse (*optimistic);
-          os << "return v;"
-             << "}";
-        }
-
-        // grow ()
-        //
-        if (generate_grow)
-        {
-          os << "bool " << traits << "::" << endl
-             << "grow (image_type& i, " << truncated_vector << " t)"
-             << "{"
-             << "ODB_POTENTIALLY_UNUSED (i);"
-             << "ODB_POTENTIALLY_UNUSED (t);"
-             << endl
-             << "bool grew (false);"
-             << endl;
-
-          index_ = 0;
-          inherits (c, grow_base_inherits_);
-          names (c, grow_member_names_);
-
-          os << "return grew;"
-             << "}";
-        }
-
-        // bind (image_type)
-        //
-        os << "void " << traits << "::" << endl
-           << "bind (" << bind_vector << " b, image_type& i, " <<
-          db << "::statement_kind sk)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (sk);"
-           << endl
-           << "using namespace " << db << ";"
-           << endl;
-
-        if (readonly (c))
-          os << "assert (sk != statement_update);"
-             << endl;
-
-        os << "std::size_t n (0);"
-           << endl;
-
-        inherits (c, bind_base_inherits_);
-        names (c, bind_member_names_);
-
-        os << "}";
-
-        // bind (id_image_type)
-        //
-        if (id != 0 && !base_id)
-        {
-          os << "void " << traits << "::" << endl
-             << "bind (" << bind_vector << " b, id_image_type& i)"
-             << "{"
-             << "std::size_t n (0);";
-
-          if (composite_wrapper (utype (*id)))
-            os << db << "::statement_kind sk (" << db << "::statement_select);";
-
-          bind_id_member_->traverse (*id);
-
-          if (optimistic != 0)
-          {
-            os << "n += " << column_count (c).id << ";"
-               << endl;
-
-            bind_version_member_->traverse (*optimistic);
-          }
-
-          os << "}";
-        }
-
-        // init (image, object)
-        //
-        os << "bool " << traits << "::" << endl
-           << "init (image_type& i, const object_type& o, " <<
-          db << "::statement_kind sk)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (o);"
-           << "ODB_POTENTIALLY_UNUSED (sk);"
-           << endl
-           << "using namespace " << db << ";"
-           << endl;
-
-        if (readonly (c))
-          os << "assert (sk != statement_update);"
-             << endl;
-
-        init_image_pre (c);
-
-        os << "bool grew (false);"
-           << endl;
-
-        inherits (c, init_image_base_inherits_);
-        names (c, init_image_member_names_);
-
-        os << "return grew;"
-           << "}";
-
-        // init (object, image)
-        //
-        os << "void " << traits << "::" << endl
-           << "init (object_type& o, const image_type& i, database* db)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (o);"
-           << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (db);"
-           << endl;
-
-        inherits (c, init_value_base_inherits_);
-        names (c, init_value_member_names_);
-
-        os << "}";
-
-        // init (id_image, id)
-        //
-        if (id != 0 && !base_id)
-        {
-          os << "void " << traits << "::" << endl
-             << "init (id_image_type& i, const id_type& id" <<
-            (optimistic != 0 ? ", const version_type* v" : "") << ")"
-             << "{";
-
-          if (grow_id)
-            os << "bool grew (false);";
-
-          if (composite_wrapper (utype (*id)))
-            os << db << "::statement_kind sk (" << db << "::statement_select);";
-
-          init_id_image_member_->traverse (*id);
-
-          if (optimistic != 0)
-          {
-            // Here we rely on the fact that init_image_member
-            // always wraps the statements in a block.
-            //
-            os << "if (v != 0)";
-            init_version_image_member_->traverse (*optimistic);
-          }
-
-          if (grow_id)
-            os << "if (grew)" << endl
-               << "i.version++;";
-
-          os << "}";
-        }
-
-        //
-        // The rest only applies to concrete objects.
-        //
-        if (abstract)
-          return;
-
-        //
-        // Containers (concrete).
-        //
-
-        // Statement cache (definition).
-        //
-        if (id != 0)
-        {
-          os << "struct " << traits << "::container_statement_cache_type"
-             << "{";
-
-          instance<container_cache_members> cm;
-          cm->traverse (c);
-
-          os << (containers ? "\n" : "")
-             << "container_statement_cache_type (" << db << "::connection&" <<
-            (containers ? " c" : "") << ")";
-
-          instance<container_cache_init_members> im;
-          im->traverse (c);
-
-          os << "{"
-             << "}"
-             << "};";
-        }
-
-        //
-        // Statements.
-        //
-
-        string const& table (table_qname (c));
-
-        // persist_statement
-        //
-        {
-          statement_columns sc;
-          {
-            statement_kind sk (statement_insert); // Imperfect forwarding.
-            instance<object_columns> ct (sk, sc);
-            ct->traverse (c);
-            process_statement_columns (sc, statement_insert);
-          }
-
-          bool dv (sc.empty ()); // The DEFAULT VALUES syntax.
-
-          os << "const char " << traits << "::persist_statement[] " <<
-            "=" << endl
-             << strlit ("INSERT INTO " + table_qname(c) +
-                        (dv ? "" : " (")) << endl;
-
-          for (statement_columns::const_iterator i (sc.begin ()),
-                 e (sc.end ()); i != e;)
-          {
-            string const& c (i->column);
-            os << strlit (c + (++i != e ? "," : ")")) << endl;
-          }
-
-          instance<query_parameters> qp;
-
-          persist_statement_extra (c, *qp, persist_after_columns);
-
-          if (!dv)
-          {
-            string values;
-            instance<persist_statement_params> pt (values, *qp);
-            pt->traverse (c);
-            os << strlit (" VALUES (" + values + ")");
-          }
-          else
-            os << strlit (" DEFAULT VALUES");
-
-          persist_statement_extra (c, *qp, persist_after_values);
-
-          os << ";"
-             << endl;
-        }
-
-        if (id != 0)
-        {
-          instance<object_columns_list> id_cols;
-          id_cols->traverse (*id);
-
-          // find_statement
-          //
-          {
-            statement_columns sc;
-            {
-              statement_kind sk (statement_select); // Imperfect forwarding.
-              instance<object_columns> t (table, sk, sc);
-              t->traverse (c);
-              process_statement_columns (sc, statement_select);
-            }
-
-            os << "const char " << traits << "::find_statement[] =" << endl
-               << strlit ("SELECT ") << endl;
-
-            for (statement_columns::const_iterator i (sc.begin ()),
-                   e (sc.end ()); i != e;)
-            {
-              string const& c (i->column);
-              os << strlit (c + (++i != e ? "," : "")) << endl;
-            }
-
-            os << strlit (" FROM " + table) << endl;
-
-            bool f (false); // @@ (im)perfect forwarding
-            instance<object_joins> j (c, f); // @@ (im)perfect forwarding
-            j->traverse (c);
-            j->write ();
-
-            instance<query_parameters> qp;
-            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
-                 i != id_cols->end (); ++i)
-            {
-              if (i != b)
-                os << endl;
-
-              os << strlit ((i == b ? " WHERE " : " AND ") + table + "." +
-                            quote_id (i->name) + "=" + qp->next ());
-            }
-
-            os << ";"
-               << endl;
-          }
-
-          // update_statement
-          //
-          if (cc.total != cc.id + cc.inverse + cc.readonly)
-          {
-            instance<query_parameters> qp;
-
-            statement_columns sc;
-            {
-              query_parameters* p (qp.get ()); // Imperfect forwarding.
-              statement_kind sk (statement_update); // Imperfect forwarding.
-              instance<object_columns> t (sk, sc, p);
-              t->traverse (c);
-              process_statement_columns (sc, statement_update);
-            }
-
-            os << "const char " << traits << "::update_statement[] " <<
-              "=" << endl
-               << strlit ("UPDATE " + table + " SET ") << endl;
-
-            for (statement_columns::const_iterator i (sc.begin ()),
-                   e (sc.end ()); i != e;)
-            {
-              string const& c (i->column);
-              os << strlit (c + (++i != e ? "," : "")) << endl;
-            }
-
-            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
-                 i != id_cols->end (); ++i)
-            {
-              if (i != b)
-                os << endl;
-
-              os << strlit ((i == b ? " WHERE " : " AND ") +
-                            quote_id (i->name) + "=" + qp->next ());
-            }
-
-            if (optimistic != 0)
-              os << endl
-                 << strlit (" AND " + column_qname (*optimistic) +
-                            "=" + qp->next ());
-
-            os << ";"
-               << endl;
-          }
-
-          // erase_statement
-          //
-          {
-            instance<query_parameters> qp;
-            os << "const char " << traits << "::erase_statement[] =" << endl
-               << strlit ("DELETE FROM " + table);
-
-            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
-                 i != id_cols->end (); ++i)
-            {
-
-              os << endl
-                 << strlit ((i == b ? " WHERE " : " AND ") +
-                            quote_id (i->name) + "=" + qp->next ());
-            }
-
-            os << ";"
-               << endl;
-          }
-
-          if (optimistic != 0)
-          {
-            instance<query_parameters> qp;
-
-            os << "const char " << traits <<
-              "::optimistic_erase_statement[] =" << endl
-               << strlit ("DELETE FROM " + table);
-
-            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
-                 i != id_cols->end (); ++i)
-            {
-              os << endl
-                 << strlit ((i == b ? " WHERE " : " AND ") +
-                            quote_id (i->name) + "=" + qp->next ());
-            }
-
-            os << endl
-               << strlit (" AND " + column_qname (*optimistic) +
-                          "=" + qp->next ()) << ";"
-               << endl;
-          }
-        }
-
-        if (options.generate_query ())
-        {
-          // query_statement
-          //
-          statement_columns sc;
-          {
-            statement_kind sk (statement_select); // Imperfect forwarding.
-            instance<object_columns> oc (table, sk, sc);
-            oc->traverse (c);
-            process_statement_columns (sc, statement_select);
-          }
-
-          os << "const char " << traits << "::query_statement[] =" << endl
-             << strlit ("SELECT ") << endl;
-
-          for (statement_columns::const_iterator i (sc.begin ()),
-                 e (sc.end ()); i != e;)
-          {
-            string const& c (i->column);
-            os << strlit (c + (++i != e ? "," : "")) << endl;
-          }
-
-          os << strlit (" FROM " + table) << endl;
-
-          if (id != 0)
-          {
-            bool t (true); //@@ (im)perfect forwarding
-            instance<object_joins> oj (c, t); //@@ (im)perfect forwarding
-            oj->traverse (c);
-            oj->write ();
-          }
-
-          os << strlit (" ") << ";"
-             << endl;
-
-          // erase_query_statement
-          //
-          os << "const char " << traits << "::erase_query_statement[] =" << endl
-             << strlit ("DELETE FROM " + table) << endl;
-
-          // DELETE JOIN:
-          //
-          // MySQL:
-          // << strlit ("DELETE FROM " + table + " USING " + table) << endl;
-          // << strlit ("DELETE " + table + " FROM " + table) << endl;
-          // oj->write ();
-          //
-
-          os << strlit (" ") << ";"
-             << endl;
-
-          // table_name
-          //
-          os << "const char " << traits << "::table_name[] =" << endl
-             << strlit (table_qname (c)) << ";" // Use quoted name.
-             << endl;
-        }
-
-        // persist ()
-        //
-        char const* object_statements_type (
-          id != 0
-          ? "object_statements< object_type >"
-          : "object_statements_no_id< object_type >");
-
-        os << "void " << traits << "::" << endl
-           << "persist (database&, " << (auto_id ? "" : "const ") <<
-          "object_type& obj)"
-           << "{"
-           << "using namespace " << db << ";"
-           << endl
-           << db << "::connection& conn (" << endl
-           << db << "::transaction::current ().connection ());"
-           << object_statements_type << "& sts (" << endl
-           << "conn.statement_cache ().find_object<object_type> ());"
-           << "image_type& im (sts.image ());"
-           << "binding& imb (sts.insert_image_binding ());"
-           << endl
-           << "if (init (im, obj, statement_insert))" << endl
-           << "im.version++;"
-           << endl;
-
-        if (auto_id && insert_send_auto_id)
-        {
-          string const& n (id->name ());
-          string var ("im." + n + (n[n.size () - 1] == '_' ? "" : "_"));
-          init_auto_id (*id, var);
-          os << endl;
-        }
-
-        os << "if (im.version != sts.insert_image_version () || " <<
-          "imb.version == 0)"
-           << "{"
-           << "bind (imb.bind, im, statement_insert);"
-           << "sts.insert_image_version (im.version);"
-           << "imb.version++;"
-           << "}"
-           << "insert_statement& st (sts.persist_statement ());"
-           << "if (!st.execute ())" << endl
-           << "throw object_already_persistent ();"
-           << endl;
-
-        if (auto_id)
-        {
-          if (const_type (id->type ()))
-            os << "const_cast< id_type& > (obj." << id->name () << ")";
-          else
-            os << "obj." << id->name ();
-
-          os << " = static_cast< id_type > (st.id ());"
-             << endl;
-        }
-
-        if (optimistic != 0)
-        {
-          // Set the version in the object member.
-          //
-          if (!auto_id || const_type (optimistic->type ()))
-            os << "const_cast< version_type& > (" <<
-              "obj." << optimistic->name () << ") = 1;";
-          else
-            os << "obj." << optimistic->name () << " = 1;";
-
-          os << endl;
-        }
-
-        if (straight_containers)
-        {
-          // Initialize id_image and binding.
-          //
-          os << "id_image_type& i (sts.id_image ());"
-             << "init (i, obj." << id->name () << ");"
-             << endl
-             << "binding& idb (sts.id_image_binding ());"
-             << "if (i.version != sts.id_image_version () || idb.version == 0)"
-             << "{"
-             << "bind (idb.bind, i);"
-             << "sts.id_image_version (i.version);"
-             << "idb.version++;"
-             << "}";
-
-          instance<container_calls> t (container_calls::persist_call);
-          t->traverse (c);
-        }
-
-        os << "}";
-
-        // update ()
-        //
-        if (id != 0 && !readonly (c))
-        {
-          os << "void " << traits << "::" << endl
-             << "update (database&, const object_type& obj)"
-             << "{"
-             << "using namespace " << db << ";"
-             << endl
-             << db << "::connection& conn (" << endl
-             << db << "::transaction::current ().connection ());"
-             << object_statements_type << "& sts (" << endl
-             << "conn.statement_cache ().find_object<object_type> ());"
-             << endl;
-
-          if (cc.total != cc.id + cc.inverse + cc.readonly)
-          {
-            // Initialize object and id images.
-            //
-            os << "id_image_type& i (sts.id_image ());";
-
-            if (optimistic == 0)
-              os << "init (i, obj." << id->name () << ");";
-            else
-              os << "init (i, obj." << id->name () << ", &obj." <<
-                optimistic->name () << ");";
-
-            os << endl
-               << "image_type& im (sts.image ());"
-               << "if (init (im, obj, statement_update))" << endl
-               << "im.version++;"
-               << endl;
-
-            // Update binding is bound to two images (object and id)
-            // so we have to track both versions.
-            //
-            os << "bool u (false);" // Avoid incrementing version twice.
-               << "binding& imb (sts.update_image_binding ());"
-               << "if (im.version != sts.update_image_version () || " <<
-              "imb.version == 0)"
-               << "{"
-               << "bind (imb.bind, im, statement_update);"
-               << "sts.update_image_version (im.version);"
-               << "imb.version++;"
-               << "u = true;"
-               << "}";
-
-            // To update the id part of the update binding we have to do
-            // it indirectly via the id binding, which just points to the
-            // suffix of the update bind array (see object_statements).
-            //
-            os << "binding& idb (sts.id_image_binding ());"
-               << "if (i.version != sts.update_id_image_version () || " <<
-              "idb.version == 0)"
-               << "{"
-              // If the id binding is up-to-date, then that means update
-              // binding is too and we just need to update the versions.
-              //
-               << "if (i.version != sts.id_image_version () || " <<
-              "idb.version == 0)"
-               << "{"
-               << "bind (idb.bind, i);"
-              // Update the id binding versions since we may use them later
-              // to update containers.
-              //
-               << "sts.id_image_version (i.version);"
-               << "idb.version++;"
-               << "}"
-               << "sts.update_id_image_version (i.version);"
-               << endl
-               << "if (!u)" << endl
-               << "imb.version++;"
-               << "}";
-
-            os << "if (sts.update_statement ().execute () == 0)" << endl;
-
-            if (optimistic == 0)
-              os << "throw object_not_persistent ();";
-            else
-              os << "throw object_changed ();";
-
-            os << endl;
-          }
-          else
-          {
-            // We don't have any columns to update. Note that we still have
-            // to make sure this object exists in the database. For that we
-            // will run the SELECT query using the find_() function.
-            //
-            os << "if (!find_ (sts, obj." << id->name () << "))" << endl
-               << "throw object_not_persistent ();"
-               << endl;
-
-            if (delay_freeing_statement_result)
-              os << "sts.find_statement ().free_result ();";
-
-            if (straight_readwrite_containers)
-              os << "binding& idb (sts.id_image_binding ());"
-                 << endl;
-          }
-
-          if (straight_readwrite_containers)
-          {
-            instance<container_calls> t (container_calls::update_call);
-            t->traverse (c);
-          }
-
-          if (optimistic != 0)
-          {
-            // Update version in the object member.
-            //
-            os << "const_cast< version_type& > (" <<
-              "obj." << optimistic->name () << ")++;";
-          }
-
-          os << "}";
-        }
-
-        // erase (id_type)
-        //
-        if (id != 0)
-        {
-          os << "void " << traits << "::" << endl
-             << "erase (database&, const id_type& id)"
-             << "{"
-             << "using namespace " << db << ";"
-             << endl
-             << db << "::connection& conn (" << endl
-             << db << "::transaction::current ().connection ());"
-             << object_statements_type << "& sts (" << endl
-             << "conn.statement_cache ().find_object<object_type> ());"
-             << endl;
-
-          // Initialize id image.
-          //
-          os << "id_image_type& i (sts.id_image ());"
-             << "init (i, id);"
-             << endl;
-
-          os << "binding& idb (sts.id_image_binding ());"
-             << "if (i.version != sts.id_image_version () || idb.version == 0)"
-             << "{"
-             << "bind (idb.bind, i);"
-             << "sts.id_image_version (i.version);"
-             << "idb.version++;"
-             << "}";
-
-          // Erase containers first so that there are no reference
-          // violations (we don't want to reply on ON DELETE CASCADE
-          // here since in case of a custom schema, it might not be
-          // there).
-          //
-          if (straight_containers)
-          {
-            instance<container_calls> t (container_calls::erase_call);
-            t->traverse (c);
-          }
-
-          os << "if (sts.erase_statement ().execute () != 1)" << endl
-             << "throw object_not_persistent ();";
-
-          os << "}";
-        }
-
-        // erase (object_type)
-        //
-        if (id != 0 && optimistic != 0)
-        {
-          os << "void " << traits << "::" << endl
-             << "erase (database&, const object_type& obj)"
-             << "{"
-             << "using namespace " << db << ";"
-             << endl
-             << db << "::connection& conn (" << endl
-             << db << "::transaction::current ().connection ());"
-             << object_statements_type << "& sts (" << endl
-             << "conn.statement_cache ().find_object<object_type> ());"
-             << endl;
-
-          // Initialize id + managed column image.
-          //
-          os << "id_image_type& i (sts.id_image ());"
-             << "init (i, obj." << id->name () << ", &obj." <<
-            optimistic->name () << ");"
-             << endl;
-
-          // To update the id part of the optimistic id binding we have
-          // to do it indirectly via the id binding, since both id and
-          // optimistic id bindings just point to the suffix of the
-          // update bind array (see object_statements).
-          //
-          os << "binding& idb (sts.id_image_binding ());"
-             << "binding& oidb (sts.optimistic_id_image_binding ());"
-             << "if (i.version != sts.optimistic_id_image_version () || " <<
-            "oidb.version == 0)"
-             << "{"
-            // If the id binding is up-to-date, then that means optimistic
-            // id binding is too and we just need to update the versions.
-            //
-             << "if (i.version != sts.id_image_version () || idb.version == 0)"
-             << "{"
-             << "bind (idb.bind, i);"
-            // Update the id binding versions since we may use them later
-            // to delete containers.
-            //
-             << "sts.id_image_version (i.version);"
-             << "idb.version++;"
-             << "}"
-             << "sts.optimistic_id_image_version (i.version);"
-             << "oidb.version++;"
-             << "}";
-
-          // Erase containers first so that there are no reference
-          // violations (we don't want to rely on ON DELETE CASCADE
-          // here since in case of a custom schema, it might not be
-          // there).
-          //
-          if (straight_containers)
-          {
-            // Things get complicated here: we don't want to trash the
-            // containers and then find out that the versions don't match
-            // and we therefore cannot delete the object. After all, there
-            // is no guarantee that the user will abort the transaction.
-            // In fact, a perfectly reasonable scenario is to reload the
-            // object, re-apply the changes, and commit the transaction.
-            //
-            // There doesn't seem to be anything better than first making
-            // sure we can delete the object, then deleting the container
-            // data, and then deleting the object. To check that we can
-            // delete the object we are going to use find_() and then
-            // compare the versions. A special-purpose SELECT query would
-            // have been more efficient but it would complicated and bloat
-            // things significantly.
-            //
-
-            os << "if (!find_ (sts, obj." << id->name () << "))" << endl
-               << "throw object_changed ();"
-               << endl;
-
-            if (delay_freeing_statement_result)
-              os << "sts.find_statement ().free_result ();";
-
-            os << "if (version (sts.image ()) != obj." <<
-              optimistic->name () << ")" << endl
-               << "throw object_changed ();"
-               << endl;
-
-            instance<container_calls> t (container_calls::erase_call);
-            t->traverse (c);
-          }
-
-          os << "if (sts.optimistic_erase_statement ().execute () != 1)" << endl
-             << "throw object_changed ();"
-             << "}";
-        }
-
-        // find (id)
-        //
-        if (id != 0 && c.default_ctor ())
-        {
-          os << traits << "::pointer_type" << endl
-             << traits << "::" << endl
-             << "find (database& db, const id_type& id)"
-             << "{"
-             << "using namespace " << db << ";"
-             << endl
-             << db << "::connection& conn (" << endl
-             << db << "::transaction::current ().connection ());"
-             << object_statements_type << "& sts (" << endl
-             << "conn.statement_cache ().find_object<object_type> ());"
-             << object_statements_type << "::auto_lock l (sts);";
-
-          if (delay_freeing_statement_result)
-            os << "auto_result ar;";
-
-          os << endl
-             << "if (l.locked ())"
-             << "{"
-             << "if (!find_ (sts, id))" << endl
-             << "return pointer_type ();";
-
-          if (delay_freeing_statement_result)
-            os << endl
-               << "ar.set (sts.find_statement ());";
-
-          os << "}"
-             << "pointer_type p (" << endl
-             << "access::object_factory< object_type, pointer_type  >::create ());"
-             << "pointer_traits< pointer_type >::guard pg (p);"
-             << "pointer_cache_traits< pointer_type >::insert_guard ig (" << endl
-             << "pointer_cache_traits< pointer_type >::insert (db, id, p));"
-             << "object_type& obj (pointer_traits< pointer_type >::get_ref (p));"
-             << endl
-             << "if (l.locked ())"
-             << "{"
-             << "callback (db, obj, callback_event::pre_load);"
-             << "init (obj, sts.image (), &db);";
-
-          init_value_extra ();
-
-          if (delay_freeing_statement_result)
-            os << "ar.free ();";
-
-          os << "load_ (sts, obj);"
-             << "sts.load_delayed ();"
-             << "l.unlock ();"
-             << "callback (db, obj, callback_event::post_load);"
-             << "}"
-             << "else" << endl
-             << "sts.delay_load (id, obj, ig.position ());"
-             << endl;
-
-          os << "ig.release ();"
-             << "pg.release ();"
-             << "return p;"
-             << "}";
-        }
-
-        // find (id, obj)
-        //
-        if (id != 0)
-        {
-          os << "bool " << traits << "::" << endl
-             << "find (database& db, const id_type& id, object_type& obj)"
-             << "{"
-             << "using namespace " << db << ";"
-             << endl
-             << db << "::connection& conn (" << endl
-             << db << "::transaction::current ().connection ());"
-             << object_statements_type << "& sts (" << endl
-             << "conn.statement_cache ().find_object<object_type> ());"
-             << endl
-            // This can only be top-level call so auto_lock must succeed.
-            //
-             << object_statements_type << "::auto_lock l (sts);"
-             << endl;
-
-          os << "if (!find_ (sts, id))" << endl
-             << "return false;"
-             << endl;
-
-          if (delay_freeing_statement_result)
-            os << "auto_result ar (sts.find_statement ());";
-
-          os << "reference_cache_traits< object_type >::insert_guard ig (" << endl
-             << "reference_cache_traits< object_type >::insert (db, id, obj));"
-             << endl
-             << "callback (db, obj, callback_event::pre_load);"
-             << "init (obj, sts.image (), &db);";
-
-          init_value_extra ();
-
-          if (delay_freeing_statement_result)
-            os << "ar.free ();";
-
-          os << "load_ (sts, obj);"
-             << "sts.load_delayed ();"
-             << "l.unlock ();"
-             << "callback (db, obj, callback_event::post_load);"
-             << "ig.release ();"
-             << "return true;"
-             << "}";
-        }
-
-        // reload()
-        //
-        if (id != 0)
-        {
-          os << "bool " << traits << "::" << endl
-             << "reload (database& db, object_type& obj)"
-             << "{"
-             << "using namespace " << db << ";"
-             << endl
-             << db << "::connection& conn (" << endl
-             << db << "::transaction::current ().connection ());"
-             << object_statements_type << "& sts (" << endl
-             << "conn.statement_cache ().find_object<object_type> ());"
-             << endl
-            // This can only be top-level call so auto_lock must succeed.
-            //
-             << object_statements_type << "::auto_lock l (sts);"
-             << endl;
-
-          os << "if (!find_ (sts, obj." << id->name () << "))" << endl
-             << "return false;"
-             << endl;
-
-          if (delay_freeing_statement_result)
-            os << "auto_result ar (sts.find_statement ());"
-               << endl;
-
-          if (optimistic != 0)
-          {
-            os << "if (version (sts.image ()) == obj." <<
-              optimistic->name () << ")" << endl
-               << "return true;";
-          }
-
-          os << "callback (db, obj, callback_event::pre_load);"
-             << "init (obj, sts.image (), &db);";
-
-          init_value_extra ();
-
-          if (delay_freeing_statement_result)
-            os << "ar.free ();";
-
-          os << "load_ (sts, obj);"
-             << "sts.load_delayed ();"
-             << "l.unlock ();"
-             << "callback (db, obj, callback_event::post_load);"
-             << "return true;"
-             << "}";
-        }
-
-        // find_ ()
-        //
-        if (id != 0)
-        {
-          os << "bool " << traits << "::" << endl
-             << "find_ (" << db << "::" << object_statements_type << "& " <<
-            "sts, const id_type& id)"
-             << "{"
-             << "using namespace " << db << ";"
-             << endl;
-
-          // Initialize id image.
-          //
-          os << "id_image_type& i (sts.id_image ());"
-             << "init (i, id);"
-             << endl;
-
-          os << "binding& idb (sts.id_image_binding ());"
-             << "if (i.version != sts.id_image_version () || idb.version == 0)"
-             << "{"
-             << "bind (idb.bind, i);"
-             << "sts.id_image_version (i.version);"
-             << "idb.version++;"
-             << "}";
-
-          // Rebind data image.
-          //
-          os << "image_type& im (sts.image ());"
-             << "binding& imb (sts.select_image_binding ());"
-             << endl
-             << "if (im.version != sts.select_image_version () || " <<
-            "imb.version == 0)"
-             << "{"
-             << "bind (imb.bind, im, statement_select);"
-             << "sts.select_image_version (im.version);"
-             << "imb.version++;"
-             << "}"
-             << "select_statement& st (sts.find_statement ());"
-             << "st.execute ();"
-             << "auto_result ar (st);"
-             << "select_statement::result r (st.fetch ());"
-             << endl;
-
-          if (grow)
-            os << "if (r == select_statement::truncated)"
-               << "{"
-               << "if (grow (im, sts.select_image_truncated ()))" << endl
-               << "im.version++;"
-               << endl
-               << "if (im.version != sts.select_image_version ())"
-               << "{"
-               << "bind (imb.bind, im, statement_select);"
-               << "sts.select_image_version (im.version);"
-               << "imb.version++;"
-               << "st.refetch ();"
-               << "}"
-               << "}";
-
-          // If we are delaying, only free the result if it is empty.
-          //
-          if (delay_freeing_statement_result)
-            os << "if (r != select_statement::no_data)"
-               << "{"
-               << "ar.release ();"
-               << "return true;"
-               << "}"
-               << "else" << endl
-               << "return false;";
-          else
-            os << "return r != select_statement::no_data;";
-
-          os << "}";
-        }
-
-        // load_()
-        //
-        if (containers)
-        {
-          os << "void " << traits << "::" << endl
-             << "load_ (" << db << "::" << object_statements_type << "& " <<
-            "sts, object_type& obj)"
-             << "{"
-             << db << "::binding& idb (sts.id_image_binding ());"
-             << endl;
-          instance<container_calls> t (container_calls::load_call);
-          t->traverse (c);
-          os << "}";
-        }
-
-        if (options.generate_query ())
-        {
-          // query ()
-          //
-          os << "result< " << traits << "::object_type >" << endl
-             << traits << "::" << endl
-             << "query (database&, const query_base_type& q)"
-             << "{"
-             << "using namespace " << db << ";"
-             << "using odb::details::shared;"
-             << "using odb::details::shared_ptr;"
-             << endl
-             << db << "::connection& conn (" << endl
-             << db << "::transaction::current ().connection ());"
-             << endl
-             << object_statements_type << "& sts (" << endl
-             << "conn.statement_cache ().find_object<object_type> ());"
-             << endl
-             << "image_type& im (sts.image ());"
-             << "binding& imb (sts.select_image_binding ());"
-             << endl
-             << "if (im.version != sts.select_image_version () || " <<
-            "imb.version == 0)"
-             << "{"
-             << "bind (imb.bind, im, statement_select);"
-             << "sts.select_image_version (im.version);"
-             << "imb.version++;"
-             << "}"
-             << "shared_ptr<select_statement> st (" << endl
-             << "new (shared) select_statement (" << endl;
-
-          object_query_statement_ctor_args (c);
-
-          os << "));" << endl
-             << "st->execute ();";
-
-          post_query_ (c);
-
-          char const* result_type (
-            id != 0
-            ? "object_result_impl<object_type>"
-            : "object_result_impl_no_id<object_type>");
-
-          os << endl
-             << "shared_ptr< odb::" << result_type << " > r (" << endl
-             << "new (shared) " << db << "::" << result_type << " (" << endl
-             << "q, st, sts));"
-             << endl
-             << "return result<object_type> (r);"
-             << "}";
-
-          // erase_query
-          //
-          os << "unsigned long long " << traits << "::" << endl
-             << "erase_query (database&, const query_base_type& q)"
-             << "{"
-             << "using namespace " << db << ";"
-             << endl
-             << db << "::connection& conn (" << endl
-             << db << "::transaction::current ().connection ());"
-             << endl
-             << "delete_statement st (" << endl;
-
-          object_erase_query_statement_ctor_args (c);
-
-          os << ");"
-             << endl
-             << "return st.execute ();"
-             << "}";
-        }
-
-        if (embedded_schema)
-          schema_->traverse (c);
-      }
+      traverse_object (type& c);
 
       //
       // view
@@ -4036,782 +3178,7 @@ namespace relational
       }
 
       virtual void
-      traverse_view (type& c)
-      {
-        string const& type (class_fq_name (c));
-        string traits ("access::view_traits< " + type + " >");
-
-        os << "// " << class_name (c) << endl
-           << "//" << endl
-           << endl;
-
-        view_extra (c);
-
-        //
-        // Query.
-        //
-
-        // query_type
-        //
-        size_t obj_count (c.get<size_t> ("object-count"));
-
-        if (obj_count != 0)
-        {
-          view_objects& objs (c.get<view_objects> ("objects"));
-
-          if (obj_count > 1)
-          {
-            for (view_objects::const_iterator i (objs.begin ());
-                 i < objs.end ();
-                 ++i)
-            {
-              if (i->kind != view_object::object)
-                continue; // Skip tables.
-
-              qname const& t (table_name (*i->obj));
-
-              if (!i->alias.empty () &&
-                  (t.qualified () || i->alias != t.uname ()))
-                os << "const char " << traits << "::query_columns::" << endl
-                   << i->alias << "_alias_[] = " <<
-                  strlit (quote_id (i->alias)) << ";"
-                   << endl;
-            }
-          }
-          else
-          {
-            // For a single object view we generate a shortcut without
-            // an intermediate typedef.
-            //
-            view_object const* vo (0);
-            for (view_objects::const_iterator i (objs.begin ());
-                 vo == 0 && i < objs.end ();
-                 ++i)
-            {
-              if (i->kind == view_object::object)
-                vo = &*i;
-            }
-
-            qname const& t (table_name (*vo->obj));
-
-            if (!vo->alias.empty () &&
-                (t.qualified () || vo->alias != t.uname ()))
-              os << "const char " << traits << "::" << endl
-                 << "query_alias[] = " << strlit (quote_id (vo->alias)) << ";"
-                 << endl;
-          }
-        }
-
-        //
-        // Functions.
-        //
-
-        // grow ()
-        //
-        if (generate_grow)
-        {
-          os << "bool " << traits << "::" << endl
-             << "grow (image_type& i, " << truncated_vector << " t)"
-             << "{"
-             << "ODB_POTENTIALLY_UNUSED (i);"
-             << "ODB_POTENTIALLY_UNUSED (t);"
-             << endl
-             << "bool grew (false);"
-             << endl;
-
-          index_ = 0;
-          names (c, grow_member_names_);
-
-          os << "return grew;"
-             << "}";
-        }
-
-        // bind (image_type)
-        //
-        os << "void " << traits << "::" << endl
-           << "bind (" << bind_vector << " b, image_type& i)"
-           << "{"
-           << "using namespace " << db << ";"
-           << endl
-           << db << "::statement_kind sk (statement_select);"
-           << "ODB_POTENTIALLY_UNUSED (sk);"
-           << endl
-           << "std::size_t n (0);"
-           << endl;
-
-        names (c, bind_member_names_);
-
-        os << "}";
-
-        // init (view, image)
-        //
-        os << "void " << traits << "::" << endl
-           << "init (view_type& o, const image_type& i, database* db)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (o);"
-           << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (db);"
-           << endl;
-
-        names (c, init_value_member_names_);
-
-        os << "}";
-
-        // query_statement()
-        //
-        view_query& vq (c.get<view_query> ("query"));
-
-        if (vq.kind != view_query::runtime)
-        {
-          os << traits << "::query_base_type" << endl
-             << traits << "::" << endl
-             << "query_statement (const query_base_type& q)"
-             << "{";
-
-          if (vq.kind == view_query::complete)
-          {
-            os << "query_base_type r (" << endl;
-
-            bool ph (false);
-
-            if (!vq.literal.empty ())
-            {
-              // See if we have the '(?)' placeholder.
-              //
-              // @@ Ideally we would need to make sure we don't match
-              // this inside strings and quoted identifier. So the
-              // proper way to handle this would be to tokenize the
-              // statement using sql_lexer, once it is complete enough.
-              //
-              string::size_type p (vq.literal.find ("(?)"));
-
-              if (p != string::npos)
-              {
-                ph = true;
-                os << strlit (string (vq.literal, 0, p + 1)) << " +" << endl
-                   << "(q.empty () ? query_base_type::true_expr : q) +" << endl
-                   << strlit (string (vq.literal, p + 2));
-              }
-              else
-                os << strlit (vq.literal);
-            }
-            else
-              // Output the pragma location for easier error tracking.
-              //
-              os << "// From " <<
-                location_file (vq.loc).leaf () << ":" <<
-                location_line (vq.loc) << ":" <<
-                location_column (vq.loc) << endl
-                 << translate_expression (
-                   c, vq.expr, vq.scope, vq.loc, "query", &ph).value;
-
-            os << ");";
-
-            // If there was no placeholder, add the query condition
-            // at the end.
-            //
-            if (!ph)
-              os << "r += q.clause_prefix ();"
-                 << "r += q;";
-          }
-          else // vq.kind == view_query::condition
-          {
-            statement_columns sc;
-            {
-              instance<view_columns> t (sc);
-              t->traverse (c);
-              process_statement_columns (sc, statement_select);
-            }
-
-            os << "query_base_type r (" << endl
-               << strlit ("SELECT ") << endl;
-
-            for (statement_columns::const_iterator i (sc.begin ()),
-                   e (sc.end ()); i != e;)
-            {
-              string const& c (i->column);
-              os << strlit (c + (++i != e ? "," : "")) << endl;
-            }
-
-            os << ");"
-               << endl;
-
-            // Generate from-list.
-            //
-            view_objects const& objs (c.get<view_objects> ("objects"));
-
-            for (view_objects::const_iterator i (objs.begin ());
-                 i != objs.end ();
-                 ++i)
-            {
-              bool first (i == objs.begin ());
-              string l;
-
-              //
-              // Tables.
-              //
-
-              if (i->kind == view_object::table)
-              {
-                if (first)
-                {
-                  l = "FROM ";
-                  l += quote_id (i->tbl_name);
-
-                  if (!i->alias.empty ())
-                    l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
-
-                  os << "r += " << strlit (l) << ";"
-                     << endl;
-
-                  continue;
-                }
-
-                l = "LEFT JOIN ";
-                l += quote_id (i->tbl_name);
-
-                if (!i->alias.empty ())
-                  l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
-
-                expression e (
-                  translate_expression (
-                    c, i->cond, i->scope, i->loc, "table"));
-
-                if (e.kind != expression::literal)
-                {
-                  error (i->loc)
-                    << "invalid join condition in db pragma table" << endl;
-
-                  throw operation_failed ();
-                }
-
-                l += " ON";
-
-                os << "r += " << strlit (l) << ";"
-                  // Output the pragma location for easier error tracking.
-                  //
-                   << "// From " <<
-                  location_file (i->loc).leaf () << ":" <<
-                  location_line (i->loc) << ":" <<
-                  location_column (i->loc) << endl
-                   << "r += " << e.value << ";"
-                   << endl;
-
-                continue;
-              }
-
-              //
-              // Objects.
-              //
-
-              // First object.
-              //
-              if (first)
-              {
-                l = "FROM ";
-                l += table_qname (*i->obj);
-
-                if (!i->alias.empty ())
-                  l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
-
-                os << "r += " << strlit (l) << ";"
-                   << endl;
-
-                continue;
-              }
-
-              expression e (
-                translate_expression (
-                  c, i->cond, i->scope, i->loc, "object"));
-
-              // Literal expression.
-              //
-              if (e.kind == expression::literal)
-              {
-                l = "LEFT JOIN ";
-                l += table_qname (*i->obj);
-
-                if (!i->alias.empty ())
-                  l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
-
-                l += " ON";
-
-                os << "r += " << strlit (l) << ";"
-                  // Output the pragma location for easier error tracking.
-                  //
-                   << "// From " <<
-                  location_file (i->loc).leaf () << ":" <<
-                  location_line (i->loc) << ":" <<
-                  location_column (i->loc) << endl
-                   << "r += " << e.value << ";"
-                   << endl;
-
-                continue;
-              }
-
-              // We have an object relationship (pointer) for which we need
-              // to come up with the corresponding JOIN condition. If this
-              // is a to-many relationship, then we first need to JOIN the
-              // container table. This code is similar to object_joins.
-              //
-              using semantics::data_member;
-
-              data_member& m (*e.member_path.back ());
-
-              // Resolve the pointed-to object to view_object and do
-              // some sanity checks while at it.
-              //
-              semantics::class_* c (0);
-
-              if (semantics::type* cont = container (m))
-                c = object_pointer (container_vt (*cont));
-              else
-                c = object_pointer (utype (m));
-
-              view_object const* vo (0);
-
-              // Check if the pointed-to object has been previously
-              // associated with this view and is unambiguous. A
-              // pointer to ourselves is always assumed to point
-              // to this association.
-              //
-              if (i->obj == c)
-                vo = &*i;
-              else
-              {
-                bool ambig (false);
-
-                for (view_objects::const_iterator j (objs.begin ());
-                     j != i;
-                     ++j)
-                {
-                  if (j->obj != c)
-                    continue;
-
-                  if (vo == 0)
-                  {
-                    vo = &*j;
-                    continue;
-                  }
-
-                  // If it is the first ambiguous object, issue the
-                  // error.
-                  //
-                  if (!ambig)
-                  {
-                    error (i->loc)
-                      << "pointed-to object '" << class_name (*c) <<  "' is "
-                      << "ambiguous" << endl;
-
-                    info (i->loc)
-                      << "candidates are:" << endl;
-
-                    info (vo->loc)
-                      << "  '" << vo->name () << "'" << endl;
-
-                    ambig = true;
-                  }
-
-                  info (j->loc)
-                    << "  '" << j->name () << "'" << endl;
-                }
-
-                if (ambig)
-                {
-                  info (i->loc)
-                    << "use the full join condition clause in db pragma "
-                    << "object to resolve this ambiguity" << endl;
-
-                  throw operation_failed ();
-                }
-
-                if (vo == 0)
-                {
-                  error (i->loc)
-                    << "pointed-to object '" << class_name (*c) << "' "
-                    << "specified in the join condition has not been "
-                    << "previously associated with this view" << endl;
-
-                  throw operation_failed ();
-                }
-              }
-
-              // Left and right-hand side table names.
-              //
-              qname lt (e.vo->alias.empty ()
-                        ? table_name (*e.vo->obj)
-                        : qname (e.vo->alias));
-
-              qname rt (vo->alias.empty ()
-                        ? table_name (*vo->obj)
-                        : qname (vo->alias));
-
-              // First join the container table if necessary.
-              //
-              data_member* im (inverse (m));
-
-              semantics::type* cont (container (im != 0 ? *im : m));
-
-              // Container table.
-              //
-              string ct;
-              if (cont != 0)
-              {
-                if (im != 0)
-                {
-                  // For now a direct member can only be directly in
-                  // the object scope. If this changes, the inverse()
-                  // function would have to return a member path instead
-                  // of just a single member.
-                  //
-                  table_prefix tp (
-                    context::schema (vo->obj->scope ()),
-                    context::table_name_prefix (vo->obj->scope ()),
-                    table_name (*vo->obj) + "_");
-                  ct = table_qname (*im, tp);
-                }
-                else
-                  ct = table_qname (*e.vo->obj, e.member_path);
-              }
-
-              if (cont != 0)
-              {
-                l = "LEFT JOIN ";
-                l += ct;
-                l += " ON";
-                os << "r += " << strlit (l) << ";";
-
-                // If we are the pointed-to object, then we have to turn
-                // things around. This is necessary to have the proper
-                // JOIN order. There seems to be a pattern there but it
-                // is not yet intuitively clear what it means.
-                //
-                instance<object_columns_list> c_cols; // Container columns.
-                instance<object_columns_list> o_cols; // Object columns.
-
-                qname* ot; // Object table (either lt or rt).
-
-                if (im != 0)
-                {
-                  if (i->obj == c)
-                  {
-                    // container.value = pointer.id
-                    //
-                    semantics::data_member& id (*id_member (*e.vo->obj));
-
-                    c_cols->traverse (*im, utype (id), "value", "value");
-                    o_cols->traverse (id);
-                    ot = &lt;
-                  }
-                  else
-                  {
-                    // container.id = pointed-to.id
-                    //
-                    semantics::data_member& id (*id_member (*vo->obj));
-
-                    c_cols->traverse (
-                      *im, utype (id), "id", "object_id", vo->obj);
-                    o_cols->traverse (id);
-                    ot = &rt;
-                  }
-                }
-                else
-                {
-                  if (i->obj == c)
-                  {
-                    // container.id = pointer.id
-                    //
-                    semantics::data_member& id (*id_member (*e.vo->obj));
-
-                    c_cols->traverse (
-                      m, utype (id), "id", "object_id", e.vo->obj);
-                    o_cols->traverse (id);
-                    ot = &lt;
-                  }
-                  else
-                  {
-                    // container.value = pointed-to.id
-                    //
-                    semantics::data_member& id (*id_member (*vo->obj));
-
-                    c_cols->traverse (m, utype (id), "value", "value");
-                    o_cols->traverse (id);
-                    ot = &rt;
-                  }
-                }
-
-                for (object_columns_list::iterator b (c_cols->begin ()), i (b),
-                       j (o_cols->begin ()); i != c_cols->end (); ++i, ++j)
-                {
-                  l.clear ();
-
-                  if (i != b)
-                    l += "AND ";
-
-                  l += ct;
-                  l += '.';
-                  l += quote_id (i->name);
-                  l += '=';
-                  l += quote_id (*ot);
-                  l += '.';
-                  l += quote_id (j->name);
-
-                  os << "r += " << strlit (l) << ";";
-                }
-              }
-
-              l = "LEFT JOIN ";
-              l += table_qname (*i->obj);
-
-              if (!i->alias.empty ())
-                l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
-
-              l += " ON";
-              os << "r += " << strlit (l) << ";";
-
-              if (cont != 0)
-              {
-                instance<object_columns_list> c_cols; // Container columns.
-                instance<object_columns_list> o_cols; // Object columns.
-
-                qname* ot; // Object table (either lt or rt).
-
-                if (im != 0)
-                {
-                  if (i->obj == c)
-                  {
-                    // container.id = pointed-to.id
-                    //
-                    semantics::data_member& id (*id_member (*vo->obj));
-
-                    c_cols->traverse (
-                      *im, utype (id), "id", "object_id", vo->obj);
-                    o_cols->traverse (id);
-                    ot = &rt;
-                  }
-                  else
-                  {
-                    // container.value = pointer.id
-                    //
-                    semantics::data_member& id (*id_member (*e.vo->obj));
-
-                    c_cols->traverse (*im, utype (id), "value", "value");
-                    o_cols->traverse (id);
-                    ot = &lt;
-                  }
-                }
-                else
-                {
-                  if (i->obj == c)
-                  {
-                    // container.value = pointed-to.id
-                    //
-                    semantics::data_member& id (*id_member (*vo->obj));
-
-                    c_cols->traverse (m, utype (id), "value", "value");
-                    o_cols->traverse (id);
-                    ot = &rt;
-                  }
-                  else
-                  {
-                    // container.id = pointer.id
-                    //
-                    semantics::data_member& id (*id_member (*e.vo->obj));
-
-                    c_cols->traverse (
-                      m, utype (id), "id", "object_id", e.vo->obj);
-                    o_cols->traverse (id);
-                    ot = &lt;
-                  }
-                }
-
-                for (object_columns_list::iterator b (c_cols->begin ()), i (b),
-                       j (o_cols->begin ()); i != c_cols->end (); ++i, ++j)
-                {
-                  l.clear ();
-
-                  if (i != b)
-                    l += "AND ";
-
-                  l += ct;
-                  l += '.';
-                  l += quote_id (i->name);
-                  l += '=';
-                  l += quote_id (*ot);
-                  l += '.';
-                  l += quote_id (j->name);
-
-                  os << "r += " << strlit (l) << ";";
-                }
-              }
-              else
-              {
-                string col_prefix;
-
-                if (im == 0)
-                  col_prefix =
-                    object_columns_base::column_prefix (e.member_path);
-
-                instance<object_columns_list> l_cols (col_prefix);
-                instance<object_columns_list> r_cols;
-
-                if (im != 0)
-                {
-                  // our.id = pointed-to.pointer
-                  //
-                  l_cols->traverse (*id_member (*e.vo->obj));
-                  r_cols->traverse (*im);
-                }
-                else
-                {
-                  // our.pointer = pointed-to.id
-                  //
-                  l_cols->traverse (*e.member_path.back ());
-                  r_cols->traverse (*id_member (*vo->obj));
-                }
-
-                for (object_columns_list::iterator b (l_cols->begin ()), i (b),
-                       j (r_cols->begin ()); i != l_cols->end (); ++i, ++j)
-                {
-                  l.clear ();
-
-                  if (i != b)
-                    l += "AND ";
-
-                  l += quote_id (lt);
-                  l += '.';
-                  l += quote_id (i->name);
-                  l += '=';
-                  l += quote_id (rt);
-                  l += '.';
-                  l += quote_id (j->name);
-
-                  os << "r += " << strlit (l) << ";";
-                }
-              }
-
-              os << endl;
-            }
-
-            // Generate the query condition.
-            //
-            if (!vq.literal.empty () || !vq.expr.empty ())
-            {
-              os << "query_base_type c (" << endl;
-
-              bool ph (false);
-
-              if (!vq.literal.empty ())
-              {
-                // See if we have the '(?)' placeholder.
-                //
-                // @@ Ideally we would need to make sure we don't match
-                // this inside strings and quoted identifier. So the
-                // proper way to handle this would be to tokenize the
-                // statement using sql_lexer, once it is complete enough.
-                //
-                string::size_type p (vq.literal.find ("(?)"));
-
-                if (p != string::npos)
-                {
-                  ph = true;
-                  os << strlit (string (vq.literal, 0, p + 1))<< " +" << endl
-                     << "(q.empty () ? query_base_type::true_expr : q) +" << endl
-                     << strlit (string (vq.literal, p + 2));
-                }
-                else
-                  os << strlit (vq.literal);
-
-                os << ");";
-              }
-              else
-              {
-                // Output the pragma location for easier error tracking.
-                //
-                os << "// From " <<
-                  location_file (vq.loc).leaf () << ":" <<
-                  location_line (vq.loc) << ":" <<
-                  location_column (vq.loc) << endl
-                   << translate_expression (
-                     c, vq.expr, vq.scope, vq.loc, "query", &ph).value;
-
-                os << ");";
-
-                // Optimize the query if it had a placeholder. This gets
-                // rid of useless clauses like WHERE TRUE.
-                //
-                if (ph)
-                  os << "c.optimize ();";
-              }
-
-              if (!ph)
-                os << "c += q;";
-
-              os << "r += c.clause_prefix ();"
-                 << "r += c;"
-                 << endl;
-            }
-            else
-            {
-              os << "r += q.clause_prefix ();"
-                 << "r += q;"
-                 << endl;
-            }
-          }
-
-          os << "return r;"
-             << "}";
-        }
-
-        // query ()
-        //
-        os << "result< " << traits << "::view_type >" << endl
-           << traits << "::" << endl
-           << "query (database&, const query_base_type& q)"
-           << "{"
-           << "using namespace " << db << ";"
-           << "using odb::details::shared;"
-           << "using odb::details::shared_ptr;"
-           << endl
-           << db << "::connection& conn (" << endl
-           << db << "::transaction::current ().connection ());"
-           << endl
-           << "view_statements< view_type >& sts (" << endl
-           << "conn.statement_cache ().find_view<view_type> ());"
-           << endl
-           << "image_type& im (sts.image ());"
-           << "binding& imb (sts.image_binding ());"
-           << endl
-           << "if (im.version != sts.image_version () || imb.version == 0)"
-           << "{"
-           << "bind (imb.bind, im);"
-           << "sts.image_version (im.version);"
-           << "imb.version++;"
-           << "}";
-
-        if (vq.kind == view_query::runtime)
-          os << "const query_base_type& qs (q);";
-        else
-          os << "const query_base_type& qs (query_statement (q));";
-
-        os << "shared_ptr<select_statement> st (" << endl
-           << "new (shared) select_statement (" << endl;
-
-        view_query_statement_ctor_args (c);
-
-        os << "));" << endl
-           << "st->execute ();";
-
-        post_query_ (c);
-
-        os << endl
-           << "shared_ptr< odb::view_result_impl<view_type> > r (" << endl
-           << "new (shared) " << db << "::view_result_impl<view_type> (" << endl
-           << "qs, st, sts));"
-           << endl
-           << "return result<view_type> (r);"
-           << "}";
-      }
+      traverse_view (type& c);
 
       struct expression
       {
@@ -4950,6 +3317,9 @@ namespace relational
       traversal::inherits grow_base_inherits_;
       instance<grow_member> grow_member_;
       traversal::names grow_member_names_;
+      instance<grow_member> grow_version_member_;
+      instance<grow_member> grow_discriminator_member_;
+
 
       instance<bind_base> bind_base_;
       traversal::inherits bind_base_inherits_;
@@ -4957,6 +3327,7 @@ namespace relational
       traversal::names bind_member_names_;
       instance<bind_member> bind_id_member_;
       instance<bind_member> bind_version_member_;
+      instance<bind_member> bind_discriminator_member_;
 
       instance<init_image_base> init_image_base_;
       traversal::inherits init_image_base_inherits_;
@@ -4973,6 +3344,9 @@ namespace relational
 
       instance<init_value_member> init_id_value_member_;
       instance<init_value_member> init_version_value_member_;
+      instance<init_value_member> init_named_version_value_member_;
+      instance<init_value_member> init_discriminator_value_member_;
+      instance<init_value_member> init_named_discriminator_value_member_;
 
       instance<schema::cxx_object> schema_;
     };
@@ -4987,10 +3361,17 @@ namespace relational
         extra_pre ();
 
         os << "#include <cassert>" << endl
-           << "#include <cstring> // std::memcpy" << endl
-           << endl;
+           << "#include <cstring>  // std::memcpy" << endl;
+
+        if (features.polymorphic_object)
+          os << "#include <typeinfo>" << endl;
+
+        os << endl;
 
         os << "#include <odb/cache-traits.hxx>" << endl;
+
+        if (features.polymorphic_object)
+          os << "#include <odb/polymorphic-map.hxx>" << endl;
 
         if (embedded_schema)
           os << "#include <odb/schema-catalog-impl.hxx>" << endl;
@@ -5000,23 +3381,42 @@ namespace relational
 
         os << endl;
 
-        os << "#include <odb/" << db << "/binding.hxx>" << endl
-           << "#include <odb/" << db << "/traits.hxx>" << endl
+        os << "#include <odb/" << db << "/traits.hxx>" << endl
            << "#include <odb/" << db << "/database.hxx>" << endl
            << "#include <odb/" << db << "/transaction.hxx>" << endl
            << "#include <odb/" << db << "/connection.hxx>" << endl
            << "#include <odb/" << db << "/statement.hxx>" << endl
-           << "#include <odb/" << db << "/statement-cache.hxx>" << endl
-           << "#include <odb/" << db << "/object-statements.hxx>" << endl;
+           << "#include <odb/" << db << "/statement-cache.hxx>" << endl;
 
-        if (options.generate_query ())
+        if (features.simple_object)
+          os << "#include <odb/" << db << "/simple-object-statements.hxx>" << endl;
+
+        if (features.polymorphic_object)
+          os << "#include <odb/" << db << "/polymorphic-object-statements.hxx>" << endl;
+
+        if (features.no_id_object)
+          os << "#include <odb/" << db << "/no-id-object-statements.hxx>" << endl;
+
+        if (features.view)
           os << "#include <odb/" << db << "/view-statements.hxx>" << endl;
 
         os << "#include <odb/" << db << "/container-statements.hxx>" << endl
            << "#include <odb/" << db << "/exceptions.hxx>" << endl;
 
         if (options.generate_query ())
-          os << "#include <odb/" << db << "/result.hxx>" << endl;
+        {
+          if (features.simple_object)
+            os << "#include <odb/" << db << "/simple-object-result.hxx>" << endl;
+
+          if (features.polymorphic_object)
+            os << "#include <odb/" << db << "/polymorphic-object-result.hxx>" << endl;
+
+          if (features.no_id_object)
+            os << "#include <odb/" << db << "/no-id-object-result.hxx>" << endl;
+
+          if (features.view)
+            os << "#include <odb/" << db << "/view-result.hxx>" << endl;
+        }
 
         extra_post ();
 

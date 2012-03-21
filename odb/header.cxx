@@ -31,14 +31,12 @@ namespace header
     // the latter is just a using-declaration for the former. To resolve
     // this we will include TR1 traits if the Boost TR1 header is included.
     //
-    if (ctx.unit.count ("tr1-pointer-used") &&
-        ctx.unit.get<bool> ("tr1-pointer-used"))
+    if (ctx.features.tr1_pointer)
     {
       os << "#include <odb/tr1/wrapper-traits.hxx>" << endl
          << "#include <odb/tr1/pointer-traits.hxx>" << endl;
     }
-    else if (ctx.unit.count ("boost-pointer-used") &&
-             ctx.unit.get<bool> ("boost-pointer-used"))
+    else if (ctx.features.boost_pointer)
     {
       os << "#ifdef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
          << "#  include <odb/tr1/wrapper-traits.hxx>" << endl
@@ -48,8 +46,25 @@ namespace header
 
     os << "#include <odb/container-traits.hxx>" << endl;
 
+    if (ctx.features.polymorphic_object)
+      os << "#include <odb/polymorphic-info.hxx>" << endl;
+
     if (ctx.options.generate_query ())
+    {
       os << "#include <odb/result.hxx>" << endl;
+
+      if (ctx.features.simple_object)
+        os << "#include <odb/simple-object-result.hxx>" << endl;
+
+      if (ctx.features.polymorphic_object)
+        os << "#include <odb/polymorphic-object-result.hxx>" << endl;
+
+      if (ctx.features.no_id_object)
+        os << "#include <odb/no-id-object-result.hxx>" << endl;
+
+      if (ctx.features.view)
+        os << "#include <odb/view-result.hxx>" << endl;
+    }
 
     os << endl;
   }

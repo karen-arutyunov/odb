@@ -15,16 +15,14 @@ namespace semantics
     template <>
     duplicate_name::
     duplicate_name (uscope& s, unameable& o, unameable& d)
-        : scope (s), orig (o), dup (d),
-          orig_name (o.name ()), dup_name (d.name ())
+        : scope (s), orig (o), dup (d), name (o.name ())
     {
     }
 
     template <>
     duplicate_name::
     duplicate_name (qscope& s, qnameable& o, qnameable& d)
-        : scope (s), orig (o), dup (d),
-          orig_name (o.name ().string ()), dup_name (d.name ().string ())
+        : scope (s), orig (o), dup (d), name (o.name ().string ())
     {
     }
 

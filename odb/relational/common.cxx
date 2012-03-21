@@ -14,6 +14,122 @@ using namespace std;
 
 namespace relational
 {
+  // query_alias_traits
+  //
+
+  void query_alias_traits::
+  traverse_object (semantics::class_& c)
+  {
+    // We don't want to traverse bases.
+    //
+    names (c);
+  }
+
+  void query_alias_traits::
+  traverse_pointer (semantics::data_member& m, semantics::class_& c)
+  {
+    // Ignore polymorphic id references.
+    //
+    if (m.count ("polymorphic-ref"))
+      return;
+
+    // Come up with a table alias. Generally, we want it to be based
+    // on the column name. This is straightforward for single-column
+    // references. In case of a composite id, we will need to use the
+    // column prefix which is based on the data member name, unless
+    // overridden by the user. In the latter case the prefix can be
+    // empty, in which case we will just fall back on the member's
+    // public name.
+    //
+    string alias;
+
+    if (composite_wrapper (utype ((*id_member (c)))))
+    {
+      string p (column_prefix (m, key_prefix_, default_name_));
+
+      if (p.empty ())
+        p = public_name_db (m);
+      else
+        p.resize (p.size () - 1); // Remove trailing underscore.
+
+      alias = column_prefix_ + p;
+    }
+    else
+      alias = column_prefix_ + column_name (m, key_prefix_, default_name_);
+
+    generate (alias, c);
+  }
+
+  void query_alias_traits::
+  generate (string const& alias, semantics::class_& c)
+  {
+    string tag (escape (alias + "_alias_tag"));
+
+    if (tags_.find (tag) == tags_.end ())
+    {
+      os << "class " << tag << ";"
+         << endl;
+
+      tags_.insert (tag);
+    }
+
+    // Generate the alias_traits specialization.
+    //
+    generate_specialization (alias, tag, c);
+  }
+
+  void query_alias_traits::
+  generate_specialization (string const& alias,
+                           string const& tag,
+                           semantics::class_& c)
+  {
+    string const& fq_name (class_fq_name (c));
+    string guard (
+      make_guard (
+        "ODB_ALIAS_TRAITS_" + alias + "_FOR_" + flat_name (fq_name)));
+
+    if (specs_.find (guard) != specs_.end ())
+      return;
+    else
+      specs_.insert (guard);
+
+    semantics::class_* poly_root (polymorphic (c));
+    bool poly_derived (poly_root != 0 && poly_root != &c);
+    semantics::class_* poly_base (poly_derived ? &polymorphic_base (c) : 0);
+
+    if (poly_derived)
+      generate_specialization (alias, tag, *poly_base);
+
+    os << "#ifndef " << guard << endl
+       << "#define " << guard << endl;
+
+    os << "template <bool d>" << endl
+       << "struct alias_traits< " << fq_name << ", " << tag << ", d >"
+       << "{"
+       << "static const char table_name[];";
+
+    if (poly_derived)
+      os << "typedef alias_traits< " << class_fq_name (*poly_base) << ", " <<
+        tag << " > base_traits;";
+
+    os << "};";
+
+    os << "template <bool d>" << endl
+       << "const char alias_traits< " << fq_name << ", " << tag <<
+      ", d >::" << endl
+       << "table_name[] = ";
+
+    if (poly_root != 0)
+      os << strlit (quote_id (alias + "_" + table_name (c).uname ()));
+    else
+      os << strlit (quote_id (alias));
+
+    os << ";"
+       << "#endif // " << guard << endl
+       << endl;
+  }
+
+
   // query_columns_base
   //
 
@@ -81,31 +197,19 @@ namespace relational
   void query_columns_base::
   traverse_pointer (semantics::data_member& m, semantics::class_& c)
   {
+    // Ignore polymorphic id references.
+    //
+    if (m.count ("polymorphic-ref"))
+      return;
+
     string name (public_name (m));
     bool inv (inverse (m, key_prefix_));
 
     if (decl_)
     {
       os << "// " << name << endl
-         << "//" << endl
-         << "static const char " << name << "_alias_[];"
-         << endl;
+         << "//" << endl;
 
-      if (inv)
-      {
-        os << "typedef" << endl
-           << "odb::query_pointer<" << endl
-           << "  odb::pointer_query_columns<" << endl
-           << "    " << class_fq_name (c) << "," << endl
-           << "    " << name << "_alias_ > >" << endl
-           << name << "_type_ ;"
-           << endl
-           << "static const " << name << "_type_ " << name << ";"
-           << endl;
-      }
-    }
-    else
-    {
       // Come up with a table alias. Generally, we want it to be based
       // on the column name. This is straightforward for single-column
       // references. In case of a composite id, we will need to use the
@@ -130,10 +234,29 @@ namespace relational
       else
         alias = column_prefix_ + column_name (m, key_prefix_, default_name_);
 
-      os << "const char " << scope_ <<  "::" << name << "_alias_[] = " <<
-        strlit (quote_id (alias)) << ";"
+      string tag (escape (alias + "_alias_tag"));
+      string const& fq_name (class_fq_name (c));
+
+      os << "typedef" << endl
+         << "odb::alias_traits< " << fq_name << ", " << tag << " >" << endl
+         << name << "_alias_;"
          << endl;
 
+      if (inv)
+      {
+        os << "typedef" << endl
+           << "odb::query_pointer<" << endl
+           << "  odb::pointer_query_columns<" << endl
+           << "    " << fq_name << "," << endl
+           << "    " << name << "_alias_ > >" << endl
+           << name << "_type_ ;"
+           << endl
+           << "static const " << name << "_type_ " << name << ";"
+           << endl;
+      }
+    }
+    else
+    {
       if (inv)
         os << "const " << scope_ << "::" << name << "_type_" << endl
            << scope_ << "::" << name << ";"
@@ -155,7 +278,7 @@ namespace relational
       : ptr_ (ptr), decl_ (false), in_ptr_ (false)
   {
     scope_ = ptr ? "pointer_query_columns" : "query_columns";
-    scope_ += "< " + class_fq_name (c) + ", table >";
+    scope_ += "< " + class_fq_name (c) + ", A >";
   }
 
   void query_columns::
@@ -217,7 +340,7 @@ namespace relational
 
       // Composite member. Note that here we don't use suffix.
       //
-      os << "template <const char* table>" << endl
+      os << "template <typename A>" << endl
          << "const typename " << scope_ << "::" << name << "_type_" << endl
          << scope_ << "::" << name << ";"
          << endl;
@@ -261,10 +384,10 @@ namespace relational
     {
       // Note that here we don't use suffix.
       //
-      os << "template <const char* table>" << endl
+      os << "template <typename A>" << endl
          << "const typename " << scope_ << "::" << name << "_type_" << endl
-         << scope_ << "::" << name << " (" << "table, " <<
-        strlit (quote_id (column));
+         << scope_ << "::" << endl
+         << name << " (A::" << "table_name, " << strlit (quote_id (column));
 
       column_ctor_extra (m);
 
@@ -295,6 +418,11 @@ namespace relational
   void query_columns::
   traverse_pointer (semantics::data_member& m, semantics::class_& c)
   {
+    // Ignore polymorphic id references.
+    //
+    if (m.count ("polymorphic-ref"))
+      return;
+
     // If this is for the pointer_query_columns and the member is not
     // inverse, then create the normal member corresponding to the id
     // column. This will allow the user to check it for NULL or to

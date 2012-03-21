@@ -96,20 +96,36 @@ namespace relational
       virtual void
       traverse (type& c)
       {
+        type* poly_root (polymorphic (c));
+        bool poly_derived (poly_root != 0 && poly_root != &c);
+
         os << "struct image_type";
 
         if (!view (c))
         {
-          instance<image_base> b;
-          traversal::inherits i (*b);
-          inherits (c, i);
+          // Don't go into the base if we are a derived type in a
+          // polymorphic hierarchy.
+          //
+          if (!poly_derived)
+          {
+            instance<image_base> b;
+            traversal::inherits i (*b);
+            inherits (c, i);
+          }
         }
 
         os << "{";
 
+        if (poly_derived)
+          os << "object_traits<base_type>::image_type* base;"
+             << endl;
+
         names (c);
 
-        if (!(composite (c) || abstract (c)))
+        // We don't need a version if this is a composite value type
+        // or reuse-abstract object.
+        //
+        if (!(composite (c) || (abstract (c) && !polymorphic (c))))
           os << "std::size_t version;"
              << endl;
 
@@ -146,7 +162,8 @@ namespace relational
 
         if (first_)
         {
-          os << ": ";
+          os << ":" << endl
+             << "  ";
           first_ = false;
         }
         else
@@ -155,8 +172,17 @@ namespace relational
              << "  ";
         }
 
-        os  << (ptr_ ? "pointer_query_columns" : "query_columns") <<
-          "< " << class_fq_name (c) << ", table >";
+        os << (ptr_ ? "pointer_query_columns" : "query_columns") << "< " <<
+          class_fq_name (c) << ", ";
+
+        // If our base is polymorphic, then it has its own table/alias.
+        //
+        if (polymorphic (c))
+          os << "typename A::base_traits";
+        else
+          os << "A";
+
+        os << " >";
       }
 
     private:
@@ -185,10 +211,17 @@ namespace relational
 
         os  << "// " << name << endl
             << "//" << endl
-          << "typedef " <<
-          (ptr_ ? "pointer_query_columns" : "query_columns") <<
-          "< " << class_fq_name (c) << ", table > " << name << ";"
-            << endl;
+            << "typedef " <<
+          (ptr_ ? "pointer_query_columns" : "query_columns") << "< " <<
+          class_fq_name (c) << ", ";
+
+        if (polymorphic (c))
+          os << "typename A::base_traits";
+        else
+          os << "A";
+
+        os << " > " << name << ";"
+           << endl;
       }
 
     private:
@@ -212,16 +245,16 @@ namespace relational
 
         if (ptr_)
         {
-          os << "template <const char* table>" << endl
-             << "struct pointer_query_columns< " << type << ", table >";
+          os << "template <typename A>" << endl
+             << "struct pointer_query_columns< " << type << ", A >";
 
           // If we don't have pointers (in the whole hierarchy), then
           // pointer_query_columns and query_columns are the same.
           //
-          if (!has_a (c, test_pointer))
+          if (!has_a (c, test_pointer | include_base))
           {
             os << ":" << endl
-               << "  query_columns< " << type << ", table >"
+               << "  query_columns< " << type << ", A >"
                << "{"
                << "};";
           }
@@ -260,6 +293,10 @@ namespace relational
 
           if (has_ptr)
           {
+            // This class contains everything for inverse pointers and
+            // aliases for non-inverse ones. It doesn't depend on the
+            // table alias (A) template argument.
+            //
             os << "template <>" << endl
                << "struct query_columns_base< " << type << " >"
                << "{";
@@ -270,8 +307,8 @@ namespace relational
             os << "};";
           }
 
-          os << "template <const char* table>" << endl
-             << "struct query_columns< " << type << ", table >";
+          os << "template <typename A>" << endl
+             << "struct query_columns< " << type << ", A >";
 
           if (has_ptr)
             os << ":" << endl
@@ -352,20 +389,20 @@ namespace relational
         using semantics::class_;
 
         // Figure out if this member is from a base object or composite
-        // value and whether it is abstract.
+        // value and if it's from an object, whether it is reuse-abstract.
         //
-        bool base, abst;
+        bool base, reuse_abst;
 
         if (object (c_))
         {
           base = cur_object != &c_ ||
             !object (dynamic_cast<type&> (m.scope ()));
-          abst = abstract (c_);
+          reuse_abst = abstract (c_) && !polymorphic (c_);
         }
         else
         {
-          base = false; // We don't go into bases.
-          abst = true;  // Always abstract.
+          base = false;      // We don't go into bases.
+          reuse_abst = true; // Always abstract.
         }
 
         container_kind_type ck (container_kind (c));
@@ -407,7 +444,7 @@ namespace relational
         //
         size_t id_columns, data_columns, cond_columns;
 
-        if (!abst)
+        if (!reuse_abst)
         {
           type& idt (container_idt (m));
 
@@ -513,7 +550,7 @@ namespace relational
 
         container_public_extra_pre (m);
 
-        if (!abst)
+        if (!reuse_abst)
         {
           // column_count
           //
@@ -572,8 +609,9 @@ namespace relational
 
         os << " container_type;";
 
-        os << "typedef odb::access::container_traits< container_type > " <<
-          "container_traits_type;";
+        os << "typedef" << endl
+           << "odb::access::container_traits<container_type>" << endl
+           << "container_traits_type;";
 
         switch (ck)
         {
@@ -912,6 +950,7 @@ namespace relational
       class1 ()
           : id_image_member_ ("id_"),
             version_image_member_ ("version_"),
+            discriminator_image_member_ ("discriminator_"),
             query_columns_type_ (false),
             pointer_query_columns_type_ (true)
       {
@@ -922,6 +961,7 @@ namespace relational
             context (),
             id_image_member_ ("id_"),
             version_image_member_ ("version_"),
+            discriminator_image_member_ ("discriminator_"),
             query_columns_type_ (false),
             pointer_query_columns_type_ (true)
       {
@@ -952,396 +992,7 @@ namespace relational
       }
 
       virtual void
-      traverse_object (type& c)
-      {
-        bool abstract (context::abstract (c));
-        string const& type (class_fq_name (c));
-
-        semantics::data_member* id (id_member (c));
-        bool auto_id (id ? id->count ("auto") : false);
-        bool base_id (id ? &id->scope () != &c : false); // Comes from base.
-
-        semantics::data_member* optimistic (context::optimistic (c));
-
-        column_count_type const& cc (column_count (c));
-
-        os << "// " << class_name (c) << endl
-           << "//" << endl;
-
-        // class_traits
-        //
-        os << "template <>" << endl
-           << "struct class_traits< " << type << " >"
-           << "{"
-           << "static const class_kind kind = class_object;"
-           << "};";
-
-        // pointer_query_columns & query_columns
-        //
-        if (options.generate_query ())
-        {
-          // If we don't have object pointers, then also generate
-          // query_columns (in this case pointer_query_columns and
-          // query_columns are the same and the former inherits from
-          // the latter). Otherwise we have to postpone query_columns
-          // generation until the second pass to deal with forward-
-          // declared objects.
-          //
-          if (!has_a (c, test_pointer))
-            query_columns_type_->traverse (c);
-
-          pointer_query_columns_type_->traverse (c);
-        }
-
-        // object_traits
-        //
-        os << "template <>" << endl
-           << "class access::object_traits< " << type << " >"
-           << "{"
-           << "public:" << endl;
-
-        object_public_extra_pre (c);
-
-        // object_type & pointer_type
-        //
-        os << "typedef " << type << " object_type;"
-           << "typedef " << c.get<string> ("object-pointer") << " pointer_type;";
-
-        // id_type & id_image_type
-        //
-        if (id != 0)
-        {
-          if (base_id)
-          {
-            semantics::class_& b (
-              dynamic_cast<semantics::class_&> (id->scope ()));
-            string const& type (class_fq_name (b));
-
-            os << "typedef object_traits< " << type << " >::id_type id_type;";
-
-            if (optimistic != 0)
-              os << "typedef object_traits< " << type << " >::version_type " <<
-                "version_type;";
-
-            os << endl
-               << "static const bool auto_id = object_traits< " << type <<
-              " >::auto_id;"
-               << endl
-               << "typedef object_traits< " << type << " >::id_image_type " <<
-              "id_image_type;"
-               << endl;
-          }
-          else
-          {
-            {
-              semantics::names* hint;
-              semantics::type& t (utype (*id, hint));
-
-              os << "typedef " << t.fq_name (hint) << " id_type;";
-            }
-
-            if (optimistic != 0)
-            {
-              semantics::names* hint;
-              semantics::type& t (utype (*optimistic, hint));
-
-              os << "typedef " << t.fq_name (hint) << " version_type;";
-            }
-
-            os << endl
-               << "static const bool auto_id = " <<
-              (auto_id ? "true" : "false") << ";"
-               << endl;
-
-            os << "struct id_image_type"
-               << "{";
-
-            id_image_member_->traverse (*id);
-
-            if (optimistic != 0)
-              version_image_member_->traverse (*optimistic);
-
-            os << "std::size_t version;"
-               << "};";
-          }
-        }
-        else if (!abstract)
-        {
-          // Object without id.
-          //
-          os << "typedef void id_type;"
-             << endl
-             << "static const bool auto_id = false;"
-             << endl;
-        }
-
-        // image_type
-        //
-        image_type_->traverse (c);
-
-        //
-        // Containers (abstract and concrete).
-        //
-
-        {
-          instance<container_traits> t (c);
-          t->traverse (c);
-        }
-
-        //
-        // Functions (abstract and concrete).
-        //
-
-        // id ()
-        //
-        if (id != 0 || !abstract)
-          // We want to generate a dummy void id() accessor even if this
-          // object has no id to help us in the runtime. This way we can
-          // write generic code that will work for both void and non-void
-          // ids.
-          //
-          os << "static id_type" << endl
-             << "id (const object_type&);"
-             << endl;
-
-        if (id != 0 && options.generate_query ())
-          os << "static id_type" << endl
-             << "id (const image_type&);"
-             << endl;
-
-        if (id != 0 && optimistic != 0)
-          os << "static version_type" << endl
-             << "version (const image_type&);"
-             << endl;
-
-        // grow ()
-        //
-        if (generate_grow)
-        {
-          os << "static bool" << endl
-             << "grow (image_type&, " << truncated_vector << ");"
-             << endl;
-        }
-
-        // bind (image_type)
-        //
-        os << "static void" << endl
-           << "bind (" << bind_vector << ", image_type&, "
-           << db << "::statement_kind);"
-           << endl;
-
-        // bind (id_image_type)
-        //
-        if (id != 0)
-        {
-          os << "static void" << endl
-             << "bind (" << bind_vector << ", id_image_type&);"
-             << endl;
-        }
-
-        // init (image, object)
-        //
-        os << "static bool" << endl
-           << "init (image_type&, const object_type&, " <<
-          db << "::statement_kind);"
-           << endl;
-
-        // init (object, image)
-        //
-        os << "static void" << endl
-           << "init (object_type&, const image_type&, database*);"
-           << endl;
-
-        // init (id_image, id)
-        //
-        if (id != 0)
-        {
-          os << "static void" << endl
-             << "init (id_image_type&, const id_type&" <<
-            (optimistic != 0 ? ", const version_type* = 0" : "") << ");"
-             << endl;
-        }
-
-        //
-        // The rest only applies to concrete objects.
-        //
-        if (abstract)
-        {
-          object_public_extra_post (c);
-          os << "};";
-          return;
-        }
-
-        //
-        // Query (concrete).
-        //
-
-        if (options.generate_query ())
-        {
-          // query_base_type
-          //
-          os << "typedef " << db << "::query query_base_type;"
-             << endl;
-
-          // query_type
-          //
-          os << "struct query_type;";
-        }
-
-        //
-        // Containers (concrete).
-        //
-
-        // Statement cache (forward declaration).
-        //
-        if (id != 0)
-          os << "struct container_statement_cache_type;"
-             << endl;
-
-        // column_count
-        //
-        os << "static const std::size_t column_count = " << cc.total << "UL;"
-           << "static const std::size_t id_column_count = " << cc.id << "UL;"
-           << "static const std::size_t inverse_column_count = " <<
-          cc.inverse << "UL;"
-           << "static const std::size_t readonly_column_count = " <<
-          cc.readonly << "UL;"
-           << "static const std::size_t managed_optimistic_column_count = " <<
-          cc.optimistic_managed << "UL;"
-           << endl;
-
-        // Statements.
-        //
-        os << "static const char persist_statement[];";
-
-        if (id != 0)
-        {
-          os << "static const char find_statement[];";
-
-          if (cc.total != cc.id + cc.inverse + cc.readonly)
-            os << "static const char update_statement[];";
-
-          os << "static const char erase_statement[];";
-
-          if (optimistic != 0)
-            os << "static const char optimistic_erase_statement[];";
-        }
-
-        if (options.generate_query ())
-        {
-          os << "static const char query_statement[];"
-             << "static const char erase_query_statement[];"
-             << endl
-             << "static const char table_name[];";
-        }
-
-        os << endl;
-
-        //
-        // Functions (concrete).
-        //
-
-        // callback ()
-        //
-        os << "static void" << endl
-           << "callback (database&, object_type&, callback_event);"
-           <<  endl;
-
-        os << "static void" << endl
-           << "callback (database&, const object_type&, callback_event);"
-           <<  endl;
-
-        // persist ()
-        //
-        os << "static void" << endl
-           << "persist (database&, " << (auto_id ? "" : "const ") <<
-          "object_type&);"
-           << endl;
-
-        if (id != 0)
-        {
-          // find ()
-          //
-          if (c.default_ctor ())
-            os << "static pointer_type" << endl
-               << "find (database&, const id_type&);"
-               << endl;
-
-          os << "static bool" << endl
-             << "find (database&, const id_type&, object_type&);"
-             << endl;
-
-          os << "static bool" << endl
-             << "reload (database&, object_type&);"
-             << endl;
-
-          // update ()
-          //
-          if (!readonly (c))
-            os << "static void" << endl
-               << "update (database&, const object_type&);"
-               << endl;
-
-          // erase ()
-          //
-          os << "static void" << endl
-             << "erase (database&, const id_type&);"
-             << endl;
-
-          os << "static void" << endl
-             << "erase (database&, const object_type&);"
-             << endl;
-        }
-
-        // query ()
-        //
-        if (options.generate_query ())
-        {
-          os << "static result<object_type>" << endl
-             << "query (database&, const query_base_type&);"
-             << endl;
-
-          os << "static unsigned long long" << endl
-             << "erase_query (database&, const query_base_type&);"
-             << endl;
-        }
-
-        // create_schema ()
-        //
-        if (embedded_schema || separate_schema)
-        {
-          os << "static bool" << endl
-             << "create_schema (database&, unsigned short pass, bool drop);"
-             << endl;
-        }
-
-        object_public_extra_post (c);
-
-        // Implementation details.
-        //
-        os << "public:" << endl;
-
-        if (id != 0)
-        {
-          // Load the object image.
-          //
-          os << "static bool" << endl
-             << "find_ (" << db << "::object_statements< object_type >&, " <<
-            "const id_type&);"
-             << endl;
-
-          // Load the rest of the object (containers, etc). Expects the id
-          // image in the object statements to be initialized to the object
-          // id.
-          //
-          os << "static void" << endl
-             << "load_ (" << db << "::object_statements< object_type >&, " <<
-            "object_type&);"
-             << endl;
-        }
-
-        os << "};";
-      }
+      traverse_object (type& c);
 
       virtual void
       view_public_extra_pre (type&)
@@ -1393,100 +1044,17 @@ namespace relational
         os << "typedef " << db << "::query query_base_type;"
            << endl;
 
-        // query_type
+        // query_type (definition generated by class2).
         //
         size_t obj_count (c.get<size_t> ("object-count"));
 
         if (obj_count != 0)
         {
-          view_objects& objs (c.get<view_objects> ("objects"));
-
           if (obj_count > 1)
-          {
-            os << "struct query_columns"
-               << "{";
+            os << "struct query_columns;";
 
-            for (view_objects::const_iterator i (objs.begin ());
-                 i < objs.end ();
-                 ++i)
-            {
-              if (i->kind != view_object::object)
-                continue; // Skip tables.
-
-              bool alias (!i->alias.empty ());
-              semantics::class_& o (*i->obj);
-              string const& name (alias ? i->alias : class_name (o));
-              string const& type (class_fq_name (o));
-              qname const& table (table_name (o));
-
-              os << "// " << name << endl
-                 << "//" << endl;
-
-              if (alias && (table.qualified () || i->alias != table.uname ()))
-                os << "static const char " << name << "_alias_[];"
-                   << endl
-                   << "typedef" << endl
-                   << "odb::pointer_query_columns< " << type << ", " <<
-                  name << "_alias_ >" << endl
-                   << name << ";"
-                   << endl;
-              else
-                os << "typedef" << endl
-                   << "odb::pointer_query_columns<" << endl
-                   << "  " << type << "," << endl
-                   << "  " << "odb::access::object_traits< " << type <<
-                  " >::table_name >" << endl
-                   << name << ";"
-                   << endl;
-            }
-
-            os << "};"
-               << "struct query_type: query_base_type, query_columns"
-               << "{";
-          }
-          else
-          {
-            // For a single object view we generate a shortcut without
-            // an intermediate typedef.
-            //
-            view_object const* vo (0);
-            for (view_objects::const_iterator i (objs.begin ());
-                 vo == 0 && i < objs.end ();
-                 ++i)
-            {
-              if (i->kind == view_object::object)
-                vo = &*i;
-            }
-
-            bool alias (!vo->alias.empty ());
-            semantics::class_& o (*vo->obj);
-            string const& type (class_fq_name (o));
-            qname const& table (table_name (o));
-
-            if (alias && (table.qualified () || vo->alias != table.uname ()))
-              os << "static const char query_alias[];"
-                 << endl
-                 << "struct query_type:" << endl
-                 << "  query_base_type," << endl
-                 << "  odb::pointer_query_columns< " << type <<
-                ", query_alias >"
-                 << "{";
-            else
-              os << "struct query_type:" << endl
-                 << "  query_base_type," << endl
-                 << "  odb::pointer_query_columns<" << endl
-                 << "    " << type << "," << endl
-                 << "    odb::access::object_traits< " << type <<
-                " >::table_name >"
-                 << "{";
-          }
-
-          os << "query_type ();"
-             << "query_type (bool);"
-             << "query_type (const char*);"
-             << "query_type (const std::string&);"
-             << "query_type (const query_base_type&);"
-             << "};";
+          os << "struct query_type;"
+             << endl;
         }
         else
           os << "typedef query_base_type query_type;"
@@ -1626,6 +1194,7 @@ namespace relational
       instance<image_type> image_type_;
       instance<image_member> id_image_member_;
       instance<image_member> version_image_member_;
+      instance<image_member> discriminator_image_member_;
 
       instance<query_columns_type> query_columns_type_;
       instance<query_columns_type> pointer_query_columns_type_;
@@ -1663,14 +1232,15 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
-        bool abst (abstract (c));
+        bool reuse_abst (abstract (c) && !polymorphic (c));
+
         string const& type (class_fq_name (c));
 
         if (options.generate_query ())
         {
-          bool has_ptr (has_a (c, test_pointer));
+          bool has_ptr (has_a (c, test_pointer | include_base));
 
-          if (has_ptr || !abst)
+          if (has_ptr || !reuse_abst)
             os << "// " << class_name (c) << endl
                << "//" << endl;
 
@@ -1680,15 +1250,22 @@ namespace relational
           // in pass 1 (see the comment in class1 for details).
           //
           if (has_ptr)
+          {
+            instance<query_alias_traits> t (alias_tags_, alias_specs_);
+            t->traverse (c);
+
             query_columns_type_->traverse (c);
+          }
 
           // query_type
           //
-          if (!abst)
+          if (!reuse_abst)
             os << "struct access::object_traits< " << type << " >::" <<
               "query_type:" << endl
                << "  query_base_type," << endl
-               << "  query_columns< " << type << ", table_name >"
+               << "  query_columns<" << endl
+               << "    " << type << "," << endl
+               << "    access::object_traits< " << type << "> >"
                << "{"
                << "query_type ();"
                << "query_type (bool);"
@@ -1702,8 +1279,141 @@ namespace relational
       }
 
       virtual void
-      traverse_view (type&)
+      traverse_view (type& c)
       {
+        string const& type (class_fq_name (c));
+
+        // query_type
+        //
+        size_t obj_count (c.get<size_t> ("object-count"));
+
+        if (obj_count != 0)
+        {
+          os << "// " << class_name (c) << endl
+             << "//" << endl;
+
+          view_objects& objs (c.get<view_objects> ("objects"));
+
+          // Generate the alias tags and alias_traits specializations.
+          //
+          {
+            instance<query_alias_traits> at (alias_tags_, alias_specs_);
+
+            for (view_objects::const_iterator i (objs.begin ());
+                 i < objs.end ();
+                 ++i)
+            {
+              if (i->kind != view_object::object)
+                continue; // Skip tables.
+
+              if (i->alias.empty ())
+                continue;
+
+              semantics::class_& o (*i->obj);
+              qname const& t (table_name (o));
+
+              // Check that the alias is not the same as the table name
+              // (if this is a polymorphic object, then the alias is just
+              // a prefix).
+              //
+              if (polymorphic (o) || t.qualified () || i->alias != t.uname ())
+                at->generate (i->alias, o);
+            }
+          }
+
+          if (obj_count > 1)
+          {
+            os << "struct access::view_traits< " << type << " >::query_columns"
+               << "{";
+
+            for (view_objects::const_iterator i (objs.begin ());
+                 i < objs.end ();
+                 ++i)
+            {
+              if (i->kind != view_object::object)
+                continue; // Skip tables.
+
+              bool alias (!i->alias.empty ());
+              semantics::class_& o (*i->obj);
+              string const& oname (alias ? i->alias : class_name (o));
+              string const& otype (class_fq_name (o));
+              qname const& table (table_name (o));
+
+              os << "// " << oname << endl
+                 << "//" << endl
+                 << "typedef" << endl
+                 << "odb::pointer_query_columns<" << endl
+                 << "  " << otype << "," << endl;
+
+              if (alias && (polymorphic (o) ||
+                            table.qualified () ||
+                            i->alias != table.uname ()))
+              {
+                string tag (escape (i->alias + "_alias_tag"));
+                os << "  odb::alias_traits< " << otype << ", " <<
+                  tag << " > >" << endl;
+              }
+              else
+                os << "  odb::access::object_traits< " << otype <<
+                  " > >" << endl;
+
+              os << oname << ";"
+                 << endl;
+            }
+
+            os << "};";
+
+            os << "struct access::view_traits< " << type << " >::" <<
+              "query_type:" << endl
+               << "  query_base_type, query_columns";
+          }
+          else
+          {
+            // For a single object view we generate a shortcut without
+            // an intermediate typedef.
+            //
+            view_object const* vo (0);
+            for (view_objects::const_iterator i (objs.begin ());
+                 vo == 0 && i < objs.end ();
+                 ++i)
+            {
+              if (i->kind == view_object::object)
+                vo = &*i;
+            }
+
+            bool alias (!vo->alias.empty ());
+            semantics::class_& o (*vo->obj);
+            string const& otype (class_fq_name (o));
+            qname const& table (table_name (o));
+
+            os << "struct access::view_traits< " << type << " >::" <<
+              "query_type:" << endl
+               << "  query_base_type," << endl
+               << "  odb::pointer_query_columns<" << endl
+               << "    " << otype << "," << endl;
+
+            if (alias && (polymorphic (o) ||
+                          table.qualified () ||
+                          vo->alias != table.uname ()))
+            {
+              string tag (escape (vo->alias + "_alias_tag"));
+              os << "    odb::alias_traits< " << otype << ", " <<
+                tag << " > >";
+            }
+            else
+              os << "    odb::access::object_traits< " << otype << " > >";
+          }
+
+          os << "{"
+             << "query_type ();"
+             << "query_type (bool);"
+             << "query_type (const char*);"
+             << "query_type (const std::string&);"
+             << "query_type (const query_base_type&);"
+             << "};";
+        }
+
+        // Move header comment out of if-block if adding any code here.
       }
 
       virtual void
@@ -1713,6 +1423,9 @@ namespace relational
 
     private:
       instance<query_columns_type> query_columns_type_;
+
+      std::set<string> alias_tags_;
+      std::set<string> alias_specs_;
     };
 
     struct include: virtual context
@@ -1728,6 +1441,7 @@ namespace relational
 
         os << "#include <odb/" << db << "/version.hxx>" << endl
            << "#include <odb/" << db << "/forward.hxx>" << endl
+           << "#include <odb/" << db << "/binding.hxx>" << endl
            << "#include <odb/" << db << "/" << db << "-types.hxx>" << endl;
 
         if (options.generate_query ())

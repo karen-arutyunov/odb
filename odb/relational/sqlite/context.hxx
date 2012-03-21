@@ -73,6 +73,7 @@ namespace relational
       context (std::ostream&,
                semantics::unit&,
                options_type const&,
+               features_type& f,
                sema_rel::model*);
 
       static context&

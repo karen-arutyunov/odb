@@ -37,6 +37,8 @@ namespace semantics
       tree_node_map_[key] = &value;
     }
 
+    using namespace_::find;
+
     // Mapping from tree nodes to name hints.
     //
   public:

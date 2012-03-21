@@ -6,6 +6,7 @@
 #define ODB_VALIDATOR_HXX
 
 #include <odb/options.hxx>
+#include <odb/features.hxx>
 #include <odb/semantics/unit.hxx>
 
 class validator
@@ -17,6 +18,7 @@ public:
   //
   void
   validate (options const&,
+            features&,
             semantics::unit&,
             semantics::path const&,
             unsigned short pass);

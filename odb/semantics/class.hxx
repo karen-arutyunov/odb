@@ -111,7 +111,7 @@ namespace semantics
     }
 
     using scope::add_edge_left;
-    using scope::add_edge_right;
+    using type::add_edge_right;
 
     // Resolve conflict between scope::scope and nameable::scope.
     //

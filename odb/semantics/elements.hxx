@@ -67,6 +67,40 @@ namespace semantics
   class edge;
   class unit;
 
+  // Support for inserting edges at specified positions.
+  //
+  template <typename N, typename I>
+  struct node_position
+  {
+    node_position (N& node, I pos)
+        : node_ (node), pos_ (pos)
+    {
+    }
+
+    operator N& () const
+    {
+      return node_;
+    }
+
+    template <typename E>
+    void
+    add_edge_left (E& e)
+    {
+      node_.add_edge_left (e, pos_);
+    }
+
+    template <typename E>
+    void
+    add_edge_right (E& e)
+    {
+      node_.add_edge_right (e, pos_);
+    }
+
+  private:
+    N& node_;
+    I pos_;
+  };
+
   //
   //
   class edge: public context
@@ -529,6 +563,9 @@ namespace semantics
     void
     add_edge_left (names&);
 
+    void
+    add_edge_left (names&, names_iterator after);
+
     using nameable::add_edge_right;
 
   protected:
@@ -544,6 +581,8 @@ namespace semantics
 
   //
   //
+  class points;
+
   class belongs;
   class qualifies;
 
@@ -567,6 +606,15 @@ namespace semantics
     }
 
   public:
+    bool
+    pointed_p () const {return pointed_ != 0;}
+
+    points&
+    pointed () const {return *pointed_;}
+
+  public:
+    type (): pointed_ (0) {}
+
     void
     add_edge_right (belongs&)
     {
@@ -578,10 +626,17 @@ namespace semantics
       qualified_.push_back (&e);
     }
 
+    void
+    add_edge_right (points& e)
+    {
+      pointed_ = &e;
+    }
+
     using nameable::add_edge_right;
 
   private:
     qualified qualified_;
+    points* pointed_;
   };
 
   //
@@ -686,6 +741,22 @@ namespace semantics
   public:
     data_member (path const& file, size_t line, size_t column, tree tn)
         : node (file, line, column, tn)
+    {
+    }
+
+  protected:
+    data_member ()
+    {
+    }
+  };
+
+  // Virtual data member (extension to the standard C++ model).
+  //
+  class virtual_data_member: public data_member
+  {
+  public:
+    virtual_data_member (path const& file, size_t line, size_t column)
+        : node (file, line, column, 0)
     {
     }
   };

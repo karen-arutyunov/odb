@@ -122,6 +122,7 @@ auto_ptr<context>
 create_context (ostream& os,
                 semantics::unit& unit,
                 options const& ops,
+                features& f,
                 semantics::relational::model* m)
 {
   auto_ptr<context> r;
@@ -130,27 +131,27 @@ create_context (ostream& os,
   {
   case database::mssql:
     {
-      r.reset (new relational::mssql::context (os, unit, ops, m));
+      r.reset (new relational::mssql::context (os, unit, ops, f, m));
       break;
     }
   case database::mysql:
     {
-      r.reset (new relational::mysql::context (os, unit, ops, m));
+      r.reset (new relational::mysql::context (os, unit, ops, f, m));
       break;
     }
   case database::oracle:
     {
-      r.reset (new relational::oracle::context (os, unit, ops, m));
+      r.reset (new relational::oracle::context (os, unit, ops, f, m));
       break;
     }
   case database::pgsql:
     {
-      r.reset (new relational::pgsql::context (os, unit, ops, m));
+      r.reset (new relational::pgsql::context (os, unit, ops, f, m));
       break;
     }
   case database::sqlite:
     {
-      r.reset (new relational::sqlite::context (os, unit, ops, m));
+      r.reset (new relational::sqlite::context (os, unit, ops, f, m));
       break;
     }
   }
@@ -169,11 +170,13 @@ context::
 context (ostream& os_,
          semantics::unit& u,
          options_type const& ops,
+         features_type& f,
          data_ptr d)
     : data_ (d ? d : data_ptr (new (shared) data (os_))),
       os (data_->os_),
       unit (u),
       options (ops),
+      features (f),
       db (options.database ()),
       keyword_set (data_->keyword_set_),
       include_regex (data_->include_regex_),
@@ -201,6 +204,7 @@ context ()
     os (current ().os),
     unit (current ().unit),
     options (current ().options),
+    features (current ().features),
     db (current ().db),
     keyword_set (current ().keyword_set),
     include_regex (current ().include_regex),
@@ -426,6 +430,28 @@ null (semantics::data_member& m, string const& kp)
 
     return false;
   }
+}
+
+size_t context::
+polymorphic_depth (semantics::class_& c)
+{
+  if (c.count ("polymorphic-depth"))
+    return c.get<size_t> ("polymorphic-depth");
+
+  // Calculate our hierarchy depth (number of classes).
+  //
+  using semantics::class_;
+
+  class_* root (polymorphic (c));
+  assert (root != 0);
+
+  size_t r (1); // One for the root.
+
+  for (class_* b (&c); b != root; b = &polymorphic_base (*b))
+    ++r;
+
+  c.set ("polymorphic-depth", r);
+  return r;
 }
 
 context::class_kind_type context::
@@ -1180,6 +1206,28 @@ escape (string const& name) const
   return r;
 }
 
+string context::
+make_guard (string const& s) const
+{
+  // Split words, e.g., "FooBar" to "Foo_Bar" and convert everything
+  // to upper case.
+  //
+  string r;
+  for (string::size_type i (0), n (s.size ()); i < n - 1; ++i)
+  {
+    char c1 (s[i]);
+    char c2 (s[i + 1]);
+
+    r += toupper (c1);
+
+    if (isalpha (c1) && isalpha (c2) && islower (c1) && isupper (c2))
+      r += "_";
+  }
+  r += toupper (s[s.size () - 1]);
+
+  return escape (r);
+}
+
 static string
 charlit (unsigned int u)
 {
@@ -1351,6 +1399,11 @@ namespace
         c_.readonly++;
       else if (context::version (m))
         c_.optimistic_managed++;
+
+      // For now discriminator can only be a simple value.
+      //
+      if (discriminator (m))
+        c_.discriminator++;
     }
 
     context::column_count_type c_;
@@ -1375,7 +1428,9 @@ namespace
   struct has_a_impl: object_members_base
   {
     has_a_impl (unsigned short flags)
-        : r_ (0), flags_ (flags)
+        : object_members_base ((flags & context::include_base) != 0),
+          r_ (0),
+          flags_ (flags)
     {
     }
 
@@ -1386,8 +1441,14 @@ namespace
     }
 
     virtual void
-    traverse_pointer (semantics::data_member&, semantics::class_&)
+    traverse_pointer (semantics::data_member& m, semantics::class_&)
     {
+      // Ignore polymorphic id references; they are represented as
+      // pointers but are normally handled in a special way.
+      //
+      if (m.count ("polymorphic-ref"))
+        return;
+
       if (context::is_a (member_path_, member_scope_, flags_))
         r_++;
 

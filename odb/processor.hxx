@@ -6,6 +6,7 @@
 #define ODB_PROCESSOR_HXX
 
 #include <odb/options.hxx>
+#include <odb/features.hxx>
 #include <odb/semantics/unit.hxx>
 
 class processor
@@ -14,7 +15,10 @@ public:
   class failed {};
 
   void
-  process (options const&, semantics::unit&, semantics::path const&);
+  process (options const&,
+           features&,
+           semantics::unit&,
+           semantics::path const&);
 
   processor () {}
 

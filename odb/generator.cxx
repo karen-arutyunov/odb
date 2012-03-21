@@ -33,30 +33,6 @@ namespace
     "// compiler for C++.\n"
     "//\n\n";
 
-  string
-  make_guard (string const& file, context& ctx)
-  {
-    string g (file);
-
-    // Split words, e.g., "FooBar" to "Foo_Bar" and convert everything
-    // to upper case.
-    //
-    string r;
-    for (string::size_type i (0), n (g.size ()); i < n - 1; ++i)
-    {
-      char c1 (g[i]);
-      char c2 (g[i + 1]);
-
-      r += toupper (c1);
-
-      if (isalpha (c1) && isalpha (c2) && islower (c1) && isupper (c2))
-        r += "_";
-    }
-    r += toupper (g[g.size () - 1]);
-
-    return ctx.escape (r);
-  }
-
   void
   open (ifstream& ifs, string const& path)
   {
@@ -88,7 +64,10 @@ namespace
 }
 
 void generator::
-generate (options const& ops, semantics::unit& unit, path const& p)
+generate (options const& ops,
+          features& fts,
+          semantics::unit& unit,
+          path const& p)
 {
   try
   {
@@ -98,7 +77,7 @@ generate (options const& ops, semantics::unit& unit, path const& p)
 
     if (ops.generate_schema ())
     {
-      auto_ptr<context> ctx (create_context (cerr, unit, ops, 0));
+      auto_ptr<context> ctx (create_context (cerr, unit, ops, fts, 0));
 
       switch (ops.database ())
       {
@@ -249,9 +228,10 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       sloc_filter sloc (hxx);
       ind_filter ind (hxx);
 
-      auto_ptr<context> ctx (create_context (hxx, unit, ops, model.get ()));
+      auto_ptr<context> ctx (
+        create_context (hxx, unit, ops, fts, model.get ()));
 
-      string guard (make_guard (gp + hxx_name, *ctx));
+      string guard (ctx->make_guard (gp + hxx_name));
 
       hxx << "#ifndef " << guard << endl
           << "#define " << guard << endl
@@ -328,7 +308,8 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       sloc_filter sloc (ixx);
       ind_filter ind (ixx);
 
-      auto_ptr<context> ctx (create_context (ixx, unit, ops, model.get ()));
+      auto_ptr<context> ctx (
+        create_context (ixx, unit, ops, fts, model.get ()));
 
       // Copy prologue.
       //
@@ -376,7 +357,8 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       sloc_filter sloc (cxx);
       ind_filter ind (cxx);
 
-      auto_ptr<context> ctx (create_context (cxx, unit, ops, model.get ()));
+      auto_ptr<context> ctx (
+        create_context (cxx, unit, ops, fts, model.get ()));
 
       cxx << "#include <odb/pre.hxx>" << endl
           << endl;
@@ -432,7 +414,8 @@ generate (options const& ops, semantics::unit& unit, path const& p)
       sloc_filter sloc (sch);
       ind_filter ind (sch);
 
-      auto_ptr<context> ctx (create_context (sch, unit, ops, model.get ()));
+      auto_ptr<context> ctx (
+        create_context (sch, unit, ops, fts, model.get ()));
 
       // Copy prologue.
       //
@@ -487,7 +470,8 @@ generate (options const& ops, semantics::unit& unit, path const& p)
     //
     if (sql_schema)
     {
-      auto_ptr<context> ctx (create_context (sql, unit, ops, model.get ()));
+      auto_ptr<context> ctx (
+        create_context (sql, unit, ops, fts, model.get ()));
 
       // Copy prologue.
       //

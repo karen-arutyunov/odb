@@ -102,10 +102,6 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
-        bool abstract (context::abstract (c));
-        string const& type (class_fq_name (c));
-        string traits ("access::object_traits< " + type + " >");
-
         semantics::data_member* id (id_member (c));
         bool base_id (id ? &id->scope () != &c : false); // Comes from base.
 
@@ -114,10 +110,18 @@ namespace relational
         // Base class the contains the object id and version for optimistic
         // concurrency.
         //
-        semantics::class_* base (
-          id != 0 && base_id
-          ? dynamic_cast<semantics::class_*> (&id->scope ())
-          : 0);
+        type* base (
+          id != 0 && base_id ? dynamic_cast<type*> (&id->scope ()) : 0);
+
+        type* poly_root (context::polymorphic (c));
+        bool poly (poly_root != 0);
+        bool poly_derived (poly && poly_root != &c);
+
+        bool abst (abstract (c));
+        bool reuse_abst (abst && !poly);
+
+        string const& type (class_fq_name (c));
+        string traits ("access::object_traits< " + type + " >");
 
         os << "// " << class_name (c) << endl
            << "//" << endl
@@ -127,7 +131,7 @@ namespace relational
 
         // id (object_type)
         //
-        if (id != 0 || !abstract)
+        if (id != 0 || !reuse_abst)
         {
           os << "inline" << endl
              << traits << "::id_type" << endl
@@ -147,77 +151,128 @@ namespace relational
           os << "}";
         }
 
-        if (id != 0)
+        if (id != 0 && base_id)
         {
-          // id (image_type)
-          //
-          if (options.generate_query () && base_id)
+          if (!poly_derived)
           {
-            os << "inline" << endl
-               << traits << "::id_type" << endl
-               << traits << "::" << endl
-               << "id (const image_type& i)"
-               << "{"
-               << "return object_traits< " << class_fq_name (*base) <<
-              " >::id (i);"
-               << "}";
-          }
+            // id (image_type)
+            //
+            if (options.generate_query ())
+            {
+              os << "inline" << endl
+                 << traits << "::id_type" << endl
+                 << traits << "::" << endl
+                 << "id (const image_type& i)"
+                 << "{"
+                 << "return object_traits< " << class_fq_name (*base) <<
+                " >::id (i);"
+                 << "}";
+            }
 
-          // version (image_type)
-          //
-          if (optimistic != 0 && base_id)
-          {
-            os << "inline" << endl
-               << traits << "::version_type" << endl
-               << traits << "::" << endl
-               << "version (const image_type& i)"
-               << "{"
-               << "return object_traits< " << class_fq_name (*base) <<
-              " >::version (i);"
-               << "}";
+            // version (image_type)
+            //
+            if (optimistic != 0)
+            {
+              os << "inline" << endl
+                 << traits << "::version_type" << endl
+                 << traits << "::" << endl
+                 << "version (const image_type& i)"
+                 << "{"
+                 << "return object_traits< " << class_fq_name (*base) <<
+                " >::version (i);"
+                 << "}";
+            }
           }
 
           // bind (id_image_type)
           //
-          if (base_id)
+          os << "inline" << endl
+             << "void " << traits << "::" << endl
+             << "bind (" << bind_vector << " b, id_image_type& i" <<
+            (optimistic != 0 ? ", bool bv" : "") << ")"
+             << "{"
+             << "object_traits< " << class_fq_name (*base) <<
+            " >::bind (b, i" << (optimistic != 0 ? ", bv" : "") << ");"
+             << "}";
+
+          os << "inline" << endl
+             << "void " << traits << "::" << endl
+             << "init (id_image_type& i, const id_type& id" <<
+            (optimistic != 0 ? ", const version_type* v" : "") << ")"
+             << "{"
+             << "object_traits< " << class_fq_name (*base) <<
+            " >::init (i, id" << (optimistic != 0 ? ", v" : "") << ");"
+             << "}";
+        }
+
+        if (poly_derived)
+        {
+          size_t depth (polymorphic_depth (c));
+
+          // check_version
+          //
+          os << "inline" << endl
+             << "bool " << traits << "::" << endl
+             << "check_version (const std::size_t* v, const image_type& i)"
+             << "{"
+             << "return ";
+
+          string image ("i.");
+          for (size_t i (0); i < depth; ++i)
           {
-            os << "inline" << endl
-               << "void " << traits << "::" << endl
-               << "bind (" << bind_vector << " b, id_image_type& i)"
-               << "{"
-               << "object_traits< " << class_fq_name (*base) <<
-              " >::bind (b, i);"
-               << "}";
+            os << (i == 0 ? "" : " ||") << endl
+               << "  v[" << i << "UL] != " << image << "version";
+
+            image += "base->";
           }
 
-          if (base_id)
+          os << ";"
+             << "}";
+
+          // update_version
+          //
+          os << "inline" << endl
+             << "void " << traits << "::" << endl
+             << "update_version (std::size_t* v, const image_type& i, " <<
+            db << "::binding* b)"
+             << "{";
+
+          image = "i.";
+          for (size_t i (0); i < depth; ++i)
           {
-            os << "inline" << endl
-               << "void " << traits << "::" << endl
-               << "init (id_image_type& i, const id_type& id" <<
-              (optimistic != 0 ? ", const version_type* v" : "") << ")"
-               << "{"
-               << "object_traits< " << class_fq_name (*base) <<
-              " >::init (i, id" << (optimistic != 0 ? ", v" : "") << ");"
-               << "}";
+            os << "v[" << i << "UL] = " << image << "version;";
+            image += "base->";
           }
+
+          // A poly-abstract class always has only one entry in the
+          // bindings array.
+          //
+          if (abst)
+            os << "b[0].version++;";
+          else
+            for (size_t i (0); i < depth; ++i)
+              os << "b[" << i << "UL].version++;";
+
+          os << "}";
         }
 
         //
-        // The rest only applies to concrete objects.
+        // The rest does not apply to reuse-abstract objects.
         //
-        if (abstract)
+        if (reuse_abst)
           return;
 
         // erase (object_type)
         //
-        if (id != 0 && optimistic == 0)
+        if (id != 0 && !poly && optimistic == 0)
         {
           os << "inline" << endl
              << "void " << traits << "::" << endl
              << "erase (database& db, const object_type& obj)"
              << "{"
+             << "callback (db, obj, callback_event::pre_erase);"
              << "erase (db, id (obj));"
+             << "callback (db, obj, callback_event::post_erase);"
              << "}";
         }
 
@@ -287,13 +342,90 @@ namespace relational
 
         // load_()
         //
-        if (id != 0 && !has_a (c, test_container))
+        if (id != 0 && !(poly_derived || has_a (c, test_container)))
         {
           os << "inline" << endl
              << "void " << traits << "::" << endl
-             << "load_ (" << db << "::object_statements< object_type >&, " <<
-            "object_type&)"
+             << "load_ (";
+
+          if (poly && !poly_derived)
+            os << "base_statements_type&, ";
+          else
+            os << "statements_type&, ";
+
+          os << "object_type&)"
              << "{"
+             << "}";
+        }
+
+        if (poly && need_image_clone && options.generate_query ())
+        {
+          // root_image ()
+          //
+          os << "inline" << endl
+             << traits << "::root_traits::image_type&" << endl
+             << traits << "::" << endl
+             << "root_image (image_type& i)"
+             << "{";
+
+          if (poly_derived)
+            os << "return object_traits<base_type>::root_image (*i.base);";
+          else
+            os << "return i;";
+
+          os << "}";
+
+          // clone_image ()
+          //
+          os << "inline" << endl
+             << traits << "::image_type*" << endl
+             << traits << "::" << endl
+             << "clone_image (const image_type& i)"
+             << "{";
+
+          if (poly_derived)
+            os << "typedef object_traits<base_type> base_traits;"
+               << endl
+               << "details::unique_ptr<base_traits::image_type> p (" << endl
+               << "base_traits::clone_image (*i.base));"
+               << "image_type* c (new image_type (i));"
+               << "c->base = p.release ();"
+               << "return c;";
+          else
+            os << "return new image_type (i);";
+
+          os << "}";
+
+          // copy_image ()
+          //
+          os << "inline" << endl
+             << "void " << traits << "::" << endl
+             << "copy_image (image_type& d, const image_type& s)"
+             << "{";
+
+          if (poly_derived)
+            os << "typedef object_traits<base_type> base_traits;"
+               << endl
+               << "base_traits::image_type* b (d.base);"
+               << "base_traits::copy_image (*b, *s.base);"
+               << "d = s;" // Overwrites the base pointer.
+               << "d.base = b;";
+          else
+            os << "d = s;";
+
+          os << "}";
+
+          // free_image ()
+          //
+          os << "inline" << endl
+             << "void " << traits << "::" << endl
+             << "free_image (image_type* i)"
+             << "{";
+
+          if (poly_derived)
+            os << "object_traits<base_type>::free_image (i->base);";
+
+          os << "delete i;"
              << "}";
         }
       }
@@ -378,6 +510,19 @@ namespace relational
 
     private:
       instance<callback_calls> callback_calls_;
+    };
+
+    struct include: virtual context
+    {
+      typedef include base;
+
+      virtual void
+      generate ()
+      {
+        if (features.polymorphic_object && options.generate_query ())
+          os << "#include <odb/details/unique-ptr.hxx>" << endl
+             << endl;
+      }
     };
   }
 }

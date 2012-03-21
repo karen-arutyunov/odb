@@ -22,24 +22,31 @@ namespace relational
         virtual void
         image_extra (type& c)
         {
-          if (!(composite (c) || abstract (c)))
+          if (!(composite (c) || (abstract (c) && !polymorphic (c))))
           {
-            bool gc (options.generate_query ());
+            type* poly_root (polymorphic (c));
 
-            if (gc)
-              os << "mssql::change_callback change_callback_;"
-                 << endl;
+            // If this is a polymorphic type, only add callback to the root.
+            //
+            if (poly_root == 0 || poly_root == &c)
+            {
+              bool gc (options.generate_query ());
 
-            os << "mssql::change_callback*" << endl
-               << "change_callback ()"
-               << "{";
+              if (gc)
+                os << "mssql::change_callback change_callback_;"
+                   << endl;
 
-            if (gc)
-              os << "return &change_callback_;";
-            else
-              os << "return 0;";
+              os << "mssql::change_callback*" << endl
+                 << "change_callback ()"
+                 << "{";
 
-            os << "}";
+              if (gc)
+                os << "return &change_callback_;";
+              else
+                os << "return 0;";
+
+              os << "}";
+            }
           }
         }
       };

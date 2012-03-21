@@ -247,7 +247,9 @@ namespace relational
           if (type.empty () && wt != 0)
             type = database_type (*wt, whint, false);
 
-          if (id (m))
+          // Use id mapping for discriminators.
+          //
+          if (id (m) || discriminator (m))
             type = id_type;
         }
 
@@ -768,14 +770,8 @@ namespace relational
               while (DECL_TEMPLATE_INFO (decl))
                 decl = DECL_TI_TEMPLATE (decl);
 
-              if (!unit.count ("tr1-pointer-used"))
-              {
-                unit.set ("tr1-pointer-used", false);
-                unit.set ("boost-pointer-used", false);
-              }
-
-              bool& tr1 (unit.get<bool> ("tr1-pointer-used"));
-              bool& boost (unit.get<bool> ("boost-pointer-used"));
+              bool& tr1 (features.tr1_pointer);
+              bool& boost (features.boost_pointer);
 
               string n (decl_as_string (decl, TFF_PLAIN_IDENTIFIER));
 
@@ -918,9 +914,9 @@ namespace relational
           throw operation_failed ();
         }
 
-        // Make sure the pointed-to class is not abstract.
+        // Make sure the pointed-to class is not reuse-abstract.
         //
-        if (context::abstract (*c))
+        if (abstract (*c) && !polymorphic (*c))
         {
           os << m.file () << ":" << m.line () << ":" << m.column () << ": "
              << "error: pointed-to class '" << class_fq_name (*c) << "' "
@@ -935,7 +931,7 @@ namespace relational
 
         // Make sure the pointed-to class has object id.
         //
-        if (context::id_member (*c) == 0)
+        if (id_member (*c) == 0)
         {
           os << m.file () << ":" << m.line () << ":" << m.column () << ": "
              << "error: pointed-to class '" << class_fq_name (*c) << "' "
@@ -1285,7 +1281,7 @@ namespace relational
 
               string name;
               tree decl (0);
-              semantics::class_* obj (0);
+              view_object* vo (0);
 
               // Check if this is an alias.
               //
@@ -1295,8 +1291,7 @@ namespace relational
 
                 if (j != amap_.end ())
                 {
-                  i->table = j->first;
-                  obj = j->second->obj;
+                  vo = j->second;
 
                   // Skip '::'.
                   //
@@ -1312,13 +1307,13 @@ namespace relational
 
                   cpp_ttype ptt; // Not used.
                   decl = lookup::resolve_scoped_name (
-                    t, tt, ptt, lex_, obj->tree_node (), name, false);
+                    t, tt, ptt, lex_, vo->obj->tree_node (), name, false);
                 }
               }
 
               // If it is not an alias, do the normal lookup.
               //
-              if (obj == 0)
+              if (vo == 0)
               {
                 // Also get the object type. We need to do it so that
                 // we can get the correct (derived) table name (the
@@ -1342,8 +1337,7 @@ namespace relational
                   throw operation_failed ();
                 }
 
-                obj = j->second->obj;
-                i->table = table_name (*obj);
+                vo = j->second;
               }
 
               // Check that we have a data member.
@@ -1357,6 +1351,40 @@ namespace relational
 
               data_member* m (dynamic_cast<data_member*> (unit.find (decl)));
               i->member_path.push_back (m);
+
+              // Figure out the table name/alias for this member.
+              //
+              using semantics::class_;
+
+              if (class_* root = polymorphic (*vo->obj))
+              {
+                // If the object is polymorphic, then figure out which of the
+                // bases this member comes from and use the corresponding
+                // table.
+                //
+                class_* c (&static_cast<class_&> (m->scope ()));
+
+                // If this member's class is not polymorphic (root uses reuse
+                // inheritance), then use the root table.
+                //
+                if (!polymorphic (*c))
+                  c = root;
+
+                // In a polymorphic hierarchy we have several tables and the
+                // provided alias is used as a prefix together with the table
+                // name to form the actual alias.
+                //
+                qname const& t (table_name (*c));
+
+                if (vo->alias.empty ())
+                  i->table = t;
+                else
+                  i->table = qname (vo->alias + "_" + t.uname ());
+              }
+              else
+                i->table = vo->alias.empty ()
+                  ? table_name (*vo->obj)
+                  : qname (vo->alias);
 
               // Finally, resolve nested members if any.
               //
@@ -1440,7 +1468,7 @@ namespace relational
             }
           }
         }
-        // This member has no column information. If we are generting our
+        // This member has no column information. If we are generating our
         // own query, try to find a member with the same (or similar) name
         // in one of the associated objects.
         //
@@ -1508,9 +1536,39 @@ namespace relational
           column_expr_part& ep (e.back ());
 
           ep.kind = column_expr_part::reference;
-          ep.table = am.vo->alias.empty ()
-            ? table_name (*am.vo->obj)
-            : qname (am.vo->alias);
+
+
+          // If this object is polymorphic, then figure out which of the
+          // bases this member comes from and use the corresponding table.
+          //
+          using semantics::class_;
+
+          if (class_* root = polymorphic (*am.vo->obj))
+          {
+            class_* c (&static_cast<class_&> (am.m->scope ()));
+
+            // If this member's class is not polymorphic (root uses reuse
+            // inheritance), then use the root table.
+            //
+            if (!polymorphic (*c))
+              c = root;
+
+            // In a polymorphic hierarchy we have several tables and the
+            // provided alias is used as a prefix together with the table
+            // name to form the actual alias.
+            //
+            qname const& t (table_name (*c));
+
+            if (am.vo->alias.empty ())
+              ep.table = t;
+            else
+              ep.table = qname (am.vo->alias + "_" + t.uname ());
+          }
+          else
+            ep.table = am.vo->alias.empty ()
+              ? table_name (*am.vo->obj)
+              : qname (am.vo->alias);
+
           ep.member_path.push_back (am.m);
 
           src_m = am.m;
@@ -1553,7 +1611,23 @@ namespace relational
         traverse (view_object& vo)
         {
           member_.vo_ = &vo;
-          traverse (*vo.obj);
+
+          // First look for an exact match.
+          //
+          {
+            member_.exact_ = true;
+            member_.found_ = false;
+            traverse (*vo.obj);
+          }
+
+          // If we didn't find an exact match, then look for a public
+          // name match.
+          //
+          if (!member_.found_)
+          {
+            member_.exact_ = false;
+            traverse (*vo.obj);
+          }
         }
 
         virtual void
@@ -1563,7 +1637,12 @@ namespace relational
             return; // Ignore transient bases.
 
           names (c);
-          inherits (c);
+
+          // If we already found a match in one of the derived classes,
+          // don't go into bases to get the standard "hiding" behavior.
+          //
+          if (!member_.found_)
+            inherits (c);
         }
 
       public:
@@ -1614,37 +1693,27 @@ namespace relational
           virtual void
           traverse (type& m)
           {
-            // First see if we have the exact match.
-            //
-            if (name_ == m.name ())
+            if (exact_)
             {
-              if (check (m))
+              if (name_ == m.name () && check (m))
               {
                 assoc_member am;
                 am.m = &m;
                 am.vo = vo_;
                 members_.push_back (am);
+                found_ = true;
               }
-
-              return;
             }
-
-            // Don't bother with public name matching if we already
-            // have an exact match.
-            //
-            if (members_.empty ())
+            else
             {
-              if (pub_name_ == context::current ().public_name (m))
+              if (pub_name_ == context::current ().public_name (m) &&
+                  check (m))
               {
-                if (check (m))
-                {
-                  assoc_member am;
-                  am.m = &m;
-                  am.vo = vo_;
-                  pub_members_.push_back (am);
-                }
-
-                return;
+                assoc_member am;
+                am.m = &m;
+                am.vo = vo_;
+                pub_members_.push_back (am);
+                found_ = true;
               }
             }
           }
@@ -1654,7 +1723,9 @@ namespace relational
           {
             // Make sure that the found node can possibly match.
             //
-            if (context::transient (m) || context::inverse (m))
+            if (context::transient (m) ||
+                context::inverse (m) ||
+                m.count ("polymorphic-ref"))
               return false;
 
             return check_types (utype (m), type_);
@@ -1668,6 +1739,8 @@ namespace relational
           semantics::type& type_;
 
           view_object* vo_;
+          bool exact_;
+          bool found_;
         };
 
         traversal::names names_;
@@ -1686,7 +1759,31 @@ namespace relational
     struct class_: traversal::class_, context
     {
       class_ ()
+          : std_string_ (0), std_string_hint_ (0)
       {
+        // Resolve the std::string type node.
+        //
+        using semantics::scope;
+
+        for (scope::names_iterator_pair ip (unit.find ("std"));
+             ip.first != ip.second; ++ip.first)
+        {
+          if (scope* ns = dynamic_cast<scope*> (&ip.first->named ()))
+          {
+            scope::names_iterator_pair jp (ns->find ("string"));
+
+            if (jp.first != jp.second)
+            {
+              std_string_ = dynamic_cast<semantics::type*> (
+                &jp.first->named ());
+              std_string_hint_ = &*jp.first;
+              break;
+            }
+          }
+        }
+
+        assert (std_string_ != 0); // No std::string?
+
         *this >> member_names_ >> member_;
       }
 
@@ -1698,17 +1795,115 @@ namespace relational
         if (k == class_other)
           return;
 
-        names (c);
-
         // Assign pointer.
         //
         if (k == class_object || k == class_view)
           assign_pointer (c);
 
-        // Do some additional processing for views.
+        // Do some additional pre-processing for objects.
+        //
+        if (k == class_object)
+          traverse_object_pre (c);
+
+        names (c);
+
+        // Do some additional post-processing for views.
         //
         if (k == class_view)
-          traverse_view (c);
+          traverse_view_post (c);
+      }
+
+      //
+      // Object.
+      //
+
+      virtual void
+      traverse_object_pre (type& c)
+      {
+        if (semantics::class_* root = polymorphic (c))
+        {
+          using namespace semantics;
+
+          semantics::data_member& idm (*id_member (*root));
+
+          if (root != &c)
+          {
+            // If we are a derived class in the polymorphic persistent
+            // class hierarchy, then add a synthesized virtual pointer
+            // member that points back to the root.
+            //
+            path const& f (idm.file ());
+            size_t l (idm.line ()), col (idm.column ());
+
+            semantics::data_member& m (
+              unit.new_node<virtual_data_member> (f, l, col));
+
+            // Make it the first member in the class.
+            //
+            node_position<type, scope::names_iterator> np (c, c.names_end ());
+            unit.new_edge<semantics::names> (
+              np, m, idm.name (), access::public_);
+
+            // Use the raw pointer as this member's type.
+            //
+            if (!root->pointed_p ())
+            {
+              // Create the pointer type in the graph. The pointer node
+              // in GCC seems to always be present, even if not explicitly
+              // used in the translation unit.
+              //
+              tree t (root->tree_node ());
+              tree ptr (TYPE_POINTER_TO (t));
+              assert (ptr != 0);
+              ptr = TYPE_MAIN_VARIANT (ptr);
+              pointer& p (unit.new_node<pointer> (f, l, col, ptr));
+              unit.insert (ptr, p);
+              unit.new_edge<points> (p, *root);
+              assert (root->pointed_p ());
+            }
+
+            unit.new_edge<belongs> (m, root->pointed ().pointer ());
+
+            m.set ("not-null", true);
+            m.set ("deferred", false);
+            m.set ("on-delete", sema_rel::foreign_key::cascade);
+
+            // Mark it as a special kind of id.
+            //
+            m.set ("id", true);
+            m.set ("polymorphic-ref", true);
+          }
+          else
+          {
+            // If we are a root of the polymorphic persistent class hierarchy,
+            // then add a synthesized virtual member for the discriminator.
+            // Use the location of the polymorphic pragma as the location of
+            // this member.
+            //
+            location_t loc (c.get<location_t> ("polymorphic-location"));
+            semantics::data_member& m (
+              unit.new_node<virtual_data_member> (
+                path (LOCATION_FILE (loc)),
+                LOCATION_LINE (loc),
+                LOCATION_COLUMN (loc)));
+
+            // Insert it after the id member (or first if this id comes
+            // from reuse-base).
+            //
+            node_position<type, scope::names_iterator> np (
+              c, c.find (idm.named ()));
+            unit.new_edge<semantics::names> (
+              np, m, "typeid_", access::public_);
+
+            belongs& edge (unit.new_edge<belongs> (m, *std_string_));
+            edge.hint (*std_string_hint_);
+
+            m.set ("readonly", true);
+            m.set ("discriminator", true);
+
+            c.set ("discriminator", &m);
+          }
+        }
       }
 
       //
@@ -1726,7 +1921,7 @@ namespace relational
       typedef vector<relationship> relationships;
 
       virtual void
-      traverse_view (type& c)
+      traverse_view_post (type& c)
       {
         bool has_q (c.count ("query"));
         bool has_o (c.count ("objects"));
@@ -1859,11 +2054,45 @@ namespace relational
                   << "persistent class '" << i->obj_name << "' is used in "
                   << "the view more than once" << endl;
 
+                error (omap[n]->loc)
+                  << "previously used here" << endl;
+
                 info (i->loc)
                   << "use the alias clause to assign it a different name"
                   << endl;
 
                 throw operation_failed ();
+              }
+
+              // Also add the bases of a polymorphic object.
+              //
+              class_* poly_root (polymorphic (o));
+
+              if (poly_root != 0 && poly_root != &o)
+              {
+                for (class_* b (&polymorphic_base (o));;
+                     b = &polymorphic_base (*b))
+                {
+                  view_object_map::value_type v (b->tree_node (), &*i);
+                  if (!omap.insert (v).second)
+                  {
+                    error (i->loc)
+                      << "base class '" << class_name (*b) << "' is "
+                      << "used in the view more than once" << endl;
+
+                    error (omap[v.first]->loc)
+                      << "previously used here" << endl;
+
+                    info (i->loc)
+                      << "use the alias clause to assign it a different name"
+                      << endl;
+
+                    throw operation_failed ();
+                  }
+
+                  if (b == poly_root)
+                    break;
+                }
               }
             }
             else
@@ -1908,9 +2137,7 @@ namespace relational
                 }
 
                 // Now see if this object points to any of the objects
-                // specified prior to it. Ignore self-references if any,
-                // since they were already added to the list in the
-                // previous pass.
+                // specified prior to it.
                 //
                 {
                   relationship_resolver r (rs, *j, false);
@@ -2002,10 +2229,20 @@ namespace relational
       {
         relationship_resolver (relationships& rs,
                                view_object& pointee,
-                               bool self_pointer)
-            : object_members_base (false, false, true),
+                               bool forward)
+            // Look in polymorphic bases only for previously-associated
+            // objects since backward pointers from bases will result in
+            // the pathological case (we will have to join the base table
+            // first, which means we will get both bases and derived objects
+            // instead of just derived).
+            //
+            : object_members_base (false, false, true, forward),
               relationships_ (rs),
-              self_pointer_ (self_pointer),
+              // Ignore self-references if we are looking for backward
+              // pointers since they were already added to the list in
+              // the previous pass.
+              //
+              self_pointer_ (forward),
               pointer_ (0),
               pointee_ (pointee)
         {
@@ -2021,6 +2258,11 @@ namespace relational
         virtual void
         traverse_pointer (semantics::data_member& m, semantics::class_& c)
         {
+          // Ignore polymorphic id references.
+          //
+          if (m.count ("polymorphic-ref"))
+            return;
+
           // Ignore inverse sides of the same relationship to avoid
           // phony conflicts caused by the direct side that will end
           // up in the relationship list as well.
@@ -2089,13 +2331,31 @@ namespace relational
           string decl_name;       // User-provided template name.
           tree resolve_scope (0); // Scope in which we resolve names.
 
+          class_pointer const* cp (0);
+          bool cp_template (false);
+
           if (c.count ("pointer"))
           {
-            class_pointer const& cp (c.get<class_pointer> ("pointer"));
-            string const& p (cp.name);
+            cp = &c.get<class_pointer> ("pointer");
+          }
+          // If we are a derived type in polymorphic hierarchy, then use
+          // our root's pointer type by default.
+          //
+          else if (semantics::class_* r = polymorphic (c))
+          {
+            if (&c != r && r->count ("pointer-template"))
+              cp = r->get<class_pointer const*> ("pointer-template");
+          }
+
+          if (cp != 0)
+          {
+            string const& p (cp->name);
 
             if (p == "*")
+            {
               ptr = type + "*";
+              cp_template = true;
+            }
             else if (p[p.size () - 1] == '*')
               ptr = p;
             else if (p.find ('<') != string::npos)
@@ -2110,7 +2370,7 @@ namespace relational
               // This is not a template-id. Resolve it and see if it is a
               // template or a type.
               //
-              decl = resolve_name (p, cp.scope, true);
+              decl = resolve_name (p, cp->scope, true);
               int tc (TREE_CODE (decl));
 
               if (tc == TYPE_DECL)
@@ -2135,10 +2395,11 @@ namespace relational
               {
                 ptr = p + "< " + type + " >";
                 decl_name = p;
+                cp_template = true;
               }
               else
               {
-                error (cp.loc)
+                error (cp->loc)
                   << "name '" << p << "' specified with db pragma pointer "
                   << "does not name a type or a template" << endl;
 
@@ -2148,8 +2409,8 @@ namespace relational
 
             // Resolve scope is the scope of the pragma.
             //
-            resolve_scope = cp.scope;
-            loc = cp.loc;
+            resolve_scope = cp->scope;
+            loc = cp->loc;
           }
           else
           {
@@ -2176,8 +2437,8 @@ namespace relational
                   continue;
               }
 
-              class_pointer const& cp (ns->get<class_pointer> ("pointer"));
-              string const& p (cp.name);
+              cp = &ns->get<class_pointer> ("pointer");
+              string const& p (cp->name);
 
               // Namespace-specified pointer can only be '*' or are template.
               //
@@ -2185,13 +2446,13 @@ namespace relational
                 ptr = type + "*";
               else if (p[p.size () - 1] == '*')
               {
-                error (cp.loc)
+                error (cp->loc)
                   << "name '" << p << "' specified with db pragma pointer "
                   << "at namespace level cannot be a raw pointer" << endl;
               }
               else if (p.find ('<') != string::npos)
               {
-                error (cp.loc)
+                error (cp->loc)
                   << "name '" << p << "' specified with db pragma pointer "
                   << "at namespace level cannot be a template-id" << endl;
               }
@@ -2199,7 +2460,7 @@ namespace relational
               {
                 // Resolve this name and make sure it is a template.
                 //
-                decl = resolve_name (p, cp.scope, true);
+                decl = resolve_name (p, cp->scope, true);
                 int tc (TREE_CODE (decl));
 
                 if (tc == TEMPLATE_DECL && DECL_CLASS_TEMPLATE_P (decl))
@@ -2209,7 +2470,7 @@ namespace relational
                 }
                 else
                 {
-                  error (cp.loc)
+                  error (cp->loc)
                     << "name '" << p << "' specified with db pragma pointer "
                     << "does not name a template" << endl;
                 }
@@ -2218,10 +2479,12 @@ namespace relational
               if (ptr.empty ())
                 throw operation_failed ();
 
+              cp_template = true;
+
               // Resolve scope is the scope of the pragma.
               //
-              resolve_scope = cp.scope;
-              loc = cp.loc;
+              resolve_scope = cp->scope;
+              loc = cp->loc;
               break;
             }
 
@@ -2245,18 +2508,18 @@ namespace relational
             }
           }
 
+          // If this class is a root of a polymorphic hierarchy, then cache
+          // the pointer template so that we can use it for derived classes.
+          //
+          if (cp != 0 && cp_template && polymorphic (c) == &c)
+            c.set ("pointer-template", cp);
+
           // Check if we are using TR1.
           //
           if (decl != 0 || !decl_name.empty ())
           {
-            if (!unit.count ("tr1-pointer-used"))
-            {
-              unit.set ("tr1-pointer-used", false);
-              unit.set ("boost-pointer-used", false);
-            }
-
-            bool& tr1 (unit.get<bool> ("tr1-pointer-used"));
-            bool& boost (unit.get<bool> ("boost-pointer-used"));
+            bool& tr1 (features.tr1_pointer);
+            bool& boost (features.boost_pointer);
 
             // First check the user-supplied name.
             //
@@ -2459,6 +2722,9 @@ namespace relational
 
       data_member member_;
       traversal::names member_names_;
+
+      semantics::type* std_string_;
+      semantics::names* std_string_hint_;
     };
   }
 

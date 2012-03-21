@@ -27,6 +27,7 @@ namespace relational
         need_alias_as (current ().need_alias_as),
         insert_send_auto_id (current ().insert_send_auto_id),
         delay_freeing_statement_result (current ().delay_freeing_statement_result),
+        need_image_clone (current ().need_image_clone),
         bind_vector (data_->bind_vector_),
         truncated_vector (data_->truncated_vector_)
   {

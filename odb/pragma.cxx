@@ -460,7 +460,8 @@ check_spec_decl_type (tree d,
            p == "callback" ||
            p == "query" ||
            p == "object" ||
-           p == "optimistic")
+           p == "optimistic" ||
+           p == "polymorphic")
   {
     if (tc != RECORD_TYPE)
     {
@@ -872,6 +873,18 @@ handle_pragma (cpp_reader* reader,
   else if (p == "optimistic")
   {
     // optimistic
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    tt = pragma_lex (&t);
+  }
+  else if (p == "polymorphic")
+  {
+    // polymorphic
     //
 
     // Make sure we've got the correct declaration type.

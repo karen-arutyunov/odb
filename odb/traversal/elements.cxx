@@ -75,4 +75,24 @@ namespace traversal
   {
     d.dispatch (m.belongs ());
   }
+
+  // virtual_data_member
+  //
+  void virtual_data_member::
+  traverse (type& m)
+  {
+    belongs (m);
+  }
+
+  void virtual_data_member::
+  belongs (type& m)
+  {
+    belongs (m, *this);
+  }
+
+  void virtual_data_member::
+  belongs (type& m, edge_dispatcher& d)
+  {
+    d.dispatch (m.belongs ());
+  }
 }

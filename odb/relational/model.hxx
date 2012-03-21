@@ -218,6 +218,7 @@ namespace relational
       traverse_pointer (semantics::data_member& m, semantics::class_& c)
       {
         using sema_rel::column;
+        using sema_rel::foreign_key;
 
         // Ignore inverse object pointers.
         //
@@ -227,11 +228,13 @@ namespace relational
         string id (id_prefix_ +
                    (key_prefix_.empty () ? m.name () : key_prefix_));
 
-        sema_rel::foreign_key& fk (
-          model_.new_node<sema_rel::foreign_key> (
-            id,
-            table_name (c),
-            true)); // deferred
+        bool deferred (m.get<bool> ("deferred", true));
+        foreign_key::action on_delete (
+          m.get<foreign_key::action> ("on-delete", foreign_key::no_action));
+
+        foreign_key& fk (
+          model_.new_node<foreign_key> (
+            id, table_name (c), deferred, on_delete));
 
         fk.set ("cxx-node", static_cast<semantics::node*> (&m));
 
@@ -529,7 +532,10 @@ namespace relational
         if (class_file (c) != unit.file ())
           return;
 
-        if (!object (c) || abstract (c))
+        if (!object (c))
+          return;
+
+        if (abstract (c) && !polymorphic (c))
           return;
 
         qname const& name (table_name (c));

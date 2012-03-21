@@ -212,8 +212,7 @@ namespace semantics
       node& orig;
       node& dup;
 
-      string orig_name;
-      string dup_name;
+      string name;
     };
 
     template <typename N>

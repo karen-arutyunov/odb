@@ -85,11 +85,22 @@ traverse (semantics::class_& c)
     return;
   }
 
-  semantics::class_* prev (context::cur_object);
-  context::cur_object = &c;
+  if (top_level_)
+    top_level_ = false;
+  else
+  {
+    // Unless requested otherwise, don't go into bases if we are a derived
+    // type in a polymorphic hierarchy.
+    //
+    if (!traverse_poly_base_ && polymorphic (c))
+      return;
+  }
 
   if (context::top_object == 0)
     context::top_object = &c;
+
+  semantics::class_* prev (context::cur_object);
+  context::cur_object = &c;
 
   if (member_scope_.empty ())
     member_scope_.push_back (class_inheritance_chain ());
@@ -138,10 +149,10 @@ traverse (semantics::class_& c)
   if (member_scope_.back ().empty ())
     member_scope_.pop_back ();
 
+  context::cur_object = prev;
+
   if (prev == 0)
     context::top_object = 0;
-
-  context::cur_object = prev;
 }
 
 void object_members_base::
@@ -363,15 +374,23 @@ traverse (semantics::class_& c)
 
   if (top_level_)
     top_level_ = false;
+  else
+  {
+    // Unless requested otherwise, don't go into bases if we are a derived
+    // type in a polymorphic hierarchy.
+    //
+    if (!traverse_poly_base_ && polymorphic (c))
+      return;
+  }
 
   semantics::class_* prev (0);
   if (k == class_object || k == class_view)
   {
-    prev = context::cur_object;
-    context::cur_object = &c;
-
     if (context::top_object == 0)
       context::top_object = &c;
+
+    prev = context::cur_object;
+    context::cur_object = &c;
   }
 
   if (member_scope_.empty ())
@@ -393,10 +412,10 @@ traverse (semantics::class_& c)
 
   if (k == class_object || k == class_view)
   {
+    context::cur_object = prev;
+
     if (prev == 0)
       context::top_object = 0;
-
-    context::cur_object = prev;
   }
 
   if (f && !first_)
