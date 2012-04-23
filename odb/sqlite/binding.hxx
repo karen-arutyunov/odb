@@ -23,6 +23,8 @@ namespace odb
     public:
       typedef sqlite::bind bind_type;
 
+      binding (): bind (0), count (0), version (0) {}
+
       binding (bind_type* b, std::size_t n)
           : bind (b), count (n), version (0)
       {

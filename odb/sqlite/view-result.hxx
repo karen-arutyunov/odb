@@ -9,11 +9,12 @@
 
 #include <cstddef> // std::size_t
 
+#include <odb/view-result.hxx>
+
 #include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx> // query, view_statements
-#include <odb/sqlite/result.hxx>
 #include <odb/sqlite/statement.hxx>
 
 namespace odb
@@ -33,12 +34,14 @@ namespace odb
       typedef typename base_type::pointer_type pointer_type;
       typedef typename base_type::pointer_traits pointer_traits;
 
+      typedef view_statements<view_type> statements_type;
+
       virtual
       ~view_result_impl ();
 
       view_result_impl (const query&,
                         details::shared_ptr<select_statement>,
-                        view_statements<view_type>&);
+                        statements_type&);
 
       virtual void
       load (view_type&);
@@ -55,7 +58,7 @@ namespace odb
       using base_type::current;
 
     private:
-      view_statements<view_type>& statements_;
+      statements_type& statements_;
     };
   }
 }

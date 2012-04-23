@@ -1,8 +1,8 @@
-// file      : odb/sqlite/object-statements.cxx
+// file      : odb/sqlite/simple-object-statements.cxx
 // copyright : Copyright (c) 2005-2012 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#include <odb/sqlite/object-statements.hxx>
+#include <odb/sqlite/simple-object-statements.hxx>
 
 namespace odb
 {

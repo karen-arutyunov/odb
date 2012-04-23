@@ -7,9 +7,6 @@
 
 #include <odb/pre.hxx>
 
-#include <odb/traits.hxx>
-#include <odb/result.hxx>
-
 #include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
@@ -40,10 +37,3 @@ namespace odb
 #include <odb/post.hxx>
 
 #endif // ODB_SQLITE_RESULT_HXX
-
-// Include result specializations so that the user code only needs
-// to include this header.
-//
-
-#include <odb/sqlite/object-result.hxx>
-#include <odb/sqlite/view-result.hxx>

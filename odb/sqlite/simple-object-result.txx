@@ -1,22 +1,18 @@
-// file      : odb/sqlite/object-result.txx
+// file      : odb/sqlite/simple-object-result.txx
 // copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #include <cassert>
 
 #include <odb/callback.hxx>
-#include <odb/exceptions.hxx>
+#include <odb/exceptions.hxx> // result_not_cached
 
-#include <odb/sqlite/object-statements.hxx>
+#include <odb/sqlite/simple-object-statements.hxx>
 
 namespace odb
 {
   namespace sqlite
   {
-    //
-    // object_result_impl
-    //
-
     template <typename T>
     object_result_impl<T>::
     ~object_result_impl ()
@@ -29,7 +25,7 @@ namespace odb
     object_result_impl<T>::
     object_result_impl (const query& q,
                         details::shared_ptr<select_statement> statement,
-                        object_statements<object_type>& statements)
+                        statements_type& statements)
         : base_type (statements.connection ().database ()),
           result_impl_base (q, statement),
           statements_ (statements)
@@ -46,7 +42,7 @@ namespace odb
       // This is a top-level call so the statements cannot be locked.
       //
       assert (!statements_.locked ());
-      typename object_statements<object_type>::auto_lock l (statements_);
+      typename statements_type::auto_lock l (statements_);
 
       odb::database& db (this->database ());
       object_traits::callback (db, obj, callback_event::pre_load);
@@ -139,96 +135,6 @@ namespace odb
 
     template <typename T>
     std::size_t object_result_impl<T>::
-    size ()
-    {
-      throw result_not_cached ();
-    }
-
-    //
-    // object_result_impl_no_id
-    //
-
-    template <typename T>
-    object_result_impl_no_id<T>::
-    ~object_result_impl_no_id ()
-    {
-      if (!this->end_)
-        statement_->free_result ();
-    }
-
-    template <typename T>
-    object_result_impl_no_id<T>::
-    object_result_impl_no_id (const query& q,
-                              details::shared_ptr<select_statement> statement,
-                              object_statements_no_id<object_type>& statements)
-        : base_type (statements.connection ().database ()),
-          result_impl_base (q, statement),
-          statements_ (statements)
-    {
-    }
-
-    template <typename T>
-    void object_result_impl_no_id<T>::
-    load (object_type& obj)
-    {
-      // The image can grow between calls to load() as a result of other
-      // statements execution.
-      //
-      typename object_traits::image_type& im (statements_.image ());
-
-      if (im.version != statements_.select_image_version ())
-      {
-        binding& b (statements_.select_image_binding ());
-        object_traits::bind (b.bind, im, statement_select);
-        statements_.select_image_version (im.version);
-        b.version++;
-      }
-
-      select_statement::result r (statement_->load ());
-
-      if (r == select_statement::truncated)
-      {
-        if (object_traits::grow (im, statements_.select_image_truncated ()))
-          im.version++;
-
-        if (im.version != statements_.select_image_version ())
-        {
-          binding& b (statements_.select_image_binding ());
-          object_traits::bind (b.bind, im, statement_select);
-          statements_.select_image_version (im.version);
-          b.version++;
-          statement_->reload ();
-        }
-      }
-
-      odb::database& db (this->database ());
-
-      object_traits::callback (db, obj, callback_event::pre_load);
-      object_traits::init (obj, im, &db);
-      object_traits::callback (db, obj, callback_event::post_load);
-    }
-
-    template <typename T>
-    void object_result_impl_no_id<T>::
-    next ()
-    {
-      this->current (pointer_type ());
-
-      if (!statement_->next ())
-      {
-        statement_->free_result ();
-        this->end_ = true;
-      }
-    }
-
-    template <typename T>
-    void object_result_impl_no_id<T>::
-    cache ()
-    {
-    }
-
-    template <typename T>
-    std::size_t object_result_impl_no_id<T>::
     size ()
     {
       throw result_not_cached ();

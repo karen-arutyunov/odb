@@ -1,9 +1,9 @@
-// file      : odb/sqlite/object-statements.hxx
+// file      : odb/sqlite/simple-object-statements.hxx
 // copyright : Copyright (c) 2005-2012 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
-#ifndef ODB_SQLITE_OBJECT_STATEMENTS_HXX
-#define ODB_SQLITE_OBJECT_STATEMENTS_HXX
+#ifndef ODB_SQLITE_SIMPLE_OBJECT_STATEMENTS_HXX
+#define ODB_SQLITE_SIMPLE_OBJECT_STATEMENTS_HXX
 
 #include <odb/pre.hxx>
 
@@ -18,6 +18,8 @@
 #include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
+#include <odb/sqlite/forward.hxx>
+#include <odb/sqlite/sqlite-types.hxx>
 #include <odb/sqlite/binding.hxx>
 #include <odb/sqlite/statement.hxx>
 #include <odb/sqlite/statements-base.hxx>
@@ -28,24 +30,6 @@ namespace odb
 {
   namespace sqlite
   {
-    template <typename T>
-    class object_statements;
-
-    template <typename T>
-    class object_statements_no_id;
-
-    template <typename T, typename ID = typename object_traits<T>::id_type>
-    struct object_statements_selector
-    {
-      typedef object_statements<T> type;
-    };
-
-    template <typename T>
-    struct object_statements_selector<T, void>
-    {
-      typedef object_statements_no_id<T> type;
-    };
-
     //
     // Implementation for objects with object id.
     //
@@ -75,16 +59,6 @@ namespace odb
         return locked_;
       }
 
-    public:
-      virtual
-      ~object_statements_base ();
-
-    protected:
-      object_statements_base (connection_type& conn)
-        : statements_base (conn), locked_ (false)
-      {
-      }
-
       struct auto_unlock
       {
         // Unlocks the statement on construction and re-locks it on
@@ -100,6 +74,16 @@ namespace odb
       private:
         object_statements_base& s_;
       };
+
+    public:
+      virtual
+      ~object_statements_base ();
+
+    protected:
+      object_statements_base (connection_type& conn)
+        : statements_base (conn), locked_ (false)
+      {
+      }
 
     protected:
       bool locked_;
@@ -141,7 +125,9 @@ namespace odb
       typedef typename object_traits::image_type image_type;
       typedef typename object_traits::id_image_type id_image_type;
 
-      typedef pointer_cache_traits<pointer_type> object_cache_traits;
+      typedef
+      typename object_traits::pointer_cache_traits
+      pointer_cache_traits;
 
       typedef
       typename object_traits::container_statement_cache_type
@@ -196,12 +182,16 @@ namespace odb
 
       // Delayed loading.
       //
+      typedef void (*loader_function) (
+        odb::database&, const id_type&, object_type&);
+
       void
       delay_load (const id_type& id,
                   object_type& obj,
-                  const typename object_cache_traits::position_type& p)
+                  const typename pointer_cache_traits::position_type& p,
+                  loader_function l = 0)
       {
-        delayed_.push_back (delayed_load (id, obj, p));
+        delayed_.push_back (delayed_load (id, obj, p, l));
       }
 
       void
@@ -388,18 +378,7 @@ namespace odb
         return container_statement_cache_;
       }
 
-    private:
-      object_statements (const object_statements&);
-      object_statements& operator= (const object_statements&);
-
-    private:
-      void
-      load_delayed_ ();
-
-      void
-      clear_delayed_ ();
-
-    private:
+    public:
       // select = total
       // insert = total - inverse - managed_optimistic
       // update = total - inverse - managed_optimistic - id - readonly
@@ -419,6 +398,17 @@ namespace odb
 
       static const std::size_t managed_optimistic_column_count =
         object_traits::managed_optimistic_column_count;
+
+    private:
+      object_statements (const object_statements&);
+      object_statements& operator= (const object_statements&);
+
+    private:
+      void
+      load_delayed_ ();
+
+      void
+      clear_delayed_ ();
 
     private:
       container_statement_cache_type container_statement_cache_;
@@ -472,17 +462,21 @@ namespace odb
       //
       struct delayed_load
       {
-        typedef typename object_cache_traits::position_type position_type;
+        typedef typename pointer_cache_traits::position_type position_type;
 
         delayed_load () {}
-        delayed_load (const id_type& i, object_type& o, const position_type& p)
-            : id (i), obj (&o), pos (p)
+        delayed_load (const id_type& i,
+                      object_type& o,
+                      const position_type& p,
+                      loader_function l)
+            : id (i), obj (&o), pos (p), loader (l)
         {
         }
 
         id_type id;
         object_type* obj;
         position_type pos;
+        loader_function loader;
       };
 
       typedef std::vector<delayed_load> delayed_loads;
@@ -510,115 +504,12 @@ namespace odb
         delayed_loads& dl_;
       };
     };
-
-    //
-    // Implementation for objects without object id.
-    //
-
-    template <typename T>
-    class object_statements_no_id: public statements_base
-    {
-    public:
-      typedef T object_type;
-      typedef odb::object_traits<object_type> object_traits;
-      typedef typename object_traits::pointer_type pointer_type;
-      typedef typename object_traits::image_type image_type;
-
-      typedef sqlite::insert_statement insert_statement_type;
-
-    public:
-      object_statements_no_id (connection_type&);
-
-      virtual
-      ~object_statements_no_id ();
-
-      // Object image.
-      //
-      image_type&
-      image () {return image_;}
-
-      // Insert binding.
-      //
-      std::size_t
-      insert_image_version () const { return insert_image_version_;}
-
-      void
-      insert_image_version (std::size_t v) {insert_image_version_ = v;}
-
-      binding&
-      insert_image_binding () {return insert_image_binding_;}
-
-      // Select binding.
-      //
-      std::size_t
-      select_image_version () const { return select_image_version_;}
-
-      void
-      select_image_version (std::size_t v) {select_image_version_ = v;}
-
-      binding&
-      select_image_binding () {return select_image_binding_;}
-
-      bool*
-      select_image_truncated () {return select_image_truncated_;}
-
-      // Statements.
-      //
-      insert_statement_type&
-      persist_statement ()
-      {
-        if (persist_ == 0)
-        {
-          persist_.reset (
-            new (details::shared) insert_statement_type (
-              conn_,
-              object_traits::persist_statement,
-              insert_image_binding_));
-
-          persist_->cached (true);
-        }
-
-        return *persist_;
-      }
-
-    private:
-      object_statements_no_id (const object_statements_no_id&);
-      object_statements_no_id& operator= (const object_statements_no_id&);
-
-    private:
-      // select = total
-      // insert = total - inverse; inverse == 0 for object without id
-      //
-      static const std::size_t insert_column_count =
-        object_traits::column_count;
-
-      static const std::size_t select_column_count =
-        object_traits::column_count;
-
-    private:
-      image_type image_;
-
-      // Select binding.
-      //
-      std::size_t select_image_version_;
-      binding select_image_binding_;
-      bind select_image_bind_[select_column_count];
-      bool select_image_truncated_[select_column_count];
-
-      // Insert binding.
-      //
-      std::size_t insert_image_version_;
-      binding insert_image_binding_;
-      bind insert_image_bind_[insert_column_count];
-
-      details::shared_ptr<insert_statement_type> persist_;
-    };
   }
 }
 
-#include <odb/sqlite/object-statements.ixx>
-#include <odb/sqlite/object-statements.txx>
+#include <odb/sqlite/simple-object-statements.ixx>
+#include <odb/sqlite/simple-object-statements.txx>
 
 #include <odb/post.hxx>
 
-#endif // ODB_SQLITE_OBJECT_STATEMENTS_HXX
+#endif // ODB_SQLITE_SIMPLE_OBJECT_STATEMENTS_HXX
