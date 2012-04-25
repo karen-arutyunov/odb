@@ -556,7 +556,10 @@ namespace relational
 
           semantics::data_member* id (id_member (c));
 
-          if (id != 0 && id->count ("auto"))
+          type* poly_root (polymorphic (c));
+          bool poly_derived (poly_root != 0 && poly_root != &c);
+
+          if (id != 0 && !poly_derived && id->count ("auto"))
           {
             os << endl
                << strlit (" RETURNING " +

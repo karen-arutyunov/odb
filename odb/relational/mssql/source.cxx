@@ -872,7 +872,10 @@ namespace relational
         {
           semantics::data_member* id (id_member (c));
 
-          if (id == 0 || !auto_ (*id))
+          type* poly_root (polymorphic (c));
+          bool poly_derived (poly_root != 0 && poly_root != &c);
+
+          if (id == 0 || poly_derived || !auto_ (*id))
             return;
 
           // If we are a derived type in a polymorphic hierarchy, then
