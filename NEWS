@@ -20,6 +20,13 @@ Version 1.9.0
     mode with VC++ 10 and later. The new 'c++11' example shows ODB support
     for some of the C++11 features.
 
+  * Support for polymorphism. Now a persistent class hierarchy can be
+    declared polymorphic which makes it possible to persist, load, update,
+    erase, and query objects of derived classes using their base class
+    interfaces. For more information, refer to Section 8.2, "Polymorphism
+    Inheritance" in the ODB manual as well as the 'inheritance/polymorphism'
+    example in the odb-examples package.
+
   * Support for composite object ids. Now a composite value type can be used
     to declare an object id member. For more information, refer to Section
     7.2.1, "Composite Object Ids" in the ODB manual as well as the 'composite'

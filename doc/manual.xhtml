@@ -405,7 +405,14 @@ for consistency.
       <th>8</th><td><a href="#8">Inheritance</a>
         <table class="toc">
           <tr><th>8.1</th><td><a href="#8.1">Reuse Inheritance</a></td></tr>
-	  <tr><th>8.2</th><td><a href="#8.2">Polymorphism Inheritance</a></td></tr>
+	  <tr>
+            <th>8.2</th><td><a href="#8.2">Polymorphism Inheritance</a>
+              <table class="toc">
+		<tr><th>8.2.1</th><td><a href="#8.2.1">Performance and Limitations</a></td></tr>
+              </table>
+            </td>
+          </tr>
+	  <tr><th>8.3</th><td><a href="#8.3">Mixed Inheritance</a></td></tr>
         </table>
       </td>
     </tr>
@@ -449,6 +456,7 @@ for consistency.
 		<tr><th>12.1.6</th><td><a href="#12.1.6"><code>id</code></a></td></tr>
 		<tr><th>12.1.7</th><td><a href="#12.1.7"><code>callback</code></a></td></tr>
 		<tr><th>12.1.8</th><td><a href="#12.1.8"><code>schema</code></a></td></tr>
+		<tr><th>12.1.9</th><td><a href="#12.1.9"><code>polymorphic</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -3706,6 +3714,20 @@ namespace odb
   {
   };
 
+  // Polymorphism support exceptions.
+  //
+  struct abstract_class: exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct no_type_info: exception
+  {
+    virtual const char*
+    what () const throw ();
+  };
+
   // Schema catalog exceptions.
   //
   struct unknown_schema: exception
@@ -3780,6 +3802,22 @@ namespace odb
      database system-specific exceptions that are thrown by the
      database system-specific runtime library. Refer to <a href="#II">Part
      II, "Database Systems"</a> for more information.</p>
+
+  <p>The <code>abstract_class</code> exception is thrown by the database
+     functions when we attempt to persist, update, load, or erase an
+     instance of a polymorphic abstract class. For more information
+     on abstract classes, refer to <a href="#12.1.3">Section 12.1.3,
+     "<code>abstract</code>"</a>.</p>
+
+  <p>The <code>no_type_info</code> exception is thrown by the database
+     functions when we attempt to persist, update, load, or erase an
+     instance of a polymorphic class for which no type information
+     is present in the application. This normally means that the
+     generated database support code for this class has not been
+     linked (or dynamically loaded) into the application or the
+     discriminator value has not been mapped to a persistent
+     class. For more information on polymorphism support, refer to
+     <a href="#8.2">Section 8.2, "Polymorphism Inheritance"</a>.</p>
 
   <p>The <code>unknown_schema</code> exception is thrown by the
      <code>odb::schema_catalog</code> class if a schema with the specified
@@ -6479,8 +6517,8 @@ class contractor: public person
  <p>A common trait of this inheritance style, referred to as <em>reuse
     inheritance</em> from now on, is the lack of virtual functions and
     a virtual destructor in the base class. Also with this style the
-    application code is normally written in terms of derived classes
-    instead of a base.</p>
+    application code is normally written in terms of the derived classes
+    instead of the base.</p>
 
  <p>The second way to utilize inheritance in C++ is to provide polymorphic
     behavior through a common interface. In this case the base class
@@ -6665,14 +6703,501 @@ CREATE TABLE contractor (
   </pre>
 
   <p>The complete version of the code presented in this section is
-     available in the <code>inheritance</code> example in the
+     available in the <code>inheritance/reuse</code> example in the
      <code>odb-examples</code> package.</p>
 
   <h2><a name="8.2">8.2 Polymorphism Inheritance</a></h2>
 
-  <p>Polymorphism inheritance mapping is not yet implemented. Future
-     versions of ODB will add support for this functionality.</p>
+  <p>There are three general approaches to mapping a polymorphic
+     class hierarchy to a relational database. These are
+     <em>table-per-hierarchy</em>, <em>table-per-difference</em>,
+     and <em>table-per-class</em>. With the table-per-hierarchy
+     mapping, all the classes in a hierarchy are stored in a single,
+     "wide" table. <code>NULL</code> values are stored in columns
+     corresponding to data members of derived classes that are
+     not present in any particular instance.</p>
 
+  <p>In the table-per-difference mapping, each class is mapped
+     to a separate table. For a derived class, this table contains
+     only columns corresponding to the data members added by this
+     derived class.</p>
+
+  <p>Finally, in the table-per-class mapping, each class is mapped
+     to a separate table. For a derived class, this table contains
+     columns corresponding to all the data members, from this derived
+     class all the way down to the root of the hierarchy.</p>
+
+  <p>The table-per-difference mapping is generally considered as
+     having the best balance of flexibility, performance, and space
+     efficiency. It also results in a more canonical relational
+     database model compared to the other two approaches. As a
+     result, this is the mapping currently implemented in ODB.
+     Other mappings may be supported in the future.</p>
+
+  <p>A pointer or reference to an ordinary, non-polymorphic object
+     has just one type &mdash; the class type of that object. When we
+     start working with polymorphic objects, there are two types
+     to consider: the <em>static type</em>, or the declaration type
+     of a reference or pointer, and the object's actual or <em>dynamic
+     type</em>. An example will help illustrate the difference:</p>
+
+  <pre>
+class person {...};
+class employee: public person {...};
+
+person p;
+employee e;
+
+person&amp; r1 (p);
+person&amp; r2 (e);
+
+auto_ptr&lt;person> p1 (new employee);
+  </pre>
+
+  <p>In the above example, the <code>r1</code> reference's both static
+     and dynamic types are <code>person</code>.
+     In contrast, the <code>r2</code> reference's static type is
+     <code>person</code> while its dynamic type (the actual object
+     that it refers to) is <code>employee</code>. Similarly,
+     <code>p1</code> points to the object of the <code>person</code>
+     static type but <code>employee</code> dynamic type.</p>
+
+  <p>In C++, the primary mechanisms for working with polymorphic objects
+     are virtual functions. We call a virtual function only knowing the
+     object's static type, but the version corresponding to the object's
+     dynamic type is automatically executed. This is the essence of
+     runtime polymorphism support in C++: we can operate in terms of a base
+     class interface but get the derived class' behavior. Similarly, the
+     essence of the runtime polymorphism support in ODB is to allow us to
+     persist, load, update, and query in terms of the base class interface
+     but have the derived class actually stored in the database.</p>
+
+  <p>To declare a persistent class as polymorphic we use the
+     <code>db&nbsp;polymorphic</code> pragma. We only need to
+     declare the root class of a hierarchy as polymorphic; ODB will
+     treat all the derived classes as polymorphic automatically. For
+     example:</p>
+
+  <pre class="c++">
+#pragma db object polymorphic
+class person
+{
+  ...
+
+  virtual
+  ~person () = 0; // Automatically abstract.
+
+  #pragma db id auto
+  unsigned long id_;
+
+  std::string first_;
+  std::string last_;
+};
+
+#pragma db object
+class employee: public person
+{
+  ...
+
+  bool temporary_;
+};
+
+#pragma db object
+class contractor: public person
+{
+
+  std::string email_;
+};
+  </pre>
+
+  <p>A persistent class hierarchy declared polymorphic must also be
+     polymorphic in the C++ sense, that is, the root class must
+     declare or inherit at least one virtual function. It is
+     recommended that the root class also declares a virtual destructor.
+     The root class of the polymorphic hierarchy must contain
+     the data member designated as object id (a persistent class
+     without an object id cannot be polymorphic). Note also that,
+     unlike reuse inheritance, abstract polymorphic classes have
+     a table in the database, just like non-abstract classes.</p>
+
+  <p>Persistent classes in the same polymorphic hierarchy must use the
+     same kind of object pointer (<a href="#3.2">Section 3.2,
+     "Object and View Pointers"</a>). If the object pointer
+     for the root class is specified as a template or using the
+     special raw pointer syntax (<code>*</code>), then the ODB
+     compiler will automatically use the same object pointer
+     for all the derived classes. For example:</p>
+
+  <pre class="c++">
+#pragma db object polymorphic pointer(std::shared_ptr)
+class person
+{
+  ...
+};
+
+#pragma db object // Object pointer is std::shared_ptr&lt;employee>.
+class employee: public person
+{
+  ...
+};
+
+#pragma db object // Object pointer is std::shared_ptr&lt;contractor>.
+class contractor: public person
+{
+  ...
+};
+  </pre>
+
+  <p>For polymorphic persistent classes, all the database operations can
+     be performed on objects with different static and dynamic types.
+     Similarly, operations that load persistent objects from the
+     database (<code>load()</code>, <code>query()</code>, etc.), can
+     return objects with different static and dynamic types. For
+     example:</p>
+
+  <pre class="c++">
+unsigned long id1, id2;
+
+// Persist.
+//
+{
+  shared_ptr&lt;person> p1 (new employee (...));
+  shared_ptr&lt;person> p2 (new contractor (...));
+
+  transaction t (db.begin ());
+  id1 = db.persist (p1); // Stores employee.
+  id2 = db.persist (p2); // Stores contractor.
+  t.commit ();
+}
+
+// Load.
+//
+{
+  shared_ptr&lt;person> p;
+
+  transaction t (db.begin ());
+  p = db.load&lt;person> (id1); // Loads employee.
+  p = db.load&lt;person> (id2); // Loads contractor.
+  t.commit ();
+}
+
+// Query.
+//
+{
+  typedef odb::query&lt;person> query;
+  typedef odb::result&lt;person> result;
+
+  transaction t (db.begin ());
+
+  result r (db.query&lt;person> (query::last == "Doe"));
+
+  for (result::iterator i (r.begin ()); i != r.end (); ++i)
+  {
+    person&amp; p (*i); // Can be employee or contractor.
+  }
+
+  t.commit ();
+}
+
+// Update.
+//
+{
+  shared_ptr&lt;person> p;
+  shared_ptr&lt;employee> e;
+
+  transaction t (db.begin ());
+
+  e = db.load&lt;employee> (id1);
+  e->temporary (false);
+  p = e;
+  db.update (p); // Updates employee.
+
+  t.commit ();
+}
+
+// Erase.
+//
+{
+  shared_ptr&lt;person> p;
+
+  transaction t (db.begin ());
+  p = db.load&lt;person> (id1); // Loads employee.
+  db.erase (p);              // Erases employee.
+  db.erase&lt;person> (id2);    // Erases contractor.
+  t.commit ();
+}
+  </pre>
+
+
+  <p>The table-per-difference mapping, as supported by ODB, requires
+     two extra columns, in addition to those corresponding to the
+     data members. The first, called <em>discriminator</em>, is added
+     to the table corresponding to the root class of the hierarchy.
+     This column is used to determine the dynamic type of each
+     object. The second column is added to tables corresponding
+     to the derived classes and contains the object id. This
+     column is used to form a foreign key constraint referencing
+     the root class table.</p>
+
+  <p>When querying the database for polymorphic objects, it is
+     possible to obtain the discriminator value without
+     instantiating the object. For example:</p>
+
+  <pre class="c++">
+typedef odb::query&lt;person> query;
+typedef odb::result&lt;person> result;
+
+transaction t (db.begin ());
+
+result r (db.query&lt;person> (query::last == "Doe"));
+
+for (result::iterator i (r.begin ()); i != r.end (); ++i)
+{
+  std::string d (i.discriminator ());
+  ...
+}
+
+t.commit ();
+  </pre>
+
+  <p>In the current implementation, ODB has limited support for
+     customizing names, types, and values of the extra columns.
+     Currently, the discriminator column is always called
+     <code>typeid</code> and contains a namespace-qualified class
+     name (for example, <code>"employee"</code> or
+     <code>"hr::employee"</code>). The id column in the derived
+     class table has the same name as the object id column in
+     the root class table. Future versions of ODB will add support
+     for customizing these extra columns.</p>
+
+  <p>The sample database schema for the above polymorphic hierarchy
+     is shown below.</p>
+
+  <pre>
+CREATE TABLE person (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  typeid VARCHAR(255) NOT NULL,
+  first TEXT NOT NULL,
+  last TEXT NOT NULL);
+
+CREATE TABLE employee (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  temporary TINYINT(1) NOT NULL,
+
+  CONSTRAINT employee_id_fk
+    FOREIGN KEY (id)
+    REFERENCES person (id)
+    ON DELETE CASCADE);
+
+CREATE TABLE contractor (
+  id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  email TEXT NOT NULL,
+
+  CONSTRAINT contractor_id_fk
+    FOREIGN KEY (id)
+    REFERENCES person (id)
+    ON DELETE CASCADE);
+  </pre>
+
+  <p>The complete version of the code presented in this section is
+     available in the <code>inheritance/polymorphism</code> example
+     in the <code>odb-examples</code> package.</p>
+
+  <h3><a name="8.2.1">8.2.1 Performance and Limitations</a></h3>
+
+  <p>A database operation on a non-polymorphic object normally translates
+     to a single database statement execution (objects with containers
+     and eager object pointers can be the exception). Because polymorphic
+     objects have their data members
+     stored in multiple tables, some database operations on such objects
+     may result in multiple database statements being executed while others
+     may require more complex statements. There is also some functionality
+     that is not available to polymorphic objects.</p>
+
+  <p>The first part of this section discusses the performance implications
+     to keep in mind when designing and working with polymorphic hierarchies.
+     The second part talks about limitations of polymorphic objects.</p>
+
+  <p>The most important aspect of a polymorphic hierarchy that
+     affects database performance is its depth. The distance between
+     the root of the hierarchy and the derived class translates
+     directly to the number of database statements that will have to
+     be executed in order to persist, update, or erase this derived class.
+     It also translates directly to the number of SQL <code>JOIN</code>
+     clauses that will be needed to load or query the database for this
+     derived class. As a result, to achieve best performance, we should
+     try to keep our polymorphic hierarchies as flat as possible.</p>
+
+  <p>When loading an object or querying the database for objects,
+     ODB will need to execute two statements if this object's static
+     and dynamic types are different but only one statement if
+     they are the same. This example will help illustrate the
+     difference:</p>
+
+  <pre class="c++">
+unsigned long id;
+
+{
+  employee e (...);
+
+  transaction t (db.begin ());
+  id = db.persist (e);
+  t.commit ();
+}
+
+{
+  shared_ptr&lt;person> p;
+
+  transaction t (db.begin ());
+  p = db.load&lt;person> (id);   // Requires two statement.
+  p = db.load&lt;employee> (id); // Requires only one statement.
+  t.commit ();
+}
+  </pre>
+
+  <p>As a result, we should try to load and query using the most
+     derived class possible.</p>
+
+  <p>Finally, for polymorphic objects, erasing via the object instance
+     is faster than erasing via its object id. In the former case the
+     object's dynamic type can be determined locally in the application
+     while in the latter case an extra statement has to be executed to
+     achieve the same result. For example:</p>
+
+  <pre class="c++">
+shared_ptr&lt;person> p = ...;
+
+transaction t (db.begin ());
+db.erase&lt;person> (p.id ()); // Slower (executes extra statement).
+db.erase (p);               // Faster.
+t.commit ();
+  </pre>
+
+  <p>Polymorphic objects can use all the mechanisms that are available
+     to ordinary objects. These include containers (<a href="#5">Chapter 5,
+     "Containers"</a>), object relationships, including to polymorphic
+     objects (<a href="#6">Chapter 6, "Relationships"</a>), views
+     (<a href="#9">Chapter 9, "Views"</a>), session (<a href="#10">Chapter
+     10, "Session"</a>), and optimistic concurrency (<a href="#11">Chapter
+     11, "Optimistic Concurrency"</a>). There are, however, a few
+     limitations, mainly due to the underlying use of SQL to access the
+     data.</p>
+
+  <p>When a polymorphic object is "joined" in a view, and the join
+     condition (either in the form of an object pointer or a custom
+     condition) comes from the object itself (as opposed to one of
+     the objects joined previously), then this condition must only
+     use data members from the derived class. For example, consider
+     the following polymorphic object hierarchy and a view:</p>
+
+
+  <pre class="c++">
+#pragma db object polymorphic
+class employee
+{
+  ...
+};
+
+#pragma db object
+class permanent_employee: public employee
+{
+  ...
+};
+
+#pragma db object
+class temporary_employee: public employee
+{
+  ...
+
+  shared_ptr&lt;permanent_employee> manager_;
+};
+
+#pragma db object
+class contractor: public temporary_employee
+{
+  shared_ptr&lt;permanent_employee> manager_;
+};
+
+#pragma db view object(permanent_employee) \
+                object(contractor: contractor::manager_)
+struct contractor_manager
+{
+  ...
+};
+  </pre>
+
+  <p>This view will not function correctly because the join condition
+     (<code>manager_</code>) comes from the base class
+     (<code>temporary_employee</code>) instead of the derived
+     (<code>contractor</code>). The reason for this limitation is the
+     <code>JOIN</code> clause order in the underlying SQL <code>SELECT</code>
+     statement. In the view presented above, the table corresponding
+     to the base class (<code>temporary_employee</code>) will have to
+     be joined first which will result in this view matching both
+     the <code>temporary_employee</code> and <code>contractor</code>
+     objects instead of just <code>contractor</code>. It is usually
+     possible to resolve this issue by reordering the objects in the
+     view. Our example, for instance, can be fixed by swapping the
+     two objects:</p>
+
+  <pre class="c++">
+#pragma db view object(contractor) \
+                object(permanent_employee: contractor::manager_)
+struct contractor_manager
+{
+  ...
+};
+  </pre>
+
+  <p>The <code>erase_query()</code> database function (<a href="#3.10">Section
+     3.10, "Deleting Persistent Objects"</a>) also has limited functionality
+     when used on polymorphic objects. Because many database implementations
+     do not support <code>JOIN</code> clauses in the SQL <code>DELETE</code>
+     statement, only data members from the derived class being erased can
+     be used in the query condition. For example:</p>
+
+  <pre class="c++">
+typedef odb::query&lt;employee> query;
+
+transaction t (db.begin ());
+db.erase_query&lt;employee> (query::permanent);     // Ok.
+db.erase_query&lt;employee> (query::last == "Doe"); // Error.
+t.commit ();
+  </pre>
+
+  <h2><a name="8.3">8.3 Mixed Inheritance</a></h2>
+
+  <p>It is possible to mix the reuse and polymorphism inheritance
+     styles in the same hierarchy. In this case, the reuse inheritance
+     must be used for the "bottom" (base) part of the hierarchy while
+     the polymorphism inheritance &mdash; for the "top" (derived) part.
+     For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+};
+
+#pragma db object polymorphic
+class employee: public person // Reuse inheritance.
+{
+  ...
+};
+
+#pragma db object
+class temporary_employee: public employee // Polymorphism inheritance.
+{
+  ...
+};
+
+#pragma db object
+class permanent_employee: public employee // Polymorphism inheritance.
+{
+  ...
+};
+  </pre>
 
   <!-- CHAPTER -->
 
@@ -8460,6 +8985,12 @@ class person
       <td><a href="#12.1.8">12.1.8</a></td>
     </tr>
 
+    <tr>
+      <td><code>polymorphic</code></td>
+      <td>persistent class is polymorphic</td>
+      <td><a href="#12.1.9">12.1.9</a></td>
+    </tr>
+
   </table>
 
   <h3><a name="12.1.1">12.1.1 <code>table</code></a></h3>
@@ -9011,6 +9542,12 @@ class employee
   <p>Table prefixes (<a href="#12.5.2">Section 12.5.2, "<code>table</code>"</a>)
      can be used as an alternative to database schemas if the target
      database system does not support schemas.</p>
+
+  <h3><a name="12.1.9">12.1.9 <code>polymorphic</code></a></h3>
+
+  <p>The <code>polymorphic</code> specifier specifies that a persistent
+     class is polymorphic. For more information on polymorphism support,
+     refer to <a href="#8">Chapter 8, "Inheritance"</a>.</p>
 
   <h2><a name="12.2">12.2 View Type Pragmas</a></h2>
 
