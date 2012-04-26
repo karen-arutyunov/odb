@@ -9,13 +9,13 @@
 
 #include <sqlite3.h>
 
-#include <memory> // std::auto_ptr
-
 #include <odb/forward.hxx>
 #include <odb/connection.hxx>
+
 #include <odb/details/mutex.hxx>
 #include <odb/details/condition.hxx>
 #include <odb/details/shared-ptr.hxx>
+#include <odb/details/unique-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx>
@@ -131,7 +131,7 @@ namespace odb
       // Keep statement_cache_ after handle_ so that it is destroyed before
       // the connection is closed.
       //
-      std::auto_ptr<statement_cache_type> statement_cache_;
+      details::unique_ptr<statement_cache_type> statement_cache_;
 
       // Unlock notification machinery.
       //
