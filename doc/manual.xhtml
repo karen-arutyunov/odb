@@ -9354,19 +9354,25 @@ namespace odb
 
   <p>The second argument to the callback function is the database
      on which the operation is about to be performed or has just
-     been performed.</p>
+     been performed. A callback function can be inline or virtual.</p>
+
+  <p>The callback function for the <code>*_persist</code>,
+     <code>*_update</code>, and <code>*_erase</code> events is always
+     called on the constant object reference while for the <code>*_load</code>
+     events &mdash; always on the unrestricted reference.</p>
 
   <p>If only the non-<code>const</code> version of the callback function
-     is provided, then only database operations that are performed on
-     unrestricted objects will trigger callback calls. If only the
-     <code>const</code> version is provided, then the database
-     operations on both constant and unrestricted objects will trigger
-     callback calls but the object will always be passed as constant.
-     Finally, if both versions are provided, then the <code>const</code>
-     overload will be called for constant objects and the non-<code>const</code>
-     overload for unrestricted objects. These rules are modeled after
-     the standard C++ overload resolution rules. A callback function can
-     be inline or virtual.</p>
+     is provided, then only the <code>*_load</code> events will be delivered.
+     If only the <code>const</code> version is provided, then all the
+     events will be delivered to this function. Finally, if both versions
+     are provided, then the <code>*_load</code> events will be delivered
+     to the non-<code>const</code> version while all others &mdash; to the
+     <code>const</code> version. If you need to modify the object in one
+     of the "<code>const</code>" events, then you can safely cast away
+     <code>const</code>-ness using the <code>const_cast</code> operator if
+     you know that none of the objects will be created const. Alternatively,
+     if you cannot make this assumption, then you can declare the data
+     members you wish to modify as <code>mutable</code>.</p>
 
   <p>A database operations callback can be used to implement object-specific
      pre and post initializations, registrations, and cleanups. As an example,
