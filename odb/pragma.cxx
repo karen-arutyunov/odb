@@ -493,6 +493,17 @@ check_spec_decl_type (tree d,
       return false;
     }
   }
+  else if (p == "session")
+  {
+    // Session can be used only for namespaces and objects.
+    //
+    if (tc != NAMESPACE_DECL && !CLASS_TYPE_P (d))
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a namespace or class" << endl;
+      return false;
+    }
+  }
   else if (p == "schema")
   {
     // For now schema can be used only for namespaces and objects.
@@ -726,6 +737,42 @@ handle_pragma (cpp_reader* reader,
     adder = &accumulate<view_object>;
 
     tt = pragma_lex (&t);
+  }
+  else if (p == "session")
+  {
+    // session
+    // session (true|false)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    tt = pragma_lex (&t);
+
+    if (tt == CPP_OPEN_PAREN)
+    {
+      tt = pragma_lex (&t);
+
+      string s;
+      if (tt != CPP_NAME ||
+          ((s = IDENTIFIER_POINTER (t)) != "true" && s != "false"))
+      {
+        error () << "true or false expected in db pragma " << p << endl;
+        return;
+      }
+
+      tt = pragma_lex (&t);
+      if (tt != CPP_CLOSE_PAREN)
+      {
+        error () << "')' expected at the end of db pragma " << p << endl;
+        return;
+      }
+
+      val = (s == "true");
+      tt = pragma_lex (&t);
+    }
   }
   else if (p == "schema")
   {

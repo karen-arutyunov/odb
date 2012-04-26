@@ -381,6 +381,12 @@ public:
   }
 
   static bool
+  session (semantics::class_& c)
+  {
+    return c.get<bool> ("session");
+  }
+
+  static bool
   transient (semantics::data_member& m)
   {
     return m.count ("transient");

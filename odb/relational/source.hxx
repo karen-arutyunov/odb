@@ -3368,8 +3368,6 @@ namespace relational
 
         os << endl;
 
-        os << "#include <odb/cache-traits.hxx>" << endl;
-
         if (features.polymorphic_object)
           os << "#include <odb/polymorphic-map.hxx>" << endl;
 

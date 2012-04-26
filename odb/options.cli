@@ -54,8 +54,15 @@ class options
 
   bool --generate-query | -q
   {
-    "Generate query support code. Without this support you cannot use
-     views and can only load objects via their ids."
+    "Generate query support code. Without this support you cannot use views
+     and can only load objects via their ids."
+  };
+
+  bool --generate-session | -e
+  {
+    "Generate session support code. With this option session support will
+     be enabled by default for all the persistent classes except those for
+     which it was explicitly disabled using the \cb{db session} pragma."
   };
 
   bool --generate-schema | -s

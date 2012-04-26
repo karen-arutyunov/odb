@@ -384,25 +384,31 @@ traverse_object (type& c)
        << "reference_cache_traits;"
        << endl;
   }
-  else if (poly_derived)
-  {
-    os << "typedef" << endl
-       << "odb::pointer_cache_traits<root_traits::pointer_type>" << endl
-       << "pointer_cache_traits;"
-       << "typedef" << endl
-       << "odb::reference_cache_traits<root_type>" << endl
-       << "reference_cache_traits;"
-       << endl;
-  }
   else
   {
-    os << "typedef" << endl
-       << "odb::pointer_cache_traits<pointer_type>" << endl
-       << "pointer_cache_traits;"
-       << "typedef" << endl
-       << "odb::reference_cache_traits<object_type>" << endl
-       << "reference_cache_traits;"
-       << endl;
+    char const* p (session (c) ? "" : "no_op_");
+
+    if (poly_derived)
+    {
+      os << "typedef" << endl
+         << "odb::" << p << "pointer_cache_traits<" <<
+        "root_traits::pointer_type>" << endl
+         << "pointer_cache_traits;"
+         << "typedef" << endl
+         << "odb::" << p << "reference_cache_traits<root_type>" << endl
+         << "reference_cache_traits;"
+         << endl;
+    }
+    else
+    {
+      os << "typedef" << endl
+         << "odb::" << p << "pointer_cache_traits<pointer_type>" << endl
+         << "pointer_cache_traits;"
+         << "typedef" << endl
+         << "odb::" << p << "reference_cache_traits<object_type>" << endl
+         << "reference_cache_traits;"
+         << endl;
+    }
   }
 
   // Statements typedefs.

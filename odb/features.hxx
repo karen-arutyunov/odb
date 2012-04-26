@@ -18,6 +18,7 @@ struct features
   bool simple_object;
   bool polymorphic_object;
   bool no_id_object;
+  bool session_object;
   bool view;
 };
 

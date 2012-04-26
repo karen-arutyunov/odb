@@ -46,6 +46,11 @@ namespace header
 
     os << "#include <odb/container-traits.hxx>" << endl;
 
+    if (ctx.features.session_object)
+      os << "#include <odb/cache-traits.hxx>" << endl;
+    else
+      os << "#include <odb/no-op-cache-traits.hxx>" << endl;
+
     if (ctx.features.polymorphic_object)
       os << "#include <odb/polymorphic-info.hxx>" << endl;
 

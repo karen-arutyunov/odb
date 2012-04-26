@@ -1047,7 +1047,7 @@ namespace
 
       if (id != 0)
       {
-        if (semantics::class_* c = composite_wrapper (utype (*id)))
+        if (semantics::class_* cm = composite_wrapper (utype (*id)))
         {
           // Composite id cannot be auto.
           //
@@ -1065,7 +1065,7 @@ namespace
           //
           if (valid_)
           {
-            composite_id_members_.traverse (*c);
+            composite_id_members_.traverse (*cm);
 
             if (!valid_)
               os << id->file () << ":" << id->line () << ":" << id->column ()
@@ -1074,28 +1074,29 @@ namespace
 
           // Check that the composite value type is default-constructible.
           //
-          if (!c->default_ctor ())
+          if (!cm->default_ctor ())
           {
-            os << c->file () << ":" << c->line () << ":" << c->column ()
+            os << cm->file () << ":" << cm->line () << ":" << cm->column ()
                << ": error: composite value type that is used as object id "
                << "is not default-constructible" << endl;
 
-              os << c->file () << ":" << c->line () << ":" << c->column ()
-                 << ": info: provide default constructor for this value type"
-                 << endl;
+            os << cm->file () << ":" << cm->line () << ":" << cm->column ()
+               << ": info: provide default constructor for this value type"
+               << endl;
 
-              os << id->file () << ":" << id->line () << ":" << id->column ()
-                 << ": info: composite id is defined here" << endl;
+            os << id->file () << ":" << id->line () << ":" << id->column ()
+               << ": info: composite id is defined here" << endl;
 
-              valid_ = false;
+            valid_ = false;
           }
 
-          // Check that composite values can be compared (used in session).
+          // If this is a session object, make sure that the composite
+          // value can be compared.
           //
-          if (has_lt_operator_ != 0)
+          if (session (c) && has_lt_operator_ != 0)
           {
             tree args (make_tree_vec (1));
-            TREE_VEC_ELT (args, 0) = c->tree_node ();
+            TREE_VEC_ELT (args, 0) = cm->tree_node ();
 
             tree inst (
               instantiate_template (
@@ -1126,16 +1127,20 @@ namespace
 
             if (!v)
             {
-              os << c->file () << ":" << c->line () << ":" << c->column ()
+              os << cm->file () << ":" << cm->line () << ":" << cm->column ()
                  << ": error: composite value type that is used as object id "
-                 << "does not support the less than (<) comparison"
+                 << "in persistent class with session support does not "
+                 << "define the less than (<) comparison"
                  << endl;
 
-              os << c->file () << ":" << c->line () << ":" << c->column ()
+              os << cm->file () << ":" << cm->line () << ":" << cm->column ()
                  << ": info: provide operator< for this value type" << endl;
 
               os << id->file () << ":" << id->line () << ":" << id->column ()
                  << ": info: composite id is defined here" << endl;
+
+              os << c.file () << ":" << c.line () << ":" << c.column ()
+                 << ": info: persistent class is defined here" << endl;
 
               valid_ = false;
             }

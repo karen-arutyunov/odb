@@ -50,6 +50,14 @@ Version 1.9.0
     but one is not used. For more information, refer to Section 6.2,
     "Bidirectional Relationships" in the ODB manual.
 
+  * Session support is now optional and is disabled by default. This is a
+    backwards-incompatible change. Session support can be enabled on the
+    per object basis or at the namespace level using the new session pragma.
+    It can also be enabled by default for all the objects using the
+    --generate-session ODB compiler option. Thus to get the old behavior
+    where all the objects were session-enabled, simply add --generate-session
+    to your ODB compiler command line.
+
 Version 1.8.0
 
   * Support for the Microsoft SQL Server database. The provided connection

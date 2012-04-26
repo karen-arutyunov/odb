@@ -457,6 +457,7 @@ for consistency.
 		<tr><th>12.1.7</th><td><a href="#12.1.7"><code>callback</code></a></td></tr>
 		<tr><th>12.1.8</th><td><a href="#12.1.8"><code>schema</code></a></td></tr>
 		<tr><th>12.1.9</th><td><a href="#12.1.9"><code>polymorphic</code></a></td></tr>
+		<tr><th>12.1.10</th><td><a href="#12.1.10"><code>session</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -535,6 +536,7 @@ for consistency.
 		<tr><th>12.5.1</th><td><a href="#12.5.1"><code>pointer</code></a></td></tr>
 		<tr><th>12.5.2</th><td><a href="#12.5.2"><code>table</code></a></td></tr>
                 <tr><th>12.5.3</th><td><a href="#12.5.3"><code>schema</code></a></td></tr>
+		<tr><th>12.5.4</th><td><a href="#12.5.4"><code>session</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -6090,8 +6092,10 @@ class person
   <p>However, a value type that can be used as an object id has a number
      of restrictions. Such a value type cannot have container, object
      pointer, or read-only data members. It also must be
-     default-constructible and implement the less-than comparison operator
-     (<code>operator&lt;</code>).</p>
+     default-constructible. Furthermore, if the persistent class in which
+     this composite value type is used as object id has session support
+     enabled (<a href="#10">Chapter 10, "Session"</a>), then it must also
+     implement the less-than comparison operator (<code>operator&lt;</code>).</p>
 
   <h3><a name="7.2.2">7.2.2 Composite Value Column and Table Names</a></h3>
 
@@ -6847,6 +6851,11 @@ class contractor: public person
   ...
 };
   </pre>
+
+  <p>Similarly, if we enable or disable session support
+     (<a href="#10">Chapter 10, "Session"</a>) for the root class, then
+     the ODB compiler will automatically enable or disable it for all
+     the derived classes.</p>
 
   <p>For polymorphic persistent classes, all the database operations can
      be performed on objects with different static and dynamic types.
@@ -8258,6 +8267,50 @@ struct employee_name
      object cache. In future versions it will provide additional
      functionality, such as automatic object state change tracking.</p>
 
+  <p>Session support is optional and can be enabled or disabled on the
+     per object basis using the <code>db&nbsp;session</code> pragma, for
+     example:</p>
+
+  <pre class="c++">
+#pragma db object session
+class person
+{
+  ...
+};
+  </pre>
+
+  <p>We can also enable or disable session support for a group of
+     objects at the namespace level:</p>
+
+  <pre class="c++">
+#pragma db namespace session
+namespace accounting
+{
+  #pragma db object                // Session support is enabled.
+  class employee
+  {
+    ...
+  };
+
+  #pragma db object session(false) // Session support is disabled.
+  class employer
+  {
+    ...
+  };
+}
+  </pre>
+
+  <p>Finally, we can pass the <code>--generate-session</code> ODB compiler
+     option to enable session support by default. With this option session
+     support will be enabled for all the persistent classes except those
+     for which it was explicitly disabled using the
+     <code>db&nbsp;session</code>. An alternative to this method with the
+     same effect is to enable session support for the global namespace:</p>
+
+  <pre class="c++">
+#pragma db namespace() session
+  </pre>
+
   <p>Each thread of execution in an application can have only one active
      session at a time. A session is started by creating an instance of
      the <code>odb::session</code> class and is automatically terminated
@@ -8374,8 +8427,8 @@ namespace odb
 
   <h2><a name="10.1">10.1 Object Cache</a></h2>
 
-  <p>A session is an object cache. Every time an object is made persistent
-     by calling the <code>database::persist()</code> function
+  <p>A session is an object cache. Every time a session-enabled object is
+     made persistent by calling the <code>database::persist()</code> function
      (<a href="#3.7">Section 3.7, "Making Objects Persistent"</a>), loaded
      by calling the <code>database::load()</code> or <code>database::find()</code>
      function (<a href="#3.8">Section 3.8, "Loading Persistent Objects"</a>),
@@ -8991,6 +9044,12 @@ class person
       <td><a href="#12.1.9">12.1.9</a></td>
     </tr>
 
+    <tr>
+      <td><code>session</code></td>
+      <td>enable/disable session support for a persistent class</td>
+      <td><a href="#12.1.10">12.1.10</a></td>
+    </tr>
+
   </table>
 
   <h3><a name="12.1.1">12.1.1 <code>table</code></a></h3>
@@ -9548,6 +9607,38 @@ class employee
   <p>The <code>polymorphic</code> specifier specifies that a persistent
      class is polymorphic. For more information on polymorphism support,
      refer to <a href="#8">Chapter 8, "Inheritance"</a>.</p>
+
+  <h3><a name="12.1.10">12.1.10 <code>session</code></a></h3>
+
+  <p>The <code>session</code> specifier specifies whether to enable
+     session support for a persistent class. For example:</p>
+
+  <pre class="c++">
+#pragma db object session        // Enable.
+class person
+{
+  ...
+};
+
+#pragma db object session(true)  // Enable.
+class employee
+{
+  ...
+};
+
+#pragma db object session(false) // Disable.
+class employer
+{
+  ...
+};
+  </pre>
+
+  <p>Session support is disabled by default unless the
+     <code>--generate-session</code> ODB compiler option is specified
+     or session support is enabled at the namespace level
+     (<a href="#12.5.4">Section 12.5.4, "<code>session</code>"</a>).
+     For more information on sessions, refer to <a href="#10">Chapter
+     10, "Session"</a>.</p>
 
   <h2><a name="12.2">12.2 View Type Pragmas</a></h2>
 
@@ -11380,6 +11471,12 @@ namespace test
       <td><a href="#12.5.3">12.5.3</a></td>
     </tr>
 
+    <tr>
+      <td><code>session</code></td>
+      <td>enable/disable session support for persistent classes inside a namespace</td>
+      <td><a href="#12.5.4">12.5.4</a></td>
+    </tr>
+
   </table>
 
   <h3><a name="12.5.1">12.5.1 <code>pointer</code></a></h3>
@@ -11506,6 +11603,37 @@ class employer
      that should be used for persistent classes inside a namespace.
      For more information on specifying a database schema refer to
      <a href="#12.1.8">Section 12.1.8, "<code>schema</code>"</a>.</p>
+
+  <h3><a name="12.5.4">12.5.4 <code>session</code></a></h3>
+
+  <p>The <code>session</code> specifier specifies whether to enable
+     session support for persistent classes inside a namespace. For
+     example:</p>
+
+  <pre class="c++">
+#pragma db namespace session
+namespace hr
+{
+  #pragma db object                // Enabled.
+  class employee
+  {
+    ...
+  };
+
+  #pragma db object session(false) // Disabled.
+  class employer
+  {
+    ...
+  };
+}
+  </pre>
+
+  <p>Session support is disabled by default unless the
+     <code>--generate-session</code> ODB compiler option is specified.
+     Session support specified at the namespace level can be overridden
+     on the per object basis (<a href="#12.1.10">Section 12.1.10,
+     "<code>session</code>"</a>). For more information on sessions,
+     refer to <a href="#10">Chapter 10, "Session"</a>.</p>
 
   <h2><a name="12.6">12.6 C++ Compiler Warnings</a></h2>
 

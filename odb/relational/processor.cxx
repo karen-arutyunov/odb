@@ -1820,13 +1820,63 @@ namespace relational
       virtual void
       traverse_object_pre (type& c)
       {
-        if (semantics::class_* root = polymorphic (c))
+        semantics::class_* poly_root (polymorphic (c));
+
+        // Determine whether it is a session object.
+        //
+        if (!c.count ("session"))
+        {
+          // If this is a derived class in a polymorphic hierarchy,
+          // then it should have the same session value as the root.
+          //
+          if (poly_root != 0 && poly_root != &c)
+            c.set ("session", session (*poly_root));
+          else
+          {
+            // See if any of the namespaces containing this class specify
+            // the session value.
+            //
+            bool found (false);
+            for (semantics::scope* s (&c.scope ());; s = &s->scope_ ())
+            {
+              using semantics::namespace_;
+
+              namespace_* ns (dynamic_cast<namespace_*> (s));
+
+              if (ns == 0)
+                continue; // Some other scope.
+
+              if (ns->extension ())
+                ns = &ns->original ();
+
+              if (ns->count ("session"))
+              {
+                c.set ("session", ns->get<bool> ("session"));
+                found = true;
+                break;
+              }
+
+              if (ns->global_scope ())
+                break;
+            }
+
+            // If still not found, then use the default value.
+            //
+            if (!found)
+              c.set ("session", options.generate_session ());
+          }
+        }
+
+        if (session (c))
+          features.session_object = true;
+
+        if (poly_root != 0)
         {
           using namespace semantics;
 
-          semantics::data_member& idm (*id_member (*root));
+          semantics::data_member& idm (*id_member (*poly_root));
 
-          if (root != &c)
+          if (poly_root != &c)
           {
             // If we are a derived class in the polymorphic persistent
             // class hierarchy, then add a synthesized virtual pointer
@@ -1846,23 +1896,23 @@ namespace relational
 
             // Use the raw pointer as this member's type.
             //
-            if (!root->pointed_p ())
+            if (!poly_root->pointed_p ())
             {
               // Create the pointer type in the graph. The pointer node
               // in GCC seems to always be present, even if not explicitly
               // used in the translation unit.
               //
-              tree t (root->tree_node ());
+              tree t (poly_root->tree_node ());
               tree ptr (TYPE_POINTER_TO (t));
               assert (ptr != 0);
               ptr = TYPE_MAIN_VARIANT (ptr);
               pointer& p (unit.new_node<pointer> (f, l, col, ptr));
               unit.insert (ptr, p);
-              unit.new_edge<points> (p, *root);
-              assert (root->pointed_p ());
+              unit.new_edge<points> (p, *poly_root);
+              assert (poly_root->pointed_p ());
             }
 
-            unit.new_edge<belongs> (m, root->pointed ().pointer ());
+            unit.new_edge<belongs> (m, poly_root->pointed ().pointer ());
 
             m.set ("not-null", true);
             m.set ("deferred", false);
