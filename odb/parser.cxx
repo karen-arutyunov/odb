@@ -1786,7 +1786,7 @@ emit_type_name (tree type, bool direct)
     {
       tree t (TREE_TYPE (decl));
 
-      if (same_type_p (type, t))
+      if (t != 0 && same_type_p (type, t))
         return IDENTIFIER_POINTER (DECL_NAME (decl));
     }
   }
