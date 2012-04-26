@@ -2590,7 +2590,10 @@ namespace odb
     typedef odb::database database_type;
     typedef odb::connection connection_type;
 
-    transaction (transaction_impl*, bool make_current = true)
+    transaction (transaction_impl*, bool make_current = true);
+
+    void
+    reset (transaction_impl*, bool make_current = true);
 
     void
     commit ();
@@ -2622,7 +2625,7 @@ namespace odb
   <p>The <code>commit()</code> function commits a transaction and
      <code>rollback()</code> rolls it back. Unless the transaction
      has been <em>finalized</em>, that is, explicitly committed or rolled
-     back, the destructor of the <code>odb::transaction</code> class will
+     back, the destructor of the <code>transaction</code> class will
      automatically roll it back when the transaction instance goes
      out of scope. If we try to commit or roll back a finalized
      transaction, the <code>odb::transaction_already_finalized</code>
@@ -2674,6 +2677,34 @@ transaction::current (t2);            // Switch to t2.
 // Perform some more database operations on db2.
 
 t2.commit ();
+  </pre>
+
+  <p>The <code>reset()</code> modifier allows us to reuse the same
+     <code>transaction</code> instance to complete several database
+     transactions. Similar to the destructor, <code>reset()</code>
+     will roll the current transaction back if it hasn't been finalized.
+     Here is how we can use this function to commit the current transaction
+     and start a new one every time a certain number of database operations
+     has been performed:</p>
+
+  <pre class="c++">
+transaction t (db.begin ());
+
+for (size_t i (0); i &lt; n; ++i)
+{
+  // Perform a database operation, such as persist an object.
+
+  // Commit the current transaction and start a new one after
+  // every 100 operations.
+  //
+  if (i % 100 == 0)
+  {
+    t.commit ();
+    t.reset (db.begin ());
+  }
+}
+
+t.commit ();
   </pre>
 
   <p>Note that in the above discussion of atomicity, consistency,

@@ -58,6 +58,10 @@ Version 1.9.0
     where all the objects were session-enabled, simply add --generate-session
     to your ODB compiler command line.
 
+  * New function, transaction::reset(), allows the reuse of the same
+    transaction instance to complete several database transactions. For more
+    information, refer to Section 3.4, "Transactions" in the ODB manual.
+
 Version 1.8.0
 
   * Support for the Microsoft SQL Server database. The provided connection
