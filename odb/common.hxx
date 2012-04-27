@@ -310,10 +310,17 @@ protected:
         member_path_, key_prefix_, (root_ != 0 && (root_id_ || root_op_)));
   }
 
+  bool
+  null () const
+  {
+    return (root_ != 0 && root_null_) || context::null (member_path_);
+  }
+
 private:
   semantics::data_member* root_; // Root member if traversing from a member.
   bool root_id_;                 // True if traversing root as object id.
   bool root_op_;                 // True if traversing root as object pointer.
+  bool root_null_;               // True if root is null-able.
 
 private:
   void

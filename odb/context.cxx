@@ -296,6 +296,21 @@ readonly (semantics::data_member& m)
 }
 
 bool context::
+null (data_member_path const& mp)
+{
+  // Outer members can override the null-ability of the inner ones. So
+  // start from the most outer member.
+  //
+  for (data_member_path::const_iterator i (mp.begin ()); i != mp.end (); ++i)
+  {
+    if (null (**i))
+      return true;
+  }
+
+  return false;
+}
+
+bool context::
 null (semantics::data_member& m)
 {
   semantics::type& t (utype (m));

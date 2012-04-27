@@ -79,7 +79,6 @@ traverse_object (type& c)
 
   if (containers)
   {
-    containers = true;
     size_t scn (has_a (c, test_straight_container));
 
     if (scn != 0)

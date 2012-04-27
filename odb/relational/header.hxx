@@ -1187,6 +1187,21 @@ namespace relational
            << "init (value_type&, const image_type&, database*);"
            << endl;
 
+        if (!has_a (c, test_container))
+        {
+          // get_null (image)
+          //
+          os << "static bool" << endl
+             << "get_null (const image_type&);"
+             << endl;
+
+          // set_null (image)
+          //
+          os << "static void" << endl
+             << "set_null (image_type&, " << db << "::statement_kind);"
+             << endl;
+        }
+
         os << "};";
       }
 

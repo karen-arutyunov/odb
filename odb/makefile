@@ -44,6 +44,7 @@ cxx_ptun +=                          \
 relational/mssql/common.cxx          \
 relational/mssql/context.cxx         \
 relational/mssql/header.cxx          \
+relational/mssql/inline.cxx          \
 relational/mssql/source.cxx          \
 relational/mssql/model.cxx           \
 relational/mssql/schema.cxx
@@ -54,6 +55,7 @@ cxx_ptun +=                          \
 relational/mysql/common.cxx          \
 relational/mysql/context.cxx         \
 relational/mysql/header.cxx          \
+relational/mysql/inline.cxx          \
 relational/mysql/source.cxx          \
 relational/mysql/model.cxx           \
 relational/mysql/schema.cxx
@@ -64,6 +66,7 @@ cxx_ptun +=                          \
 relational/oracle/common.cxx         \
 relational/oracle/context.cxx        \
 relational/oracle/header.cxx         \
+relational/oracle/inline.cxx         \
 relational/oracle/source.cxx         \
 relational/oracle/model.cxx          \
 relational/oracle/schema.cxx
@@ -74,6 +77,7 @@ cxx_ptun +=                          \
 relational/pgsql/common.cxx          \
 relational/pgsql/context.cxx         \
 relational/pgsql/header.cxx          \
+relational/pgsql/inline.cxx          \
 relational/pgsql/source.cxx          \
 relational/pgsql/model.cxx           \
 relational/pgsql/schema.cxx
@@ -84,6 +88,7 @@ cxx_ptun +=                          \
 relational/sqlite/common.cxx         \
 relational/sqlite/context.cxx        \
 relational/sqlite/header.cxx         \
+relational/sqlite/inline.cxx         \
 relational/sqlite/source.cxx         \
 relational/sqlite/model.cxx          \
 relational/sqlite/schema.cxx

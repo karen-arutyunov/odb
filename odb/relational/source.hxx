@@ -1266,10 +1266,10 @@ namespace relational
           os << "}"
              << "else" << endl;
 
-          // @@ Composite value currently cannot be NULL.
-          //
-          if (!null (mi.m, key_prefix_) || composite (mi.t))
+          if (!null (mi.m, key_prefix_))
             os << "throw null_pointer ();";
+          else if (composite (mi.t))
+            os << traits << "::set_null (i." << mi.var << "value, sk);";
           else
             set_null (mi);
         }
@@ -1456,22 +1456,23 @@ namespace relational
             " > ptr_traits;"
              << endl;
 
-          // @@ Composite value currently cannot be NULL.
-          //
-          if (!comp)
-          {
-            os << "if (";
+          os << "if (";
+
+          if (comp)
+            os << "composite_value_traits< " + type + " >::get_null (i." <<
+              mi.var << "value)";
+          else
             get_null (mi);
-            os << ")" << endl;
 
-            if (!null (mi.m, key_prefix_) )
-              os << "throw null_pointer ();";
-            else
-              os << member << " = ptr_traits::pointer_type ();";
+          os << ")" << endl;
 
-            os << "else"
-               << "{";
-          }
+          if (!null (mi.m, key_prefix_) )
+            os << "throw null_pointer ();";
+          else
+            os << member << " = ptr_traits::pointer_type ();";
+
+          os << "else"
+             << "{";
 
           os << type << " id;";
 
@@ -1542,12 +1543,8 @@ namespace relational
             }
           }
 
-          // @@ Composite value currently cannot be NULL.
-          //
-          if (!composite (mi.t))
-            os << "}";
-
-          os << "}";
+          os << "}"
+             << "}";
         }
       }
 

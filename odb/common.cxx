@@ -338,6 +338,7 @@ traverse (semantics::data_member& m,
   root_ = &m;
   root_id_ = (kp.empty () ? context::id (m) : kp == "id");
   root_op_ = (c != 0);
+  root_null_ = context::null (m, kp);
 
   key_prefix_ = kp;
   default_name_ = dn;

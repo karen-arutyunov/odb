@@ -425,12 +425,15 @@ public:
     return c.count ("readonly");
   }
 
+  // Null-able.
   //
-  //
-  bool
+  static bool
+  null (data_member_path const&);
+
+  static bool
   null (semantics::data_member&);
 
-  bool
+  static bool
   null (semantics::data_member&, string const& key_prefix);
 
   // Optimistic concurrency.

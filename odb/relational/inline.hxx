@@ -75,10 +75,128 @@ namespace relational
     };
 
     //
+    // get/set null (composite value only)
+    //
+
+    struct null_member: virtual member_base
+    {
+      typedef null_member base;
+
+      null_member (bool get)
+          : member_base (string (), 0, string (), string ()), get_ (get)
+      {
+      }
+
+    protected:
+      bool get_;
+    };
+
+    template <typename T>
+    struct null_member_impl: null_member, virtual member_base_impl<T>
+    {
+      typedef null_member_impl base_impl;
+
+      null_member_impl (base const& x): base (x) {}
+
+      typedef typename member_base_impl<T>::member_info member_info;
+
+      virtual bool
+      pre (member_info& mi)
+      {
+        // If the whole value type is readonly, then set will never be
+        // called with sk == statement_update.
+        //
+        if (!get_ && !readonly (*context::top_object))
+        {
+          semantics::class_* c;
+
+          if (readonly (mi.m) || ((c = composite (mi.t)) && readonly (*c)))
+            os << "if (sk == statement_insert)" << endl;
+        }
+
+        return true;
+      }
+
+      virtual void
+      traverse_composite (member_info& mi)
+      {
+        string traits ("composite_value_traits< " + mi.fq_type () + " >");
+
+        if (get_)
+          os << "r = r && " << traits << "::get_null (" <<
+            "i." << mi.var << "value);";
+        else
+          os << traits << "::set_null (i." << mi.var << "value, sk);";
+      }
+    };
+
+    struct null_base: traversal::class_, virtual context
+    {
+      typedef null_base base;
+
+      null_base (bool get): get_ (get) {}
+
+      virtual void
+      traverse (type& c)
+      {
+        // Ignore transient bases.
+        //
+        if (!composite (c))
+          return;
+
+        string traits ("composite_value_traits< " + class_fq_name (c) + " >");
+
+        // If the derived value type is readonly, then set will never be
+        // called with sk == statement_update.
+        //
+        if (!get_ && readonly (c) && !readonly (*context::top_object))
+          os << "if (sk == statement_insert)" << endl;
+
+        if (get_)
+          os << "r = r && " << traits << "::get_null (i);";
+        else
+          os << traits << "::set_null (i, sk);";
+      }
+
+    protected:
+      bool get_;
+    };
+
+    //
     //
     struct class_: traversal::class_, virtual context
     {
       typedef class_ base;
+
+      class_ ()
+          : get_null_base_ (true),
+            get_null_member_ (true),
+            set_null_base_ (false),
+            set_null_member_ (false)
+      {
+        init ();
+      }
+
+      class_ (class_ const&)
+          : root_context (), //@@ -Wextra
+            context (),
+            get_null_base_ (true),
+            get_null_member_ (true),
+            set_null_base_ (false),
+            set_null_member_ (false)
+      {
+        init ();
+      }
+
+      void
+      init ()
+      {
+        get_null_base_inherits_ >> get_null_base_;
+        get_null_member_names_ >> get_null_member_;
+
+        set_null_base_inherits_ >> set_null_base_;
+        set_null_member_names_ >> set_null_member_;
+      }
 
       virtual void
       traverse (type& c)
@@ -86,12 +204,16 @@ namespace relational
         if (class_file (c) != unit.file ())
           return;
 
+        context::top_object = context::cur_object = &c;
+
         if (object (c))
           traverse_object (c);
         if (view (c))
           traverse_view (c);
         else if (composite (c))
           traverse_composite (c);
+
+        context::top_object = context::cur_object = 0;
       }
 
       virtual void
@@ -504,12 +626,61 @@ namespace relational
       }
 
       virtual void
-      traverse_composite (type&)
+      traverse_composite (type& c)
       {
+        string const& type (class_fq_name (c));
+        string traits ("access::composite_value_traits< " + type + " >");
+
+        os << "// " << class_name (c) << endl
+           << "//" << endl
+           << endl;
+
+        if (!has_a (c, test_container))
+        {
+          // get_null (image)
+          //
+          os << "inline" << endl
+             << "bool " << traits << "::" << endl
+             << "get_null (const image_type& i)"
+             << "{"
+             << "bool r (true);";
+
+          inherits (c, get_null_base_inherits_);
+          names (c, get_null_member_names_);
+
+          os << "return r;"
+             << "}";
+
+          // set_null (image)
+          //
+          os << "inline" << endl
+             << "void " << traits << "::" << endl
+             << "set_null (image_type& i, " << db << "::statement_kind sk)"
+             << "{"
+             << "ODB_POTENTIALLY_UNUSED (sk);"
+             << endl
+             << "using namespace " << db << ";"
+             << endl;
+
+          inherits (c, set_null_base_inherits_);
+          names (c, set_null_member_names_);
+
+          os << "}";
+        }
       }
 
     private:
       instance<callback_calls> callback_calls_;
+
+      instance<null_base> get_null_base_;
+      traversal::inherits get_null_base_inherits_;
+      instance<null_member> get_null_member_;
+      traversal::names get_null_member_names_;
+
+      instance<null_base> set_null_base_;
+      traversal::inherits set_null_base_inherits_;
+      instance<null_member> set_null_member_;
+      traversal::names set_null_member_names_;
     };
 
     struct include: virtual context
