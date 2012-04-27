@@ -173,10 +173,23 @@ cxx_string_lexer ()
     : reader_ (0)
 {
   linemap_init (&line_map_);
+
+#if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 6
+  line_map_.round_alloc_size = ggc_round_alloc_size;
+#endif
+
   linemap_add (&line_map_, LC_ENTER, 0, "<memory>", 0);
 
   reader_ = cpp_create_reader (
-    cxx_dialect == cxx0x ? CLK_CXX0X : CLK_CXX98, 0, &line_map_);
+    cxx_dialect == cxx0x
+#if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 6
+    ? CLK_CXX11
+#else
+    ? CLK_CXX0X
+#endif
+    : CLK_CXX98,
+    0,
+    &line_map_);
 
   if (reader_ == 0)
     throw bad_alloc ();
@@ -190,7 +203,11 @@ cxx_string_lexer::
   if (reader_ != 0)
     cpp_destroy (reader_);
 
+  // Was removed as "dead code" in GCC 4.7.0.
+  //
+#if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
   linemap_free (&line_map_);
+#endif
 }
 
 void cxx_string_lexer::

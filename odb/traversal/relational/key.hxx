@@ -31,7 +31,7 @@ namespace traversal
       virtual void
       contains (T& k, edge_dispatcher& d)
       {
-        iterate_and_dispatch (k.contains_begin (), k.contains_end (), d);
+        this->iterate_and_dispatch (k.contains_begin (), k.contains_end (), d);
       }
     };
 

@@ -16,8 +16,11 @@
 
 #include <cstdlib> // Include before GCC poisons some declarations.
 
+#if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
 extern "C"
 {
+#endif
+
 #include <bversion.h>
 #include <gcc-plugin.h>
 
@@ -43,7 +46,10 @@ extern "C"
 
 #include <diagnostic.h>
 #include <output.h>
-}
+
+#if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
+} // extern "C"
+#endif
 
 #ifndef LOCATION_COLUMN
 #define LOCATION_COLUMN(LOC) (expand_location (LOC).column)

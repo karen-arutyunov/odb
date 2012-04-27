@@ -11,9 +11,12 @@
 
 #include <odb/cxx-token.hxx>
 
-// A C++ keyword. This is an extension to libcpp token types.
+// A C++ keyword. This is an extension to libcpp token types. GCC 4.7.0
+// adds this define.
 //
-#define CPP_KEYWORD ((cpp_ttype) (N_TTYPES + 1))
+#if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
+#  define CPP_KEYWORD ((cpp_ttype) (N_TTYPES + 1))
+#endif
 
 class cxx_lexer
 {

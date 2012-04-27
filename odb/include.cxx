@@ -487,23 +487,36 @@ namespace include
 
     // Add all the known include locations for each file in the map.
     //
-    for (size_t i (0); i < line_table->used; ++i)
+#if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
+    size_t used (line_table->used);
+    line_map const* maps (line_table->maps);
+#else
+    size_t used (line_table->info_ordinary.used);
+    line_map const* maps (line_table->info_ordinary.maps);
+#endif
+
+    for (size_t i (0); i < used; ++i)
     {
-      line_map const* m (line_table->maps + i);
+      line_map const* m (maps + i);
 
       if (MAIN_FILE_P (m) || m->reason != LC_ENTER)
         continue;
 
-      line_map const* i (INCLUDED_FROM (line_table, m));
+      line_map const* ifm (INCLUDED_FROM (line_table, m));
 
+#if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
       path f (m->to_file);
+#else
+      path f (ORDINARY_MAP_FILE_NAME (m));
+#endif
+
       f.complete ();
       f.normalize ();
 
       include_map::iterator it (imap.find (f));
 
       if (it != imap.end ())
-        it->second[i] = include_directive ();
+        it->second[ifm] = include_directive ();
     }
 
     //
@@ -549,7 +562,11 @@ namespace include
 
       if (main_lm != 0)
       {
+#if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
         string f (main_lm->to_file);
+#else
+        string f (ORDINARY_MAP_FILE_NAME (main_lm));
+#endif
         size_t n (f.size ());
 
         // Check if this is a synthesized fragment.
@@ -573,7 +590,11 @@ namespace include
       {
         line_map const* lm (j->first);
 
+#if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
         string f (lm->to_file);
+#else
+        string f (ORDINARY_MAP_FILE_NAME (lm));
+#endif
         size_t n (f.size ());
 
         // Check if this is a synthesized fragment.

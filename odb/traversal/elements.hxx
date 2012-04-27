@@ -193,7 +193,7 @@ namespace traversal
     virtual void
     names (T& s, edge_dispatcher& d)
     {
-      iterate_and_dispatch (s.names_begin (), s.names_end (), d);
+      this->iterate_and_dispatch (s.names_begin (), s.names_end (), d);
     }
   };
 
