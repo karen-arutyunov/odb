@@ -322,7 +322,7 @@ traverse_object (type& c)
 
   // init (image, object)
   //
-  os << "static bool" << endl
+  os << "static " << (generate_grow ? "bool" : "void") << endl
      << "init (image_type&, const object_type&, " << db << "::statement_kind);"
      << endl;
 

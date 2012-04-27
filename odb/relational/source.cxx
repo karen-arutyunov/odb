@@ -302,7 +302,7 @@ traverse_object (type& c)
 
   // init (image, object)
   //
-  os << "bool " << traits << "::" << endl
+  os << (generate_grow ? "bool " : "void ") << traits << "::" << endl
      << "init (image_type& i, const object_type& o, " <<
     db << "::statement_kind sk)"
      << "{"
@@ -319,16 +319,19 @@ traverse_object (type& c)
 
   init_image_pre (c);
 
-  os << "bool grew (false);"
-     << endl;
+  if (generate_grow)
+    os << "bool grew (false);"
+       << endl;
 
   if (!poly_derived)
     inherits (c, init_image_base_inherits_);
 
   names (c, init_image_member_names_);
 
-  os << "return grew;"
-     << "}";
+  if (generate_grow)
+    os << "return grew;";
+
+  os << "}";
 
   // init (object, image)
   //
@@ -873,9 +876,18 @@ traverse_object (type& c)
   if (poly_derived)
     os << "const binding& idb (sts.id_image_binding ());";
 
-  os << endl
-     << "if (init (im, obj, statement_insert))" << endl
-     << "im.version++;"
+  os << endl;
+
+  if (generate_grow)
+    os << "if (";
+
+  os << "init (im, obj, statement_insert)";
+
+  if (generate_grow)
+    os << ")" << endl
+       << "im.version++";
+
+  os << ";"
      << endl;
 
   if (!poly_derived && auto_id && insert_send_auto_id)
@@ -1104,9 +1116,18 @@ traverse_object (type& c)
         {
           // Initialize the object image.
           //
-          os << "image_type& im (sts.image ());"
-             << "if (init (im, obj, statement_update))" << endl
-             << "im.version++;"
+          os << "image_type& im (sts.image ());";
+
+          if (generate_grow)
+            os << "if (";
+
+          os << "init (im, obj, statement_update)";
+
+          if (generate_grow)
+            os << ")" << endl
+               << "im.version++";
+
+          os << ";"
              << endl;
 
           os << "binding& imb (sts.update_image_binding ());"
@@ -1158,10 +1179,19 @@ traverse_object (type& c)
             optimistic->name () << ");";
 
         os << endl
-           << "image_type& im (sts.image ());"
-           << "if (init (im, obj, statement_update))" << endl
-           << "im.version++;"
-           << endl;
+           << "image_type& im (sts.image ());";
+
+        if (generate_grow)
+            os << "if (";
+
+          os << "init (im, obj, statement_update)";
+
+          if (generate_grow)
+            os << ")" << endl
+               << "im.version++";
+
+          os << ";"
+             << endl;
 
         // Update binding is bound to two images (object and id)
         // so we have to track both versions.

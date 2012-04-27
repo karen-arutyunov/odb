@@ -1176,7 +1176,7 @@ namespace relational
 
         // init (image, value)
         //
-        os << "static bool" << endl
+        os << "static " << (generate_grow ? "bool" : "void") << endl
            << "init (image_type&, const value_type&, " <<
           db << "::statement_kind);"
            << endl;

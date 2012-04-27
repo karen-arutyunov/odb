@@ -1347,9 +1347,17 @@ namespace relational
           os << "if (sk != statement_update)"
              << "{";
 
-        os << "if (" << (obj ? "object" : "composite_value") << "_traits< " <<
-          class_fq_name (c) << " >::init (i, o, sk))" << endl
-           << "grew = true;";
+        if (generate_grow)
+          os << "if (";
+
+        os << (obj ? "object" : "composite_value") << "_traits< " <<
+          class_fq_name (c) << " >::init (i, o, sk)";
+
+        if (generate_grow)
+          os << ")" << endl
+             << "grew = true";
+
+        os << ";";
 
         if (check)
           os << "}";
@@ -2270,9 +2278,11 @@ namespace relational
              << endl
              << "statement_kind sk (statement_insert);"
              << "ODB_POTENTIALLY_UNUSED (sk);"
-             << endl
-             << "bool grew (false);"
              << endl;
+
+          if (generate_grow)
+            os << "bool grew (false);"
+               << endl;
 
           switch (ck)
           {
@@ -2316,9 +2326,11 @@ namespace relational
             im->traverse (m);
           }
 
-          os << "if (grew)" << endl
-             << "i.version++;"
-             << "}";
+          if (generate_grow)
+            os << "if (grew)" << endl
+               << "i.version++;";
+
+          os << "}";
         }
 
         // init (data)
@@ -3297,7 +3309,7 @@ namespace relational
 
         // init (image, value)
         //
-        os << "bool " << traits << "::" << endl
+        os << (generate_grow ? "bool " : "void ") << traits << "::" << endl
            << "init (image_type& i, const value_type& o, " <<
           db << "::statement_kind sk)"
            << "{"
@@ -3312,14 +3324,17 @@ namespace relational
           os << "assert (sk != statement_update);"
              << endl;
 
-        os << "bool grew (false);"
-           << endl;
+        if (generate_grow)
+          os << "bool grew (false);"
+             << endl;
 
         inherits (c, init_image_base_inherits_);
         names (c, init_image_member_names_);
 
-        os << "return grew;"
-           << "}";
+        if (generate_grow)
+          os << "return grew;";
+
+        os << "}";
 
         // init (value, image)
         //
