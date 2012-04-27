@@ -6326,7 +6326,7 @@ CREATE TABLE person_nickname (
      "<code>null</code>/<code>not_null</code>"</a>).</p>
 
   <p>To properly support the <code>NULL</code> semantics, the
-     C++ value type must have a notion or a <code>NULL</code>
+     C++ value type must have a notion of a <code>NULL</code>
      value or a similar special state concept. Most basic
      C++ types, such as <code>int</code> or <code>std::string</code>,
      do not have this notion and therefore cannot be used directly
@@ -6481,18 +6481,17 @@ class person
      Qt), provide support for smart pointers found in these frameworks
      and libraries (<a href="#III">Part III, "Profiles"</a>).</p>
 
-  <p>Currently, ODB supports the <code>NULL</code> semantics only
-     for simple values. In future versions this support will be extended
-     to composite values and containers. With this limitation in mind,
-     we can still use smart pointers in data members of composite value
-     and container types. The only restriction is that these pointers
-     must not be <code>NULL</code>. For example:</p>
+  <p>ODB also supports the <code>NULL</code> semantics for composite
+     values. In the relational database the <code>NULL</code> composite
+     value is translated to <code>NULL</code> values for all the simple
+     data members of this composite value. For example:</p>
 
   <pre class="c++">
 #pragma db value
 struct name
 {
   std::string first_;
+  odb::nullable&lt;std::string> middle_;
   std::string last_;
 };
 
@@ -6500,9 +6499,24 @@ struct name
 class person
 {
   ...
+  odb::nullable&lt;name> name_;
+};
+  </pre>
 
-  std::auto_ptr&lt;name> name_;
-  std::auto_ptr&lt;std::vector&lt;name> > aliases_;
+  <p>ODB does not support the <code>NULL</code> semantics for containers.
+     This also means that a composite value that contains a container
+     cannot be <code>NULL</code>. With this limitation in mind, we can
+     still use smart pointers in data members of container types. The
+     only restriction is that these pointers must not be <code>NULL</code>.
+     For example:</p>
+
+  <pre class="c++">
+#pragma db object
+class person
+{
+  ...
+
+  std::auto_ptr&lt;std::vector&lt;std::string> > aliases_;
 };
   </pre>
 

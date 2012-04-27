@@ -1170,25 +1170,40 @@ namespace relational
             member = "o." + name;
         }
 
+        bool comp (composite (mi.t));
+
+        // If this is a wrapped composite value, then we need to "unwrap"
+        // it. If this is a NULL wrapper, then we also need to handle that.
+        // For simple values this is taken care of by the value_traits
+        // specializations.
+        //
+        if (mi.wrapper != 0 && comp)
+        {
+          // The wrapper type, not the wrapped type.
+          //
+          string const& wt (mi.fq_type (false));
+
+          // If this is a NULL wrapper and the member can be NULL, then
+          // we need to handle the NULL value.
+          //
+          if (null (mi.m, key_prefix_) &&
+              mi.wrapper->template get<bool> ("wrapper-null-handler"))
+          {
+            os << "if (wrapper_traits< " + wt + " >::get_null (" <<
+              member << "))" << endl
+               << "composite_value_traits< " + mi.fq_type () + " >::" <<
+              "set_null (i." << mi.var << "value, sk);"
+               << "else";
+          }
+
+          member = "wrapper_traits< " + wt + " >::get_ref (" + member + ")";
+        }
+
         os << "{";
 
         if (discriminator (mi.m))
           os << "const info_type& di (map->find (typeid (o)));"
              << endl;
-
-        bool comp (composite (mi.t));
-
-        // If this is a wrapped composite value, then we need to "unwrap"
-        // it. For simple values this is taken care of by the value_traits
-        // specializations.
-        //
-        if (mi.wrapper != 0 && comp)
-        {
-          // Here we need the wrapper type, not the wrapped type.
-          //
-          member = "wrapper_traits< " + mi.fq_type (false) + " >::" +
-            "get_ref (" + member + ")";
-        }
 
         if (mi.ptr != 0)
         {
@@ -1431,16 +1446,30 @@ namespace relational
 
         bool comp (composite (mi.t));
 
-        // If this is a wrapped composite value, then we need to
-        // "unwrap" it. For simple values this is taken care of
-        // by the value_traits specializations.
+        // If this is a wrapped composite value, then we need to "unwrap" it.
+        // If this is a NULL wrapper, then we also need to handle that. For
+        // simple values this is taken care of by the value_traits
+        // specializations.
         //
         if (mi.wrapper != 0 && comp)
         {
-          // Here we need the wrapper type, not the wrapped type.
+          // The wrapper type, not the wrapped type.
           //
-          member = "wrapper_traits< " + mi.fq_type (false) + " >::" +
-            "set_ref (\n" + member + ")";
+          string const& wt (mi.fq_type (false));
+
+          // If this is a NULL wrapper and the member can be NULL, then
+          // we need to handle the NULL value.
+          //
+          if (null (mi.m, key_prefix_) &&
+              mi.wrapper->template get<bool> ("wrapper-null-handler"))
+          {
+            os << "if (composite_value_traits< " + mi.fq_type () + " >::" <<
+              "get_null (i." << mi.var << "value))" << endl
+               << "wrapper_traits< " + wt + " >::set_null (" << member + ");"
+               << "else" << endl;
+          }
+
+          member = "wrapper_traits< " + wt + " >::set_ref (" + member + ")";
         }
 
         if (mi.ptr != 0)

@@ -42,9 +42,9 @@ namespace
   // Pass 1.
   //
 
-  struct data_member: traversal::data_member, context
+  struct data_member1: traversal::data_member, context
   {
-    data_member (bool& valid)
+    data_member1 (bool& valid)
         : valid_ (valid)
     {
     }
@@ -776,7 +776,7 @@ namespace
     bool& valid_;
     value_type& vt_;
 
-    data_member member_;
+    data_member1 member_;
     traversal::names names_;
   };
 
@@ -803,6 +803,41 @@ namespace
   //
   // Pass 2.
   //
+
+  struct data_member2: traversal::data_member, context
+  {
+    data_member2 (bool& valid)
+        : valid_ (valid)
+    {
+    }
+
+    virtual void
+    traverse (type& m)
+    {
+      if (transient (m))
+        return;
+
+      if (null (m))
+      {
+        if (semantics::class_* c = composite_wrapper (utype (m)))
+        {
+          if (has_a (*c, test_container))
+          {
+            os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+               << " error: composite member containing containers cannot "
+               << "be null" << endl;
+
+            os << c->file () << ":" << c->line () << ":" << c->column () << ":"
+               << " info: composite value type is defined here" << endl;
+
+            valid_ = false;
+          }
+        }
+      }
+    }
+
+    bool& valid_;
+  };
 
   struct object_no_id_members: object_members_base
   {
@@ -985,10 +1020,13 @@ namespace
   {
     class2 (bool& valid)
         : valid_ (valid),
+          data_member_ (valid),
           object_no_id_members_ (valid),
           composite_id_members_ (valid),
           view_members_ (valid)
     {
+      *this >> data_member_names_ >> data_member_;
+
       // Find the has_lt_operator function template..
       //
       has_lt_operator_ = 0;
@@ -1156,6 +1194,8 @@ namespace
           object_no_id_members_.traverse (c);
         }
       }
+
+      names (c);
     }
 
     virtual void
@@ -1164,15 +1204,21 @@ namespace
       // Make sure we don't have any containers or object pointers.
       //
       view_members_.traverse (c);
+
+      names (c);
     }
 
     virtual void
-    traverse_composite (type&)
+    traverse_composite (type& c)
     {
+      names (c);
     }
 
     bool& valid_;
     tree has_lt_operator_;
+
+    data_member2 data_member_;
+    traversal::names data_member_names_;
 
     object_no_id_members object_no_id_members_;
     composite_id_members composite_id_members_;

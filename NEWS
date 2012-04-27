@@ -45,6 +45,10 @@ Version 1.9.0
     namespace. For more information, refer to Section 12.5.1, "pointer" and
     Section 12.5.2, "table" in the ODB manual.
 
+  * Support for the NULL value semantics for composite values. For more
+    information, refer to Section 7.3, "Pointers and NULL Value Semantics"
+    in the ODB manual.
+
   * Session support is now optional and is disabled by default. This is a
     backwards-incompatible change. Session support can be enabled on the
     per object basis or at the namespace level using the new session pragma.
@@ -58,7 +62,7 @@ Version 1.9.0
     function for the *_persist, *_update, and *_erase events is always called
     on the constant object reference while for the *_load events -- always on
     the unrestricted reference. For more information, refer to Section 12.1.7,
-    "Callback" in the ODB manual.
+    "callback" in the ODB manual.
 
   * New function, transaction::reset(), allows the reuse of the same
     transaction instance to complete several database transactions. For more
