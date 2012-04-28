@@ -3367,7 +3367,7 @@ typedef odb::query&lt;person> query;
 
 transaction t (db.begin ());
 
-db.erase_query&lt;person> (query::last == "Doe" &amp;&amp; query::are &lt; 30);
+db.erase_query&lt;person> (query::last == "Doe" &amp;&amp; query::age &lt; 30);
 
 t.commit ();
   </pre>
@@ -4195,7 +4195,7 @@ find_minors (database&amp; db, const query&amp; name_query)
   return db.query&lt;person> (name_query &amp;&amp; query::age &lt; 18);
 }
 
-result r (find_underage (db, query::first == "John"));
+result r (find_minors (db, query::first == "John"));
   </pre>
 
   <h2><a name="4.4">4.4 Query Result</a></h2>
