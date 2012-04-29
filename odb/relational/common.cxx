@@ -316,8 +316,8 @@ namespace relational
         os << ": " << name << "_base_";
 
       os << "{"
-         << name << suffix << " (){}"; // For some reason GCC needs this c-tor
-                                       // if we make the static member const.
+         << name << suffix << " (){}"; // Need user-defined default c-tor
+                                       // for initialization of const.
 
       object_columns_base::traverse_composite (m, c);
 
@@ -472,6 +472,8 @@ namespace relational
           os << "struct " << name << "_type_: " <<
             name << "_pointer_type_, " << name << "_column_type_"
              << "{"
+             << name << "_type_ (){}" // Need user-defined default c-tor
+                                      // for initialization of const.
              << "};";
 
           os << "static const " << name << "_type_ " << name << ";"
@@ -513,7 +515,9 @@ namespace relational
 
           os << "struct " << name << "_type_: " <<
             name << "_pointer_type_, " << name << "_column_type_"
-             << "{";
+             << "{"
+             << name << "_type_ (){}"; // Need user-defined default c-tor
+                                       // for initialization of const.
 
           column_ctor (name + "_type_", name + "_column_type_");
 
