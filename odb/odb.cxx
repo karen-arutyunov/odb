@@ -737,7 +737,7 @@ main (int argc, char* argv[])
         //
         os << "template <typename T>" << endl
            << "bool" << endl
-           << "has_lt_operator (T const& x, T const& y)" << endl
+           << "has_lt_operator (const T& x, const T& y)" << endl
            << "{"  << endl
            << "bool r (x < y);"  << endl
            << "return r;"  << endl
