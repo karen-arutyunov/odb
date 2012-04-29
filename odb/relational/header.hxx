@@ -1280,7 +1280,7 @@ namespace relational
                << "  query_base_type," << endl
                << "  query_columns<" << endl
                << "    " << type << "," << endl
-               << "    access::object_traits< " << type << "> >"
+               << "    access::object_traits< " << type << " > >"
                << "{"
                << "query_type ();"
                << "query_type (bool);"
