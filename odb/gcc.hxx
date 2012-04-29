@@ -16,12 +16,13 @@
 
 #include <cstdlib> // Include before GCC poisons some declarations.
 
+#include <bversion.h>
+
 #if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
 extern "C"
 {
 #endif
 
-#include <bversion.h>
 #include <gcc-plugin.h>
 
 #include <config.h>
