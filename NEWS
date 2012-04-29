@@ -1,7 +1,7 @@
 Version 2.0.0
 
-  * Support for C++11. Some of the newly supported C++11 standard library
-    components include:
+  * Support for C++11. The newly supported C++11 standard library components
+    include:
       - std::unique_ptr as object pointer or value wrapper
       - odb::lazy_unique_ptr lazy counterpart
       - std::shared_ptr/weak_ptr as object pointer or value wrapper
@@ -17,15 +17,15 @@ Version 2.0.0
     and examples can be compiled in the C++11 mode by passing the necessary
     options to turn the C++ compiler into this mode (e.g., -std=c++0x GCC
     option). On Windows, the tests and examples are always built in the C++11
-    mode with VC++ 10 and later. The new 'c++11' example shows ODB support
-    for some of the C++11 features.
+    mode with VC++ 10 and later. The new 'c++11' example in the odb-examples
+    package shows ODB support for some of the C++11 features.
 
   * Support for polymorphism. Now a persistent class hierarchy can be
     declared polymorphic which makes it possible to persist, load, update,
     erase, and query objects of derived classes using their base class
-    interfaces. For more information, refer to Section 8.2, "Polymorphism
-    Inheritance" in the ODB manual as well as the 'inheritance/polymorphism'
-    example in the odb-examples package.
+    interfaces. For more information, refer to Chapter 8, "Inheritance" in
+    the ODB manual as well as the 'inheritance/polymorphism' example in the
+    odb-examples package.
 
   * Support for composite object ids. Now a composite value type can be used
     to declare an object id member. For more information, refer to Section
@@ -38,7 +38,7 @@ Version 2.0.0
 
   * New schema format (--schema-format), 'separate', allows the generation
     of the schema creation code into a separate C++ source file (called
-    'name-schema.cxx' by default). This value is primarily useful if you
+    '<name>-schema.cxx' by default). This value is primarily useful if you
     want to place the schema creation functionality into a separate program
     or library.
 
@@ -51,19 +51,19 @@ Version 2.0.0
 
   * Session support is now optional and is disabled by default. This is a
     backwards-incompatible change. Session support can be enabled on the
-    per object basis or at the namespace level using the new session pragma.
-    It can also be enabled by default for all the objects using the
-    --generate-session ODB compiler option. Thus to get the old behavior
+    per class basis or at the namespace level using the new session pragma.
+    It can also be enabled by default for all the persistent classes using
+    the --generate-session ODB compiler option. Thus, to get the old behavior
     where all the objects were session-enabled, simply add --generate-session
     to your ODB compiler command line. For more information, refer to Chapter
     10, "Session" in the ODB manual.
 
-  * The semantics of the callback functions with respect to object const-ness
-    has changed. This is a backwards-incompatible change. Now, the callback
-    function for the *_persist, *_update, and *_erase events is always called
-    on the constant object reference while for the *_load events -- always on
-    the unrestricted reference. For more information, refer to Section 12.1.7,
-    "callback" in the ODB manual.
+  * The semantics of the database operations callbacks has changed with
+    respect to object const-ness. This is a backwards-incompatible change.
+    Now the callback function for the *_persist, *_update, and *_erase events
+    is always called on the constant object reference while for the *_load
+    events -- always on the unrestricted reference. For more information,
+    refer to Section 12.1.7, "callback" in the ODB manual.
 
   * New function, transaction::reset(), allows the reuse of the same
     transaction instance to complete several database transactions. For more
