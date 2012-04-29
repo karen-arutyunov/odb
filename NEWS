@@ -32,6 +32,10 @@ Version 1.9.0
     7.2.1, "Composite Object Ids" in the ODB manual as well as the 'composite'
     example in the odb-examples package.
 
+  * Support for the NULL value semantics for composite values. For more
+    information, refer to Section 7.3, "Pointers and NULL Value Semantics"
+    in the ODB manual.
+
   * New schema format (--schema-format), 'separate', allows the generation
     of the schema creation code into a separate C++ source file (called
     'name-schema.cxx' by default). This value is primarily useful if you
@@ -45,17 +49,14 @@ Version 1.9.0
     namespace. For more information, refer to Section 12.5.1, "pointer" and
     Section 12.5.2, "table" in the ODB manual.
 
-  * Support for the NULL value semantics for composite values. For more
-    information, refer to Section 7.3, "Pointers and NULL Value Semantics"
-    in the ODB manual.
-
   * Session support is now optional and is disabled by default. This is a
     backwards-incompatible change. Session support can be enabled on the
     per object basis or at the namespace level using the new session pragma.
     It can also be enabled by default for all the objects using the
     --generate-session ODB compiler option. Thus to get the old behavior
     where all the objects were session-enabled, simply add --generate-session
-    to your ODB compiler command line.
+    to your ODB compiler command line. For more information, refer to Chapter
+    10, "Session" in the ODB manual.
 
   * The semantics of the callback functions with respect to object const-ness
     has changed. This is a backwards-incompatible change. Now, the callback
