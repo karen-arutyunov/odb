@@ -1,4 +1,4 @@
-Version 1.9.0
+Version 2.0.0
 
   * Support for C++11. Some of the newly supported C++11 standard library
     components include:
