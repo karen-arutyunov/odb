@@ -100,13 +100,7 @@ traverse_object (type& c)
       //
       size_t depth (polymorphic_depth (c));
 
-      os << "static const std::size_t depth = " << depth << "UL;"
-         << endl;
-
-      os << "static " << (abst ? "abstract_" : "") << "info_type info;";
-
-      if (!abst)
-        os << "static entry_type entry;";
+      os << "static const std::size_t depth = " << depth << "UL;";
     }
     else
     {
@@ -136,14 +130,7 @@ traverse_object (type& c)
       else
         os << "typedef odb::polymorphic_entry<object_type> entry_type;";
 
-      os << "static const std::size_t depth = 1UL;"
-         << endl;
-
-      os << "static map_type* map;"
-         << "static " << (abst ? "abstract_" : "") << "info_type info;";
-
-      if (!abst)
-        os << "static entry_type entry;";
+      os << "static const std::size_t depth = 1UL;";
     }
   }
 
@@ -220,6 +207,17 @@ traverse_object (type& c)
   //
   os << "static const bool abstract = " << (abst ? "true" : "false") << ";"
      << endl;
+
+  // Polymorphic map.
+  //
+  if (poly)
+  {
+    if (!poly_derived)
+      os << "static map_type* map;";
+
+    os << "static const " << (abst ? "abstract_" : "") << "info_type info;"
+       << endl;
+  }
 
   // image_type
   //

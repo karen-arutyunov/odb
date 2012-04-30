@@ -437,7 +437,8 @@ traverse_object (type& c)
          << traits << "::map;"
          << endl;
 
-    os << traits << "::" << (abst ? "abstract_" : "") << "info_type" << endl
+    os << "const " << traits << "::" << (abst ? "abstract_" : "") <<
+      "info_type" << endl
        << traits << "::info (" << endl
        << "typeid (" << type << ")," << endl;
 
@@ -446,9 +447,11 @@ traverse_object (type& c)
     else
       os << "0";
 
+    string n;
+
     if (!abst)
     {
-      string n (class_fq_name (c));
+      n = class_fq_name (c);
 
       os << "," << endl
          << strlit (string (n, 2, string::npos)) << "," << endl
@@ -465,8 +468,8 @@ traverse_object (type& c)
        << endl;
 
     if (!abst)
-      os << traits << "::entry_type" << endl
-         << traits << "::entry;"
+      os << "static const " << traits << "::entry_type" << endl
+         << "polymorphic_entry_for_" << flat_name (n) << ";"
          << endl;
   }
 
