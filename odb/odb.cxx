@@ -268,16 +268,19 @@ main (int argc, char* argv[])
             def_inc_dirs.push_back (a);
           }
         }
-        // -framework (Mac OS X)
+        // -isystem, -iquote, -idirafter, and -framework (Mac OS X)
         //
-        else if (a == "-framework")
+        else if (a == "-isystem"   ||
+                 a == "-iquote"    ||
+                 a == "-idirafter" ||
+                 a == "-framework")
         {
           def_inc_dirs.push_back (a);
 
           if (!s.more () || (a = s.next ()).empty ())
           {
-            e << file << ": error: expected argument for the -framework "
-              << "option" << endl;
+            e << file << ": error: expected argument for the " << a
+              << " option" << endl;
             return 1;
           }
 
@@ -401,16 +404,19 @@ main (int argc, char* argv[])
           args.push_back (argv[i]);
         }
       }
-      // -framework (Mac OS X)
+      // -isystem, -iquote, -idirafter, and -framework (Mac OS X)
       //
-      else if (a == "-framework")
+      else if (a == "-isystem"   ||
+               a == "-iquote"    ||
+               a == "-idirafter" ||
+               a == "-framework")
       {
         args.push_back (a);
 
         if (++i == argc || argv[i][0] == '\0')
         {
-          e << argv[0] << ": error: expected argument for the -framework "
-            << "option" << endl;
+          e << argv[0] << ": error: expected argument for the " << a
+            << " option" << endl;
           return 1;
         }
 
@@ -1022,7 +1028,10 @@ profile_paths (strings const& sargs, char const* name)
     }
     // -framework
     //
-    else if (a == "-framework")
+    else if (a == "-isystem"   ||
+             a == "-iquote"    ||
+             a == "-idirafter" ||
+             a == "-framework")
     {
       args.push_back (a);
       args.push_back (*(++i));
