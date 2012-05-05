@@ -18,7 +18,18 @@
 
 #include <bversion.h>
 
+// GCC 4.7 can be built using either C or C++ compiler.
+//
 #if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
+#  define ODB_GCC_PLUGIN_C
+#else
+#  include <config.h>
+#  ifndef ENABLE_BUILD_WITH_CXX
+#    define ODB_GCC_PLUGIN_C
+#  endif
+#endif
+
+#ifdef ODB_GCC_PLUGIN_C
 extern "C"
 {
 #endif
@@ -48,7 +59,7 @@ extern "C"
 #include <diagnostic.h>
 #include <output.h>
 
-#if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
+#ifdef ODB_GCC_PLUGIN_C
 } // extern "C"
 #endif
 
