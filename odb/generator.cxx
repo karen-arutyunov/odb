@@ -225,11 +225,10 @@ generate (options const& ops,
     // HXX
     //
     {
-      sloc_filter sloc (hxx);
-      ind_filter ind (hxx);
-
       auto_ptr<context> ctx (
         create_context (hxx, unit, ops, fts, model.get ()));
+
+      sloc_filter sloc (ctx->os);
 
       string guard (ctx->make_guard (gp + hxx_name));
 
@@ -261,19 +260,25 @@ generate (options const& ops,
       hxx << "#include " << ctx->process_include_path (file.string ()) << endl
           << endl;
 
-      include::generate ();
-      header::generate ();
-
-      switch (ops.database ())
       {
-      case database::mssql:
-      case database::mysql:
-      case database::oracle:
-      case database::pgsql:
-      case database::sqlite:
+        // We don't want to indent prologues/epilogues.
+        //
+        ind_filter ind (ctx->os);
+
+        include::generate ();
+        header::generate ();
+
+        switch (ops.database ())
         {
-          relational::header::generate ();
-          break;
+        case database::mssql:
+        case database::mysql:
+        case database::oracle:
+        case database::pgsql:
+        case database::sqlite:
+          {
+            relational::header::generate ();
+            break;
+          }
         }
       }
 
@@ -294,8 +299,6 @@ generate (options const& ops,
 
       hxx << "#endif // " << guard << endl;
 
-      ind.stream ().unbuffer (); // Flush buffers to get correct SLOC.
-
       if (ops.show_sloc ())
         cerr << hxx_name << ": " << sloc.stream ().count () << endl;
 
@@ -305,11 +308,10 @@ generate (options const& ops,
     // IXX
     //
     {
-      sloc_filter sloc (ixx);
-      ind_filter ind (ixx);
-
       auto_ptr<context> ctx (
         create_context (ixx, unit, ops, fts, model.get ()));
+
+      sloc_filter sloc (ctx->os);
 
       // Copy prologue.
       //
@@ -320,18 +322,24 @@ generate (options const& ops,
           << "// End prologue." << endl
           << endl;
 
-      inline_::generate ();
-
-      switch (ops.database ())
       {
-      case database::mssql:
-      case database::mysql:
-      case database::oracle:
-      case database::pgsql:
-      case database::sqlite:
+        // We don't want to indent prologues/epilogues.
+        //
+        ind_filter ind (ctx->os);
+
+        inline_::generate ();
+
+        switch (ops.database ())
         {
-          relational::inline_::generate ();
-          break;
+        case database::mssql:
+        case database::mysql:
+        case database::oracle:
+        case database::pgsql:
+        case database::sqlite:
+          {
+            relational::inline_::generate ();
+            break;
+          }
         }
       }
 
@@ -343,8 +351,6 @@ generate (options const& ops,
       ixx << "//" << endl
           << "// End epilogue." << endl;
 
-      ind.stream ().unbuffer (); // Flush buffers to get correct SLOC.
-
       if (ops.show_sloc ())
         cerr << ixx_name << ": " << sloc.stream ().count () << endl;
 
@@ -354,11 +360,10 @@ generate (options const& ops,
     // CXX
     //
     {
-      sloc_filter sloc (cxx);
-      ind_filter ind (cxx);
-
       auto_ptr<context> ctx (
         create_context (cxx, unit, ops, fts, model.get ()));
+
+      sloc_filter sloc (ctx->os);
 
       cxx << "#include <odb/pre.hxx>" << endl
           << endl;
@@ -375,16 +380,22 @@ generate (options const& ops,
       cxx << "#include " << ctx->process_include_path (hxx_name) << endl
           << endl;
 
-      switch (ops.database ())
       {
-      case database::mssql:
-      case database::mysql:
-      case database::oracle:
-      case database::pgsql:
-      case database::sqlite:
+        // We don't want to indent prologues/epilogues.
+        //
+        ind_filter ind (ctx->os);
+
+        switch (ops.database ())
         {
-          relational::source::generate ();
-          break;
+        case database::mssql:
+        case database::mysql:
+        case database::oracle:
+        case database::pgsql:
+        case database::sqlite:
+          {
+            relational::source::generate ();
+            break;
+          }
         }
       }
 
@@ -399,8 +410,6 @@ generate (options const& ops,
 
       cxx << "#include <odb/post.hxx>" << endl;
 
-      ind.stream ().unbuffer (); // Flush buffers to get correct SLOC.
-
       if (ops.show_sloc ())
         cerr << cxx_name << ": " << sloc.stream ().count () << endl;
 
@@ -411,11 +420,10 @@ generate (options const& ops,
     //
     if (sep_schema)
     {
-      sloc_filter sloc (sch);
-      ind_filter ind (sch);
-
       auto_ptr<context> ctx (
         create_context (sch, unit, ops, fts, model.get ()));
+
+      sloc_filter sloc (ctx->os);
 
       // Copy prologue.
       //
@@ -434,16 +442,22 @@ generate (options const& ops,
       sch << "#include " << ctx->process_include_path (hxx_name) << endl
           << endl;
 
-      switch (ops.database ())
       {
-      case database::mssql:
-      case database::mysql:
-      case database::oracle:
-      case database::pgsql:
-      case database::sqlite:
+        // We don't want to indent prologues/epilogues.
+        //
+        ind_filter ind (ctx->os);
+
+        switch (ops.database ())
         {
-          relational::schema_source::generate ();
-          break;
+        case database::mssql:
+        case database::mysql:
+        case database::oracle:
+        case database::pgsql:
+        case database::sqlite:
+          {
+            relational::schema_source::generate ();
+            break;
+          }
         }
       }
 
@@ -457,8 +471,6 @@ generate (options const& ops,
           << endl;
 
       sch << "#include <odb/post.hxx>" << endl;
-
-      ind.stream ().unbuffer (); // Flush buffers to get correct SLOC.
 
       if (ops.show_sloc ())
         cerr << sch_name << ": " << sloc.stream ().count () << endl;
