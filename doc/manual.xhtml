@@ -1096,7 +1096,7 @@ for consistency.
      in our application will be represented as objects of C++ class
      <code>person</code> which is saved in <code>person.hxx</code>:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 // person.hxx
 //
 
@@ -1132,7 +1132,7 @@ private:
   to save the <code>person</code> objects in a database. To achieve this
   we declare the <code>person</code> class as persistent:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 // person.hxx
 //
 
@@ -1213,7 +1213,7 @@ private:
      have used that since each person is presumed to have a unique
      email address, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class person
 {
   ...
@@ -1386,7 +1386,7 @@ mysql --user=odb_test --database=odb_test &lt; person.sql
   database. In this section we will learn how to make <code>person</code>
   objects persistent:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 // driver.cxx
 //
 
@@ -1567,7 +1567,7 @@ mysql> quit
      each database operation. Here is how we can enable tracing just for
      the duration of our transaction:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
     // Create a few persistent person objects.
     //
     {
@@ -1611,7 +1611,7 @@ INSERT INTO `person` (`id`,`first`,`last`,`age`) VALUES (?,?,?,?)
      people from our database. To make it a bit more interesting,
      let's say hello only to people over 30:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 // driver.cxx
 //
 
@@ -1711,7 +1711,7 @@ Hello, Jane!
      both sets are returned. We can change the line where we print
      the "Hello" string as follows to illustrate this point:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 cout &lt;&lt; "Hello, " &lt;&lt; i->first () &lt;&lt; " (" &lt;&lt; i->id () &lt;&lt; ")!" &lt;&lt; endl;
   </pre>
 
@@ -1739,7 +1739,7 @@ Hello, Jane (8)!
      to change the object's state and then make these changes persistent.
      Let's illustrate this by updating Joe's age who just had a birthday:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 // driver.cxx
 //
 
@@ -1829,7 +1829,7 @@ Hello, Joe!
      in the database, we can use the query facility to come up with
      an alternative implementation of the above transaction:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
     // Joe Dirt just had a birthday, so update his age. An
     // alternative implementation without using the object id.
     //
@@ -1885,7 +1885,7 @@ Hello, Joe!
      the <code>person_stat</code> view that returns the basic statistics
      about the <code>person</code> objects:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db view object(person)
 struct person_stat
 {
@@ -1905,7 +1905,7 @@ struct person_stat
      how we can load and print our statistics using the view we have
      just created:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
     // Print some statistics about all the people in our database.
     //
     {
@@ -1931,7 +1931,7 @@ struct person_stat
      re-run our example, then we will see the following
      additional lines in the output:</p>
 
-  <pre>
+  <pre class="term">
 count  : 3
 min age: 31
 max age: 33
@@ -1943,7 +1943,7 @@ max age: 33
      the persistent object from the database. The following code
      fragment shows how we can delete an object given its identifier:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
     // John Doe is no longer in our database.
     //
     {
@@ -1961,7 +1961,7 @@ max age: 33
   <p>If we don't have an object id handy, we can use queries to find
      and delete the object:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
     // John Doe is no longer in our database. An alternative
     // implementation without using the object id.
     //
@@ -2144,7 +2144,7 @@ max age: 33
      it as such using the <code>db&nbsp;object</code> pragma, for
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -2156,7 +2156,7 @@ class person
      which designates one of the data members as an object id, for
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -2196,7 +2196,7 @@ class person
      <code>&lt;odb/core.hxx></code> header, should be declared a
      friend of this object type. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/core.hxx>
 
 #pragma db object
@@ -2227,7 +2227,7 @@ private:
      to object types, composite value types have to be explicitly declared
      as persistent using the <code>db&nbsp;value</code> pragma, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class name
 {
@@ -2321,7 +2321,7 @@ class name
      type. To specify the pointer type on the per object or per view basis
      we can use the <code>db&nbsp;pointer</code> pragma, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object pointer(std::tr1::shared_ptr)
 class person
 {
@@ -2332,7 +2332,7 @@ class person
   <p>We can also specify the default pointer for a group of objects or
      views at the namespace level:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace pointer(std::tr1::shared_ptr)
 namespace accounting
 {
@@ -2372,7 +2372,7 @@ namespace accounting
      the <code>db&nbsp;pointer</code> object or view pragma. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object pointer(std::shared_ptr)
 namespace accounting
 {
@@ -2419,7 +2419,7 @@ namespace accounting
      shows how we can create a database instance for the MySQL
      database system:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/database.hxx>
 #include &lt;odb/mysql/database.hxx>
 
@@ -2467,7 +2467,7 @@ auto_ptr&lt;odb::database> db (
      <code>odb::schema_catalog</code> class to create it in the database
      from within our application, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/schema-catalog.hxx>
 
 odb::transaction t (db->begin ());
@@ -2484,7 +2484,7 @@ t.commit ();
      You will need to include the <code>&lt;odb/schema-catalog.hxx></code>
      header file to make this class available in your application.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   class schema_catalog
@@ -2569,7 +2569,7 @@ namespace odb
      header file to make this class available in your application.
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/transaction.hxx>
 
 transaction t (db.begin ())
@@ -2582,7 +2582,7 @@ t.commit ();
   <p>The <code>odb::transaction</code> class has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   class transaction
@@ -2657,7 +2657,7 @@ namespace odb
      allow for more advanced use cases, such as multiplexing
      two or more transactions on the same thread. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 transaction t1 (db1.begin ());        // Active transaction.
 transaction t2 (db2.begin (), false); // Not active.
 
@@ -2688,7 +2688,7 @@ t2.commit ();
      and start a new one every time a certain number of database operations
      has been performed:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 transaction t (db.begin ());
 
 for (size_t i (0); i &lt; n; ++i)
@@ -2718,7 +2718,7 @@ t.commit ();
      persistent objects only within the transaction scope. Consider,
      for example, these two implementations of the same transaction:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 void
 update_age (database&amp; db, person&amp; p)
 {
@@ -2738,7 +2738,7 @@ update_age (database&amp; db, person&amp; p)
      alternative implementation which only instantiates the
      <code>person</code> object for the duration of the transaction:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 void
 update_age (database&amp; db, unsigned long id)
 {
@@ -2761,7 +2761,7 @@ update_age (database&amp; db, unsigned long id)
      remains unchanged. One way to do this is to re-load
      the object's state from the database, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 void
 update_age (database&amp; db, person&amp; p)
 {
@@ -2807,7 +2807,7 @@ update_age (database&amp; db, person&amp; p)
      header file. The <code>odb::connection</code> class has the
      following interface:</p>
 
-  <pre>
+  <pre class="cxx">
 namespace odb
 {
   class connection
@@ -2855,7 +2855,7 @@ namespace odb
      <code>database</code> instance. The following code fragment
      shows how we can obtain, use, and release a connection:</p>
 
-  <pre>
+  <pre class="cxx">
 using namespace odb::core;
 
 database&amp; db = ...
@@ -2939,7 +2939,7 @@ c->execute ("SET FOREIGN_KEY_CHECKS = 1");
   <p>The following code fragment shows how to handle the recoverable
      exceptions by restarting the affected transaction:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 const unsigned short max_retries = 5;
 
 for (unsigned short retry_count (0); ; retry_count++)
@@ -2970,7 +2970,7 @@ for (unsigned short retry_count (0); ; retry_count++)
      to make a transient instance persistent. This function has four
      overloaded versions with the following signatures:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   template &lt;typename T>
   typename object_traits&lt;T>::id_type
   persist (const T&amp; object);
@@ -3022,7 +3022,7 @@ for (unsigned short retry_count (0); ; retry_count++)
      deduced from the argument being passed. The following example shows
      how we can call these functions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 person john ("John", "Doe", 33);
 shared_ptr&lt;person> jane (new person ("Jane", "Doe", 32));
 
@@ -3056,7 +3056,7 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
      function template. This function has two overloaded versions with
      the following signatures:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   template &lt;typename T>
   typename object_traits&lt;T>::pointer_type
   load (const typename object_traits&lt;T>::id_type&amp; id);
@@ -3078,7 +3078,7 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
      the second function because the object type will be automatically
      deduced from the second argument, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 transaction t (db.begin ());
 
 auto_ptr&lt;person> jane (db.load&lt;person> (jane_id));
@@ -3095,7 +3095,7 @@ t.commit ();
      has a number of special properties. This function has two
      overloaded versions with the following signatures:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   template &lt;typename T>
   void
   reload (T&amp; object);
@@ -3133,7 +3133,7 @@ t.commit ();
      is persistent, we can use the <code>find()</code> function
      instead of <code>load()</code>, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   template &lt;typename T>
   typename object_traits&lt;T>::pointer_type
   find (const typename object_traits&lt;T>::id_type&amp; id);
@@ -3162,7 +3162,7 @@ t.commit ();
      function template. This function has three overloaded versions with
      the following signatures:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   template &lt;typename T>
   void
   update (const T&amp; object);
@@ -3186,7 +3186,7 @@ t.commit ();
      in the earlier section on transactions. It uses the hypothetical
      <code>bank_account</code> persistent class:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 void
 transfer (database&amp; db,
           unsigned long from_acc,
@@ -3218,7 +3218,7 @@ transfer (database&amp; db,
      and the <code>update()</code> function with object pointer argument,
      for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 transaction t (db.begin ());
 
 shared_ptr&lt;bank_account> from (db.load&lt;bank_account> (from_acc));
@@ -3276,7 +3276,7 @@ t.commit ();
      erased object, this instance becomes transient. The <code>erase()</code>
      function has the following overloaded versions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   template &lt;typename T>
   void
   erase (const T&amp; object);
@@ -3310,7 +3310,7 @@ t.commit ();
      deduced from their arguments. The following example shows how we
      can call these functions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 person&amp; john = ...
 shared_ptr&lt;jane> jane = ...
 unsigned long joe_id = ...
@@ -3345,7 +3345,7 @@ t.commit ();
      specified. The <code>erase_query()</code> function has the
      following overloaded versions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   template &lt;typename T>
   unsigned long long
   erase_query ();
@@ -3363,7 +3363,7 @@ t.commit ();
      the <code>erase_query()</code> function, we have to explicitly
      specify the object type we are erasing. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef odb::query&lt;person> query;
 
 transaction t (db.begin ());
@@ -3389,7 +3389,7 @@ t.commit ();
      "Relationships"</a> for complete definitions of these
      classes.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef odb::query&lt;employee> query;
 
 transaction t (db.begin ());
@@ -3413,7 +3413,7 @@ t.commit ();
      <code>database::execute()</code> function, which has three
      overloaded versions, provides this functionality:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   unsigned long long
   execute (const char* statement);
 
@@ -3432,7 +3432,7 @@ t.commit ();
      return the number of rows that were affected by the statement. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 transaction t (db.begin ());
 
 db.execute ("DROP TABLE test");
@@ -3464,7 +3464,7 @@ t.commit ();
      extract such a subset of statements from the database logs,
      it is easy to achieve with ODB tracing support:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 transaction t (db.begin ());
 t.tracer (stderr_tracer);
 
@@ -3485,7 +3485,7 @@ t.commit ();
       and <code>odb::transaction</code>) provide the identical
      tracing API:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   void
   tracer (odb::tracer&amp;);
 
@@ -3520,7 +3520,7 @@ t.commit ();
      The <code>odb::tracer</code> interface provided the following
      callback functions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   class tracer
@@ -3567,7 +3567,7 @@ namespace odb
      information can be obtained from the <code>odb::pgsql::statement</code>
      object:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/pgsql/tracer.hxx>
 #include &lt;odb/pgsql/database.hxx>
 #include &lt;odb/pgsql/connection.hxx>
@@ -3605,7 +3605,7 @@ class pgsql_tracer: public odb::pgsql::tracer
   <p>Note also that you can only set a database-specific tracer object
      using a database-specific database instance, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 pgsql_tracer tracer;
 
 odb::database&amp; db = ...;
@@ -3628,7 +3628,7 @@ db.tracer (tracer); // Ok.
      from <code>std::exception</code> and has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   struct exception: std::exception
@@ -3647,7 +3647,7 @@ namespace odb
   <p>The concrete exceptions that can be thrown by ODB are presented
      in the following listing:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   struct null_pointer: exception
@@ -3891,7 +3891,7 @@ namespace odb
      ordinary C++. We have already seen examples of these queries in the
      introductory chapters. Below is another, more interesting, example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   typedef odb::query&lt;person> query;
   typedef odb::result&lt;person> result;
 
@@ -3914,14 +3914,14 @@ namespace odb
      is the re-implementation of the above example using SQL as
      the native query language:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   query q ("first = 'John' AND age = " + query::_ref (age));
   </pre>
 
   <p>Note that at this level we lose the static typing of
      query expressions. For example, if we wrote something like this:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   query q (query::first == 123 &amp;&amp; query::agee &lt; query::_ref (age));
   </pre>
 
@@ -3931,7 +3931,7 @@ namespace odb
      <code>query::agee</code>. On the other hand, if we wrote something
      like this:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   query q ("first = 123 AND agee = " + query::_ref (age));
   </pre>
 
@@ -3941,7 +3941,7 @@ namespace odb
   <p>We can also combine the two query languages in a single query, for
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   query q ("first = 'John'" + (query::age &lt; query::_ref (age)));
   </pre>
 
@@ -3954,7 +3954,7 @@ namespace odb
      combined with logical operators such as <code>&amp;&amp;</code> (AND),
      <code>||</code> (OR), and <code>!</code> (NOT). For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   typedef odb::query&lt;person> query;
 
   query q (query::first == "John" || query::age == 31);
@@ -4051,7 +4051,7 @@ namespace odb
      excluding the <code>end</code> position. The following
      code fragment shows how we can use these functions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   std::vector&lt;string> names;
 
   names.push_back ("John");
@@ -4069,7 +4069,7 @@ namespace odb
      make sure the expression is evaluated in the desired order.
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   query q ((query::first == "John" || query::first == "Jane") &amp;&amp;
            query::age &lt; 31);
   </pre>
@@ -4090,7 +4090,7 @@ namespace odb
      at the query execution time. Consider, for example, the following
      two queries:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   string name ("John");
 
   query q1 (query::first == query::_val (name));
@@ -4110,7 +4110,7 @@ namespace odb
      native query language, binding must always be specified
      explicitly. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   query q1 (query::age &lt; age);                // By value.
   query q2 (query::age &lt; query::_val (age));  // By value.
   query q3 (query::age &lt; query::_ref (age));  // By reference.
@@ -4134,7 +4134,7 @@ namespace odb
      <code>database::query()</code> function template. It has two
      overloaded versions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   template &lt;typename T>
   result&lt;T>
   query (bool cache = true);
@@ -4156,7 +4156,7 @@ namespace odb
   <p>When calling the <code>query()</code> function, we have to
      explicitly specify the object type we are querying. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   typedef odb::query&lt;person> query;
   typedef odb::result&lt;person> result;
 
@@ -4168,7 +4168,7 @@ namespace odb
      query variable before executing it. For example, the following
      two queries are equivalent:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   query q (query::first == "John");
 
   result r1 (db.query&lt;person> (q));
@@ -4189,7 +4189,7 @@ namespace odb
   <p>It is also possible to create queries from other queries by
      combining them using logical operators. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 result
 find_minors (database&amp; db, const query&amp; name_query)
 {
@@ -4205,7 +4205,7 @@ result r (find_minors (db, query::first == "John"));
      matching the query criteria. The result is returned as an instance
      of the <code>odb::result</code> class template, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   typedef odb::query&lt;person> query;
   typedef odb::result&lt;person> result;
 
@@ -4225,7 +4225,7 @@ result r (find_minors (db, query::first == "John"));
      standard C++ sequence requirements and has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   template &lt;typename T>
@@ -4306,7 +4306,7 @@ namespace odb
      together with the <code>odb::result&lt;T>::iterator</code>
      type, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   result r (db.query&lt;person> (query::first == "John"));
 
   for (result::iterator i (r.begin ()); i != r.end (); ++i)
@@ -4318,7 +4318,7 @@ namespace odb
   <p>In C++11 we can use the <code>auto</code>-typed variabe instead
      of spelling the iterator type explicitly, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   for (auto i (r.begin ()); i != r.end (); ++i)
   {
     ...
@@ -4328,7 +4328,7 @@ namespace odb
   <p>The C++11 range-based <code>for</code>-loop can be used to further
      simplify the iteration:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   for (person&amp; p: r)
   {
     ...
@@ -4350,7 +4350,7 @@ namespace odb
   <p>The result iterator has the following dereference functions
      that can be used to access the pointed-to object:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   template &lt;typename T>
@@ -4384,7 +4384,7 @@ namespace odb
      operators until it is advanced to the next object or we call
      the first <code>load()</code> function (see below). For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   result r (db.query&lt;person> (query::first == "John"));
 
   for (result::iterator i (r.begin ()); i != r.end ();)
@@ -4406,7 +4406,7 @@ namespace odb
      This allows us to write code like this without worrying about
      a double allocation:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   result r (db.query&lt;person> (query::first == "John"));
 
   for (result::iterator i (r.begin ()); i != r.end (); ++i)
@@ -4427,7 +4427,7 @@ namespace odb
      us to load the current object's state into an existing instance.
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   result r (db.query&lt;person> (query::first == "John"));
 
   person p;
@@ -4445,7 +4445,7 @@ namespace odb
      create the object. This can be useful when all we need is the object's
      identifier. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   std::set&lt;unsigned long> set = ...; // Persons of interest.
 
   result r (db.query&lt;person> (query::first == "John"));
@@ -4482,7 +4482,7 @@ namespace odb
   <p>We don't need to do anything special to declare a member of a
      container type in a persistent class. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -4530,7 +4530,7 @@ private:
      case the <code>odb::access</code> class should be made a friend of
      the value or key type. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class name
 {
@@ -4576,7 +4576,7 @@ private:
 
   <p>Consider the following persistent object as an example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -4603,7 +4603,7 @@ private:
      Language"</a>. The following example shows some of the possible
      customizations:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -4629,7 +4629,7 @@ private:
      "<code>unordered</code>"</a>, <a href="#12.4.14">Section 12.4.14,
      "<code>unordered</code>"</a>). For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -4667,7 +4667,7 @@ private:
 
   <p>Consider the following persistent object as an example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -4693,7 +4693,7 @@ private:
      Language"</a>. The following example shows some of the possible
      customizations:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -4730,7 +4730,7 @@ private:
 
   <p>Consider the following persistent object as an example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -4757,7 +4757,7 @@ private:
      Language"</a>. The following example shows some of the possible
      customizations:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -4854,7 +4854,7 @@ private:
      will use the <code>shared_ptr</code> and <code>weak_ptr</code>
      smart pointers from the TR1 (<code>std::tr1</code>) namespace.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class employer
 {
@@ -4888,7 +4888,7 @@ class employee
      12.4.19, "<code>value_null</code>/<code>value_not_null</code>"</a>)
      for containers of object pointers. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class employee
 {
@@ -4912,7 +4912,7 @@ class employee
      relationship between two persistent objects, as shown in the
      following code fragment:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 // Create an employer and a few employees.
 //
 unsigned long john_id, jane_id;
@@ -4981,7 +4981,7 @@ unsigned long john_id, jane_id;
      objects. For example, the following transaction finds all the
      employees of Example Inc that have the Doe last name:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef odb::query&lt;employee> query;
 typedef odb::result&lt;employee> result;
 
@@ -5004,7 +5004,7 @@ t.commit ();
      all the <code>employee</code> objects that don't have an associated
      <code>employer</code> object:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 result r (db.query&lt;employee> (query::employer.is_null ()));
   </pre>
 
@@ -5051,7 +5051,7 @@ result r (db.query&lt;employee> (query::employer.is_null ()));
      employee-employer relationship (an employee has one employer).
      The following persistent C++ classes model this relationship:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class employer
 {
@@ -5092,7 +5092,7 @@ CREATE TABLE employee (
      in multiple projects). The following persistent C++ classes
      model this relationship:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class project
 {
@@ -5133,7 +5133,7 @@ CREATE TABLE employee_projects (
      and columns above can be customized using ODB pragmas
      (<a href="#12">Chapter 12, "ODB Pragma Language"</a>). For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class employee
 {
@@ -5164,7 +5164,7 @@ CREATE TABLE employee_projects (
      be used as one of the pointers to avoid ownership cycles. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class employee;
 
 #pragma db object
@@ -5197,7 +5197,7 @@ class employee
      provide a single function that updates both pointers at the
      same time. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class position: public enable_shared_from_this&lt;position>
 {
@@ -5234,7 +5234,7 @@ private:
      transaction that tries to load the <code>position</code> object
      from the above example without using a session:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 transaction t (db.begin ())
 shared_ptr&lt;position> p (db.load&lt;position> (1));
 ...
@@ -5257,7 +5257,7 @@ t.commit ();
   <p>As the exception name suggests, the easiest way to resolve this
      problem is to use a session:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 session s;
 transaction t (db.begin ())
 shared_ptr&lt;position> p (db.load&lt;position> (1));
@@ -5303,7 +5303,7 @@ CREATE TABLE employee (
      a pointer is the inverse side of a bidirectional relationship.
      Either side of a relationship can be made inverse. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class position
 {
@@ -5362,7 +5362,7 @@ CREATE TABLE employee (
      fills one position and a position is filled by one employee).
      The following persistent C++ classes model this relationship:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class employee;
 
 #pragma db object
@@ -5420,7 +5420,7 @@ CREATE TABLE employee (
      employees and an employee is employed by one employer).
      The following persistent C++ classes model this relationship:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class employee;
 
 #pragma db object
@@ -5485,7 +5485,7 @@ CREATE TABLE employee (
      projects and a project can have multiple participating employees).
      The following persistent C++ classes model this relationship:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class employee;
 
 #pragma db object
@@ -5547,7 +5547,7 @@ CREATE TABLE employee (
   <p>Consider again the bidirectional, one-to-many employer-employee
      relationship that was presented earlier in this chapter:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class employee;
 
 #pragma db object
@@ -5578,7 +5578,7 @@ class employee
   <p>Consider also the following transaction which obtains the employer
      name given the employee id:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 unsigned long id = ...
 string name;
 
@@ -5638,7 +5638,7 @@ t.commit ();
      relationship to use lazy pointers. Here we choose to use lazy pointers
      for both sides of the relationship.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class employee;
 
 #pragma db object
@@ -5662,7 +5662,7 @@ class employee
 
   <p>And the transaction is changed like this:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 unsigned long id = ...
 string name;
 
@@ -5687,7 +5687,7 @@ t.commit ();
      lazy loading functionality. Overall, the interface of a lazy
      pointer follows this general outline:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 template &lt;class T>
 class lazy_ptr
 {
@@ -5751,7 +5751,7 @@ public:
      the <code>employer</code> and <code>employee</code> classes
      presented earlier.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;lazy_weak_ptr&lt;employee> > employees;
 
 session s;
@@ -5795,7 +5795,7 @@ t.commit ();
      to Example Inc. The straightforward implementation of this
      transaction is presented below:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 session s;
 transaction t (db.begin ());
 
@@ -5820,7 +5820,7 @@ t.commit ();
      <em>unloaded</em> lazy pointer with the database where the object
      is stored as well as its identifier:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 lazy_shared_ptr&lt;employer> er (db, std::string ("Example Inc"));
 shared_ptr&lt;employee> e (new employee ("John", "Doe"));
 
@@ -5924,7 +5924,7 @@ t.commit ();
      a composite value type we use the <code>db&nbsp;value</code> pragma,
      for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class basic_name
 {
@@ -5947,7 +5947,7 @@ class basic_name
      an element of a container, then the <code>odb::access</code> class
      should be declared a friend of this value type. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class basic_name
 {
@@ -5981,7 +5981,7 @@ private:
      are not allowed. The following example illustrates some of the
      possible use cases:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class basic_name
 {
@@ -6023,7 +6023,7 @@ class person
   <p>A composite value type can also be defined as an instantiation
      of a C++ class template, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 template &lt;typename T>
 struct point
 {
@@ -6052,7 +6052,7 @@ class object
      <code>std::pair</code> defined in the <code>utility</code>
      standard header file:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;utility> // std::pair
 
 typedef std::pair&lt;std::string, std::string> phone_numbers;
@@ -6083,7 +6083,7 @@ class person
      expression while querying the database for the <code>person</code>
      objects. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef odb::query&lt;person> query;
 typedef odb::result&lt;person> result;
 
@@ -6101,7 +6101,7 @@ t.commit ();
 
   <p>An object id can be of a composite value type, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class name
 {
@@ -6138,7 +6138,7 @@ class person
      types things are slightly more complex since they are mapped to
      multiple columns. Consider the following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class name
 {
@@ -6178,7 +6178,7 @@ CREATE TABLE person (
     <code>db&nbsp;column</code> pragma as shown in the following
     example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class name
 {
@@ -6212,7 +6212,7 @@ CREATE TABLE person (
 
   <p>We can also make the column prefix empty, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -6246,7 +6246,7 @@ CREATE TABLE person (
      column names, except that by default both the object name and the
      member name are used as a prefix. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class name
 {
@@ -6284,7 +6284,7 @@ CREATE TABLE person (
      <code>db&nbsp;table</code> pragma (<a href="#12.4.15">Section
      12.4.15, "<code>table</code>"</a>), for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class name
 {
@@ -6344,7 +6344,7 @@ CREATE TABLE person_nickname (
      the <code>NULL</code> values for data members of the
      <code>odb::nullable</code> type. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/nullable.hxx>
 
 #pragma db object
@@ -6362,7 +6362,7 @@ class person
      in the <code>&lt;odb/nullable.hxx></code> header file and
      has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   template &lt;typename T>
@@ -6408,7 +6408,7 @@ namespace odb
 
   <p>The following example shows how we can use this interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   nullable&lt;string> ns;
 
   // Using the accessor interface.
@@ -6459,7 +6459,7 @@ namespace odb
      need to enable it explicitly using the <code>db&nbsp;null</code>
      pragma. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -6487,7 +6487,7 @@ class person
      value is translated to <code>NULL</code> values for all the simple
      data members of this composite value. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 struct name
 {
@@ -6511,7 +6511,7 @@ class person
      only restriction is that these pointers must not be <code>NULL</code>.
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -6532,7 +6532,7 @@ class person
      We can employ inheritance to reuse common data and functionality
      in multiple classes. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class person
 {
 public:
@@ -6576,7 +6576,7 @@ class contractor: public person
     destructor while the derived classes provide specific
     implementations of these virtual functions. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class person
 {
 public:
@@ -6672,7 +6672,7 @@ public:
      class is only inherited once. The following example shows a
      persistent class hierarchy employing reuse inheritance:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 // Abstract person class. Note that it does not declare the
 // object id.
 //
@@ -6791,7 +6791,7 @@ CREATE TABLE contractor (
      of a reference or pointer, and the object's actual or <em>dynamic
      type</em>. An example will help illustrate the difference:</p>
 
-  <pre>
+  <pre class="cxx">
 class person {...};
 class employee: public person {...};
 
@@ -6828,7 +6828,7 @@ auto_ptr&lt;person> p1 (new employee);
      treat all the derived classes as polymorphic automatically. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object polymorphic
 class person
 {
@@ -6878,7 +6878,7 @@ class contractor: public person
      compiler will automatically use the same object pointer
      for all the derived classes. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object polymorphic pointer(std::shared_ptr)
 class person
 {
@@ -6910,7 +6910,7 @@ class contractor: public person
      return objects with different static and dynamic types. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 unsigned long id1, id2;
 
 // Persist.
@@ -6998,7 +6998,7 @@ unsigned long id1, id2;
      possible to obtain the discriminator value without
      instantiating the object. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef odb::query&lt;person> query;
 typedef odb::result&lt;person> result;
 
@@ -7028,7 +7028,7 @@ t.commit ();
   <p>The sample database schema for the above polymorphic hierarchy
      is shown below.</p>
 
-  <pre>
+  <pre class="sql">
 CREATE TABLE person (
   id BIGINT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
   typeid VARCHAR(255) NOT NULL,
@@ -7089,7 +7089,7 @@ CREATE TABLE contractor (
      they are the same. This example will help illustrate the
      difference:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 unsigned long id;
 
 {
@@ -7119,7 +7119,7 @@ unsigned long id;
      while in the latter case an extra statement has to be executed to
      achieve the same result. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 shared_ptr&lt;person> p = ...;
 
 transaction t (db.begin ());
@@ -7146,7 +7146,7 @@ t.commit ();
      the following polymorphic object hierarchy and a view:</p>
 
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object polymorphic
 class employee
 {
@@ -7195,7 +7195,7 @@ struct contractor_manager
      view. Our example, for instance, can be fixed by swapping the
      two objects:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db view object(contractor) \
                 object(permanent_employee: contractor::manager_)
 struct contractor_manager
@@ -7211,7 +7211,7 @@ struct contractor_manager
      statement, only data members from the derived class being erased can
      be used in the query condition. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef odb::query&lt;employee> query;
 
 transaction t (db.begin ());
@@ -7228,7 +7228,7 @@ t.commit ();
      the polymorphism inheritance &mdash; for the "top" (derived) part.
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -7285,7 +7285,7 @@ class permanent_employee: public employee // Polymorphism inheritance.
      assume that you are familiar with ODB object relationship
      support (<a href="#6">Chapter 6, "Relationships"</a>).</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db object
 class country
 {
@@ -7332,7 +7332,7 @@ class employee
      <code>employee_extra</code> table that is not mapped to any persistent
      class. It has the following definition:</p>
 
-  <pre>
+  <pre class="sql">
 CREATE TABLE employee_extra(
   employee_id INTEGER NOT NULL,
   vacation_days INTEGER NOT NULL,
@@ -7347,7 +7347,7 @@ CREATE TABLE employee_extra(
   <p>To declare a view we use the <code>db&nbsp;view</code> pragma,
      for example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee)
 struct employee_name
 {
@@ -7374,7 +7374,7 @@ struct employee_name
      shows how we can find the names of all the employees that are
      younger than 31:</p>
 
-  <pre>
+  <pre class="cxx">
 typedef odb::query&lt;employee_name> query;
 typedef odb::result&lt;employee_name> result;
 
@@ -7406,7 +7406,7 @@ t.commit ();
      <code>db&nbsp;object</code> pragma for each additional object,
      for example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) object(employer)
 struct employee_employer
 {
@@ -7453,7 +7453,7 @@ struct employee_employer
 
   <p>On the other hand, consider this view:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) object(country)
 struct employee_residence
 {
@@ -7475,7 +7475,7 @@ struct employee_residence
      Here is how we can fix the <code>employee_residence</code>
      view:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) object(country: employee::residence_)
 struct employee_residence
 {
@@ -7490,7 +7490,7 @@ struct employee_residence
      this case, we have to use aliases to assign different names
      for each association. For example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) \
   object(country = res_country: employee::residence_) \
   object(country = nat_country: employee::nationality_)
@@ -7509,7 +7509,7 @@ struct employee_country
      unqualified alias name instead of the potentially qualified
      object name. For example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee = ee) object(country: ee::residence_)
 struct employee_residence
 {
@@ -7527,7 +7527,7 @@ struct employee_residence
      the <code>country</code> object, as we have done with
      residence and nationality.</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db object
 class employee
 {
@@ -7541,7 +7541,7 @@ class employee
      for an employee, then we have to use a custom join condition when
      associating the <code>country</code> object. For example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) \
   object(country: employee::birth_place_ == country::name_)
 struct employee_birth_code
@@ -7584,7 +7584,7 @@ struct employee_birth_code
      <code>db&nbsp;column</code> pragma (<a href="#12.4.8">Section 12.4.8,
      "<code>column</code>"</a>). For example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) object(employer)
 struct employee_employer
 {
@@ -7607,7 +7607,7 @@ struct employee_employer
      unqualified alias name instead of the potentially qualified
      object name. For example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) \
   object(country = res_country: employee::residence_) \
   object(country = nat_country: employee::nationality_)
@@ -7631,7 +7631,7 @@ struct employee_country
      It is primarily useful for defining aggregate views based on
      SQL aggregate functions, for example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee)
 struct employee_count
 {
@@ -7649,7 +7649,7 @@ struct employee_count
      <code>odb::query&lt;object>::member</code> expressions when
      querying the database for an object. For example:</p>
 
-  <pre>
+  <pre class="cxx">
 typedef odb::result&lt;employee_count> result;
 typedef odb::query&lt;employee_count> query;
 
@@ -7680,7 +7680,7 @@ t.commit ();
      scope named after the object. As an example, consider
      the <code>employee_employer</code> view again:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) object(employer)
 struct employee_employer
 {
@@ -7699,7 +7699,7 @@ struct employee_employer
      <code>odb::query&lt;...>::employer::name</code> expression.
      For example:</p>
 
-  <pre>
+  <pre class="cxx">
 typedef odb::result&lt;employee_employer> result;
 typedef odb::query&lt;employee_employer> query;
 
@@ -7719,7 +7719,7 @@ t.commit ();
      name the query members scope instead of the object name. As an
      example, consider the <code>employee_country</code> view again:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) \
   object(country = res_country: employee::residence_) \
   object(country = nat_country: employee::nationality_)
@@ -7732,7 +7732,7 @@ struct employee_country
   <p>And a query which returns all the employees that have the same
      country of residence and nationality:</p>
 
-  <pre>
+  <pre class="cxx">
 typedef odb::query&lt;employee_country> query;
 typedef odb::result&lt;employee_country> result;
 
@@ -7751,7 +7751,7 @@ t.commit ();
      no support referencing members in related objects. For example,
      the following query is invalid:</p>
 
-  <pre>
+  <pre class="cxx">
 typedef odb::query&lt;employee_name> query;
 typedef odb::result&lt;employee_name> result;
 
@@ -7795,7 +7795,7 @@ t.commit ();
      <code>employee_extra</code> legacy table we have defined at the
      beginning of the chapter.</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view table("employee_extra")
 struct employee_vacation
 {
@@ -7821,7 +7821,7 @@ struct employee_vacation
      <code>"table"."column"</code> form. The following example
      illustrates the use of a column expression:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view table("employee_extra")
 struct employee_max_vacation
 {
@@ -7833,7 +7833,7 @@ struct employee_max_vacation
   <p>Both the asociated table names and the column names can be qualified
      with a database schema, for example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view table("hr.employee_extra")
 struct employee_max_vacation
 {
@@ -7890,7 +7890,7 @@ struct employee_max_vacation
      <code>employee_health</code> table that we define in addition
      to <code>employee_extra</code>:</p>
 
-  <pre>
+  <pre class="sql">
 CREATE TABLE employee_health(
   employee_id INTEGER NOT NULL,
   sick_leave_days INTEGER NOT NULL)
@@ -7899,7 +7899,7 @@ CREATE TABLE employee_health(
   <p>Given these two tables we can now define a view that returns both
      the vacation and sick leave information for each employee:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view table("employee_extra" = "extra") \
   table("employee_health" = "health": \
         "extra.employee_id = health.employee_id")
@@ -7920,7 +7920,7 @@ struct employee_leave
      object view except that we can only use native query expressions.
      For example:</p>
 
-  <pre>
+  <pre class="cxx">
 typedef odb::query&lt;employee_leave> query;
 typedef odb::result&lt;employee_leave> result;
 
@@ -7946,7 +7946,7 @@ t.commit ();
      have to associate both the <code>employee</code> object and
      the <code>employee_extra</code> table with the view:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) \
   table("employee_extra" = "extra": "extra.employee_id = " + employee::id_)
 struct employee_vacation
@@ -7964,7 +7964,7 @@ struct employee_vacation
      but have to fall back to using the native syntax for the parts that
      involve table columns. For example:</p>
 
-  <pre>
+  <pre class="cxx">
 typedef odb::query&lt;employee_vacation> query;
 typedef odb::result&lt;employee_vacation> result;
 
@@ -7983,7 +7983,7 @@ t.commit ();
      two objects via a legacy table. This view allows us to find the
      previous employer name for each employee:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) \
   table("employee_extra" = "extra": "extra.employee_id = " + employee::id_) \
   object(employer: "extra.previous_employer_id = " + employer::id_)
@@ -8014,7 +8014,7 @@ struct employee_prev_employer
      view as we have done in the previous sections and then use a
      query like this:</p>
 
-  <pre>
+  <pre class="cxx">
 result r (db.query&lt;employee_retirement> (query::age > 50));
   </pre>
 
@@ -8024,7 +8024,7 @@ result r (db.query&lt;employee_retirement> (query::age > 50));
      stays the same. View query conditions allow us to solve this
      problem. For example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) query(employee::age > 50)
 struct employee_retirement
 {
@@ -8036,7 +8036,7 @@ struct employee_retirement
 
   <p>With this improvement we can rewrite our query like this:</p>
 
-  <pre>
+  <pre class="cxx">
 result r (db.query&lt;employee_retirement> ());
   </pre>
 
@@ -8050,7 +8050,7 @@ result r (db.query&lt;employee_retirement> ());
       constant query expression where the runtime expression should be
       inserted. For example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) query(employee::age > 50 &amp;&amp; (?))
 struct employee_retirement
 {
@@ -8063,7 +8063,7 @@ struct employee_retirement
   <p>With this change we can now use additional query criteria in our
      view:</p>
 
-  <pre>
+  <pre class="cxx">
 result r (db.query&lt;employee_retirement> (query::last == "Doe"));
   </pre>
 
@@ -8079,7 +8079,7 @@ result r (db.query&lt;employee_retirement> (query::last == "Doe"));
      and in native SQL expressions specified as string literals. The
      following view is an example of the latter case:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view table("employee_extra") \
   query("vacation_days &lt;> 0 AND (?)")
 struct employee_vacation
@@ -8095,7 +8095,7 @@ struct employee_vacation
      view which calculate the minimum and maximum ages of employees
      for each employer:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee) object(employer) \
   query ((?) + "GROUP BY" + employer::name_)
 struct employer_age
@@ -8122,7 +8122,7 @@ struct employer_age
      is how we can re-implement the <code>employee_vacation</code> table
      view from Section 9.2 above as a native view:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view query("SELECT employee_id, vacation_days " \
                       "FROM employee_extra")
 struct employee_vacation
@@ -8164,7 +8164,7 @@ struct employee_vacation
      along with the <code>WHERE</code> keyword, if required.
      The following example shows the usage of the placeholder:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view query("SELECT employee_id, vacation_days " \
                       "FROM employee_extra " \
                       "WHERE vacation_days &lt;> 0 AND (?)")
@@ -8177,7 +8177,7 @@ struct employee_vacation
   <p>As another example, consider a view that returns the next
      value of a database sequence:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view query("SELECT nextval('my_seq')")
 struct sequence_value
 {
@@ -8198,7 +8198,7 @@ struct sequence_value
      <code>WHERE</code>, <code>GROUP BY</code>, and similar
      clauses. In other words, the following won't work:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view query("SELECT nextval('(?)')")
 struct sequence_value
 {
@@ -8214,7 +8214,7 @@ result r (db.query&lt;sequence_value> ("my_seq"));
      we can either specify the empty <code>db&nbsp;query</code>
      pragma or omit the pragma altogether. For example:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view
 struct sequence_value
 {
@@ -8224,7 +8224,7 @@ struct sequence_value
 
   <p>Given this view, we can perform the following queries:</p>
 
-  <pre>
+  <pre class="cxx">
 typedef odb::query&lt;sequence_value> query;
 typedef odb::result&lt;sequence_value> result;
 
@@ -8254,7 +8254,7 @@ result n (db.query&lt;sequence_value> (
      consider a modified version of the <code>employee</code> persistent
      class that stores a person's name as a composite value:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db value
 class person_name
 {
@@ -8276,7 +8276,7 @@ class employee
   <p>Given this change, we can re-implement the <code>employee_name</code>
      view like this:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee)
 struct employee_name
 {
@@ -8289,7 +8289,7 @@ struct employee_name
      how we could have defined the <code>employee_name</code> view
      if we wanted to keep its original structure:</p>
 
-  <pre>
+  <pre class="cxx">
 #pragma db view object(employee)
 struct employee_name
 {
@@ -8317,7 +8317,7 @@ struct employee_name
      per object basis using the <code>db&nbsp;session</code> pragma, for
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object session
 class person
 {
@@ -8328,7 +8328,7 @@ class person
   <p>We can also enable or disable session support for a group of
      objects at the namespace level:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace session
 namespace accounting
 {
@@ -8353,7 +8353,7 @@ namespace accounting
      <code>db&nbsp;session</code>. An alternative to this method with the
      same effect is to enable session support for the global namespace:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace() session
   </pre>
 
@@ -8364,7 +8364,7 @@ namespace accounting
      <code>&lt;odb/session.hxx></code> header file to make this class
      available in your application. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/database.hxx>
 #include &lt;odb/session.hxx>
 #include &lt;odb/transaction.hxx>
@@ -8396,7 +8396,7 @@ using namespace odb::core;
 
   <p>The <code>session</code> class has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   class session
@@ -8488,7 +8488,7 @@ namespace odb
      (<a href="#3.10">Section 3.10, "Deleting Persistent Objects"</a>), the
      cached object pointer is removed from the session. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 shared_ptr&lt;person> p (new person ("John", "Doe"));
 
 session s;
@@ -8522,7 +8522,7 @@ t.commit ();
      non-<code>const</code> instances. The following code fragment
      illustrates this point:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 void save (database&amp; db, shared_ptr&lt;const person> p)
 {
   transaction t (db.begin ());
@@ -8593,7 +8593,7 @@ unsigned long id2 (save (db, p2)); // p2 is cached in s as non-const.
      in one database transaction, waiting for user input, and then
      updating the object in another database transaction. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 unsigned long id = ...;
 person p;
 
@@ -8647,7 +8647,7 @@ p.age (age);
      to specify which data member will store the object version. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object optimistic
 class person
 {
@@ -8670,7 +8670,7 @@ class person
      to the version member, we can declare it <code>const</code>, for
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object optimistic
 class person
 {
@@ -8699,7 +8699,7 @@ class person
   <p>The following example shows how we can reimplement the above
      transaction using the second recovery option:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 unsigned long id = ...;
 person p;
 
@@ -8751,7 +8751,7 @@ p.age (age);
      To understand why this can be important, consider the following
      application transaction:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 unsigned long id = ...;
 person p;
 
@@ -8780,7 +8780,7 @@ if (answer == "yes")
      a completely different age. Here is how we can  fix this problem
      using optimistic concurrency:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 unsigned long id = ...;
 person p;
 
@@ -8827,7 +8827,7 @@ for (bool done (false); !done; )
      model regardless of its state, then we need to use the <code>erase()</code>
      function that deletes an object given its id, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 {
   transaction t (db.begin ());
   db.erase (p.id ());
@@ -8887,7 +8887,7 @@ for (bool done (false); !done; )
      of the <code>person</code> class that shows how we can use ODB
      pragmas:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -8906,7 +8906,7 @@ private:
      apply to data members, the <code>member</code> qualifier can be
      omitted for brevity, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   #pragma db id
   unsigned long id_;
   </pre>
@@ -8915,7 +8915,7 @@ private:
      position pragma is incompatible with the pragma qualifier, an
      error will be issued. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
   #pragma db object  // Error: expected class instead of data member.
   unsigned long id_;
   </pre>
@@ -8928,7 +8928,7 @@ private:
      explicitly specify the C++ declaration to which they apply by
      adding the declaration name after the pragma qualifier. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class person
 {
   ...
@@ -8946,7 +8946,7 @@ private:
      named pragmas is resolved using the standard C++ name resolution
      rules, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace db
 {
   class person
@@ -8969,7 +8969,7 @@ namespace db
   <p>As another example, the following code fragment shows how to use the
      named value type pragma to map a C++ type to a native database type:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value(bool) type("INT")
 
 #pragma db object
@@ -8987,7 +8987,7 @@ private:
      that defines the persistent types) using the <code>#include</code>
      directive, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 // person.hxx
 
 class person
@@ -9104,7 +9104,7 @@ class person
      be used to store objects of a class in a relational database. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object table("people")
 class person
 {
@@ -9116,7 +9116,7 @@ class person
      table name. The table name can be qualified with a database
      schema, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object table("census.people")
 class person
 {
@@ -9135,7 +9135,7 @@ class person
      pass, and cache dynamically allocated instances of a persistent
      class. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object pointer(std::tr1::shared_ptr&lt;person>)
 class person
 {
@@ -9151,7 +9151,7 @@ class person
      name as a template argument. The following example is therefore
      equivalent to the one above:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object pointer(std::tr1::shared_ptr)
 class person
 {
@@ -9162,7 +9162,7 @@ class person
   <p>If you would like to use the raw pointer as an object pointer,
      you can use <code>*</code> as a shortcut:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object pointer(*) // Same as pointer(person*)
 class person
 {
@@ -9186,7 +9186,7 @@ class person
      the database and is normally used as a base for other persistent
      classes. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object abstract
 class person
 {
@@ -9219,7 +9219,7 @@ class contractor: public person
      <code>database::update()</code> function (<a href="#3.9">Section 3.9,
      "Updating Persistent Objects"</a>) for such objects. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object readonly
 class person
 {
@@ -9249,7 +9249,7 @@ class person
      (<a href="#12.4.13">Section 12.4.13, "<code>version</code>"</a>).
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object optimistic
 class person
 {
@@ -9275,7 +9275,7 @@ class person
      has no object id. It should be followed by opening and closing
      parenthesis. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object id()
 class person
 {
@@ -9315,7 +9315,7 @@ class person
      database operation is performed on an object of this class.
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/callback.hxx>
 
 #pragma db object callback(init)
@@ -9331,7 +9331,7 @@ class person
   <p>The callback function has the following signature and can be
      overloaded for constant objects:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 void
 name (odb::callback_event, odb::database&amp;);
 
@@ -9344,7 +9344,7 @@ name (odb::callback_event, odb::database&amp;) const;
      enum-like type is defined in the <code>&lt;odb/callback.hxx></code>
      header file and has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   struct callback_event
@@ -9397,7 +9397,7 @@ namespace odb
      is used to calculate the value of the former from the latter every
      time a <code>person</code> object is loaded from the database.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/core.hxx>
 #include &lt;odb/callback.hxx>
 
@@ -9482,7 +9482,7 @@ SELECT ... FROM accounting.employee WHERE ...
      file level. To assign a schema to a specific persistent class
      we can use the <code>schema</code> specifier, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object schema("accounting")
 class employee
 {
@@ -9494,7 +9494,7 @@ class employee
      a shorter notation by specifying both the schema and
      the table name in the <code>table</code> specifier:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object table("accounting.employee")
 class employee
 {
@@ -9507,7 +9507,7 @@ class employee
      for each class, we can specify it once at the C++ namespace level.
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace schema("accounting")
 namespace accounting
 {
@@ -9536,7 +9536,7 @@ odb ... --schema accounting ...
   <p>An alternative to this approach with the same effect is to
      assign a schema to the global namespace:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace() schema("accounting")
   </pre>
 
@@ -9546,7 +9546,7 @@ odb ... --schema accounting ...
      specified with the <code>--schema</code> option. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace schema("audit_db")
 namespace audit
 {
@@ -9575,7 +9575,7 @@ namespace audit
      names in the <code>::accounting::employee</code> form. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace schema("accounting")
 namespace accounting
 {
@@ -9608,7 +9608,7 @@ namespace accounting
      table in a different schema, then you can provide a qualified
      name using the <code>table</code> specifier, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object table("accounting.employee")
 class employee
 {
@@ -9631,7 +9631,7 @@ class employee
      <code>"</code><i>name</i><code>"."</code><i>name</i><code>"</code>...
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object table("accounting_1.2"."employee")
 class employee
 {
@@ -9642,7 +9642,7 @@ class employee
   <p>Finally, to specify an unqualified name that contains periods
      we can use the following special syntax:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object schema(."accounting_1.2") table("employee")
 class employee
 {
@@ -9665,7 +9665,7 @@ class employee
   <p>The <code>session</code> specifier specifies whether to enable
      session support for a persistent class. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object session        // Enable.
 class person
 {
@@ -9935,7 +9935,7 @@ class employer
   <p>The <code>type</code> specifier specifies the native database type
      that should be used for data members of this type. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value(bool) type("INT")
 
 #pragma db object
@@ -9966,7 +9966,7 @@ class person
      of a value. Consider, as an example, a situation where the
      boolean value is stored in the database as a string:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value(bool) type("VARCHAR(5)")
   </pre>
 
@@ -9991,7 +9991,7 @@ class person
      on whether it is used in an ordinary member or an object id. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value(std::string) type("TEXT") id_type("VARCHAR(128)")
 
 #pragma db object
@@ -10010,7 +10010,7 @@ class person
      <code>id_type</code> since the desired result can be achieved
      with just the <code>type</code> specifier, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -10031,7 +10031,7 @@ class person
      <code>NULL</code> values are mapped in a relational database to
      columns that allow <code>NULL</code> values. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 using std::tr1::shared_ptr;
 
 typedef shared_ptr&lt;std::string> string_ptr;
@@ -10068,7 +10068,7 @@ typedef shared_ptr&lt;person> person_ptr;
      specifier to disable <code>NULL</code> values for this type for the
      entire translation unit. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 // By default, null_string allows NULL values.
 //
 #include &lt;null-string.hxx>
@@ -10089,7 +10089,7 @@ typedef shared_ptr&lt;person> person_ptr;
   <p>The <code>default</code> specifier specifies the database default value
      that should be used for data members of this type. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value(std::string) default("")
 
 #pragma db object
@@ -10112,7 +10112,7 @@ class person
      definition options that should be used for data members of this
      type. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value(std::string) options("COLLATE binary")
 
 #pragma db object
@@ -10138,7 +10138,7 @@ class person
      Objects"</a>) containing such a value type. Note that this specifier
      is only valid for composite value types. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value readonly
 class person_name
 {
@@ -10167,7 +10167,7 @@ class person_name
      and the order in which elements are retrieved from the database may
      not be the same as the order in which they were stored. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;std::string> names;
 #pragma db value(names) unordered
   </pre>
@@ -10185,7 +10185,7 @@ typedef std::vector&lt;std::string> names;
      (<a href="#12.3.1">Section 12.3.1, "<code>type</code>"</a>). The native
      database type is expected to be an integer type. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;std::string> names;
 #pragma db value(names) index_type("SMALLINT UNSIGNED")
   </pre>
@@ -10199,7 +10199,7 @@ typedef std::vector&lt;std::string> names;
      (<a href="#12.3.1">Section 12.3.1, "<code>type</code>"</a>). For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::map&lt;unsigned short, float> age_weight_map;
 #pragma db value(age_weight_map) key_type("INT UNSIGNED")
   </pre>
@@ -10213,7 +10213,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
      (<a href="#12.3.1">Section 12.3.1, "<code>type</code>"</a>). For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;std::string> names;
 #pragma db value(names) value_type("VARCHAR(255)")
   </pre>
@@ -10233,7 +10233,7 @@ typedef std::vector&lt;std::string> names;
      (<a href="#12.3.3">Section 12.3.3, "<code>null</code>/<code>not_null</code>"</a>).
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 using std::tr1::shared_ptr;
 
 #pragma db object
@@ -10257,7 +10257,7 @@ typedef std::vector&lt;shared_ptr&lt;account> > accounts;
      column definition options that should be used for a container's
      id column. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;std::string> nicknames;
 #pragma db value(nicknames) id_options("COLLATE binary")
   </pre>
@@ -10274,7 +10274,7 @@ typedef std::vector&lt;std::string> nicknames;
      column definition options that should be used for a container's
      index column. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;std::string> nicknames;
 #pragma db value(nicknames) index_options("ZEROFILL")
   </pre>
@@ -10291,7 +10291,7 @@ typedef std::vector&lt;std::string> nicknames;
      column definition options that should be used for a container's
      key column. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::map&lt;std::string, std::string> properties;
 #pragma db value(properties) key_options("COLLATE binary")
   </pre>
@@ -10308,7 +10308,7 @@ typedef std::map&lt;std::string, std::string> properties;
      column definition options that should be used for a container's
      value column. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::set&lt;std::string> nicknames;
 #pragma db value(nicknames) value_options("COLLATE binary")
   </pre>
@@ -10325,7 +10325,7 @@ typedef std::set&lt;std::string> nicknames;
      name that should be used to store the object id in a
      container's table. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;std::string> names;
 #pragma db value(names) id_column("id")
   </pre>
@@ -10339,7 +10339,7 @@ typedef std::vector&lt;std::string> names;
      name that should be used to store the element index in an
      ordered container's table. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;std::string> names;
 #pragma db value(names) index_column("name_number")
   </pre>
@@ -10353,7 +10353,7 @@ typedef std::vector&lt;std::string> names;
      name that should be used to store the key in a map
      container's table. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::map&lt;unsigned short, float> age_weight_map;
 #pragma db value(age_weight_map) key_column("age")
   </pre>
@@ -10367,7 +10367,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
      name that should be used to store the element value in a
      container's table. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::map&lt;unsigned short, float> age_weight_map;
 #pragma db value(age_weight_map) value_column("weight")
   </pre>
@@ -10574,7 +10574,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
      the object id. In a relational database, an identifier member is
      mapped to a primary key. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -10599,7 +10599,7 @@ class person
      is automatically assigned by the database. Only a member that was
      designated as an object id can have this specifier. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -10628,7 +10628,7 @@ class person
   <p>The <code>type</code> specifier specifies the native database type
      that should be used for a data member. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -10651,7 +10651,7 @@ class person
      a member of a composite value type that is used for both id and
      non-id members. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value
 class name
 {
@@ -10694,7 +10694,7 @@ class person
      allow <code>NULL</code> values are mapped in a relational database
      to columns that allow <code>NULL</code> values. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 using std::tr1::shared_ptr;
 
 #pragma db object
@@ -10736,7 +10736,7 @@ class account
   <p>The <code>default</code> specifier specifies the database default value
      that should be used for a data member. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -10755,7 +10755,7 @@ class person
      the <code>options</code> specifier (<a href="#12.4.7">Section
      12.4.7, "<code>options</code>"</a>) instead. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 enum gender {male, female, undisclosed};
 
 #pragma db object
@@ -10791,7 +10791,7 @@ class person
      database type, then you should use a literal corresponding
      to that type to specify the default value. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 enum gender {male, female, undisclosed};
 #pragma db value(gender) type("VARCHAR(11)")
 
@@ -10811,7 +10811,7 @@ class person
      a default value that was previously specified on the per-type
      basis. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value(std::string) default("")
 
 #pragma db object
@@ -10845,7 +10845,7 @@ class person
      definition options that should be used for a data member. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -10864,7 +10864,7 @@ class person
      accumulated options at any point in this sequence you can use
      an empty <code>options</code> specifier. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db value(std::string) options("COLLATE binary")
 
 #pragma db object
@@ -10903,7 +10903,7 @@ class person
      that should be used to store a data member of a persistent class
      or composite value type in a relational database. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -10936,7 +10936,7 @@ class person
   <p>The <code>transient</code> specifier instructs the ODB compiler
      not to store a data member in the database. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -10967,7 +10967,7 @@ class person
      as read-only and must not be explicitly declared as such. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -10991,7 +10991,7 @@ class person
      For example, the following <code>person</code> object is equivalent
      to the above declaration for the database persistence purposes:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11005,7 +11005,7 @@ class person
      declare the pointer as <code>const</code> rather than (or in addition
      to) the object itself. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11022,7 +11022,7 @@ class person
      order for the ODB compiler to automatically treat the data
      member as read-only. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11054,7 +11054,7 @@ class person
      required argument to this specifier is the corresponding data
      member name in the referenced object. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 using std::tr1::shared_ptr;
 using std::tr1::weak_ptr;
 
@@ -11098,7 +11098,7 @@ class person
      (<a href="#12.1.5">Section 12.1.5, "<code>optimistic</code>"</a>). For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object optimistic
 class person
 {
@@ -11127,7 +11127,7 @@ class person
      and the order in which elements are retrieved from the database may
      not be the same as the order in which they were stored. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11147,7 +11147,7 @@ class person
   <p>The <code>table</code> specifier specifies the table name that should
      be used to store the contents of a container member. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11175,7 +11175,7 @@ class person
   <p>The container table name can be qualified with a database
      schema, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11199,7 +11199,7 @@ class person
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>). The native
      database type is expected to be an integer type. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11219,7 +11219,7 @@ class person
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>). For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11239,7 +11239,7 @@ class person
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>). For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11265,7 +11265,7 @@ class person
      (<a href="#12.4.5">Section 12.4.5, "<code>null</code>/<code>not_null</code>"</a>).
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 using std::tr1::shared_ptr;
 
 #pragma db object
@@ -11294,7 +11294,7 @@ class account
      column definition options that should be used for a container's
      id column of a data member. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11318,7 +11318,7 @@ class person
      column definition options that should be used for a container's
      index column of a data member. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11339,7 +11339,7 @@ class person
      column definition options that should be used for a container's
      key column of a data member. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11360,7 +11360,7 @@ class person
      column definition options that should be used for a container's
      value column of a data member. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11385,7 +11385,7 @@ class person
      (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11409,7 +11409,7 @@ class person
      (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11433,7 +11433,7 @@ class person
      (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11457,7 +11457,7 @@ class person
      (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
      For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -11477,7 +11477,7 @@ class person
      C++ namespace. Similar to other qualifiers, <code>namespace</code>
      can also refer to a named C++ namespace, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace test
 {
   ...
@@ -11489,7 +11489,7 @@ namespace test
   <p>To refer to the global namespace in the <code>namespace</code>
      qualifier the following special syntax is used:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace() ....
   </pre>
 
@@ -11537,7 +11537,7 @@ namespace test
      type for persistent classes and views inside a namespace. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace pointer(std::tr1::shared_ptr)
 namespace accounting
 {
@@ -11566,7 +11566,7 @@ namespace accounting
      specified at the namespace level for any persistent class
      or view inside this namespace. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace pointer(std::unique_ptr)
 namespace accounting
 {
@@ -11593,7 +11593,7 @@ namespace accounting
      that should be added to table names of persistent classes inside
      a namespace. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace table("acc_")
 namespace accounting
 {
@@ -11619,7 +11619,7 @@ namespace accounting
      that table prefixes specified at the namespace level as well
      as with the command line option are accumulated. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace() table("audit_")
 
 #pragma db namespace table("hr_")
@@ -11662,7 +11662,7 @@ class employer
      session support for persistent classes inside a namespace. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db namespace session
 namespace hr
 {
@@ -11705,7 +11705,7 @@ namespace hr
      declaration when compiled with other compilers. The following example
      shows how we can use this macro:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/core.hxx>
 
 PRAGMA_DB(object)
@@ -11723,7 +11723,7 @@ class person
      conditionally included into compilation only when compiled with the
      ODB compiler. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class person
 {
   ...
@@ -11768,7 +11768,7 @@ g++ -Wall -Wno-unknown-pragmas ...
      a fragment of a header using the warning control pragma. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/core.hxx>
 
 #pragma warning (push)
@@ -11834,7 +11834,7 @@ clang++ -Wall -Wno-unknown-pragmas ...
      a fragment of a header using the warning control pragma. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/core.hxx>
 
 #pragma clang diagnostic push
@@ -12016,7 +12016,7 @@ class person
      <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section
      12.4.3, "<code>type</code>"</a>), for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class object
 {
@@ -12035,7 +12035,7 @@ class object
 
   <p>Alternatively, this can be done on the per-type basis, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;char> buffer;
 #pragma db value(buffer) type("BLOB")
 
@@ -12055,7 +12055,7 @@ class object
      <code>INT UNSIGNED</code>. In both cases the default <code>NULL</code>
      semantics is <code>NOT NULL</code>. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 enum color {red, green, blue};
 enum taste
 {
@@ -12080,7 +12080,7 @@ class object
   <p>The MySQL <code>database</code> class has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mysql
@@ -12262,7 +12262,7 @@ namespace odb
 
   <p>The <code>mysql::connection</code> class has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mysql
@@ -12294,7 +12294,7 @@ namespace odb
   <p>The <code>mysql::connection_factory</code> abstract class has the
      following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mysql
@@ -12332,7 +12332,7 @@ namespace odb
      <code>new_connection_factory</code> class has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mysql
@@ -12348,7 +12348,7 @@ namespace odb
   <p>The <code>connection_pool_factory</code> class implements a
      connection pool. It has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mysql
@@ -12433,7 +12433,7 @@ namespace odb
      The following code fragment shows how we can pass our own
      connection factory instance:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/database.hxx>
 
 #include &lt;odb/mysql/database.hxx>
@@ -12455,7 +12455,7 @@ main (int argc, char* argv[])
   <p>The MySQL ODB runtime library defines the following MySQL-specific
      exceptions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mysql
@@ -12649,7 +12649,7 @@ namespace odb
      <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
      "<code>type</code>"</a>), for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class object
 {
@@ -12665,7 +12665,7 @@ class object
 
   <p>Alternatively, this can be done on the per-type basis, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;char> buffer;
 #pragma db value(buffer) type("BLOB")
 
@@ -12693,7 +12693,7 @@ class object
   <p>The SQLite <code>database</code> class has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace sqlite
@@ -12758,7 +12758,7 @@ namespace odb
   <p>The following example shows how we can open the <code>test.db</code>
      database in the read-write mode and create it if it does not exist:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 auto_ptr&lt;odb::database> db (
   new odb::sqlite::database (
     "test.db",
@@ -12835,7 +12835,7 @@ auto_ptr&lt;odb::database> db (
 
   <p>The <code>sqlite::connection</code> class has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace sqlite
@@ -12883,7 +12883,7 @@ namespace odb
   <p>The <code>sqlite::connection_factory</code> abstract class has the
      following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace sqlite
@@ -12924,7 +12924,7 @@ namespace odb
      <code>single_connection_factory</code> class has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace sqlite
@@ -12962,7 +12962,7 @@ namespace odb
      <code>new_connection_factory</code> class has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace sqlite
@@ -12978,7 +12978,7 @@ namespace odb
   <p>The <code>connection_pool_factory</code> class implements a
      connection pool. It has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace sqlite
@@ -13059,7 +13059,7 @@ namespace odb
      values set to <code>0</code>. The following code fragment shows how we
      can pass our own connection factory instance:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/database.hxx>
 
 #include &lt;odb/sqlite/database.hxx>
@@ -13081,7 +13081,7 @@ main (int argc, char* argv[])
   <p>The SQLite ODB runtime library defines the following SQLite-specific
      exceptions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace sqlite
@@ -13162,7 +13162,7 @@ namespace odb
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>). For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -13202,7 +13202,7 @@ class person
      re-creating the schema. The following code fragment shows how
      this can be done:</p>
 
-  <pre>
+  <pre class="cxx">
 #include &lt;odb/connection.hxx>
 #include &lt;odb/transaction.hxx>
 #include &lt;odb/schema-catalog.hxx>
@@ -13396,7 +13396,7 @@ CREATE TABLE Employee (
      using the <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section
      12.4.3, "<code>type</code>"</a>), for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class object
 {
@@ -13415,7 +13415,7 @@ class object
 
   <p>Alternatively, this can be done on the per-type basis, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;char> buffer;
 #pragma db value(buffer) type("BYTEA")
 
@@ -13446,7 +13446,7 @@ class object
   <p>The PostgreSQL <code>database</code> class has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace pgsql
@@ -13595,7 +13595,7 @@ namespace odb
 
   <p>The <code>pgsql::connection</code> class has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace pgsql
@@ -13627,7 +13627,7 @@ namespace odb
   <p>The <code>pgsql::connection_factory</code> abstract class has the
      following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace pgsql
@@ -13665,7 +13665,7 @@ namespace odb
      <code>new_connection_factory</code> class has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace pgsql
@@ -13681,7 +13681,7 @@ namespace odb
   <p>The <code>connection_pool_factory</code> class implements a
      connection pool. It has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace pgsql
@@ -13755,7 +13755,7 @@ namespace odb
      following code fragment shows how we can pass our own connection factory
      instance:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/database.hxx>
 
 #include &lt;odb/pgsql/database.hxx>
@@ -13777,7 +13777,7 @@ main (int argc, char* argv[])
   <p>The PostgreSQL ODB runtime library defines the following
      PostgreSQL-specific exceptions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace pgsql
@@ -14035,7 +14035,7 @@ SHOW integer_datetimes
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class object
 {
@@ -14054,7 +14054,7 @@ class object
 
   <p>Alternatively, this can be done on the per-type basis, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;char> buffer;
 #pragma db value(buffer) type("BLOB")
 
@@ -14078,7 +14078,7 @@ class object
      that are used to establish connections to the database. It has the
      following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace oracle
@@ -14253,7 +14253,7 @@ namespace odb
 
   <p>The <code>oracle::connection</code> class has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace oracle
@@ -14306,7 +14306,7 @@ namespace odb
   <p>The <code>oracle::connection_factory</code> abstract class has the
      following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace oracle
@@ -14344,7 +14344,7 @@ namespace odb
      <code>new_connection_factory</code> class has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace oracle
@@ -14360,7 +14360,7 @@ namespace odb
   <p>The <code>connection_pool_factory</code> class implements a
      connection pool. It has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace oracle
@@ -14434,7 +14434,7 @@ namespace odb
      following code fragment shows how we can pass our own connection factory
      instance:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/database.hxx>
 
 #include &lt;odb/oracle/database.hxx>
@@ -14456,7 +14456,7 @@ main (int argc, char* argv[])
   <p>The Oracle ODB runtime library defines the following
      Oracle-specific exceptions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace oracle
@@ -14550,7 +14550,7 @@ namespace odb
      pragmas (<a href="#12">Chapter 12, "ODB Pragma Language")</a>. For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class long_class_name
 {
@@ -14568,7 +14568,7 @@ class long_class_name
      <code>long_class_name_long_container</code>. To resolve this
      collision we can assign a custom table name for each container:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class long_class_name
 {
@@ -14816,7 +14816,7 @@ CREATE TABLE Employee (
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class object
 {
@@ -14835,7 +14835,7 @@ class object
 
   <p>Alternatively, this can be done on the per-type basis, for example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 typedef std::vector&lt;char> buffer;
 #pragma db value(buffer) type("VARBINARY(max)")
 
@@ -14876,7 +14876,7 @@ class object
      (<a href="#17.4">Section 17.4, "SQL Server Exceptions"</a>). For
      example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class object
 {
@@ -14933,7 +14933,7 @@ t.commit ();
      user credentials that are used to establish connections to the
      database. It has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mssql
@@ -15084,7 +15084,7 @@ namespace odb
      following examples show common ways of connecting to the database
      using the first three constructors:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 // Connect to the default SQL Server instance on the local machine
 // using the default protocol. Login as 'test' with password 'secret'
 // and open the 'example_db' database.
@@ -15238,7 +15238,7 @@ odb::mssql::database dbA ("test",
 
   <p>The <code>mssql::connection</code> class has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mssql
@@ -15284,7 +15284,7 @@ namespace odb
   <p>The <code>mssql::connection_factory</code> abstract class has the
      following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mssql
@@ -15322,7 +15322,7 @@ namespace odb
      <code>new_connection_factory</code> class has the following
      interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mssql
@@ -15338,7 +15338,7 @@ namespace odb
   <p>The <code>connection_pool_factory</code> class implements a
      connection pool. It has the following interface:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mssql
@@ -15412,7 +15412,7 @@ namespace odb
      following code fragment shows how we can pass our own connection factory
      instance:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;odb/database.hxx>
 
 #include &lt;odb/mssql/database.hxx>
@@ -15434,7 +15434,7 @@ main (int argc, char* argv[])
   <p>The SQL Server ODB runtime library defines the following
      SQL Server-specific exceptions:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace mssql
@@ -15704,7 +15704,7 @@ odb --profile boost/date-time ...
      Semantics"</a>. When used as a pointer to a value, only
      <code>boost::shared_ptr</code> is supported. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -15725,7 +15725,7 @@ class person
      "Lazy Pointers"</a>. The following example shows how we can use these
      smart pointers to establish a relationship between persistent objects.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class employee;
 
 #pragma db object
@@ -15773,7 +15773,7 @@ class employee
      the <code>unordered_set</code> container may be used within a persistent
      object.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -15796,7 +15796,7 @@ class person
      <code>NULL</code> Value Semantics"</a>), it can be used to add the
      <code>NULL</code> semantics to existing C++ types. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #include &lt;boost/optional.hpp>
 
 #pragma db object
@@ -15839,7 +15839,7 @@ class person
      sub-sections that follow. The example below shows how
      <code>gregorian::date</code> may be used within a persistent object.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -15852,7 +15852,7 @@ class person
      sub-profile implementation are presented below.</p>
 
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace boost
@@ -15930,7 +15930,7 @@ namespace odb
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), as shown in
      the following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -15994,7 +15994,7 @@ class person
      <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
      "<code>type</code>"</a>), as shown in the following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -16171,7 +16171,7 @@ class person
      <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
      "<code>type</code>"</a>), as shown in the following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -16236,7 +16236,7 @@ class person
      sub-sections that follow. The example below shows how
      <code>QString</code> may be used within a persistent object.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class Person
 {
@@ -16290,7 +16290,7 @@ class Person
      (<a href="#12.4.3">Section 12.4.3, "type"</a>), as shown in
      the following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class Person
 {
@@ -16370,7 +16370,7 @@ class Person
      (<a href="#12.4.3">Section 12.4.3, "type"</a>), as shown in
      the following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class Person
 {
@@ -16420,7 +16420,7 @@ class Person
      pragma (<a href="#12.4.3">Section 12.4.3, "type"</a>), as shown in the
      following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class Person
 {
@@ -16481,7 +16481,7 @@ class Person
      pragma (<a href="#12.4.3">Section 12.4.3, "type"</a>), as shown in the
      following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class Person
 {
@@ -16512,7 +16512,7 @@ class Person
      Semantics"</a>. When used as a pointer to a value, only
      <code>QSharedPointer</code> is supported. For example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
@@ -16533,7 +16533,7 @@ class person
      "Lazy Pointers"</a>. The following example shows how we can use these
      smart pointers to establish a relationship between persistent objects.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 class Employee;
 
 #pragma db object
@@ -16580,7 +16580,7 @@ class Employee
      The following example shows how the <code>QSet</code> container may
      be used within a persistent object.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class Person
 {
@@ -16602,7 +16602,7 @@ class Person
      discussed in the sub-sections that follow. The example below shows how
      <code>QDate</code> may be used within a persistent object.</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class Person
 {
@@ -16615,7 +16615,7 @@ class Person
      <code>date-time</code> sub-profile implementation is presented below.</p>
 
 
-  <pre class="c++">
+  <pre class="cxx">
 namespace odb
 {
   namespace qt
@@ -16685,7 +16685,7 @@ namespace odb
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), as shown in
      the following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class Person
 {
@@ -16747,7 +16747,7 @@ class Person
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), as shown
      in the following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class Person
 {
@@ -16885,7 +16885,7 @@ class Person
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), as
      shown in the following example:</p>
 
-  <pre class="c++">
+  <pre class="cxx">
 #pragma db object
 class person
 {
