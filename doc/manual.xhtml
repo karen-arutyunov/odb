@@ -8402,7 +8402,7 @@ namespace odb
   class session
   {
   public:
-    session ();
+    session (bool make_current = true);
     ~session ();
 
     // Copying or assignment of sessions is not supported.
@@ -8448,10 +8448,11 @@ namespace odb
 }
   </pre>
 
-  <p>The session constructor creates a new session and sets it as a
-     current session for this thread. If we try to create another
-     session while there is already a current session in effect,
-     the constructor throws the <code>odb::already_in_session</code>
+  <p>The session constructor creates a new session and, if the
+     <code>make_current</code> argument is <code>true</code>, sets it as a
+     current session for this thread. If we try to make a session current
+     while there is already another session in effect for this thread,
+     then the constructor throws the <code>odb::already_in_session</code>
      exception. The destructor clears the current session for this
      thread if this session is the current one.</p>
 
