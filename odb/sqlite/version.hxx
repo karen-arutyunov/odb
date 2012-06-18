@@ -35,8 +35,8 @@
 // libodb-sqlite version: odb interface version plus the bugfix
 // version.
 //
-#define LIBODB_SQLITE_VERSION     2000000
-#define LIBODB_SQLITE_VERSION_STR "2.0.0"
+#define LIBODB_SQLITE_VERSION     2000100
+#define LIBODB_SQLITE_VERSION_STR "2.0.1"
 
 #include <odb/post.hxx>
 
