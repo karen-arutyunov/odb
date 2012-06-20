@@ -969,7 +969,6 @@ main (int argc, char* argv[])
     e << ex << endl;
     return 1;
   }
-
 }
 
 static string
