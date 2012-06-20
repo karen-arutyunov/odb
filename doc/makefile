@@ -31,16 +31,16 @@ $(out_base)/odb.xhtml: $(src_root)/odb/options.cli    \
                        $(src_base)/odb-epilogue.xhtml | $(out_base)/.
 	$(call message,cli-html $<,$(cli) --generate-html --stdout \
 --suppress-undocumented \
---html-prologue $(src_base)/odb-prologue.xhtml \
---html-epilogue $(src_base)/odb-epilogue.xhtml $< >$@)
+--html-prologue-file $(src_base)/odb-prologue.xhtml \
+--html-epilogue-file $(src_base)/odb-epilogue.xhtml $< >$@)
 
 $(out_base)/odb.1: $(src_root)/odb/options.cli \
                    $(src_base)/odb-prologue.1  \
                    $(src_base)/odb-epilogue.1 | $(out_base)/.
 	$(call message,cli-man $<,$(cli) --generate-man --stdout \
 --suppress-undocumented \
---man-prologue $(src_base)/odb-prologue.1 \
---man-epilogue $(src_base)/odb-epilogue.1 $< >$@)
+--man-prologue-file $(src_base)/odb-prologue.1 \
+--man-epilogue-file $(src_base)/odb-epilogue.1 $< >$@)
 
 # Manual.
 #
