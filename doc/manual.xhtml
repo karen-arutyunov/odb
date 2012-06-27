@@ -16114,6 +16114,24 @@ class person
   <p>The Boost special value <code>date_time::not_a_date_time</code> is stored
      as a <code>NULL</code> value in an Oracle database.</p>
 
+  <p>The <code>date-time</code> sub-profile implementation also provides
+     support for mapping <code>posix_time::ptime</code> to the
+     <code>DATE</code> Oracle type with fractional seconds that may be
+     stored in a <code>ptime</code> instance being ignored. This
+     alternative mapping has to be explicitly requested using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>), as shown in the following example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+  #pragma db type("DATE")
+  boost::posix_time::ptime updated_;
+};
+  </pre>
+
   <p>Some valid Boost date-time values cannot be stored in an Oracle database.
      An attempt to persist a <code>gregorian::date</code>,
      <code>posix_time::ptime</code>, or
@@ -16835,6 +16853,24 @@ class Person
   <p>Instances of the <code>QDate</code>, <code>QTime</code>, and
      <code>QDateTime</code> types are stored as a NULL value if their
      <code>isNull()</code> member function returns true.</p>
+
+  <p>The <code>date-time</code> sub-profile implementation also provides
+     support for mapping <code>QDateTime</code> to the
+     <code>DATE</code> Oracle type with fractional seconds that may be
+     stored in a <code>QDateTime</code> instance being ignored. This
+     alternative mapping has to be explicitly requested using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>), as shown in the following example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+  #pragma db type("DATE")
+  QDateTime updated_;
+};
+  </pre>
 
   <h3><a name="20.4.5">20.4.5 SQL Server Database Type Mapping</a></h3>
 
