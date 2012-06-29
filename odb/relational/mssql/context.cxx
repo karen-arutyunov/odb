@@ -270,7 +270,7 @@ namespace relational
             r_.has_prec = true;
             r_.prec = 53;
 
-            // It appears that DOUBLE PRECISION can be follows by the
+            // It appears that DOUBLE PRECISION can be followed by the
             // precision specification.
             //
             parse_precision (l_.next ());

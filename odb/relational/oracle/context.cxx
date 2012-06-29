@@ -267,7 +267,7 @@ namespace relational
                   s = parse_done;
                 }
                 //
-                // Floating point types
+                // Floating point types.
                 //
                 else if (id == "FLOAT" && prefix.empty ())
                 {
