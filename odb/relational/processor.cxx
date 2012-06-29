@@ -909,7 +909,7 @@ namespace relational
 
           os << c->file () << ":" << c->line () << ":" << c->column () << ": "
              << "info: consider including its definition with the "
-             << "--odb-prologue option" << endl;
+             << "--odb-epilogue option" << endl;
 
           throw operation_failed ();
         }
