@@ -106,7 +106,7 @@ namespace relational
              << "  EXCEPTION" << endl
              << "    WHEN OTHERS THEN" << endl
              << "      IF SQLCODE != -942 THEN RAISE; END IF;" << endl
-             << "  END;"
+             << "  END;" << endl
              << "  BEGIN" << endl
              << "    EXECUTE IMMEDIATE 'DROP SEQUENCE " <<
             quote_id (table + "_seq") << "';" << endl
