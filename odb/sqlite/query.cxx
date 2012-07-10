@@ -188,9 +188,13 @@ namespace odb
     }
 
     void query::
-    add (details::shared_ptr<query_param> p)
+    add (details::shared_ptr<query_param> p, const char* conv)
     {
       clause_.push_back (clause_part (clause_part::param));
+
+      if (conv != 0)
+        clause_.back ().part = conv;
+
       parameters_->add (p);
     }
 
@@ -287,7 +291,20 @@ namespace odb
             if (last != ' ' && last != '(')
               r += ' ';
 
+            // Add the conversion expression, if any.
+            //
+            string::size_type p;
+            if (!i->part.empty ())
+            {
+              p = i->part.find ("(?)");
+              r.append (i->part, 0, p);
+            }
+
             r += '?';
+
+            if (!i->part.empty ())
+              r.append (i->part, p + 3, string::npos);
+
             break;
           }
         case clause_part::native:
