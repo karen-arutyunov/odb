@@ -9,15 +9,28 @@
 using namespace std;
 
 sql_lexer::
-sql_lexer (std::string const& sql)
-    : loc_ ("C"),
-      is_ (sql),
-      l_ (1),
-      c_(1),
-      eos_ (false),
-      buf_ (0, 0, 0),
-      unget_ (false)
+sql_lexer ()
+    : loc_ ("C"), buf_ (0, 0, 0)
 {
+}
+
+sql_lexer::
+sql_lexer (std::string const& sql)
+    : loc_ ("C"), buf_ (0, 0, 0)
+{
+  lex (sql);
+}
+
+void sql_lexer::
+lex (std::string const& sql)
+{
+  is_.str (sql);
+  is_.clear ();
+
+  l_ = c_ = 1;
+  buf_ = xchar (0, 0, 0);
+  eos_ = false;
+  unget_  = false;
 }
 
 sql_lexer::xchar sql_lexer::

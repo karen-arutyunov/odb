@@ -15,7 +15,10 @@
 class sql_lexer
 {
 public:
+  sql_lexer ();
   sql_lexer (std::string const& sql);
+
+  void lex (std::string const& sql);
 
   struct invalid_input
   {
