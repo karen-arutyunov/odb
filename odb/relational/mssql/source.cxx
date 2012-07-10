@@ -908,14 +908,16 @@ namespace relational
             {
               if (p == persist_after_values)
                 os << endl
-                   << strlit ("; SELECT SCOPE_IDENTITY()");
+                   << strlit ("; SELECT " +
+                              convert_from ("SCOPE_IDENTITY()", *id));
 
               return;
             }
           }
 
           if (p == persist_after_columns)
-            os << strlit (" OUTPUT INSERTED." + column_qname (*id)) << endl;
+            os << strlit (" OUTPUT " + convert_from (
+                            "INSERTED." + column_qname (*id), *id)) << endl;
         }
 
         virtual void

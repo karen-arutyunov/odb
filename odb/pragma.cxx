@@ -13,7 +13,9 @@
 #include <odb/pragma.hxx>
 #include <odb/cxx-token.hxx>
 #include <odb/cxx-lexer.hxx>
+
 #include <odb/context.hxx>
+#include <odb/relational/context.hxx>
 
 using namespace std;
 using namespace cutl;
@@ -342,77 +344,6 @@ resolve_scoped_name (tree& token,
 }
 
 static bool
-check_qual_decl_type (tree d,
-                      string const& name,
-                      string const& p,
-                      location_t l)
-{
-  int tc (TREE_CODE (d));
-
-  if (p == "namespace")
-  {
-    if (tc != NAMESPACE_DECL)
-    {
-      error (l) << "name '" << name << "' in db pragma " << p << " does "
-                << "not refer to a namespace" << endl;
-      return false;
-    }
-  }
-  else if (p == "object" ||
-           p == "view")
-  {
-    if (tc != RECORD_TYPE)
-    {
-      error (l) << "name '" << name << "' in db pragma " << p << " does "
-                << "not refer to a class" << endl;
-      return false;
-    }
-  }
-  else if (p == "value")
-  {
-    if (!TYPE_P (d))
-    {
-      error (l) << "name '" << name << "' in db pragma " << p << " does "
-                << "not refer to a type" << endl;
-      return false;
-    }
-  }
-  else if (p == "member")
-  {
-    if (tc != FIELD_DECL)
-    {
-      error (l) << "name '" << name << "' in db pragma " << p << " does "
-                << "not refer to a data member" << endl;
-      return false;
-    }
-  }
-  else
-  {
-    error () << "unknown db pragma " << p << endl;
-    return false;
-  }
-
-  return true;
-}
-
-static void
-add_qual_entry (compiler::context& ctx,
-                string const& k,
-                any const& v,
-                location_t l)
-{
-  // Store the TYPE_DECL node that was referred to in the pragma. This
-  // can be used later as a name hint in case the type is a template
-  // instantiation. Also store the pragma location which is used as
-  // the "definition point" for this instantiation.
-  //
-  ctx.set ("tree-node", v);
-  ctx.set ("location", l);
-
-  ctx.set (k, true);
-}
-
-static bool
 check_spec_decl_type (tree d,
                       string const& name,
                       string const& p,
@@ -632,6 +563,7 @@ static void
 handle_pragma (cpp_reader* reader,
                string const& p,
                string const& qualifier,
+               any& qualifier_value,
                tree decl,
                string const& decl_name,
                bool ns) // True if this is a position namespace pragma.
@@ -1418,6 +1350,93 @@ handle_pragma (cpp_reader* reader,
     adder = &accumulate<string>;
     tt = pragma_lex (&t);
   }
+  else if (qualifier == "map" &&
+           (p == "type" ||
+            p == "as"   ||
+            p == "to"   ||
+            p == "from"))
+  {
+    // type("<regex>")
+    // as("<subst>")
+    // to("<subst>")
+    // from("<subst>")
+    //
+    using relational::custom_db_type;
+
+    // Make sure we've got the correct declaration type.
+    //
+    assert (decl == global_namespace);
+    custom_db_type& ct (qualifier_value.value<custom_db_type> ());
+
+    if (pragma_lex (&t) != CPP_OPEN_PAREN)
+    {
+      error () << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    tt = pragma_lex (&t);
+
+    if (p == "type")
+    {
+      if (tt != CPP_STRING)
+      {
+        error () << "type name regex expected in db pragma " << p << endl;
+        return;
+      }
+
+      try
+      {
+        // Make it case-insensitive.
+        //
+        ct.type.assign (TREE_STRING_POINTER (t), true);
+      }
+      catch (regex_format const& e)
+      {
+        error () << "invalid regex: '" << e.regex () << "' in db pragma " <<
+          p << ": " << e.description () << endl;
+        return;
+      }
+    }
+    else if (p == "as")
+    {
+      if (tt != CPP_STRING)
+      {
+        error () << "type name expected in db pragma " << p << endl;
+        return;
+      }
+
+      ct.as = TREE_STRING_POINTER (t);
+    }
+    else if (p == "to")
+    {
+      if (tt != CPP_STRING)
+      {
+        error () << "expression expected in db pragma " << p << endl;
+        return;
+      }
+
+      ct.to = TREE_STRING_POINTER (t);
+    }
+    else if (p == "from")
+    {
+      if (tt != CPP_STRING)
+      {
+        error () << "expression expected in db pragma " << p << endl;
+        return;
+      }
+
+      ct.from = TREE_STRING_POINTER (t);
+    }
+
+    if (pragma_lex (&t) != CPP_CLOSE_PAREN)
+    {
+      error () << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    name.clear (); // We don't need to add anything for this pragma.
+    tt = pragma_lex (&t);
+  }
   else if (p == "type" ||
            p == "id_type" ||
            p == "value_type" ||
@@ -1691,33 +1710,122 @@ handle_pragma (cpp_reader* reader,
     return;
   }
 
-  // If the value is not specified and we don't use a custom adder,
-  // then make it bool (flag).
+  // Add the pragma unless was indicated otherwise.
   //
-  if (adder == 0 && val.empty ())
-    val = true;
+  if (!name.empty ())
+  {
+    // If the value is not specified and we don't use a custom adder,
+    // then make it bool (flag).
+    //
+    if (adder == 0 && val.empty ())
+      val = true;
 
-  // Convert '_' to '-' in the context name so we get foo-bar instead
-  // of foo_bar (that's the convention used).
-  //
-  for (size_t i (0); i < name.size (); ++i)
-    if (name[i] == '_')
-      name[i] = '-';
+    // Convert '_' to '-' in the context name so we get foo-bar instead
+    // of foo_bar (that's the convention used).
+    //
+    for (size_t i (0); i < name.size (); ++i)
+      if (name[i] == '_')
+        name[i] = '-';
 
-  // Record this pragma.
-  //
-  add_pragma (
-    pragma (p, name, val, loc, &check_spec_decl_type, adder), decl, ns);
+    // Record this pragma.
+    //
+    add_pragma (
+      pragma (p, name, val, loc, &check_spec_decl_type, adder), decl, ns);
+  }
 
   // See if there are any more pragmas.
   //
   if (tt == CPP_NAME)
   {
-    handle_pragma (
-      reader, IDENTIFIER_POINTER (t), qualifier, decl, decl_name, ns);
+    handle_pragma (reader,
+                   IDENTIFIER_POINTER (t),
+                   qualifier,
+                   qualifier_value,
+                   decl,
+                   decl_name,
+                   ns);
   }
   else if (tt != CPP_EOF)
     error () << "unexpected text after " << p << " in db pragma" << endl;
+}
+
+//
+// Qualifiers.
+//
+
+static bool
+check_qual_decl_type (tree d,
+                      string const& name,
+                      string const& p,
+                      location_t l)
+{
+  int tc (TREE_CODE (d));
+
+  if (p == "map")
+  {
+    assert (d == global_namespace);
+  }
+  else if (p == "namespace")
+  {
+    if (tc != NAMESPACE_DECL)
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a namespace" << endl;
+      return false;
+    }
+  }
+  else if (p == "object" ||
+           p == "view")
+  {
+    if (tc != RECORD_TYPE)
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a class" << endl;
+      return false;
+    }
+  }
+  else if (p == "value")
+  {
+    if (!TYPE_P (d))
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a type" << endl;
+      return false;
+    }
+  }
+  else if (p == "member")
+  {
+    if (tc != FIELD_DECL)
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a data member" << endl;
+      return false;
+    }
+  }
+  else
+  {
+    error () << "unknown db pragma " << p << endl;
+    return false;
+  }
+
+  return true;
+}
+
+static void
+add_qual_entry (compiler::context& ctx,
+                string const& k,
+                any const& v,
+                location_t l)
+{
+  // Store the TYPE_DECL node that was referred to in the pragma. This
+  // can be used later as a name hint in case the type is a template
+  // instantiation. Also store the pragma location which is used as
+  // the "definition point" for this instantiation.
+  //
+  ctx.set ("tree-node", v);
+  ctx.set ("location", l);
+
+  ctx.set (k, true);
 }
 
 static void
@@ -1728,12 +1836,30 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
 
   tree decl (0), orig_decl (0);
   string decl_name;
-  location_t loc (input_location);
-  bool ns (false); // Namespace location pragma.
+
+  string name (p);                 // Pragma name.
+  any val;                         // Pragma value.
+  location_t loc (input_location); // Pragma location.
+  pragma::add_func adder (0);      // Custom context adder.
+  bool ns (false);                 // Namespace location pragma.
 
   // Pragma qualifiers.
   //
-  if (p == "namespace")
+  if (p == "map")
+  {
+    // map type("<regex>") as("<subst>") [to("<subst>")] [from("<subst>")]
+    //
+    using relational::custom_db_type;
+
+    custom_db_type ct;
+    ct.loc = loc;
+    val = ct;
+    name = "custom-db-types";
+    orig_decl = decl = global_namespace;
+    adder = &accumulate<custom_db_type>;
+    tt = pragma_lex (&t);
+  }
+  else if (p == "namespace")
   {
     // namespace [(<identifier>)]
     // namespace ()                (refers to global namespace)
@@ -1917,7 +2043,7 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
            p == "transient" ||
            p == "version")
   {
-    handle_pragma (reader, p, "member", 0, "", false);
+    handle_pragma (reader, p, "member", val, 0, "", false);
     return;
   }
   else
@@ -1926,17 +2052,22 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
     return;
   }
 
+  if (adder == 0)
+    val = orig_decl;
+
   // Record this pragma.
   //
   pragma prag (p,
-               p, // For now no need to translate '_' to '-'.
-               any (orig_decl),
+               name, // For now no need to translate '_' to '-'.
+               val,
                loc,
                &check_qual_decl_type,
-               &add_qual_entry);
+               adder != 0 ? adder : &add_qual_entry);
+
+  any* pval;
 
   if (decl)
-    decl_pragmas_[decl].insert (prag);
+    pval = &decl_pragmas_[decl].insert (prag).value;
   else
   {
     tree scope (current_scope ());
@@ -1946,20 +2077,32 @@ handle_pragma_qualifier (cpp_reader* reader, string const& p)
       if (!CLASS_TYPE_P (scope))
         scope = global_namespace;
 
-      loc_pragmas_[scope].push_back (prag);
+      pragma_list& pl (loc_pragmas_[scope]);
+      pl.push_back (prag);
+      pval = &pl.back ().value;
     }
     else
+    {
       ns_loc_pragmas_.push_back (ns_loc_pragma (scope, prag));
+      pval = &ns_loc_pragmas_.back ().pragma.value;
+    }
   }
 
   // See if there are any more pragmas.
   //
   if (tt == CPP_NAME)
   {
-    handle_pragma (reader, IDENTIFIER_POINTER (t), p, decl, decl_name, ns);
+    handle_pragma (
+      reader, IDENTIFIER_POINTER (t), p, *pval, decl, decl_name, ns);
   }
   else if (tt != CPP_EOF)
     error () << "unexpected text after " << p << " in db pragma" << endl;
+}
+
+extern "C" void
+handle_pragma_db_map (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "map");
 }
 
 extern "C" void
@@ -2220,6 +2363,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion (0, "db", handle_pragma_db);
 
   /*
+  c_register_pragma_with_expansion ("db", "map", handle_pragma_db_map);
   c_register_pragma_with_expansion ("db", "namespace", handle_pragma_db_namespace);
   c_register_pragma_with_expansion ("db", "object", handle_pragma_db_object);
   c_register_pragma_with_expansion ("db", "view", handle_pragma_db_view);

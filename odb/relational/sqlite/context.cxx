@@ -104,6 +104,13 @@ namespace relational
     {
     }
 
+    string const& context::
+    convert_expr (string const& sqlt, semantics::data_member& m, bool to)
+    {
+      sql_type const& t (parse_sql_type (sqlt, m));
+      return to ? t.to : t.from;
+    }
+
     namespace
     {
       struct has_grow: traversal::class_
@@ -230,66 +237,67 @@ namespace relational
       {
         typedef context::invalid_sql_type invalid_sql_type;
 
-        sql_parser (std::string const& sql)
-            : l_ (sql)
-        {
-        }
+        sql_parser (custom_db_types const* ct): ct_ (ct) {}
 
         sql_type
-        parse ()
+        parse (string sql)
         {
+          sql_type r;
+
+          // First run the type through the custom mapping, if requested.
+          //
+          if (ct_ != 0)
+          {
+            for (custom_db_types::const_iterator i (ct_->begin ());
+                 i != ct_->end (); ++i)
+            {
+              custom_db_type const& t (*i);
+
+              if (t.type.match (sql))
+              {
+                r.to = t.type.replace (sql, t.to);
+                r.from = t.type.replace (sql, t.from);
+                sql = t.type.replace (sql, t.as);
+                break;
+              }
+            }
+          }
+
+          // Parse the type into a sequence of identifiers.
+          //
           try
           {
+            l_.lex (sql);
+
             for (sql_token t (l_.next ()); t.type () != sql_token::t_eos;)
             {
               sql_token::token_type tt (t.type ());
 
               if (tt == sql_token::t_identifier)
               {
-                string const& id (context::upcase (t.identifier ()));
-
-                // Column constraints start with one of the following
-                // keywords. Use them to determine when to stop parsing.
-                //
-                if (id == "CONSTRAINT" ||
-                    id == "PRIMARY" ||
-                    id == "NOT" ||
-                    id == "UNIQUE" ||
-                    id == "CHECK" ||
-                    id == "DEFAULT" ||
-                    id == "COLLATE" ||
-                    id == "REFERENCES")
-                {
-                  break;
-                }
-
-                ids_.push_back (id);
+                ids_.push_back (context::upcase (t.identifier ()));
                 t = l_.next ();
 
                 if (t.punctuation () == sql_token::p_lparen)
                 {
-                  parse_range ();
+                  if (!parse_range ())
+                    return error (m_);
+
                   t = l_.next ();
                 }
               }
               else
-              {
-                throw invalid_sql_type (
-                  "expected SQLite type name instead of '" + t.string () +
-                  "'");
-              }
+                return error ("expected SQLite type name instead of '" +
+                              t.string () + "'");
             }
           }
           catch (sql_lexer::invalid_input const& e)
           {
-            throw invalid_sql_type (
-              "invalid SQLite type declaration: " + e.message);
+            return error ("invalid SQLite type declaration: " + e.message);
           }
 
           if (ids_.empty ())
-            throw invalid_sql_type ("expected SQLite type name");
-
-          sql_type r;
+            return error ("expected SQLite type name");
 
           // Apply the first four rules of the SQLite type to affinity
           // conversion algorithm.
@@ -319,15 +327,13 @@ namespace relational
             else if (id == "DATE" || id == "TIME" || id == "DATETIME")
               r.type = sql_type::TEXT;
             else
-            {
-              throw invalid_sql_type ("unknown SQLite type '" + id + "'");
-            }
+              return error ("unknown SQLite type '" + id + "'");
           }
 
           return r;
         }
 
-        void
+        bool
         parse_range ()
         {
           // Skip tokens until we get the closing paren.
@@ -339,10 +345,22 @@ namespace relational
 
             if (t.type () == sql_token::t_eos)
             {
-              throw invalid_sql_type (
-                "missing ')' in SQLite type declaration");
+              m_ = "missing ')' in SQLite type declaration";
+              return false;
             }
           }
+
+          return true;
+        }
+
+      private:
+        sql_type
+        error (string const& m)
+        {
+          if (ct_ == 0)
+            return sql_type ();
+          else
+            throw invalid_sql_type (m);
         }
 
         bool
@@ -359,29 +377,41 @@ namespace relational
         }
 
       private:
-        typedef vector<string> identifiers;
-
-      private:
+        custom_db_types const* ct_;
         sql_lexer l_;
+        string m_; // Error message.
+
+        typedef vector<string> identifiers;
         identifiers ids_;
       };
     }
 
     sql_type const& context::
-    parse_sql_type (string const& t, semantics::data_member& m)
+    parse_sql_type (string const& t, semantics::data_member& m, bool custom)
     {
-      // If this proves to be too expensive, we can maintain a
-      // cache of parsed types.
+      // If this proves to be too expensive, we can maintain a cache of
+      // parsed types across contexts.
       //
       data::sql_type_cache::iterator i (data_->sql_type_cache_.find (t));
 
-      if (i != data_->sql_type_cache_.end ())
-        return i->second;
+      if (i != data_->sql_type_cache_.end ()
+          && (custom ? i->second.custom_cached : i->second.straight_cached))
+      {
+        return (custom ? i->second.custom : i->second.straight);
+      }
       else
       {
         try
         {
-          return (data_->sql_type_cache_[t] = parse_sql_type (t));
+          sql_type st (
+            parse_sql_type (
+              t,
+              custom ? &unit.get<custom_db_types> ("custom-db-types") : 0));
+
+          if (custom)
+            return data_->sql_type_cache_[t].cache_custom (st);
+          else
+            return data_->sql_type_cache_[t].cache_straight (st);
         }
         catch (invalid_sql_type const& e)
         {
@@ -394,10 +424,10 @@ namespace relational
     }
 
     sql_type context::
-    parse_sql_type (string const& t)
+    parse_sql_type (string const& sqlt, custom_db_types const* ct)
     {
-      sql_parser p (t);
-      return p.parse ();
+      sql_parser p (ct);
+      return p.parse (sqlt);
     }
   }
 }

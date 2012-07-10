@@ -75,14 +75,20 @@ namespace relational
       bool range;
       unsigned int range_value; // MySQL max value is 2^32 - 1 (LONGBLOG/TEXT).
       std::vector<std::string> enumerators; // Enumerator strings for ENUM.
+
+      // Conversion expressions for custom database types.
+      //
+      std::string to;
+      std::string from;
     };
 
     class context: public virtual relational::context
     {
     public:
       sql_type const&
-      parse_sql_type (string const&, semantics::data_member&);
-
+      parse_sql_type (string const&,
+                      semantics::data_member&,
+                      bool custom = true);
     public:
       struct invalid_sql_type
       {
@@ -95,10 +101,17 @@ namespace relational
         string message_;
       };
 
+      // If custom_db_types is NULL, then this function returns
+      // invalid type instead of throwing in case an unknown type
+      // is encountered.
+      //
       static sql_type
-      parse_sql_type (string const&);
+      parse_sql_type (string, custom_db_types const* = 0);
 
     protected:
+      virtual string const&
+      convert_expr (string const&, semantics::data_member&, bool);
+
       virtual bool
       grow_impl (semantics::class_&);
 
@@ -140,7 +153,35 @@ namespace relational
       {
         data (std::ostream& os): base_context::data (os) {}
 
-        typedef std::map<string, sql_type> sql_type_cache;
+        struct sql_type_cache_entry
+        {
+          sql_type_cache_entry ()
+              : custom_cached (false), straight_cached (false) {}
+
+          sql_type const&
+          cache_custom (sql_type const& t)
+          {
+            custom = t;
+            custom_cached = true;
+            return custom;
+          }
+
+          sql_type const&
+          cache_straight (sql_type const& t)
+          {
+            straight = t;
+            straight_cached = true;
+            return straight;
+          }
+
+          sql_type custom;   // With custom mapping.
+          sql_type straight; // Without custom mapping.
+
+          bool custom_cached;
+          bool straight_cached;
+        };
+
+        typedef std::map<string, sql_type_cache_entry> sql_type_cache;
         sql_type_cache sql_type_cache_;
       };
       data* data_;

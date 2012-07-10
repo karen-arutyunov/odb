@@ -35,6 +35,7 @@ using std::cerr;
 //
 using cutl::re::regex;
 using cutl::re::regexsub;
+typedef cutl::re::format regex_format;
 
 typedef std::vector<regexsub> regex_mapping;
 

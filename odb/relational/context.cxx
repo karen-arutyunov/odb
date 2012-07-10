@@ -44,6 +44,22 @@ namespace relational
     current_ = this;
   }
 
+  string context::
+  convert (string const& e, string const& c)
+  {
+    size_t p (c.find ("(?)"));
+    string r (c, 0, p);
+    r += e;
+    r.append (c, p + 3, string::npos);
+    return r;
+  }
+
+  string const& context::
+  convert_expr (string const&, semantics::data_member&, bool)
+  {
+    assert (false);
+  }
+
   bool context::
   grow_impl (semantics::class_&)
   {

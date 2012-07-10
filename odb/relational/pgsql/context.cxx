@@ -185,6 +185,13 @@ namespace relational
       };
     }
 
+    string const& context::
+    convert_expr (string const& sqlt, semantics::data_member& m, bool to)
+    {
+      sql_type const& t (parse_sql_type (sqlt, m));
+      return to ? t.to : t.from;
+    }
+
     bool context::
     grow_impl (semantics::class_& c)
     {
@@ -239,20 +246,31 @@ namespace relational
     //
 
     sql_type const& context::
-    parse_sql_type (string const& t, semantics::data_member& m)
+    parse_sql_type (string const& t, semantics::data_member& m, bool custom)
     {
-      // If this proves to be too expensive, we can maintain a
-      // cache of parsed types.
+      // If this proves to be too expensive, we can maintain a cache of
+      // parsed types across contexts.
       //
       data::sql_type_cache::iterator i (data_->sql_type_cache_.find (t));
 
-      if (i != data_->sql_type_cache_.end ())
-        return i->second;
+      if (i != data_->sql_type_cache_.end ()
+          && (custom ? i->second.custom_cached : i->second.straight_cached))
+      {
+        return (custom ? i->second.custom : i->second.straight);
+      }
       else
       {
         try
         {
-          return (data_->sql_type_cache_[t] = parse_sql_type (t));
+          sql_type st (
+            parse_sql_type (
+              t,
+              custom ? &unit.get<custom_db_types> ("custom-db-types") : 0));
+
+          if (custom)
+            return data_->sql_type_cache_[t].cache_custom (st);
+          else
+            return data_->sql_type_cache_[t].cache_straight (st);
         }
         catch (invalid_sql_type const& e)
         {
@@ -264,12 +282,41 @@ namespace relational
       }
     }
 
+    inline sql_type
+    error (bool fail, string const& m)
+    {
+      if (!fail)
+        return sql_type ();
+      else
+        throw context::invalid_sql_type (m);
+    }
+
     sql_type context::
-    parse_sql_type (string const& sqlt)
+    parse_sql_type (string sqlt, custom_db_types const* ct)
     {
       try
       {
         sql_type r;
+
+        // First run the type through the custom mapping, if requested.
+        //
+        if (ct != 0)
+        {
+          for (custom_db_types::const_iterator i (ct->begin ());
+               i != ct->end (); ++i)
+          {
+            custom_db_type const& t (*i);
+
+            if (t.type.match (sqlt))
+            {
+              r.to = t.type.replace (sqlt, t.to);
+              r.from = t.type.replace (sqlt, t.from);
+              sqlt = t.type.replace (sqlt, t.as);
+              break;
+            }
+          }
+        }
+
         sql_lexer l (sqlt);
 
         // While most type names use single identifier, there are
@@ -384,8 +431,8 @@ namespace relational
                 }
                 else if (id == "TIMETZ")
                 {
-                  throw invalid_sql_type (
-                    "PostgreSQL time zones are not currently supported");
+                  return error (ct, "PostgreSQL time zones are not currently "
+                                "supported");
                 }
                 else if (id == "TIMESTAMP")
                 {
@@ -393,8 +440,8 @@ namespace relational
                 }
                 else if (id == "TIMESTAMPTZ")
                 {
-                  throw invalid_sql_type (
-                    "PostgreSQL time zones are not currently supported");
+                  return error (ct, "PostgreSQL time zones are not currently "
+                                "supported");
                 }
                 //
                 // String and binary types.
@@ -460,13 +507,11 @@ namespace relational
 
               if (r.type == sql_type::invalid)
               {
-                if (tt == sql_token::t_identifier)
-                {
-                  throw invalid_sql_type (
-                    "unknown PostgreSQL type '" + t.identifier () + "'");
-                }
-                else
-                  throw invalid_sql_type ("expected PostgreSQL type name");
+                return error (
+                  ct,
+                  tt == sql_token::t_identifier
+                  ? "unknown PostgreSQL type '" + t.identifier () + "'"
+                  : "expected PostgreSQL type name");
               }
 
               // Fall through.
@@ -481,8 +526,8 @@ namespace relational
 
                 if (t.type () != sql_token::t_int_lit)
                 {
-                  throw invalid_sql_type (
-                    "integer range expected in PostgreSQL type declaration");
+                  return error (ct, "integer range expected in PostgreSQL "
+                                "type declaration");
                 }
 
                 unsigned int v;
@@ -490,9 +535,8 @@ namespace relational
 
                 if (!(is >> v && is.eof ()))
                 {
-                  throw invalid_sql_type (
-                    "invalid range value '" + t.literal () + "' in PostgreSQL "
-                    "type declaration");
+                  return error (ct, "invalid range value '" + t.literal () +
+                                "' in PostgreSQL type declaration");
                 }
 
                 r.range = true;
@@ -510,8 +554,8 @@ namespace relational
 
                 if (t.punctuation () != sql_token::p_rparen)
                 {
-                  throw invalid_sql_type (
-                    "expected ')' in PostgreSQL type declaration");
+                  return error (ct, "expected ')' in PostgreSQL type "
+                                "declaration");
                 }
 
                 s = parse_suffix;
@@ -548,9 +592,10 @@ namespace relational
 
                         if (id3 == "ZONE")
                         {
-                          throw invalid_sql_type (
-                            "PostgreSQL time zones are not currently "
-                            "supported");
+                          // This code shall not fall through.
+                          //
+                          return error (ct, "PostgreSQL time zones are not "
+                                        "currently supported");
                         }
                       }
                     }
@@ -558,8 +603,11 @@ namespace relational
                 }
               }
 
-              s = parse_done;
-              break;
+              return error (
+                ct,
+                tt == sql_token::t_identifier
+                ? "unknown PostgreSQL type '" + t.identifier () + "'"
+                : "unknown PostgreSQL type");
             }
           case parse_done:
             {
@@ -592,9 +640,7 @@ namespace relational
         }
 
         if (r.type == sql_type::invalid)
-        {
-          throw invalid_sql_type ("incomplete PostgreSQL type declaration");
-        }
+          return error (ct, "incomplete PostgreSQL type declaration");
 
         // If range is omitted for CHAR or BIT types, it defaults to 1.
         //
@@ -608,8 +654,7 @@ namespace relational
       }
       catch (sql_lexer::invalid_input const& e)
       {
-        throw invalid_sql_type (
-          "invalid PostgreSQL type declaration: " + e.message);
+        return error (ct, "invalid PostgreSQL type declaration: " + e.message);
       }
     }
   }

@@ -104,6 +104,13 @@ namespace relational
     {
     }
 
+    string const& context::
+    convert_expr (string const& sqlt, semantics::data_member& m, bool to)
+    {
+      sql_type const& t (parse_sql_type (sqlt, m));
+      return to ? t.to : t.from;
+    }
+
     string context::
     quote_id_impl (qname const& id) const
     {
@@ -162,20 +169,31 @@ namespace relational
     //
 
     sql_type const& context::
-    parse_sql_type (string const& t, semantics::data_member& m)
+    parse_sql_type (string const& t, semantics::data_member& m, bool custom)
     {
-      // If this proves to be too expensive, we can maintain a
-      // cache of parsed types.
+      // If this proves to be too expensive, we can maintain a cache of
+      // parsed types across contexts.
       //
       data::sql_type_cache::iterator i (data_->sql_type_cache_.find (t));
 
-      if (i != data_->sql_type_cache_.end ())
-        return i->second;
+      if (i != data_->sql_type_cache_.end ()
+          && (custom ? i->second.custom_cached : i->second.straight_cached))
+      {
+        return (custom ? i->second.custom : i->second.straight);
+      }
       else
       {
         try
         {
-          return (data_->sql_type_cache_[t] = parse_sql_type (t));
+          sql_type st (
+            parse_sql_type (
+              t,
+              custom ? &unit.get<custom_db_types> ("custom-db-types") : 0));
+
+          if (custom)
+            return data_->sql_type_cache_[t].cache_custom (st);
+          else
+            return data_->sql_type_cache_[t].cache_straight (st);
         }
         catch (invalid_sql_type const& e)
         {
@@ -187,12 +205,41 @@ namespace relational
       }
     }
 
+    inline sql_type
+    error (bool fail, string const& m)
+    {
+      if (!fail)
+        return sql_type ();
+      else
+        throw context::invalid_sql_type (m);
+    }
+
     sql_type context::
-    parse_sql_type (string const& sqlt)
+    parse_sql_type (string sqlt, custom_db_types const* ct)
     {
       try
       {
         sql_type r;
+
+        // First run the type through the custom mapping, if requested.
+        //
+        if (ct != 0)
+        {
+          for (custom_db_types::const_iterator i (ct->begin ());
+               i != ct->end (); ++i)
+          {
+            custom_db_type const& t (*i);
+
+            if (t.type.match (sqlt))
+            {
+              r.to = t.type.replace (sqlt, t.to);
+              r.from = t.type.replace (sqlt, t.from);
+              sqlt = t.type.replace (sqlt, t.as);
+              break;
+            }
+          }
+        }
+
         sql_lexer l (sqlt);
 
         // While most type names use single identifier, there are
@@ -388,9 +435,8 @@ namespace relational
                          (prefix == "TIMESTAMP WITH LOCAL TIME" ||
                           prefix == "TIMESTAMP WITH TIME"))
                 {
-                  throw invalid_sql_type (
-                    "Oracle timestamps with time zones are not currently "
-                    "supported");
+                  return error (ct, "Oracle timestamps with time zones are "
+                                "not currently supported");
                 }
                 //
                 // String and binary types.
@@ -475,15 +521,10 @@ namespace relational
                 // LONG types.
                 //
                 else if (id == "LONG")
-                {
-                  throw invalid_sql_type (
-                    "Oracle LONG types are not supported");
-                }
+                  return error (ct, "Oracle LONG types are not supported");
                 else
-                {
-                  throw invalid_sql_type (
-                    "unknown Oracle type '" + t.identifier () + "'");
-                }
+                  return error (ct, "unknown Oracle type '" +
+                                t.identifier () + "'");
 
                 t = l.next ();
                 continue;
@@ -517,10 +558,8 @@ namespace relational
                   r.prec_value = 6;
                 }
                 else
-                {
-                  throw invalid_sql_type (
-                    "incomplete Oracle type declaration: '" + prefix + "'");
-                }
+                  return error (ct, "incomplete Oracle type declaration: '" +
+                                prefix + "'");
 
                 // All of the possible types handled in this block can take
                 // an optional precision specifier. Set the state and fall
@@ -531,10 +570,8 @@ namespace relational
               else
               {
                 assert (r.type == sql_type::invalid);
-
-                throw invalid_sql_type (
-                  "unexepected '" + t.literal () + "' in Oracle "
-                  "type declaration");
+                return error (ct, "unexepected '" + t.literal () +
+                              "' in Oracle type declaration");
               }
 
               // Fall through.
@@ -548,9 +585,8 @@ namespace relational
 
                 if (t.type () != sql_token::t_int_lit)
                 {
-                  throw invalid_sql_type (
-                    "integer size/precision expected in Oracle type "
-                    "declaration");
+                  return error (ct, "integer size/precision expected in "
+                                "Oracle type declaration");
                 }
 
                 // Parse the precision.
@@ -561,9 +597,8 @@ namespace relational
 
                   if (!(is >> v && is.eof ()))
                   {
-                    throw invalid_sql_type (
-                      "invalid prec value '" + t.literal () + "' in Oracle "
-                      "type declaration");
+                    return error (ct, "invalid prec value '" + t.literal () +
+                                  "' in Oracle type declaration");
                   }
 
                   // Store seconds precision in scale since prec holds
@@ -591,16 +626,16 @@ namespace relational
                   //
                   if (r.type != sql_type::NUMBER)
                   {
-                    throw invalid_sql_type (
-                      "invalid scale in Oracle type declaration");
+                    return error (ct, "invalid scale in Oracle type "
+                                  "declaration");
                   }
 
                   t = l.next ();
 
                   if (t.type () != sql_token::t_int_lit)
                   {
-                    throw invalid_sql_type (
-                      "integer scale expected in Oracle type declaration");
+                    return error (ct, "integer scale expected in Oracle type "
+                                  "declaration");
                   }
 
                   short v;
@@ -608,9 +643,8 @@ namespace relational
 
                   if (!(is >> v && is.eof ()))
                   {
-                    throw invalid_sql_type (
-                      "invalid scale value '" + t.literal () + "' in Oracle "
-                      "type declaration");
+                    return error (ct, "invalid scale value '" + t.literal () +
+                                  "' in Oracle type declaration");
                   }
 
                   r.scale = true;
@@ -626,9 +660,8 @@ namespace relational
                     r.byte_semantics = false;
                   else if (id != "BYTE")
                   {
-                    throw invalid_sql_type (
-                      "invalid keyword '" + t.literal () + "' in Oracle "
-                      "type declaration");
+                    return error (ct, "invalid keyword '" + t.literal () +
+                                  "' in Oracle type declaration");
                   }
 
                   t = l.next ();
@@ -636,8 +669,7 @@ namespace relational
 
                 if (t.punctuation () != sql_token::p_rparen)
                 {
-                  throw invalid_sql_type (
-                    "expected ')' in Oracle type declaration");
+                  return error (ct, "expected ')' in Oracle type declaration");
                 }
                 else
                   t = l.next ();
@@ -648,10 +680,8 @@ namespace relational
             }
           case parse_done:
             {
-              throw invalid_sql_type (
-                "unexepected '" + t.literal () + "' in Oracle "
-                "type declaration");
-
+              return error (ct, "unexepected '" + t.literal () + "' in Oracle "
+                            "type declaration");
               break;
             }
           }
@@ -687,23 +717,18 @@ namespace relational
               r.prec_value = 6;
             }
             else
-            {
-              throw invalid_sql_type (
-                "incomplete Oracle type declaration: '" + prefix + "'");
-            }
+              return error (ct, "incomplete Oracle type declaration: '" +
+                            prefix + "'");
           }
           else
-          {
-            throw invalid_sql_type ("invalid Oracle type declaration");
-          }
+            return error (ct, "invalid Oracle type declaration");
         }
 
         return r;
       }
       catch (sql_lexer::invalid_input const& e)
       {
-        throw invalid_sql_type (
-          "invalid Oracle type declaration: " + e.message);
+        return error (ct, "invalid Oracle type declaration: " + e.message);
       }
     }
   }

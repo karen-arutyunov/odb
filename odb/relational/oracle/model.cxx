@@ -28,7 +28,8 @@ namespace relational
         {
           // Make sure the column is mapped to Oracle NUMBER.
           //
-          if (parse_sql_type (column_type (), m).type != sql_type::NUMBER)
+          sql_type const& t (parse_sql_type (column_type (), m, false));
+          if (t.type != sql_type::NUMBER)
           {
             cerr << m.file () << ":" << m.line () << ":" << m.column ()
                  << ": error: column with default value specified as C++ "

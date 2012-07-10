@@ -483,9 +483,10 @@ namespace relational
       {
         os << type << " (const char* t," << endl
            << "const char* c," << endl
+           << "const char* conv," << endl
            << "unsigned short p = 0," << endl
            << "unsigned short s = 0xFFFF)" << endl
-           << "  : " << base << " (t, c, p, s)"
+           << "  : " << base << " (t, c, conv, p, s)"
            << "{"
            << "}";
       }

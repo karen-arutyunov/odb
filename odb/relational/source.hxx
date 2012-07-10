@@ -238,6 +238,8 @@ namespace relational
 
         r += column; // Already quoted.
 
+        string const& sqlt (column_type ());
+
         // Version column (optimistic concurrency) requires special
         // handling in the UPDATE statement.
         //
@@ -249,12 +251,12 @@ namespace relational
         else if (param_ != 0)
         {
           r += '=';
-          r += param_->next ();
+          r += convert_to (param_->next (), sqlt, m);
         }
+        else if (sk_ == statement_select)
+          r = convert_from (r, sqlt, m);
 
-        sc_.push_back (
-          statement_column (
-            table, r, column_type (), m, key_prefix_));
+        sc_.push_back (statement_column (table, r, sqlt, m, key_prefix_));
       }
 
     protected:
@@ -434,7 +436,10 @@ namespace relational
               string const& table,
               string const& column)
       {
-        sc_.push_back (statement_column (table, column, column_type (), m));
+        string const& sqlt (column_type ());
+        sc_.push_back (
+          statement_column (
+            table, convert_from (column, sqlt, m), sqlt, m));
       }
 
     protected:
@@ -1875,7 +1880,8 @@ namespace relational
             {
               os << endl
                  << strlit ((i == b ? " WHERE " : " AND ") + inv_table + "." +
-                            quote_id (i->name) + "=" + qp->next ());
+                            quote_id (i->name) + "=" +
+                            convert_to (qp->next (), i->type, *i->member));
             }
           }
           else
@@ -1928,7 +1934,8 @@ namespace relational
             {
               os << endl
                  << strlit ((i == b ? " WHERE " : " AND ") + table + "." +
-                            quote_id (i->name) + "=" + qp->next ());
+                            quote_id (i->name) + "=" +
+                            convert_to (qp->next (), i->type, *i->member));
             }
 
             if (ordered)
@@ -1995,13 +2002,13 @@ namespace relational
 
             string values;
             instance<query_parameters> qp;
-            for (size_t i (0), n (m.get<size_t> ("data-column-count"));
-                 i < n; ++i)
+            for (statement_columns::const_iterator b (sc.begin ()), i (b),
+                   e (sc.end ()); i != e; ++i)
             {
-              if (i != 0)
+              if (i != b)
                 values += ',';
 
-              values += qp->next ();
+              values += convert_to (qp->next (), i->type, *i->member);
             }
 
             os << strlit (" VALUES (" + values + ")") << ";"
@@ -2027,7 +2034,8 @@ namespace relational
             {
               os << endl
                  << strlit ((i == b ? " WHERE " : " AND ") +
-                            quote_id (i->name) + "=" + qp->next ());
+                            quote_id (i->name) + "=" +
+                            convert_to (qp->next (), i->type, *i->member));
             }
 
             os << ";"
@@ -2995,22 +3003,22 @@ namespace relational
 
     // Output a list of parameters for the persist statement.
     //
-    struct persist_statement_params: object_members_base, virtual context
+    struct persist_statement_params: object_columns_base, virtual context
     {
       persist_statement_params (string& params, query_parameters& qp)
-          : params_ (params), count_ (0), qp_ (qp)
+          : params_ (params), qp_ (qp)
       {
       }
 
       virtual void
       traverse_pointer (semantics::data_member& m, semantics::class_& c)
       {
-        if (!inverse (m))
-          object_members_base::traverse_pointer (m, c);
+        if (!inverse (m, key_prefix_))
+          object_columns_base::traverse_pointer (m, c);
       }
 
-      virtual void
-      traverse_simple (semantics::data_member& m)
+      virtual bool
+      traverse_column (semantics::data_member& m, string const&, bool first)
       {
         string p;
 
@@ -3023,16 +3031,17 @@ namespace relational
 
         if (!p.empty ())
         {
-          if (count_++ != 0)
+          if (!first)
             params_ += ',';
 
-          params_ += p;
+          params_ += (p != "DEFAULT" ? convert_to (p, column_type (), m) : p);
         }
+
+        return !p.empty ();
       }
 
     private:
       string& params_;
-      size_t count_;
       query_parameters& qp_;
     };
 

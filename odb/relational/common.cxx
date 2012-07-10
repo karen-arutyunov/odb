@@ -350,8 +350,8 @@ namespace relational
   void query_columns::
   column_ctor (string const& type, string const& base)
   {
-    os << type << " (const char* t, const char* c)" << endl
-       << "  : " << base << " (t, c)"
+    os << type << " (const char* t, const char* c, const char* conv)" << endl
+       << "  : " << base << " (t, c, conv)"
        << "{"
        << "}";
   }
@@ -388,6 +388,9 @@ namespace relational
          << "const typename " << scope_ << "::" << name << "_type_" << endl
          << scope_ << "::" << endl
          << name << " (A::" << "table_name, " << strlit (quote_id (column));
+
+      string const& conv (convert_to_expr (column_type (), m));
+      os << ", " << (conv.empty () ? "0" : strlit (conv));
 
       column_ctor_extra (m);
 

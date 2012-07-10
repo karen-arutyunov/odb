@@ -522,7 +522,7 @@ generate (options const& ops,
     //
     throw failed ();
   }
-  catch (re::format const& e)
+  catch (regex_format const& e)
   {
     cerr << "error: invalid regex: '" << e.regex () << "': " <<
       e.description () << endl;

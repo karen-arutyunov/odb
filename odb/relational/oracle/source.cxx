@@ -563,7 +563,7 @@ namespace relational
           {
             os << endl
                << strlit (" RETURNING " +
-                          column_qname (*id) +
+                          convert_from (column_qname (*id), *id) +
                           " INTO " +
                           qp.next ());
           }

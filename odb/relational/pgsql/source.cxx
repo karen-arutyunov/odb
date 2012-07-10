@@ -617,7 +617,8 @@ namespace relational
           if (id != 0 && !poly_derived && id->count ("auto"))
           {
             os << endl
-               << strlit (" RETURNING " + column_qname (*id));
+               << strlit (" RETURNING " +
+                          convert_from (column_qname (*id), *id));
           }
         }
 

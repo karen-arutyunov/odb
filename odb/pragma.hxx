@@ -74,16 +74,17 @@ struct pragma_set: std::set<pragma>
 {
   typedef std::set<pragma> base;
 
-  void
+  pragma&
   insert (pragma const& p)
   {
     std::pair<iterator, bool> r (base::insert (p));
 
+    pragma& x (const_cast<pragma&> (*r.first));
+
     if (!r.second)
-    {
-      pragma& x (const_cast<pragma&> (*r.first));
       x = p;
-    }
+
+    return x;
   }
 
   template <typename I>

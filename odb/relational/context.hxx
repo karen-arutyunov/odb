@@ -23,6 +23,19 @@ namespace relational
     statement_where   // WHERE clause.
   };
 
+  // Custom database type mapping.
+  //
+  struct custom_db_type
+  {
+    regex type;
+    std::string as;
+    std::string to;
+    std::string from;
+    location_t loc;
+  };
+
+  typedef std::vector<custom_db_type> custom_db_types;
+
   class context: public virtual ::context
   {
   public:
@@ -93,6 +106,58 @@ namespace relational
     {
       return quote_id (table_name (m, p));
     }
+
+    // Custom database type conversion.
+    //
+  public:
+    string
+    convert_to (string const& expr,
+                string const& sqlt,
+                semantics::data_member& m)
+    {
+      string const& conv (current ().convert_expr (sqlt, m, true));
+      return conv.empty () ? expr : convert (expr, conv);
+    }
+
+    string
+    convert_from (string const& expr,
+                  string const& sqlt,
+                  semantics::data_member& m)
+    {
+      string const& conv (current ().convert_expr (sqlt, m, false));
+      return conv.empty () ? expr : convert (expr, conv);
+    }
+
+    // These shortcut versions should only be used on special members
+    // (e.g., auto id, version, etc) since they may not determine the
+    // proper SQL type in other cases (prefixes, composite ids, etc).
+    //
+    string
+    convert_to (string const& expr, semantics::data_member& m)
+    {
+      return convert_to (expr, column_type (m), m);
+    }
+
+    string
+    convert_from (string const& expr, semantics::data_member& m)
+    {
+      return convert_from (expr, column_type (m), m);
+    }
+
+    // Return the conversion expression itself.
+    //
+    string const&
+    convert_to_expr (string const& sqlt, semantics::data_member& m)
+    {
+      return current ().convert_expr (sqlt, m, true);
+    }
+
+  protected:
+    virtual string const&
+    convert_expr (string const& sqlt, semantics::data_member&, bool to);
+
+    string
+    convert (string const& expr, string const& conv);
 
   protected:
     // The default implementation returns false.

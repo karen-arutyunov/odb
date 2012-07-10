@@ -577,7 +577,8 @@ traverse_object (type& c)
           os << endl;
 
         os << strlit ((i == b ? " WHERE " : " AND ") + table + "." +
-                      quote_id (i->name) + "=" + qp->next ());
+                      quote_id (i->name) + "=" +
+                      convert_to (qp->next (), i->type, *i->member));
       }
 
       if (abst)
@@ -650,7 +651,8 @@ traverse_object (type& c)
           os << endl;
 
         os << strlit ((i == b ? " WHERE " : " AND ") + table + "." +
-                      quote_id (i->name) + "=" + qp->next ());
+                      quote_id (i->name) + "=" +
+                      convert_to (qp->next (), i->type, *i->member));
       }
 
       os << ";"
@@ -689,13 +691,14 @@ traverse_object (type& c)
           os << endl;
 
         os << strlit ((i == b ? " WHERE " : " AND ") +
-                      quote_id (i->name) + "=" + qp->next ());
+                      quote_id (i->name) + "=" +
+                      convert_to (qp->next (), i->type, *i->member));
       }
 
       if (optimistic != 0 && !poly_derived)
         os << endl
-           << strlit (" AND " + column_qname (*optimistic) +
-                      "=" + qp->next ());
+           << strlit (" AND " + column_qname (*optimistic) + "=" +
+                      convert_to (qp->next (), *optimistic));
       os << ";"
          << endl;
     }
@@ -713,7 +716,8 @@ traverse_object (type& c)
 
         os << endl
            << strlit ((i == b ? " WHERE " : " AND ") +
-                      quote_id (i->name) + "=" + qp->next ());
+                      quote_id (i->name) + "=" +
+                      convert_to (qp->next (), i->type, *i->member));
       }
 
       os << ";"
@@ -733,12 +737,13 @@ traverse_object (type& c)
       {
         os << endl
            << strlit ((i == b ? " WHERE " : " AND ") +
-                      quote_id (i->name) + "=" + qp->next ());
+                      quote_id (i->name) + "=" +
+                      convert_to (qp->next (), i->type, *i->member));
       }
 
       os << endl
-         << strlit (" AND " + column_qname (*optimistic) +
-                    "=" + qp->next ()) << ";"
+         << strlit (" AND " + column_qname (*optimistic) + "=" +
+                    convert_to (qp->next (), *optimistic)) << ";"
          << endl;
     }
   }

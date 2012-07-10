@@ -109,7 +109,7 @@ namespace relational
           // to value_traits.
           //
 
-          string type (column_type ());
+          string const& type (column_type ());
 
           if (sk_ != statement_select ||
               parse_sql_type (type, m).type != sql_type::ENUM)
@@ -118,28 +118,18 @@ namespace relational
             return;
           }
 
-          string r;
-
-          r += "CONCAT(";
-
+          // Qualified column and conversion expression.
+          //
+          string qc;
           if (!table.empty ())
           {
-            r += table;
-            r += '.';
+            qc += table;
+            qc += '.';
           }
+          qc += column;
+          qc = convert_from (qc, type, m);
 
-          r += column;
-          r += "+0,' ',";
-
-          if (!table.empty ())
-          {
-            r += table;
-            r += '.';
-          }
-
-          r += column;
-
-          r += ")";
+          string r ("CONCAT(" + qc + "+0,' '," + qc + ")");
 
           sc_.push_back (
             relational::statement_column (table, r, type, m, key_prefix_));
@@ -158,7 +148,7 @@ namespace relational
         {
           // The same idea as in object_columns.
           //
-          string type (column_type ());
+          string const& type (column_type ());
 
           if (parse_sql_type (type, m).type != sql_type::ENUM)
           {
@@ -166,14 +156,11 @@ namespace relational
             return;
           }
 
-          string r;
+          // Column and conversion expression.
+          //
+          string c (convert_from (column, type, m));
 
-          r += "CONCAT(";
-          r += column;
-          r += "+0,' ',";
-          r += column;
-          r += ")";
-
+          string r ("CONCAT(" + c + "+0,' '," + c + ")");
           sc_.push_back (relational::statement_column (table, r, type, m));
         }
       };

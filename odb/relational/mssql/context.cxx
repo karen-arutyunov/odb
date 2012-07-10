@@ -109,6 +109,13 @@ namespace relational
     {
     }
 
+    string const& context::
+    convert_expr (string const& sqlt, semantics::data_member& m, bool to)
+    {
+      sql_type const& t (parse_sql_type (sqlt, m));
+      return to ? t.to : t.from;
+    }
+
     string context::
     quote_id_impl (qname const& id) const
     {
@@ -159,38 +166,68 @@ namespace relational
       {
         typedef context::invalid_sql_type invalid_sql_type;
 
-        sql_parser (std::string const& sql)
-            : l_ (sql)
-        {
-        }
+        sql_parser (custom_db_types const* ct): ct_ (ct) {}
 
         sql_type
-        parse ()
+        parse (std::string sql)
         {
           r_ = sql_type ();
+          m_.clear ();
+
+          // First run the type through the custom mapping, if requested.
+          //
+          if (ct_ != 0)
+          {
+            for (custom_db_types::const_iterator i (ct_->begin ());
+                 i != ct_->end (); ++i)
+            {
+              custom_db_type const& t (*i);
+
+              if (t.type.match (sql))
+              {
+                r_.to = t.type.replace (sql, t.to);
+                r_.from = t.type.replace (sql, t.from);
+                sql = t.type.replace (sql, t.as);
+                break;
+              }
+            }
+          }
+
+          l_.lex (sql);
+
+          bool ok (true);
 
           try
           {
-            parse_name ();
+            ok = parse_name ();
           }
           catch (sql_lexer::invalid_input const& e)
           {
-            throw invalid_sql_type ("invalid SQL Server type declaration: " +
-                                    e.message);
+            ok = false;
+            m_ = "invalid SQL Server type declaration: " + e.message;
+          }
+
+          if (!ok)
+          {
+            if (ct_ == 0)
+              return sql_type ();
+            else
+              throw invalid_sql_type (m_);
           }
 
           return r_;
         }
 
-        void
+        bool
         parse_name ()
         {
           sql_token t (l_.next ());
 
           if (t.type () != sql_token::t_identifier)
           {
-            throw invalid_sql_type ("expected SQL Server type name "
-                                    "instead of '" + t.string () + "'");
+            m_ = "expected SQL Server type name instead of '" +
+              t.string () + "'";
+            return false;
           }
 
           string id (upcase (t.identifier ()));
@@ -228,7 +265,8 @@ namespace relational
             r_.has_scale = true;
             r_.scale = 0;
 
-            parse_precision (l_.next ());
+            if (!parse_precision (l_.next ()))
+              return false;
           }
           else if (id == "SMALLMONEY")
           {
@@ -252,7 +290,8 @@ namespace relational
             r_.has_prec = true;
             r_.prec = 53;
 
-            parse_precision (l_.next ());
+            if (!parse_precision (l_.next ()))
+              return false;
           }
           else if (id == "DOUBLE")
           {
@@ -261,8 +300,8 @@ namespace relational
             if (t.type () != sql_token::t_identifier ||
                 upcase (t.identifier ()) != "PRECISION")
             {
-              throw invalid_sql_type ("expected 'PRECISION' instead of '"
-                                      + t.string () + "'");
+              m_ = "expected 'PRECISION' instead of '" + t.string () + "'";
+              return false;
             }
 
             r_.type = sql_type::FLOAT;
@@ -273,12 +312,14 @@ namespace relational
             // It appears that DOUBLE PRECISION can be followed by the
             // precision specification.
             //
-            parse_precision (l_.next ());
+            if (!parse_precision (l_.next ()))
+              return false;
           }
           else if (id == "CHAR" ||
                    id == "CHARACTER")
           {
-            parse_char_trailer (false);
+            if (!parse_char_trailer (false))
+              return false;
           }
           else if (id == "VARCHAR")
           {
@@ -287,7 +328,8 @@ namespace relational
             r_.has_prec = true;
             r_.prec = 1;
 
-            parse_precision (l_.next ());
+            if (!parse_precision (l_.next ()))
+              return false;
           }
           else if (id == "TEXT")
           {
@@ -300,7 +342,8 @@ namespace relational
             r_.has_prec = true;
             r_.prec = 1;
 
-            parse_precision (l_.next ());
+            if (!parse_precision (l_.next ()))
+              return false;
           }
           else if (id == "NVARCHAR")
           {
@@ -309,7 +352,8 @@ namespace relational
             r_.has_prec = true;
             r_.prec = 1;
 
-            parse_precision (l_.next ());
+            if (!parse_precision (l_.next ()))
+              return false;
           }
           else if (id == "NTEXT")
           {
@@ -329,13 +373,14 @@ namespace relational
             else if (id == "CHAR" ||
                      id == "CHARACTER")
             {
-              parse_char_trailer (true);
+              if (!parse_char_trailer (true))
+                return false;
             }
             else
             {
-              throw invalid_sql_type (
-                "expected 'CHAR', 'CHARACTER', or 'TEXT' instead of '"
-                + t.string () + "'");
+              m_ = "expected 'CHAR', 'CHARACTER', or 'TEXT' instead of '"
+                + t.string () + "'";
+              return false;
             }
           }
           else if (id == "BINARY")
@@ -358,7 +403,8 @@ namespace relational
             r_.has_prec = true;
             r_.prec = 1;
 
-            parse_precision (t);
+            if (!parse_precision (t))
+              return false;
           }
           else if (id == "VARBINARY")
           {
@@ -367,7 +413,8 @@ namespace relational
             r_.has_prec = true;
             r_.prec = 1;
 
-            parse_precision (l_.next ());
+            if (!parse_precision (l_.next ()))
+              return false;
           }
           else if (id == "IMAGE")
           {
@@ -384,7 +431,8 @@ namespace relational
             r_.has_scale = true;
             r_.scale = 7;
 
-            parse_precision (l_.next ());
+            if (!parse_precision (l_.next ()))
+              return false;
           }
           else if (id == "DATETIME")
           {
@@ -397,7 +445,8 @@ namespace relational
             r_.has_scale = true;
             r_.scale = 7;
 
-            parse_precision (l_.next ());
+            if (!parse_precision (l_.next ()))
+              return false;
           }
           else if (id == "SMALLDATETIME")
           {
@@ -410,7 +459,8 @@ namespace relational
             r_.has_scale = true;
             r_.scale = 7;
 
-            parse_precision (l_.next ());
+            if (!parse_precision (l_.next ()))
+              return false;
           }
           else if (id == "UNIQUEIDENTIFIER")
           {
@@ -423,12 +473,14 @@ namespace relational
           }
           else
           {
-            throw invalid_sql_type ("unexpected SQL Server type name '" +
-                                    t.identifier () + "'");
+            m_ = "unexpected SQL Server type name '" + t.identifier () + "'";
+            return false;
           }
+
+          return true;
         }
 
-        void
+        bool
         parse_precision (sql_token t)
         {
           if (t.punctuation () == sql_token::p_lparen)
@@ -450,9 +502,9 @@ namespace relational
 
               if (!(is >> v && is.eof ()))
               {
-                throw invalid_sql_type (
-                  "invalid precision value '" + t.literal () + "' in SQL "
-                  "Server type declaration");
+                m_ = "invalid precision value '" + t.literal () + "' in SQL "
+                  "Server type declaration";
+                return false;
               }
 
               switch (r_.type)
@@ -475,8 +527,8 @@ namespace relational
             }
             else
             {
-              throw invalid_sql_type (
-                "integer precision expected in SQL Server type declaration");
+              m_ = "integer precision expected in SQL Server type declaration";
+              return false;
             }
 
             // Parse the scale if present.
@@ -489,25 +541,25 @@ namespace relational
               //
               if (r_.type != sql_type::DECIMAL)
               {
-                throw invalid_sql_type (
-                  "unexpected scale in SQL Server type declaration");
+                m_ = "unexpected scale in SQL Server type declaration";
+                return false;
               }
 
               t = l_.next ();
 
               if (t.type () != sql_token::t_int_lit)
               {
-                throw invalid_sql_type (
-                  "integer scale expected in SQL Server type declaration");
+                m_ = "integer scale expected in SQL Server type declaration";
+                return false;
               }
 
               istringstream is (t.literal ());
 
               if (!(is >> r_.scale && is.eof ()))
               {
-                throw invalid_sql_type (
-                  "invalid scale value '" + t.literal () + "' in SQL Server "
-                  "type declaration");
+                m_ = "invalid scale value '" + t.literal () + "' in SQL "
+                  "Server type declaration";
+                return false;
               }
 
               r_.has_scale = true;
@@ -516,13 +568,15 @@ namespace relational
 
             if (t.punctuation () != sql_token::p_rparen)
             {
-              throw invalid_sql_type (
-                "expected ')' in SQL Server type declaration");
+              m_ = "expected ')' in SQL Server type declaration";
+              return false;
             }
           }
+
+          return true;
         }
 
-        void
+        bool
         parse_char_trailer (bool nat)
         {
           sql_token t (l_.next ());
@@ -543,7 +597,7 @@ namespace relational
           r_.has_prec = true;
           r_.prec = 1;
 
-          parse_precision (t);
+          return parse_precision (t);
         }
 
       private:
@@ -554,26 +608,39 @@ namespace relational
         }
 
       private:
+        custom_db_types const* ct_;
         sql_lexer l_;
         sql_type r_;
+        string m_; // Error message.
       };
     }
 
     sql_type const& context::
-    parse_sql_type (string const& t, semantics::data_member& m)
+    parse_sql_type (string const& t, semantics::data_member& m, bool custom)
     {
-      // If this proves to be too expensive, we can maintain a
-      // cache of parsed types.
+      // If this proves to be too expensive, we can maintain a cache of
+      // parsed types across contexts.
       //
       data::sql_type_cache::iterator i (data_->sql_type_cache_.find (t));
 
-      if (i != data_->sql_type_cache_.end ())
-        return i->second;
+      if (i != data_->sql_type_cache_.end ()
+          && (custom ? i->second.custom_cached : i->second.straight_cached))
+      {
+        return (custom ? i->second.custom : i->second.straight);
+      }
       else
       {
         try
         {
-          return (data_->sql_type_cache_[t] = parse_sql_type (t));
+          sql_type st (
+            parse_sql_type (
+              t,
+              custom ? &unit.get<custom_db_types> ("custom-db-types") : 0));
+
+          if (custom)
+            return data_->sql_type_cache_[t].cache_custom (st);
+          else
+            return data_->sql_type_cache_[t].cache_straight (st);
         }
         catch (invalid_sql_type const& e)
         {
@@ -586,10 +653,10 @@ namespace relational
     }
 
     sql_type context::
-    parse_sql_type (string const& t)
+    parse_sql_type (string const& sqlt, custom_db_types const* ct)
     {
-      sql_parser p (t);
-      return p.parse ();
+      sql_parser p (ct);
+      return p.parse (sqlt);
     }
   }
 }
