@@ -93,12 +93,18 @@ namespace relational
         drop_table (base const& x): base (x) {}
 
         virtual void
-        drop (sema_rel::qname const& table)
+        traverse (sema_rel::table& t)
         {
+          if (pass_ != 1)
+            return;
+
+          qname const& table (t.name ());
+
           // Oracle has no IF EXISTS conditional for dropping objects. The
           // PL/SQL approach below seems to be the least error-prone and the
           // most widely used of the alternatives.
           //
+          pre_statement ();
           os << "BEGIN" << endl
              << "  BEGIN" << endl
              << "    EXECUTE IMMEDIATE 'DROP TABLE " << quote_id (table) <<
@@ -106,22 +112,37 @@ namespace relational
              << "  EXCEPTION" << endl
              << "    WHEN OTHERS THEN" << endl
              << "      IF SQLCODE != -942 THEN RAISE; END IF;" << endl
-             << "  END;" << endl
-             << "  BEGIN" << endl
-             << "    EXECUTE IMMEDIATE 'DROP SEQUENCE " <<
-            quote_id (table + "_seq") << "';" << endl
-             << "  EXCEPTION" << endl
-             << "    WHEN OTHERS THEN" << endl
-             << "      IF SQLCODE != -2289 THEN RAISE; END IF;" << endl
-             << "  END;" << endl
-             << "  BEGIN" << endl
-             << "    EXECUTE IMMEDIATE 'DROP TRIGGER " <<
-            quote_id (table + "_trg") << "';" << endl
-             << "  EXCEPTION" << endl
-             << "    WHEN OTHERS THEN" << endl
-             << "      IF SQLCODE != -4080 THEN RAISE; END IF;" << endl
-             << "  END;" << endl
-             << "END;" << endl;
+             << "  END;" << endl;
+
+          // Drop the sequence and trigger if we have auto primary key.
+          //
+          using sema_rel::primary_key;
+
+          sema_rel::table::names_iterator i (t.find ("")); // Special name.
+          primary_key* pk (i != t.names_end ()
+                           ? &dynamic_cast<primary_key&> (i->nameable ())
+                           : 0);
+
+          if (pk != 0 && pk->auto_ ())
+          {
+            os << "  BEGIN" << endl
+               << "    EXECUTE IMMEDIATE 'DROP SEQUENCE " <<
+              quote_id (table + "_seq") << "';" << endl
+               << "  EXCEPTION" << endl
+               << "    WHEN OTHERS THEN" << endl
+               << "      IF SQLCODE != -2289 THEN RAISE; END IF;" << endl
+               << "  END;" << endl
+               << "  BEGIN" << endl
+               << "    EXECUTE IMMEDIATE 'DROP TRIGGER " <<
+              quote_id (table + "_trg") << "';" << endl
+               << "  EXCEPTION" << endl
+               << "    WHEN OTHERS THEN" << endl
+               << "      IF SQLCODE != -4080 THEN RAISE; END IF;" << endl
+               << "  END;" << endl;
+          }
+
+          os << "END;" << endl;
+          post_statement ();
         }
       };
       entry<drop_table> drop_table_;
@@ -267,7 +288,6 @@ namespace relational
           using sema_rel::primary_key;
 
           sema_rel::table::names_iterator i (t.find ("")); // Special name.
-
           primary_key* pk (i != t.names_end ()
                            ? &dynamic_cast<primary_key&> (i->nameable ())
                            : 0);
