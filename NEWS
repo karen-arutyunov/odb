@@ -1,5 +1,13 @@
 Version 2.1.0
 
+ * Support for mapping additional database types, such as geospatial types,
+   user-defined types, and collections. This mechanism allows you to map
+   any database type to one of the types for which ODB provides built-in
+   support (normally string or binary). The text or binary representation
+   of the data can then be extracted into a C++ data type of your choice.
+   For more information, refer to Section 12.6, "Database Type Mapping
+   Pragmas" in the ODB manual.
+
  * The session constructor now accepts an options bool argument (true by
    default) which indicates whether to make this session current for this
    thread. For more information, refer to Chapter 10, "Session" in the ODB
