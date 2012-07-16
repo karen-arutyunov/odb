@@ -30,7 +30,12 @@ namespace
     path path_;
   };
 
-  typedef std::map<line_map const*, include_directive> includes;
+  struct includes
+  {
+    typedef std::map<line_map const*, include_directive> map_type;
+    bool trailing; // Included at the beginning or at the end of the main file.
+    map_type map;
+  };
   typedef std::map<path, includes> include_map;
 
   // Map of files to the lines which contain include directives
@@ -65,10 +70,7 @@ namespace
 
   struct class_: traversal::class_, context
   {
-    class_ (include_map& map)
-        : map_ (map)
-    {
-    }
+    class_ (include_map& map): trailing_ (false), map_ (map) {}
 
     virtual void
     traverse (type& c)
@@ -105,7 +107,16 @@ namespace
       }
 
       if (f == unit.file ())
+      {
+        // Any include directives that follow are trailing (specified at
+        // the end of the main file). Note that we ignore views in this
+        // test so if a file defines only views, then all includes will
+        // be treated as leading. This is ok since views cannot have
+        // circular dependencies.
+        //
+        trailing_ = true;
         return;
+      }
 
       // This is a persistent object or composite value type declared in
       // another header file. Include its -odb header.
@@ -123,12 +134,17 @@ namespace
           f.normalize ();
 
           if (map_.find (f) == map_.end ())
-            map_[f][lm] = include_directive ();
+          {
+            includes& i (map_[f]);
+            i.trailing = trailing_;
+            i.map[lm] = include_directive ();
+          }
         }
       }
     }
 
   private:
+    bool trailing_;
     include_map& map_;
   };
 
@@ -461,29 +477,38 @@ namespace
 namespace include
 {
   void
-  generate ()
+  generate (bool header)
   {
+    // We do the same include directive collection and processing
+    // twice, once for the header file and once for the source file.
+    // If that proves to be too slow, we will need to do it only once
+    // and cache the result.
+    //
     context ctx;
     include_map imap;
 
-    traversal::unit unit;
-    traversal::defines unit_defines;
-    typedefs unit_typedefs (true);
-    traversal::namespace_ ns;
-    class_ c (imap);
+    // Collect all the files that we need to include.
+    //
+    {
+      traversal::unit unit;
+      traversal::defines unit_defines;
+      typedefs unit_typedefs (true);
+      traversal::namespace_ ns;
+      class_ c (imap);
 
-    unit >> unit_defines >> ns;
-    unit_defines >> c;
-    unit >> unit_typedefs >> c;
+      unit >> unit_defines >> ns;
+      unit_defines >> c;
+      unit >> unit_typedefs >> c;
 
-    traversal::defines ns_defines;
-    typedefs ns_typedefs (true);
+      traversal::defines ns_defines;
+      typedefs ns_typedefs (true);
 
-    ns >> ns_defines >> ns;
-    ns_defines >> c;
-    ns >> ns_typedefs >> c;
+      ns >> ns_defines >> ns;
+      ns_defines >> c;
+      ns >> ns_typedefs >> c;
 
-    unit.dispatch (ctx.unit);
+      unit.dispatch (ctx.unit);
+    }
 
     // Add all the known include locations for each file in the map.
     //
@@ -516,7 +541,7 @@ namespace include
       include_map::iterator it (imap.find (f));
 
       if (it != imap.end ())
-        it->second[ifm] = include_directive ();
+        it->second.map[ifm] = include_directive ();
     }
 
     //
@@ -544,8 +569,8 @@ namespace include
       line_map const* main_lm (0);
       include_directive* main_inc (0);
 
-      for (includes::iterator j (i->second.begin ());
-           j != i->second.end (); ++j)
+      for (includes::map_type::iterator j (i->second.map.begin ());
+           j != i->second.map.end (); ++j)
       {
         line_map const* lm (j->first);
 
@@ -583,10 +608,10 @@ namespace include
         continue;
       }
 
-      // Otherwise, add all entries.
+      // Otherwise, add all the entries.
       //
-      for (includes::iterator j (i->second.begin ());
-           j != i->second.end (); ++j)
+      for (includes::map_type::iterator j (i->second.map.begin ());
+           j != i->second.map.end (); ++j)
       {
         line_map const* lm (j->first);
 
@@ -611,7 +636,7 @@ namespace include
       }
     }
 
-    //
+    // Parse the collected include directives.
     //
     include_parser ip (ctx.options);
 
@@ -626,18 +651,25 @@ namespace include
          i != e; ++i)
     {
       includes const& is (i->second);
+
+      // In header we generate only leading includes. In source -- only
+      // trailing.
+      //
+      if (header == is.trailing)
+        continue;
+
       include_directive const* inc (0);
 
-      if (is.size () == 1)
+      if (is.map.size () == 1)
       {
-        inc = &is.begin ()->second;
+        inc = &is.map.begin ()->second;
       }
       else
       {
         include_set set;
 
-        for (includes::const_iterator j (i->second.begin ());
-             j != i->second.end (); ++j)
+        for (includes::map_type::const_iterator j (i->second.map.begin ());
+             j != i->second.map.end (); ++j)
         {
           if (!j->second.path_.empty ())
             set.insert (&j->second);

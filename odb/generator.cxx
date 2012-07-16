@@ -265,7 +265,7 @@ generate (options const& ops,
         //
         ind_filter ind (ctx->os);
 
-        include::generate ();
+        include::generate (true);
         header::generate ();
 
         switch (ops.database ())
@@ -384,6 +384,8 @@ generate (options const& ops,
         // We don't want to indent prologues/epilogues.
         //
         ind_filter ind (ctx->os);
+
+        include::generate (false);
 
         switch (ops.database ())
         {

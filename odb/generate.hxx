@@ -8,7 +8,7 @@
 namespace include
 {
   void
-  generate ();
+  generate (bool header);
 }
 
 namespace header
