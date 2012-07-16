@@ -3371,7 +3371,7 @@ namespace relational
 
       bool multi_obj ((amap.size () + omap.size ()) > 1);
 
-      string r ("query_type");
+      string r ("query_columns");
       string name;
 
       bool fail (false);

@@ -453,10 +453,6 @@ traverse_object (type& c)
     //
     os << "typedef " << db << "::query query_base_type;"
        << endl;
-
-    // query_type
-    //
-    os << "struct query_type;";
   }
 
   //
