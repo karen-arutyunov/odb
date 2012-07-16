@@ -1289,7 +1289,8 @@ namespace odb
 namespace odb
 {
   template <typename T>
-  class query<T, sqlite::query>: public query_selector<T>::type
+  class query<T, sqlite::query>: public sqlite::query,
+                                 public query_selector<T>::columns_type
   {
   public:
     // We don't define any typedefs here since they may clash with
@@ -1302,44 +1303,44 @@ namespace odb
 
     explicit
     query (bool v)
-        : query_selector<T>::type (v)
+        : sqlite::query (v)
     {
     }
 
     explicit
     query (const char* q)
-        : query_selector<T>::type (q)
+        : sqlite::query (q)
     {
     }
 
     explicit
     query (const std::string& q)
-        : query_selector<T>::type (q)
+        : sqlite::query (q)
     {
     }
 
     template <typename T2>
     explicit
     query (sqlite::val_bind<T2> v)
-        : query_selector<T>::type (sqlite::query (v))
+        : sqlite::query (sqlite::query (v))
     {
     }
 
     template <typename T2>
     explicit
     query (sqlite::ref_bind<T2> r)
-        : query_selector<T>::type (sqlite::query (r))
+        : sqlite::query (sqlite::query (r))
     {
     }
 
     query (const sqlite::query& q)
-        : query_selector<T>::type (q)
+        : sqlite::query (q)
     {
     }
 
     template <sqlite::database_type_id ID>
     query (const sqlite::query_column<bool, ID>& qc)
-        : query_selector<T>::type (qc)
+        : sqlite::query (qc)
     {
     }
   };
