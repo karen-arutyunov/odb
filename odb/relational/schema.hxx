@@ -690,6 +690,13 @@ namespace relational
         empty_ = true;
         pass_ = p;
         new_pass_ = true;
+
+        if (pass_ == 1)
+          empty_passes_ = 0; // New set of passes.
+
+        // Assume this pass is empty.
+        //
+        empty_passes_++;
       }
 
       // Did this pass produce anything?
@@ -716,28 +723,44 @@ namespace relational
         {
           first_ = false;
 
-          // If this line starts a new pass, then output the
-          // switch/case blocks.
+          // If this line starts a new pass, then output the switch/case
+          // blocks.
           //
           if (new_pass_)
           {
             new_pass_ = false;
             empty_ = false;
+            empty_passes_--; // This pass is not empty.
+
+            // Output case statements for empty preceeding passes, if any.
+            //
+            if (empty_passes_ != 0)
+            {
+              unsigned short s (pass_ - empty_passes_);
+
+              if (s == 1)
+                os << "switch (pass)"
+                   << "{";
+              else
+                os << "return true;" // One more pass.
+                   << "}";
+
+              for (; s != pass_; ++s)
+                os << "case " << s << ":" << endl;
+
+              os << "{";
+              empty_passes_ = 0;
+            }
 
             if (pass_ == 1)
-            {
               os << "switch (pass)"
-                 << "{"
-                 << "case 1:" << endl
                  << "{";
-            }
             else
-            {
               os << "return true;" // One more pass.
-                 << "}"
-                 << "case " << pass_ << ":" << endl
-                 << "{";
-            }
+                 << "}";
+
+            os << "case " << pass_ << ":" << endl
+               << "{";
           }
 
           os << "db.execute (";
@@ -761,6 +784,7 @@ namespace relational
       bool empty_;
       bool new_pass_;
       unsigned short pass_;
+      unsigned short empty_passes_; // Number of preceding empty passes.
     };
 
     struct cxx_object: virtual context

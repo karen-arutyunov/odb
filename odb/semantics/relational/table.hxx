@@ -13,6 +13,11 @@ namespace semantics
   {
     class table: public qnameable, public uscope
     {
+    public:
+      // Resolve ambiguity.
+      //
+      using qnameable::scope;
+
     protected:
       table (string const& id)
           : qnameable (id)
