@@ -284,8 +284,8 @@ namespace relational
 
         // Add foreign keys.
         //
-        instance<add_foreign_key> fk (format_, *this);
-        trav_rel::unames n (*fk);
+        add_foreign_key fk (format_, *this);
+        trav_rel::unames n (fk);
         names (t, n);
       }
 

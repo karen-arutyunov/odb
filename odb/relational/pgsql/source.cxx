@@ -719,8 +719,8 @@ namespace relational
                << "persist_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st (statement_insert);
-            st->traverse (c);
+            statement_oids st (statement_insert);
+            st.traverse (c);
 
             os << "};";
           }
@@ -733,8 +733,8 @@ namespace relational
                << "find_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st (statement_select);
-            st->traverse (*id);
+            statement_oids st (statement_select);
+            st.traverse (*id);
 
             os << "};";
           }
@@ -748,18 +748,18 @@ namespace relational
                << "{";
 
             {
-              instance<statement_oids> st (statement_update);
-              st->traverse (c);
+              statement_oids st (statement_update);
+              st.traverse (c);
             }
 
             bool first (cc.total == cc.id + cc.inverse + cc.readonly +
                         cc.optimistic_managed);
 
-            instance<statement_oids> st (statement_where, first);
-            st->traverse (*id);
+            statement_oids st (statement_where, first);
+            st.traverse (*id);
 
             if (optimistic != 0)
-              st->traverse (*optimistic);
+              st.traverse (*optimistic);
 
             os << "};";
           }
@@ -770,9 +770,9 @@ namespace relational
                << "optimistic_erase_statement_types[] ="
                << "{";
 
-            instance<statement_oids> st (statement_where);
-            st->traverse (*id);
-            st->traverse (*optimistic);
+            statement_oids st (statement_where);
+            st.traverse (*id);
+            st.traverse (*optimistic);
 
             os << "};";
           }
@@ -880,22 +880,22 @@ namespace relational
                << "select_all_types[] ="
                << "{";
 
-            instance<statement_oids> so (statement_where);
+            statement_oids so (statement_where);
 
             if (inv)
             {
               // many(i)-to-many
               //
               if (container (*inv_m))
-                so->traverse (*inv_m, idt, "value", "value");
+                so.traverse (*inv_m, idt, "value", "value");
 
               // many(i)-to-one
               //
               else
-                so->traverse (*inv_m);
+                so.traverse (*inv_m);
             }
             else
-              so->traverse (m, idt, "id", "object_id");
+              so.traverse (m, idt, "id", "object_id");
 
             os << "};";
           }
@@ -909,22 +909,22 @@ namespace relational
 
             if (!inv)
             {
-              instance<statement_oids> so (statement_insert);
+              statement_oids so (statement_insert);
 
-              so->traverse (m, idt, "id", "object_id");
+              so.traverse (m, idt, "id", "object_id");
 
               switch (container_kind (t))
               {
               case ck_ordered:
                 {
                   if (!unordered (m))
-                    so->traverse (m, container_it (t), "index", "index");
+                    so.traverse (m, container_it (t), "index", "index");
                   break;
                 }
               case ck_map:
               case ck_multimap:
                 {
-                  so->traverse (m, container_kt (t), "key", "key");
+                  so.traverse (m, container_kt (t), "key", "key");
                   break;
                 }
               case ck_set:
@@ -934,7 +934,7 @@ namespace relational
                 }
               }
 
-              so->traverse (m, vt, "value", "value");
+              so.traverse (m, vt, "value", "value");
             }
             else
               // MSVC does not allow zero length arrays or uninitialized
@@ -954,8 +954,8 @@ namespace relational
 
             if (!inv)
             {
-              instance<statement_oids> so (statement_where);
-              so->traverse (m, idt, "id", "object_id");
+              statement_oids so (statement_where);
+              so.traverse (m, idt, "id", "object_id");
             }
             else
               os << "0";
