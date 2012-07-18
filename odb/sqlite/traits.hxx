@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <limits>  // std::numeric_limits
 #include <cstddef> // std::size_t
 #include <cstring> // std::memcpy, std::memset, std::strlen
 
@@ -200,6 +201,45 @@ namespace odb
         is_null = false;
         i = image_type (v);
       }
+    };
+
+    // Float & double specialization. SQLite converts NaNs to NULLs so
+    // we convert NULLs to NaNs for consistency.
+    //
+    template <typename T>
+    struct real_value_traits
+    {
+      typedef T value_type;
+      typedef T query_type;
+      typedef double image_type;
+
+      static void
+      set_value (T& v, double i, bool is_null)
+      {
+        if (!is_null)
+          v = T (i);
+        else
+          v = std::numeric_limits<T>::quiet_NaN ();
+      }
+
+      static void
+      set_image (double& i, bool& is_null, T v)
+      {
+        is_null = false;
+        i = image_type (v);
+      }
+    };
+
+    template <>
+    struct LIBODB_SQLITE_EXPORT default_value_traits<float, id_real>:
+      real_value_traits<float>
+    {
+    };
+
+    template <>
+    struct LIBODB_SQLITE_EXPORT default_value_traits<double, id_real>:
+      real_value_traits<double>
+    {
     };
 
     // std::string specialization.
