@@ -58,6 +58,48 @@ namespace relational
     // Drop.
     //
 
+    struct drop_index: trav_rel::index, common
+    {
+      typedef drop_index base;
+
+      drop_index (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      virtual string
+      name (sema_rel::index& in)
+      {
+        return quote_id (in.name ());
+      }
+
+      virtual string
+      table_name (sema_rel::index& in)
+      {
+        return quote_id (static_cast<sema_rel::table&> (in.scope ()).name ());
+      }
+
+      virtual void
+      drop (string const& /*name*/, string const& /*table*/)
+      {
+        // Most database systems drop indexes together with the table.
+        //
+        // os << "DROP INDEX IF EXISTS " << quote_id (name) << " ON " <<
+        //   table << endl;
+      }
+
+      virtual void
+      traverse (sema_rel::index& in)
+      {
+        pre_statement ();
+        drop (name (in), table_name (in));
+        post_statement ();
+      }
+
+    protected:
+      schema_format format_;
+    };
+
     struct drop_table: trav_rel::table, common
     {
       typedef drop_table base;
@@ -82,50 +124,16 @@ namespace relational
         if (pass_ > 1)
           return;
 
+        // Drop indexes.
+        //
+        {
+          instance<drop_index> in (emitter (), stream (), format_);
+          trav_rel::unames n (*in);
+          names (t, n);
+        }
+
         pre_statement ();
         drop (t.name ());
-        post_statement ();
-      }
-
-      void
-      pass (unsigned short p)
-      {
-        pass_ = p;
-      }
-
-    protected:
-      schema_format format_;
-      unsigned short pass_;
-    };
-
-    struct drop_index: trav_rel::index, common
-    {
-      typedef drop_index base;
-
-      drop_index (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
-      {
-      }
-
-      virtual void
-      drop (sema_rel::qname const& /*index*/)
-      {
-        // Most database systems drop indexes together with the table.
-        //
-        //os << "DROP INDEX IF EXISTS " << quote_id (index);
-      }
-
-      virtual void
-      traverse (sema_rel::index& in)
-      {
-        // By default we do everything in a single pass. But some
-        // databases may require the second pass.
-        //
-        if (pass_ > 1)
-          return;
-
-        pre_statement ();
-        drop (in.name ());
         post_statement ();
       }
 
@@ -456,6 +464,66 @@ namespace relational
       create_table& create_table_;
     };
 
+    struct create_index: trav_rel::index, common
+    {
+      typedef create_index base;
+
+      create_index (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      virtual void
+      traverse (sema_rel::index& in)
+      {
+        pre_statement ();
+        create (in);
+        post_statement ();
+      }
+
+      virtual string
+      name (sema_rel::index& in)
+      {
+        return quote_id (in.name ());
+      }
+
+      virtual string
+      table_name (sema_rel::index& in)
+      {
+        return quote_id (static_cast<sema_rel::table&> (in.scope ()).name ());
+      }
+
+      virtual void
+      create (sema_rel::index& in)
+      {
+        using sema_rel::index;
+
+        os << "CREATE INDEX " << name (in) << endl
+           << "  ON " << table_name (in) << " (";
+
+        for (index::contains_iterator i (in.contains_begin ());
+             i != in.contains_end ();
+             ++i)
+        {
+          if (in.contains_size () > 1)
+          {
+            if (i != in.contains_begin ())
+              os << ",";
+
+            os << endl
+               << "    ";
+          }
+
+          os << quote_id (i->column ().name ());
+        }
+
+        os << ")" << endl;
+      }
+
+    protected:
+      schema_format format_;
+    };
+
     struct create_table: trav_rel::table, common
     {
       typedef create_table base;
@@ -502,79 +570,14 @@ namespace relational
 
         create_post ();
         post_statement ();
-      }
 
-      void
-      pass (unsigned short p)
-      {
-        pass_ = p;
-      }
-
-    protected:
-      schema_format format_;
-      unsigned short pass_;
-    };
-
-    struct create_index: trav_rel::index, common
-    {
-      typedef create_index base;
-
-      create_index (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
-      {
-      }
-
-      virtual void
-      traverse (sema_rel::index& in)
-      {
-        // By default we do everything in a single pass. But some
-        // databases may require the second pass.
+        // Create indexes.
         //
-        if (pass_ > 1)
-          return;
-
-        pre_statement ();
-        create (in);
-        post_statement ();
-      }
-
-      virtual string
-      name (sema_rel::index& in)
-      {
-        return quote_id (in.name ());
-      }
-
-      virtual string
-      table_name (sema_rel::index& in)
-      {
-        return quote_id (in.table ().name ());
-      }
-
-      virtual void
-      create (sema_rel::index& in)
-      {
-        using sema_rel::index;
-
-        os << "CREATE INDEX " << name (in) << endl
-           << "  ON " << table_name (in) << " (";
-
-        for (index::contains_iterator i (in.contains_begin ());
-             i != in.contains_end ();
-             ++i)
         {
-          if (in.contains_size () > 1)
-          {
-            if (i != in.contains_begin ())
-              os << ",";
-
-            os << endl
-               << "    ";
-          }
-
-          os << quote_id (i->column ().name ());
+          instance<create_index> in (emitter (), stream (), format_);
+          trav_rel::unames n (*in);
+          names (t, n);
         }
-
-        os << ")" << endl;
       }
 
       void
@@ -799,10 +802,8 @@ namespace relational
           : stream_ (*emitter_),
             drop_model_ (*emitter_, stream_, format_embedded),
             drop_table_ (*emitter_, stream_, format_embedded),
-            drop_index_ (*emitter_, stream_, format_embedded),
             create_model_ (*emitter_, stream_, format_embedded),
-            create_table_ (*emitter_, stream_, format_embedded),
-            create_index_ (*emitter_, stream_, format_embedded)
+            create_table_ (*emitter_, stream_, format_embedded)
       {
         init ();
       }
@@ -813,10 +814,8 @@ namespace relational
             stream_ (*emitter_),
             drop_model_ (*emitter_, stream_, format_embedded),
             drop_table_ (*emitter_, stream_, format_embedded),
-            drop_index_ (*emitter_, stream_, format_embedded),
             create_model_ (*emitter_, stream_, format_embedded),
-            create_table_ (*emitter_, stream_, format_embedded),
-            create_index_ (*emitter_, stream_, format_embedded)
+            create_table_ (*emitter_, stream_, format_embedded)
       {
         init ();
       }
@@ -826,11 +825,9 @@ namespace relational
       {
         drop_model_ >> drop_names_;
         drop_names_ >> drop_table_;
-        drop_names_ >> drop_index_;
 
         create_model_ >> create_names_;
         create_names_ >> create_table_;
-        create_names_ >> create_index_;
       }
 
       void
@@ -872,7 +869,6 @@ namespace relational
             emitter_->pass (pass);
             drop_model_->pass (pass);
             drop_table_->pass (pass);
-            drop_index_->pass (pass);
 
             drop_model_->traverse (begin, end);
 
@@ -900,7 +896,6 @@ namespace relational
             emitter_->pass (pass);
             create_model_->pass (pass);
             create_table_->pass (pass);
-            create_index_->pass (pass);
 
             create_model_->traverse (begin, end);
 
@@ -932,12 +927,10 @@ namespace relational
       trav_rel::qnames drop_names_;
       instance<drop_model> drop_model_;
       instance<drop_table> drop_table_;
-      instance<drop_index> drop_index_;
 
       trav_rel::qnames create_names_;
       instance<create_model> create_model_;
       instance<create_table> create_table_;
-      instance<create_index> create_index_;
     };
   }
 }

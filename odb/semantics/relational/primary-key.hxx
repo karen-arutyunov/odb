@@ -12,7 +12,7 @@ namespace semantics
 {
   namespace relational
   {
-    class primary_key: public unameable, public key
+    class primary_key: public key
     {
     public:
       bool
@@ -23,9 +23,8 @@ namespace semantics
 
     public:
       primary_key (bool auto_)
-          // Primary key has the implicit empty id.
-          //
-          : unameable (""), auto__ (auto_)
+          : key (""),      // Primary key has the implicit empty id.
+            auto__ (auto_)
       {
       }
 

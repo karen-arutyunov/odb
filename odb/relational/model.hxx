@@ -471,9 +471,7 @@ namespace relational
             id_name += '_';
 
           model_.new_edge<sema_rel::unames> (t, fk, id_name + "fk");
-
-          model_.new_edge<sema_rel::qnames> (
-            model_, in, name + "_" + id_name + "i");
+          model_.new_edge<sema_rel::unames> (t, in, id_name + "i");
         }
 
         // index (simple value)
@@ -492,8 +490,7 @@ namespace relational
           model_.new_edge<sema_rel::contains> (
             in, dynamic_cast<column&> (t.find (col_name)->nameable ()));
 
-          model_.new_edge<sema_rel::qnames> (
-            model_, in, name + "_" + col_name + "_i");
+          model_.new_edge<sema_rel::unames> (t, in, col_name + "_i");
         }
 
         // key

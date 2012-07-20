@@ -50,7 +50,7 @@ namespace semantics
       column_type* column_;
     };
 
-    class key: public virtual node
+    class key: public unameable
     {
       typedef std::vector<contains*> contains_list;
 
@@ -78,6 +78,8 @@ namespace semantics
       }
 
     public:
+      key (std::string const& id): unameable (id) {}
+
       void
       add_edge_left (contains& e)
       {

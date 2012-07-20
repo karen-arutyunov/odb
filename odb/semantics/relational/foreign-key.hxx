@@ -12,7 +12,7 @@ namespace semantics
 {
   namespace relational
   {
-    class foreign_key: public unameable, public key
+    class foreign_key: public key
     {
     public:
       enum action
@@ -25,7 +25,7 @@ namespace semantics
                    qname const& referenced_table,
                    bool deferred,
                    action on_delete = no_action)
-          : unameable (id),
+          : key (id),
             referenced_table_ (referenced_table),
             deferred_ (deferred),
             on_delete_ (on_delete)

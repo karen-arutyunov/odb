@@ -302,6 +302,26 @@ namespace relational
         trav_rel::unames n (fk);
         names (t, n);
       }
+
+      struct create_index: relational::create_index, context
+      {
+        create_index (base const& x): base (x) {}
+
+        virtual string
+        name (sema_rel::index& in)
+        {
+          // In Oracle, index names are database-global. Make them unique
+          // by prefixing the index name with table name (preserving the
+          // schema).
+          //
+          sema_rel::qname n (
+            static_cast<sema_rel::table&> (in.scope ()).name ());
+
+          n.uname () += "_" + in.name ();
+          return quote_id (n);
+        }
+      };
+      entry<create_index> create_index_;
     }
   }
 }

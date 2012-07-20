@@ -6,31 +6,18 @@
 #define ODB_SEMANTICS_RELATIONAL_INDEX_HXX
 
 #include <odb/semantics/relational/elements.hxx>
-#include <odb/semantics/relational/column.hxx>
 #include <odb/semantics/relational/key.hxx>
-#include <odb/semantics/relational/table.hxx>
 
 namespace semantics
 {
   namespace relational
   {
-    // Note that unlike other keys, indexes are defined in the model
-    // scope, not table scope.
+    // Note that in our model indexes are defined in the table scope.
     //
-    class index: public qnameable, public key
+    class index: public key
     {
     public:
-      relational::table&
-      table () const
-      {
-        return contains_begin ()->column ().table ();
-      }
-
-    public:
-      index (string const& id)
-          : qnameable (id)
-      {
-      }
+      index (string const& id): key (id) {}
 
       virtual string
       kind () const

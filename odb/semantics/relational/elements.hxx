@@ -174,10 +174,10 @@ namespace semantics
     public:
       // Id identifies the C++ node (e.g., a class or a data member) that
       // this model node corresponds to. The ids are not necessarily unique
-      // (e.g., there can be a table and an index with the same id that
-      // correspond to a container member). However, in any given scope,
-      // the {id,typeid} must be unique. This becomes important when we
-      // try to find correspondance between nodes during model diff'ing.
+      // (e.g., there can be a foreign key and an index with the same id that
+      // correspond to a container member). However, in any given scope, the
+      // {id,typeid} must be unique. This becomes important when we try to
+      // find correspondance between nodes during model diff'ing.
       //
       nameable (string const& id): id_ (id), named_ (0) {}
 

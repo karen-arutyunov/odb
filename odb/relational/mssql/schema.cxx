@@ -288,20 +288,6 @@ namespace relational
         trav_rel::unames n (fk);
         names (t, n);
       }
-
-      struct create_index: relational::create_index, context
-      {
-        create_index (base const& x): base (x) {}
-
-        virtual string
-        name (sema_rel::index& in)
-        {
-          // In SQL Server indexes cannot have a schema.
-          //
-          return quote_id (in.name ().uname ());
-        }
-      };
-      entry<create_index> create_index_;
     }
   }
 }

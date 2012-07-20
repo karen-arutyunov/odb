@@ -54,13 +54,29 @@ namespace relational
         create_index (base const& x): base (x) {}
 
         virtual string
+        name (sema_rel::index& in)
+        {
+          // In SQLite, index names are database-global. Make them unique
+          // by prefixing the index name with table name (preserving the
+          // database).
+          //
+          sema_rel::qname n (
+            static_cast<sema_rel::table&> (in.scope ()).name ());
+
+          n.uname () += "_" + in.name ();
+          return quote_id (n);
+        }
+
+        virtual string
         table_name (sema_rel::index& in)
         {
           // In SQLite, the index table cannot be qualified with the
-          // database name (it has to be in the same database anyway).
+          // database name (it has to be in the same database).
           //
-          return quote_id (in.table ().name ().uname ());
+          return quote_id (
+            static_cast<sema_rel::table&> (in.scope ()).name ().uname ());
         }
+
       };
       entry<create_index> create_index_;
     }

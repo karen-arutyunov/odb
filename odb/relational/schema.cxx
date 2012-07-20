@@ -45,15 +45,11 @@ namespace relational
       // Drop.
       //
       {
-
         instance<drop_model> model (*em, emos, f);
-        trav_rel::qnames names;
         instance<drop_table> table (*em, emos, f);
-        instance<drop_index> index (*em, emos, f);
+        trav_rel::qnames names;
 
-        model >> names;
-        names >> table;
-        names >> index;
+        model >> names >> table;
 
         // Pass 1 and 2.
         //
@@ -61,7 +57,6 @@ namespace relational
         {
           model->pass (pass);
           table->pass (pass);
-          index->pass (pass);
 
           model->traverse (*ctx.model);
         }
@@ -73,13 +68,10 @@ namespace relational
       //
       {
         instance<create_model> model (*em, emos, f);
-        trav_rel::qnames names;
         instance<create_table> table (*em, emos, f);
-        instance<create_index> index (*em, emos, f);
+        trav_rel::qnames names;
 
-        model >> names;
-        names >> table;
-        names >> index;
+        model >> names >> table;
 
         // Pass 1 and 2.
         //
@@ -87,7 +79,6 @@ namespace relational
         {
           model->pass (pass);
           table->pass (pass);
-          index->pass (pass);
 
           model->traverse (*ctx.model);
         }

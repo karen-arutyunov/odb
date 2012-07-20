@@ -125,20 +125,6 @@ namespace relational
         }
       };
       entry<create_table> create_table_;
-
-      struct create_index: relational::create_index, context
-      {
-        create_index (base const& x): base (x) {}
-
-        virtual string
-        name (sema_rel::index& in)
-        {
-          // In MySQL an index cannot be qualified with the database name.
-          //
-          return quote_id (in.name ().uname ());
-        }
-      };
-      entry<create_index> create_index_;
     }
   }
 }
