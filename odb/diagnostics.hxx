@@ -32,14 +32,18 @@ warn (location_t);
 std::ostream&
 info (location_t);
 
-std::ostream&
-error ();
+//
+//
+class cxx_lexer;
 
 std::ostream&
-warn ();
+error (cxx_lexer&);
 
 std::ostream&
-info ();
+warn (cxx_lexer&);
+
+std::ostream&
+info (cxx_lexer&);
 
 // location_t macro wrappers.
 //

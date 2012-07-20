@@ -1276,8 +1276,9 @@ namespace relational
 
               lex_.start (i->value);
 
-              string t;
-              cpp_ttype tt (lex_.next (t));
+              string tl;
+              tree tn;
+              cpp_ttype tt (lex_.next (tl, &tn));
 
               string name;
               tree decl (0);
@@ -1287,7 +1288,7 @@ namespace relational
               //
               if (tt == CPP_NAME)
               {
-                view_alias_map::iterator j (amap_.find (t));
+                view_alias_map::iterator j (amap_.find (tl));
 
                 if (j != amap_.end ())
                 {
@@ -1295,7 +1296,7 @@ namespace relational
 
                   // Skip '::'.
                   //
-                  if (lex_.next (t) != CPP_SCOPE)
+                  if (lex_.next (tl, &tn) != CPP_SCOPE)
                   {
                     error (i->loc)
                       << "member name expected after an alias in db pragma "
@@ -1303,11 +1304,11 @@ namespace relational
                     throw operation_failed ();
                   }
 
-                  tt = lex_.next (t);
+                  tt = lex_.next (tl, &tn);
 
                   cpp_ttype ptt; // Not used.
                   decl = lookup::resolve_scoped_name (
-                    t, tt, ptt, lex_, vo->obj->tree_node (), name, false);
+                    lex_, tt, tl, tn, ptt, vo->obj->tree_node (), name, false);
                 }
               }
 
@@ -1322,7 +1323,7 @@ namespace relational
                 tree type;
                 cpp_ttype ptt; // Not used.
                 decl = lookup::resolve_scoped_name (
-                  t, tt, ptt, lex_, i->scope, name, false, &type);
+                  lex_, tt, tl, tn, ptt, i->scope, name, false, &type);
 
                 type = TYPE_MAIN_VARIANT (type);
 
@@ -1388,18 +1389,18 @@ namespace relational
 
               // Finally, resolve nested members if any.
               //
-              for (; tt == CPP_DOT; tt = lex_.next (t))
+              for (; tt == CPP_DOT; tt = lex_.next (tl, &tn))
               {
-                lex_.next (t); // Get CPP_NAME.
+                lex_.next (tl, &tn); // Get CPP_NAME.
 
                 tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
 
                 decl = lookup_qualified_name (
-                  type, get_identifier (t.c_str ()), false, false);
+                  type, get_identifier (tl.c_str ()), false, false);
 
                 if (decl == error_mark_node || TREE_CODE (decl) != FIELD_DECL)
                 {
-                  error (i->loc) << "name '" << t << "' in db pragma column "
+                  error (i->loc) << "name '" << tl << "' in db pragma column "
                                  << "does not refer to a data member" << endl;
                   throw operation_failed ();
                 }
@@ -2257,8 +2258,7 @@ namespace relational
                    tt != CPP_EOF;
                    tt = lexer.next (t))
               {
-                cxx_token ct;
-                ct.type = tt;
+                cxx_token ct (lexer.location (), tt);
                 ct.literal = t;
                 i->cond.push_back (ct);
               }
@@ -2746,15 +2746,16 @@ namespace relational
       {
         try
         {
-          string t;
+          string tl;
+          tree tn;
           cpp_ttype tt, ptt;
 
           nested_lexer.start (qn);
-          tt = nested_lexer.next (t);
+          tt = nested_lexer.next (tl, &tn);
 
           string name;
           return lookup::resolve_scoped_name (
-            t, tt, ptt, nested_lexer, scope, name, is_type);
+            nested_lexer, tt, tl, tn, ptt, scope, name, is_type);
         }
         catch (cxx_lexer::invalid_input const&)
         {

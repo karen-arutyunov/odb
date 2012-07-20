@@ -28,14 +28,20 @@ public:
   struct invalid_input {};
 
   virtual cpp_ttype
-  next (std::string& token) = 0;
+  next (std::string& token, tree* node = 0) = 0;
+
+  // Location of the last returned token.
+  //
+  virtual location_t
+  location () const = 0;
 
 public:
   static char const* token_spelling[N_TTYPES + 1];
 };
 
 
-// Adapter to scan a saved token sequence.
+// Adapter to scan a saved token sequence. It returns numbers in the same
+// form as they were saved in the token sequence.
 //
 class cxx_tokens_lexer: public cxx_lexer
 {
@@ -44,16 +50,20 @@ public:
   start (cxx_tokens const&);
 
   virtual cpp_ttype
-  next (std::string& token);
+  next (std::string& token, tree* node = 0);
+
+  virtual location_t
+  location () const;
 
 private:
   cxx_tokens const* tokens_;
   cxx_tokens::const_iterator cur_;
+  location_t loc_;
 };
 
 
 // A thin wrapper around the pragma_lex() function that recognizes
-// CPP_KEYWORD.
+// CPP_KEYWORD. It returns numbers as tree nodes.
 //
 class cxx_pragma_lexer: public cxx_lexer
 {
@@ -72,13 +82,10 @@ public:
   start (tree& token, cpp_ttype& type);
 
   virtual cpp_ttype
-  next (std::string& token);
+  next (std::string& token, tree* node = 0);
 
-  // This pragma-specific version of next() returns a token as a tree
-  // node.
-  //
-  cpp_ttype
-  next (tree& token);
+  virtual location_t
+  location () const;
 
 private:
   std::string
@@ -92,7 +99,8 @@ private:
   cpp_ttype type_data_;
 };
 
-// A thin wrapper around cpp_reader for lexing C++ code fragments.
+// A thin wrapper around cpp_reader for lexing C++ code fragments. It
+// returns numbers as string literals.
 //
 class cxx_string_lexer: public cxx_lexer
 {
@@ -107,7 +115,10 @@ public:
   start (std::string const&);
 
   virtual cpp_ttype
-  next (std::string& token);
+  next (std::string& token, tree* node = 0);
+
+  virtual location_t
+  location () const;
 
 private:
   std::string data_;
@@ -115,6 +126,7 @@ private:
   line_maps line_map_;
   cpp_reader* reader_;
   cpp_callbacks* callbacks_;
+  location_t loc_;
 };
 
 #endif // ODB_CXX_LEXER_HXX

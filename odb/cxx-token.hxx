@@ -8,10 +8,18 @@
 #include <string>
 #include <vector>
 
+#include <odb/gcc-fwd.hxx>
+
 struct cxx_token
 {
+  cxx_token (location_t l, unsigned int t): loc (l), type (t), node (0) {}
+
+  location_t loc;      // Location of this token.
   unsigned int type;   // Untyped cpp_ttype.
-  std::string literal; // Only used for name, string, number, etc.
+  std::string literal; // Only used for name, keyword, string, amd number.
+  tree node;           // Tree node for the number. The number can be
+                       // represented as either literal, tree node, or
+                       // both, depending on which lexer was used.
 };
 
 typedef std::vector<cxx_token> cxx_tokens;

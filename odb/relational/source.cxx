@@ -3308,14 +3308,15 @@ namespace relational
     }
 
     static string
-    translate_name_trailer (string& t,
+    translate_name_trailer (cxx_lexer& l,
                             cpp_ttype& tt,
-                            cpp_ttype& ptt,
-                            cxx_tokens_lexer& lex)
+                            string& tl,
+                            tree& tn,
+                            cpp_ttype& ptt)
     {
       string r;
 
-      for (; tt != CPP_EOF; ptt = tt, tt = lex.next (t))
+      for (; tt != CPP_EOF; ptt = tt, tt = l.next (tl, &tn))
       {
         bool done (false);
 
@@ -3339,7 +3340,7 @@ namespace relational
               if (ptt == CPP_NAME || ptt == CPP_KEYWORD)
                 r += ' ';
 
-              r += t;
+              r += tl;
             }
             else
               done = true;
@@ -3356,10 +3357,11 @@ namespace relational
     }
 
     static class_::expression
-    translate_name (string& t,
+    translate_name (cxx_lexer& l,
                     cpp_ttype& tt,
+                    string& tl,
+                    tree& tn,
                     cpp_ttype& ptt,
-                    cxx_tokens_lexer& lex,
                     tree scope,
                     location_t loc,
                     string const& prag,
@@ -3390,7 +3392,7 @@ namespace relational
         //
         if (tt == CPP_NAME)
         {
-          view_alias_map::const_iterator i (amap.find (t));
+          view_alias_map::const_iterator i (amap.find (tl));
 
           if (i != amap.end ())
           {
@@ -3406,7 +3408,7 @@ namespace relational
             // Skip '::'.
             //
             ptt = tt;
-            tt = lex.next (t);
+            tt = l.next (tl, &tn);
 
             if (tt != CPP_SCOPE)
             {
@@ -3417,10 +3419,10 @@ namespace relational
             }
 
             ptt = tt;
-            tt = lex.next (t);
+            tt = l.next (tl, &tn);
 
             decl = lookup::resolve_scoped_name (
-              t, tt, ptt, lex, vo->obj->tree_node (), name, false);
+              l, tt, tl, tn, ptt, vo->obj->tree_node (), name, false);
           }
         }
 
@@ -3434,7 +3436,7 @@ namespace relational
           //
           tree type;
           decl = lookup::resolve_scoped_name (
-            t, tt, ptt, lex, scope, name, false, &type);
+            l, tt, tl, tn, ptt, scope, name, false, &type);
 
           type = TYPE_MAIN_VARIANT (type);
 
@@ -3446,7 +3448,7 @@ namespace relational
             // is some other valid name.
             //
             return expression (
-              name + translate_name_trailer (t, tt, ptt, lex));
+              name + translate_name_trailer (l, tt, tl, tn, ptt));
           }
 
           vo = i->second;
@@ -3471,7 +3473,7 @@ namespace relational
           }
           else
             return expression (
-              name + translate_name_trailer (t, tt, ptt, lex));
+              name + translate_name_trailer (l, tt, tl, tn, ptt));
         }
 
         expression e (vo);
@@ -3491,7 +3493,7 @@ namespace relational
 
         // Finally, resolve nested members if any.
         //
-        for (; tt == CPP_DOT; ptt = tt, tt = lex.next (t))
+        for (; tt == CPP_DOT; ptt = tt, tt = l.next (tl, &tn))
         {
           // Check if this member is actually of a composite value type.
           // This is to handle expressions like "object::member.is_null ()"
@@ -3503,7 +3505,7 @@ namespace relational
             break;
 
           ptt = tt;
-          tt = lex.next (t);
+          tt = l.next (tl, &tn);
 
           if (tt != CPP_NAME)
           {
@@ -3515,12 +3517,12 @@ namespace relational
           tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
 
           decl = lookup_qualified_name (
-            type, get_identifier (t.c_str ()), false, false);
+            type, get_identifier (tl.c_str ()), false, false);
 
           if (decl == error_mark_node || TREE_CODE (decl) != FIELD_DECL)
           {
             error (loc)
-              << "name '" << t << "' in db pragma " << prag << " does not "
+              << "name '" << tl << "' in db pragma " << prag << " does not "
               << "refer to a data member" << endl;
             throw operation_failed ();
           }
@@ -3557,7 +3559,7 @@ namespace relational
         // loop.
         //
         if (tt == CPP_DOT)
-          r += translate_name_trailer (t, tt, ptt, lex);
+          r += translate_name_trailer (l, tt, tl, tn, ptt);
 
         return expression (r);
       }
@@ -3570,7 +3572,7 @@ namespace relational
         }
         else
           return expression (
-            name + translate_name_trailer (t, tt, ptt, lex));
+            name + translate_name_trailer (l, tt, tl, tn, ptt));
       }
       catch (lookup::unable_to_resolve const& e)
       {
@@ -3582,7 +3584,7 @@ namespace relational
         }
         else
           return expression (
-            name + translate_name_trailer (t, tt, ptt, lex));
+            name + translate_name_trailer (l, tt, tl, tn, ptt));
       }
     }
 
@@ -3610,11 +3612,12 @@ namespace relational
       view_alias_map const& amap (c.get<view_alias_map> ("alias-map"));
       view_object_map const& omap (c.get<view_object_map> ("object-map"));
 
-      cxx_tokens_lexer lex;
-      lex.start (ts);
+      cxx_tokens_lexer l;
+      l.start (ts);
 
-      string t;
-      for (cpp_ttype tt (lex.next (t)), ptt (CPP_EOF); tt != CPP_EOF;)
+      tree tn;
+      string tl;
+      for (cpp_ttype tt (l.next (tl, &tn)), ptt (CPP_EOF); tt != CPP_EOF;)
       {
         // Try to format the expression to resemble the style of the
         // generated code.
@@ -3726,7 +3729,7 @@ namespace relational
                 ptt == CPP_NUMBER)
               add_space (r);
 
-            r += strlit (t);
+            r += strlit (tl);
             break;
           }
         case CPP_NUMBER:
@@ -3737,7 +3740,7 @@ namespace relational
                 ptt == CPP_NUMBER)
               add_space (r);
 
-            r += t;
+            r += tl;
             break;
           }
         case CPP_SCOPE:
@@ -3759,7 +3762,7 @@ namespace relational
             //
             expression e (
               translate_name (
-                t, tt, ptt, lex,
+                l, tt, tl, tn, ptt,
                 scope, loc, prag,
                 r.empty () && placeholder == 0, amap, omap));
 
@@ -3779,7 +3782,7 @@ namespace relational
                 // Get the next token and see if it is ')'.
                 //
                 ptt = tt;
-                tt = lex.next (t);
+                tt = l.next (tl, &tn);
 
                 if (tt == CPP_CLOSE_PAREN)
                 {
@@ -3811,7 +3814,7 @@ namespace relational
                   ptt == CPP_NUMBER)
                 add_space (r);
 
-              r += t;
+              r += tl;
             }
             else
             {
@@ -3831,7 +3834,7 @@ namespace relational
         //
 
         ptt = tt;
-        tt = lex.next (t);
+        tt = l.next (tl, &tn);
       }
 
       return e;

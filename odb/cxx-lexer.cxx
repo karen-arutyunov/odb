@@ -41,18 +41,28 @@ start (cxx_tokens const& ts)
 {
   tokens_ = &ts;
   cur_ = ts.begin ();
+  loc_ = 0;
 }
 
 cpp_ttype cxx_tokens_lexer::
-next (std::string& token)
+next (std::string& token, tree* node)
 {
   if (cur_ != tokens_->end ())
   {
+    loc_ = cur_->loc;
     token = cur_->literal;
+    if (node != 0)
+      *node = cur_->node;
     return static_cast<cpp_ttype> (cur_++->type);
   }
   else
     return CPP_EOF;
+}
+
+location_t cxx_tokens_lexer::
+location () const
+{
+  return loc_;
 }
 
 //
@@ -76,15 +86,7 @@ start (tree& token, cpp_ttype& type)
 }
 
 cpp_ttype cxx_pragma_lexer::
-next (string& token)
-{
-  next (*token_);
-  token = translate ();
-  return *type_;
-}
-
-cpp_ttype cxx_pragma_lexer::
-next (tree& token)
+next (string& token, tree* node)
 {
   *type_ = pragma_lex (token_);
 
@@ -94,10 +96,17 @@ next (tree& token)
   if (*type_ == CPP_NAME && C_IS_RESERVED_WORD (*token_))
     *type_ = CPP_KEYWORD;
 
-  if (&token != token_)
-    token = *token_;
+  if (node != 0 && node != token_)
+    *node = *token_;
 
+  token = translate ();
   return *type_;
+}
+
+location_t cxx_pragma_lexer::
+location () const
+{
+  return input_location;
 }
 
 string cxx_pragma_lexer::
@@ -221,6 +230,7 @@ start (string const& data)
   data_ = data;
   buf_ = data;
   buf_ += '\n';
+  loc_ = 0;
 
   cpp_push_buffer (
     reader_,
@@ -230,7 +240,7 @@ start (string const& data)
 }
 
 cpp_ttype cxx_string_lexer::
-next (string& token)
+next (string& token, tree* node)
 {
   token.clear ();
   cpp_token const* t (cpp_get_token (reader_));
@@ -258,11 +268,18 @@ next (string& token)
       if (C_IS_RESERVED_WORD (id))
         tt = CPP_KEYWORD;
 
+      if (node != 0)
+        *node = id;
+
       token = name;
       break;
     }
+  case CPP_STRING:
   case CPP_NUMBER:
     {
+      if (node != 0)
+        *node = 0; // Doesn't seem to be available.
+
       cpp_string const& s (t->val.str);
       token.assign (reinterpret_cast<char const*> (s.text), s.len);
       break;
@@ -270,7 +287,11 @@ next (string& token)
   default:
     {
       if (tt <= CPP_LAST_PUNCTUATOR)
-        token += token_spelling[tt];
+      {
+        if (node != 0)
+          *node = 0;
+        token = token_spelling[tt];
+      }
       else
       {
         cerr << "unexpected token '" << token_spelling[tt] << "' in '" <<
@@ -281,5 +302,15 @@ next (string& token)
     }
   }
 
+  // Cache the location of this token.
+  //
+  loc_ = t->src_loc;
+
   return tt;
+}
+
+location_t cxx_string_lexer::
+location () const
+{
+  return loc_;
 }

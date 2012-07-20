@@ -3,6 +3,7 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <odb/gcc.hxx>
+#include <odb/cxx-lexer.hxx>
 #include <odb/diagnostics.hxx>
 
 using namespace std;
@@ -68,21 +69,21 @@ info (location_t loc)
 }
 
 std::ostream&
-error ()
+error (cxx_lexer& l)
 {
-  return error (input_location);
+  return error (l.location ());
 }
 
 std::ostream&
-warn ()
+warn (cxx_lexer& l)
 {
-  return warn (input_location);
+  return warn (l.location ());
 }
 
 std::ostream&
-info ()
+info (cxx_lexer& l)
 {
-  return info (input_location);
+  return info (l.location ());
 }
 
 cutl::fs::path

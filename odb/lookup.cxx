@@ -9,14 +9,14 @@ using namespace std;
 namespace lookup
 {
   std::string
-  parse_scoped_name (std::string& t, cpp_ttype& tt, cxx_lexer& lex)
+  parse_scoped_name (cxx_lexer& l, cpp_ttype& tt, string& tl, tree& tn)
   {
     string name;
 
     if (tt == CPP_SCOPE)
     {
       name += "::";
-      tt = lex.next (t);
+      tt = l.next (tl, &tn);
     }
 
     while (true)
@@ -26,24 +26,25 @@ namespace lookup
       if (tt != CPP_NAME && tt != CPP_KEYWORD)
         throw invalid_name ();
 
-      name += t;
-      tt = lex.next (t);
+      name += tl;
+      tt = l.next (tl, &tn);
 
       if (tt != CPP_SCOPE)
         break;
 
       name += "::";
-      tt = lex.next (t);
+      tt = l.next (tl, &tn);
     }
 
     return name;
   }
 
   tree
-  resolve_scoped_name (string& t,
+  resolve_scoped_name (cxx_lexer& l,
                        cpp_ttype& tt,
+                       string& tl,
+                       tree& tn,
                        cpp_ttype& ptt,
-                       cxx_lexer& lex,
                        tree scope,
                        string& name,
                        bool is_type,
@@ -59,7 +60,7 @@ namespace lookup
       first = false;
 
       ptt = tt;
-      tt = lex.next (t);
+      tt = l.next (tl, &tn);
     }
 
     while (true)
@@ -72,10 +73,10 @@ namespace lookup
       if (tt != CPP_NAME && tt != CPP_KEYWORD)
         throw invalid_name ();
 
-      name += t;
-      id = get_identifier (t.c_str ());
+      name += tl;
+      id = get_identifier (tl.c_str ());
       ptt = tt;
-      tt = lex.next (t);
+      tt = l.next (tl, &tn);
 
       bool last (tt != CPP_SCOPE);
       tree decl = lookup_qualified_name (scope, id, last && is_type, false);
@@ -110,7 +111,7 @@ namespace lookup
       name += "::";
 
       ptt = tt;
-      tt = lex.next (t);
+      tt = l.next (tl, &tn);
     }
 
     return scope;

@@ -35,15 +35,17 @@ namespace lookup
   };
 
   std::string
-  parse_scoped_name (std::string& token,
-                     cpp_ttype& type,
-                     cxx_lexer& lexer);
+  parse_scoped_name (cxx_lexer&,
+                     cpp_ttype&,
+                     std::string& tl, // Token literal.
+                     tree& tn);       // Token node.
 
   tree
-  resolve_scoped_name (std::string& token,
-                       cpp_ttype& type,
-                       cpp_ttype& previous_type,
-                       cxx_lexer& lexer,
+  resolve_scoped_name (cxx_lexer&,
+                       cpp_ttype&,
+                       std::string& tl, // Token literal.
+                       tree& tn,        // Token node.
+                       cpp_ttype& ptt,  // Previous token type.
                        tree start_scope,
                        std::string& name,
                        bool is_type,
