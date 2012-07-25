@@ -19,10 +19,7 @@ namespace relational
 
       struct query_parameters: relational::query_parameters
       {
-        query_parameters (base const& x)
-            : base (x), i_ (0)
-        {
-        }
+        query_parameters (base const& x): base (x), i_ (0) {}
 
         virtual string
         next ()
@@ -31,6 +28,14 @@ namespace relational
           ss << ":" << ++i_;
 
           return ss.str ();
+        }
+
+        virtual string
+        auto_id ()
+        {
+          // The same sequence name as used in schema.cxx.
+          //
+          return quote_id (table_ + "_seq") + ".nextval";
         }
 
       private:
@@ -507,11 +512,6 @@ namespace relational
       struct class_: relational::class_, context
       {
         class_ (base const& x): base (x) {}
-
-        virtual void
-        init_auto_id (semantics::data_member&, string const&)
-        {
-        }
 
         virtual void
         init_image_pre (type& c)

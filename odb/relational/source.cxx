@@ -477,7 +477,8 @@ traverse_object (type& c)
   // Statements.
   //
 
-  string const& table (table_qname (c));
+  qname table (table_name (c));
+  string qtable (quote_id (table));
 
   // persist_statement
   //
@@ -493,7 +494,7 @@ traverse_object (type& c)
     bool dv (sc.empty ()); // The DEFAULT VALUES syntax.
 
     os << "const char " << traits << "::persist_statement[] =" << endl
-       << strlit ("INSERT INTO " + table_qname(c) + (dv ? "" : " (")) << endl;
+       << strlit ("INSERT INTO " + qtable + (dv ? "" : " (")) << endl;
 
     for (statement_columns::const_iterator i (sc.begin ()),
            e (sc.end ()); i != e;)
@@ -502,7 +503,7 @@ traverse_object (type& c)
       os << strlit (c + (++i != e ? "," : ")")) << endl;
     }
 
-    instance<query_parameters> qp;
+    instance<query_parameters> qp (table);
 
     persist_statement_extra (c, *qp, persist_after_columns);
 
@@ -542,7 +543,7 @@ traverse_object (type& c)
       statement_columns sc;
       {
         statement_kind sk (statement_select); // Imperfect forwarding.
-        instance<object_columns> t (table, sk, sc, d);
+        instance<object_columns> t (qtable, sk, sc, d);
         t->traverse (c);
         process_statement_columns (sc, statement_select);
         find_column_counts[poly_depth - d] = sc.size ();
@@ -557,7 +558,7 @@ traverse_object (type& c)
         os << strlit (c + (++i != e ? "," : "")) << endl;
       }
 
-      os << strlit (" FROM " + table) << endl;
+      os << strlit (" FROM " + qtable) << endl;
 
       if (poly_derived)
       {
@@ -569,15 +570,15 @@ traverse_object (type& c)
       instance<object_joins> j (c, f, d); // @@ (im)perfect forwarding
       j->traverse (c);
 
-      instance<query_parameters> qp;
+      instance<query_parameters> qp (table);
       for (object_columns_list::iterator b (id_cols->begin ()), i (b);
            i != id_cols->end (); ++i)
       {
         if (i != b)
           os << endl;
 
-        os << strlit ((i == b ? " WHERE " : " AND ") + table + "." +
-                      quote_id (i->name) + "=" +
+        os << strlit ((i == b ? " WHERE " : " AND ") +
+                      qtable + "." + quote_id (i->name) + "=" +
                       convert_to (qp->next (), i->type, *i->member));
       }
 
@@ -621,7 +622,7 @@ traverse_object (type& c)
       statement_columns sc;
       {
         statement_kind sk (statement_select); // Imperfect forwarding.
-        instance<object_columns> t (table, sk, sc);
+        instance<object_columns> t (qtable, sk, sc);
         t->traverse (*discriminator);
 
         if (optimistic != 0)
@@ -641,17 +642,17 @@ traverse_object (type& c)
         os << strlit (c + (++i != e ? "," : "")) << endl;
       }
 
-      os << strlit (" FROM " + table) << endl;
+      os << strlit (" FROM " + qtable) << endl;
 
-      instance<query_parameters> qp;
+      instance<query_parameters> qp (table);
       for (object_columns_list::iterator b (id_cols->begin ()), i (b);
            i != id_cols->end (); ++i)
       {
         if (i != b)
           os << endl;
 
-        os << strlit ((i == b ? " WHERE " : " AND ") + table + "." +
-                      quote_id (i->name) + "=" +
+        os << strlit ((i == b ? " WHERE " : " AND ") +
+                      qtable + "." + quote_id (i->name) + "=" +
                       convert_to (qp->next (), i->type, *i->member));
       }
 
@@ -663,7 +664,7 @@ traverse_object (type& c)
     //
     if (cc.total != cc.id + cc.inverse + cc.readonly)
     {
-      instance<query_parameters> qp;
+      instance<query_parameters> qp (table);
 
       statement_columns sc;
       {
@@ -675,7 +676,7 @@ traverse_object (type& c)
       }
 
       os << "const char " << traits << "::update_statement[] =" << endl
-         << strlit ("UPDATE " + table + " SET ") << endl;
+         << strlit ("UPDATE " + qtable + " SET ") << endl;
 
       for (statement_columns::const_iterator i (sc.begin ()),
              e (sc.end ()); i != e;)
@@ -706,9 +707,9 @@ traverse_object (type& c)
     // erase_statement
     //
     {
-      instance<query_parameters> qp;
+      instance<query_parameters> qp (table);
       os << "const char " << traits << "::erase_statement[] =" << endl
-         << strlit ("DELETE FROM " + table);
+         << strlit ("DELETE FROM " + qtable);
 
       for (object_columns_list::iterator b (id_cols->begin ()), i (b);
            i != id_cols->end (); ++i)
@@ -726,11 +727,11 @@ traverse_object (type& c)
 
     if (optimistic != 0 && !poly_derived)
     {
-      instance<query_parameters> qp;
+      instance<query_parameters> qp (table);
 
       os << "const char " << traits << "::optimistic_erase_statement[] " <<
         "=" << endl
-         << strlit ("DELETE FROM " + table);
+         << strlit ("DELETE FROM " + qtable);
 
       for (object_columns_list::iterator b (id_cols->begin ()), i (b);
            i != id_cols->end (); ++i)
@@ -755,7 +756,7 @@ traverse_object (type& c)
     statement_columns sc;
     {
       statement_kind sk (statement_select); // Imperfect forwarding.
-      instance<object_columns> oc (table, sk, sc, poly_depth);
+      instance<object_columns> oc (qtable, sk, sc, poly_depth);
       oc->traverse (c);
       process_statement_columns (sc, statement_select);
     }
@@ -770,7 +771,7 @@ traverse_object (type& c)
       os << strlit (c + (++i != e ? "," : "")) << endl;
     }
 
-    os << strlit (" FROM " + table) << endl;
+    os << strlit (" FROM " + qtable) << endl;
 
     if (poly_derived)
     {
@@ -791,13 +792,13 @@ traverse_object (type& c)
     // erase_query_statement
     //
     os << "const char " << traits << "::erase_query_statement[] =" << endl
-       << strlit ("DELETE FROM " + table) << endl;
+       << strlit ("DELETE FROM " + qtable) << endl;
 
     // DELETE JOIN:
     //
     // MySQL:
-    // << strlit ("DELETE FROM " + table + " USING " + table) << endl;
-    // << strlit ("DELETE " + table + " FROM " + table) << endl;
+    // << strlit ("DELETE FROM " + qtable + " USING " + qtable) << endl;
+    // << strlit ("DELETE " + qtable + " FROM " + qtable) << endl;
     // oj->write ();
     //
 
@@ -807,7 +808,7 @@ traverse_object (type& c)
     // table_name
     //
     os << "const char " << traits << "::table_name[] =" << endl
-       << strlit (table_qname (c)) << ";" // Use quoted name.
+       << strlit (qtable) << ";" // Use quoted name.
        << endl;
   }
 

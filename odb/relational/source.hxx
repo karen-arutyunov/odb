@@ -55,6 +55,8 @@ namespace relational
     {
       typedef query_parameters base;
 
+      query_parameters (qname const& table): table_ (table) {}
+
       virtual string
       next ()
       {
@@ -66,6 +68,9 @@ namespace relational
       {
         return next ();
       }
+
+    protected:
+      qname table_;
     };
 
     struct object_columns: object_columns_base, virtual context
@@ -1790,7 +1795,8 @@ namespace relational
         {
           semantics::type& idt (container_idt (m));
 
-          string table (table_qname (m, table_prefix_));
+          qname table (table_name (m, table_prefix_));
+          string qtable (quote_id (table));
           instance<object_columns_list> id_cols;
 
           // select_all_statement
@@ -1803,7 +1809,8 @@ namespace relational
             semantics::class_* c (object_pointer (vt));
             semantics::data_member& inv_id (*id_member (*c));
 
-            string inv_table;                           // Other table name.
+            qname inv_table;                            // Other table name.
+            string inv_qtable;
             instance<object_columns_list> inv_id_cols;  // Other id column.
             instance<object_columns_list> inv_fid_cols; // Other foreign id
                                                         // column (ref to us).
@@ -1820,7 +1827,8 @@ namespace relational
               table_prefix tp (schema (c->scope ()),
                                table_name_prefix (c->scope ()),
                                table_name (*c) + "_");
-              inv_table = table_qname (*im, tp);
+              inv_table = table_name (*im, tp);
+              inv_qtable = quote_id (inv_table);
 
               inv_id_cols->traverse (*im, utype (inv_id), "id", "object_id", c);
               inv_fid_cols->traverse (*im, idt, "value", "value");
@@ -1833,8 +1841,8 @@ namespace relational
                 //
                 sc.push_back (
                   statement_column (
-                    inv_table,
-                    inv_table + "." + quote_id (i->name),
+                    inv_qtable,
+                    inv_qtable + "." + quote_id (i->name),
                     i->type,
                     *i->member,
                     inv_id_cols->size () == 1 ? "id" : ""));
@@ -1844,7 +1852,8 @@ namespace relational
             {
               // many(i)-to-one
               //
-              inv_table = table_qname (*c);
+              inv_table = table_name (*c);
+              inv_qtable = quote_id (inv_table);
 
               inv_id_cols->traverse (inv_id);
               inv_fid_cols->traverse (*im);
@@ -1854,8 +1863,8 @@ namespace relational
               {
                 sc.push_back (
                   statement_column (
-                    inv_table,
-                    inv_table + "." + quote_id (i->name),
+                    inv_qtable,
+                    inv_qtable + "." + quote_id (i->name),
                     i->type,
                     *i->member));
               }
@@ -1872,15 +1881,15 @@ namespace relational
               os << strlit (c + (++i != e ? "," : "")) << endl;
             }
 
-            instance<query_parameters> qp;
-            os << strlit (" FROM " + inv_table);
+            instance<query_parameters> qp (inv_table);
+            os << strlit (" FROM " + inv_qtable);
 
             for (object_columns_list::iterator b (inv_fid_cols->begin ()),
                    i (b); i != inv_fid_cols->end (); ++i)
             {
               os << endl
-                 << strlit ((i == b ? " WHERE " : " AND ") + inv_table + "." +
-                            quote_id (i->name) + "=" +
+                 << strlit ((i == b ? " WHERE " : " AND ") +
+                            inv_qtable + "." + quote_id (i->name) + "=" +
                             convert_to (qp->next (), i->type, *i->member));
             }
           }
@@ -1890,7 +1899,7 @@ namespace relational
 
             statement_columns sc;
             statement_kind sk (statement_select); // Imperfect forwarding.
-            instance<object_columns> t (table, sk, sc);
+            instance<object_columns> t (qtable, sk, sc);
 
             switch (ck)
             {
@@ -1926,15 +1935,15 @@ namespace relational
               os << strlit (c + (++i != e ? "," : "")) << endl;
             }
 
-            instance<query_parameters> qp;
-            os << strlit (" FROM " + table);
+            instance<query_parameters> qp (table);
+            os << strlit (" FROM " + qtable);
 
             for (object_columns_list::iterator b (id_cols->begin ()), i (b);
                  i != id_cols->end (); ++i)
             {
               os << endl
-                 << strlit ((i == b ? " WHERE " : " AND ") + table + "." +
-                            quote_id (i->name) + "=" +
+                 << strlit ((i == b ? " WHERE " : " AND ") +
+                            qtable + "." + quote_id (i->name) + "=" +
                             convert_to (qp->next (), i->type, *i->member));
             }
 
@@ -1943,7 +1952,7 @@ namespace relational
               string const& col (column_qname (m, "index", "index"));
 
               os << endl
-                 << strlit (" ORDER BY " + table + "." + col);
+                 << strlit (" ORDER BY " + qtable + "." + col);
             }
           }
 
@@ -1991,7 +2000,7 @@ namespace relational
 
             process_statement_columns (sc, statement_insert);
 
-            os << strlit ("INSERT INTO " + table + " (") << endl;
+            os << strlit ("INSERT INTO " + qtable + " (") << endl;
 
             for (statement_columns::const_iterator i (sc.begin ()),
                    e (sc.end ()); i != e;)
@@ -2001,7 +2010,7 @@ namespace relational
             }
 
             string values;
-            instance<query_parameters> qp;
+            instance<query_parameters> qp (table);
             for (statement_columns::const_iterator b (sc.begin ()), i (b),
                    e (sc.end ()); i != e; ++i)
             {
@@ -2025,9 +2034,9 @@ namespace relational
                << endl;
           else
           {
-            instance<query_parameters> qp;
+            instance<query_parameters> qp (table);
 
-            os << strlit ("DELETE FROM " + table);
+            os << strlit ("DELETE FROM " + qtable);
 
             for (object_columns_list::iterator b (id_cols->begin ()), i (b);
                  i != id_cols->end (); ++i)

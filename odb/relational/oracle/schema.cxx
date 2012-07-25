@@ -114,7 +114,7 @@ namespace relational
              << "      IF SQLCODE != -942 THEN RAISE; END IF;" << endl
              << "  END;" << endl;
 
-          // Drop the sequence and trigger if we have auto primary key.
+          // Drop the sequence if we have auto primary key.
           //
           using sema_rel::primary_key;
 
@@ -131,13 +131,6 @@ namespace relational
                << "  EXCEPTION" << endl
                << "    WHEN OTHERS THEN" << endl
                << "      IF SQLCODE != -2289 THEN RAISE; END IF;" << endl
-               << "  END;" << endl
-               << "  BEGIN" << endl
-               << "    EXECUTE IMMEDIATE 'DROP TRIGGER " <<
-              quote_id (table + "_trg") << "';" << endl
-               << "  EXCEPTION" << endl
-               << "    WHEN OTHERS THEN" << endl
-               << "      IF SQLCODE != -4080 THEN RAISE; END IF;" << endl
                << "  END;" << endl;
           }
 
@@ -283,7 +276,7 @@ namespace relational
           tables_.insert (t.name ()); // Add it before to cover self-refs.
           base::traverse (t);
 
-          // Create the sequence and trigger if we have auto primary key.
+          // Create the sequence if we have auto primary key.
           //
           using sema_rel::primary_key;
 
@@ -294,33 +287,9 @@ namespace relational
 
           if (pk != 0 && pk->auto_ ())
           {
-            qname const& tname (t.name ());
-            string const& cname (pk->contains_begin ()->column ().name ());
-
-            qname seq_name (tname + "_seq");
-            qname trg_name (tname + "_trg");
-
-            // Sequence.
-            //
             pre_statement ();
-
-            os_ << "CREATE SEQUENCE " << quote_id (seq_name) << endl
+            os_ << "CREATE SEQUENCE " << quote_id (t.name () + "_seq") << endl
                 << "  START WITH 1 INCREMENT BY 1" << endl;
-
-            post_statement ();
-
-            // Trigger.
-            //
-            pre_statement ();
-
-            os_ << "CREATE TRIGGER " << quote_id (trg_name) << endl
-                << "  BEFORE INSERT ON " << quote_id (tname) << endl
-                << "  FOR EACH ROW" << endl
-                << "BEGIN" << endl
-                << "  SELECT " << quote_id (seq_name) << ".nextval " <<
-              "INTO :new." << quote_id (cname) << " FROM DUAL;" << endl
-                << "END;" << endl;
-
             post_statement ();
           }
 
