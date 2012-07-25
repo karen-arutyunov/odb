@@ -319,14 +319,21 @@ resolve_scoped_name (cxx_lexer& l,
                      tree& tn,
                      string& name,
                      bool is_type,
-                     string const& prag)
+                     string const& prag,
+                     bool trailing_scope = false,
+                     cpp_ttype* prev_tt = 0)
 {
   try
   {
     cpp_ttype ptt; // Not used.
-    return
+    tree r (
       lookup::resolve_scoped_name (
-        l, tt, tl, tn, ptt, current_scope (), name, is_type);
+        l, tt, tl, tn, ptt, current_scope (), name, is_type, trailing_scope));
+
+    if (prev_tt != 0)
+      *prev_tt = ptt;
+
+    return r;
   }
   catch (lookup::invalid_name const&)
   {
@@ -365,11 +372,13 @@ check_spec_decl_type (tree d,
       return false;
     }
   }
-  else if (p == "auto" ||
-           p == "column" ||
-           p == "inverse" ||
+  else if (p == "auto"      ||
+           p == "column"    ||
+           p == "inverse"   ||
            p == "transient" ||
-           p == "version")
+           p == "version"   ||
+           p == "index"     ||
+           p == "unique")
   {
     if (tc != FIELD_DECL)
     {
@@ -580,7 +589,278 @@ handle_pragma (cxx_lexer& l,
   pragma::add_func adder (0);                // Custom context adder.
   location_t loc (l.location ());            // Pragma location.
 
-  if (p == "table")
+  if (qualifier == "map")
+  {
+    // type("<regex>")
+    // as("<subst>")
+    // to("<subst>")
+    // from("<subst>")
+    //
+
+    if (p != "type" &&
+        p != "as"   &&
+        p != "to"   &&
+        p != "from")
+    {
+      error (l) << "unknown db pragma " << p << endl;
+      return;
+    }
+
+    using relational::custom_db_type;
+
+    // Make sure we've got the correct declaration type.
+    //
+    assert (decl == global_namespace);
+    custom_db_type& ct (qualifier_value.value<custom_db_type> ());
+
+    if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+    {
+      error (l) << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+
+    if (p == "type")
+    {
+      if (tt != CPP_STRING)
+      {
+        error (l) << "type name regex expected in db pragma " << p << endl;
+        return;
+      }
+
+      try
+      {
+        // Make it case-insensitive.
+        //
+        ct.type.assign (tl, true);
+      }
+      catch (regex_format const& e)
+      {
+        error (l) << "invalid regex: '" << e.regex () << "' in db pragma "
+                  << p << ": " << e.description () << endl;
+        return;
+      }
+    }
+    else if (p == "as")
+    {
+      if (tt != CPP_STRING)
+      {
+        error (l) << "type name expected in db pragma " << p << endl;
+        return;
+      }
+
+      ct.as = tl;
+    }
+    else if (p == "to")
+    {
+      if (tt != CPP_STRING)
+      {
+        error (l) << "expression expected in db pragma " << p << endl;
+        return;
+      }
+
+      ct.to = tl;
+    }
+    else if (p == "from")
+    {
+      if (tt != CPP_STRING)
+      {
+        error (l) << "expression expected in db pragma " << p << endl;
+        return;
+      }
+
+      ct.from = tl;
+    }
+
+    if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
+    {
+      error (l) << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    name.clear (); // We don't need to add anything for this pragma.
+    tt = l.next (tl, &tn);
+  }
+  else if (qualifier == "index")
+  {
+    // unique
+    // type("<type>")
+    // method("<method>")
+    // options("<options>")
+    // member(<name>[, "<options>"])
+    // members(<name>[, <name>...])
+    //
+
+    if (p != "unique"  &&
+        p != "type"    &&
+        p != "method"  &&
+        p != "options" &&
+        p != "member"  &&
+        p != "members")
+    {
+      error (l) << "unknown db pragma " << p << endl;
+      return;
+    }
+
+    using relational::index;
+    index& in (qualifier_value.value<index> ());
+
+    if (p == "unique")
+      in.type = "UNIQUE";
+    else
+    {
+      if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+      {
+        error (l) << "'(' expected after db pragma " << p << endl;
+        return;
+      }
+
+      tt = l.next (tl, &tn);
+
+      if (p == "type")
+      {
+        if (tt != CPP_STRING)
+        {
+          error (l) << "index type expected in db pragma " << p << endl;
+          return;
+        }
+
+        in.type = tl;
+        tt = l.next (tl, &tn);
+      }
+      else if (p == "method")
+      {
+        if (tt != CPP_STRING)
+        {
+          error (l) << "index method expected in db pragma " << p << endl;
+          return;
+        }
+
+        in.method = tl;
+        tt = l.next (tl, &tn);
+      }
+      else if (p == "options")
+      {
+        if (tt != CPP_STRING)
+        {
+          error (l) << "index options expected in db pragma " << p << endl;
+          return;
+        }
+
+        in.options = tl;
+        tt = l.next (tl, &tn);
+      }
+      else if (p == "member")
+      {
+        if (tt != CPP_NAME)
+        {
+          error (l) << "data member name expected in db pragma " << p << endl;
+          return;
+        }
+
+        index::member m;
+        m.loc = loc;
+        m.name = tl;
+
+        tt = l.next (tl, &tn);
+
+        // Parse nested members if any.
+        //
+        for (; tt == CPP_DOT; tt = l.next (tl, &tn))
+        {
+          if (l.next (tl, &tn) != CPP_NAME)
+          {
+            error (l) << "name expected after '.' in db pragma " << p << endl;
+            return;
+          }
+
+          m.name += '.';
+          m.name += tl;
+        }
+
+        // Parse member options, if any.
+        //
+        if (tt == CPP_COMMA)
+        {
+          if (l.next (tl, &tn) != CPP_STRING)
+          {
+            error (l) << "index member options expected in db pragma " << p
+                      << endl;
+            return;
+          }
+
+          m.options = tl;
+          tt = l.next (tl, &tn);
+        }
+
+        in.members.push_back (m);
+      }
+      else if (p == "members")
+      {
+        for (;;)
+        {
+          if (tt != CPP_NAME)
+          {
+            error (l) << "data member name expected in db pragma " << p
+                      << endl;
+            return;
+          }
+
+          index::member m;
+          m.loc = l.location ();
+          m.name = tl;
+
+          tt = l.next (tl, &tn);
+
+          // Parse nested members if any.
+          //
+          for (; tt == CPP_DOT; tt = l.next (tl, &tn))
+          {
+            if (l.next (tl, &tn) != CPP_NAME)
+            {
+              error (l) << "name expected after '.' in db pragma " << p
+                        << endl;
+              return;
+            }
+
+            m.name += '.';
+            m.name += tl;
+          }
+
+          in.members.push_back (m);
+
+          if (tt == CPP_COMMA)
+            tt = l.next (tl, &tn);
+          else
+            break;
+        }
+      }
+
+      if (tt != CPP_CLOSE_PAREN)
+      {
+        error (l) << "')' expected at the end of db pragma " << p << endl;
+        return;
+      }
+    }
+
+    name.clear (); // We don't need to add anything for this pragma.
+    tt = l.next (tl, &tn);
+  }
+  else if (p == "index" ||
+           p == "unique")
+  {
+    // index
+    // unique
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    tt = l.next (tl, &tn);
+  }
+  else if (p == "table")
   {
     // table (<name>)
     // table (<name> [= "<alias>"] [: "<cond>"]  (view only)
@@ -1358,93 +1638,6 @@ handle_pragma (cxx_lexer& l,
     adder = &accumulate<string>;
     tt = l.next (tl, &tn);
   }
-  else if (qualifier == "map" &&
-           (p == "type" ||
-            p == "as"   ||
-            p == "to"   ||
-            p == "from"))
-  {
-    // type("<regex>")
-    // as("<subst>")
-    // to("<subst>")
-    // from("<subst>")
-    //
-    using relational::custom_db_type;
-
-    // Make sure we've got the correct declaration type.
-    //
-    assert (decl == global_namespace);
-    custom_db_type& ct (qualifier_value.value<custom_db_type> ());
-
-    if (l.next (tl, &tn) != CPP_OPEN_PAREN)
-    {
-      error (l) << "'(' expected after db pragma " << p << endl;
-      return;
-    }
-
-    tt = l.next (tl, &tn);
-
-    if (p == "type")
-    {
-      if (tt != CPP_STRING)
-      {
-        error (l) << "type name regex expected in db pragma " << p << endl;
-        return;
-      }
-
-      try
-      {
-        // Make it case-insensitive.
-        //
-        ct.type.assign (tl, true);
-      }
-      catch (regex_format const& e)
-      {
-        error (l) << "invalid regex: '" << e.regex () << "' in db pragma "
-                  << p << ": " << e.description () << endl;
-        return;
-      }
-    }
-    else if (p == "as")
-    {
-      if (tt != CPP_STRING)
-      {
-        error (l) << "type name expected in db pragma " << p << endl;
-        return;
-      }
-
-      ct.as = tl;
-    }
-    else if (p == "to")
-    {
-      if (tt != CPP_STRING)
-      {
-        error (l) << "expression expected in db pragma " << p << endl;
-        return;
-      }
-
-      ct.to = tl;
-    }
-    else if (p == "from")
-    {
-      if (tt != CPP_STRING)
-      {
-        error (l) << "expression expected in db pragma " << p << endl;
-        return;
-      }
-
-      ct.from = tl;
-    }
-
-    if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
-    {
-      error (l) << "')' expected at the end of db pragma " << p << endl;
-      return;
-    }
-
-    name.clear (); // We don't need to add anything for this pragma.
-    tt = l.next (tl, &tn);
-  }
   else if (p == "type" ||
            p == "id_type" ||
            p == "value_type" ||
@@ -1777,6 +1970,26 @@ check_qual_decl_type (tree d,
   {
     assert (d == global_namespace);
   }
+  else if (p == "index")
+  {
+    if (tc != RECORD_TYPE)
+    {
+      // For an index, name is not empty only if the class name was
+      // specified explicitly. Otherwise, the index definition scope
+      // is assumed.
+      //
+      if (name.empty ())
+      {
+        error (l) << "db pragma " << p << " outside of a class scope" << endl;
+        info (l) << "use the db pragma " << p << "(<class-name>) syntax "
+                 << " instead" << endl;
+      }
+      else
+        error (l) << "name '" << name << "' in db pragma " << p << " does "
+                  << "not refer to a class" << endl;
+      return false;
+    }
+  }
   else if (p == "namespace")
   {
     if (tc != NAMESPACE_DECL)
@@ -1856,6 +2069,8 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
   pragma::add_func adder (0);      // Custom context adder.
   bool ns (false);                 // Namespace location pragma.
 
+  cxx_tokens saved_tokens;         // Saved token seuqnece to be replayed.
+
   // Pragma qualifiers.
   //
   if (p == "map")
@@ -1871,6 +2086,175 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
     orig_decl = decl = global_namespace;
     adder = &accumulate<custom_db_type>;
     tt = l.next (tl, &tn);
+  }
+  else if (p == "index")
+  {
+    // Index can be both a qualifier and a specifier. Things are complicated
+    // by the fact that when it is a specifier, it belongs to a member which
+    // means that the actual qualifier ('member') can be omitted. So we need
+    // to distinguish between cases like these:
+    //
+    // #pragma db index type("INTEGER")              // specifier
+    // #pragma db index type("UNIQUE") member(foo_)  // qualifier
+    //
+    // The thing that determines whether this is a qualifier or a specifier
+    // is the presence of the 'member' or 'members' specifier. So to handle
+    // this we are going to pre-scan the pragma looking for 'member' or
+    // 'members' and saving the tokens. Once we determine what this is,
+    // we replay the saved tokens to actually parse them.
+    //
+    tt = l.next (tl, &tn);
+
+    if (tt != CPP_OPEN_PAREN)
+    {
+      // Determine what this is by scanning the pragma until we see
+      // the 'member' qualifier or EOF.
+      //
+      bool qual (false);
+      size_t balance (0);
+
+      for (; tt != CPP_EOF; tt = l.next (tl, &tn))
+      {
+        switch (tt)
+        {
+        case CPP_OPEN_PAREN:
+          {
+            balance++;
+            break;
+          }
+        case CPP_CLOSE_PAREN:
+          {
+            if (balance > 0)
+              balance--;
+            else
+            {
+              error (l) << "unbalanced parenthesis in db pragma " << p << endl;
+              return;
+            }
+            break;
+          }
+        case CPP_NAME:
+          {
+            if (balance == 0 && (tl == "member" || tl == "members"))
+              qual = true;
+            break;
+          }
+        default:
+          break;
+        }
+
+        if (qual)
+          break;
+
+        cxx_token ct (l.location (), tt);
+        ct.literal = tl;
+        ct.node = tn;
+        saved_tokens.push_back (ct);
+      }
+
+      if (balance != 0)
+      {
+        error (l) << "unbalanced parenthesis in db pragma " << p << endl;
+        return;
+      }
+
+      if (qual)
+      {
+        // This is a qualifer. The saved tokens sequence contains tokens
+        // until the first 'member' or 'members' specifier. So we will
+        // first need to re-play these tokens and then continue parsing
+        // as if we just saw the 'member' or 'members' specifier. The
+        // token type (tt) and token literal (tl) variables should contain
+        // the correct values.
+        //
+        orig_decl = decl = current_scope ();
+      }
+      else
+      {
+        // This is a specifier. The saved tokens sequence contains all the
+        // tokens in this pragma until EOF.
+        //
+        cxx_tokens_lexer l;
+        l.start (saved_tokens, loc);
+        handle_pragma (l, "index", "member", val, 0, "", false);
+        return;
+      }
+    }
+
+    relational::index in;
+    in.loc = loc;
+
+    if (tt == CPP_OPEN_PAREN)
+    {
+      // Specifier with the class fq-name, index name, or both.
+      //
+      // index(<fq-name>)
+      // index("<name>")
+      // index(<fq-name>::"<name>")
+      //
+      tt = l.next (tl, &tn);
+
+      // Resolve class name, if any.
+      //
+      if (tt == CPP_NAME || tt == CPP_SCOPE)
+      {
+        cpp_ttype ptt;
+        orig_decl = resolve_scoped_name (
+          l, tt, tl, tn, decl_name, true, p, true, &ptt);
+
+        if (orig_decl == 0)
+          return; // Diagnostics has already been issued.
+
+        // Get the actual type if this is a TYPE_DECL. Also get the main
+        // variant.
+        //
+        if (TREE_CODE (orig_decl) == TYPE_DECL)
+          orig_decl = TREE_TYPE (orig_decl);
+
+        if (TYPE_P (orig_decl)) // Can be a template.
+          decl = TYPE_MAIN_VARIANT (orig_decl);
+        else
+          decl = orig_decl;
+
+        if (tt == CPP_STRING && ptt != CPP_SCOPE)
+        {
+          error (l) << "'::' expected before index name in db pragma " << p
+                    << endl;
+          return;
+        }
+
+        if (tt != CPP_STRING && ptt == CPP_SCOPE)
+        {
+          error (l) << "index name expected after '::' in db pragma " << p
+                    << endl;
+          return;
+        }
+      }
+      else
+        orig_decl = decl = current_scope ();
+
+      // Make sure we've got the correct declaration type.
+      //
+      if (!check_qual_decl_type (decl, decl_name, p, loc))
+        return;
+
+      if (tt == CPP_STRING)
+      {
+        in.name = tl;
+        tt = l.next (tl, &tn);
+      }
+
+      if (tt != CPP_CLOSE_PAREN)
+      {
+        error (l) << "')' expected at the end of db pragma " << p << endl;
+        return;
+      }
+
+      tt = l.next (tl, &tn);
+    }
+
+    val = in;
+    adder = &accumulate<relational::index>;
   }
   else if (p == "namespace")
   {
@@ -2032,6 +2416,7 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
   //
   else if (p == "id" ||
            p == "auto" ||
+           p == "unique" ||
            p == "column" ||
            p == "value_column" ||
            p == "index_column" ||
@@ -2104,8 +2489,30 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
     }
   }
 
-  // See if there are any more pragmas.
+  // See if there are any saved tokens to replay.
   //
+  if (!saved_tokens.empty ())
+  {
+    cxx_tokens_lexer l;
+    l.start (saved_tokens);
+
+    string tl;
+    cpp_ttype tt (l.next (tl));
+
+    if (tt == CPP_NAME || tt == CPP_KEYWORD)
+    {
+      handle_pragma (l, tl, p, *pval, decl, decl_name, ns);
+
+      if (errorcount != 0) // Avoid parsing the rest if there was an error.
+        return;
+    }
+    else if (tt != CPP_EOF)
+    {
+      error (l) << "unexpected text after " << p << " in db pragma" << endl;
+      return;
+    }
+  }
+
   if (tt == CPP_NAME || tt == CPP_KEYWORD)
   {
     handle_pragma (l, tl, p, *pval, decl, decl_name, ns);

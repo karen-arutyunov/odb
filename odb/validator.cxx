@@ -1236,57 +1236,54 @@ validate (options const& ops,
           unsigned short pass)
 {
   bool valid (true);
+  auto_ptr<context> ctx (create_context (cerr, u, ops, f, 0));
 
+  if (pass == 1)
   {
-    auto_ptr<context> ctx (create_context (cerr, u, ops, f, 0));
+    traversal::unit unit;
+    traversal::defines unit_defines;
+    traversal::declares unit_declares;
+    typedefs1 unit_typedefs (unit_declares);
+    traversal::namespace_ ns;
+    value_type vt (valid);
+    class1 c (valid, vt);
 
-    if (pass == 1)
-    {
-      traversal::unit unit;
-      traversal::defines unit_defines;
-      traversal::declares unit_declares;
-      typedefs1 unit_typedefs (unit_declares);
-      traversal::namespace_ ns;
-      value_type vt (valid);
-      class1 c (valid, vt);
+    unit >> unit_defines >> ns;
+    unit_defines >> c;
+    unit >> unit_declares >> vt;
+    unit >> unit_typedefs >> c;
 
-      unit >> unit_defines >> ns;
-      unit_defines >> c;
-      unit >> unit_declares >> vt;
-      unit >> unit_typedefs >> c;
+    traversal::defines ns_defines;
+    traversal::declares ns_declares;
+    typedefs1 ns_typedefs (ns_declares);
 
-      traversal::defines ns_defines;
-      traversal::declares ns_declares;
-      typedefs1 ns_typedefs (ns_declares);
+    ns >> ns_defines >> ns;
+    ns_defines >> c;
+    ns >> ns_declares >> vt;
+    ns >> ns_typedefs >> c;
 
-      ns >> ns_defines >> ns;
-      ns_defines >> c;
-      ns >> ns_declares >> vt;
-      ns >> ns_typedefs >> c;
+    unit.dispatch (u);
+  }
+  else
+  {
+    traversal::unit unit;
+    traversal::defines unit_defines;
+    typedefs unit_typedefs (true);
+    traversal::namespace_ ns;
+    class2 c (valid);
 
-      unit.dispatch (u);
-    }
-    else
-    {
-      traversal::unit unit;
-      traversal::defines unit_defines;
-      typedefs unit_typedefs (true);
-      traversal::namespace_ ns;
-      class2 c (valid);
+    unit >> unit_defines >> ns;
+    unit_defines >> c;
+    unit >> unit_typedefs >> c;
 
-      unit >> unit_defines >> ns;
-      unit_defines >> c;
-      unit >> unit_typedefs >> c;
+    traversal::defines ns_defines;
+    typedefs ns_typedefs (true);
 
-      traversal::defines ns_defines;
-      typedefs ns_typedefs (true);
+    ns >> ns_defines >> ns;
+    ns_defines >> c;
+    ns >> ns_typedefs >> c;
 
-      ns >> ns_defines >> ns;
-      ns_defines >> c;
-      ns >> ns_typedefs >> c;
-
-      unit.dispatch (u);
-    }
+    unit.dispatch (u);
   }
 
   if (!valid)

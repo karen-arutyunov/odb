@@ -20,6 +20,7 @@
 #include <cutl/compiler/context.hxx>
 
 #include <odb/gcc-fwd.hxx>
+#include <odb/location.hxx>
 
 namespace semantics
 {
@@ -134,22 +135,30 @@ namespace semantics
     }
 
   public:
+    typedef ::location location_type;
+
     path const&
     file () const
     {
-      return file_;
+      return loc_.file;
     }
 
     size_t
     line () const
     {
-      return line_;
+      return loc_.line;
     }
 
     size_t
     column () const
     {
-      return column_;
+      return loc_.column;
+    }
+
+    location_type const&
+    location () const
+    {
+      return loc_;
     }
 
   public:
@@ -204,9 +213,7 @@ namespace semantics
     tree tree_node_;
     unit_type* unit_;
 
-    path file_;
-    size_t line_;
-    size_t column_;
+    location_type loc_;
   };
 
   //

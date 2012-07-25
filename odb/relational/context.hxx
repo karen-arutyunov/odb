@@ -23,6 +23,41 @@ namespace relational
     statement_where   // WHERE clause.
   };
 
+  // Index.
+  //
+  struct index
+  {
+    location_t loc;      // Location of this index definition.
+    std::string name;    // If empty, then derive from the member name.
+    std::string type;    // E.g., "UNIQUE", etc.
+    std::string method;  // E.g., "BTREE", etc.
+    std::string options; // Database-specific index options.
+
+    struct member
+    {
+      location_t loc;        // Location of this member specifier.
+      std::string name;      // Member name, e.g., foo_, foo_.bar_.
+      data_member_path path; // Member path.
+      std::string options;   // Member options, e.g., "ASC", etc.
+    };
+    typedef std::vector<member> members_type;
+
+    members_type members;
+  };
+
+  typedef std::vector<index> indexes;
+
+  // Indexes in the above vector are in location order.
+  //
+  struct index_comparator
+  {
+    bool
+    operator() (index const& x, index const& y) const
+    {
+      return x.loc < y.loc;
+    }
+  };
+
   // Custom database type mapping.
   //
   struct custom_db_type

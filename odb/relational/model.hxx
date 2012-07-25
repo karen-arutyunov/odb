@@ -109,9 +109,7 @@ namespace relational
 
         sema_rel::column& c (
           model_.new_node<sema_rel::column> (col_id, column_type (), null));
-
-        c.set ("cxx-node", static_cast<semantics::node*> (&m));
-
+        c.set ("cxx-location", m.location ());
         model_.new_edge<sema_rel::unames> (table_, c, name);
 
         // An id member cannot have a default value.
@@ -196,7 +194,7 @@ namespace relational
             {
               pkey_ = &model_.new_node<sema_rel::primary_key> (
                 m.count ("auto"));
-              pkey_->set ("cxx-node", static_cast<semantics::node*> (idm));
+              pkey_->set ("cxx-location", idm->location ());
 
               // In most databases the primary key constraint can be
               // manipulated without an explicit name. So we use the special
@@ -236,7 +234,7 @@ namespace relational
           model_.new_node<foreign_key> (
             id, table_name (c), deferred, on_delete));
 
-        fk.set ("cxx-node", static_cast<semantics::node*> (&m));
+        fk.set ("cxx-location", m.location ());
 
         bool simple;
 
@@ -328,6 +326,93 @@ namespace relational
       bool id_override_;
     };
 
+    struct object_indexes: traversal::class_, virtual context
+    {
+      typedef object_indexes base;
+
+      object_indexes (sema_rel::model& model, sema_rel::table& table)
+          : model_ (model), table_ (table)
+      {
+        *this >> inherits_ >> *this;
+      }
+
+      object_indexes (object_indexes const& x)
+          : root_context (), context (), //@@ -Wextra
+            model_ (x.model_), table_ (x.table_)
+      {
+        *this >> inherits_ >> *this;
+      }
+
+      virtual void
+      traverse (type& c)
+      {
+        if (!object (c)) // Ignore transient bases.
+          return;
+
+        // Polymorphic bases get their own tables.
+        //
+        if (!polymorphic (c))
+          inherits (c);
+
+        indexes& ins (c.get<indexes> ("index"));
+
+        for (indexes::iterator i (ins.begin ()); i != ins.end (); ++i)
+        {
+          // Using index name as its id.
+          //
+          sema_rel::index& in (
+            model_.new_node<sema_rel::index> (
+              i->name, i->type, i->method, i->options));
+          in.set ("cxx-location", location (i->loc));
+          model_.new_edge<sema_rel::unames> (table_, in, i->name);
+
+          for (index::members_type::iterator j (i->members.begin ());
+               j != i->members.end (); ++j)
+          {
+            using sema_rel::column;
+
+            index::member& im (*j);
+
+            if (type* comp = composite_wrapper (utype (*im.path.back ())))
+            {
+              // Composite value. Get the list of the columns. Here
+              // column_name() returns the column prefix.
+              //
+              instance<object_columns_list> ocl (column_name (im.path));
+              ocl->traverse (*comp);
+
+              for (object_columns_list::iterator i (ocl->begin ());
+                   i != ocl->end (); ++i)
+              {
+                column& c (
+                  dynamic_cast<column&> (
+                    table_.find (i->name)->nameable ()));
+
+                model_.new_edge<sema_rel::contains> (in, c, im.options);
+              }
+            }
+            else
+            {
+              // Simple value. Get the column name and look it up in the
+              // table.
+              //
+              column& c (
+                dynamic_cast<column&> (
+                  table_.find (column_name (im.path))->nameable ()));
+
+              model_.new_edge<sema_rel::contains> (in, c, im.options);
+            }
+          }
+        }
+      }
+
+    private:
+      sema_rel::model& model_;
+      sema_rel::table& table_;
+
+      traversal::inherits inherits_;
+    };
+
     struct member_create: object_members_base, virtual context
     {
       typedef member_create base;
@@ -384,7 +469,6 @@ namespace relational
         using semantics::type;
         using semantics::data_member;
 
-        using sema_rel::index;
         using sema_rel::column;
 
         // Ignore inverse containers of object pointers.
@@ -404,8 +488,7 @@ namespace relational
 
         sema_rel::container_table& t (
           model_.new_node<sema_rel::container_table> (id));
-        t.set ("cxx-node", static_cast<semantics::node*> (&m));
-
+        t.set ("cxx-location", m.location ());
         model_.new_edge<sema_rel::qnames> (model_, t, name);
 
         // object_id
@@ -418,16 +501,31 @@ namespace relational
         // Foreign key and index for the object id.
         //
         {
+          // Derive the name prefix. See the comment for the other foreign
+          // key code above.
+          //
+          // Note also that id_name can be a column prefix (if id is
+          // composite), in which case it can be empty and if not, then
+          // it will most likely already contain a trailing underscore.
+          //
+          string id_name (column_name (m, "id", "object_id"));
+
+          if (id_name.empty ())
+            id_name = "object_id";
+
+          if (id_name[id_name.size () - 1] != '_')
+            id_name += '_';
+
+          // Foreign key.
+          //
           sema_rel::foreign_key& fk (
             model_.new_node<sema_rel::foreign_key> (
               id + ".id",
               table_name (*context::top_object),
               false, // immediate
               sema_rel::foreign_key::cascade));
-          fk.set ("cxx-node", static_cast<semantics::node*> (&m));
-
-          index& in (model_.new_node<index> (id + ".id"));
-          in.set ("cxx-node", static_cast<semantics::node*> (&m));
+          fk.set ("cxx-location", m.location ());
+          model_.new_edge<sema_rel::unames> (t, fk, id_name + "fk");
 
           // Get referenced columns.
           //
@@ -443,35 +541,47 @@ namespace relational
           }
 
           // All the columns we have in this table so far are for the
-          // object id. Add them to the foreign key and the index.
+          // object id. Add them to the foreign key.
           //
           for (sema_rel::table::names_iterator i (t.names_begin ());
                i != t.names_end ();
                ++i)
           {
-            column& c (dynamic_cast<column&> (i->nameable ()));
-
-            model_.new_edge<sema_rel::contains> (fk, c);
-            model_.new_edge<sema_rel::contains> (in, c);
+            if (column* c = dynamic_cast<column*> (&i->nameable ()))
+              model_.new_edge<sema_rel::contains> (fk, *c);
           }
 
-          // Derive the names. See the comment for the other foreign key
-          // code above.
+          // Index. See if we have a custom index.
           //
-          // Note also that id_name can be a column prefix (if id is
-          // composite), in which case it can be empty and if not, then
-          // it will most likely already contain a trailing underscore.
+          index* sin (m.count ("id-index") ? &m.get<index> ("id-index") : 0);
+          sema_rel::index* in (0);
+
+          if (sin != 0)
+          {
+            in = &model_.new_node<sema_rel::index> (
+              id + ".id", sin->type, sin->method, sin->options);
+            in->set ("cxx-location", sin->loc);
+            model_.new_edge<sema_rel::unames> (
+              t, *in, (sin->name.empty () ? id_name + "i" : sin->name));
+          }
+          else
+          {
+            in = &model_.new_node<sema_rel::index> (id + ".id");
+            in->set ("cxx-location", m.location ());
+            model_.new_edge<sema_rel::unames> (t, *in, id_name + "i");
+          }
+
+          // All the columns we have in this table so far are for the
+          // object id. Add them to the index.
           //
-          string id_name (column_name (m, "id", "object_id"));
-
-          if (id_name.empty ())
-            id_name = "object_id";
-
-          if (id_name[id_name.size () - 1] != '_')
-            id_name += '_';
-
-          model_.new_edge<sema_rel::unames> (t, fk, id_name + "fk");
-          model_.new_edge<sema_rel::unames> (t, in, id_name + "i");
+          for (sema_rel::table::names_iterator i (t.names_begin ());
+               i != t.names_end ();
+               ++i)
+          {
+            if (column* c = dynamic_cast<column*> (&i->nameable ()))
+              model_.new_edge<sema_rel::contains> (
+                *in, *c, (sin != 0 ? sin->members.back ().options : ""));
+          }
         }
 
         // index (simple value)
@@ -479,18 +589,39 @@ namespace relational
         bool ordered (ck == ck_ordered && !unordered (m));
         if (ordered)
         {
+          // Column.
+          //
           instance<object_columns> oc (model_, t);
           oc->traverse (m, container_it (ct), "index", "index");
 
           string col_name (column_name (m, "index", "index"));
 
-          index& in (model_.new_node<index> (id + ".index"));
-          in.set ("cxx-node", static_cast<semantics::node*> (&m));
+          // Index. See if we have a custom index.
+          //
+          index* sin (m.count ("index-index")
+                      ? &m.get<index> ("index-index")
+                      : 0);
+          sema_rel::index* in (0);
+
+          if (sin != 0)
+          {
+            in = &model_.new_node<sema_rel::index> (
+              id + ".index", sin->type, sin->method, sin->options);
+            in->set ("cxx-location", sin->loc);
+            model_.new_edge<sema_rel::unames> (
+              t, *in, (sin->name.empty () ? col_name + "_i" : sin->name));
+          }
+          else
+          {
+            in = &model_.new_node<sema_rel::index> (id + ".index");
+            in->set ("cxx-location", m.location ());
+            model_.new_edge<sema_rel::unames> (t, *in, col_name + "_i");
+          }
 
           model_.new_edge<sema_rel::contains> (
-            in, dynamic_cast<column&> (t.find (col_name)->nameable ()));
-
-          model_.new_edge<sema_rel::unames> (t, in, col_name + "_i");
+            *in,
+            dynamic_cast<column&> (t.find (col_name)->nameable ()),
+            (sin != 0 ? sin->members.back ().options : ""));
         }
 
         // key
@@ -551,16 +682,23 @@ namespace relational
 
         sema_rel::object_table& t(
           model_.new_node<sema_rel::object_table> (id));
-
-        t.set ("cxx-node", static_cast<semantics::node*> (&c));
-
+        t.set ("cxx-location", c.location ());
         model_.new_edge<sema_rel::qnames> (model_, t, name);
 
         sema_rel::model::names_iterator begin (--model_.names_end ());
 
+        // Add columns.
+        //
         {
           instance<object_columns> oc (model_, t);
           oc->traverse (c);
+        }
+
+        // Add indexes.
+        //
+        {
+          instance<object_indexes> oi (model_, t);
+          oi->traverse (c);
         }
 
         tables_.insert (name);

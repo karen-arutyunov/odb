@@ -47,7 +47,7 @@ class cxx_tokens_lexer: public cxx_lexer
 {
 public:
   void
-  start (cxx_tokens const&);
+  start (cxx_tokens const&, location_t start_loc = 0);
 
   virtual cpp_ttype
   next (std::string& token, tree* node = 0);

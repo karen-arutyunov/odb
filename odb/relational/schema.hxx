@@ -494,12 +494,9 @@ namespace relational
       }
 
       virtual void
-      create (sema_rel::index& in)
+      columns (sema_rel::index& in)
       {
         using sema_rel::index;
-
-        os << "CREATE INDEX " << name (in) << endl
-           << "  ON " << table_name (in) << " (";
 
         for (index::contains_iterator i (in.contains_begin ());
              i != in.contains_end ();
@@ -515,9 +512,31 @@ namespace relational
           }
 
           os << quote_id (i->column ().name ());
+
+          if (!i->options ().empty ())
+            os << ' ' << i->options ();
         }
+      }
+
+      virtual void
+      create (sema_rel::index& in)
+      {
+        // Default implementation that ignores the method.
+        //
+        os << "CREATE ";
+
+        if (!in.type ().empty ())
+          os << in.type () << ' ';
+
+        os << "INDEX " << name (in) << endl
+           << "  ON " << table_name (in) << " (";
+
+        columns (in);
 
         os << ")" << endl;
+
+        if (!in.options ().empty ())
+          os << ' ' << in.options () << endl;
       }
 
     protected:

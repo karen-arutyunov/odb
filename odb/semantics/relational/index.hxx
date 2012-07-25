@@ -17,13 +17,42 @@ namespace semantics
     class index: public key
     {
     public:
-      index (string const& id): key (id) {}
+      index (string const& id,
+             string const& t = string (),
+             string const& m = string (),
+             string const& o = string ())
+          : key (id), type_ (t), method_ (m), options_ (o)
+      {
+      }
+
+      string const&
+      type () const
+      {
+        return type_;
+      }
+
+      string const&
+      method () const
+      {
+        return method_;
+      }
+
+      string const&
+      options () const
+      {
+        return options_;
+      }
 
       virtual string
       kind () const
       {
         return "index";
       }
+
+    private:
+      string type_;    // E.g., "UNIQUE", etc.
+      string method_;  // E.g., "BTREE", etc.
+      string options_; // Database-specific index options.
     };
   }
 }

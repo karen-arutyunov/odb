@@ -48,6 +48,7 @@ namespace lookup
                        tree scope,
                        string& name,
                        bool is_type,
+                       bool trailing_scope,
                        tree* end_scope)
   {
     tree id;
@@ -78,7 +79,24 @@ namespace lookup
       ptt = tt;
       tt = l.next (tl, &tn);
 
-      bool last (tt != CPP_SCOPE);
+      bool last (true);
+      if (tt == CPP_SCOPE)
+      {
+        // If trailing scope names are allowed, then we also need to
+        // check what's after the scope.
+        //
+        if (trailing_scope)
+        {
+          ptt = tt;
+          tt = l.next (tl, &tn);
+
+          if (tt == CPP_NAME)
+            last = false;
+        }
+        else
+          last = false;
+      }
+
       tree decl = lookup_qualified_name (scope, id, last && is_type, false);
 
       // If this is the first component in the name, then also search the
@@ -110,8 +128,11 @@ namespace lookup
 
       name += "::";
 
-      ptt = tt;
-      tt = l.next (tl, &tn);
+      if (!trailing_scope)
+      {
+        ptt = tt;
+        tt = l.next (tl, &tn);
+      }
     }
 
     return scope;

@@ -4,6 +4,7 @@
 
 #include <set>
 
+#include <odb/diagnostics.hxx>
 #include <odb/relational/schema.hxx>
 
 #include <odb/relational/pgsql/common.hxx>
@@ -74,11 +75,10 @@ namespace relational
               os << "BIGSERIAL";
             else
             {
-              semantics::node& n (*c.get<semantics::node*> ("cxx-node"));
+              location const& l (c.get<location> ("cxx-location"));
 
-              cerr << n.file () << ":" << n.line () << ":" << n.column ()
-                   << ": error: automatically assigned object id must map "
-                   << "to PostgreSQL INTEGER or BIGINT" << endl;
+              error (l) << "automatically assigned object id must map "
+                        << "to PostgreSQL INTEGER or BIGINT" << endl;
 
               throw operation_failed ();
             }
@@ -180,6 +180,49 @@ namespace relational
           return quote_id (
             static_cast<sema_rel::table&> (in.scope ()).name ().uname ()
             + "_" + in.name ());
+        }
+
+        virtual void
+        create (sema_rel::index& in)
+        {
+          os << "CREATE ";
+
+          if (!in.type ().empty ())
+          {
+            // Handle the CONCURRENTLY keyword.
+            //
+            string const& t (in.type ());
+
+            if (t == "concurrently" || t == "CONCURRENTLY")
+            {
+              os << "INDEX " << t;
+            }
+            else
+            {
+              size_t p (t.rfind (' '));
+              string s (t, (p != string::npos ? p + 1 : 0), string::npos);
+
+              if (s == "concurrently" || s == "CONCURRENTLY")
+                os << string (t, 0, p) << " INDEX " << s;
+              else
+                os << t << " INDEX";
+            }
+          }
+          else
+            os << "INDEX";
+
+          os << " " << name (in) << endl
+             << "  ON " << table_name (in);
+
+          if (!in.method ().empty ())
+            os << " USING " << in.method ();
+
+          os << " (";
+          columns (in);
+          os << ")" << endl;
+
+          if (!in.options ().empty ())
+            os << ' ' << in.options () << endl;
         }
       };
       entry<create_index> create_index_;

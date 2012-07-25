@@ -27,13 +27,13 @@ namespace semantics
   //
   node::
   node (path const& file, size_t line, size_t column, tree tn)
-      : tree_node_ (tn), file_ (file), line_ (line), column_ (column)
+      : tree_node_ (tn), loc_ (file, line, column)
   {
   }
 
   node::
   node ()
-      : file_ ("")
+      : loc_ (0)
   {
     // GCC plugin machinery #define's abort as a macro.
     //

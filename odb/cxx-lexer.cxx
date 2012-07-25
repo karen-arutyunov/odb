@@ -37,11 +37,11 @@ cxx_lexer::
 //
 
 void cxx_tokens_lexer::
-start (cxx_tokens const& ts)
+start (cxx_tokens const& ts, location_t start_loc)
 {
   tokens_ = &ts;
   cur_ = ts.begin ();
-  loc_ = 0;
+  loc_ = start_loc;
 }
 
 cpp_ttype cxx_tokens_lexer::

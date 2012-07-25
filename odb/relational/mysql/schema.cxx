@@ -125,6 +125,36 @@ namespace relational
         }
       };
       entry<create_table> create_table_;
+
+      struct create_index: relational::create_index, context
+      {
+        create_index (base const& x): base (x) {}
+
+        virtual void
+        create (sema_rel::index& in)
+        {
+          os << "CREATE ";
+
+          if (!in.type ().empty ())
+            os << in.type () << ' ';
+
+          os << "INDEX " << name (in);
+
+          if (!in.method ().empty ())
+            os << " USING " << in.method ();
+
+          os << endl
+             << "  ON " << table_name (in) << " (";
+
+          columns (in);
+
+          os << ")" << endl;
+
+          if (!in.options ().empty ())
+            os << ' ' << in.options () << endl;
+        }
+      };
+      entry<create_index> create_index_;
     }
   }
 }

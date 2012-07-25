@@ -8,6 +8,8 @@
 #include <limits>
 #include <sstream>
 
+#include <odb/diagnostics.hxx>
+
 #include <odb/relational/model.hxx>
 #include <odb/relational/generate.hxx>
 
@@ -143,24 +145,25 @@ namespace relational
       }
       catch (sema_rel::duplicate_name const& e)
       {
-        semantics::node& o (*e.orig.get<semantics::node*> ("cxx-node"));
-        semantics::node& d (*e.dup.get<semantics::node*> ("cxx-node"));
+        location const& o (e.orig.get<location> ("cxx-location"));
+        location const& d (e.dup.get<location> ("cxx-location"));
 
-        cerr << d.file () << ":" << d.line () << ":" << d.column ()
-             << ": error: " << e.dup.kind () << " name '" << e.name
-             << "' conflicts with an already defined " << e.orig.kind ()
-             << " name"
-             << endl;
+        error (d) << e.dup.kind () << " name '" << e.name << "' conflicts "
+                  << "with an already defined " << e.orig.kind () << " name"
+                  << endl;
 
-        cerr << o.file () << ":" << o.line () << ":" << o.column ()
-             << ": info: conflicting " << e.orig.kind () << " is "
-             << "defined here"
-             << endl;
+        info (o) << "conflicting " << e.orig.kind () << " is defined here"
+                 << endl;
 
-        cerr << d.file () << ":" << d.line () << ":" << d.column ()
-             << ": error: use '#pragma db column' or '#pragma db table' "
-             << "to change one of the names"
-             << endl;
+        if (e.dup.kind () == "index")
+          error (d) << "use #pragma db index to change one of the names"
+                    << endl;
+        else if (e.dup.kind () == "table")
+          error (d) << "use #pragma db table to change one of the names"
+                    << endl;
+        else
+          error (d) << "use #pragma db column to change its name"
+                    << endl;
 
         throw operation_failed ();
       }

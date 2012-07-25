@@ -32,7 +32,15 @@ namespace semantics
         return *column_;
       }
 
+      string const&
+      options () const
+      {
+        return options_;
+      }
+
     public:
+      contains (string const& o = string ()) : options_ (o) {}
+
       void
       set_left_node (key_type& n)
       {
@@ -48,6 +56,7 @@ namespace semantics
     protected:
       key_type* key_;
       column_type* column_;
+      string options_;
     };
 
     class key: public unameable

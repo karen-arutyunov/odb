@@ -12,6 +12,7 @@ sql-token.cxx                        \
 sql-lexer.cxx                        \
 context.cxx                          \
 common.cxx                           \
+location.cxx                         \
 diagnostics.cxx                      \
 emitter.cxx                          \
 lookup.cxx                           \

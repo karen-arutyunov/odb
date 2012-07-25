@@ -12,6 +12,8 @@
 
 #include <cutl/fs/path.hxx>
 
+#include <odb/location.hxx>
+
 using std::endl;
 
 std::ostream&
@@ -22,6 +24,24 @@ warn (cutl::fs::path const&, std::size_t line, std::size_t clmn);
 
 std::ostream&
 info (cutl::fs::path const&, std::size_t line, std::size_t clmn);
+
+inline std::ostream&
+error (location const& l)
+{
+  return error (l.file, l.line, l.column);
+}
+
+inline std::ostream&
+warn (location const&l)
+{
+  return warn (l.file, l.line, l.column);
+}
+
+inline std::ostream&
+info (location const&l)
+{
+  return info (l.file, l.line, l.column);
+}
 
 std::ostream&
 error (location_t);

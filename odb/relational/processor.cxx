@@ -5,6 +5,7 @@
 #include <odb/gcc.hxx>
 
 #include <vector>
+#include <algorithm>
 
 #include <odb/diagnostics.hxx>
 #include <odb/lookup.hxx>
@@ -118,6 +119,8 @@ namespace relational
       {
         if (transient (m))
           return;
+
+        process_index (m);
 
         semantics::names* hint;
         semantics::type& t (utype (m, hint));
@@ -288,6 +291,44 @@ namespace relational
            << endl;
 
         throw operation_failed ();
+      }
+
+      // Convert index/unique specifiers to the index entry in the object.
+      //
+      void
+      process_index (semantics::data_member& m)
+      {
+        bool ip (m.count ("index"));
+        bool up (m.count ("unique"));
+
+        if (ip || up)
+        {
+          using semantics::class_;
+          class_& c (dynamic_cast<class_&> (m.scope ()));
+
+          indexes& ins (c.count ("index")
+                        ? c.get<indexes> ("index")
+                        : c.set ("index", indexes ()));
+
+          index in;
+          in.loc = m.get<location_t> (
+            ip ? "index-location" : "unique-location");
+
+          if (up)
+            in.type = "UNIQUE";
+
+          index::member im;
+          im.loc = in.loc;
+          im.name = m.name ();
+          im.path.push_back (&m);
+          in.members.push_back (im);
+
+          // Insert it in the location order.
+          //
+          ins.insert (
+            lower_bound (ins.begin (), ins.end (), in, index_comparator ()),
+            in);
+        }
       }
 
       void
@@ -1323,7 +1364,7 @@ namespace relational
                 tree type;
                 cpp_ttype ptt; // Not used.
                 decl = lookup::resolve_scoped_name (
-                  lex_, tt, tl, tn, ptt, i->scope, name, false, &type);
+                  lex_, tt, tl, tn, ptt, i->scope, name, false, false, &type);
 
                 type = TYPE_MAIN_VARIANT (type);
 
@@ -1801,16 +1842,18 @@ namespace relational
         if (k == class_object || k == class_view)
           assign_pointer (c);
 
-        // Do some additional pre-processing for objects.
+        // Do some additional pre-processing.
         //
         if (k == class_object)
           traverse_object_pre (c);
 
         names (c);
 
-        // Do some additional post-processing for views.
+        // Do some additional post-processing.
         //
-        if (k == class_view)
+        if (k == class_object)
+          traverse_object_post (c);
+        else if (k == class_view)
           traverse_view_post (c);
       }
 
@@ -1954,6 +1997,191 @@ namespace relational
 
             c.set ("discriminator", &m);
           }
+        }
+      }
+
+      virtual void
+      traverse_object_post (type& c)
+      {
+        // Process indexes. Here we need to do two things: resolve member
+        // names to member paths and assign names to unnamed indexes. We
+        // are also going to handle the special container indexes.
+        //
+        indexes& ins (c.count ("index")
+                      ? c.get<indexes> ("index")
+                      : c.set ("index", indexes ()));
+
+        for (indexes::iterator i (ins.begin ()); i != ins.end ();)
+        {
+          index& in (*i);
+
+          // This should never happen since a db index pragma without
+          // the member specifier will be treated as a member pragma.
+          //
+          assert (!in.members.empty ());
+
+          // First resolve member names.
+          //
+          string tl;
+          tree tn;
+          cpp_ttype tt;
+
+          index::members_type::iterator j (in.members.begin ());
+          for (; j != in.members.end (); ++j)
+          {
+            index::member& im (*j);
+
+            if (!im.path.empty ())
+              continue; // Already resolved.
+
+            try
+            {
+              lex_.start (im.name);
+              tt = lex_.next (tl, &tn);
+
+              // The name was already verified to be syntactically correct so
+              // we don't need to do any error checking.
+              //
+              string name;   // Not used.
+              cpp_ttype ptt; // Not used.
+              tree decl (
+                lookup::resolve_scoped_name (
+                  lex_, tt, tl, tn, ptt, c.tree_node (), name, false));
+
+              // Check that we have a data member.
+              //
+              if (TREE_CODE (decl) != FIELD_DECL)
+              {
+                error (im.loc) << "name '" << tl << "' in db pragma member "
+                               << "does not refer to a data member" << endl;
+                throw operation_failed ();
+              }
+
+              using semantics::data_member;
+
+              data_member* m (dynamic_cast<data_member*> (unit.find (decl)));
+              im.path.push_back (m);
+
+              if (container (*m))
+                break;
+
+              // Resolve nested members if any.
+              //
+              for (; tt == CPP_DOT; tt = lex_.next (tl, &tn))
+              {
+                lex_.next (tl, &tn); // Get CPP_NAME.
+
+                tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
+
+                decl = lookup_qualified_name (
+                  type, get_identifier (tl.c_str ()), false, false);
+
+                if (decl == error_mark_node || TREE_CODE (decl) != FIELD_DECL)
+                {
+                  error (im.loc) << "name '" << tl << "' in db pragma member "
+                                 << "does not refer to a data member" << endl;
+                  throw operation_failed ();
+                }
+
+                m = dynamic_cast<data_member*> (unit.find (decl));
+                im.path.push_back (m);
+
+                if (container (*m))
+                {
+                  tt = lex_.next (tl, &tn); // Get CPP_DOT.
+                  break; // Only breaks out of the inner loop.
+                }
+              }
+
+              if (container (*m))
+                break;
+            }
+            catch (lookup::invalid_name const&)
+            {
+              error (im.loc) << "invalid name in db pragma member" << endl;
+              throw operation_failed ();
+            }
+            catch (lookup::unable_to_resolve const& e)
+            {
+              error (im.loc) << "unable to resolve name '" << e.name ()
+                             << "' in db pragma member" << endl;
+              throw operation_failed ();
+            }
+          }
+
+          // Handle container indexes.
+          //
+          if (j != in.members.end ())
+          {
+            // Do some sanity checks.
+            //
+            if (in.members.size () != 1)
+            {
+              error (in.loc) << "multiple data members specified for a "
+                             << "container index" << endl;
+              throw operation_failed ();
+            }
+
+            if (tt != CPP_DOT || lex_.next (tl, &tn) != CPP_NAME ||
+                (tl != "id" && tl != "index"))
+            {
+              error (j->loc) << ".id or .index special member expected in a "
+                             << "container index" << endl;
+              throw operation_failed ();
+            }
+
+            string n (tl);
+
+            if (lex_.next (tl, &tn) != CPP_EOF)
+            {
+              error (j->loc) << "unexpected text after ." << n << " in "
+                             << "db pragma member" << endl;
+              throw operation_failed ();
+            }
+
+            // Move this index to the container member.
+            //
+            j->path.back ()->set (n + "-index", *i);
+            i = ins.erase (i);
+            continue;
+          }
+
+          // Now assign the name if the index is unnamed.
+          //
+          if (in.name.empty ())
+          {
+            // Make sure there is only one member.
+            //
+            if (in.members.size () > 1)
+            {
+              error (in.loc) << "unnamed index with more than one data "
+                             << "member" << endl;
+              throw operation_failed ();
+            }
+
+            // Generally, we want the index name to be based on the column
+            // name. This is straightforward for single-column members. In
+            // case of a composite member, we will need to use the column
+            // prefix which is based on the data member name, unless
+            // overridden by the user. In the latter case the prefix can
+            // be empty, in which case we will just fall back on the
+            // member's public name.
+            //
+            in.name = column_name (in.members.front ().path);
+
+            if (in.name.empty ())
+              in.name = public_name_db (*in.members.front ().path.back ());
+
+            // In case of a composite member, column_name() return a column
+            // prefix which already includes the trailing underscore.
+            //
+            if (in.name[in.name.size () - 1] != '_')
+              in.name += '_';
+
+            in.name += 'i';
+          }
+
+          ++i;
         }
       }
 
@@ -2251,14 +2479,14 @@ namespace relational
               name += "::";
               name += r.name;
 
-              lexer.start (name);
+              lex_.start (name);
 
               string t;
-              for (cpp_ttype tt (lexer.next (t));
+              for (cpp_ttype tt (lex_.next (t));
                    tt != CPP_EOF;
-                   tt = lexer.next (t))
+                   tt = lex_.next (t))
               {
-                cxx_token ct (lexer.location (), tt);
+                cxx_token ct (lex_.location (), tt);
                 ct.literal = t;
                 i->cond.push_back (ct);
               }
@@ -2618,16 +2846,16 @@ namespace relational
           //
           try
           {
-            lexer.start (ptr);
+            lex_.start (ptr);
             ptr.clear ();
 
             string t;
             bool punc (false);
             bool scoped (false);
 
-            for (cpp_ttype tt (lexer.next (t));
+            for (cpp_ttype tt (lex_.next (t));
                  tt != CPP_EOF;
-                 tt = lexer.next (t))
+                 tt = lex_.next (t))
             {
               if (punc && tt > CPP_LAST_PUNCTUATOR)
                 ptr += ' ';
@@ -2750,12 +2978,12 @@ namespace relational
           tree tn;
           cpp_ttype tt, ptt;
 
-          nested_lexer.start (qn);
-          tt = nested_lexer.next (tl, &tn);
+          nlex_.start (qn);
+          tt = nlex_.next (tl, &tn);
 
           string name;
           return lookup::resolve_scoped_name (
-            nested_lexer, tt, tl, tn, ptt, scope, name, is_type);
+            nlex_, tt, tl, tn, ptt, scope, name, is_type);
         }
         catch (cxx_lexer::invalid_input const&)
         {
@@ -2768,8 +2996,8 @@ namespace relational
       }
 
     private:
-      cxx_string_lexer lexer;
-      cxx_string_lexer nested_lexer;
+      cxx_string_lexer lex_;
+      cxx_string_lexer nlex_; // Nested lexer.
 
       data_member member_;
       traversal::names member_names_;

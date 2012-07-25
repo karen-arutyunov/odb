@@ -40,6 +40,11 @@ namespace lookup
                      std::string& tl, // Token literal.
                      tree& tn);       // Token node.
 
+  // If trailing_scope is true, then this function also handles
+  // names in the 'foo::bar::<something-other-than-name>' form.
+  // In this case token will be <something-other-than-name> and
+  // ptt will be CPP_SCOPE.
+  //
   tree
   resolve_scoped_name (cxx_lexer&,
                        cpp_ttype&,
@@ -49,6 +54,7 @@ namespace lookup
                        tree start_scope,
                        std::string& name,
                        bool is_type,
+                       bool trailing_scope = false,
                        tree* end_scope = 0);
 }
 

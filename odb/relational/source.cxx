@@ -3436,7 +3436,7 @@ namespace relational
           //
           tree type;
           decl = lookup::resolve_scoped_name (
-            l, tt, tl, tn, ptt, scope, name, false, &type);
+            l, tt, tl, tn, ptt, scope, name, false, false, &type);
 
           type = TYPE_MAIN_VARIANT (type);
 
