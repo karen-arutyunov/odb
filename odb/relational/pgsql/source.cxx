@@ -22,8 +22,7 @@ namespace relational
       struct query_parameters: relational::query_parameters
       {
         query_parameters (base const& x)
-            : base (x),
-              i_ (0)
+            : base (x), i_ (0)
         {
         }
 
@@ -39,7 +38,6 @@ namespace relational
         virtual string
         auto_id ()
         {
-          ++i_;
           return "DEFAULT";
         }
 
@@ -128,8 +126,15 @@ namespace relational
           // generating. See object_columns in common source generator for
           // details.
           //
-          if ((id () || readonly (member_path_, member_scope_)) &&
-              sk_ == statement_update)
+          if (id ())
+          {
+            if (sk_ == statement_update ||
+                (sk_ == statement_insert && auto_ (m)))
+            return false;
+          }
+
+          if (sk_ == statement_update &&
+              readonly (member_path_, member_scope_))
             return false;
 
           if ((sk_ == statement_insert || sk_ == statement_update) &&

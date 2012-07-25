@@ -80,7 +80,7 @@ namespace relational
 
       generate_grow = true;
       need_alias_as = true;
-      insert_send_auto_id = true;
+      insert_send_auto_id = false;
       delay_freeing_statement_result = false;
       need_image_clone = false;
       data_->bind_vector_ = "pgsql::bind*";
