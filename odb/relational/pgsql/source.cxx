@@ -718,6 +718,13 @@ namespace relational
             statement_oids st (statement_insert);
             st.traverse (c);
 
+            // Empty array are not portable. So add a dummy member if we
+            // are not sending anything with the insert statement.
+            //
+            if (cc.total == cc.inverse + cc.optimistic_managed +
+                (id != 0 && !poly_derived && auto_ (*id) ? cc.id : 0))
+              os << "0";
+
             os << "};";
           }
 
