@@ -19,6 +19,9 @@ Version 2.1.0
    thread. For more information, refer to Chapter 10, "Session" in the ODB
    manual.
 
+ * Simplified Oracle automatically-assigned object id implementation that
+   doesn't use triggers.
+
  * Support for mapping boost::posix_time::ptime and QDateTime to the DATE
    Oracle type. For more information, refer to Sections 19.4.4 (Boost) and
    20.4.4 (Qt) in the ODB manual.
