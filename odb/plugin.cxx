@@ -11,6 +11,7 @@
 #include <cassert>
 #include <iostream>
 
+#include <cutl/re.hxx>
 #include <cutl/fs/path.hxx>
 
 #include <odb/pragma.hxx>
@@ -136,6 +137,12 @@ gate_callback (void*, void*)
     //
     generator g;
     g.generate (*options_, f, *u, file_);
+  }
+  catch (cutl::re::format const& e)
+  {
+    cerr << "error: invalid regex: '" << e.regex () << "': " <<
+      e.description () << endl;
+    r = 1;
   }
   catch (pragmas_failed const&)
   {

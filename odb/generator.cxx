@@ -524,12 +524,6 @@ generate (options const& ops,
     //
     throw failed ();
   }
-  catch (regex_format const& e)
-  {
-    cerr << "error: invalid regex: '" << e.regex () << "': " <<
-      e.description () << endl;
-    throw failed ();
-  }
   catch (semantics::invalid_path const& e)
   {
     cerr << "error: '" << e.path () << "' is not a valid filesystem path"
