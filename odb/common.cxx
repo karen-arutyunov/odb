@@ -593,7 +593,7 @@ check (semantics::typedefs& t)
   if (hint != &t)
     return false;
 
-  // And the pragma may have to be in the file we are compiling.
+  // And the definition may have to be in the file we are compiling.
   //
   if (!included_)
   {

@@ -501,9 +501,18 @@ class_fq_name (semantics::class_& c)
 semantics::path context::
 class_file (semantics::class_& c)
 {
-  return c.is_a<semantics::class_instantiation> ()
-    ? semantics::path (LOCATION_FILE (c.get<location_t> ("location")))
-    : c.file ();
+  // If we have an explicit definition location, use that.
+  //
+  if (c.count ("definition"))
+    return semantics::path (LOCATION_FILE (c.get<location_t> ("definition")));
+  //
+  // Otherwise, if it is a template instantiation, use the location
+  // of the qualifier.
+  //
+  else if (c.is_a<semantics::class_instantiation> ())
+    return semantics::path (LOCATION_FILE (c.get<location_t> ("location")));
+  else
+    return c.file ();
 }
 
 string context::

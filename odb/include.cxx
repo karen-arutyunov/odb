@@ -84,7 +84,8 @@ namespace
 
       // Not interested in classes that we are generating.
       //
-      // If this is a class template instantiation, then get the file
+      // If we have an explicit definition location, use that. Otherwise,
+      // if this is a class template instantiation, then get the file
       // corresponding to the pragma, not the instantiation itself,
       // since that's where we are generation the code for this class.
       // While at it, also get the location.
@@ -94,7 +95,12 @@ namespace
       path f;
       location_t l;
 
-      if (c.is_a<semantics::class_instantiation> ())
+      if (c.count ("definition"))
+      {
+        l = c.get<location_t> ("definition");
+        f = path (LOCATION_FILE (l));
+      }
+      else if (c.is_a<semantics::class_instantiation> ())
       {
         l = c.get<location_t> ("location");
         f = path (LOCATION_FILE (l));
@@ -104,18 +110,21 @@ namespace
         f = c.file ();
         tree decl (TYPE_NAME (c.tree_node ()));
         l = DECL_SOURCE_LOCATION (decl);
-      }
 
-      if (f == unit.file ())
-      {
         // Any include directives that follow are trailing (specified at
         // the end of the main file). Note that we ignore views in this
         // test so if a file defines only views, then all includes will
         // be treated as leading. This is ok since views cannot have
-        // circular dependencies.
+        // circular dependencies. We also ignore overridden locations for
+        // the purpose of this test since they are not really in the file
+        // being compiled. We assume that any includes that come after
+        // such classes are still leading.
         //
-        trailing_ = true;
-        return;
+        if (f == unit.file ())
+        {
+          trailing_ = true;
+          return;
+        }
       }
 
       // This is a persistent object or composite value type declared in
@@ -129,7 +138,6 @@ namespace
         {
           lm = INCLUDED_FROM (line_table, lm);
 
-          path f (c.file ());
           f.complete ();
           f.normalize ();
 

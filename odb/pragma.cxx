@@ -404,7 +404,8 @@ check_spec_decl_type (tree d,
            p == "query" ||
            p == "object" ||
            p == "optimistic" ||
-           p == "polymorphic")
+           p == "polymorphic" ||
+           p == "definition")
   {
     if (tc != RECORD_TYPE)
     {
@@ -1160,6 +1161,19 @@ handle_pragma (cxx_lexer& l,
     if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
+    tt = l.next (tl, &tn);
+  }
+  else if (p == "definition")
+  {
+    // definition
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    val = l.location ();
     tt = l.next (tl, &tn);
   }
   else if (p == "callback")
