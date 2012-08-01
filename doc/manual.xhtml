@@ -458,6 +458,7 @@ for consistency.
 		<tr><th>12.1.8</th><td><a href="#12.1.8"><code>schema</code></a></td></tr>
 		<tr><th>12.1.9</th><td><a href="#12.1.9"><code>polymorphic</code></a></td></tr>
 		<tr><th>12.1.10</th><td><a href="#12.1.10"><code>session</code></a></td></tr>
+		<tr><th>12.1.11</th><td><a href="#12.1.11"><code>definition</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -469,6 +470,7 @@ for consistency.
 		<tr><th>12.2.3</th><td><a href="#12.2.3"><code>query</code></a></td></tr>
 		<tr><th>12.2.4</th><td><a href="#12.2.4"><code>pointer</code></a></td></tr>
 		<tr><th>12.2.5</th><td><a href="#12.2.5"><code>callback</code></a></td></tr>
+		<tr><th>12.2.6</th><td><a href="#12.2.6"><code>definition</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -481,19 +483,20 @@ for consistency.
 		<tr><th>12.3.4</th><td><a href="#12.3.4"><code>default</code></a></td></tr>
 		<tr><th>12.3.5</th><td><a href="#12.3.5"><code>options</code></a></td></tr>
 		<tr><th>12.3.6</th><td><a href="#12.3.6"><code>readonly</code></a></td></tr>
-		<tr><th>12.3.7</th><td><a href="#12.3.7"><code>unordered</code></a></td></tr>
-		<tr><th>12.3.8</th><td><a href="#12.3.8"><code>index_type</code></a></td></tr>
-		<tr><th>12.3.9</th><td><a href="#12.3.9"><code>key_type</code></a></td></tr>
-		<tr><th>12.3.10</th><td><a href="#12.3.10"><code>value_type</code></a></td></tr>
-		<tr><th>12.3.11</th><td><a href="#12.3.11"><code>value_null</code>/<code>value_not_null</code></a></td></tr>
-		<tr><th>12.3.12</th><td><a href="#12.3.12"><code>id_options</code></a></td></tr>
-		<tr><th>12.3.13</th><td><a href="#12.3.13"><code>index_options</code></a></td></tr>
-		<tr><th>12.3.14</th><td><a href="#12.3.14"><code>key_options</code></a></td></tr>
-		<tr><th>12.3.15</th><td><a href="#12.3.15"><code>value_options</code></a></td></tr>
-		<tr><th>12.3.16</th><td><a href="#12.3.16"><code>id_column</code></a></td></tr>
-		<tr><th>12.3.17</th><td><a href="#12.3.17"><code>index_column</code></a></td></tr>
-		<tr><th>12.3.18</th><td><a href="#12.3.18"><code>key_column</code></a></td></tr>
-		<tr><th>12.3.19</th><td><a href="#12.3.19"><code>value_column</code></a></td></tr>
+		<tr><th>12.3.7</th><td><a href="#12.3.7"><code>definition</code></a></td></tr>
+		<tr><th>12.3.8</th><td><a href="#12.3.8"><code>unordered</code></a></td></tr>
+		<tr><th>12.3.9</th><td><a href="#12.3.9"><code>index_type</code></a></td></tr>
+		<tr><th>12.3.10</th><td><a href="#12.3.10"><code>key_type</code></a></td></tr>
+		<tr><th>12.3.11</th><td><a href="#12.3.11"><code>value_type</code></a></td></tr>
+		<tr><th>12.3.12</th><td><a href="#12.3.12"><code>value_null</code>/<code>value_not_null</code></a></td></tr>
+		<tr><th>12.3.13</th><td><a href="#12.3.13"><code>id_options</code></a></td></tr>
+		<tr><th>12.3.14</th><td><a href="#12.3.14"><code>index_options</code></a></td></tr>
+		<tr><th>12.3.15</th><td><a href="#12.3.15"><code>key_options</code></a></td></tr>
+		<tr><th>12.3.16</th><td><a href="#12.3.16"><code>value_options</code></a></td></tr>
+		<tr><th>12.3.17</th><td><a href="#12.3.17"><code>id_column</code></a></td></tr>
+		<tr><th>12.3.18</th><td><a href="#12.3.18"><code>index_column</code></a></td></tr>
+		<tr><th>12.3.19</th><td><a href="#12.3.19"><code>key_column</code></a></td></tr>
+		<tr><th>12.3.20</th><td><a href="#12.3.20"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -4643,7 +4646,7 @@ private:
      the order information. In the example above, for instance, the order
      of person's nicknames is probably not important. To instruct the ODB
      compiler to ignore the order in ordered containers we can use the
-     <code>db&nbsp;unordered</code> pragma (<a href="#12.3.7">Section 12.3.7,
+     <code>db&nbsp;unordered</code> pragma (<a href="#12.3.8">Section 12.3.8,
      "<code>unordered</code>"</a>, <a href="#12.4.16">Section 12.4.16,
      "<code>unordered</code>"</a>). For example:</p>
 
@@ -9125,6 +9128,12 @@ class person
       <td><a href="#12.1.10">12.1.10</a></td>
     </tr>
 
+    <tr>
+      <td><code>definition</code></td>
+      <td>definition location for a persistent class</td>
+      <td><a href="#12.1.11">12.1.11</a></td>
+    </tr>
+
   </table>
 
   <h3><a name="12.1.1">12.1.1 <code>table</code></a></h3>
@@ -9464,7 +9473,7 @@ private:
   <h3><a name="12.1.8">12.1.8 <code>schema</code></a></h3>
 
   <p>The <code>schema</code> specifier specifies a database schema
-     that should be used for a persistent class.</p>
+     that should be used for the persistent class.</p>
 
   <p>In relational databases the term schema can refer to two related
      but ultimately different concepts. Normally it means a collection
@@ -9685,14 +9694,14 @@ class employee
 
   <h3><a name="12.1.9">12.1.9 <code>polymorphic</code></a></h3>
 
-  <p>The <code>polymorphic</code> specifier specifies that a persistent
+  <p>The <code>polymorphic</code> specifier specifies that the persistent
      class is polymorphic. For more information on polymorphism support,
      refer to <a href="#8">Chapter 8, "Inheritance"</a>.</p>
 
   <h3><a name="12.1.10">12.1.10 <code>session</code></a></h3>
 
   <p>The <code>session</code> specifier specifies whether to enable
-     session support for a persistent class. For example:</p>
+     session support for the persistent class. For example:</p>
 
   <pre class="cxx">
 #pragma db object session        // Enable.
@@ -9720,6 +9729,20 @@ class employer
      (<a href="#12.5.4">Section 12.5.4, "<code>session</code>"</a>).
      For more information on sessions, refer to <a href="#10">Chapter
      10, "Session"</a>.</p>
+
+  <h3><a name="12.1.11">12.1.11 <code>definition</code></a></h3>
+
+  <p>The <code>definition</code> specifier specifies an alternative
+     <em>definition location</em> for the persistent class. By
+     default, the ODB compiler generates the database support code for
+     a persistent class when we compile the header file that
+     defines this class. However, if the  <code>definition</code>
+     specifier is used, then the ODB compiler will instead generate
+     the database support code when we compile the header file
+     containing this pragma.</p>
+
+  <p>For more information on this functionality, refer to
+     <a href="#12.3.7">Section 12.3.7, "<code>definition</code>"</a>.</p>
 
   <h2><a name="12.2">12.2 View Type Pragmas</a></h2>
 
@@ -9764,6 +9787,12 @@ class employer
       <td><code>callback</code></td>
       <td>database operations callback</td>
       <td><a href="#12.2.5">12.2.5</a></td>
+    </tr>
+
+    <tr>
+      <td><code>definition</code></td>
+      <td>definition location for a view</td>
+      <td><a href="#12.2.6">12.2.6</a></td>
     </tr>
 
   </table>
@@ -9817,6 +9846,19 @@ class employer
      call in the case of a view are <code>pre_load</code> and
      <code>post_load</code>.</p>
 
+  <h3><a name="12.2.6">12.2.6 <code>definition</code></a></h3>
+
+  <p>The <code>definition</code> specifier specifies an alternative
+     <em>definition location</em> for the view class. By
+     default, the ODB compiler generates the database support code for
+     a view class when we compile the header file that
+     defines this class. However, if the  <code>definition</code>
+     specifier is used, then the ODB compiler will instead generate
+     the database support code when we compile the header file
+     containing this pragma.</p>
+
+  <p>For more information on this functionality, refer to
+     <a href="#12.3.7">Section 12.3.7, "<code>definition</code>"</a>.</p>
 
   <h2><a name="12.3">12.3 Value Type Pragmas</a></h2>
 
@@ -9869,81 +9911,87 @@ class employer
     </tr>
 
     <tr>
+      <td><code>definition</code></td>
+      <td>definition location for a composite value type</td>
+      <td><a href="#12.3.7">12.3.7</a></td>
+    </tr>
+
+    <tr>
       <td><code>unordered</code></td>
       <td>ordered container should be stored unordered</td>
-      <td><a href="#12.3.7">12.3.7</a></td>
+      <td><a href="#12.3.8">12.3.8</a></td>
     </tr>
 
     <tr>
       <td><code>index_type</code></td>
       <td>database type for a container's index type</td>
-      <td><a href="#12.3.8">12.3.8</a></td>
+      <td><a href="#12.3.9">12.3.9</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
       <td>database type for a container's key type</td>
-      <td><a href="#12.3.9">12.3.9</a></td>
+      <td><a href="#12.3.10">12.3.10</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
       <td>database type for a container's value type</td>
-      <td><a href="#12.3.10">12.3.10</a></td>
+      <td><a href="#12.3.11">12.3.11</a></td>
     </tr>
 
     <tr>
       <td><code>value_null</code>/<code>value_not_null</code></td>
       <td>container's value can/cannot be <code>NULL</code></td>
-      <td><a href="#12.3.11">12.3.11</a></td>
+      <td><a href="#12.3.12">12.3.12</a></td>
     </tr>
 
     <tr>
       <td><code>id_options</code></td>
       <td>database options for a container's id column</td>
-      <td><a href="#12.3.12">12.3.12</a></td>
+      <td><a href="#12.3.13">12.3.13</a></td>
     </tr>
 
     <tr>
       <td><code>index_options</code></td>
       <td>database options for a container's index column</td>
-      <td><a href="#12.3.13">12.3.13</a></td>
+      <td><a href="#12.3.14">12.3.14</a></td>
     </tr>
 
     <tr>
       <td><code>key_options</code></td>
       <td>database options for a container's key column</td>
-      <td><a href="#12.3.14">12.3.14</a></td>
+      <td><a href="#12.3.15">12.3.15</a></td>
     </tr>
 
     <tr>
       <td><code>value_options</code></td>
       <td>database options for a container's value column</td>
-      <td><a href="#12.3.15">12.3.15</a></td>
+      <td><a href="#12.3.16">12.3.16</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
       <td>column name for a container's object id</td>
-      <td><a href="#12.3.16">12.3.16</a></td>
+      <td><a href="#12.3.17">12.3.17</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>column name for a container's index</td>
-      <td><a href="#12.3.17">12.3.17</a></td>
+      <td><a href="#12.3.18">12.3.18</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>column name for a container's key</td>
-      <td><a href="#12.3.18">12.3.18</a></td>
+      <td><a href="#12.3.19">12.3.19</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>column name for a container's value</td>
-      <td><a href="#12.3.19">12.3.19</a></td>
+      <td><a href="#12.3.20">12.3.20</a></td>
     </tr>
 
   </table>
@@ -10188,7 +10236,72 @@ class person_name
      as well as whole objects (<a href="#12.1.4">Section 12.1.4,
      "<code>readonly</code>"</a>) as read-only.</p>
 
-  <h3><a name="12.3.7">12.3.7 <code>unordered</code></a></h3>
+  <h3><a name="12.3.7">12.3.7 <code>definition</code></a></h3>
+
+  <p>The <code>definition</code> specifier specifies an alternative
+     <em>definition location</em> for the composite value type. By
+     default, the ODB compiler generates the database support code for
+     a composite value type when we compile the header file that
+     defines this value type. However, if the  <code>definition</code>
+     specifier is used, then the ODB compiler will instead generate
+     the database support code when we compile the header file containing
+     this pragma.</p>
+
+  <p>This mechanism is primarily useful for converting third-party
+     types to ODB composite value types. In such cases we normally
+     cannot modify the header files to add the necessary pragmas.
+     It is also often inconvenient to compile these header files
+     with the ODB compiler. With the <code>definition</code>
+     specifier we can create a <em>wrapper header</em> that contains
+     the necessary pragmas and instructs the ODB compiler to generate
+     the database support code for a third-party type when we compile
+     the wrapper header. As an example, consider <code>struct timeval</code>
+     that is defined in the <code>&lt;sys/time.h></code> system header.
+     This type has the following (or similar) definition:</p>
+
+  <pre class="cxx">
+struct timeval
+{
+  long tv_sec;
+  long tv_usec;
+};
+  </pre>
+
+  <p>If we would like to make this type an ODB composite value type,
+     then we can create a wrapper header, for example
+     <code>time-mapping.hxx</code>, with the following content:</p>
+
+  <pre class="cxx">
+#ifndef TIME_MAPPING_HXX
+#define TIME_MAPPING_HXX
+
+#include &lt;sys/time.h>
+
+#pragma db value(timeval) definition
+#pragma db member(timeval::tv_sec) column("sec")
+#pragma db member(timeval::tv_usec) column("usec")
+
+#endif // TIME_MAPPING_HXX
+  </pre>
+
+  <p>If we now compile this header with the ODB compiler, the
+     resulting <code>time-mapping-odb.?xx</code> files will
+     contain the database support code for <code>struct timeval</code>.
+     To use <code>timeval</code> in our persistent classes, we simply
+     include the <code>time-mapping.hxx</code> header:</p>
+
+  <pre class="cxx">
+#include &lt;sys/time.h>
+#include "time-mapping.hxx"
+
+#pragma db object
+class object
+{
+  timeval timestamp;
+};
+  </pre>
+
+  <h3><a name="12.3.8">12.3.8 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that the ordered
      container should be stored unordered in the database. The database
@@ -10205,7 +10318,7 @@ typedef std::vector&lt;std::string> names;
      storage in the database, refer to <a href="#5.1">Section 5.1,
      "Ordered Containers"</a>.</p>
 
-  <h3><a name="12.3.8">12.3.8 <code>index_type</code></a></h3>
+  <h3><a name="12.3.9">12.3.9 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
      database type that should be used for an ordered container's
@@ -10219,7 +10332,7 @@ typedef std::vector&lt;std::string> names;
 #pragma db value(names) index_type("SMALLINT UNSIGNED")
   </pre>
 
-  <h3><a name="12.3.9">12.3.9 <code>key_type</code></a></h3>
+  <h3><a name="12.3.10">12.3.10 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
      database type that should be used for a map container's
@@ -10233,7 +10346,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 #pragma db value(age_weight_map) key_type("INT UNSIGNED")
   </pre>
 
-  <h3><a name="12.3.10">12.3.10 <code>value_type</code></a></h3>
+  <h3><a name="12.3.11">12.3.11 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
      database type that should be used for a container's
@@ -10248,11 +10361,11 @@ typedef std::vector&lt;std::string> names;
   </pre>
 
   <p>The <code>value_null</code> and <code>value_not_null</code>
-     (<a href="#12.3.11">Section 12.3.11,
+     (<a href="#12.3.12">Section 12.3.12,
      "<code>value_null</code>/<code>value_not_null</code>"</a>) specifiers
      can be used to control the NULL semantics of a value column.</p>
 
-  <h3><a name="12.3.11">12.3.11 <code>value_null</code>/<code>value_not_null</code></a></h3>
+  <h3><a name="12.3.12">12.3.12 <code>value_null</code>/<code>value_not_null</code></a></h3>
 
   <p>The <code>value_null</code> and <code>value_not_null</code> specifiers
      specify that a container type's element value can or cannot be
@@ -10280,7 +10393,7 @@ typedef std::vector&lt;shared_ptr&lt;account> > accounts;
      as not allowing a <code>NULL</code> value.</p>
 
 
-  <h3><a name="12.3.12">12.3.12 <code>id_options</code></a></h3>
+  <h3><a name="12.3.13">12.3.13 <code>id_options</code></a></h3>
 
   <p>The <code>id_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -10297,7 +10410,7 @@ typedef std::vector&lt;std::string> nicknames;
      "<code>id_options</code>"</a>).</p>
 
 
-  <h3><a name="12.3.13">12.3.13 <code>index_options</code></a></h3>
+  <h3><a name="12.3.14">12.3.14 <code>index_options</code></a></h3>
 
   <p>The <code>index_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -10314,7 +10427,7 @@ typedef std::vector&lt;std::string> nicknames;
      "<code>index_options</code>"</a>).</p>
 
 
-  <h3><a name="12.3.14">12.3.14 <code>key_options</code></a></h3>
+  <h3><a name="12.3.15">12.3.15 <code>key_options</code></a></h3>
 
   <p>The <code>key_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -10331,7 +10444,7 @@ typedef std::map&lt;std::string, std::string> properties;
      "<code>key_options</code>"</a>).</p>
 
 
-  <h3><a name="12.3.15">12.3.15 <code>value_options</code></a></h3>
+  <h3><a name="12.3.16">12.3.16 <code>value_options</code></a></h3>
 
   <p>The <code>value_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -10348,7 +10461,7 @@ typedef std::set&lt;std::string> nicknames;
      "<code>value_options</code>"</a>).</p>
 
 
-  <h3><a name="12.3.16">12.3.16 <code>id_column</code></a></h3>
+  <h3><a name="12.3.17">12.3.17 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in a
@@ -10362,7 +10475,7 @@ typedef std::vector&lt;std::string> names;
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="12.3.17">12.3.17 <code>index_column</code></a></h3>
+  <h3><a name="12.3.18">12.3.18 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in an
@@ -10376,7 +10489,7 @@ typedef std::vector&lt;std::string> names;
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="12.3.18">12.3.18 <code>key_column</code></a></h3>
+  <h3><a name="12.3.19">12.3.19 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in a map
@@ -10390,7 +10503,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="12.3.19">12.3.19 <code>value_column</code></a></h3>
+  <h3><a name="12.3.20">12.3.20 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in a

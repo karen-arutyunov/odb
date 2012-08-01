@@ -14,6 +14,12 @@ Version 2.1.0
    For more information, refer to Section 12.7, "Database Type Mapping
    Pragmas" in the ODB manual.
 
+ * New pragma, definition, allows the specification of an alternative code
+   generation location for persistent classes, views, and composite value
+   types. This mechanism is primarily useful for converting third-party
+   types to ODB composite value types. For more information, refer to
+   Section 12.3.7, "Definition" in the ODB manual.
+
  * The session constructor now accepts an options bool argument (true by
    default) which indicates whether to make this session current for this
    thread. For more information, refer to Chapter 10, "Session" in the ODB
