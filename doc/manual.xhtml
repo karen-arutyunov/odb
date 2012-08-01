@@ -9139,8 +9139,8 @@ class person
   <h3><a name="12.1.1">12.1.1 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies the table name that should
-     be used to store objects of a class in a relational database. For
-     example:</p>
+     be used to store objects of the persistent class in a relational
+     database. For example:</p>
 
   <pre class="cxx">
 #pragma db object table("people")
@@ -9169,7 +9169,7 @@ class person
   <h3><a name="12.1.2">12.1.2 <code>pointer</code></a></h3>
 
   <p>The <code>pointer</code> specifier specifies the object pointer type
-     for a persistent class. The object pointer type is used to return,
+     for the persistent class. The object pointer type is used to return,
      pass, and cache dynamically allocated instances of a persistent
      class. For example:</p>
 
@@ -9219,7 +9219,7 @@ class person
 
   <h3><a name="12.1.3">12.1.3 <code>abstract</code></a></h3>
 
-  <p>The <code>abstract</code> specifier specifies that a persistent class
+  <p>The <code>abstract</code> specifier specifies that the persistent class
      is abstract. An instance of an abstract class cannot be stored in
      the database and is normally used as a base for other persistent
      classes. For example:</p>
@@ -9803,14 +9803,14 @@ class employer
   <h3><a name="12.2.1">12.2.1 <code>object</code></a></h3>
 
   <p>The <code>object</code> specifier specifies a persistent class
-     that should be associated with a view. For more information
+     that should be associated with the view. For more information
      on object associations refer to <a href="#9.1">Section 9.1, "Object
      Views"</a>.</p>
 
   <h3><a name="12.2.2">12.2.2 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies a database table
-     that should be associated with a view. For more information
+     that should be associated with the view. For more information
      on table associations refer to <a href="#9.2">Section 9.2, "Table
      Views"</a>.</p>
 
@@ -9827,7 +9827,7 @@ class employer
   <h3><a name="12.2.4">12.2.4 <code>pointer</code></a></h3>
 
   <p>The <code>pointer</code> specifier specifies the view pointer type
-     for a view class. Similar to objects, the view pointer type is used
+     for the view class. Similar to objects, the view pointer type is used
      to return dynamically allocated instances of a view class. The
      semantics of the <code>pointer</code> specifier for a view are the
      same as those of the <code>pointer</code> specifier for an object
@@ -10321,7 +10321,7 @@ typedef std::vector&lt;std::string> names;
   <h3><a name="12.3.9">12.3.9 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
-     database type that should be used for an ordered container's
+     database type that should be used for the ordered container's
      index column. The semantics of <code>index_type</code>
      are similar to those of the <code>type</code> specifier
      (<a href="#12.3.1">Section 12.3.1, "<code>type</code>"</a>). The native
@@ -10335,7 +10335,7 @@ typedef std::vector&lt;std::string> names;
   <h3><a name="12.3.10">12.3.10 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
-     database type that should be used for a map container's
+     database type that should be used for the map container's
      key column. The semantics of <code>key_type</code>
      are similar to those of the <code>type</code> specifier
      (<a href="#12.3.1">Section 12.3.1, "<code>type</code>"</a>). For
@@ -10349,7 +10349,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <h3><a name="12.3.11">12.3.11 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
-     database type that should be used for a container's
+     database type that should be used for the container's
      value column. The semantics of <code>value_type</code>
      are similar to those of the <code>type</code> specifier
      (<a href="#12.3.1">Section 12.3.1, "<code>type</code>"</a>). For
@@ -10368,7 +10368,7 @@ typedef std::vector&lt;std::string> names;
   <h3><a name="12.3.12">12.3.12 <code>value_null</code>/<code>value_not_null</code></a></h3>
 
   <p>The <code>value_null</code> and <code>value_not_null</code> specifiers
-     specify that a container type's element value can or cannot be
+     specify that the container type's element value can or cannot be
      <code>NULL</code>, respectively. The semantics of <code>value_null</code>
      and <code>value_not_null</code> are similar to those of the
      <code>null</code> and <code>not_null</code> specifiers
@@ -10396,7 +10396,7 @@ typedef std::vector&lt;shared_ptr&lt;account> > accounts;
   <h3><a name="12.3.13">12.3.13 <code>id_options</code></a></h3>
 
   <p>The <code>id_options</code> specifier specifies additional
-     column definition options that should be used for a container's
+     column definition options that should be used for the container's
      id column. For example:</p>
 
   <pre class="cxx">
@@ -10413,7 +10413,7 @@ typedef std::vector&lt;std::string> nicknames;
   <h3><a name="12.3.14">12.3.14 <code>index_options</code></a></h3>
 
   <p>The <code>index_options</code> specifier specifies additional
-     column definition options that should be used for a container's
+     column definition options that should be used for the container's
      index column. For example:</p>
 
   <pre class="cxx">
@@ -10430,7 +10430,7 @@ typedef std::vector&lt;std::string> nicknames;
   <h3><a name="12.3.15">12.3.15 <code>key_options</code></a></h3>
 
   <p>The <code>key_options</code> specifier specifies additional
-     column definition options that should be used for a container's
+     column definition options that should be used for the container's
      key column. For example:</p>
 
   <pre class="cxx">
@@ -10447,7 +10447,7 @@ typedef std::map&lt;std::string, std::string> properties;
   <h3><a name="12.3.16">12.3.16 <code>value_options</code></a></h3>
 
   <p>The <code>value_options</code> specifier specifies additional
-     column definition options that should be used for a container's
+     column definition options that should be used for the container's
      value column. For example:</p>
 
   <pre class="cxx">
@@ -10464,7 +10464,7 @@ typedef std::set&lt;std::string> nicknames;
   <h3><a name="12.3.17">12.3.17 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
-     name that should be used to store the object id in a
+     name that should be used to store the object id in the
      container's table. For example:</p>
 
   <pre class="cxx">
@@ -10478,7 +10478,7 @@ typedef std::vector&lt;std::string> names;
   <h3><a name="12.3.18">12.3.18 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
-     name that should be used to store the element index in an
+     name that should be used to store the element index in the
      ordered container's table. For example:</p>
 
   <pre class="cxx">
@@ -10492,7 +10492,7 @@ typedef std::vector&lt;std::string> names;
   <h3><a name="12.3.19">12.3.19 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
-     name that should be used to store the key in a map
+     name that should be used to store the key in the map
      container's table. For example:</p>
 
   <pre class="cxx">
@@ -10506,7 +10506,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
   <h3><a name="12.3.20">12.3.20 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
-     name that should be used to store the element value in a
+     name that should be used to store the element value in the
      container's table. For example:</p>
 
   <pre class="cxx">
@@ -10724,7 +10724,7 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
 
   <h3><a name="12.4.1">12.4.1 <code>id</code></a></h3>
 
-  <p>The <code>id</code> specifier specifies that a data member contains
+  <p>The <code>id</code> specifier specifies that the data member contains
      the object id. In a relational database, an identifier member is
      mapped to a primary key. For example:</p>
 
@@ -10780,7 +10780,7 @@ class person
   <h3><a name="12.4.3">12.4.3 <code>type</code></a></h3>
 
   <p>The <code>type</code> specifier specifies the native database type
-     that should be used for a data member. For example:</p>
+     that should be used for the data member. For example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -10800,7 +10800,7 @@ class person
   <h3><a name="12.4.4">12.4.4 <code>id_type</code></a></h3>
 
   <p>The <code>type</code> specifier specifies the native database type
-     that should be used for a data member when it is part of an
+     that should be used for the data member when it is part of an
      object identifier. This specifier only makes sense when applied to
      a member of a composite value type that is used for both id and
      non-id members. For example:</p>
@@ -10833,7 +10833,7 @@ class person
   <h3><a name="12.4.5">12.4.5 <code>null</code>/<code>not_null</code></a></h3>
 
   <p>The <code>null</code> and <code>not_null</code> specifiers specify that
-     a data member can or cannot be <code>NULL</code>, respectively.
+     the data member can or cannot be <code>NULL</code>, respectively.
      By default, data members of basic value types for which database
      mapping is provided by the ODB compiler do not allow <code>NULL</code>
      values while data members of object pointers allow <code>NULL</code>
@@ -10888,7 +10888,7 @@ class account
   <h3><a name="12.4.6">12.4.6 <code>default</code></a></h3>
 
   <p>The <code>default</code> specifier specifies the database default value
-     that should be used for a data member. For example:</p>
+     that should be used for the data member. For example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -10996,7 +10996,7 @@ class person
   <h3><a name="12.4.7">12.4.7 <code>options</code></a></h3>
 
   <p>The <code>options</code> specifier specifies additional column
-     definition options that should be used for a data member. For
+     definition options that should be used for the data member. For
      example:</p>
 
   <pre class="cxx">
@@ -11054,7 +11054,7 @@ class person
   <h3><a name="12.4.8">12.4.8 <code>column</code> (object, composite value)</a></h3>
 
   <p>The <code>column</code> specifier specifies the column name
-     that should be used to store a data member of a persistent class
+     that should be used to store the data member of a persistent class
      or composite value type in a relational database. For example:</p>
 
   <pre class="cxx">
@@ -11081,14 +11081,14 @@ class person
 
   <p>The <code>column</code> specifier can be used to specify the associated
      object data member, the potentially qualified column name, or the column
-     expression for a data member of a view class. For more information,
+     expression for the data member of a view class. For more information,
      refer to <a href="#9.1">Section 9.1, "Object Views"</a> and
      <a href="#9.2">Section 9.2, "Table Views"</a>.</p>
 
   <h3><a name="12.4.10">12.4.10 <code>transient</code></a></h3>
 
   <p>The <code>transient</code> specifier instructs the ODB compiler
-     not to store a data member in the database. For example:</p>
+     not to store the data member in the database. For example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -11109,7 +11109,7 @@ class person
 
   <h3><a name="12.4.11">12.4.11 <code>readonly</code></a></h3>
 
-  <p>The <code>readonly</code> specifier specifies that a data member of
+  <p>The <code>readonly</code> specifier specifies that the data member of
      an object or composite value type is read-only. Changes to a read-only
      data member are ignored when updating the database state of an object
      (<a href="#3.9">Section 3.9, "Updating Persistent Objects"</a>)
@@ -11202,7 +11202,7 @@ class person
 
   <h3><a name="12.4.12">12.4.12 <code>inverse</code></a></h3>
 
-  <p>The <code>inverse</code> specifier specifies that a data member of
+  <p>The <code>inverse</code> specifier specifies that the data member of
      an object pointer or a container of object pointers type is an
      inverse side of a bidirectional object relationship. The single
      required argument to this specifier is the corresponding data
@@ -11313,7 +11313,7 @@ class person
 
   <h3><a name="12.4.16">12.4.16 <code>unordered</code></a></h3>
 
-  <p>The <code>unordered</code> specifier specifies that a member of
+  <p>The <code>unordered</code> specifier specifies that the member of
      an ordered container type should be stored unordered in the database.
      The database table for such a member will not contain the index column
      and the order in which elements are retrieved from the database may
@@ -11337,7 +11337,7 @@ class person
   <h3><a name="12.4.17">12.4.17 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies the table name that should
-     be used to store the contents of a container member. For example:</p>
+     be used to store the contents of the container member. For example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -11386,7 +11386,7 @@ class person
 
   <p>The <code>index_type</code> specifier specifies the native
      database type that should be used for an ordered container's
-     index column of a data member. The semantics of <code>index_type</code>
+     index column of the data member. The semantics of <code>index_type</code>
      are similar to those of the <code>type</code> specifier
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>). The native
      database type is expected to be an integer type. For example:</p>
@@ -11406,7 +11406,7 @@ class person
 
   <p>The <code>key_type</code> specifier specifies the native
      database type that should be used for a map container's
-     key column of a data member. The semantics of <code>key_type</code>
+     key column of the data member. The semantics of <code>key_type</code>
      are similar to those of the <code>type</code> specifier
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>). For
      example:</p>
@@ -11426,7 +11426,7 @@ class person
 
   <p>The <code>value_type</code> specifier specifies the native
      database type that should be used for a container's
-     value column of a data member. The semantics of <code>value_type</code>
+     value column of the data member. The semantics of <code>value_type</code>
      are similar to those of the <code>type</code> specifier
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>). For
      example:</p>
@@ -11450,7 +11450,7 @@ class person
   <h3><a name="12.4.21">12.4.21 <code>value_null</code>/<code>value_not_null</code></a></h3>
 
   <p>The <code>value_null</code> and <code>value_not_null</code> specifiers
-     specify that a container's element value for a data member can or
+     specify that a container's element value for the data member can or
      cannot be <code>NULL</code>, respectively. The semantics of
      <code>value_null</code> and <code>value_not_null</code> are similar
      to those of the <code>null</code> and <code>not_null</code> specifiers
@@ -11484,7 +11484,7 @@ class account
 
   <p>The <code>id_options</code> specifier specifies additional
      column definition options that should be used for a container's
-     id column of a data member. For example:</p>
+     id column of the data member. For example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -11508,7 +11508,7 @@ class person
 
   <p>The <code>index_options</code> specifier specifies additional
      column definition options that should be used for a container's
-     index column of a data member. For example:</p>
+     index column of the data member. For example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -11529,7 +11529,7 @@ class person
 
   <p>The <code>key_options</code> specifier specifies additional
      column definition options that should be used for a container's
-     key column of a data member. For example:</p>
+     key column of the data member. For example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -11550,7 +11550,7 @@ class person
 
   <p>The <code>value_options</code> specifier specifies additional
      column definition options that should be used for a container's
-     value column of a data member. For example:</p>
+     value column of the data member. For example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -11571,7 +11571,7 @@ class person
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in a
-     container's table for a data member. The semantics of
+     container's table for the data member. The semantics of
      <code>id_column</code> are similar to those of the
      <code>column</code> specifier
      (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
@@ -11595,7 +11595,7 @@ class person
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in an
-     ordered container's table for a data member. The semantics of
+     ordered container's table for the data member. The semantics of
      <code>index_column</code> are similar to those of the
      <code>column</code> specifier
      (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
@@ -11619,7 +11619,7 @@ class person
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in a map
-     container's table for a data member. The semantics of
+     container's table for the data member. The semantics of
      <code>key_column</code> are similar to those of the
      <code>column</code> specifier
      (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
@@ -11643,7 +11643,7 @@ class person
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in a
-     container's table for a data member. The semantics of
+     container's table for the data member. The semantics of
      <code>value_column</code> are similar to those of the
      <code>column</code> specifier
      (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
@@ -11726,7 +11726,7 @@ namespace test
   <h3><a name="12.5.1">12.5.1 <code>pointer</code></a></h3>
 
   <p>The <code>pointer</code> specifier specifies the default pointer
-     type for persistent classes and views inside a namespace. For
+     type for persistent classes and views inside the namespace. For
      example:</p>
 
   <pre class="cxx">
@@ -11783,7 +11783,7 @@ namespace accounting
 
   <p>The <code>table</code> specifier specifies a table prefix
      that should be added to table names of persistent classes inside
-     a namespace. For example:</p>
+     the namespace. For example:</p>
 
   <pre class="cxx">
 #pragma db namespace table("acc_")
@@ -11844,14 +11844,14 @@ class employer
   <h3><a name="12.5.3">12.5.3 <code>schema</code></a></h3>
 
   <p>The <code>schema</code> specifier specifies a database schema
-     that should be used for persistent classes inside a namespace.
+     that should be used for persistent classes inside the namespace.
      For more information on specifying a database schema refer to
      <a href="#12.1.8">Section 12.1.8, "<code>schema</code>"</a>.</p>
 
   <h3><a name="12.5.4">12.5.4 <code>session</code></a></h3>
 
   <p>The <code>session</code> specifier specifies whether to enable
-     session support for persistent classes inside a namespace. For
+     session support for persistent classes inside the namespace. For
      example:</p>
 
   <pre class="cxx">
