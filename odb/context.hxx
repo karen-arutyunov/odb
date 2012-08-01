@@ -564,6 +564,11 @@ public:
                string const& key_prefix,
                string const& default_name) const;
 
+  // Compose the name by inserting/removing an underscore, as necessary.
+  //
+  static string
+  compose_name (string const& prefix, string const& name);
+
   string
   column_type (const data_member_path&,
                string const& key_prefix = string (),

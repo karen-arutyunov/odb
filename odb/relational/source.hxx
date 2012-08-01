@@ -186,22 +186,21 @@ namespace relational
 
             if (!table_name_.empty ())
             {
+              string n;
+
               if (composite_wrapper (idt))
               {
-                string p (column_prefix (m, key_prefix_, default_name_));
+                n = column_prefix (m, key_prefix_, default_name_);
 
-                if (p.empty ())
-                  p = public_name_db (m);
+                if (n.empty ())
+                  n = public_name_db (m);
                 else
-                  p.resize (p.size () - 1); // Remove trailing underscore.
-
-                table = column_prefix_ + p;
+                  n.resize (n.size () - 1); // Remove trailing underscore.
               }
               else
-                table = column_prefix_ +
-                  column_name (m, key_prefix_, default_name_);
+                n = column_name (m, key_prefix_, default_name_);
 
-              table = quote_id (table);
+              table = quote_id (compose_name (column_prefix_, n));
             }
 
             instance<object_columns> oc (table, sk_, sc_);
@@ -410,7 +409,7 @@ namespace relational
                 tbl = quote_id (i->table);
                 col += tbl;
                 col += '.';
-                col += quote_id (column_name (i->member_path));
+                col += column_qname (i->member_path);
                 break;
               }
             }
@@ -591,20 +590,23 @@ namespace relational
         // fall back on the member's public name.
         //
         string alias;
-
-        if (composite_wrapper (utype (*id_member (c))))
         {
-          string p (column_prefix (m, key_prefix_, default_name_));
+          string n;
 
-          if (p.empty ())
-            p = public_name_db (m);
+          if (composite_wrapper (utype (*id_member (c))))
+          {
+            n = column_prefix (m, key_prefix_, default_name_);
+
+            if (n.empty ())
+              n = public_name_db (m);
+            else
+              n.resize (n.size () - 1); // Remove trailing underscore.
+          }
           else
-            p.resize (p.size () - 1); // Remove trailing underscore.
+            n = column_name (m, key_prefix_, default_name_);
 
-          alias = column_prefix_ + p;
+          alias = compose_name (column_prefix_, n);
         }
-        else
-          alias = column_prefix_ + column_name (m, key_prefix_, default_name_);
 
         semantics::class_* poly_root (polymorphic (c));
         bool poly (poly_root != 0);

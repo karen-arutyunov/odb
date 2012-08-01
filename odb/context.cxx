@@ -897,7 +897,7 @@ column_name (data_member_path const& mp) const
     if (composite_wrapper (utype (m)))
       r += object_columns_base::column_prefix (m);
     else
-      r += column_name (m);
+      r = compose_name (r, column_name (m));
   }
 
   return r;
@@ -925,6 +925,34 @@ column_name (semantics::data_member& m, string const& p, string const& d) const
   }
 
   return d;
+}
+
+string context::
+compose_name (string const& prefix, string const& name)
+{
+  string r (prefix);
+  size_t n (r.size ());
+
+  // Add an underscore unless one is already in the prefix or
+  // the name is empty. Similarly, remove it if it is there but
+  // the name is empty.
+  //
+  if (n != 0)
+  {
+    if (r[n - 1] != '_')
+    {
+      if (!name.empty ())
+        r += '_';
+    }
+    else
+    {
+      if (name.empty ())
+        r.resize (n - 1);
+    }
+  }
+
+  r += name;
+  return r;
 }
 
 string context::

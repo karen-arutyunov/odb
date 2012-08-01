@@ -496,7 +496,9 @@ traverse_member (semantics::data_member& m, semantics::type& t)
   }
   else
   {
-    string name (column_prefix_ + column_name (m, key_prefix_, default_name_));
+    string name (
+      compose_name (
+        column_prefix_, column_name (m, key_prefix_, default_name_)));
 
     if (traverse_column (m, name, first_))
     {

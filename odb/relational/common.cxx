@@ -42,20 +42,23 @@ namespace relational
     // public name.
     //
     string alias;
-
-    if (composite_wrapper (utype ((*id_member (c)))))
     {
-      string p (column_prefix (m, key_prefix_, default_name_));
+      string n;
 
-      if (p.empty ())
-        p = public_name_db (m);
+      if (composite_wrapper (utype (*id_member (c))))
+      {
+        n = column_prefix (m, key_prefix_, default_name_);
+
+        if (n.empty ())
+          n = public_name_db (m);
+        else
+          n.resize (n.size () - 1); // Remove trailing underscore.
+      }
       else
-        p.resize (p.size () - 1); // Remove trailing underscore.
+        n = column_name (m, key_prefix_, default_name_);
 
-      alias = column_prefix_ + p;
+      alias = compose_name (column_prefix_, n);
     }
-    else
-      alias = column_prefix_ + column_name (m, key_prefix_, default_name_);
 
     generate (alias, c);
   }
@@ -219,20 +222,23 @@ namespace relational
       // public name.
       //
       string alias;
-
-      if (composite_wrapper (utype ((*id_member (c)))))
       {
-        string p (column_prefix (m, key_prefix_, default_name_));
+        string n;
 
-        if (p.empty ())
-          p = public_name_db (m);
+        if (composite_wrapper (utype (*id_member (c))))
+        {
+          n = column_prefix (m, key_prefix_, default_name_);
+
+          if (n.empty ())
+            n = public_name_db (m);
+          else
+            n.resize (n.size () - 1); // Remove trailing underscore.
+        }
         else
-          p.resize (p.size () - 1); // Remove trailing underscore.
+          n = column_name (m, key_prefix_, default_name_);
 
-        alias = column_prefix_ + p;
+        alias = compose_name (column_prefix_, n);
       }
-      else
-        alias = column_prefix_ + column_name (m, key_prefix_, default_name_);
 
       string tag (escape (alias + "_alias_tag"));
       string const& fq_name (class_fq_name (c));
@@ -489,8 +495,9 @@ namespace relational
       // Simple id.
       //
       string type (t.fq_name (hint));
-      string column (column_prefix_ +
-                     column_name (m, key_prefix_, default_name_));
+      string column (
+        compose_name (
+          column_prefix_, column_name (m, key_prefix_, default_name_)));
 
       // For pointer_query_columns generate normal column mapping.
       //

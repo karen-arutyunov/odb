@@ -2172,13 +2172,7 @@ namespace relational
             if (in.name.empty ())
               in.name = public_name_db (*in.members.front ().path.back ());
 
-            // In case of a composite member, column_name() return a column
-            // prefix which already includes the trailing underscore.
-            //
-            if (in.name[in.name.size () - 1] != '_')
-              in.name += '_';
-
-            in.name += 'i';
+            in.name = compose_name (in.name, "i");
           }
 
           ++i;
