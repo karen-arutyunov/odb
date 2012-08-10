@@ -17,7 +17,7 @@ gcc_plugin_base=`$CXX -print-file-name=plugin 2>/dev/null`
 
 if test x"$gcc_plugin_base" = xplugin; then
   AC_MSG_RESULT([no])
-  AC_MSG_ERROR([$CXX does not support plugins; reconfigure GCC with --enable-plugin])
+  AC_MSG_ERROR([$CXX does not support plugins; reconfigure GCC with --enable-plugin or install plugin headers])
 else
   AC_MSG_RESULT([yes])
   gcc_plugin_support=yes
