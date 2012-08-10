@@ -719,38 +719,42 @@ main (int argc, char* argv[])
           pi.out_fd, ios_base::out | ios_base::binary);
         ostream os (&fb);
 
-        // Add the standard prologue.
-        //
-        os << "#line 1 \"<standard-odb-prologue>\"" << endl;
+        if (!ops.trace ())
+        {
+          // Add the standard prologue.
+          //
+          os << "#line 1 \"<standard-odb-prologue>\"" << endl;
 
-        // Make sure ODB compiler and libodb versions are compatible.
-        //
-        os << "#include <odb/version.hxx>" << endl
-           << endl
-           << "#if ODB_VERSION != " << ODB_VERSION << endl
-           << "#  error incompatible ODB compiler and runtime versions" << endl
-           << "#endif" << endl
-           << endl;
+          // Make sure ODB compiler and libodb versions are compatible.
+          //
+          os << "#include <odb/version.hxx>" << endl
+             << endl
+             << "#if ODB_VERSION != " << ODB_VERSION << endl
+             << "#  error incompatible ODB compiler and runtime " <<
+            "versions" << endl
+             << "#endif" << endl
+             << endl;
 
-        // Add ODB compiler metaprogramming tests.
-        //
-        os << "namespace odb" << endl
-           << "{" << endl
-           << "namespace compiler" << endl
-           << "{" << endl;
+          // Add ODB compiler metaprogramming tests.
+          //
+          os << "namespace odb" << endl
+             << "{" << endl
+             << "namespace compiler" << endl
+             << "{" << endl;
 
-        // operator< test, used in validator.
-        //
-        os << "template <typename T>" << endl
-           << "bool" << endl
-           << "has_lt_operator (const T& x, const T& y)" << endl
-           << "{"  << endl
-           << "bool r (x < y);"  << endl
-           << "return r;"  << endl
-           << "}" << endl;
+          // operator< test, used in validator.
+          //
+          os << "template <typename T>" << endl
+             << "bool" << endl
+             << "has_lt_operator (const T& x, const T& y)" << endl
+             << "{"  << endl
+             << "bool r (x < y);"  << endl
+             << "return r;"  << endl
+             << "}" << endl;
 
-        os << "}" << endl
-           << "}" << endl;
+          os << "}" << endl
+             << "}" << endl;
+        }
 
         // Add custom prologue if any.
         //
@@ -848,34 +852,37 @@ main (int argc, char* argv[])
           os << endl;
         }
 
-        // Add the standard epilogue at the end so that we see all
-        // the declarations.
-        //
-        os << "#line 1 \"<standard-odb-epilogue>\"" << endl;
+        if (!ops.trace ())
+        {
+          // Add the standard epilogue at the end so that we see all
+          // the declarations.
+          //
+          os << "#line 1 \"<standard-odb-epilogue>\"" << endl;
 
-        // Includes for standard smart pointers. The Boost TR1 header
-        // may or may not delegate to the GCC implementation. In either
-        // case, the necessary declarations will be provided so we don't
-        // need to do anything.
-        //
-        os << "#include <memory>" << endl
-           << "#ifndef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
-           << "#  include <tr1/memory>" << endl
-           << "#endif" << endl;
+          // Includes for standard smart pointers. The Boost TR1 header
+          // may or may not delegate to the GCC implementation. In either
+          // case, the necessary declarations will be provided so we don't
+          // need to do anything.
+          //
+          os << "#include <memory>" << endl
+             << "#ifndef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
+             << "#  include <tr1/memory>" << endl
+             << "#endif" << endl;
 
-        // Standard wrapper traits.
-        //
-        os << "#include <odb/wrapper-traits.hxx>" << endl
-           << "#include <odb/tr1/wrapper-traits.hxx>" << endl;
+          // Standard wrapper traits.
+          //
+          os << "#include <odb/wrapper-traits.hxx>" << endl
+             << "#include <odb/tr1/wrapper-traits.hxx>" << endl;
 
-        // Standard pointer traits.
-        //
-        os << "#include <odb/pointer-traits.hxx>" << endl
-           << "#include <odb/tr1/pointer-traits.hxx>" << endl;
+          // Standard pointer traits.
+          //
+          os << "#include <odb/pointer-traits.hxx>" << endl
+             << "#include <odb/tr1/pointer-traits.hxx>" << endl;
 
-        // Standard container traits.
-        //
-        os << "#include <odb/container-traits.hxx>" << endl;
+          // Standard container traits.
+          //
+          os << "#include <odb/container-traits.hxx>" << endl;
+        }
       }
 
       // Filter the output stream looking for communication from the
