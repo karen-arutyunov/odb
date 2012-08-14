@@ -846,8 +846,9 @@ namespace relational
           if (!object (c_) || (abstract (c_) && !polymorphic (c_)))
             return;
 
-          string scope (scope_ + "::" + flat_prefix_ + public_name (m) +
-                        "_traits");
+
+          string const& pn (public_name (m));
+          string scope (scope_ + "::" + flat_prefix_ + pn + "_traits");
 
           // Statment names.
           //
@@ -855,7 +856,9 @@ namespace relational
           // Prefix top-object name to avoid conflicts with inherited
           // member statement names.
           //
-          string fn (flat_name (class_fq_name (*top_object) + m.fq_name ()));
+          string fn (
+            flat_name (
+              class_fq_name (*top_object) + "_" + flat_prefix_ + pn));
 
           os << "const char " << scope << "::" << endl
              << "select_all_name[] = " << strlit (fn + "_select_all") << ";"
