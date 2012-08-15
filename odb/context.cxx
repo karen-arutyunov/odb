@@ -6,10 +6,12 @@
 
 #include <cctype> // std::toupper
 #include <cassert>
+#include <sstream>
 
 #include <odb/context.hxx>
 #include <odb/common.hxx>
 #include <odb/pragma.hxx>
+#include <odb/cxx-lexer.hxx>
 
 #include <odb/relational/mssql/context.hxx>
 #include <odb/relational/mysql/context.hxx>
@@ -30,6 +32,263 @@ name () const
     return alias;
 
   return kind == object ? context::class_name (*obj) : tbl_name.string ();
+}
+
+//
+// member_access
+//
+
+bool member_access::
+placeholder () const
+{
+  for (cxx_tokens::const_iterator i (expr.begin ()), e (expr.end ()); i != e;)
+  {
+    if (i->type == CPP_OPEN_PAREN)
+    {
+      if (++i != e && i->type == CPP_QUERY)
+      {
+        if (++i != e && i->type == CPP_CLOSE_PAREN)
+          return true;
+      }
+    }
+    else
+      ++i;
+  }
+
+  return false;
+}
+
+static inline void
+add_space (string& s)
+{
+  string::size_type n (s.size ());
+  if (n != 0 && s[n - 1] != ' ')
+    s += ' ';
+}
+
+string member_access::
+translate (string const& obj, string const& val) const
+{
+  // This code is similar to translate_expression() from relations/source.cxx.
+  //
+  string r;
+
+  cxx_tokens_lexer l;
+  l.start (expr);
+
+  string tl;
+  for (cpp_ttype tt (l.next (tl)), ptt (CPP_EOF); tt != CPP_EOF;)
+  {
+    // Try to format the expression to resemble the style of the
+    // generated code.
+    //
+    switch (tt)
+    {
+    case CPP_NOT:
+      {
+        add_space (r);
+        r += '!';
+        break;
+      }
+    case CPP_COMMA:
+      {
+        r += ", ";
+        break;
+      }
+    case CPP_OPEN_PAREN:
+      {
+        if (ptt == CPP_NAME ||
+            ptt == CPP_KEYWORD)
+          add_space (r);
+
+        r += '(';
+        break;
+      }
+    case CPP_CLOSE_PAREN:
+      {
+        r += ')';
+        break;
+      }
+    case CPP_OPEN_SQUARE:
+      {
+        r += '[';
+        break;
+      }
+    case CPP_CLOSE_SQUARE:
+      {
+        r += ']';
+        break;
+      }
+    case CPP_OPEN_BRACE:
+      {
+        add_space (r);
+        r += "{ ";
+        break;
+      }
+    case CPP_CLOSE_BRACE:
+      {
+        add_space (r);
+        r += '}';
+        break;
+      }
+    case CPP_SEMICOLON:
+      {
+        r += ';';
+        break;
+      }
+    case CPP_ELLIPSIS:
+      {
+        add_space (r);
+        r += "...";
+        break;
+      }
+    case CPP_PLUS:
+    case CPP_MINUS:
+      {
+        bool unary (ptt != CPP_NAME &&
+                    ptt != CPP_SCOPE &&
+                    ptt != CPP_NUMBER &&
+                    ptt != CPP_STRING &&
+                    ptt != CPP_CLOSE_PAREN &&
+                    ptt != CPP_PLUS_PLUS &&
+                    ptt != CPP_MINUS_MINUS);
+
+        if (!unary)
+          add_space (r);
+
+        r += cxx_lexer::token_spelling[tt];
+
+        if (!unary)
+          r += ' ';
+        break;
+      }
+    case CPP_PLUS_PLUS:
+    case CPP_MINUS_MINUS:
+      {
+        if (ptt != CPP_NAME &&
+            ptt != CPP_CLOSE_PAREN &&
+            ptt != CPP_CLOSE_SQUARE)
+          add_space (r);
+
+        r += cxx_lexer::token_spelling[tt];
+        break;
+      }
+    case CPP_DEREF:
+    case CPP_DEREF_STAR:
+    case CPP_DOT:
+    case CPP_DOT_STAR:
+      {
+        r += cxx_lexer::token_spelling[tt];
+        break;
+      }
+    case CPP_STRING:
+      {
+        if (ptt == CPP_NAME ||
+            ptt == CPP_KEYWORD ||
+            ptt == CPP_STRING ||
+            ptt == CPP_NUMBER)
+          add_space (r);
+
+        r += context::strlit (tl);
+        break;
+      }
+    case CPP_NUMBER:
+      {
+        if (ptt == CPP_NAME ||
+            ptt == CPP_KEYWORD ||
+            ptt == CPP_STRING ||
+            ptt == CPP_NUMBER)
+          add_space (r);
+
+        r += tl;
+        break;
+      }
+    case CPP_SCOPE:
+      {
+        // Add space except for a few common cases.
+        //
+        if (ptt != CPP_NAME &&
+            ptt != CPP_OPEN_PAREN &&
+            ptt != CPP_OPEN_SQUARE)
+          add_space (r);
+
+        r += cxx_lexer::token_spelling[tt];
+        break;
+      }
+    case CPP_NAME:
+      {
+        // Start of a name.
+        //
+        if (ptt == CPP_NAME ||
+            ptt == CPP_KEYWORD ||
+            ptt == CPP_STRING ||
+            ptt == CPP_NUMBER)
+          add_space (r);
+
+        r += tl;
+        break;
+      }
+    case CPP_QUERY:
+      {
+        if (ptt == CPP_OPEN_PAREN)
+        {
+          // Get the next token and see if it is ')'.
+          //
+          ptt = tt;
+          tt = l.next (tl);
+
+          if (tt == CPP_CLOSE_PAREN)
+            r += val;
+          else
+          {
+            // The same as in the default case.
+            //
+            add_space (r);
+            r += "? ";
+          }
+          continue; // We have already gotten the next token.
+        }
+        // Fall through.
+      }
+    default:
+      {
+        // Handle CPP_KEYWORD here to avoid a warning (it is not
+        // part of the cpp_ttype enumeration).
+        //
+        if (tt == CPP_KEYWORD)
+        {
+          if (ptt == CPP_NAME ||
+              ptt == CPP_KEYWORD ||
+              ptt == CPP_STRING ||
+              ptt == CPP_NUMBER)
+            add_space (r);
+
+          // Translate 'this'.
+          //
+          r += (tl == "this" ? obj : tl);
+        }
+        else
+        {
+          // All the other operators.
+          //
+          add_space (r);
+          r += cxx_lexer::token_spelling[tt];
+          r += ' ';
+        }
+        break;
+      }
+    }
+
+    //
+    // Watch out for the continue statements above if you add any
+    // logic here.
+    //
+
+    ptt = tt;
+    tt = l.next (tl);
+  }
+
+  return r;
 }
 
 //
@@ -612,6 +871,133 @@ member_type (semantics::data_member& m, string const& key_prefix)
     return *indirect_value<semantics::type*> (utype (*wt), key);
   else
     return *indirect_value<semantics::type*> (t, key);
+}
+
+string context::
+type_ref_type (semantics::type& t,
+               semantics::names* hint,
+               bool mc,
+               string const& var)
+{
+  using semantics::array;
+  string r;
+
+  // Note that trailing const syntax is used for a reason (consider
+  // t == const foo*). We also have to decay top-level arrays.
+  //
+  if (array* a = dynamic_cast<array*> (&utype (t)))
+  {
+    semantics::type& bt (a->base_type ());
+    hint = a->contains ().hint ();
+
+    if (bt.is_a<array> ())
+    {
+      // If we need to add/strip const or no name was used in the
+      // declaration, then create an array declaration (e.g., for
+      // char x[2][3] we will have char const (*x)[3]).
+      //
+      if (mc != const_type (t) || hint == 0)
+        return type_val_type (bt, 0, mc, "(*" + var + ")");
+    }
+
+    // Array base type is always cvr-unqualified.
+    //
+    if (mc)
+      r = bt.fq_name (hint) + " const";
+    else
+      r = bt.fq_name (hint);
+
+    r += '*';
+
+    if (!var.empty ())
+      r += ' ' + var;
+  }
+  else
+  {
+    if (mc == const_type (t))
+      r = t.fq_name (hint);
+    else if (mc)
+      r = t.fq_name (hint) + " const";
+    else
+    {
+      semantics::type& ut (utype (t, hint));
+      r = ut.fq_name (hint);
+    }
+
+    r += '&';
+
+    if (!var.empty ())
+      r += ' ' + var;
+  }
+
+  return r;
+}
+
+string context::
+type_val_type (semantics::type& t,
+               semantics::names* hint,
+               bool mc,
+               string const& var)
+{
+  using semantics::array;
+  string r;
+
+  // Arrays are a complicated case. Firstly, we may need to add/strip const
+  // to/from the base type. Secondly, the array dimensions are written after
+  // the variable name. All this is further complicated by multiple dimensions.
+  // Thanks, Dennis!
+  //
+  if (array* a = dynamic_cast<array*> (&utype (t)))
+  {
+    semantics::type& bt (a->base_type ());
+
+    // If we don't need to add/strip const and a name was used in the
+    // declaration, then use that name.
+    //
+    if (mc == const_type (t) && hint != 0)
+    {
+      r = t.fq_name (hint);
+
+      if (!var.empty ())
+        r += ' ' + var;
+    }
+    else
+    {
+      // Otherwise, construct the array declaration.
+      //
+      string v (var);
+      v += '[';
+      ostringstream ostr;
+      ostr << a->size ();
+      v += ostr.str ();
+
+      if (a->size () > 0xFFFFFFFF)
+        v += "ULL";
+      else if (a->size () > 2147483647)
+        v += "U";
+
+      v += ']';
+
+      r = type_val_type (bt, a->contains ().hint (), mc, v);
+    }
+  }
+  else
+  {
+    if (mc == const_type (t))
+      r = t.fq_name (hint);
+    else if (mc)
+      r = t.fq_name (hint) + " const";
+    else
+    {
+      semantics::type& ut (utype (t, hint));
+      r = ut.fq_name (hint);
+    }
+
+    if (!var.empty ())
+      r += ' ' + var;
+  }
+
+  return r;
 }
 
 bool context::

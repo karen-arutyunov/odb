@@ -5,6 +5,7 @@
 #ifndef ODB_RELATIONAL_INLINE_HXX
 #define ODB_RELATIONAL_INLINE_HXX
 
+#include <odb/diagnostics.hxx>
 #include <odb/relational/context.hxx>
 #include <odb/relational/common.hxx>
 
@@ -258,16 +259,27 @@ namespace relational
           os << "inline" << endl
              << traits << "::id_type" << endl
              << traits << "::" << endl
-             << "id (const object_type&" << (id != 0 ? " obj" : "") << ")"
+             << "id (const object_type&" << (id != 0 ? " o" : "") << ")"
              << "{";
 
           if (id != 0)
           {
             if (base_id)
               os << "return object_traits< " << class_fq_name (*base) <<
-                " >::id (obj);";
+                " >::id (o);";
             else
-              os << "return obj." << id->name () << ";";
+            {
+              // Get the id using the accessor expression. If this is not
+              // a synthesized expression, then output its location for
+              // easier error tracking.
+              //
+              member_access& ma (id->get<member_access> ("get"));
+
+              if (ma.loc != 0)
+                os << "// From " << location_string (ma.loc, true) << endl;
+
+              os << "return " << ma.translate ("o") << ";";
+            }
           }
 
           os << "}";

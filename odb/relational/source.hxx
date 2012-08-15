@@ -1127,6 +1127,9 @@ namespace relational
       virtual void
       set_null (member_info&) = 0;
 
+      virtual void
+      check_accessor (member_info&, member_access&) {}
+
       virtual bool
       pre (member_info& mi)
       {
@@ -1142,8 +1145,13 @@ namespace relational
         if (mi.ptr != 0 && mi.m.count ("polymorphic-ref"))
           return false;
 
+        bool comp (composite (mi.t));
+
         if (!member_override_.empty ())
+        {
           member = member_override_;
+          os << "{";
+        }
         else
         {
           // If we are generating standard init() and this member
@@ -1158,9 +1166,7 @@ namespace relational
           if (!insert_send_auto_id && id (mi.m) && auto_ (mi.m))
             return false;
 
-          string const& name (mi.m.name ());
-
-          os << "// " << name << endl
+          os << "// " << mi.m.name () << endl
              << "//" << endl;
 
           // If the whole class is readonly, then we will never be
@@ -1176,13 +1182,37 @@ namespace relational
               os << "if (sk == statement_insert)";
           }
 
+          os << "{";
+
           if (discriminator (mi.m))
             member = "di.discriminator";
           else
-            member = "o." + name;
-        }
+          {
+            // Get the member using the accessor expression.
+            //
+            member_access& ma (mi.m.template get<member_access> ("get"));
 
-        bool comp (composite (mi.t));
+            // Make sure this kind of member can be accessed with this
+            // kind of accessor (database-specific, e.g., streaming).
+            //
+            if (!comp)
+              check_accessor (mi, ma);
+
+            // If this is not a synthesized expression, then output
+            // its location for easier error tracking.
+            //
+            if (ma.loc != 0)
+              os << "// From " << location_string (ma.loc, true) << endl;
+
+            // Use the original type to form the const reference.
+            //
+            os << member_ref_type (mi.m, true, "v") << " (" << endl
+               << ma.translate ("o") << ");"
+               << endl;
+
+            member = "v";
+          }
+        }
 
         // If this is a wrapped composite value, then we need to "unwrap"
         // it. If this is a NULL wrapper, then we also need to handle that.
@@ -1205,13 +1235,12 @@ namespace relational
               member << "))" << endl
                << "composite_value_traits< " + mi.fq_type () + " >::" <<
               "set_null (i." << mi.var << "value, sk);"
-               << "else";
+               << "else"
+               << "{";
           }
 
           member = "wrapper_traits< " + wt + " >::get_ref (" + member + ")";
         }
-
-        os << "{";
 
         if (discriminator (mi.m))
           os << "const info_type& di (map->find (typeid (o)));"
@@ -1299,6 +1328,13 @@ namespace relational
             os << traits << "::set_null (i." << mi.var << "value, sk);";
           else
             set_null (mi);
+        }
+
+        if (mi.wrapper != 0 && composite (mi.t))
+        {
+          if (null (mi.m, key_prefix_) &&
+              mi.wrapper->template get<bool> ("wrapper-null-handler"))
+            os << "}";
         }
 
         os << "}";
@@ -1430,6 +1466,9 @@ namespace relational
       virtual void
       get_null (member_info&) = 0;
 
+      virtual void
+      check_modifier (member_info&, member_access&) {}
+
       virtual bool
       pre (member_info& mi)
       {
@@ -1447,24 +1486,65 @@ namespace relational
         if (ignore_implicit_discriminator_ && discriminator (mi.m))
           return false;
 
+        bool comp (composite (mi.t));
+
         if (!member_override_.empty ())
+        {
+          os << "{";
           member = member_override_;
+        }
         else
         {
-          string const& name (mi.m.name ());
-          member = "o." + name;
+          os << "// " << mi.m.name () << endl
+             << "//" << endl
+             << "{";
 
-          if (mi.cq)
+          // Get the member using the accessor expression.
+          //
+          member_access& ma (mi.m.template get<member_access> ("set"));
+
+          // Make sure this kind of member can be modified with this
+          // kind of accessor (database-specific, e.g., streaming).
+          //
+          if (!comp)
+            check_modifier (mi, ma);
+
+          // If this is not a synthesized expression, then output
+          // its location for easier error tracking.
+          //
+          if (ma.loc != 0)
+            os << "// From " << location_string (ma.loc, true) << endl;
+
+          // See if we are modifying via a reference or proper modifier.
+          //
+          if (ma.placeholder ())
+            os << member_val_type (mi.m, false, "v") << ";"
+               << endl;
+          else
           {
-            string t (mi.ptr == 0 ? mi.fq_type (false) : mi.ptr_fq_type ());
-            member = "const_cast< " + t + "& > (" + member + ")";
+            // Use the original type to form the reference.
+            //
+            os << member_ref_type (mi.m, false, "v") << " (" << endl;
+
+            // If this member is const and we have a synthesized access,
+            // then cast away constness. Otherwise, we assume that the
+            // user-provided expression handles this.
+            //
+            if (mi.cq && ma.loc == 0)
+              os << "const_cast< " << member_ref_type (mi.m, false) <<
+                " > (" << endl;
+
+            os << ma.translate ("o");
+
+            if (mi.cq && ma.loc == 0)
+              os << ")";
+
+            os << ");"
+               << endl;
           }
 
-          os << "// " << name << endl
-             << "//" << endl;
+          member = "v";
         }
-
-        bool comp (composite (mi.t));
 
         // If this is a wrapped composite value, then we need to "unwrap" it.
         // If this is a NULL wrapper, then we also need to handle that. For
@@ -1498,8 +1578,7 @@ namespace relational
 
           // Handle NULL pointers and extract the id.
           //
-          os << "{"
-             << "typedef object_traits< " << class_fq_name (*mi.ptr) <<
+          os << "typedef object_traits< " << class_fq_name (*mi.ptr) <<
             " > obj_traits;"
              << "typedef odb::pointer_traits< " << mi.ptr_fq_type () <<
             " > ptr_traits;"
@@ -1548,16 +1627,9 @@ namespace relational
       {
         if (mi.ptr != 0)
         {
-          if (!member_override_.empty ())
-            member = member_override_;
-          else
-          {
-            member = "o." + mi.m.name ();
-
-            if (mi.cq)
-              member = "const_cast< " + mi.ptr_fq_type () +
-                "& > (" + member + ")";
-          }
+          // Restore the member variable name.
+          //
+          member = member_override_.empty () ? "v" : member_override_;
 
           // When handling a pointer, mi.t is the id type of the referenced
           // object.
@@ -1592,9 +1664,28 @@ namespace relational
             }
           }
 
-          os << "}"
-             << "}";
+          os << "}";
         }
+
+        // Call the modifier if we are using a proper one.
+        //
+        if (member_override_.empty ())
+        {
+          member_access& ma (mi.m.template get<member_access> ("set"));
+
+          if (ma.placeholder ())
+          {
+            // If this is not a synthesized expression, then output its
+            // location for easier error tracking.
+            //
+            if (ma.loc != 0)
+              os << "// From " << location_string (ma.loc, true) << endl;
+
+            os << ma.translate ("o", "v") << ";";
+          }
+        }
+
+        os << "}";
       }
 
       virtual void
@@ -2867,9 +2958,10 @@ namespace relational
       };
 
       container_calls (call_type call)
-          : object_members_base (true, false, false),
+          : object_members_base (true, false, true),
             call_ (call),
-            obj_prefix_ ("obj.")
+            obj_prefix_ ("obj"),
+            modifier_ (0)
       {
       }
 
@@ -2878,17 +2970,56 @@ namespace relational
                                   semantics::class_& c,
                                   semantics::type* w)
       {
-        if (m == 0)
+        if (m == 0 || call_ == erase_call || modifier_ != 0)
         {
           object_members_base::traverse_composite (m, c);
           return;
         }
 
-        string old (obj_prefix_);
-        obj_prefix_ += m->name ();
+        // Get this member using the accessor expression.
+        //
+        member_access& ma (
+          m->get<member_access> (call_ == load_call ? "set" : "get"));
 
-        // If this is a wrapped composite value, then we need to
-        // "unwrap" it.
+        // We don't support by-value modifiers for composite values
+        // with containers. However, at this point we don't know
+        // whether this composite value has any containers. So we
+        // are just going to set a flag that can be checked in
+        // traverse_container() below.
+        //
+        if (ma.placeholder ())
+        {
+          modifier_ = &ma;
+          object_members_base::traverse_composite (m, c);
+          modifier_ = 0;
+          return;
+        }
+
+        string old_op (obj_prefix_);
+        string old_f (from_);
+        obj_prefix_.clear ();
+
+        // If this member is const and we have a synthesized access,
+        // then cast away constness. Otherwise, we assume that the
+        // user-provided expression handles this.
+        //
+        if (call_ == load_call && ma.loc == 0 && const_type (m->type ()))
+          obj_prefix_ = "const_cast< " + member_ref_type (*m, false) +
+            " > (\n";
+
+        obj_prefix_ += ma.translate (old_op);
+
+        if (call_ == load_call && ma.loc == 0 && const_type (m->type ()))
+          obj_prefix_ += ")";
+
+        // If this is not a synthesized expression, then store its
+        // location which we will output later for easier error
+        // tracking.
+        //
+        if (ma.loc != 0)
+          from_ += "// From " + location_string (ma.loc, true) + "\n";
+
+        // If this is a wrapped composite value, then we need to "unwrap" it.
         //
         if (w != 0)
         {
@@ -2900,26 +3031,14 @@ namespace relational
           //
           assert (&t == w);
 
-          string const& type (t.fq_name (hint));
-
-          if (call_ == load_call && const_type (m->type ()))
-            obj_prefix_ = "const_cast< " + type + "& > (\n" +
-              obj_prefix_ + ")";
-
-          obj_prefix_ = "wrapper_traits< " + type + " >::" +
+          obj_prefix_ = "wrapper_traits< " + t.fq_name (hint) + " >::" +
             (call_ == load_call ? "set_ref" : "get_ref") +
             " (\n" + obj_prefix_ + ")";
         }
-        else if (call_ == load_call && const_type (m->type ()))
-        {
-          obj_prefix_ = "const_cast< " + class_fq_name (c) + "& > (\n" +
-            obj_prefix_ + ")";
-        }
-
-        obj_prefix_ += '.';
 
         object_members_base::traverse_composite (m, c);
-        obj_prefix_ = old;
+        from_ = old_f;
+        obj_prefix_ = old_op;
       }
 
       virtual void
@@ -2929,87 +3048,155 @@ namespace relational
 
         bool inverse (context::inverse (m, "value"));
 
+        // In certain cases we don't need to do anything.
+        //
+        if ((call_ != load_call && inverse) ||
+            (call_ == update_call && readonly (member_path_, member_scope_)))
+          return;
+
         string const& name (m.name ());
-        string obj_name (obj_prefix_ + name);
         string sts_name (flat_prefix_ + name);
         string traits (flat_prefix_ + public_name (m) + "_traits");
 
-        if (call_ == load_call && const_type (m.type ()))
-        {
+        os << "// " << member_prefix_ << m.name () << endl
+           << "//" << endl;
 
-        }
-
-        semantics::names* hint;
-        semantics::type& t (utype (m, hint));
-
-        // If this is a wrapped container, then we need to "unwrap" it.
+        // Get this member using the accessor expression.
         //
-        if (wrapper (t))
-        {
-          string const& type (t.fq_name (hint));
+        string var;
+        member_access& ma (
+          m.get<member_access> (call_ == load_call ? "set" : "get"));
 
-          // We cannot use traits::container_type here.
+        // We don't support by-value modifiers for composite values
+        // with containers.
+        //
+        if (call_ == load_call && modifier_ != 0)
+        {
+          error (modifier_->loc) << "by-value modification of a composite "
+                                 << "value with container is not supported"
+                                 << endl;
+          info (m.location ()) << "container member is defined here" << endl;
+          throw operation_failed ();
+        }
+
+        if (call_ != erase_call)
+        {
+          os << "{";
+
+          // Output stored locations, if any.
           //
-          if (call_ == load_call && const_type (m.type ()))
-            obj_name = "const_cast< " + type + "& > (\n" + obj_name + ")";
+          if (!ma.placeholder ())
+            os << from_;
 
-          obj_name = "wrapper_traits< " + type + " >::" +
-            (call_ == load_call ? "set_ref" : "get_ref") +
-            " (\n" + obj_name + ")";
-        }
-        else if (call_ == load_call && const_type (m.type ()))
-        {
-          obj_name = "const_cast< " + traits + "::container_type& > (\n" +
-            obj_name + ")";
-        }
+          // If this is not a synthesized expression, then output its
+          // location for easier error tracking.
+          //
+          if (ma.loc != 0)
+            os << "// From " << location_string (ma.loc, true) << endl;
 
+          // See if we are modifying via a reference or proper modifier.
+          //
+          if (ma.placeholder ())
+            os << member_val_type (m, false, "v") << ";"
+               << endl;
+          else
+          {
+            os << member_ref_type (m, call_ != load_call, "v") << " (" << endl;
+
+            // If this member is const and we have a synthesized access,
+            // then cast away constness. Otherwise, we assume that the
+            // user-provided expression handles this.
+            //
+            if (call_ == load_call && ma.loc == 0 && const_type (m.type ()))
+              os << "const_cast< " << member_ref_type (m, false) <<
+                " > (" << endl;
+
+            os << ma.translate (obj_prefix_);
+
+            if (call_ == load_call && ma.loc == 0 && const_type (m.type ()))
+              os << ")";
+
+            os << ");"
+               << endl;
+          }
+
+          var = "v";
+
+          semantics::names* hint;
+          semantics::type& t (utype (m, hint));
+
+          // If this is a wrapped container, then we need to "unwrap" it.
+          //
+          if (wrapper (t))
+          {
+            var = "wrapper_traits< " + t.fq_name (hint) + " >::" +
+              (call_ == load_call ? "set_ref" : "get_ref") + " (" + var + ")";
+          }
+        }
 
         switch (call_)
         {
         case persist_call:
           {
-            if (!inverse)
-              os << traits << "::persist (" << endl
-                 << obj_name << "," << endl
-                 << "idb," << endl
-                 << "sts.container_statment_cache ()." << sts_name << ");"
-                 << endl;
+            os << traits << "::persist (" << endl
+               << var << "," << endl
+               << "idb," << endl
+               << "sts.container_statment_cache ()." << sts_name << ");";
             break;
           }
         case load_call:
           {
             os << traits << "::load (" << endl
-               << obj_name << "," << endl
+               << var << "," << endl
+               << "idb," << endl
+               << "sts.container_statment_cache ()." << sts_name << ");";
+            break;
+          }
+        case update_call:
+          {
+            os << traits << "::update (" << endl
+               << var << "," << endl
+               << "idb," << endl
+               << "sts.container_statment_cache ()." << sts_name << ");";
+            break;
+          }
+        case erase_call:
+          {
+            os << traits << "::erase (" << endl
                << "idb," << endl
                << "sts.container_statment_cache ()." << sts_name << ");"
                << endl;
             break;
           }
-        case update_call:
+        }
+
+        if (call_ != erase_call)
+        {
+          // Call the modifier if we are using a proper one.
+          //
+          if (ma.placeholder ())
           {
-            if (!(inverse || readonly (member_path_, member_scope_)))
-              os << traits << "::update (" << endl
-                 << obj_name << "," << endl
-                 << "idb," << endl
-                 << "sts.container_statment_cache ()." << sts_name << ");"
-                 << endl;
-            break;
+            os << endl
+               << from_;
+
+            // If this is not a synthesized expression, then output its
+            // location for easier error tracking.
+            //
+            if (ma.loc != 0)
+              os << "// From " << location_string (ma.loc, true) << endl;
+
+            os << ma.translate (obj_prefix_, "v") << ";";
           }
-        case erase_call:
-          {
-            if (!inverse)
-              os << traits << "::erase (" << endl
-                 << "idb," << endl
-                 << "sts.container_statment_cache ()." << sts_name << ");"
-                 << endl;
-            break;
-          }
+
+          os << "}";
         }
       }
 
     protected:
       call_type call_;
       string obj_prefix_;
+      string from_;
+      member_access* modifier_;
     };
 
     // Output a list of parameters for the persist statement.

@@ -7,6 +7,7 @@
 
 #include <odb/gcc-fwd.hxx>
 
+#include <string>
 #include <cstddef>
 #include <iostream>
 
@@ -64,6 +65,23 @@ warn (cxx_lexer&);
 
 std::ostream&
 info (cxx_lexer&);
+
+// Location as a string in the "<file>:<line>:<column>" format.
+//
+std::string
+location_string (cutl::fs::path const&,
+                 std::size_t line,
+                 std::size_t clmn,
+                 bool leaf = false);
+
+inline std::string
+location_string (location const& l, bool leaf = false)
+{
+  return location_string (l.file, l.line, l.column, leaf);
+}
+
+std::string
+location_string (location_t, bool leaf = false);
 
 // location_t macro wrappers.
 //

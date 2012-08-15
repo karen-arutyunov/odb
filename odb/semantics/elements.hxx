@@ -495,7 +495,7 @@ namespace semantics
     string
     fq_name_ (scope_entry const*) const;
 
-  private:
+  protected:
     defines* defined_;
     names_list named_;
   };

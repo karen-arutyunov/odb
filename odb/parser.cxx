@@ -1388,7 +1388,7 @@ emit_type (tree t,
        << " main " << mv << endl;
 
     for (tree v (TYPE_MAIN_VARIANT (t)); v != 0; v = TYPE_NEXT_VARIANT (v))
-      ts << "\tvariant " << v << endl;
+      ts << "\tvariant " << v << " " << CP_TYPE_CONST_P (v) << endl;
   }
 
   node* n (unit_->find (mv));
@@ -1709,24 +1709,46 @@ create_type (tree t,
         }
       }
 
-      type& bt (
-        emit_type (TREE_TYPE (t), access::public_, file, line, clmn));
+      // In GCC tree a const array has both the array type itself and the
+      // element type marked as const. This doesn't bode well with our
+      // semantic graph model where we have a separate type node for
+      // qualifiers. To fix this, we are going to strip the const
+      // qualification from the element type and only preserve it in
+      // the array type. In other words, we view it as "constant array"
+      // rather than "array of constant elements".
+      //
+      tree bt (TREE_TYPE (t));
+      tree bt_mv (TYPE_MAIN_VARIANT (bt));
+      type& bt_node (emit_type (bt_mv, access::public_, file, line, clmn));
       t = TYPE_MAIN_VARIANT (t);
       array& a (unit_->new_node<array> (file, line, clmn, t, size));
       unit_->insert (t, a);
-      unit_->new_edge<contains> (a, bt);
+      contains& edge (unit_->new_edge<contains> (a, bt_node));
+
+      // See if there is a name hint for the base type.
+      //
+      if (names* hint = unit_->find_hint (
+            cp_type_quals (bt) == TYPE_UNQUALIFIED ? bt : bt_mv))
+        edge.hint (*hint);
+
       process_named_pragmas (t, a);
       r = &a;
       break;
     }
   case REFERENCE_TYPE:
     {
-      type& bt (
-        emit_type (TREE_TYPE (t), access::public_, file, line, clmn));
+      tree bt (TREE_TYPE (t));
+      type& bt_node (emit_type (bt, access::public_, file, line, clmn));
       t = TYPE_MAIN_VARIANT (t);
       reference& ref (unit_->new_node<reference> (file, line, clmn, t));
       unit_->insert (t, ref);
-      unit_->new_edge<references> (ref, bt);
+      references& edge (unit_->new_edge<references> (ref, bt_node));
+
+      // See if there is a name hint for the base type.
+      //
+      if (names* hint = unit_->find_hint (bt))
+        edge.hint (*hint);
+
       process_named_pragmas (t, ref);
       r = &ref;
       break;
@@ -1735,12 +1757,18 @@ create_type (tree t,
     {
       if (!TYPE_PTRMEM_P (t))
       {
-        type& bt (
-          emit_type (TREE_TYPE (t), access::public_, file, line, clmn));
+        tree bt (TREE_TYPE (t));
+        type& bt_node (emit_type (bt, access::public_, file, line, clmn));
         t = TYPE_MAIN_VARIANT (t);
         pointer& p (unit_->new_node<pointer> (file, line, clmn, t));
         unit_->insert (t, p);
-        unit_->new_edge<points> (p, bt);
+        points& edge (unit_->new_edge<points> (p, bt_node));
+
+        // See if there is a name hint for the base type.
+        //
+        if (names* hint = unit_->find_hint (bt))
+          edge.hint (*hint);
+
         process_named_pragmas (t, p);
         r = &p;
       }

@@ -20,10 +20,13 @@ traverse_object (type& c)
   data_member* id (id_member (c));
   bool auto_id (id ? id->count ("auto") : false);
   bool base_id (id ? &id->scope () != &c : false); // Comes from base.
+  member_access* id_ma (id ? &id->get<member_access> ("get") : 0);
 
   bool has_ptr (has_a (c, test_pointer));
 
-  data_member* optimistic (context::optimistic (c));
+  data_member* opt (optimistic (c));
+  member_access* opt_ma_get (opt ? &opt->get<member_access> ("get") : 0);
+  member_access* opt_ma_set (opt ? &opt->get<member_access> ("set") : 0);
 
   type* poly_root (polymorphic (c));
   bool poly (poly_root != 0);
@@ -42,7 +45,7 @@ traverse_object (type& c)
   {
     grow = context::grow (c);
     grow_id = (id ? context::grow (*id) : false) ||
-      (optimistic ? context::grow (*optimistic) : false);
+      (opt ? context::grow (*opt) : false);
   }
 
   string const& type (class_fq_name (c));
@@ -105,6 +108,8 @@ traverse_object (type& c)
   //
   if (!poly_derived && id != 0 && !base_id)
   {
+    // id (image)
+    //
     if (options.generate_query ())
     {
       os << traits << "::id_type" << endl
@@ -120,14 +125,16 @@ traverse_object (type& c)
          << "}";
     }
 
-    if (optimistic != 0)
+    // version (image)
+    //
+    if (opt != 0)
     {
       os << traits << "::version_type" << endl
          << traits << "::" << endl
          << "version (const image_type& i)"
          << "{"
          << "version_type v;";
-      init_version_value_member_->traverse (*optimistic);
+      init_version_value_member_->traverse (*opt);
       os << "return v;"
          << "}";
     }
@@ -277,7 +284,7 @@ traverse_object (type& c)
   {
     os << "void " << traits << "::" << endl
        << "bind (" << bind_vector << " b, id_image_type& i" <<
-      (optimistic != 0 ? ", bool bv" : "") << ")"
+      (opt != 0 ? ", bool bv" : "") << ")"
        << "{"
        << "std::size_t n (0);";
 
@@ -286,14 +293,14 @@ traverse_object (type& c)
 
     bind_id_member_->traverse (*id);
 
-    if (optimistic != 0)
+    if (opt != 0)
     {
       os << "if (bv)"
          << "{"
          << "n += " << column_count (c).id << ";"
          << endl;
 
-      bind_version_member_->traverse (*optimistic);
+      bind_version_member_->traverse (*opt);
       os << "}";
     }
 
@@ -370,7 +377,7 @@ traverse_object (type& c)
   {
     os << "void " << traits << "::" << endl
        << "init (id_image_type& i, const id_type& id" <<
-      (optimistic != 0 ? ", const version_type* v" : "") << ")"
+      (opt != 0 ? ", const version_type* v" : "") << ")"
        << "{";
 
     if (grow_id)
@@ -381,13 +388,13 @@ traverse_object (type& c)
 
     init_id_image_member_->traverse (*id);
 
-    if (optimistic != 0)
+    if (opt != 0)
     {
       // Here we rely on the fact that init_image_member
       // always wraps the statements in a block.
       //
       os << "if (v != 0)";
-      init_version_image_member_->traverse (*optimistic);
+      init_version_image_member_->traverse (*opt);
     }
 
     if (grow_id)
@@ -625,8 +632,8 @@ traverse_object (type& c)
         instance<object_columns> t (qtable, sk, sc);
         t->traverse (*discriminator);
 
-        if (optimistic != 0)
-          t->traverse (*optimistic);
+        if (opt != 0)
+          t->traverse (*opt);
 
         process_statement_columns (sc, statement_select);
       }
@@ -696,10 +703,10 @@ traverse_object (type& c)
                       convert_to (qp->next (), i->type, *i->member));
       }
 
-      if (optimistic != 0 && !poly_derived)
+      if (opt != 0 && !poly_derived)
         os << endl
-           << strlit (" AND " + column_qname (*optimistic) + "=" +
-                      convert_to (qp->next (), *optimistic));
+           << strlit (" AND " + column_qname (*opt) + "=" +
+                      convert_to (qp->next (), *opt));
       os << ";"
          << endl;
     }
@@ -725,7 +732,7 @@ traverse_object (type& c)
          << endl;
     }
 
-    if (optimistic != 0 && !poly_derived)
+    if (opt != 0 && !poly_derived)
     {
       instance<query_parameters> qp (table);
 
@@ -743,8 +750,8 @@ traverse_object (type& c)
       }
 
       os << endl
-         << strlit (" AND " + column_qname (*optimistic) + "=" +
-                    convert_to (qp->next (), *optimistic)) << ";"
+         << strlit (" AND " + column_qname (*opt) + "=" +
+                    convert_to (qp->next (), *opt)) << ";"
          << endl;
     }
   }
@@ -936,26 +943,66 @@ traverse_object (type& c)
 
   if (!poly_derived && auto_id)
   {
-    if (const_type (id->type ()))
-      os << "const_cast< id_type& > (obj." << id->name () << ")";
-    else
-      os << "obj." << id->name ();
+    member_access& ma (id->get<member_access> ("set"));
 
-    os << " = static_cast< id_type > (st.id ());"
-       << endl;
+    if (ma.loc != 0)
+      os << "// From " << location_string (ma.loc, true) << endl;
+
+    if (ma.placeholder ())
+      os << ma.translate ("obj", "static_cast< id_type > (st.id ())") << ";"
+         << endl;
+    else
+    {
+      // If this member is const and we have a synthesized access, then
+      // cast away constness. Otherwise, we assume that the user-provided
+      // expression handles this.
+      //
+      bool cast (ma.loc == 0 && const_type (id->type ()));
+      if (cast)
+        os << "const_cast< id_type& > (" << endl;
+
+      os << ma.translate ("obj");
+
+      if (cast)
+        os << ")";
+
+      os << " = static_cast< id_type > (st.id ());"
+         << endl;
+    }
   }
 
-  if (optimistic != 0 && !poly_derived)
+  // Set the optimistic concurrency version in the object member.
+  //
+  if (opt != 0 && !poly_derived)
   {
-    // Set the version in the object member.
+    // If we don't have auto id, then obj is a const reference.
     //
-    if (!auto_id || const_type (optimistic->type ()))
-      os << "const_cast< version_type& > (obj." << optimistic->name () <<
-        ") = 1;";
-    else
-      os << "obj." << optimistic->name () << " = 1;";
+    string obj (auto_id ? "obj" : "const_cast< object_type& > (obj)");
 
-    os << endl;
+    if (opt_ma_set->loc != 0)
+      os << "// From " << location_string (opt_ma_set->loc, true) << endl;
+
+    if (opt_ma_set->placeholder ())
+      os << opt_ma_set->translate (obj, "1") << ";"
+         << endl;
+    else
+    {
+      // If this member is const and we have a synthesized access, then
+      // cast away constness. Otherwise, we assume that the user-provided
+      // expression handles this.
+      //
+      bool cast (opt_ma_set->loc == 0 && const_type (opt->type ()));
+      if (cast)
+        os << "const_cast< version_type& > (" << endl;
+
+      os << opt_ma_set->translate (obj);
+
+      if (cast)
+        os << ")";
+
+      os << " = 1;"
+         << endl;
+    }
   }
 
   // Initialize id_image and binding if we are a root of a polymorphic
@@ -971,8 +1018,12 @@ traverse_object (type& c)
       os << "if (!top)"
          << "{";
 
-    os << "id_image_type& i (sts.id_image ());"
-       << "init (i, obj." << id->name () << ");"
+    os << "id_image_type& i (sts.id_image ());";
+
+    if (id_ma->loc != 0)
+      os << "// From " << location_string (id_ma->loc, true) << endl;
+
+    os << "init (i, " <<  id_ma->translate ("obj") << ");"
        << endl
        << "binding& idb (sts.id_image_binding ());"
        << "if (i.version != sts.id_image_version () || idb.version == 0)"
@@ -1100,8 +1151,12 @@ traverse_object (type& c)
             os << "if (!top)";
 
           os << "{"
-             << "id_image_type& i (sts.id_image ());"
-             << "init (i, obj." << id->name () << ");"
+             << "id_image_type& i (sts.id_image ());";
+
+          if (id_ma->loc != 0)
+            os << "// From " << location_string (id_ma->loc, true) << endl;
+
+          os << "init (i, " << id_ma->translate ("obj") << ");"
              << endl;
 
           os << "binding& idb (sts.id_image_binding ());"
@@ -1161,9 +1216,11 @@ traverse_object (type& c)
           // exists in the database. Use the discriminator_() call for
           // that.
           //
-          os << "root_traits::discriminator_ (sts.root_statements (), obj." <<
-            id->name () << ", 0);"
-             << endl;
+          if (id_ma->loc != 0)
+            os << "// From " << location_string (id_ma->loc, true) << endl;
+
+          os << "root_traits::discriminator_ (sts.root_statements (), " <<
+            id_ma->translate ("obj") << ", 0);" << endl;
         }
         // Otherwise, nothing else to do here if we don't have any columns
         // to update.
@@ -1179,15 +1236,27 @@ traverse_object (type& c)
 
         // Initialize object and id images.
         //
+        if (opt != 0)
+        {
+          if (opt_ma_get->loc != 0)
+            os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+
+          os << "const version_type& v (" << endl
+             << opt_ma_get->translate ("obj") << ");";
+        }
+
         os << "id_image_type& i (sts.id_image ());";
 
-        if (optimistic == 0)
-          os << "init (i, obj." << id->name () << ");";
-        else
-          os << "init (i, obj." << id->name () << ", &obj." <<
-            optimistic->name () << ");";
+        if (id_ma->loc != 0)
+          os << "// From " << location_string (id_ma->loc, true) << endl;
 
-        os << endl
+        os << "init (i, " << id_ma->translate ("obj");
+
+        if (opt != 0)
+          os << ", &v";
+
+        os << ");"
+           << endl
            << "image_type& im (sts.image ());";
 
         if (generate_grow)
@@ -1245,7 +1314,7 @@ traverse_object (type& c)
 
         os << "if (sts.update_statement ().execute () == 0)" << endl;
 
-        if (optimistic == 0)
+        if (opt == 0)
           os << "throw object_not_persistent ();";
         else
           os << "throw object_changed ();";
@@ -1265,21 +1334,29 @@ traverse_object (type& c)
            << "conn.statement_cache ().find_object<object_type> ());"
            << endl;
 
+        if (id_ma->loc != 0)
+          os << "// From " << location_string (id_ma->loc, true) << endl;
+
+        os << "const id_type& id (" << endl
+           << id_ma->translate ("obj") << ");"
+           << endl;
+
         if (poly)
         {
           // In case of a polymorphic root, use discriminator_(), which
           // is faster. And initialize the id image, unless this is a
           // top-level call.
           //
-          os << "discriminator_ (sts, obj." << id->name () << ", 0);"
+          os << "discriminator_ (sts, id, 0);"
              << endl;
 
           if (!abst)
             os << "if (!top)";
 
           os << "{"
-             << "id_image_type& i (sts.id_image ());"
-             << "init (i, obj." << id->name () << ");"
+             << "id_image_type& i (sts.id_image ());";
+
+          os << "init (i, id);"
              << endl;
 
           os << "binding& idb (sts.id_image_binding ());"
@@ -1293,7 +1370,7 @@ traverse_object (type& c)
         }
         else
         {
-          os << "if (!find_ (sts, &obj." << id->name () << "))" << endl
+          os << "if (!find_ (sts, &id))" << endl
              << "throw object_not_persistent ();"
              << endl;
 
@@ -1312,11 +1389,46 @@ traverse_object (type& c)
         t->traverse (c);
       }
 
-      if (optimistic != 0 && !poly_derived)
+      // Update the optimistic concurrency version in the object member.
+      //
+      if (opt != 0 && !poly_derived)
       {
-        // Update version in the object member.
+        // Object is passed as const reference so we need to cast away
+        // constness.
         //
-        os << "const_cast<version_type&> (obj." << optimistic->name () << ")++;";
+        string obj ("const_cast< object_type& > (obj)");
+
+        if (opt_ma_set->loc != 0)
+          os << "// From " << location_string (opt_ma_set->loc, true) << endl;
+
+        if (opt_ma_set->placeholder ())
+        {
+          if (opt_ma_get->loc != 0)
+            os << "// From " << location_string (opt_ma_get->loc, true) <<
+              endl;
+
+          os << opt_ma_set->translate (
+            obj, opt_ma_get->translate ("obj") + " + 1") << ";"
+             << endl;
+        }
+        else
+        {
+          // If this member is const and we have a synthesized access, then
+          // cast away constness. Otherwise, we assume that the user-provided
+          // expression handles this.
+          //
+          bool cast (opt_ma_set->loc == 0 && const_type (opt->type ()));
+          if (cast)
+            os << "const_cast< version_type& > (" << endl;
+
+          os << opt_ma_set->translate (obj);
+
+          if (cast)
+            os << ")";
+
+          os << "++;"
+             << endl;
+        }
       }
 
       // Call callback (post_update).
@@ -1457,7 +1569,7 @@ traverse_object (type& c)
 
   // erase (object)
   //
-  if (id != 0 && (poly || optimistic != 0))
+  if (id != 0 && (poly || opt != 0))
   {
     os << "void " << traits << "::" << endl
        << "erase (database& db, const object_type& obj";
@@ -1497,7 +1609,7 @@ traverse_object (type& c)
 
     // Determine the dynamic type of this object.
     //
-    if (optimistic == 0)
+    if (opt == 0)
     {
       os << "callback (db, obj, callback_event::pre_erase);"
          << "erase (db, id (obj), true, false);"
@@ -1530,6 +1642,16 @@ traverse_object (type& c)
            << endl;
       }
 
+      if (!abst || straight_containers)
+      {
+        if (id_ma->loc != 0)
+          os << "// From " << location_string (id_ma->loc, true) << endl;
+
+        os << "const id_type& id  (" << endl
+           << id_ma->translate ("obj") << ");"
+           << endl;
+      }
+
       // Initialize id + managed column image.
       //
       os << "binding& idb (" << rsts << ".id_image_binding ());"
@@ -1541,9 +1663,13 @@ traverse_object (type& c)
           os << "if (top)"
              << "{";
 
-        os << "id_image_type& i (" << rsts << ".id_image ());"
-           << "init (i, obj." << id->name () << ", &obj." <<
-          optimistic->name () << ");"
+        if (opt_ma_get->loc != 0)
+          os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+
+        os << "const version_type& v (" << endl
+           << opt_ma_get->translate ("obj") << ");"
+           << "id_image_type& i (" << rsts << ".id_image ());"
+           << "init (i, id, &v);"
            << endl;
 
         // To update the id part of the optimistic id binding we have
@@ -1592,10 +1718,13 @@ traverse_object (type& c)
           os << "if (top)"
              << "{"
              << "version_type v;"
-             << "root_traits::discriminator_ (" << rsts << ", obj." <<
-            id->name () << ", 0, &v);"
-             << endl
-             << "if (v != obj." << optimistic->name () << ")" << endl
+             << "root_traits::discriminator_ (" << rsts << ", id, 0, &v);"
+             << endl;
+
+          if (opt_ma_get->loc != 0)
+            os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+
+          os << "if (v != " << opt_ma_get->translate ("obj") << ")" << endl
              << "throw object_changed ();"
              << "}";
         }
@@ -1618,15 +1747,19 @@ traverse_object (type& c)
         // have been more efficient but it would complicated and bloat
         // things significantly.
         //
-        os << "if (!find_ (sts, &obj." << id->name () << "))" << endl
+        os << "if (!find_ (sts, &id))" << endl
            << "throw object_changed ();"
            << endl;
 
         if (delay_freeing_statement_result)
-          os << "sts.find_statement ().free_result ();";
+          os << "sts.find_statement ().free_result ();"
+             << endl;
 
-        os << "if (version (sts.image ()) != obj." <<
-          optimistic->name () << ")" << endl
+        if (opt_ma_get->loc != 0)
+          os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+
+        os << "if (version (sts.image ()) != " <<
+          opt_ma_get->translate ("obj") << ")" << endl
            << "throw object_changed ();"
            << endl;
       }
@@ -1666,7 +1799,7 @@ traverse_object (type& c)
 
         // Remove from the object cache.
         //
-        os << "pointer_cache_traits::erase (db, obj." << id->name () << ");";
+        os << "pointer_cache_traits::erase (db, id);";
 
         // Call callback (post_erase).
         //
@@ -2015,7 +2148,14 @@ traverse_object (type& c)
          << "statements_type::auto_lock l (" << rsts << ");"
          << endl;
 
-      os << "if (!find_ (sts, &obj." << id->name () << "))" << endl
+      if (id_ma->loc != 0)
+        os << "// From " << location_string (id_ma->loc, true) << endl;
+
+      os << "const id_type& id  (" << endl
+         << id_ma->translate ("obj") << ");"
+         << endl;
+
+      os << "if (!find_ (sts, &id))" << endl
          << "return false;"
          << endl;
 
@@ -2028,10 +2168,14 @@ traverse_object (type& c)
         os << "auto_result ar (st);"
            << endl;
 
-      if (optimistic != 0)
+      if (opt != 0)
       {
+        if (opt_ma_get->loc != 0)
+          os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+
         os << "if (" << (poly_derived ? "root_traits::" : "") << "version (" <<
-          rsts << ".image ()) == obj." << optimistic->name () << ")" << endl
+          rsts << ".image ()) == " << opt_ma_get->translate ("obj") <<
+          ")" << endl
            << "return true;"
            << endl;
       }
@@ -2272,7 +2416,7 @@ traverse_object (type& c)
        << "const id_type& id," << endl
        << "discriminator_type* pd";
 
-    if (optimistic != 0)
+    if (opt != 0)
       os << "," << endl
          << "version_type* pv";
 
@@ -2291,7 +2435,7 @@ traverse_object (type& c)
        << "if (idi.version != sts.discriminator_id_image_version () ||" << endl
        << "idb.version == 0)"
        << "{"
-       << "bind (idb.bind, idi" << (optimistic != 0 ? ", false" : "") << ");"
+       << "bind (idb.bind, idi" << (opt != 0 ? ", false" : "") << ");"
        << "sts.discriminator_id_image_version (idi.version);"
        << "idb.version++;"
        << "}";
@@ -2313,11 +2457,11 @@ traverse_object (type& c)
     bind_discriminator_member_->traverse (*discriminator);
     os << "}";
 
-    if (optimistic != 0)
+    if (opt != 0)
     {
       os << "n++;" // For now discriminator is a simple value.
          << "{";
-      bind_version_member_->traverse (*optimistic);
+      bind_version_member_->traverse (*opt);
       os << "}";
     }
 
@@ -2334,7 +2478,7 @@ traverse_object (type& c)
        << "if (r == select_statement::no_data)"
        << "{";
 
-    if (optimistic != 0)
+    if (opt != 0)
       os << "if (pv != 0)" << endl
          << "throw object_changed ();"
          << "else" << endl;
@@ -2342,9 +2486,9 @@ traverse_object (type& c)
     os << "throw object_not_persistent ();"
        << "}";
 
-    if (generate_grow && (
-          context::grow (*discriminator) ||
-          (optimistic != 0 && context::grow (*optimistic))))
+    if (generate_grow &&
+        (context::grow (*discriminator) ||
+         (opt != 0 && context::grow (*opt))))
     {
       os << "else if (r == select_statement::truncated)"
          << "{";
@@ -2358,8 +2502,8 @@ traverse_object (type& c)
       index_ = 0;
       grow_discriminator_member_->traverse (*discriminator);
 
-      if (optimistic != 0)
-        grow_version_member_->traverse (*optimistic);
+      if (opt != 0)
+        grow_version_member_->traverse (*opt);
 
       os << "if (grew)" << endl
          << "i.version++;"
@@ -2375,11 +2519,11 @@ traverse_object (type& c)
       bind_discriminator_member_->traverse (*discriminator);
       os << "}";
 
-      if (optimistic != 0)
+      if (opt != 0)
       {
         os << "n++;" // For now discriminator is a simple value.
            << "{";
-        bind_version_member_->traverse (*optimistic);
+        bind_version_member_->traverse (*opt);
         os << "}";
       }
 
@@ -2404,12 +2548,12 @@ traverse_object (type& c)
     init_named_discriminator_value_member_->traverse (*discriminator);
     os << "}";
 
-    if (optimistic != 0)
+    if (opt != 0)
     {
       os << "if (pv != 0)"
          << "{"
          << "version_type& v (*pv);";
-      init_named_version_value_member_->traverse (*optimistic);
+      init_named_version_value_member_->traverse (*opt);
       os << "}";
     }
 
@@ -2618,10 +2762,7 @@ traverse_view (type& c)
       else
         // Output the pragma location for easier error tracking.
         //
-        os << "// From " <<
-          location_file (vq.loc).leaf () << ":" <<
-          location_line (vq.loc) << ":" <<
-          location_column (vq.loc) << endl
+        os << "// From " << location_string (vq.loc, true) << endl
            << translate_expression (
              c, vq.expr, vq.scope, vq.loc, "query", &ph).value;
 
@@ -2707,13 +2848,10 @@ traverse_view (type& c)
 
           l += " ON";
 
+          // Output the pragma location for easier error tracking.
+          //
           os << "r += " << strlit (l) << ";"
-            // Output the pragma location for easier error tracking.
-            //
-             << "// From " <<
-            location_file (i->loc).leaf () << ":" <<
-            location_line (i->loc) << ":" <<
-            location_column (i->loc) << endl
+             << "// From " << location_string (i->loc, true) << endl
              << "r += " << e.value << ";"
              << endl;
 
@@ -2775,13 +2913,10 @@ traverse_view (type& c)
 
           l += " ON";
 
+          // Output the pragma location for easier error tracking.
+          //
           os << "r += " << strlit (l) << ";"
-            // Output the pragma location for easier error tracking.
-            //
-             << "// From " <<
-            location_file (i->loc).leaf () << ":" <<
-            location_line (i->loc) << ":" <<
-            location_column (i->loc) << endl
+             << "// From " << location_string (i->loc, true) << endl
              << "r += " << e.value << ";";
 
           if (poly_depth != 1)
@@ -3210,10 +3345,7 @@ traverse_view (type& c)
         {
           // Output the pragma location for easier error tracking.
           //
-          os << "// From " <<
-            location_file (vq.loc).leaf () << ":" <<
-            location_line (vq.loc) << ":" <<
-            location_column (vq.loc) << endl
+          os << "// From " << location_string (vq.loc, true) << endl
              << translate_expression (
                c, vq.expr, vq.scope, vq.loc, "query", &ph).value;
 
@@ -3596,6 +3728,9 @@ namespace relational
                           string const& prag,
                           bool* placeholder)
     {
+      // This code is similar to translate() from context.cxx.
+      //
+
       // The overall idea is as folows: read in tokens and add them
       // to the string. If a token starts a name, try to resolve it
       // to an object member (taking into account aliases). If this

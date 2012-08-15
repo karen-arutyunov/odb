@@ -120,8 +120,6 @@ namespace relational
         if (transient (m))
           return;
 
-        process_index (m);
-
         semantics::names* hint;
         semantics::type& t (utype (m, hint));
 
@@ -151,146 +149,378 @@ namespace relational
             m.set ("readonly", true);
         }
 
-        // Nothing to do if this is a composite value type.
+        // Determine the member kind.
+        //
+        enum {simple, composite, container, unknown} kind (unknown);
+
+        // See if this is a composite value type.
         //
         if (composite_wrapper (t))
-          return;
+          kind = composite;
 
-        string type, id_type;
-
-        if (m.count ("id-type"))
-          id_type = m.get<string> ("id-type");
-
-        if (m.count ("type"))
-        {
-          type = m.get<string> ("type");
-
-          if (id_type.empty ())
-            id_type = type;
-        }
-
-        if (semantics::class_* c = process_object_pointer (m, t))
-        {
-          // This is an object pointer. The column type is the pointed-to
-          // object id type.
-          //
-          semantics::data_member& id (*id_member (*c));
-
-          semantics::names* idhint;
-          semantics::type& idt (utype (id, idhint));
-
-          semantics::type* wt (0);
-          semantics::names* whint (0);
-          if (process_wrapper (idt))
-          {
-            whint = idt.get<semantics::names*> ("wrapper-hint");
-            wt = &utype (*idt.get<semantics::type*> ("wrapper-type"), whint);
-          }
-
-          // Nothing to do if this is a composite value type.
-          //
-          if (composite_wrapper (idt))
-            return;
-
-          if (type.empty () && id.count ("id-type"))
-            type = id.get<string> ("id-type");
-
-          if (type.empty () && id.count ("type"))
-            type = id.get<string> ("type");
-
-          // The rest should be identical to the code for the id_type in
-          // the else block.
-          //
-          if (type.empty () && idt.count ("id-type"))
-            type = idt.get<string> ("id-type");
-
-          if (type.empty () && wt != 0 && wt->count ("id-type"))
-            type = wt->get<string> ("id-type");
-
-          if (type.empty () && idt.count ("type"))
-            type = idt.get<string> ("type");
-
-          if (type.empty () && wt != 0 && wt->count ("type"))
-            type = wt->get<string> ("type");
-
-          if (type.empty ())
-            type = database_type (idt, idhint, true);
-
-          if (type.empty () && wt != 0)
-            type = database_type (*wt, whint, true);
-
-          id_type = type;
-        }
-        else
-        {
-          if (id_type.empty () && t.count ("id-type"))
-            id_type = t.get<string> ("id-type");
-
-          if (id_type.empty () && wt != 0 && wt->count ("id-type"))
-            id_type = wt->get<string> ("id-type");
-
-          if (type.empty () && t.count ("type"))
-            type = t.get<string> ("type");
-
-          if (type.empty () && wt != 0 && wt->count ("type"))
-            type = wt->get<string> ("type");
-
-          if (id_type.empty ())
-            id_type = type;
-
-          if (id_type.empty ())
-            id_type = database_type (t, hint, true);
-
-          if (type.empty ())
-            type = database_type (t, hint, false);
-
-          if (id_type.empty () && wt != 0)
-            id_type = database_type (*wt, whint, true);
-
-          if (type.empty () && wt != 0)
-            type = database_type (*wt, whint, false);
-
-          // Use id mapping for discriminators.
-          //
-          if (id (m) || discriminator (m))
-            type = id_type;
-        }
-
-        if (!type.empty ())
-        {
-          m.set ("column-type", type);
-          m.set ("column-id-type", id_type);
-
-          // Issue a warning if we are relaxing null-ness.
-          //
-          if (m.count ("null") && t.count ("not-null"))
-          {
-            os << m.file () << ":" << m.line () << ":" << m.column () << ":"
-               << " warning: data member declared null while its type is "
-               << "declared not null" << endl;
-          }
-
-          return;
-        }
-
-        // See if this is a container type.
+        // If not, see if it is a simple value.
         //
-        if (process_container (m, t) ||
-            (wt != 0 && process_container (m, *wt)))
-          return;
+        if (kind == unknown)
+        {
+          string type, id_type;
+
+          if (m.count ("id-type"))
+            id_type = m.get<string> ("id-type");
+
+          if (m.count ("type"))
+          {
+            type = m.get<string> ("type");
+
+            if (id_type.empty ())
+              id_type = type;
+          }
+
+          if (semantics::class_* c = process_object_pointer (m, t))
+          {
+            // This is an object pointer. The column type is the pointed-to
+            // object id type.
+            //
+            semantics::data_member& id (*id_member (*c));
+
+            semantics::names* idhint;
+            semantics::type& idt (utype (id, idhint));
+
+            semantics::type* wt (0);
+            semantics::names* whint (0);
+            if (process_wrapper (idt))
+            {
+              whint = idt.get<semantics::names*> ("wrapper-hint");
+              wt = &utype (*idt.get<semantics::type*> ("wrapper-type"), whint);
+            }
+
+            // The id type can be a composite value type.
+            //
+            if (composite_wrapper (idt))
+              kind = composite;
+            else
+            {
+              if (type.empty () && id.count ("id-type"))
+                type = id.get<string> ("id-type");
+
+              if (type.empty () && id.count ("type"))
+                type = id.get<string> ("type");
+
+              // The rest should be identical to the code for the id_type in
+              // the else block.
+              //
+              if (type.empty () && idt.count ("id-type"))
+                type = idt.get<string> ("id-type");
+
+              if (type.empty () && wt != 0 && wt->count ("id-type"))
+                type = wt->get<string> ("id-type");
+
+              if (type.empty () && idt.count ("type"))
+                type = idt.get<string> ("type");
+
+              if (type.empty () && wt != 0 && wt->count ("type"))
+                type = wt->get<string> ("type");
+
+              if (type.empty ())
+                type = database_type (idt, idhint, true);
+
+              if (type.empty () && wt != 0)
+                type = database_type (*wt, whint, true);
+
+              id_type = type;
+            }
+          }
+          else
+          {
+            if (id_type.empty () && t.count ("id-type"))
+              id_type = t.get<string> ("id-type");
+
+            if (id_type.empty () && wt != 0 && wt->count ("id-type"))
+              id_type = wt->get<string> ("id-type");
+
+            if (type.empty () && t.count ("type"))
+              type = t.get<string> ("type");
+
+            if (type.empty () && wt != 0 && wt->count ("type"))
+              type = wt->get<string> ("type");
+
+            if (id_type.empty ())
+              id_type = type;
+
+            if (id_type.empty ())
+              id_type = database_type (t, hint, true);
+
+            if (type.empty ())
+              type = database_type (t, hint, false);
+
+            if (id_type.empty () && wt != 0)
+              id_type = database_type (*wt, whint, true);
+
+            if (type.empty () && wt != 0)
+              type = database_type (*wt, whint, false);
+
+            // Use id mapping for discriminators.
+            //
+            if (id (m) || discriminator (m))
+              type = id_type;
+          }
+
+          if (kind == unknown && !type.empty ())
+          {
+            m.set ("column-type", type);
+            m.set ("column-id-type", id_type);
+
+            // Issue a warning if we are relaxing null-ness.
+            //
+            if (m.count ("null") && t.count ("not-null"))
+            {
+              os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+                 << " warning: data member declared null while its type is "
+                 << "declared not null" << endl;
+            }
+
+            kind = simple;
+          }
+        }
+
+        // If not a simple value, see if this is a container.
+        //
+        if (kind == unknown &&
+            (process_container (m, t) ||
+             (wt != 0 && process_container (m, *wt))))
+          kind = container;
 
         // If it is none of the above then we have an error.
         //
-        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
-           << " error: unable to map C++ type '" << t.fq_name (hint)
-           << "' used in data member '" << m.name () << "' to a "
-           << "database type" << endl;
+        if (kind == unknown)
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+             << " error: unable to map C++ type '" << t.fq_name (hint)
+             << "' used in data member '" << m.name () << "' to a "
+             << "database type" << endl;
 
-        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
-           << " info: use '#pragma db type' to specify the database type"
-           << endl;
+          os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+             << " info: use '#pragma db type' to specify the database type"
+             << endl;
 
-        throw operation_failed ();
+          throw operation_failed ();
+        }
+
+        process_access (m, "get");
+        process_access (m, "set");
+        process_index (m);
+      }
+
+      // Process member access expressions.
+      //
+      void
+      process_access (semantics::data_member& m, std::string const& k)
+      {
+        // If we don't have an access expression, synthesize one which
+        // goes directly for the member. Zero location indicates it is
+        // a synthesized one.
+        //
+        if (!m.count (k))
+        {
+          member_access& ma (m.set (k, member_access (0)));
+          ma.expr.push_back (cxx_token (0, CPP_KEYWORD, "this"));
+          ma.expr.push_back (cxx_token (0, CPP_DOT));
+          ma.expr.push_back (cxx_token (0, CPP_NAME, m.name ()));
+          return;
+        }
+
+        semantics::type& t (utype (m));
+        member_access& ma (m.get<member_access> (k));
+        cxx_tokens& e (ma.expr);
+
+        // If it is just a name, resolve it and convert to an
+        // appropriate expression.
+        //
+        if (e.size () == 1 && e.back ().type == CPP_NAME)
+        {
+          string n (e.back ().literal);
+          e.clear ();
+
+          tree decl (
+            lookup_qualified_name (
+              m.scope ().tree_node (),
+              get_identifier (n.c_str ()),
+              false,
+              false));
+
+          if (decl == error_mark_node)
+          {
+            error (ma.loc) << "unable to resolve data member or function "
+                           << "name '" << n << "'" << endl;
+            throw operation_failed ();
+          }
+
+          switch (TREE_CODE (decl))
+          {
+          case FIELD_DECL:
+            {
+              e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
+              e.push_back (cxx_token (0, CPP_DOT));
+              e.push_back (cxx_token (0, CPP_NAME, n));
+              break;
+            }
+          case BASELINK:
+            {
+              // OVL_* macros work for both FUNCTION_DECL and OVERLOAD.
+              //
+              for (tree o (BASELINK_FUNCTIONS (decl));
+                   o != 0;
+                   o = OVL_NEXT (o))
+              {
+                tree f (OVL_CURRENT (o));
+
+                // We are only interested in non-static member functions.
+                //
+                if (!DECL_NONSTATIC_MEMBER_FUNCTION_P (f))
+                  continue;
+
+                // Note that we have to use TREE_TYPE(TREE_TYPE()) and
+                // not DECL_RESULT, as suggested by the documentation.
+                //
+                tree r (TYPE_MAIN_VARIANT (TREE_TYPE (TREE_TYPE (f))));
+                tree a (DECL_ARGUMENTS (f));
+                a = DECL_CHAIN (a); // Skip this.
+
+                if (k == "get")
+                {
+                  // For an accessor, look for a function with a non-void
+                  // return value and no arguments (other than 'this').
+                  //
+                  if (r != void_type_node && a == NULL_TREE)
+                  {
+                    e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
+                    e.push_back (cxx_token (0, CPP_DOT));
+                    e.push_back (cxx_token (0, CPP_NAME, n));
+                    e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
+                    e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
+
+                    // See if it returns by value.
+                    //
+                    int tc (TREE_CODE (r));
+                    ma.by_value = (tc != REFERENCE_TYPE && tc != POINTER_TYPE);
+                    break;
+                  }
+                }
+                else
+                {
+                  // For a modifier, it can either be a function that
+                  // returns a non-const reference (or non-const pointer,
+                  // in case the member is an array) or a proper modifier
+                  // that sets a new value. If both are available, we
+                  // prefer the former for efficiency.
+                  //
+                  semantics::array* ar (dynamic_cast<semantics::array*> (&t));
+                  int tc (TREE_CODE (r));
+
+                  if (a == NULL_TREE &&
+                      ((ar == 0 && tc == REFERENCE_TYPE) ||
+                       (ar != 0 && tc == POINTER_TYPE)))
+                  {
+                    tree bt (TREE_TYPE (r)); // Base type.
+                    tree bt_mv (TYPE_MAIN_VARIANT (bt));
+
+                    if (!CP_TYPE_CONST_P (bt) &&
+                        ((ar == 0 && bt_mv == t.tree_node ()) ||
+                         (ar != 0 && bt_mv == ar->base_type ().tree_node ())))
+                    {
+                      e.clear (); // Could contain proper modifier.
+                      e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
+                      e.push_back (cxx_token (0, CPP_DOT));
+                      e.push_back (cxx_token (0, CPP_NAME, n));
+                      e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
+                      e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
+                      break;
+                    }
+                  }
+
+                  // Any function with a single argument works for us.
+                  // And we don't care what it returns.
+                  //
+                  if (a != NULL_TREE && DECL_CHAIN (a) == NULL_TREE)
+                  {
+                    if (e.empty ())
+                    {
+                      e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
+                      e.push_back (cxx_token (0, CPP_DOT));
+                      e.push_back (cxx_token (0, CPP_NAME, n));
+                      e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
+                      e.push_back (cxx_token (0, CPP_QUERY));
+                      e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
+                    }
+
+                    // Continue searching in case there is version that
+                    // returns a non-const reference (which we prefer).
+                  }
+                }
+              }
+
+              if (e.empty ())
+              {
+                error (ma.loc) << "unable to find suitable "
+                               << (k == "get" ? "accessor" : "modifier")
+                               << " function '" << n << "'" << endl;
+                throw operation_failed ();
+              }
+              break;
+            }
+          default:
+            {
+              error (ma.loc) << "name '" << n << "' does not refer to a data "
+                             << "member or function" << endl;
+              throw operation_failed ();
+            }
+          }
+        }
+
+        // If there is no 'this' keyword, then add it as a prefix.
+        //
+        {
+          bool t (false);
+          for (cxx_tokens::iterator i (e.begin ()); i != e.end (); ++i)
+          {
+            if (i->type == CPP_KEYWORD && i->literal == "this")
+            {
+              t = true;
+              break;
+            }
+          }
+
+          if (!t)
+          {
+            e.insert (e.begin (), cxx_token (0, CPP_DOT));
+            e.insert (e.begin (), cxx_token (0, CPP_KEYWORD, "this"));
+          }
+        }
+
+        // Check that there is no placeholder in the accessor expression.
+        //
+        if (k == "get" && ma.placeholder ())
+        {
+          error (ma.loc) << "(?) placeholder in the accessor expression"
+                         << endl;
+          throw operation_failed ();
+        }
+
+        // Check that the member type is default-constructible if we
+        // have a placeholder in the modifier.
+        //
+        if (k == "set" && ma.placeholder ())
+        {
+          // Assume all other types are default-constructible.
+          //
+          semantics::class_* c (dynamic_cast<semantics::class_*> (&t));
+
+          if (c != 0 && !c->default_ctor ())
+          {
+            error (ma.loc) << "modifier expression requires member type "
+                           << "to be default-constructible" << endl;
+            throw operation_failed ();
+          }
+        }
       }
 
       // Convert index/unique specifiers to the index entry in the object.
@@ -2480,9 +2710,7 @@ namespace relational
                    tt != CPP_EOF;
                    tt = lex_.next (t))
               {
-                cxx_token ct (lex_.location (), tt);
-                ct.literal = t;
-                i->cond.push_back (ct);
+                i->cond.push_back (cxx_token (lex_.location (), tt, t));
               }
             }
           }

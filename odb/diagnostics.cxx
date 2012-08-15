@@ -3,13 +3,17 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <odb/gcc.hxx>
+
+#include <sstream>
+
 #include <odb/cxx-lexer.hxx>
 #include <odb/diagnostics.hxx>
 
 using namespace std;
+using cutl::fs::path;
 
 std::ostream&
-error (cutl::fs::path const& p, size_t line, size_t clmn)
+error (path const& p, size_t line, size_t clmn)
 {
   //@@ We only need to do this if we are still parsing (i.e.,
   //   pragma parsing). Is there a way to detect this?
@@ -21,7 +25,7 @@ error (cutl::fs::path const& p, size_t line, size_t clmn)
 }
 
 std::ostream&
-warn (cutl::fs::path const& p, size_t line, size_t clmn)
+warn (path const& p, size_t line, size_t clmn)
 {
   warningcount++;
 
@@ -30,7 +34,7 @@ warn (cutl::fs::path const& p, size_t line, size_t clmn)
 }
 
 std::ostream&
-info (cutl::fs::path const& p, size_t line, size_t clmn)
+info (path const& p, size_t line, size_t clmn)
 {
   cerr << p << ':' << line << ':' << clmn << ": info: ";
   return cerr;
@@ -86,10 +90,38 @@ info (cxx_lexer& l)
   return info (l.location ());
 }
 
-cutl::fs::path
+std::string
+location_string (path const& p, size_t line, size_t clmn, bool leaf)
+{
+  ostringstream ostr;
+
+  if (leaf)
+    ostr << p.leaf ();
+  else
+    ostr << p;
+
+  ostr << ':' << line << ':' << clmn;
+  return ostr.str ();
+}
+
+std::string
+location_string (location_t loc, bool leaf)
+{
+  ostringstream ostr;
+
+  if (leaf)
+    ostr << path (LOCATION_FILE (loc)).leaf ();
+  else
+    ostr << LOCATION_FILE (loc);
+
+  ostr << ':' << LOCATION_LINE (loc) << ':' << LOCATION_COLUMN (loc);
+  return ostr.str ();
+}
+
+path
 location_file (location_t loc)
 {
-  return cutl::fs::path (LOCATION_FILE (loc));
+  return path (LOCATION_FILE (loc));
 }
 
 size_t

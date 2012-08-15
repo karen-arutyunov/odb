@@ -217,6 +217,26 @@ namespace relational
         }
 
         virtual void
+        check_accessor (member_info& mi, member_access& ma)
+        {
+          // We cannot use accessors that return by-value for LOB
+          // members.
+          //
+          if ((mi.st->type == sql_type::BLOB ||
+               mi.st->type == sql_type::CLOB ||
+               mi.st->type == sql_type::NCLOB) &&
+              ma.by_value)
+          {
+            error (ma.loc) << "accessor returning a value cannot be used "
+                           << "for a data member of Oracle LOB type" << endl;
+            info (ma.loc) << "accessor returning a const reference is required"
+                          << endl;
+            info (mi.m.location ()) << "data member is defined here" << endl;
+            throw operation_failed ();
+          }
+        }
+
+        virtual void
         set_null (member_info& mi)
         {
           os << "i." << mi.var << "indicator = -1;";
@@ -360,6 +380,25 @@ namespace relational
         get_null (member_info& mi)
         {
           os << "i." << mi.var << "indicator == -1";
+        }
+
+        virtual void
+        check_modifier (member_info& mi, member_access& ma)
+        {
+          // We cannot use by-value modifier for LOB members.
+          //
+          if ((mi.st->type == sql_type::BLOB ||
+               mi.st->type == sql_type::CLOB ||
+               mi.st->type == sql_type::NCLOB) &&
+              ma.placeholder ())
+          {
+            error (ma.loc) << "modifier accepting a value cannot be used "
+                           << "for a data member of Oracle LOB type" << endl;
+            info (ma.loc) << "modifier returning a non-const reference is "
+                          << "required" << endl;
+            info (mi.m.location ()) << "data member is defined here" << endl;
+            throw operation_failed ();
+          }
         }
 
         virtual void

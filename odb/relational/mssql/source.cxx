@@ -307,6 +307,24 @@ namespace relational
         }
 
         virtual void
+        check_accessor (member_info& mi, member_access& ma)
+        {
+          // We cannot use accessors that return by-value for long data
+          // members.
+          //
+          if (long_data (*mi.st) && ma.by_value)
+          {
+            error (ma.loc) << "accessor returning a value cannot be used "
+                           << "for a data member of SQL Server long data "
+                           << "type" << endl;
+            info (ma.loc) << "accessor returning a const reference is required"
+                          << endl;
+            info (mi.m.location ()) << "data member is defined here" << endl;
+            throw operation_failed ();
+          }
+        }
+
+        virtual void
         traverse_integer (member_info& mi)
         {
           os << traits << "::set_image (" << endl
@@ -538,6 +556,23 @@ namespace relational
         get_null (member_info& mi)
         {
           os << "i." << mi.var << "size_ind == SQL_NULL_DATA";
+        }
+
+        virtual void
+        check_modifier (member_info& mi, member_access& ma)
+        {
+          // We cannot use by-value modifier for long data members.
+          //
+          if (long_data (*mi.st) && ma.placeholder ())
+          {
+            error (ma.loc) << "modifier accepting a value cannot be used "
+                           << "for a data member of SQL Server long data "
+                           << "type" << endl;
+            info (ma.loc) << "modifier returning a non-const reference is "
+                          << "required" << endl;
+            info (mi.m.location ()) << "data member is defined here" << endl;
+            throw operation_failed ();
+          }
         }
 
         virtual void

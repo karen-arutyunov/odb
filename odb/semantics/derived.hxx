@@ -114,6 +114,10 @@ namespace semantics
     }
 
   public:
+    virtual string
+    fq_name (names*) const;
+
+  public:
     qualifier (path const&,
                size_t line,
                size_t column,
@@ -155,6 +159,21 @@ namespace semantics
       return *pointer_;
     }
 
+    // Name hint of the base type.
+    //
+  public:
+    void
+    hint (names& hint)
+    {
+      hint_ = &hint;
+    }
+
+    names*
+    hint () const
+    {
+      return hint_;
+    }
+
   public:
     points ();
 
@@ -173,6 +192,7 @@ namespace semantics
   protected:
     type_type* type_;
     pointer_type* pointer_;
+    names* hint_;
   };
 
   class pointer: public derived_type
@@ -191,6 +211,10 @@ namespace semantics
     {
       return *points_;
     }
+
+  public:
+    virtual string
+    fq_name (names*) const;
 
   public:
     pointer (path const&, size_t line, size_t column, tree);
@@ -228,6 +252,21 @@ namespace semantics
       return *reference_;
     }
 
+    // Name hint of the base type.
+    //
+  public:
+    void
+    hint (names& hint)
+    {
+      hint_ = &hint;
+    }
+
+    names*
+    hint () const
+    {
+      return hint_;
+    }
+
   public:
     references ();
 
@@ -246,6 +285,7 @@ namespace semantics
   protected:
     type_type* type_;
     reference_type* reference_;
+    names* hint_;
   };
 
   class reference: public derived_type
@@ -264,6 +304,10 @@ namespace semantics
     {
       return *references_;
     }
+
+  public:
+    virtual string
+    fq_name (names*) const;
 
   public:
     reference (path const&, size_t line, size_t column, tree);
@@ -301,6 +345,21 @@ namespace semantics
       return *array_;
     }
 
+    // Name hint of the base type.
+    //
+  public:
+    void
+    hint (names& hint)
+    {
+      hint_ = &hint;
+    }
+
+    names*
+    hint () const
+    {
+      return hint_;
+    }
+
   public:
     contains ();
 
@@ -319,6 +378,7 @@ namespace semantics
   protected:
     type_type* type_;
     array_type* array_;
+    names* hint_;
   };
 
   class array: public derived_type
@@ -346,6 +406,16 @@ namespace semantics
     {
       return *contains_;
     }
+
+  public:
+    virtual string
+    fq_name (names*) const;
+
+  private:
+    friend class qualifier;
+
+    string
+    fq_name (names*, string& trailer) const;
 
   public:
     array (path const&,

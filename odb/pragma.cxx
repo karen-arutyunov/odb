@@ -378,7 +378,10 @@ check_spec_decl_type (tree d,
            p == "transient" ||
            p == "version"   ||
            p == "index"     ||
-           p == "unique")
+           p == "unique"    ||
+           p == "get"       ||
+           p == "set"       ||
+           p == "access")
   {
     if (tc != FIELD_DECL)
     {
@@ -853,11 +856,55 @@ handle_pragma (cxx_lexer& l,
   {
     // index
     // unique
+    //
 
     // Make sure we've got the correct declaration type.
     //
     if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
+
+    tt = l.next (tl, &tn);
+  }
+  else if (p == "get" ||
+           p == "set" ||
+           p == "access")
+  {
+    // get(name|expr)
+    // set(name|expr)
+    // access(name|expr)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+    {
+      error (l) << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+
+    val = member_access (loc);
+    if (!parse_expression (l, tt, tl, tn, val.value<member_access> ().expr, p))
+      return; // Diagnostics has already been issued.
+
+    if (tt != CPP_CLOSE_PAREN)
+    {
+      error (l) << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    // Convert access to the get/set pair.
+    //
+    if (p == "access")
+    {
+      add_pragma (
+        pragma (p, "get", val, loc, &check_spec_decl_type, 0), decl, ns);
+      name = "set";
+    }
 
     tt = l.next (tl, &tn);
   }
@@ -1259,10 +1306,7 @@ handle_pragma (cxx_lexer& l,
       // Expression.
       //
       if (s)
-      {
-        vq.expr.push_back (cxx_token (0, CPP_STRING));
-        vq.expr.back ().literal = str;
-      }
+        vq.expr.push_back (cxx_token (0, CPP_STRING, str));
 
       if (!parse_expression (l, tt, tl, tn, vq.expr, p))
         return; // Diagnostics has already been issued.
@@ -2160,10 +2204,7 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
         if (qual)
           break;
 
-        cxx_token ct (l.location (), tt);
-        ct.literal = tl;
-        ct.node = tn;
-        saved_tokens.push_back (ct);
+        saved_tokens.push_back (cxx_token (l.location (), tt, tl, tn));
       }
 
       if (balance != 0)
@@ -2431,6 +2472,9 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
   else if (p == "id" ||
            p == "auto" ||
            p == "unique" ||
+           p == "get" ||
+           p == "set" ||
+           p == "access" ||
            p == "column" ||
            p == "value_column" ||
            p == "index_column" ||

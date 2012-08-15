@@ -217,6 +217,27 @@ struct column_expr: std::vector<column_expr_part>
   location_t loc;
 };
 
+//
+//
+struct member_access
+{
+  member_access (location_t l): loc (l), by_value (false) {}
+
+  // Return true of we have the (?) placeholder.
+  //
+  bool
+  placeholder () const;
+
+  std::string
+  translate (std::string const& obj,
+             std::string const& val = std::string ()) const;
+
+  location_t loc;  // If zero, then this is a synthesized expression.
+  cxx_tokens expr;
+  bool by_value;   // True if accessor returns by value. False doesn't
+                   // necessarily mean that it is by reference.
+};
+
 class context
 {
 public:
@@ -260,17 +281,58 @@ public:
   static semantics::type&
   utype (semantics::data_member&, semantics::names*& hint);
 
+  // For arrays this function returns true if the (innermost) element
+  // type is const.
+  //
   static bool
   const_type (semantics::type&);
 
   static semantics::type&
-  member_type (semantics::data_member& m, string const& key_prefix);
+  member_type (semantics::data_member&, string const& key_prefix);
 
   static semantics::type&
   member_utype (semantics::data_member& m, string const& key_prefix)
   {
     return utype (member_type (m, key_prefix));
   }
+
+  // Form a reference type for a member type. If make_const is true, then
+  // add top-level const qualifier, unless it is already there. If it is
+  // false, then strip it if it is already there. If var is not empty,
+  // then embed the variable name into the type (e.g., char (*v)[3]).
+  //
+  static string
+  member_ref_type (semantics::data_member& m,
+                   bool make_const,
+                   string const& var = "")
+  {
+    return type_ref_type (m.type (), m.belongs ().hint (), make_const, var);
+  }
+
+  static string
+  type_ref_type (semantics::type&,
+                 semantics::names* hint,
+                 bool make_const,
+                 string const& var = "");
+
+  // Form a value type for a member type. If make_const is true, then add
+  // top-level const qualifier, unless it is already there. If it is false,
+  // then strip it if it is already there. If var is not empty, then embed
+  // the variable name into the type (e.g., char v[3]).
+  //
+  static string
+  member_val_type (semantics::data_member& m,
+                   bool make_const,
+                   string const& var = "")
+  {
+    return type_val_type (m.type (), m.belongs ().hint (), make_const, var);
+  }
+
+  static string
+  type_val_type (semantics::type&,
+                 semantics::names* hint,
+                 bool make_const,
+                 string const& var = "");
 
   // Predicates.
   //
@@ -617,7 +679,7 @@ public:
   // Return a string literal that can be used in C++ source code. It
   // includes "".
   //
-  string
+  static string
   strlit (string const&);
 
   // Counts and other information.

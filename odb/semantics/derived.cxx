@@ -2,8 +2,12 @@
 // copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <sstream>
+
 #include <cutl/compiler/type-info.hxx>
 #include <odb/semantics/derived.hxx>
+
+using namespace std;
 
 namespace semantics
 {
@@ -25,8 +29,42 @@ namespace semantics
   {
   }
 
+  string qualifier::
+  fq_name (names* hint) const
+  {
+    if (hint != 0 || defined_ != 0)
+      return nameable::fq_name (hint);
+
+    // GCC type_as_string() for some reason cannot correctly print names
+    // like 'const std::string'. Instead it prints 'const string'.
+    //
+    type& bt (base_type ());
+
+    // Use the trailing qualifier syntax so that we don't get bogged down
+    // in stuff like 'const const foo*'. We also have to handle arrays in
+    // a special way since char[16] const is not a legal syntax.
+    //
+    string q;
+    if (c_)
+      q += " const";
+
+    if (v_)
+      q += " volatile";
+
+    if (r_)
+      q += " __restrict";
+
+    hint = qualifies ().hint ();
+
+    if (array* a = dynamic_cast<array*> (&bt))
+      return a->fq_name (hint, q);
+    else
+      return bt.fq_name (hint) + q;
+  }
+
   points::
   points ()
+      : hint_ (0)
   {
   }
 
@@ -36,8 +74,23 @@ namespace semantics
   {
   }
 
+  string pointer::
+  fq_name (names* hint) const
+  {
+    if (hint != 0 || defined_ != 0)
+      return nameable::fq_name (hint);
+
+    // GCC type_as_string() for some reason cannot correctly print names
+    // like 'const std::string*'. Instead it prints 'const string*'.
+    //
+    string r (base_type ().fq_name (points ().hint ()));
+    r += '*';
+    return r;
+  }
+
   references::
   references ()
+      : hint_ (0)
   {
   }
 
@@ -47,8 +100,23 @@ namespace semantics
   {
   }
 
+  string reference::
+  fq_name (names* hint) const
+  {
+    if (hint != 0 || defined_ != 0)
+      return nameable::fq_name (hint);
+
+    // GCC type_as_string() for some reason cannot correctly print names
+    // like 'const std::string&'. Instead it prints 'const string&'.
+    //
+    string r (base_type ().fq_name (points ().hint ()));
+    r += '&';
+    return r;
+  }
+
   contains::
   contains ()
+      : hint_ (0)
   {
   }
 
@@ -60,6 +128,44 @@ namespace semantics
          unsigned long long size)
       : node (file, line, column, tn), size_ (size)
   {
+  }
+
+  string array::
+  fq_name (names* hint) const
+  {
+    // GCC type_as_string() for some reason cannot correctly print names
+    // like 'const std::string[123]'. Instead it prints 'const string[123]'.
+    //
+    string t;
+    return fq_name (hint, t);
+  }
+
+  string array::
+  fq_name (names* hint, string& t) const
+  {
+    if (hint != 0 || defined_ != 0)
+      return nameable::fq_name (hint) + t;
+
+    t += '[';
+    ostringstream ostr;
+    ostr << size ();
+    t += ostr.str ();
+
+    if (size () > 0xFFFFFFFF)
+      t += "ULL";
+    else if (size () > 2147483647)
+      t += "U";
+
+    t += ']';
+
+    type& bt (base_type ());
+    hint = contains ().hint ();
+    array* a;
+
+    if (hint != 0 || (a = dynamic_cast<array*> (&bt)) == 0)
+      return bt.fq_name (hint) + t;
+    else
+      return a->fq_name (0, t);
   }
 
   // type info
