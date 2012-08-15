@@ -94,6 +94,11 @@ namespace relational
                       semantics::data_member&,
                       bool custom = true);
 
+      // Return true if this type is long data.
+      //
+      bool
+      long_data (sql_type const&);
+
     public:
       struct invalid_sql_type
       {

@@ -156,6 +156,52 @@ namespace relational
       return r;
     }
 
+    bool context::
+    long_data (sql_type const& st)
+    {
+      bool r (false);
+
+      // The same test as in common.cxx:traverse_simple().
+      //
+      switch (st.type)
+      {
+      case sql_type::CHAR:
+      case sql_type::VARCHAR:
+      case sql_type::BINARY:
+      case sql_type::VARBINARY:
+        {
+          // Zero precision means max in VARCHAR(max).
+          //
+          if (st.prec == 0 || st.prec > options.mssql_short_limit ())
+            r = true;
+
+          break;
+        }
+      case sql_type::NCHAR:
+      case sql_type::NVARCHAR:
+        {
+          // Zero precision means max in NVARCHAR(max). Note that
+          // the precision is in 2-byte UCS-2 characters, not bytes.
+          //
+          if (st.prec == 0 || st.prec * 2 > options.mssql_short_limit ())
+            r = true;
+
+          break;
+        }
+      case sql_type::TEXT:
+      case sql_type::NTEXT:
+      case sql_type::IMAGE:
+        {
+          r = true;
+          break;
+        }
+      default:
+        break;
+      }
+
+      return r;
+    }
+
     //
     // SQL type parsing.
     //

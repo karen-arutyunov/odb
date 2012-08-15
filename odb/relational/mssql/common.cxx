@@ -27,6 +27,8 @@ namespace relational
     {
       const sql_type& st (*mi.st);
 
+      // The same long/short data test as in context.cxx:long_data().
+      //
       switch (st.type)
       {
         // Integral types.
