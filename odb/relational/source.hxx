@@ -1201,7 +1201,7 @@ namespace relational
             // If this is not a synthesized expression, then output
             // its location for easier error tracking.
             //
-            if (ma.loc != 0)
+            if (!ma.synthesized)
               os << "// From " << location_string (ma.loc, true) << endl;
 
             // Use the original type to form the const reference.
@@ -1512,7 +1512,7 @@ namespace relational
           // If this is not a synthesized expression, then output
           // its location for easier error tracking.
           //
-          if (ma.loc != 0)
+          if (!ma.synthesized)
             os << "// From " << location_string (ma.loc, true) << endl;
 
           // See if we are modifying via a reference or proper modifier.
@@ -1526,17 +1526,18 @@ namespace relational
             //
             os << member_ref_type (mi.m, false, "v") << " (" << endl;
 
-            // If this member is const and we have a synthesized access,
-            // then cast away constness. Otherwise, we assume that the
-            // user-provided expression handles this.
+            // If this member is const and we have a synthesized direct
+            // access, then cast away constness. Otherwise, we assume
+            // that the user-provided expression handles this.
             //
-            if (mi.cq && ma.loc == 0)
+            bool cast (mi.cq && ma.direct ());
+            if (cast)
               os << "const_cast< " << member_ref_type (mi.m, false) <<
                 " > (" << endl;
 
             os << ma.translate ("o");
 
-            if (mi.cq && ma.loc == 0)
+            if (cast)
               os << ")";
 
             os << ");"
@@ -1678,7 +1679,7 @@ namespace relational
             // If this is not a synthesized expression, then output its
             // location for easier error tracking.
             //
-            if (ma.loc != 0)
+            if (!ma.synthesized)
               os << "// From " << location_string (ma.loc, true) << endl;
 
             os << ma.translate ("o", "v") << ";";
@@ -2999,24 +3000,26 @@ namespace relational
         string old_f (from_);
         obj_prefix_.clear ();
 
-        // If this member is const and we have a synthesized access,
-        // then cast away constness. Otherwise, we assume that the
-        // user-provided expression handles this.
+        // If this member is const and we have a synthesized direct
+        // access, then cast away constness. Otherwise, we assume
+        // that the user-provided expression handles this.
         //
-        if (call_ == load_call && ma.loc == 0 && const_type (m->type ()))
+        bool cast (
+          call_ == load_call && ma.direct () && const_type (m->type ()));
+        if (cast)
           obj_prefix_ = "const_cast< " + member_ref_type (*m, false) +
             " > (\n";
 
         obj_prefix_ += ma.translate (old_op);
 
-        if (call_ == load_call && ma.loc == 0 && const_type (m->type ()))
+        if (cast)
           obj_prefix_ += ")";
 
         // If this is not a synthesized expression, then store its
         // location which we will output later for easier error
         // tracking.
         //
-        if (ma.loc != 0)
+        if (!ma.synthesized)
           from_ += "// From " + location_string (ma.loc, true) + "\n";
 
         // If this is a wrapped composite value, then we need to "unwrap" it.
@@ -3091,7 +3094,7 @@ namespace relational
           // If this is not a synthesized expression, then output its
           // location for easier error tracking.
           //
-          if (ma.loc != 0)
+          if (!ma.synthesized)
             os << "// From " << location_string (ma.loc, true) << endl;
 
           // See if we are modifying via a reference or proper modifier.
@@ -3103,17 +3106,19 @@ namespace relational
           {
             os << member_ref_type (m, call_ != load_call, "v") << " (" << endl;
 
-            // If this member is const and we have a synthesized access,
-            // then cast away constness. Otherwise, we assume that the
-            // user-provided expression handles this.
+            // If this member is const and we have a synthesized direct
+            // access, then cast away constness. Otherwise, we assume
+            // that the user-provided expression handles this.
             //
-            if (call_ == load_call && ma.loc == 0 && const_type (m.type ()))
+            bool cast (
+              call_ == load_call && ma.direct () && const_type (m.type ()));
+            if (cast)
               os << "const_cast< " << member_ref_type (m, false) <<
                 " > (" << endl;
 
             os << ma.translate (obj_prefix_);
 
-            if (call_ == load_call && ma.loc == 0 && const_type (m.type ()))
+            if (cast)
               os << ")";
 
             os << ");"
@@ -3182,7 +3187,7 @@ namespace relational
             // If this is not a synthesized expression, then output its
             // location for easier error tracking.
             //
-            if (ma.loc != 0)
+            if (!ma.synthesized)
               os << "// From " << location_string (ma.loc, true) << endl;
 
             os << ma.translate (obj_prefix_, "v") << ";";

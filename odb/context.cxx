@@ -439,6 +439,8 @@ context (ostream& os_,
       db (options.database ()),
       keyword_set (data_->keyword_set_),
       include_regex (data_->include_regex_),
+      accessor_regex (data_->accessor_regex_),
+      modifier_regex (data_->modifier_regex_),
       embedded_schema (ops.generate_schema () &&
                        ops.schema_format ().count (schema_format::embedded)),
       separate_schema (ops.generate_schema () &&
@@ -455,6 +457,27 @@ context (ostream& os_,
   for (strings::const_iterator i (ops.include_regex ().begin ());
        i != ops.include_regex ().end (); ++i)
     data_->include_regex_.push_back (regexsub (*i));
+
+  // Common accessor/modifier naming variants. Try the user-supplied and
+  // more specific ones first.
+  //
+  for (strings::const_iterator i (ops.accessor_regex ().begin ());
+       i != ops.accessor_regex ().end (); ++i)
+    data_->accessor_regex_.push_back (regexsub (*i));
+
+  data_->accessor_regex_.push_back (regexsub ("/(.+)/get_$1/"));   // get_foo
+  data_->accessor_regex_.push_back (regexsub ("/(.+)/get\\u$1/")); // getFoo
+  data_->accessor_regex_.push_back (regexsub ("/(.+)/get$1/"));    // getfoo
+  data_->accessor_regex_.push_back (regexsub ("/(.+)/$1/"));       // foo
+
+  for (strings::const_iterator i (ops.modifier_regex ().begin ());
+       i != ops.modifier_regex ().end (); ++i)
+    data_->modifier_regex_.push_back (regexsub (*i));
+
+  data_->modifier_regex_.push_back (regexsub ("/(.+)/set_$1/"));   // set_foo
+  data_->modifier_regex_.push_back (regexsub ("/(.+)/set\\u$1/")); // setFoo
+  data_->modifier_regex_.push_back (regexsub ("/(.+)/set$1/"));    // setfoo
+  data_->modifier_regex_.push_back (regexsub ("/(.+)/$1/"));       // foo
 }
 
 context::
@@ -467,6 +490,8 @@ context ()
     db (current ().db),
     keyword_set (current ().keyword_set),
     include_regex (current ().include_regex),
+    accessor_regex (current ().accessor_regex),
+    modifier_regex (current ().modifier_regex),
     embedded_schema (current ().embedded_schema),
     separate_schema (current ().separate_schema),
     top_object (current ().top_object),
@@ -1542,9 +1567,9 @@ public_name_db (semantics::data_member& m) const
 }
 
 string context::
-public_name (semantics::data_member& m) const
+public_name (semantics::data_member& m, bool e) const
 {
-  return escape (public_name_impl (m));
+  return e ? escape (public_name_impl (m)) : public_name_impl (m);
 }
 
 string context::

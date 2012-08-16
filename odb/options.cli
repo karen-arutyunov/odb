@@ -408,6 +408,84 @@ class options
      option)."
   };
 
+  // Accessor/modifier options.
+  //
+  std::vector<std::string> --accessor-regex
+  {
+    "<regex>",
+    "Add <regex> to the list of regular expressions used to transform
+     data member names to function names when searching for a suitable
+     accessor function. The argument to this option is a Perl-like regular
+     expression in the form \c{\b{/}\i{pattern}\b{/}\i{replacement}\b{/}}.
+     Any character can be used as a delimiter instead of \cb{/} and the
+     delimiter can be escaped inside \ci{pattern} and \ci{replacement}
+     with a backslash (\cb{\\}). You can specify multiple regular
+     expressions by repeating this option.
+
+     All the regular expressions are tried in the order specified and
+     the first expression that produces a suitable accessor function is
+     used. Each expression is tried twice: first with the actual member
+     name and then with the member's \i{public name} which is obtained by
+     removing the common member name decorations, such as leading and
+     trailing underscores, the \cb{m_} prefix, etc. The ODB compiler also
+     includes a number of built-in expressions for commonly used accessor
+     names, such as \cb{get_foo}, \cb{getFoo}, \cb{getfoo}, and just
+     \cb{foo}. The built-in expressions are tried last.
+
+     As an example, the following expression transforms data members with
+     public names in the form \cb{foo} to accessor names in the form
+     \cb{GetFoo}:
+
+     \cb{/(.+)/Get\\u$1/}
+
+     See also the REGEX AND SHELL QUOTING section below."
+  };
+
+  bool --accessor-regex-trace
+  {
+    "Trace the process of applying regular expressions specified with the
+     \cb{--accessor-regex} option. Use this option to find out why your
+     regular expressions don't do what you expected them to do."
+  };
+
+  std::vector<std::string> --modifier-regex
+  {
+    "<regex>",
+    "Add <regex> to the list of regular expressions used to transform
+     data member names to function names when searching for a suitable
+     modifier function. The argument to this option is a Perl-like regular
+     expression in the form \c{\b{/}\i{pattern}\b{/}\i{replacement}\b{/}}.
+     Any character can be used as a delimiter instead of \cb{/} and the
+     delimiter can be escaped inside \ci{pattern} and \ci{replacement}
+     with a backslash (\cb{\\}). You can specify multiple regular
+     expressions by repeating this option.
+
+     All the regular expressions are tried in the order specified and
+     the first expression that produces a suitable modifier function is
+     used. Each expression is tried twice: first with the actual member
+     name and then with the member's \i{public name} which is obtained by
+     removing the common member name decorations, such as leading and
+     trailing underscores, the \cb{m_} prefix, etc. The ODB compiler also
+     includes a number of built-in expressions for commonly used modifier
+     names, such as \cb{set_foo}, \cb{setFoo}, \cb{setfoo}, and just
+     \cb{foo}. The built-in expressions are tried last.
+
+     As an example, the following expression transforms data members with
+     public names in the form \cb{foo} to modifier names in the form
+     \cb{SetFoo}:
+
+     \cb{/(.+)/Set\\u$1/}
+
+     See also the REGEX AND SHELL QUOTING section below."
+  };
+
+  bool --modifier-regex-trace
+  {
+    "Trace the process of applying regular expressions specified with the
+     \cb{--modifier-regex} option. Use this option to find out why your
+     regular expressions don't do what you expected them to do."
+  };
+
   // Include options.
   //
   bool --include-with-brackets

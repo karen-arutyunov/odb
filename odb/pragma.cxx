@@ -887,7 +887,7 @@ handle_pragma (cxx_lexer& l,
 
     tt = l.next (tl, &tn);
 
-    val = member_access (loc);
+    val = member_access (loc, false);
     if (!parse_expression (l, tt, tl, tn, val.value<member_access> ().expr, p))
       return; // Diagnostics has already been issued.
 

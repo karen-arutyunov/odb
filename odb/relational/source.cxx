@@ -945,7 +945,7 @@ traverse_object (type& c)
   {
     member_access& ma (id->get<member_access> ("set"));
 
-    if (ma.loc != 0)
+    if (!ma.synthesized)
       os << "// From " << location_string (ma.loc, true) << endl;
 
     if (ma.placeholder ())
@@ -953,11 +953,11 @@ traverse_object (type& c)
          << endl;
     else
     {
-      // If this member is const and we have a synthesized access, then
-      // cast away constness. Otherwise, we assume that the user-provided
-      // expression handles this.
+      // If this member is const and we have a synthesized direct access,
+      // then cast away constness. Otherwise, we assume that the user-
+      // provided expression handles this.
       //
-      bool cast (ma.loc == 0 && const_type (id->type ()));
+      bool cast (ma.direct () && const_type (id->type ()));
       if (cast)
         os << "const_cast< id_type& > (" << endl;
 
@@ -979,7 +979,7 @@ traverse_object (type& c)
     //
     string obj (auto_id ? "obj" : "const_cast< object_type& > (obj)");
 
-    if (opt_ma_set->loc != 0)
+    if (!opt_ma_set->synthesized)
       os << "// From " << location_string (opt_ma_set->loc, true) << endl;
 
     if (opt_ma_set->placeholder ())
@@ -987,11 +987,11 @@ traverse_object (type& c)
          << endl;
     else
     {
-      // If this member is const and we have a synthesized access, then
-      // cast away constness. Otherwise, we assume that the user-provided
-      // expression handles this.
+      // If this member is const and we have a synthesized direct access,
+      // then cast away constness. Otherwise, we assume that the user-
+      // provided expression handles this.
       //
-      bool cast (opt_ma_set->loc == 0 && const_type (opt->type ()));
+      bool cast (opt_ma_set->direct () && const_type (opt->type ()));
       if (cast)
         os << "const_cast< version_type& > (" << endl;
 
@@ -1020,7 +1020,7 @@ traverse_object (type& c)
 
     os << "id_image_type& i (sts.id_image ());";
 
-    if (id_ma->loc != 0)
+    if (!id_ma->synthesized)
       os << "// From " << location_string (id_ma->loc, true) << endl;
 
     os << "init (i, " <<  id_ma->translate ("obj") << ");"
@@ -1153,7 +1153,7 @@ traverse_object (type& c)
           os << "{"
              << "id_image_type& i (sts.id_image ());";
 
-          if (id_ma->loc != 0)
+          if (!id_ma->synthesized)
             os << "// From " << location_string (id_ma->loc, true) << endl;
 
           os << "init (i, " << id_ma->translate ("obj") << ");"
@@ -1216,7 +1216,7 @@ traverse_object (type& c)
           // exists in the database. Use the discriminator_() call for
           // that.
           //
-          if (id_ma->loc != 0)
+          if (!id_ma->synthesized)
             os << "// From " << location_string (id_ma->loc, true) << endl;
 
           os << "root_traits::discriminator_ (sts.root_statements (), " <<
@@ -1238,7 +1238,7 @@ traverse_object (type& c)
         //
         if (opt != 0)
         {
-          if (opt_ma_get->loc != 0)
+          if (!opt_ma_get->synthesized)
             os << "// From " << location_string (opt_ma_get->loc, true) << endl;
 
           os << "const version_type& v (" << endl
@@ -1247,7 +1247,7 @@ traverse_object (type& c)
 
         os << "id_image_type& i (sts.id_image ());";
 
-        if (id_ma->loc != 0)
+        if (!id_ma->synthesized)
           os << "// From " << location_string (id_ma->loc, true) << endl;
 
         os << "init (i, " << id_ma->translate ("obj");
@@ -1334,7 +1334,7 @@ traverse_object (type& c)
            << "conn.statement_cache ().find_object<object_type> ());"
            << endl;
 
-        if (id_ma->loc != 0)
+        if (!id_ma->synthesized)
           os << "// From " << location_string (id_ma->loc, true) << endl;
 
         os << "const id_type& id (" << endl
@@ -1398,12 +1398,12 @@ traverse_object (type& c)
         //
         string obj ("const_cast< object_type& > (obj)");
 
-        if (opt_ma_set->loc != 0)
+        if (!opt_ma_set->synthesized)
           os << "// From " << location_string (opt_ma_set->loc, true) << endl;
 
         if (opt_ma_set->placeholder ())
         {
-          if (opt_ma_get->loc != 0)
+          if (!opt_ma_get->synthesized)
             os << "// From " << location_string (opt_ma_get->loc, true) <<
               endl;
 
@@ -1413,11 +1413,11 @@ traverse_object (type& c)
         }
         else
         {
-          // If this member is const and we have a synthesized access, then
-          // cast away constness. Otherwise, we assume that the user-provided
-          // expression handles this.
+          // If this member is const and we have a synthesized direct access,
+          // then cast away constness. Otherwise, we assume that the user-
+          // provided expression handles this.
           //
-          bool cast (opt_ma_set->loc == 0 && const_type (opt->type ()));
+          bool cast (opt_ma_set->direct () && const_type (opt->type ()));
           if (cast)
             os << "const_cast< version_type& > (" << endl;
 
@@ -1644,7 +1644,7 @@ traverse_object (type& c)
 
       if (!abst || straight_containers)
       {
-        if (id_ma->loc != 0)
+        if (!id_ma->synthesized)
           os << "// From " << location_string (id_ma->loc, true) << endl;
 
         os << "const id_type& id  (" << endl
@@ -1663,7 +1663,7 @@ traverse_object (type& c)
           os << "if (top)"
              << "{";
 
-        if (opt_ma_get->loc != 0)
+        if (!opt_ma_get->synthesized)
           os << "// From " << location_string (opt_ma_get->loc, true) << endl;
 
         os << "const version_type& v (" << endl
@@ -1721,7 +1721,7 @@ traverse_object (type& c)
              << "root_traits::discriminator_ (" << rsts << ", id, 0, &v);"
              << endl;
 
-          if (opt_ma_get->loc != 0)
+          if (!opt_ma_get->synthesized)
             os << "// From " << location_string (opt_ma_get->loc, true) << endl;
 
           os << "if (v != " << opt_ma_get->translate ("obj") << ")" << endl
@@ -1755,7 +1755,7 @@ traverse_object (type& c)
           os << "sts.find_statement ().free_result ();"
              << endl;
 
-        if (opt_ma_get->loc != 0)
+        if (!opt_ma_get->synthesized)
           os << "// From " << location_string (opt_ma_get->loc, true) << endl;
 
         os << "if (version (sts.image ()) != " <<
@@ -2148,7 +2148,7 @@ traverse_object (type& c)
          << "statements_type::auto_lock l (" << rsts << ");"
          << endl;
 
-      if (id_ma->loc != 0)
+      if (!id_ma->synthesized)
         os << "// From " << location_string (id_ma->loc, true) << endl;
 
       os << "const id_type& id  (" << endl
@@ -2170,7 +2170,7 @@ traverse_object (type& c)
 
       if (opt != 0)
       {
-        if (opt_ma_get->loc != 0)
+        if (!opt_ma_get->synthesized)
           os << "// From " << location_string (opt_ma_get->loc, true) << endl;
 
         os << "if (" << (poly_derived ? "root_traits::" : "") << "version (" <<

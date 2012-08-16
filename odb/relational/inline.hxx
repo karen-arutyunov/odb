@@ -275,7 +275,7 @@ namespace relational
               //
               member_access& ma (id->get<member_access> ("get"));
 
-              if (ma.loc != 0)
+              if (!ma.synthesized)
                 os << "// From " << location_string (ma.loc, true) << endl;
 
               os << "return " << ma.translate ("o") << ";";

@@ -22,6 +22,7 @@
 
 #include <odb/options.hxx>
 #include <odb/features.hxx>
+#include <odb/location.hxx>
 #include <odb/cxx-token.hxx>
 #include <odb/semantics.hxx>
 #include <odb/semantics/relational/name.hxx>
@@ -221,18 +222,29 @@ struct column_expr: std::vector<column_expr_part>
 //
 struct member_access
 {
-  member_access (location_t l): loc (l), by_value (false) {}
+  member_access (const location& l, bool s)
+      : loc (l), synthesized (s), by_value (false) {}
 
   // Return true of we have the (?) placeholder.
   //
   bool
   placeholder () const;
 
+  // Return true if this is a synthesized expression that goes
+  // directly for the member.
+  //
+  bool
+  direct () const
+  {
+    return synthesized && expr.size () == 3; // this.member
+  }
+
   std::string
   translate (std::string const& obj,
              std::string const& val = std::string ()) const;
 
-  location_t loc;  // If zero, then this is a synthesized expression.
+  location loc;
+  bool synthesized; // If true, then this is a synthesized expression.
   cxx_tokens expr;
   bool by_value;   // True if accessor returns by value. False doesn't
                    // necessarily mean that it is by reference.
@@ -653,11 +665,11 @@ public:
   // C++ names.
   //
 public:
-  // Cleaned-up and escaped member name that can be used in public C++
-  // interfaces.
+  // Cleaned-up and potentially escaped member name that can be used
+  // in public C++ interfaces.
   //
   string
-  public_name (semantics::data_member&) const;
+  public_name (semantics::data_member&, bool escape = true) const;
 
   // "Flatten" fully-qualified C++ name by replacing '::' with '_'
   // and removing leading '::', if any.
@@ -930,6 +942,8 @@ protected:
     type_map_type type_map_;
 
     regex_mapping include_regex_;
+    regex_mapping accessor_regex_;
+    regex_mapping modifier_regex_;
   };
 
   typedef cutl::shared_ptr<data> data_ptr;
@@ -947,6 +961,8 @@ public:
   keyword_set_type const& keyword_set;
 
   regex_mapping const& include_regex;
+  regex_mapping const& accessor_regex;
+  regex_mapping const& modifier_regex;
 
   bool embedded_schema;
   bool separate_schema;

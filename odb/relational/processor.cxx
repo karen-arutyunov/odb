@@ -310,30 +310,326 @@ namespace relational
         process_index (m);
       }
 
+      //
       // Process member access expressions.
       //
+
+      enum found_type
+      {
+        found_none,
+        found_some, // Found something but keep looking for a better one.
+        found_best
+      };
+
+      // Check if a function is a suitable accessor for this member.
+      //
+      found_type
+      check_accessor (semantics::data_member& m,
+                      tree f,
+                      string const& n,
+                      member_access& ma,
+                      bool strict)
+      {
+        // Must be const.
+        //
+        if (!DECL_CONST_MEMFUNC_P (f))
+          return found_none;
+
+        // Accessor is a function with no arguments (other than 'this').
+        //
+        if (DECL_CHAIN (DECL_ARGUMENTS (f)) != NULL_TREE)
+          return found_none;
+
+        // Note that to get the return type we have to use
+        // TREE_TYPE(TREE_TYPE()) and not DECL_RESULT, as
+        // suggested in the documentation.
+        //
+        tree r (TYPE_MAIN_VARIANT (TREE_TYPE (TREE_TYPE (f))));
+        int tc (TREE_CODE (r));
+
+        // In the strict mode make sure the function returns for non-array
+        // types a value or a (const) reference to the member type and for
+        // array types a (const) pointer to element type. In the lax mode
+        // we just check that the return value is not void.
+        //
+        if (strict)
+        {
+          semantics::type& t (utype (m));
+          semantics::array* ar (dynamic_cast<semantics::array*> (&t));
+
+          if (ar != 0 && tc != POINTER_TYPE)
+            return found_none;
+
+          tree bt (ar != 0 || tc == REFERENCE_TYPE ? TREE_TYPE (r) : r);
+          tree bt_mv (TYPE_MAIN_VARIANT (bt));
+
+          if ((ar != 0 ? ar->base_type () : t).tree_node () != bt_mv)
+            return found_none;
+        }
+        else if (r == void_type_node)
+          return found_none;
+
+        cxx_tokens& e (ma.expr);
+        e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
+        e.push_back (cxx_token (0, CPP_DOT));
+        e.push_back (cxx_token (0, CPP_NAME, n));
+        e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
+        e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
+
+        // See if it returns by value.
+        //
+        ma.by_value = (tc != REFERENCE_TYPE && tc != POINTER_TYPE);
+
+        return found_best;
+      }
+
+      // Check if a function is a suitable modifier for this member.
+      //
+      found_type
+      check_modifier (semantics::data_member& m,
+                      tree f,
+                      string const& n,
+                      member_access& ma,
+                      bool strict)
+      {
+        tree a (DECL_ARGUMENTS (f));
+        a = DECL_CHAIN (a); // Skip this.
+
+        // For a modifier, it can either be a function that returns a non-
+        // const reference (or non-const pointer, in case the member is an
+        // array) or a by-value modifier that sets a new value. If both are
+        // available, we prefer the former for efficiency.
+        //
+        cxx_tokens& e (ma.expr);
+        semantics::type& t (utype (m));
+        semantics::array* ar (dynamic_cast<semantics::array*> (&t));
+
+        if (a == NULL_TREE)
+        {
+          // Note that to get the return type we have to use
+          // TREE_TYPE(TREE_TYPE()) and not DECL_RESULT, as
+          // suggested in the documentation.
+          //
+          tree r (TYPE_MAIN_VARIANT (TREE_TYPE (TREE_TYPE (f))));
+          int tc (TREE_CODE (r));
+
+          // By-reference modifier. Should return a reference or a pointer.
+          //
+          if (tc != (ar != 0 ? POINTER_TYPE : REFERENCE_TYPE))
+            return found_none;
+
+          // The base type should not be const and, in strict mode, should
+          // match the member type.
+          //
+          tree bt (TREE_TYPE (r));
+
+          if (CP_TYPE_CONST_P (bt))
+            return found_none;
+
+          tree bt_mv (TYPE_MAIN_VARIANT (bt));
+
+          if (strict && (ar != 0 ? ar->base_type () : t).tree_node () != bt_mv)
+            return found_none;
+
+          e.clear (); // Could contain by value modifier.
+          e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
+          e.push_back (cxx_token (0, CPP_DOT));
+          e.push_back (cxx_token (0, CPP_NAME, n));
+          e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
+          e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
+
+          return found_best;
+        }
+        // Otherwise look for a by value modifier, which is a function
+        // with a single argument.
+        //
+        else if (DECL_CHAIN (a) == NULL_TREE)
+        {
+          // In the lax mode any function with a single argument works
+          // for us. And we don't care what it returns.
+          //
+          if (strict)
+          {
+            // In the strict mode make sure the argument matches the
+            // member. This is exactly the same logic as in accessor
+            // with regards to arrays, references, etc.
+            //
+            tree at (TREE_TYPE (a));
+            int tc (TREE_CODE (at));
+
+            if (ar != 0 && tc != POINTER_TYPE)
+              return found_none;
+
+            tree bt (ar != 0 || tc == REFERENCE_TYPE ? TREE_TYPE (at) : at);
+            tree bt_mv (TYPE_MAIN_VARIANT (bt));
+
+            if ((ar != 0 ? ar->base_type () : t).tree_node () != bt_mv)
+              return found_none;
+          }
+
+          if (e.empty ())
+          {
+            e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
+            e.push_back (cxx_token (0, CPP_DOT));
+            e.push_back (cxx_token (0, CPP_NAME, n));
+            e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
+            e.push_back (cxx_token (0, CPP_QUERY));
+            e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
+
+            // Continue searching in case there is version that returns a
+            // non-const reference which we prefer for efficiency.
+            //
+            return found_some;
+          }
+          else
+            return found_none; // We didn't find anything better.
+        }
+
+        return found_none;
+      }
+
       void
       process_access (semantics::data_member& m, std::string const& k)
       {
-        // If we don't have an access expression, synthesize one which
-        // goes directly for the member. Zero location indicates it is
-        // a synthesized one.
+        char const* kind (k == "get" ? "accessor" : "modifier");
+        semantics::class_& c (dynamic_cast<semantics::class_&> (m.scope ()));
+
+        // If we don't have an access expression, try to come up with
+        // one.
         //
         if (!m.count (k))
         {
-          member_access& ma (m.set (k, member_access (0)));
-          ma.expr.push_back (cxx_token (0, CPP_KEYWORD, "this"));
-          ma.expr.push_back (cxx_token (0, CPP_DOT));
-          ma.expr.push_back (cxx_token (0, CPP_NAME, m.name ()));
-          return;
+          found_type found (found_none);
+          semantics::access const& a (m.named ().access ());
+          member_access& ma (m.set (k, member_access (m.location (), true)));
+
+          // If this member is public or if we are a friend of this
+          // class, then go for the member directly.
+          //
+          if (a == semantics::access::public_ || c.get<bool> ("friend"))
+          {
+            ma.expr.push_back (cxx_token (0, CPP_KEYWORD, "this"));
+            ma.expr.push_back (cxx_token (0, CPP_DOT));
+            ma.expr.push_back (cxx_token (0, CPP_NAME, m.name ()));
+            found = found_best;
+          }
+
+          // Otherwise, try to find a suitable accessor/modifier.
+          //
+
+          // First try the original name. If that doesn't produce anything,
+          // then try the public name.
+          //
+          bool t (k == "get"
+                  ? options.accessor_regex_trace ()
+                  : options.modifier_regex_trace ());
+          regex_mapping const& re (
+            k == "get" ? accessor_regex : modifier_regex);
+
+          for (unsigned short j (0); found != found_best && j != 2; ++j)
+          {
+            string b (j == 0 ? m.name () : public_name (m, false));
+
+            // Skip the second pass if original and public names are the same.
+            //
+            if (j == 1 && b == m.name ())
+              continue;
+
+            if (t)
+              cerr << kind << (j == 0 ? " original" : " public")
+                   << " name '" << b << "'" << endl;
+
+            for (regex_mapping::const_iterator i (re.begin ());
+                 found != found_best && i != re.end ();
+                 ++i)
+            {
+              if (t)
+                cerr << "try: '" << i->regex () << "' : ";
+
+              if (!i->match (b))
+              {
+                if (t)
+                  cerr << '-' << endl;
+                continue;
+              }
+
+              string n (i->replace (b));
+
+              if (t)
+                cerr << "'" << n << "' : ";
+
+              tree decl (
+                lookup_qualified_name (
+                  c.tree_node (), get_identifier (n.c_str ()), false, false));
+
+              if (decl == error_mark_node || TREE_CODE (decl) != BASELINK)
+              {
+                if (t)
+                  cerr << '-' << endl;
+                continue;
+              }
+
+              // OVL_* macros work for both FUNCTION_DECL and OVERLOAD.
+              //
+              for (tree o (BASELINK_FUNCTIONS (decl));
+                   o != 0;
+                   o = OVL_NEXT (o))
+              {
+                tree f (OVL_CURRENT (o));
+
+                // We are only interested in public non-static member
+                // functions. Note that TREE_PUBLIC() returns something
+                // other than what we need.
+                //
+                if (!DECL_NONSTATIC_MEMBER_FUNCTION_P (f) ||
+                    TREE_PRIVATE (f) || TREE_PROTECTED (f))
+                  continue;
+
+                found_type r (k == "get"
+                              ? check_accessor (m, f, n, ma, true)
+                              : check_modifier (m, f, n, ma, true));
+
+                if (r != found_none)
+                {
+                  // Update the location of the access expression to point
+                  // to this function.
+                  //
+                  ma.loc = location (DECL_SOURCE_LOCATION (f));
+                  found = r;
+                }
+              }
+
+              if (t)
+                cerr << (found != found_none ? '+' : '-') << endl;
+            }
+          }
+
+          // If that didn't work then the generated code won't be able
+          // to access this member.
+          //
+          if (found == found_none)
+          {
+            location const& l (m.location ());
+
+            error (l) << "data member '" << m.name () << "' is " << a.string ()
+                      << " and no suitable " << kind << " function could be "
+                      << "automatically found" << endl;
+
+            info (l)  << "consider making class 'odb::access' a friend of "
+                      << "class '" << class_name (c) << "'" << endl;
+
+            info (l)  << "or use '#pragma db " << k << "' to explicitly "
+                      << "specify the " << kind << " function" << endl;
+
+            throw operation_failed ();
+          }
         }
 
-        semantics::type& t (utype (m));
         member_access& ma (m.get<member_access> (k));
         cxx_tokens& e (ma.expr);
 
-        // If it is just a name, resolve it and convert to an
-        // appropriate expression.
+        // If it is just a name, resolve it and convert to an appropriate
+        // expression.
         //
         if (e.size () == 1 && e.back ().type == CPP_NAME)
         {
@@ -342,10 +638,7 @@ namespace relational
 
           tree decl (
             lookup_qualified_name (
-              m.scope ().tree_node (),
-              get_identifier (n.c_str ()),
-              false,
-              false));
+              c.tree_node (), get_identifier (n.c_str ()), false, false));
 
           if (decl == error_mark_node)
           {
@@ -378,90 +671,15 @@ namespace relational
                 if (!DECL_NONSTATIC_MEMBER_FUNCTION_P (f))
                   continue;
 
-                // Note that we have to use TREE_TYPE(TREE_TYPE()) and
-                // not DECL_RESULT, as suggested by the documentation.
-                //
-                tree r (TYPE_MAIN_VARIANT (TREE_TYPE (TREE_TYPE (f))));
-                tree a (DECL_ARGUMENTS (f));
-                a = DECL_CHAIN (a); // Skip this.
-
-                if (k == "get")
-                {
-                  // For an accessor, look for a function with a non-void
-                  // return value and no arguments (other than 'this').
-                  //
-                  if (r != void_type_node && a == NULL_TREE)
-                  {
-                    e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
-                    e.push_back (cxx_token (0, CPP_DOT));
-                    e.push_back (cxx_token (0, CPP_NAME, n));
-                    e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
-                    e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
-
-                    // See if it returns by value.
-                    //
-                    int tc (TREE_CODE (r));
-                    ma.by_value = (tc != REFERENCE_TYPE && tc != POINTER_TYPE);
-                    break;
-                  }
-                }
-                else
-                {
-                  // For a modifier, it can either be a function that
-                  // returns a non-const reference (or non-const pointer,
-                  // in case the member is an array) or a proper modifier
-                  // that sets a new value. If both are available, we
-                  // prefer the former for efficiency.
-                  //
-                  semantics::array* ar (dynamic_cast<semantics::array*> (&t));
-                  int tc (TREE_CODE (r));
-
-                  if (a == NULL_TREE &&
-                      ((ar == 0 && tc == REFERENCE_TYPE) ||
-                       (ar != 0 && tc == POINTER_TYPE)))
-                  {
-                    tree bt (TREE_TYPE (r)); // Base type.
-                    tree bt_mv (TYPE_MAIN_VARIANT (bt));
-
-                    if (!CP_TYPE_CONST_P (bt) &&
-                        ((ar == 0 && bt_mv == t.tree_node ()) ||
-                         (ar != 0 && bt_mv == ar->base_type ().tree_node ())))
-                    {
-                      e.clear (); // Could contain proper modifier.
-                      e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
-                      e.push_back (cxx_token (0, CPP_DOT));
-                      e.push_back (cxx_token (0, CPP_NAME, n));
-                      e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
-                      e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
-                      break;
-                    }
-                  }
-
-                  // Any function with a single argument works for us.
-                  // And we don't care what it returns.
-                  //
-                  if (a != NULL_TREE && DECL_CHAIN (a) == NULL_TREE)
-                  {
-                    if (e.empty ())
-                    {
-                      e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
-                      e.push_back (cxx_token (0, CPP_DOT));
-                      e.push_back (cxx_token (0, CPP_NAME, n));
-                      e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
-                      e.push_back (cxx_token (0, CPP_QUERY));
-                      e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
-                    }
-
-                    // Continue searching in case there is version that
-                    // returns a non-const reference (which we prefer).
-                  }
-                }
+                if ((k == "get"
+                     ? check_accessor (m, f, n, ma, false)
+                     : check_modifier (m, f, n, ma, false)) == found_best)
+                  break;
               }
 
               if (e.empty ())
               {
-                error (ma.loc) << "unable to find suitable "
-                               << (k == "get" ? "accessor" : "modifier")
+                error (ma.loc) << "unable to find suitable " << kind
                                << " function '" << n << "'" << endl;
                 throw operation_failed ();
               }
@@ -506,13 +724,13 @@ namespace relational
         }
 
         // Check that the member type is default-constructible if we
-        // have a placeholder in the modifier.
+        // have a by value  modifier.
         //
         if (k == "set" && ma.placeholder ())
         {
           // Assume all other types are default-constructible.
           //
-          semantics::class_* c (dynamic_cast<semantics::class_*> (&t));
+          semantics::class_* c (dynamic_cast<semantics::class_*> (&utype (m)));
 
           if (c != 0 && !c->default_ctor ())
           {
@@ -2031,7 +2249,7 @@ namespace relational
     struct class_: traversal::class_, context
     {
       class_ ()
-          : std_string_ (0), std_string_hint_ (0)
+          : std_string_ (0), std_string_hint_ (0), access_ (0)
       {
         // Resolve the std::string type node.
         //
@@ -2056,6 +2274,19 @@ namespace relational
 
         assert (std_string_ != 0); // No std::string?
 
+        // Resolve odb::access, if any.
+        //
+        tree odb = lookup_qualified_name (
+          global_namespace, get_identifier ("odb"), false, false);
+
+        if (odb != error_mark_node)
+        {
+          access_ = lookup_qualified_name (
+            odb, get_identifier ("access"), true, false);
+
+          access_ = (access_ != error_mark_node ? TREE_TYPE (access_) : 0);
+        }
+
         *this >> member_names_ >> member_;
       }
 
@@ -2066,6 +2297,10 @@ namespace relational
 
         if (k == class_other)
           return;
+
+        // Check if odb::access is a friend of this class.
+        //
+        c.set ("friend", access_ != 0 && is_friend (c.tree_node (), access_));
 
         // Assign pointer.
         //
@@ -3226,6 +3461,8 @@ namespace relational
 
       semantics::type* std_string_;
       semantics::names* std_string_hint_;
+
+      tree access_; // odb::access node.
     };
   }
 

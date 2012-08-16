@@ -141,6 +141,8 @@ private:
   access
   decl_access (tree decl)
   {
+    // Note that TREE_PUBLIC() returns something other than what we need.
+    //
     if (TREE_PRIVATE (decl))
       return access::private_;
 

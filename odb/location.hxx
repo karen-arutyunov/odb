@@ -12,9 +12,7 @@
 
 struct location
 {
-  explicit
   location (location_t);
-
   location (cutl::fs::path const& f, std::size_t l, std::size_t c)
       : file (f), line (l), column (c)
   {
