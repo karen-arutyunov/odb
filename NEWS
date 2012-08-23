@@ -1,5 +1,21 @@
 Version 2.1.0
 
+ * ODB compiler is now capable of automatically discovering accessor and
+   modifier functions for inaccessible data members in persistent classes,
+   composite value types, and views. It will then use these accessors and
+   modifiers in the generated code. The names of these functions are derived
+   from the data member names and by default the ODB compiler will look for
+   names in the form: get_foo/set_foo, getFoo/setFoo, getfoo/setfoo, and
+   just foo. You can also add custom name derivations with the
+   --accessor-regex and --modifier-regex ODB compiler options. For more
+   information, refer to Section 3.2, "Declaring Persistent Objects and
+   Values" in the ODB manual.
+
+ * New pragmas, get, set, and access, allow the specification of custom
+   accessor and modifier expressions for data members in persistent classes,
+   composite value types, and views. For more information, refer to Section
+   12.4.5, "get/set/access" in the ODB manual.
+
  * Support for defining database indexes. Both simple and composite indexes
    can be defined with support for database-specific index types, methods, and
    options. For more information, refer to Section 12.6, "Index Definition

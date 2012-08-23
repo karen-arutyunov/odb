@@ -320,18 +320,19 @@ for consistency.
       <th>3</th><td><a href="#3">Working with Persistent Objects</a>
         <table class="toc">
           <tr><th>3.1</th><td><a href="#3.1">Concepts and Terminology</a></td></tr>
-	  <tr><th>3.2</th><td><a href="#3.2">Object and View Pointers</a></td></tr>
-          <tr><th>3.3</th><td><a href="#3.3">Database</a></td></tr>
-          <tr><th>3.4</th><td><a href="#3.4">Transactions</a></td></tr>
-	  <tr><th>3.5</th><td><a href="#3.5">Connections</a></td></tr>
-	  <tr><th>3.6</th><td><a href="#3.6">Error Handling and Recovery</a></td></tr>
-          <tr><th>3.7</th><td><a href="#3.7">Making Objects Persistent</a></td></tr>
-          <tr><th>3.8</th><td><a href="#3.8">Loading Persistent Objects</a></td></tr>
-          <tr><th>3.9</th><td><a href="#3.9">Updating Persistent Objects</a></td></tr>
-          <tr><th>3.10</th><td><a href="#3.10">Deleting Persistent Objects</a></td></tr>
-	  <tr><th>3.11</th><td><a href="#3.11">Executing Native SQL Statements</a></td></tr>
-	  <tr><th>3.12</th><td><a href="#3.12">Tracing SQL Statement Execution</a></td></tr>
-          <tr><th>3.13</th><td><a href="#3.13">ODB Exceptions</a></td></tr>
+	  <tr><th>3.2</th><td><a href="#3.2">Declaring Persistent Objects and Values</a></td></tr>
+	  <tr><th>3.3</th><td><a href="#3.3">Object and View Pointers</a></td></tr>
+          <tr><th>3.4</th><td><a href="#3.4">Database</a></td></tr>
+          <tr><th>3.5</th><td><a href="#3.5">Transactions</a></td></tr>
+	  <tr><th>3.6</th><td><a href="#3.6">Connections</a></td></tr>
+	  <tr><th>3.7</th><td><a href="#3.7">Error Handling and Recovery</a></td></tr>
+          <tr><th>3.8</th><td><a href="#3.8">Making Objects Persistent</a></td></tr>
+          <tr><th>3.9</th><td><a href="#3.9">Loading Persistent Objects</a></td></tr>
+          <tr><th>3.10</th><td><a href="#3.10">Updating Persistent Objects</a></td></tr>
+          <tr><th>3.11</th><td><a href="#3.11">Deleting Persistent Objects</a></td></tr>
+	  <tr><th>3.12</th><td><a href="#3.12">Executing Native SQL Statements</a></td></tr>
+	  <tr><th>3.13</th><td><a href="#3.13">Tracing SQL Statement Execution</a></td></tr>
+          <tr><th>3.14</th><td><a href="#3.14">ODB Exceptions</a></td></tr>
         </table>
       </td>
     </tr>
@@ -507,31 +508,32 @@ for consistency.
                 <tr><th>12.4.2</th><td><a href="#12.4.2"><code>auto</code></a></td></tr>
                 <tr><th>12.4.3</th><td><a href="#12.4.3"><code>type</code></a></td></tr>
 		<tr><th>12.4.4</th><td><a href="#12.4.4"><code>id_type</code></a></td></tr>
-		<tr><th>12.4.5</th><td><a href="#12.4.5"><code>null</code>/<code>not_null</code></a></td></tr>
-		<tr><th>12.4.6</th><td><a href="#12.4.6"><code>default</code></a></td></tr>
-		<tr><th>12.4.7</th><td><a href="#12.4.7"><code>options</code></a></td></tr>
-		<tr><th>12.4.8</th><td><a href="#12.4.8"><code>column</code> (object, composite value)</a></td></tr>
-		<tr><th>12.4.9</th><td><a href="#12.4.9"><code>column</code> (view)</a></td></tr>
-		<tr><th>12.4.10</th><td><a href="#12.4.10"><code>transient</code></a></td></tr>
-		<tr><th>12.4.11</th><td><a href="#12.4.11"><code>readonly</code></a></td></tr>
-		<tr><th>12.4.12</th><td><a href="#12.4.12"><code>inverse</code></a></td></tr>
-		<tr><th>12.4.13</th><td><a href="#12.4.13"><code>version</code></a></td></tr>
-		<tr><th>12.4.14</th><td><a href="#12.4.14"><code>index</code></a></td></tr>
-		<tr><th>12.4.15</th><td><a href="#12.4.15"><code>unique</code></a></td></tr>
-		<tr><th>12.4.16</th><td><a href="#12.4.16"><code>unordered</code></a></td></tr>
-		<tr><th>12.4.17</th><td><a href="#12.4.17"><code>table</code></a></td></tr>
-		<tr><th>12.4.18</th><td><a href="#12.4.18"><code>index_type</code></a></td></tr>
-		<tr><th>12.4.19</th><td><a href="#12.4.19"><code>key_type</code></a></td></tr>
-		<tr><th>12.4.20</th><td><a href="#12.4.20"><code>value_type</code></a></td></tr>
-		<tr><th>12.4.21</th><td><a href="#12.4.21"><code>value_null</code>/<code>value_not_null</code></a></td></tr>
-		<tr><th>12.4.22</th><td><a href="#12.4.22"><code>id_options</code></a></td></tr>
-		<tr><th>12.4.23</th><td><a href="#12.4.23"><code>index_options</code></a></td></tr>
-		<tr><th>12.4.24</th><td><a href="#12.4.24"><code>key_options</code></a></td></tr>
-		<tr><th>12.4.25</th><td><a href="#12.4.25"><code>value_options</code></a></td></tr>
-		<tr><th>12.4.26</th><td><a href="#12.4.26"><code>id_column</code></a></td></tr>
-		<tr><th>12.4.27</th><td><a href="#12.4.27"><code>index_column</code></a></td></tr>
-		<tr><th>12.4.28</th><td><a href="#12.4.28"><code>key_column</code></a></td></tr>
-		<tr><th>12.4.29</th><td><a href="#12.4.29"><code>value_column</code></a></td></tr>
+		<tr><th>12.4.5</th><td><a href="#12.4.5"><code>get</code>/<code>set</code>/<code>access</code></a></td></tr>
+		<tr><th>12.4.6</th><td><a href="#12.4.6"><code>null</code>/<code>not_null</code></a></td></tr>
+		<tr><th>12.4.7</th><td><a href="#12.4.7"><code>default</code></a></td></tr>
+		<tr><th>12.4.8</th><td><a href="#12.4.8"><code>options</code></a></td></tr>
+		<tr><th>12.4.9</th><td><a href="#12.4.9"><code>column</code> (object, composite value)</a></td></tr>
+		<tr><th>12.4.10</th><td><a href="#12.4.10"><code>column</code> (view)</a></td></tr>
+		<tr><th>12.4.11</th><td><a href="#12.4.11"><code>transient</code></a></td></tr>
+		<tr><th>12.4.12</th><td><a href="#12.4.12"><code>readonly</code></a></td></tr>
+		<tr><th>12.4.13</th><td><a href="#12.4.13"><code>inverse</code></a></td></tr>
+		<tr><th>12.4.14</th><td><a href="#12.4.14"><code>version</code></a></td></tr>
+		<tr><th>12.4.15</th><td><a href="#12.4.15"><code>index</code></a></td></tr>
+		<tr><th>12.4.16</th><td><a href="#12.4.16"><code>unique</code></a></td></tr>
+		<tr><th>12.4.17</th><td><a href="#12.4.17"><code>unordered</code></a></td></tr>
+		<tr><th>12.4.18</th><td><a href="#12.4.18"><code>table</code></a></td></tr>
+		<tr><th>12.4.19</th><td><a href="#12.4.19"><code>index_type</code></a></td></tr>
+		<tr><th>12.4.20</th><td><a href="#12.4.20"><code>key_type</code></a></td></tr>
+		<tr><th>12.4.21</th><td><a href="#12.4.21"><code>value_type</code></a></td></tr>
+		<tr><th>12.4.22</th><td><a href="#12.4.22"><code>value_null</code>/<code>value_not_null</code></a></td></tr>
+		<tr><th>12.4.23</th><td><a href="#12.4.23"><code>id_options</code></a></td></tr>
+		<tr><th>12.4.24</th><td><a href="#12.4.24"><code>index_options</code></a></td></tr>
+		<tr><th>12.4.25</th><td><a href="#12.4.25"><code>key_options</code></a></td></tr>
+		<tr><th>12.4.26</th><td><a href="#12.4.26"><code>value_options</code></a></td></tr>
+		<tr><th>12.4.27</th><td><a href="#12.4.27"><code>id_column</code></a></td></tr>
+		<tr><th>12.4.28</th><td><a href="#12.4.28"><code>index_column</code></a></td></tr>
+		<tr><th>12.4.29</th><td><a href="#12.4.29"><code>key_column</code></a></td></tr>
+		<tr><th>12.4.30</th><td><a href="#12.4.30"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -654,6 +656,7 @@ for consistency.
 		<tr><th>16.5.5</th><td><a href="#16.5.5">Large <code>FLOAT</code> and <code>NUMBER</code> Types</a></td></tr>
 		<tr><th>16.5.6</th><td><a href="#16.5.6">Timezones</a></td></tr>
 		<tr><th>16.5.7</th><td><a href="#16.5.7"><code>LONG</code> Types</a></td></tr>
+		<tr><th>16.5.8</th><td><a href="#16.5.8">LOB Types and By-Value Accessors/Modifiers</a></td></tr>
               </table>
             </td>
           </tr>
@@ -678,6 +681,7 @@ for consistency.
 		<tr><th>17.5.4</th><td><a href="#17.5.4">Multithreaded Windows Applications</a></td></tr>
 		<tr><th>17.5.5</th><td><a href="#17.5.5">Affected Row Count and DDL Statements</a></td></tr>
 		<tr><th>17.5.6</th><td><a href="#17.5.6">Long Data and Automatically Assigned Object Ids</a></td></tr>
+		<tr><th>17.5.7</th><td><a href="#17.5.7">Long Data and By-Value Accessors/Modifiers</a></td></tr>
               </table>
             </td>
           </tr>
@@ -1125,17 +1129,11 @@ public:
           const std::string&amp; last,
           unsigned short age);
 
-  const std::string&amp;
-  first () const;
+  const std::string&amp; first () const;
+  const std::string&amp; last () const;
 
-  const std::string&amp;
-  last () const;
-
-  unsigned short
-  age () const;
-
-  void
-  age (unsigned short);
+  unsigned short age () const;
+  void age (unsigned short);
 
 private:
   std::string first_;
@@ -1197,14 +1195,16 @@ private:
      when instantiating an object from the persistent state. Just as we have
      done for the <code>person</code> class, you can make the default
      constructor private or protected if you don't want to make it
-     available to the users of your class.</p>
+     available to the users of your class. Note also that with some
+     limitations it is possible to have a persistent class without
+     the default constructor.</p>
 
   <p>With the fourth change we make the <code>odb::access</code> class a
      friend of our <code>person</code> class. This is necessary to make
      the default constructor and the data members accessible to the
-     ODB support code. If your class has public default constructor and
-     public data members, then the <code>friend</code> declaration is
-     unnecessary.</p>
+     database support code. If your class has a public default constructor and
+     either public data members or public accessors and modifiers for the
+     data members, then the <code>friend</code> declaration is unnecessary.</p>
 
   <p>The final change adds a data member called <code>id_</code> which
      is preceded by another pragma. In ODB every persistent object normally
@@ -1228,20 +1228,41 @@ private:
      in other countries), then we could use that as an id. Or, if
      we stored an email associated with each person, then we could
      have used that if each person is presumed to have a unique
-     email address, for example:</p>
+     email address.</p>
+
+  <p>As another example, consider the following alternative version
+     of the <code>person</code> class. Here we use one of
+     the existing data members as id. Also the data members are kept
+     private and are instead accessed via public accessor and modifier
+     functions. Finally, the ODB pragmas are grouped together and are
+     placed after the class definition. They could have also been moved
+     into a separate header leaving the original class completely
+     unchanged (for more information on such a non-intrusive conversion
+     refer to <a href="#12">Chapter 12, "ODB Pragma Language"</a>).</p>
 
   <pre class="cxx">
 class person
 {
-  ...
+public:
+  person ();
 
-  #pragma db id
+  const std::string&amp; email () const;
+  void email (const std::string&amp;);
+
+  const std::string&amp; get_name () const;
+  std::string&amp; set_name ();
+
+  unsigned short getAge () const;
+  void setAge (unsigned short);
+
+private:
   std::string email_;
-
-  std::string first_;
-  std::string last_;
+  std::string name_;
   unsigned short age_;
 };
+
+#pragma db object(person)
+#pragma db member(person::email_) id
   </pre>
 
   <p>Now that we have the header file with the persistent class, let's
@@ -1386,7 +1407,7 @@ mysql --user=odb_test --database=odb_test &lt; person.sql
      only way to create a database schema in ODB. We can also embed
      the schema directly into our application or use custom schemas
      that were not generated by the ODB compiler. Refer to
-     <a href="#3.3">Section 3.3, "Database"</a> for details.</p>
+     <a href="#3.4">Section 3.4, "Database"</a> for details.</p>
 
   <p>Once the database schema is ready, we run our application
   using the same login and database name:</p>
@@ -1542,7 +1563,7 @@ main (int argc, char* argv[])
 
   <p>The final bit of code in our example is the <code>catch</code>
      block that handles the database exceptions. We do this by catching
-     the base ODB exception (<a href="#3.13">Section 3.13, "ODB
+     the base ODB exception (<a href="#3.14">Section 3.14, "ODB
      Exceptions"</a>) and printing the diagnostics.</p>
 
   <p>Let's now compile (<a href="#2.3">Section 2.3, "Compiling and
@@ -1616,7 +1637,7 @@ INSERT INTO `person` (`id`,`first`,`last`,`age`) VALUES (?,?,?,?)
   <p>Note that we see question marks instead of the actual values
      because ODB uses prepared statements and sends the data to the
      database in binary form. For more information on tracing, refer
-     to <a href="#3.12">Section 3.12, "Tracing SQL Statement Execution"</a>.
+     to <a href="#3.13">Section 3.13, "Tracing SQL Statement Execution"</a>.
      In the next section we will see how to access persistent objects
      from our application.</p>
 
@@ -1820,7 +1841,7 @@ main (int argc, char* argv[])
      <code>std::unique_ptr</code> from C++11 or <code>shared_ptr</code>
      from TR1, C++11, or Boost. For more information
      on the object lifetime management and the smart pointers that we
-     can use for that, see <a href="#3.2">Section 3.2, "Object
+     can use for that, see <a href="#3.3">Section 3.3, "Object
      and View Pointers"</a>.</p>
 
   <p>With the instantiated object in hand we increment the age
@@ -2034,11 +2055,11 @@ max age: 33
      chapter we will examine the ODB object persistence model as
      well as the core database APIs in greater detail. We will
      start with basic concepts and terminology in <a href="#3.1">Section
-     3.1</a> and <a href="#3.2">Section 3.2</a> and continue with the
+     3.1</a> and <a href="#3.3">Section 3.3</a> and continue with the
      discussion of the <code>odb::database</code> class in
-     <a href="#3.3">Section 3.3</a>, transactions in
-     <a href="#3.4">Section 3.4</a>, and connections in
-     <a href="#3.5">Section 3.5</a>. The remainder of this chapter
+     <a href="#3.4">Section 3.4</a>, transactions in
+     <a href="#3.5">Section 3.5</a>, and connections in
+     <a href="#3.6">Section 3.6</a>. The remainder of this chapter
      deals with the core database operations and concludes with
      the discussion of ODB exceptions.</p>
 
@@ -2157,107 +2178,6 @@ max age: 33
      we invariably refer to an object class rather than a value
      class.</p>
 
-  <p>To make a C++ class a persistent object class we declare
-     it as such using the <code>db&nbsp;object</code> pragma, for
-     example:</p>
-
-  <pre class="cxx">
-#pragma db object
-class person
-{
-  ...
-};
-  </pre>
-
-  <p>The other pragma that we often use is <code>db&nbsp;id</code>
-     which designates one of the data members as an object id, for
-     example:</p>
-
-  <pre class="cxx">
-#pragma db object
-class person
-{
-  ...
-
-  #pragma db id
-  unsigned long id_;
-};
-  </pre>
-
-  <p>While it is possible to declare a persistent class without an
-     object id, such a class will have limited functionality
-     (<a href="#12.1.6">Section 12.1.6, "<code>id</code>"</a>).</p>
-
-  <p>The above two pragmas are the minimum required to declare a
-     persistent class with an object id. Other pragmas can be used to
-     fine-tune the database-related properties of a class and its
-     members (<a href="#12">Chapter 12, "ODB Pragma Language"</a>).</p>
-
-  <p>Normally, an object class should define the default constructor. The
-     generated database support code uses this constructor when
-     instantiating an object from the persistent state. If we add the
-     default constructor only for the database support code, then we
-     can make it private. It is also possible to have an object type
-     without the default constructor. However, in this case, the database
-     operations can only load the persistent state into an existing instance
-     (<a href="#3.8">Section 3.8, "Loading Persistent Objects"</a>,
-     <a href="#4.4">Section 4.4, "Query Result"</a>).</p>
-
-  <p>The object id can be of a simple or composite (<a href="#7.2.1">Section
-     7.2.1, "Composite Object Ids"</a>) value type and should be
-     default-constructible.</p>
-
-  <p>If an object class has private or protected non-transient data
-     members or if its default constructor is not public, then the
-     <code>odb::access</code> class, defined in the
-     <code>&lt;odb/core.hxx></code> header, should be declared a
-     friend of this object type. For example:</p>
-
-  <pre class="cxx">
-#include &lt;odb/core.hxx>
-
-#pragma db object
-class person
-{
-  ...
-
-private:
-  friend class odb::access;
-
-  person () {}
-
-  #pragma db id
-  unsigned long id_;
-};
-  </pre>
-
-  <p>You may be wondering whether we also have to declare value types
-     as persistent. We don't need to do anything special for simple value
-     types such as <code>int</code> or <code>std::string</code> since the
-     ODB compiler knows how to map them to suitable database system types and
-     how to convert between the two. On the other hand, if a simple value
-     is unknown to the ODB compiler then we will need to provide the
-     mapping to the database system type and, possibly, the code to
-     convert between the two. For more information on how to achieve
-     this refer to the <code>db&nbsp;type</code> pragma description
-     in <a href="#12.3.1">Section 12.3.1, "<code>type</code>"</a>. Similar
-     to object types, composite value types have to be explicitly declared
-     as persistent using the <code>db&nbsp;value</code> pragma, for example:</p>
-
-  <pre class="cxx">
-#pragma db value
-class name
-{
-  ...
-
-  std::string first_;
-  std::string last_;
-};
-  </pre>
-
-  <p>Composite value types are discussed in more detail in
-     <a href="#7.2">Section 7.2, "Composite Value Types"</a>.</p>
-
   <p>Normally, you would use object types to model real-world entities,
      things that have their own identity. For example, in the
      previous chapter we created a <code>person</code> class to model
@@ -2301,7 +2221,188 @@ class name
     application terminates unless and until it is explicitly
     deleted from the database.</p>
 
-  <h2><a name="3.2">3.2 Object and View Pointers</a></h2>
+  <h2><a name="3.2">3.2 Declaring Persistent Objects and Values</a></h2>
+
+  <p>To make a C++ class a persistent object class we declare
+     it as such using the <code>db&nbsp;object</code> pragma, for
+     example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+};
+  </pre>
+
+  <p>The other pragma that we often use is <code>db&nbsp;id</code>
+     which designates one of the data members as an object id, for
+     example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+};
+  </pre>
+
+  <p>The object id can be of a simple or composite (<a href="#7.2.1">Section
+     7.2.1, "Composite Object Ids"</a>) value type. This type should be
+     default-constructible. It is also possible to declare a persistent
+     class without an object id, however, such a class will have limited
+     functionality (<a href="#12.1.6">Section 12.1.6,
+     "<code>id</code>"</a>).</p>
+
+  <p>The above two pragmas are the minimum required to declare a
+     persistent class with an object id. Other pragmas can be used to
+     fine-tune the database-related properties of a class and its
+     members (<a href="#12">Chapter 12, "ODB Pragma Language"</a>).</p>
+
+  <p>Normally, a persistent class should define the default constructor. The
+     generated database support code uses this constructor when
+     instantiating an object from the persistent state. If we add the
+     default constructor only for the database support code, then we
+     can make it private provided we also make the <code>odb::access</code>
+     class, defined in the <code>&lt;odb/core.hxx></code> header, a
+     friend of this object class. For example:</p>
+
+  <pre class="cxx">
+#include &lt;odb/core.hxx>
+
+#pragma db object
+class person
+{
+  ...
+
+private:
+  friend class odb::access;
+  person () {}
+};
+  </pre>
+
+  <p>It is also possible to have an object class without the default
+     constructor. However, in this case, the database operations will
+     only be able to load the persistent state into an existing instance
+     (<a href="#3.9">Section 3.9, "Loading Persistent Objects"</a>,
+     <a href="#4.4">Section 4.4, "Query Result"</a>).</p>
+
+  <p>The ODB compiler also needs access to the non-transient
+     (<a href="#12.4.11">Section 12.4.11, "<code>transient</code>"</a>)
+     data members of a persistent class. The ODB compiler can access
+     such data members directly if they are public. It can also do
+     so if they are private or protected and the <code>odb::access</code>
+     class is declared a friend of the object type. For example:</p>
+
+  <pre class="cxx">
+#include &lt;odb/core.hxx>
+
+#pragma db object
+class person
+{
+  ...
+
+private:
+  friend class odb::access;
+  person () {}
+
+  #pragma db id
+  unsigned long id_;
+
+  std::string name_;
+};
+  </pre>
+
+  <p>If data members are not accessible directly, then the ODB
+     compiler will try to automatically find suitable accessor and
+     modifier functions. To accomplish this, the ODB compiler will
+     try to lookup common accessor and modifier names derived from
+     the data member name. Specifically, for the <code>name_</code>
+     data member in the above example, the ODB compiler will look
+     for accessor functions with names: <code>get_name()</code>,
+     <code>getName()</code>, <code>getname()</code>, and just
+     <code>name()</code> as well as for modifier functions with
+     names: <code>set_name()</code>, <code>setName()</code>,
+     <code>setname()</code>, and just <code>name()</code>. You can
+     also add support for custom name derivations with the
+     <code>--accessor-regex</code> and <code>--modifier-regex</code>
+     ODB compiler options. Refer to the
+     <a href="http://www.codesynthesis.com/products/odb/doc/odb.xhtml">ODB
+     Compiler Command Line Manual</a> for details on these options.
+     The following example illustrates automatic accessor and modifier
+     discovery:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+public:
+  person () {}
+
+  ...
+
+  unsigned long id () const;
+  void id (unsigned long);
+
+  const std::string&amp; get_name () const;
+  std::string&amp; set_name ();
+
+private:
+  #pragma db id
+  unsigned long id_; // Uses id() for access.
+
+  std::string name_; // Uses get_name()/set_name() for access.
+};
+  </pre>
+
+  <p>Finally, if a data member is not directly accessible and the
+     ODB compiler was unable to discover suitable accessor and
+     modifier functions, then we can provide custom accessor
+     and modifier expressions using the <code>db&nbsp;get</code>
+     and <code>db&nbsp;set</code> pragmas. For more information
+     on custom accessor and modifier expressions refer to
+     <a href="#12.4.5">Section 12.4.5,
+     "<code>get</code>/<code>set</code>/<code>access</code>"</a>.</p>
+
+  <p>You may be wondering whether we also have to declare value types
+     as persistent. We don't need to do anything special for simple value
+     types such as <code>int</code> or <code>std::string</code> since the
+     ODB compiler knows how to map them to suitable database types and
+     how to convert between the two. On the other hand, if a simple value
+     is unknown to the ODB compiler then we will need to provide the
+     mapping to the database type and, possibly, the code to
+     convert between the two. For more information on how to achieve
+     this refer to the <code>db&nbsp;type</code> pragma description
+     in <a href="#12.3.1">Section 12.3.1, "<code>type</code>"</a>.</p>
+
+  <p>Similar to object classes, composite value types have to be
+     explicitly declared as persistent using the <code>db&nbsp;value</code>
+     pragma, for example:</p>
+
+  <pre class="cxx">
+#pragma db value
+class name
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+};
+  </pre>
+
+  <p>Note that a composite value cannot have a data member designated
+     as an object id since, as we have discussed earlier, values do
+     not have a notion of identity. A composite value type also doesn't
+     have to define the default constructor, unless it is used as an
+     element of a container. The ODB compiler uses the same mechanisms
+     to access data members in composite value types as in object types.
+     Composite value types are discussed in more detail in
+     <a href="#7.2">Section 7.2, "Composite Value Types"</a>.</p>
+
+  <h2><a name="3.3">3.3 Object and View Pointers</a></h2>
 
   <p>As we have seen in the previous chapter, some database operations
      create dynamically allocated instances of persistent classes and
@@ -2422,7 +2523,7 @@ namespace accounting
      easy to add support for our own smart pointers, as described in
      <a href="#6.4"> Section 6.4, "Using Custom Smart Pointers"</a>.</p>
 
-  <h2><a name="3.3">3.3 Database</a></h2>
+  <h2><a name="3.4">3.4 Database</a></h2>
 
   <p>Before an application can make use of persistence services
      offered by ODB, it has to create a database class instance. A
@@ -2539,7 +2640,7 @@ namespace odb
      for various C++ constructs, refer to the <code>schema/custom</code>
      example in the <code>odb-examples</code> package.</p>
 
-  <h2><a name="3.4">3.4 Transactions</a></h2>
+  <h2><a name="3.5">3.5 Transactions</a></h2>
 
   <p>A transaction is an atomic, consistent, isolated and durable
      (ACID) unit of work. Database operations can only be
@@ -2652,7 +2753,7 @@ namespace odb
   <p>The <code>database()</code> accessor returns the database this
      transaction is working on. Similarly, the <code>connection()</code>
      accessor returns the database connection this transaction is on
-     (<a href="#3.5">Section 3.5, "Connections"</a>).</p>
+     (<a href="#3.6">Section 3.6, "Connections"</a>).</p>
 
   <p>The static <code>current()</code> accessor returns the
      currently active transaction for this thread. If there is no active
@@ -2802,7 +2903,7 @@ update_age (database&amp; db, person&amp; p)
 }
   </pre>
 
-  <h2><a name="3.5">3.5 Connections</a></h2>
+  <h2><a name="3.6">3.6 Connections</a></h2>
 
   <p>The <code>odb::connection</code> class represents a connection
      to the database. Normally, you wouldn't work with connections
@@ -2856,7 +2957,7 @@ namespace odb
      on the connection. The <code>execute()</code> functions allow
      us to execute native database statements on the connection.
      Their semantics are equivalent to the <code>database::execute()</code>
-     functions (<a href="#3.11">Section 3.11, "Executing Native SQL
+     functions (<a href="#3.12">Section 3.12, "Executing Native SQL
      Statements"</a>) except that they can be legally called outside
      a transaction. Finally, the <code>database()</code> accessor
      returns a reference to the <code>odb::database</code> instance
@@ -2902,7 +3003,7 @@ c->execute ("SET FOREIGN_KEY_CHECKS = 1");
      sure that a set of transactions is executed on the same
      connection.</p>
 
-  <h2><a name="3.6">3.6 Error Handling and Recovery</a></h2>
+  <h2><a name="3.7">3.7 Error Handling and Recovery</a></h2>
 
   <p>ODB uses C++ exceptions to report database operation errors. Most
      ODB exceptions signify <em>hard</em> errors or errors that cannot
@@ -2913,7 +3014,7 @@ c->execute ("SET FOREIGN_KEY_CHECKS = 1");
      instance, by obtaining a valid object id and trying again.
      The hard errors and corresponding ODB exceptions that can be
      thrown by each database function are described in the remainder
-     of this chapter with <a href="#3.13">Section 3.13, "ODB Exceptions"</a>
+     of this chapter with <a href="#3.14">Section 3.14, "ODB Exceptions"</a>
      providing a quick reference for all the ODB exceptions.</p>
 
   <p>The second group of ODB exceptions signify <em>soft</em> or
@@ -2980,7 +3081,7 @@ for (unsigned short retry_count (0); ; retry_count++)
 }
   </pre>
 
-  <h2><a name="3.7">3.7 Making Objects Persistent</a></h2>
+  <h2><a name="3.8">3.8 Making Objects Persistent</a></h2>
 
   <p>A newly created instance of a persistent class is transient.
      We use the <code>database::persist()</code> function template
@@ -3008,8 +3109,8 @@ for (unsigned short retry_count (0); ; retry_count++)
   <p>Here and in the rest of the manual,
      <code>object_traits&lt;T>::pointer_type</code> and
      <code>object_traits&lt;T>::const_pointer_type</code> denote the
-     unrestricted and constant object pointer types (<a href="#3.2">Section
-     3.2, "Object and View Pointers"</a>), respectively.
+     unrestricted and constant object pointer types (<a href="#3.3">Section
+     3.3, "Object and View Pointers"</a>), respectively.
      Similarly, <code>object_traits&lt;T>::id_type</code> denotes the object
      id type. The <code>odb::object_traits</code> template is part of the
      database support code generated by the ODB compiler.</p>
@@ -3066,7 +3167,7 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
      threads in your application and to other applications as soon as
      possible.</p>
 
-  <h2><a name="3.8">3.8 Loading Persistent Objects</a></h2>
+  <h2><a name="3.9">3.9 Loading Persistent Objects</a></h2>
 
   <p>Once an object is made persistent, and you know its object id, it
      can be loaded by the application using the <code>database::load()</code>
@@ -3172,7 +3273,7 @@ t.commit ();
      identifier can be significantly faster than executing a query.</p>
 
 
-  <h2><a name="3.9">3.9 Updating Persistent Objects</a></h2>
+  <h2><a name="3.10">3.10 Updating Persistent Objects</a></h2>
 
   <p>If a persistent object has been modified, we can store the updated
      state in the database using the <code>database::update()</code>
@@ -3270,7 +3371,7 @@ t.commit ();
      data members can be declared read-only (see <a href="#12.1.4">Section
      12.1.4, "<code>readonly</code> (object)"</a>, <a href="#12.3.6">Section
      12.3.6, "<code>readonly</code> (composite value)"</a>, and
-     <a href="#12.4.11">Section 12.4.11, "<code>readonly</code>
+     <a href="#12.4.12">Section 12.4.12, "<code>readonly</code>
      (data member)"</a>).</p>
 
   <p>If an individual data member is declared read-only, then
@@ -3285,7 +3386,7 @@ t.commit ();
      <code>update()</code> functions for such an object will result in a
      compile-time error.</p>
 
-  <h2><a name="3.10">3.10 Deleting Persistent Objects</a></h2>
+  <h2><a name="3.11">3.11 Deleting Persistent Objects</a></h2>
 
   <p>To delete a persistent object's state from the database we use the
      <code>database::erase()</code> or <code>database::erase_query()</code>
@@ -3420,7 +3521,7 @@ t.commit ();
   </pre>
 
 
-  <h2><a name="3.11">3.11 Executing Native SQL Statements</a></h2>
+  <h2><a name="3.12">3.12 Executing Native SQL Statements</a></h2>
 
   <p>In some situations we may need to execute native SQL statements
      instead of using the object-oriented database API described above.
@@ -3462,9 +3563,9 @@ t.commit ();
      it may be necessary to execute a native statement outside a
      transaction. This can be done using the
      <code>connection::execute()</code> functions as described in
-     <a href="#3.5">Section 3.5, "Connections"</a>.</p>
+     <a href="#3.6">Section 3.6, "Connections"</a>.</p>
 
-  <h2><a name="3.12">3.12 Tracing SQL Statement Execution</a></h2>
+  <h2><a name="3.13">3.13 Tracing SQL Statement Execution</a></h2>
 
   <p>Oftentimes it is useful to understand what SQL statements are
      executed as a result of high-level database operations. For
@@ -3632,7 +3733,7 @@ odb::pgsql::database&amp; db = ...;
 db.tracer (tracer); // Ok.
   </pre>
 
-  <h2><a name="3.13">3.13 ODB Exceptions</a></h2>
+  <h2><a name="3.14">3.14 ODB Exceptions</a></h2>
 
   <p>In the previous sections we have already mentioned some of the
      exceptions that can be thrown by the database functions. In this
@@ -3802,7 +3903,7 @@ namespace odb
      <code>not_in_transaction</code>,
      <code>transaction_already_finalized</code>) are thrown by the
      <code>odb::transaction</code> class and are discussed
-     in <a href="#3.4">Section 3.4, "Transactions"</a>.</p>
+     in <a href="#3.5">Section 3.5, "Transactions"</a>.</p>
 
   <p>The next two exceptions (<code>already_in_session</code>, and
      <code>not_in_session</code>) are thrown by the <code>odb::session</code>
@@ -3823,20 +3924,20 @@ namespace odb
      has timed out. The <code>deadlock</code> exception is thrown when a
      transaction deadlock is detected by the database system. These
      exceptions can be thrown by any database function. See
-     <a href="#3.6">Section 3.6, "Error Handling and Recovery"</a>
+     <a href="#3.7">Section 3.7, "Error Handling and Recovery"</a>
      for details.</p>
 
   <p>The <code>object_already_persistent</code> exception is thrown
      by the <code>persist()</code> database function. See
-     <a href="#3.7">Section 3.7, "Making Objects Persistent"</a>
+     <a href="#3.8">Section 3.8, "Making Objects Persistent"</a>
      for details.</p>
 
   <p>The <code>object_not_persistent</code> exception is thrown
      by the <code>load()</code>, <code>update()</code>, and
      <code>erase()</code> database functions. Refer to
-     <a href="#3.8">Section 3.8, "Loading Persistent Objects"</a>,
-     <a href="#3.9">Section 3.9, "Updating Persistent Objects"</a>, and
-     <a href="#3.10">Section 3.10, "Deleting Persistent Objects"</a> for
+     <a href="#3.9">Section 3.9, "Loading Persistent Objects"</a>,
+     <a href="#3.10">Section 3.10, "Updating Persistent Objects"</a>, and
+     <a href="#3.11">Section 3.11, "Deleting Persistent Objects"</a> for
      more information.</p>
 
   <p>The <code>object_changed</code> exception is thrown
@@ -3872,7 +3973,7 @@ namespace odb
 
   <p>The <code>unknown_schema</code> exception is thrown by the
      <code>odb::schema_catalog</code> class if a schema with the specified
-     name is not found. Refer to <a href="#3.3">Section 3.3, "Database"</a>
+     name is not found. Refer to <a href="#3.4">Section 3.4, "Database"</a>
      for details.</p>
 
   <p>The <code>odb::exception</code> class is defined in the
@@ -4648,7 +4749,7 @@ private:
      of person's nicknames is probably not important. To instruct the ODB
      compiler to ignore the order in ordered containers we can use the
      <code>db&nbsp;unordered</code> pragma (<a href="#12.3.8">Section 12.3.8,
-     "<code>unordered</code>"</a>, <a href="#12.4.16">Section 12.4.16,
+     "<code>unordered</code>"</a>, <a href="#12.4.17">Section 12.4.17,
      "<code>unordered</code>"</a>). For example:</p>
 
   <pre class="cxx">
@@ -4862,7 +4963,7 @@ private:
      in <a href="#6.4"> Section 6.4, "Using Custom Smart Pointers"</a>. Any
      supported smart pointer can be used in a data member as long as it can be
      explicitly constructed from the canonical object pointer
-     (<a href="#3.2">Section 3.2, "Object and View Pointers"</a>).  For
+     (<a href="#3.3">Section 3.3, "Object and View Pointers"</a>).  For
      example, we can use <code>weak_ptr</code> if the object pointer
      is <code>shared_ptr</code>.</p>
 
@@ -4911,11 +5012,11 @@ class employee
 
   <p>By default, an object pointer can be <code>NULL</code>. To
      specify that a pointer always points to a valid object we can
-     use the <code>not_null</code> pragma (<a href="#12.4.5">Section
-     12.4.5, "<code>null</code>/<code>not_null</code>"</a>) for
+     use the <code>not_null</code> pragma (<a href="#12.4.6">Section
+     12.4.6, "<code>null</code>/<code>not_null</code>"</a>) for
      single object pointers and the <code>value_not_null</code> pragma
-     (<a href="#12.4.21">Section
-     12.4.21, "<code>value_null</code>/<code>value_not_null</code>"</a>)
+     (<a href="#12.4.22">Section
+     12.4.22, "<code>value_null</code>/<code>value_not_null</code>"</a>)
      for containers of object pointers. For example:</p>
 
   <pre class="cxx">
@@ -5328,7 +5429,7 @@ CREATE TABLE employee (
      of these references.</p>
 
   <p>To eliminate redundant database schema references we can use the
-     <code>inverse</code> pragma (<a href="#12.4.12">Section 12.4.12,
+     <code>inverse</code> pragma (<a href="#12.4.13">Section 12.4.13,
      "<code>inverse</code>"</a>) which tells the ODB compiler that
      a pointer is the inverse side of a bidirectional relationship.
      Either side of a relationship can be made inverse. For example:</p>
@@ -5372,7 +5473,7 @@ CREATE TABLE employee (
      pointer. Also note that an ordered container (<a href="#5.1">Section
      5.1, "Ordered Containers"</a>) of pointers that is an inverse side
      of a bidirectional relationship is always treated as unordered
-     (<a href="#12.4.16">Section 12.4.16, "<code>unordered</code>"</a>)
+     (<a href="#12.4.17">Section 12.4.17, "<code>unordered</code>"</a>)
      because the contents of such a container are implicitly built from
      the direct side of the relationship which does not contain the
      element order (index).</p>
@@ -5970,14 +6071,15 @@ class basic_name
      example in the <code>odb-examples</code> package.</p>
 
   <p>A composite value type does not have to define a default constructor,
-     unless it is used as an element of a container, in which case the
-     default constructor can be made private. If a composite value type
-     has private or protected non-transient data members or if its
-     default constructor is not public and the value type is used as
-     an element of a container, then the <code>odb::access</code> class
-     should be declared a friend of this value type. For example:</p>
+     unless it is used as an element of a container. In this case the
+     default constructor can be made private provided we also make the
+     <code>odb::access</code> class, defined in the
+     <code>&lt;odb/core.hxx></code> header, a friend of this value type.
+     For example:</p>
 
   <pre class="cxx">
+#include &lt;odb/core.hxx>
+
 #pragma db value
 class basic_name
 {
@@ -5991,10 +6093,16 @@ private:
 
   basic_name () {} // Needed for storing basic_name in containers.
 
-  std::string first_;
-  std::string last_;
+  ...
 };
   </pre>
+
+  <p>The ODB compiler also needs access to the non-transient
+     (<a href="#12.4.11">Section 12.4.11, "<code>transient</code>"</a>)
+     data members of a composite value type. It uses the same mechanisms
+     as for persistent classes which are discussed in
+     <a href="#3.2">Section 3.2, "Declaring Persistent Objects and
+     Values"</a>.</p>
 
   <p>The members of a composite value can be other value types (either
      simple or composite), containers (<a href="#5">Chapter 5,
@@ -6163,8 +6271,8 @@ class person
 
   <p>Customizing a column name for a data member of a simple value
      type is straightforward: we simply specify the desired name with
-     the <code>db&nbsp;column</code> pragma (<a href="#12.4.8">Section
-     12.4.8, "<code>column</code>"</a>). For composite value
+     the <code>db&nbsp;column</code> pragma (<a href="#12.4.9">Section
+     12.4.9, "<code>column</code>"</a>). For composite value
      types things are slightly more complex since they are mapped to
      multiple columns. Consider the following example:</p>
 
@@ -6265,9 +6373,9 @@ CREATE TABLE person (
   <p>The same principle applies when a composite value type is used
      as an element of a container, except that instead of
      <code>db&nbsp;column</code>, either the <code>db&nbsp;value_column</code>
-     (<a href="#12.4.29">Section 12.4.29, "<code>value_column</code>"</a>) or
+     (<a href="#12.4.30">Section 12.4.30, "<code>value_column</code>"</a>) or
      <code>db&nbsp;key_column</code>
-     (<a href="#12.4.28">Section 12.4.28, "<code>key_column</code>"</a>)
+     (<a href="#12.4.29">Section 12.4.29, "<code>key_column</code>"</a>)
      pragmas are used to specify the column prefix.</p>
 
   <p>When a composite value type contains a container, an extra table
@@ -6311,8 +6419,8 @@ CREATE TABLE person (
   </pre>
 
   <p>To customize the container table name we can use the
-     <code>db&nbsp;table</code> pragma (<a href="#12.4.17">Section
-     12.4.17, "<code>table</code>"</a>), for example:</p>
+     <code>db&nbsp;table</code> pragma (<a href="#12.4.18">Section
+     12.4.18, "<code>table</code>"</a>), for example:</p>
 
   <pre class="cxx">
 #pragma db value
@@ -6353,7 +6461,7 @@ CREATE TABLE person_nickname (
      of a valid value in a column. While by default ODB maps
      values to columns that do not allow <code>NULL</code> values,
      it is possible to change that with the <code>db&nbsp;null</code>
-     pragma (<a href="#12.4.5">Section 12.4.5,
+     pragma (<a href="#12.4.6">Section 12.4.6,
      "<code>null</code>/<code>not_null</code>"</a>).</p>
 
   <p>To properly support the <code>NULL</code> semantics, the
@@ -6566,11 +6674,8 @@ class person
 class person
 {
 public:
-  const std::string&amp;
-  first () const;
-
-  const std::string&amp;
-  last () const;
+  const std::string&amp; first () const;
+  const std::string&amp; last () const;
 
 private:
   std::string first_;
@@ -6901,7 +7006,7 @@ class contractor: public person
      a table in the database, just like non-abstract classes.</p>
 
   <p>Persistent classes in the same polymorphic hierarchy must use the
-     same kind of object pointer (<a href="#3.2">Section 3.2,
+     same kind of object pointer (<a href="#3.3">Section 3.3,
      "Object and View Pointers"</a>). If the object pointer
      for the root class is specified as a template or using the
      special raw pointer syntax (<code>*</code>), then the ODB
@@ -7234,8 +7339,8 @@ struct contractor_manager
 };
   </pre>
 
-  <p>The <code>erase_query()</code> database function (<a href="#3.10">Section
-     3.10, "Deleting Persistent Objects"</a>) also has limited functionality
+  <p>The <code>erase_query()</code> database function (<a href="#3.11">Section
+     3.11, "Deleting Persistent Objects"</a>) also has limited functionality
      when used on polymorphic objects. Because many database implementations
      do not support <code>JOIN</code> clauses in the SQL <code>DELETE</code>
      statement, only data members from the derived class being erased can
@@ -7611,7 +7716,7 @@ struct employee_birth_code
      or the match is ambiguous, the ODB compiler will issue an error.
      To associate two differently-named members or to resolve an ambiguity,
      we can explicitly specify the member association using the
-     <code>db&nbsp;column</code> pragma (<a href="#12.4.8">Section 12.4.8,
+     <code>db&nbsp;column</code> pragma (<a href="#12.4.9">Section 12.4.9,
      "<code>column</code>"</a>). For example:</p>
 
   <pre class="cxx">
@@ -8506,17 +8611,17 @@ namespace odb
 
   <p>A session is an object cache. Every time a session-enabled object is
      made persistent by calling the <code>database::persist()</code> function
-     (<a href="#3.7">Section 3.7, "Making Objects Persistent"</a>), loaded
+     (<a href="#3.8">Section 3.8, "Making Objects Persistent"</a>), loaded
      by calling the <code>database::load()</code> or <code>database::find()</code>
-     function (<a href="#3.8">Section 3.8, "Loading Persistent Objects"</a>),
+     function (<a href="#3.9">Section 3.9, "Loading Persistent Objects"</a>),
      or loaded by iterating over a query result (<a href="#4.4">Section 4.4,
      "Query Result"</a>), the pointer to the persistent object, in the form
-     of the canonical object pointer (<a href="#3.2">Section 3.2, "Object
+     of the canonical object pointer (<a href="#3.3">Section 3.3, "Object
      and View Pointers"</a>), is stored in the session. For as long as the
      session is in effect, any subsequent calls to load the same object will
      return the cached instance. When an object's state is deleted from the
      database with the <code>database::erase()</code> function
-     (<a href="#3.10">Section 3.10, "Deleting Persistent Objects"</a>), the
+     (<a href="#3.11">Section 3.11, "Deleting Persistent Objects"</a>), the
      cached object pointer is removed from the session. For example:</p>
 
   <pre class="cxx">
@@ -8590,7 +8695,7 @@ unsigned long id2 (save (db, p2)); // p2 is cached in s as non-const.
   <hr class="page-break"/>
   <h1><a name="11">11 Optimistic Concurrency</a></h1>
 
-  <p>The ODB transaction model (<a href="#3.4">Section 3.4,
+  <p>The ODB transaction model (<a href="#3.5">Section 3.5,
      "Transactions"</a>) guarantees consistency as long as we perform all the
      database operations corresponding to a specific application transaction
      in a single database transaction. That is, if we load an object within a
@@ -8674,7 +8779,7 @@ p.age (age);
   <p>To declare a persistent class with the optimistic concurrency model we
      use the <code>optimistic</code> pragma (<a href="#12.1.5">Section 12.1.5,
      "<code>optimistic</code>"</a>). We also use the <code>version</code>
-     pragma (<a href="#12.4.13">Section 12.4.13, "<code>version</code>"</a>)
+     pragma (<a href="#12.4.14">Section 12.4.14, "<code>version</code>"</a>)
      to specify which data member will store the object version. For
      example:</p>
 
@@ -8713,7 +8818,7 @@ class person
   </pre>
 
   <p>When we call the <code>database::update()</code> function
-     (<a href="#3.9">Section 3.9, "Updating Persistent Objects"</a>) and pass
+     (<a href="#3.10">Section 3.10, "Updating Persistent Objects"</a>) and pass
      an object that has an outdated state, the <code>odb::object_changed</code>
      exception is thrown. At this point the application has two
      recovery options: it can abort and potentially restart the
@@ -8778,7 +8883,7 @@ p.age (age);
 
   <p>In addition to updates, ODB also performs state mismatch detection
      when we are deleting an object from the database
-     (<a href="#3.10">Section 3.10, "Deleting Persistent Objects"</a>).
+     (<a href="#3.11">Section 3.11, "Deleting Persistent Objects"</a>).
      To understand why this can be important, consider the following
      application transaction:</p>
 
@@ -9216,7 +9321,7 @@ class person
      used to specify the pointer, then the raw pointer is used by default.</p>
 
   <p>For a more detailed discussion of object pointers, refer to
-     <a href="#3.2">Section 3.2, "Object and View Pointers"</a>.</p>
+     <a href="#3.3">Section 3.3, "Object and View Pointers"</a>.</p>
 
   <h3><a name="12.1.3">12.1.3 <code>abstract</code></a></h3>
 
@@ -9255,7 +9360,7 @@ class contractor: public person
   <p>The <code>readonly</code> specifier specifies that the persistent class
      is read-only. The database state of read-only objects cannot be
      updated. In particular, this means that you cannot call the
-     <code>database::update()</code> function (<a href="#3.9">Section 3.9,
+     <code>database::update()</code> function (<a href="#3.10">Section 3.10,
      "Updating Persistent Objects"</a>) for such objects. For example:</p>
 
   <pre class="cxx">
@@ -9275,7 +9380,7 @@ class person
      read-only while the rest is treated as read-write.</p>
 
   <p>Note that it is also possible to declare individual data members
-    (<a href="#12.4.11">Section 12.4.11, "<code>readonly</code>"</a>)
+    (<a href="#12.4.12">Section 12.4.12, "<code>readonly</code>"</a>)
      as well as composite value types (<a href="#12.3.6">Section 12.3.6,
      "<code>readonly</code>"</a>) as read-only.</p>
 
@@ -9285,7 +9390,7 @@ class person
      has the optimistic concurrency model. A class with the optimistic
      concurrency model must also specify the data member that is used to
      store the object version using the <code>version</code> pragma
-     (<a href="#12.4.13">Section 12.4.13, "<code>version</code>"</a>).
+     (<a href="#12.4.14">Section 12.4.14, "<code>version</code>"</a>).
      For example:</p>
 
   <pre class="cxx">
@@ -9324,18 +9429,18 @@ class person
 
   <p>A persistent class without an object id has limited functionality.
      Such a class cannot be loaded with the <code>database::load()</code>
-     or <code>database::find()</code> functions (<a href="#3.8">Section 3.8,
+     or <code>database::find()</code> functions (<a href="#3.9">Section 3.9,
      "Loading Persistent Objects"</a>), updated with the
-     <code>database::update()</code> function (<a href="#3.9">Section 3.9,
+     <code>database::update()</code> function (<a href="#3.10">Section 3.10,
      "Updating Persistent Objects"</a>), or deleted with the
-     <code>database::erase()</code> function (<a href="#3.10">Section 3.10,
+     <code>database::erase()</code> function (<a href="#3.11">Section 3.11,
      "Deleting Persistent Objects"</a>). To load and delete
      objects without ids you can use the <code>database::query()</code>
      (<a href="#4">Chapter 4, "Querying the Database"</a>) and
-     <code>database::erase_query()</code> (<a href="#3.10">Section 3.10,
+     <code>database::erase_query()</code> (<a href="#3.11">Section 3.11,
      "Deleting Persistent Objects"</a>) functions, respectively.
      There is no way to update such objects except by using native SQL
-     statements (<a href="#3.11">Section 3.11, "Executing Native SQL
+     statements (<a href="#3.12">Section 3.12, "Executing Native SQL
      Statements"</a>).</p>
 
   <p>Furthermore, persistent classes without object ids cannot have container
@@ -9660,8 +9765,8 @@ class employee
 
   <p>The standard syntax for qualified names used in the
      <code>schema</code> and <code>table</code> specifiers as well
-     as the view <code>column</code> specifier (<a href="#12.4.9">Section
-     12.4.9, "<code>column</code> (view)"</a>) has the
+     as the view <code>column</code> specifier (<a href="#12.4.10">Section
+     12.4.10, "<code>column</code> (view)"</a>) has the
      <code>"</code><i>name</i><code>.</code><i>name</i>...<code>"</code>
      form where, as discussed above, the leading name component
      can be empty to denote a fully qualified name. This form, however,
@@ -10128,7 +10233,7 @@ typedef shared_ptr&lt;person> person_ptr;
   </pre>
 
   <p>The <code>NULL</code> semantics can also be specified on the
-     per-member basis (<a href="#12.4.5">Section 12.4.5,
+     per-member basis (<a href="#12.4.6">Section 12.4.6,
      "<code>null</code>/<code>not_null</code>"</a>). If both a type and
      a member have <code>null</code>/<code>not_null</code> specifiers,
      then the member specifier takes precedence. If a member specifier
@@ -10181,7 +10286,7 @@ class person
 
   <p>The semantics of the <code>default</code> specifier for a value type
      are similar to those of the <code>default</code> specifier for a
-     data member (<a href="#12.4.6">Section 12.4.6,
+     data member (<a href="#12.4.7">Section 12.4.7,
      "<code>default</code>"</a>).</p>
 
   <h3><a name="12.3.5">12.3.5 <code>options</code></a></h3>
@@ -10204,7 +10309,7 @@ class person
 
   <p>The semantics of the <code>options</code> specifier for a value type
      are similar to those of the <code>options</code> specifier for a
-     data member (<a href="#12.4.7">Section 12.4.7,
+     data member (<a href="#12.4.8">Section 12.4.8,
      "<code>options</code>"</a>).</p>
 
   <h3><a name="12.3.6">12.3.6 <code>readonly</code></a></h3>
@@ -10212,7 +10317,7 @@ class person
   <p>The <code>readonly</code> specifier specifies that the composite
      value type is read-only. Changes to data members of a read-only
      composite value type are ignored when updating the database
-     state of an object (<a href="#3.9">Section 3.9, "Updating Persistent
+     state of an object (<a href="#3.10">Section 3.10, "Updating Persistent
      Objects"</a>) containing such a value type. Note that this specifier
      is only valid for composite value types. For example:</p>
 
@@ -10233,7 +10338,7 @@ class person_name
      read-only while the rest is treated as read-write.</p>
 
   <p>Note that it is also possible to declare individual data members
-     (<a href="#12.4.11">Section 12.4.11, "<code>readonly</code>"</a>)
+     (<a href="#12.4.12">Section 12.4.12, "<code>readonly</code>"</a>)
      as well as whole objects (<a href="#12.1.4">Section 12.1.4,
      "<code>readonly</code>"</a>) as read-only.</p>
 
@@ -10407,7 +10512,7 @@ typedef std::vector&lt;std::string> nicknames;
 
   <p>The semantics of the <code>id_options</code> specifier for a container
      type are similar to those of the <code>id_options</code> specifier for
-     a container data member (<a href="#12.4.22">Section 12.4.22,
+     a container data member (<a href="#12.4.23">Section 12.4.23,
      "<code>id_options</code>"</a>).</p>
 
 
@@ -10424,7 +10529,7 @@ typedef std::vector&lt;std::string> nicknames;
 
   <p>The semantics of the <code>index_options</code> specifier for a container
      type are similar to those of the <code>index_options</code> specifier for
-     a container data member (<a href="#12.4.23">Section 12.4.23,
+     a container data member (<a href="#12.4.24">Section 12.4.24,
      "<code>index_options</code>"</a>).</p>
 
 
@@ -10441,7 +10546,7 @@ typedef std::map&lt;std::string, std::string> properties;
 
   <p>The semantics of the <code>key_options</code> specifier for a container
      type are similar to those of the <code>key_options</code> specifier for
-     a container data member (<a href="#12.4.24">Section 12.4.24,
+     a container data member (<a href="#12.4.25">Section 12.4.25,
      "<code>key_options</code>"</a>).</p>
 
 
@@ -10458,7 +10563,7 @@ typedef std::set&lt;std::string> nicknames;
 
   <p>The semantics of the <code>value_options</code> specifier for a container
      type are similar to those of the <code>value_options</code> specifier for
-     a container data member (<a href="#12.4.25">Section 12.4.25,
+     a container data member (<a href="#12.4.26">Section 12.4.26,
      "<code>value_options</code>"</a>).</p>
 
 
@@ -10561,153 +10666,159 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
     </tr>
 
     <tr>
+      <td><code>get</code>/<code>set</code>/<code>access</code></td>
+      <td>member accessor/modifier expressions</td>
+      <td><a href="#12.4.5">12.4.5</a></td>
+    </tr>
+
+    <tr>
       <td><code>null</code>/<code>not_null</code></td>
       <td>member can/cannot be <code>NULL</code></td>
-      <td><a href="#12.4.5">12.4.5</a></td>
+      <td><a href="#12.4.6">12.4.6</a></td>
     </tr>
 
     <tr>
       <td><code>default</code></td>
       <td>default value for a member</td>
-      <td><a href="#12.4.6">12.4.6</a></td>
+      <td><a href="#12.4.7">12.4.7</a></td>
     </tr>
 
     <tr>
       <td><code>options</code></td>
       <td>database options for a member</td>
-      <td><a href="#12.4.7">12.4.7</a></td>
-    </tr>
-
-    <tr>
-      <td><code>column</code></td>
-      <td>column name for a member of an object or composite value</td>
       <td><a href="#12.4.8">12.4.8</a></td>
     </tr>
 
     <tr>
       <td><code>column</code></td>
-      <td>column name for a member of a view</td>
+      <td>column name for a member of an object or composite value</td>
       <td><a href="#12.4.9">12.4.9</a></td>
+    </tr>
+
+    <tr>
+      <td><code>column</code></td>
+      <td>column name for a member of a view</td>
+      <td><a href="#12.4.10">12.4.10</a></td>
     </tr>
 
     <tr>
       <td><code>transient</code></td>
       <td>member is not stored in the database</td>
-      <td><a href="#12.4.10">12.4.10</a></td>
+      <td><a href="#12.4.11">12.4.11</a></td>
     </tr>
 
     <tr>
       <td><code>readonly</code></td>
       <td>member is read-only</td>
-      <td><a href="#12.4.11">12.4.11</a></td>
+      <td><a href="#12.4.12">12.4.12</a></td>
     </tr>
 
     <tr>
       <td><code>inverse</code></td>
       <td>member is an inverse side of a bidirectional relationship</td>
-      <td><a href="#12.4.12">12.4.12</a></td>
+      <td><a href="#12.4.13">12.4.13</a></td>
     </tr>
 
     <tr>
       <td><code>version</code></td>
       <td>member stores object version</td>
-      <td><a href="#12.4.13">12.4.13</a></td>
+      <td><a href="#12.4.14">12.4.14</a></td>
     </tr>
 
     <tr>
       <td><code>index</code></td>
       <td>define database index for a member</td>
-      <td><a href="#12.4.14">12.4.14</a></td>
+      <td><a href="#12.4.15">12.4.15</a></td>
     </tr>
 
     <tr>
       <td><code>unique</code></td>
       <td>define unique database index for a member</td>
-      <td><a href="#12.4.15">12.4.15</a></td>
+      <td><a href="#12.4.16">12.4.16</a></td>
     </tr>
 
     <tr>
       <td><code>unordered</code></td>
       <td>ordered container should be stored unordered</td>
-      <td><a href="#12.4.16">12.4.16</a></td>
+      <td><a href="#12.4.17">12.4.17</a></td>
     </tr>
 
     <tr>
       <td><code>table</code></td>
       <td>table name for a container</td>
-      <td><a href="#12.4.17">12.4.17</a></td>
+      <td><a href="#12.4.18">12.4.18</a></td>
     </tr>
 
     <tr>
       <td><code>index_type</code></td>
       <td>database type for a container's index type</td>
-      <td><a href="#12.4.18">12.4.18</a></td>
+      <td><a href="#12.4.19">12.4.19</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
       <td>database type for a container's key type</td>
-      <td><a href="#12.4.19">12.4.19</a></td>
+      <td><a href="#12.4.20">12.4.20</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
       <td>database type for a container's value type</td>
-      <td><a href="#12.4.20">12.4.20</a></td>
+      <td><a href="#12.4.21">12.4.21</a></td>
     </tr>
 
     <tr>
       <td><code>value_null</code>/<code>value_not_null</code></td>
       <td>container's value can/cannot be <code>NULL</code></td>
-      <td><a href="#12.4.21">12.4.21</a></td>
+      <td><a href="#12.4.22">12.4.22</a></td>
     </tr>
 
     <tr>
       <td><code>id_options</code></td>
       <td>database options for a container's id column</td>
-      <td><a href="#12.4.22">12.4.22</a></td>
+      <td><a href="#12.4.23">12.4.23</a></td>
     </tr>
 
     <tr>
       <td><code>index_options</code></td>
       <td>database options for a container's index column</td>
-      <td><a href="#12.4.23">12.4.23</a></td>
+      <td><a href="#12.4.24">12.4.24</a></td>
     </tr>
 
     <tr>
       <td><code>key_options</code></td>
       <td>database options for a container's key column</td>
-      <td><a href="#12.4.24">12.4.24</a></td>
+      <td><a href="#12.4.25">12.4.25</a></td>
     </tr>
 
     <tr>
       <td><code>value_options</code></td>
       <td>database options for a container's value column</td>
-      <td><a href="#12.4.25">12.4.25</a></td>
+      <td><a href="#12.4.26">12.4.26</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
       <td>column name for a container's object id</td>
-      <td><a href="#12.4.26">12.4.26</a></td>
+      <td><a href="#12.4.27">12.4.27</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>column name for a container's index</td>
-      <td><a href="#12.4.27">12.4.27</a></td>
+      <td><a href="#12.4.28">12.4.28</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>column name for a container's key</td>
-      <td><a href="#12.4.28">12.4.28</a></td>
+      <td><a href="#12.4.29">12.4.29</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>column name for a container's value</td>
-      <td><a href="#12.4.29">12.4.29</a></td>
+      <td><a href="#12.4.30">12.4.30</a></td>
     </tr>
 
   </table>
@@ -10773,7 +10884,7 @@ class person
      is a safe choice.</p>
 
   <p>For additional information on the automatic identifier assignment,
-     refer to <a href="#3.7">Section 3.7, "Making Objects Persistent"</a>.</p>
+     refer to <a href="#3.8">Section 3.8, "Making Objects Persistent"</a>.</p>
 
   <p>Note also that the <code>auto</code> specifier cannot be specified
      for data members of composite value types or views.</p>
@@ -10794,8 +10905,8 @@ class person
 };
   </pre>
 
-  <p>The <code>null</code> and <code>not_null</code> (<a href="#12.4.5">Section
-     12.4.5, "<code>null</code>/<code>not_null</code>"</a>) specifiers
+  <p>The <code>null</code> and <code>not_null</code> (<a href="#12.4.6">Section
+     12.4.6, "<code>null</code>/<code>not_null</code>"</a>) specifiers
      can be used to control the NULL semantics of a data member.</p>
 
   <h3><a name="12.4.4">12.4.4 <code>id_type</code></a></h3>
@@ -10831,7 +10942,234 @@ class person
 };
   </pre>
 
-  <h3><a name="12.4.5">12.4.5 <code>null</code>/<code>not_null</code></a></h3>
+  <h3><a name="12.4.5">12.4.5 <code>get</code>/<code>set</code>/<code>access</code></a></h3>
+
+  <p>The <code>get</code> and <code>set</code> specifiers specify the
+     data member accessor and modifier expressions, respectively. If
+     provided, the generated database support code will use these
+     expressions to access and modify the data member when performing
+     database operations. The <code>access</code> specifier can be used
+     as a shortcut to specify both the accessor and modifier if they
+     happen to be the same.</p>
+
+  <p>In its simplest form the accessor or modifier expression can be
+     just a name. Such a name should resolve either to another data
+     member of the same type or to a suitable accessor or modifier
+     member function. For example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+
+public:
+  const std::string&amp; name () const;
+  void name (const std::string&amp;);
+private:
+  #pragma db access(name)
+  std::string name_;
+};
+  </pre>
+
+  <p>A suitable accessor function is a <code>const</code> member function
+     that takes no arguments and whose return value can be implicitly
+     converted to the <code>const</code> reference to the member type
+     (<code>const&nbsp;std::string&amp;</code> in the example above).
+     An accessor function that returns a <code>const</code> reference
+     to the data member is called <em>by-reference accessor</em>.
+     Otherwise, it is called <em>by-value accessor</em>.</p>
+
+  <p>A suitable modifier function can be of two forms. It can be the
+     so called <em>by-reference modifier</em> which is a member function
+     that takes no arguments and returns a non-<code>const</code> reference
+     to the data member (<code>std::string&amp;</code> in the example above).
+     Alternatively, it can be the so called <em>by-value modifier</em> which
+     is a member function taking a single argument &mdash; the new value
+     &mdash; that can be implicitly initialized from a variable of the member
+     type (<code>std::string</code> in the example above). The return value
+     of a by-value modifier, if any, is ignored. If both by-reference and
+     by-value modifiers are available, then ODB prefers the by-reference
+     version since it is more efficient. For example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+
+public:
+  std::string get_name () const;      // By-value accessor.
+  std::string&amp; set_name ();           // By-reference modifier.
+  void set_name (std::string const&amp;); // By-value modifier.
+private:
+  #pragma db get(get_name) \ // Uses by-value accessor.
+             set(set_name)   // Uses by-reference modifier.
+  std::string name_;
+};
+  </pre>
+
+  <p>Note that in many cases it is not necessary to specify accessor and
+     modifier functions explicitly since the ODB compiler will try to
+     discover them automatically in case the data member will be inaccessible
+     to the generated code. In particular, in both of the above examples
+     the ODB compiler would have successfully discovered the necessary
+     functions. For more information on this functionality, refer to
+     <a href="#3.2">Section 3.2, "Declaring Persistent Objects and
+     Values"</a>.</p>
+
+  <p>Note also that by-value accessors and by-value modifiers cannot be
+     used for certain data members in certain situations. These limitations
+     are discussed in more detail later in this section.</p>
+
+  <p>Accessor and modifier expressions can be more elaborate than simple
+     names. An accessor expression is any C++ expression that can be
+     used to initialize a <code>const</code> reference to the member
+     type. Similar to accessor functions, which are just a special case
+     of accessor expressions, an accessor expression that evaluates to a
+     <code>const</code> reference to the data member is called
+     <em>by-reference accessor expression</em>. Otherwise, it is
+     called <em>by-value accessor expression</em>.</p>
+
+  <p>Modifier expressions can also be of two forms: <em>by-reference
+     modifier expression</em> and <em>by-value modifier expression</em>
+     (again, modifier functions are just a special case of modifier
+     expressions). A by-reference modifier expression is any C++
+     expression that evaluates to the non-<code>const</code> reference
+     to the member type. A by-value modifier expression can be a
+     single or multiple (separated by semicolon) C++ statements
+     with the effect of setting the new member value.</p>
+
+  <p>There are two special placeholders that are recognized by the
+     ODB compiler in accessor and modifier expressions. The first
+     is the <code>this</code> keyword which denotes a reference
+     (note: not a pointer) to the persistent object. In accessor
+     expressions this reference is <code>const</code> while in
+     modifier expressions it is non-<code>const</code>. If an
+     expression does not contain the <code>this</code> placeholder,
+     then the ODB compiler automatically prefixes it with <code>this.</code>
+     sequence.</p>
+
+  <p>The second placeholder, the <code>(?)</code> sequence, is used
+     to denote the new value in by-value modifier expressions. The
+     ODB compiler replaces the question mark with the variable name,
+     keeping the surrounding parenthesis. The following example shows
+     a few more interesting accessor and modifier expressions:</p>
+
+  <pre class="cxx">
+#pragma db value
+struct point
+{
+  point (int, int);
+
+  int x;
+  int y;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+  public:
+    const char* name () const;
+    void name (const char*);
+  private:
+    #pragma db get(std::string (this.name ())) \
+               set(name ((?).c_str ())) // The same as this.name (...).
+    std::string name_;
+
+  public:
+    const std::unique_ptr&lt;account>&amp; acc () const;
+    void acc (std::unique_ptr&lt;account>);
+  private:
+    #pragma db set(acc (std::move (?)))
+    std::unique_ptr&lt;account> acc_;
+
+  public:
+    int loc_x () const
+    int loc_y () const
+    void loc_x (int);
+    void loc_y (int);
+  private:
+    #pragma db get(point (this.loc_x (), this.loc_y ()))    \
+               set(this.loc_x ((?).x); this.loc_y ((?).y))
+    point loc_;
+};
+  </pre>
+
+  <p>When the data member is of an array type, then the terms "reference"
+     and "member type" in the above discussion should be replaced with
+     "pointer" and "array element type", respectively. That is, the accessor
+     expression for an array member is any C++ expression that can be
+     used to initialize a <code>const</code> pointer to the array
+     element type, and so on. The following example shows common
+     accessor and modifier signatures for array members:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+
+  public:
+    const char* id () const; // By-reference accessor.
+    void id (const char*);   // By-value modifier.
+  private:
+    char id_[16];
+
+  public:
+    const char* pub_key () const; // By-reference accessor.
+    char* pub_key ();             // By-reference modifier.
+  private:
+    char pub_key_[2048];
+};
+  </pre>
+
+  <p>Accessor and modifier expressions can be used with data members
+     of simple value, composite value, container, and object pointer
+     types. They can also be used for data members in persistent classes,
+     composite value types, and views. There are, however, certain
+     limitations when it comes to using by-value accessor and modifier
+     expressions. First of all, if a by-value modifier is used, then
+     the data member type should be default-constructible. Furthermore,
+     a composite value type that has a container member cannot
+     be modified with a by-value modifier. Only a by-reference modifier
+     expression can be used. The ODB compiler will detect such cases
+     and issue diagnostics. For example:</p>
+
+  <pre class="cxx">
+#pragma db value
+struct name
+{
+  std::string first_;
+  std::string last_;
+  std::vector&lt;std::string> aliases_;
+};
+
+#pragma db object
+class person
+{
+  ...
+
+public:
+  const name&amp; name () const;
+  void name (const name&amp;);
+private:
+  #pragma db access(name) // Error: by-value modifier.
+  name name_;
+};
+  </pre>
+
+  <p>In certain database systems it is also not possible to use by-value
+     accessor and modifier expression with certain database types.
+     The ODB compiler is only able to detect such cases and issue diagnostics
+     if you specified accessor/modifier function names as opposed to custom
+     expressions. For more information on these database and type-specific
+     limitations, refer to the "Limitations" sections in <a href="#II">Part
+     II, "Database Systems"</a>.</p>
+
+  <h3><a name="12.4.6">12.4.6 <code>null</code>/<code>not_null</code></a></h3>
 
   <p>The <code>null</code> and <code>not_null</code> specifiers specify that
      the data member can or cannot be <code>NULL</code>, respectively.
@@ -10844,7 +11182,7 @@ class person
      of each value type. Consult the relevant documentation to find
      out more about the <code>NULL</code> semantics for such value
      types. A data member containing the object id (<a href="#12.4.1">Section
-     12.4.1, "<code>id</code>"</a> ) is automatically treated as not
+     12.4.1, "<code>id</code>"</a>) is automatically treated as not
      allowing a <code>NULL</code> value. Data members that
      allow <code>NULL</code> values are mapped in a relational database
      to columns that allow <code>NULL</code> values. For example:</p>
@@ -10886,7 +11224,7 @@ class account
      discussion of the <code>NULL</code> semantics for object pointers,
      refer to <a href="#6">Chapter 6, "Relationships"</a>.</p>
 
-  <h3><a name="12.4.6">12.4.6 <code>default</code></a></h3>
+  <h3><a name="12.4.7">12.4.7 <code>default</code></a></h3>
 
   <p>The <code>default</code> specifier specifies the database default value
      that should be used for the data member. For example:</p>
@@ -10907,8 +11245,8 @@ class person
      an integer literal, a floating point literal, a string literal, or
      an enumerator name. If you need to specify a default value that is
      an expression, for example an SQL function call, then you can use
-     the <code>options</code> specifier (<a href="#12.4.7">Section
-     12.4.7, "<code>options</code>"</a>) instead. For example:</p>
+     the <code>options</code> specifier (<a href="#12.4.8">Section
+     12.4.8, "<code>options</code>"</a>) instead. For example:</p>
 
   <pre class="cxx">
 enum gender {male, female, undisclosed};
@@ -10994,7 +11332,7 @@ class person
   <p>Additionally, the <code>default</code> specifier cannot be specified
      for view data members.</p>
 
-  <h3><a name="12.4.7">12.4.7 <code>options</code></a></h3>
+  <h3><a name="12.4.8">12.4.8 <code>options</code></a></h3>
 
   <p>The <code>options</code> specifier specifies additional column
      definition options that should be used for the data member. For
@@ -11042,9 +11380,9 @@ class person
 
   <p>ODB provides dedicated specifiers for specifying column types
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>),
-     <code>NULL</code> constraints (<a href="#12.4.5">Section 12.4.5,
+     <code>NULL</code> constraints (<a href="#12.4.6">Section 12.4.6,
      "<code>null</code>/<code>not_null</code>"</a>), and default
-     values (<a href="#12.4.6">Section 12.4.6, "<code>default</code>"</a>).
+     values (<a href="#12.4.7">Section 12.4.7, "<code>default</code>"</a>).
      For ODB to function correctly these specifiers should always be
      used instead of the opaque <code>options</code> specifier for
      these components of a column definition.</p>
@@ -11052,7 +11390,7 @@ class person
   <p>Note also that the <code>options</code> specifier cannot be specified
      for view data members.</p>
 
-  <h3><a name="12.4.8">12.4.8 <code>column</code> (object, composite value)</a></h3>
+  <h3><a name="12.4.9">12.4.9 <code>column</code> (object, composite value)</a></h3>
 
   <p>The <code>column</code> specifier specifies the column name
      that should be used to store the data member of a persistent class
@@ -11078,7 +11416,7 @@ class person
      the common data member name decorations, such as leading and trailing
      underscores, the <code>m_</code> prefix, etc.</p>
 
-  <h3><a name="12.4.9">12.4.9 <code>column</code> (view)</a></h3>
+  <h3><a name="12.4.10">12.4.10 <code>column</code> (view)</a></h3>
 
   <p>The <code>column</code> specifier can be used to specify the associated
      object data member, the potentially qualified column name, or the column
@@ -11086,7 +11424,7 @@ class person
      refer to <a href="#9.1">Section 9.1, "Object Views"</a> and
      <a href="#9.2">Section 9.2, "Table Views"</a>.</p>
 
-  <h3><a name="12.4.10">12.4.10 <code>transient</code></a></h3>
+  <h3><a name="12.4.11">12.4.11 <code>transient</code></a></h3>
 
   <p>The <code>transient</code> specifier instructs the ODB compiler
      not to store the data member in the database. For example:</p>
@@ -11108,16 +11446,16 @@ class person
      references that are only meaningful in the application's
      memory, as well as utility members such as mutexes, etc.</p>
 
-  <h3><a name="12.4.11">12.4.11 <code>readonly</code></a></h3>
+  <h3><a name="12.4.12">12.4.12 <code>readonly</code></a></h3>
 
   <p>The <code>readonly</code> specifier specifies that the data member of
      an object or composite value type is read-only. Changes to a read-only
      data member are ignored when updating the database state of an object
-     (<a href="#3.9">Section 3.9, "Updating Persistent Objects"</a>)
+     (<a href="#3.10">Section 3.10, "Updating Persistent Objects"</a>)
      containing such a member. Since views are read-only, it is not
      necessary to use this specifier for view data members. Object id
      (<a href="#12.4.1">Section 12.4.1, "<code>id</code>"</a>)
-     and inverse (<a href="#12.4.12">Section 12.4.12,
+     and inverse (<a href="#12.4.13">Section 12.4.13,
      "<code>inverse</code>"</a>) data members are automatically treated
      as read-only and must not be explicitly declared as such. For
      example:</p>
@@ -11201,7 +11539,7 @@ class person
      as well as whole objects (<a href="#12.1.4">Section 12.1.4,
      "<code>readonly</code>"</a>) as read-only.</p>
 
-  <h3><a name="12.4.12">12.4.12 <code>inverse</code></a></h3>
+  <h3><a name="12.4.13">12.4.13 <code>inverse</code></a></h3>
 
   <p>The <code>inverse</code> specifier specifies that the data member of
      an object pointer or a container of object pointers type is an
@@ -11239,12 +11577,12 @@ class person
      relationship information. Only ordered and set containers can be used
      for inverse members. If an inverse member is of an ordered container
      type, it is automatically marked as unordered
-     (<a href="#12.4.16">Section 12.4.16, "<code>unordered</code>"</a>).</p>
+     (<a href="#12.4.17">Section 12.4.17, "<code>unordered</code>"</a>).</p>
 
   <p>For a more detailed discussion of inverse members, refer to
      <a href="#6.2">Section 6.2, "Bidirectional Relationships"</a>.</p>
 
-  <h3><a name="12.4.13">12.4.13 <code>version</code></a></h3>
+  <h3><a name="12.4.14">12.4.14 <code>version</code></a></h3>
 
   <p>The <code>version</code> specifier specifies that the data member stores
      the object version used to support optimistic concurrency.  If a class
@@ -11274,7 +11612,7 @@ class person
   <p>For a more detailed discussion of optimistic concurrency, refer to
      <a href="#11">Chapter 11, "Optimistic Concurrency"</a>.</p>
 
-  <h3><a name="12.4.14">12.4.14 <code>index</code></a></h3>
+  <h3><a name="12.4.15">12.4.15 <code>index</code></a></h3>
 
   <p>The <code>index</code> specifier instructs the ODB compiler to define
      a database index for the data member. For example:</p>
@@ -11293,7 +11631,7 @@ class person
   <p>For more information on defining database indexes, refer to
      <a href="#12.6">Section 12.6, "Index Definition Pragmas"</a>.</p>
 
-  <h3><a name="12.4.15">12.4.15 <code>unique</code></a></h3>
+  <h3><a name="12.4.16">12.4.16 <code>unique</code></a></h3>
 
   <p>The <code>index</code> specifier instructs the ODB compiler to define
      a unique database index for the data member. For example:</p>
@@ -11312,7 +11650,7 @@ class person
   <p>For more information on defining database indexes, refer to
      <a href="#12.6">Section 12.6, "Index Definition Pragmas"</a>.</p>
 
-  <h3><a name="12.4.16">12.4.16 <code>unordered</code></a></h3>
+  <h3><a name="12.4.17">12.4.17 <code>unordered</code></a></h3>
 
   <p>The <code>unordered</code> specifier specifies that the member of
      an ordered container type should be stored unordered in the database.
@@ -11335,7 +11673,7 @@ class person
      storage in the database, refer to <a href="#5.1">Section 5.1,
      "Ordered Containers"</a>.</p>
 
-  <h3><a name="12.4.17">12.4.17 <code>table</code></a></h3>
+  <h3><a name="12.4.18">12.4.18 <code>table</code></a></h3>
 
   <p>The <code>table</code> specifier specifies the table name that should
      be used to store the contents of the container member. For example:</p>
@@ -11383,7 +11721,7 @@ class person
      qualified names, refer to <a href="#12.1.8">Section 12.1.8,
      "<code>schema</code>"</a>.</p>
 
-  <h3><a name="12.4.18">12.4.18 <code>index_type</code></a></h3>
+  <h3><a name="12.4.19">12.4.19 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
      database type that should be used for an ordered container's
@@ -11403,7 +11741,7 @@ class person
 };
   </pre>
 
-  <h3><a name="12.4.19">12.4.19 <code>key_type</code></a></h3>
+  <h3><a name="12.4.20">12.4.20 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
      database type that should be used for a map container's
@@ -11423,7 +11761,7 @@ class person
 };
   </pre>
 
-  <h3><a name="12.4.20">12.4.20 <code>value_type</code></a></h3>
+  <h3><a name="12.4.21">12.4.21 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
      database type that should be used for a container's
@@ -11444,18 +11782,18 @@ class person
   </pre>
 
   <p>The <code>value_null</code> and <code>value_not_null</code>
-     (<a href="#12.4.21">Section 12.4.21,
+     (<a href="#12.4.22">Section 12.4.22,
      "<code>value_null</code>/<code>value_not_null</code>"</a>) specifiers
      can be used to control the NULL semantics of a value column.</p>
 
-  <h3><a name="12.4.21">12.4.21 <code>value_null</code>/<code>value_not_null</code></a></h3>
+  <h3><a name="12.4.22">12.4.22 <code>value_null</code>/<code>value_not_null</code></a></h3>
 
   <p>The <code>value_null</code> and <code>value_not_null</code> specifiers
      specify that a container's element value for the data member can or
      cannot be <code>NULL</code>, respectively. The semantics of
      <code>value_null</code> and <code>value_not_null</code> are similar
      to those of the <code>null</code> and <code>not_null</code> specifiers
-     (<a href="#12.4.5">Section 12.4.5, "<code>null</code>/<code>not_null</code>"</a>).
+     (<a href="#12.4.6">Section 12.4.6, "<code>null</code>/<code>not_null</code>"</a>).
      For example:</p>
 
   <pre class="cxx">
@@ -11481,7 +11819,7 @@ class account
      Multiset Containers"</a>) the element value is automatically treated
      as not allowing a <code>NULL</code> value.</p>
 
-  <h3><a name="12.4.22">12.4.22 <code>id_options</code></a></h3>
+  <h3><a name="12.4.23">12.4.23 <code>id_options</code></a></h3>
 
   <p>The <code>id_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -11502,10 +11840,10 @@ class person
   </pre>
 
   <p>The semantics of <code>id_options</code> are similar to those
-     of the <code>options</code> specifier (<a href="#12.4.7">Section
-     12.4.7, "<code>options</code>"</a>).</p>
+     of the <code>options</code> specifier (<a href="#12.4.8">Section
+     12.4.8, "<code>options</code>"</a>).</p>
 
-  <h3><a name="12.4.23">12.4.23 <code>index_options</code></a></h3>
+  <h3><a name="12.4.24">12.4.24 <code>index_options</code></a></h3>
 
   <p>The <code>index_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -11523,10 +11861,10 @@ class person
   </pre>
 
   <p>The semantics of <code>index_options</code> are similar to those
-     of the <code>options</code> specifier (<a href="#12.4.7">Section
-     12.4.7, "<code>options</code>"</a>).</p>
+     of the <code>options</code> specifier (<a href="#12.4.8">Section
+     12.4.8, "<code>options</code>"</a>).</p>
 
-  <h3><a name="12.4.24">12.4.24 <code>key_options</code></a></h3>
+  <h3><a name="12.4.25">12.4.25 <code>key_options</code></a></h3>
 
   <p>The <code>key_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -11544,10 +11882,10 @@ class person
   </pre>
 
   <p>The semantics of <code>key_options</code> are similar to those
-     of the <code>options</code> specifier (<a href="#12.4.7">Section
-     12.4.7, "<code>options</code>"</a>).</p>
+     of the <code>options</code> specifier (<a href="#12.4.8">Section
+     12.4.8, "<code>options</code>"</a>).</p>
 
-  <h3><a name="12.4.25">12.4.25 <code>value_options</code></a></h3>
+  <h3><a name="12.4.26">12.4.26 <code>value_options</code></a></h3>
 
   <p>The <code>value_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -11565,17 +11903,17 @@ class person
   </pre>
 
   <p>The semantics of <code>value_options</code> are similar to those
-     of the <code>options</code> specifier (<a href="#12.4.7">Section
-     12.4.7, "<code>options</code>"</a>).</p>
+     of the <code>options</code> specifier (<a href="#12.4.8">Section
+     12.4.8, "<code>options</code>"</a>).</p>
 
-  <h3><a name="12.4.26">12.4.26 <code>id_column</code></a></h3>
+  <h3><a name="12.4.27">12.4.27 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in a
      container's table for the data member. The semantics of
      <code>id_column</code> are similar to those of the
      <code>column</code> specifier
-     (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
+     (<a href="#12.4.9">Section 12.4.9, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="cxx">
@@ -11592,14 +11930,14 @@ class person
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="12.4.27">12.4.27 <code>index_column</code></a></h3>
+  <h3><a name="12.4.28">12.4.28 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in an
      ordered container's table for the data member. The semantics of
      <code>index_column</code> are similar to those of the
      <code>column</code> specifier
-     (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
+     (<a href="#12.4.9">Section 12.4.9, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="cxx">
@@ -11616,14 +11954,14 @@ class person
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="12.4.28">12.4.28 <code>key_column</code></a></h3>
+  <h3><a name="12.4.29">12.4.29 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in a map
      container's table for the data member. The semantics of
      <code>key_column</code> are similar to those of the
      <code>column</code> specifier
-     (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
+     (<a href="#12.4.9">Section 12.4.9, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="cxx">
@@ -11640,14 +11978,14 @@ class person
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="12.4.29">12.4.29 <code>value_column</code></a></h3>
+  <h3><a name="12.4.30">12.4.30 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in a
      container's table for the data member. The semantics of
      <code>value_column</code> are similar to those of the
      <code>column</code> specifier
-     (<a href="#12.4.8">Section 12.4.8, "<code>column</code>"</a>).
+     (<a href="#12.4.9">Section 12.4.9, "<code>column</code>"</a>).
      For example:</p>
 
   <pre class="cxx">
@@ -11778,7 +12116,7 @@ namespace accounting
   </pre>
 
   <p>For a more detailed discussion of object and view pointers, refer
-     to <a href="#3.2">Section 3.2, "Object and View Pointers"</a>.</p>
+     to <a href="#3.3">Section 3.3, "Object and View Pointers"</a>.</p>
 
   <h3><a name="12.5.2">12.5.2 <code>table</code></a></h3>
 
@@ -11959,9 +12297,9 @@ class object
 
   <p>ODB also offers a shortcut for defining an index with the default
      method and options for a single data member. Such an index can
-     be defined using the <code>index</code> (<a href="#12.4.14">Section
-     12.4.14, "<code>index</code>"</a>) or <code>unique</code>
-     (<a href="#12.4.15">Section 12.4.15, "<code>unique</code>"</a>)
+     be defined using the <code>index</code> (<a href="#12.4.15">Section
+     12.4.15, "<code>index</code>"</a>) or <code>unique</code>
+     (<a href="#12.4.16">Section 12.4.16, "<code>unique</code>"</a>)
      member specifier. For example:</p>
 
 <pre class="cxx">
@@ -12121,7 +12459,7 @@ class object
      The conversion expressions are regular expression substitutions.
      They must contain the special <code>(?)</code> placeholder which will
      be replaced with the actual value to be converted. Turning on SQL
-     statement tracing (<a href="#3.12">Section 3.12, "Tracing SQL
+     statement tracing (<a href="#3.13">Section 3.13, "Tracing SQL
      Statement Execution"</a>) can be useful for debugging conversion
      expressions. This allows you to see the substituted expressions
      as used in the actual statements.</p>
@@ -12882,7 +13220,7 @@ namespace odb
   </pre>
 
   <p>For more information on the <code>odb::connection</code> interface,
-     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The first
+     refer to <a href="#3.6">Section 3.6, "Connections"</a>. The first
      overloaded <code>mysql::connection</code> constructor establishes a
      new MySQL connection. The second constructor allows us to create
      a <code>connection</code> instance by providing an already connected
@@ -13447,7 +13785,7 @@ auto_ptr&lt;odb::database> db (
   <p>The <code>begin_immediate()</code> and <code>begin_exclusive()</code>
      functions are the SQLite-specific extensions to the standard
      <code>odb::database::begin()</code> function (see
-     <a href="#3.4">Section 3.4, "Transactions"</a>). They allow us
+     <a href="#3.5">Section 3.5, "Transactions"</a>). They allow us
      to start an immediate (<code>BEGIN IMMEDIATE</code>) and an exclusive
      (<code>BEGIN EXCLUSIVE</code>) SQLite transaction, respectively.
      For more information on the semantics of the immediate and exclusive
@@ -13491,7 +13829,7 @@ namespace odb
   </pre>
 
   <p>For more information on the <code>odb::connection</code> interface,
-     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The first
+     refer to <a href="#3.6">Section 3.6, "Connections"</a>. The first
      overloaded <code>sqlite::connection</code> constructor opens
      a new SQLite connection. The <code>extra_flags</code> argument can
      be used to specify extra <code>sqlite3_open_v2()</code> flags
@@ -13774,7 +14112,7 @@ namespace odb
      SQLite results is the unavailability of the <code>result::size()</code>
      function. If you call this function on an SQLite query result, then
      the <code>odb::result_not_cached</code> exception
-     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>) is always
+     (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>) is always
      thrown. Future versions of the SQLite ODB runtime library may add support
      for result caching.</p>
 
@@ -13819,7 +14157,7 @@ class person
   <p>If foreign key constraints checking is disabled or not available,
      then inconsistencies in object relationships will not be detected.
      Furthermore, using the <code>erase_query()</code> function
-     (<a href="#3.10">Section 3.10, "Deleting Persistent Objects"</a>)
+     (<a href="#3.11">Section 3.11, "Deleting Persistent Objects"</a>)
      to delete persistent objects that contain containers will not work
      correctly. Container data for such objects will not be deleted.</p>
 
@@ -13874,8 +14212,8 @@ CREATE TABLE Employee (
      to distinguish between the duplicate primary key and other constraint
      violations. As a result, when making an object persistent, the SQLite
      ODB runtime will translate all constraint violation errors to the
-     <code>object_already_persistent</code> exception (<a href="#3.13">Section
-     3.13, "ODB Exceptions"</a>).</p>
+     <code>object_already_persistent</code> exception (<a href="#3.14">Section
+     3.14, "ODB Exceptions"</a>).</p>
 
   <h3><a name="14.5.5">14.5.5 Sharing of Queries</a></h3>
 
@@ -14276,7 +14614,7 @@ namespace odb
   </pre>
 
   <p>For more information on the <code>odb::connection</code> interface,
-     refer to <a href="#3.5">Section 3.5, "Connections"</a>. The first
+     refer to <a href="#3.6">Section 3.6, "Connections"</a>. The first
      overloaded <code>pgsql::connection</code> constructor establishes a
      new PostgreSQL connection. The second constructor allows us to create
      a <code>connection</code> instance by providing an already connected
@@ -14519,7 +14857,7 @@ CREATE TABLE Employee (
      constraint violations. As a result, when making an object persistent,
      the PostgreSQL ODB runtime will translate all unique constraint violation
      errors to the <code>object_already_persistent</code> exception
-     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>).</p>
+     (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>).</p>
 
   <h3><a name="15.5.4">15.5.4 Date-Time Format</a></h3>
 
@@ -14715,7 +15053,7 @@ class object
      in the generated schema, columns of these types are declared as
      <code>NULL</code> even if explicitly declared as
      <code>NOT NULL</code> with the <code>db&nbsp;not_null</code> pragma
-     (<a href="#12.4.5">Section 12.4.5, "<code>null/not_null</code>"</a>),
+     (<a href="#12.4.6">Section 12.4.6, "<code>null/not_null</code>"</a>),
      except for primary key columns. This also means that for object ids
      that are mapped to these Oracle types, an empty string is an invalid
      value.</p>
@@ -14986,7 +15324,7 @@ namespace odb
   </pre>
 
   <p>For more information on the <code>odb::connection</code> interface, refer
-     to <a href="#3.5">Section 3.5, "Connections"</a>. The first overloaded
+     to <a href="#3.6">Section 3.6, "Connections"</a>. The first overloaded
      <code>oracle::connection</code> constructor creates a new OCI service
      context. The OCI statement caching is enabled for the underlying session
      while the OCI connection pooling and session pooling are not used. The
@@ -15299,7 +15637,7 @@ class long_class_name
      the uncached Oracle results is the unavailability of the
      <code>result::size()</code> function. If you call this function on
      an Oracle query result, then the <code>odb::result_not_cached</code>
-     exception (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>) is
+     exception (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>) is
      always thrown. Future versions of the Oracle ODB runtime library
      may add support for result caching.</p>
 
@@ -15329,7 +15667,7 @@ CREATE TABLE Employee (
      constraint violations. As a result, when making an object persistent,
      the Oracle ODB runtime will translate all unique constraint violation
      errors to the <code>object_already_persistent</code> exception
-     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>).</p>
+     (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>).</p>
 
   <h3><a name="16.5.5">16.5.5 Large <code>FLOAT</code> and
       <code>NUMBER</code> Types</a></h3>
@@ -15370,6 +15708,17 @@ CREATE TABLE Employee (
      <code>LONG RAW</code> data types. However, these types can be accessed
      by mapping them to one of the natively supported types, as discussed
      in <a href="#12.7">Section 12.7, "Database Type Mapping Pragmas"</a>.</p>
+
+  <h3><a name="16.5.8">16.5.8 LOB Types and By-Value Accessors/Modifiers</a></h3>
+
+  <p>As discussed in <a href="#12.4.5">Section 12.4.5,
+     "<code>get</code>/<code>set</code>/<code>access</code>"</a>, by-value
+     accessor and modifier expressions cannot be used with data members
+     of Oracle large object (LOB) data types: <code>BLOB</code>,
+     <code>CLOB</code>, and <code>NCLOB</code>. The Oracle ODB runtime
+     uses streaming for reading/writing LOB data directly from/to
+     data members. As a result, by-reference accessors and modifiers
+     should be used for these data types.</p>
 
   <h2><a name="16.6">16.6 Oracle Index Definitions</a></h2>
 
@@ -16011,7 +16360,7 @@ namespace odb
   </pre>
 
   <p>For more information on the <code>odb::connection</code> interface, refer
-     to <a href="#3.5">Section 3.5, "Connections"</a>. The first overloaded
+     to <a href="#3.6">Section 3.6, "Connections"</a>. The first overloaded
      <code>mssql::connection</code> constructor creates a new ODBC connection.
      The created connection is configured to use the manual commit mode with
      multiple active result sets (MARS) enabled. The second constructor allows
@@ -16277,8 +16626,8 @@ namespace odb
      them. The only limitation of the uncached SQL Server results is the
      unavailability of the <code>result::size()</code> function. If you
      call this function on an SQL Server query result, then the
-     <code>odb::result_not_cached</code> exception (<a href="#3.13">Section
-     3.13, "ODB Exceptions"</a>) is always thrown. Future versions of the
+     <code>odb::result_not_cached</code> exception (<a href="#3.14">Section
+     3.14, "ODB Exceptions"</a>) is always thrown. Future versions of the
      SQL Server ODB runtime library may add support for result caching.</p>
 
   <h3><a name="17.5.2">17.5.2 Foreign Key Constraints</a></h3>
@@ -16297,7 +16646,7 @@ namespace odb
      constraint violations. As a result, when making an object persistent,
      the SQL Server ODB runtime will translate all unique constraint violation
      errors to the <code>object_already_persistent</code> exception
-     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>).</p>
+     (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>).</p>
 
   <h3><a name="17.5.4">17.5.4 Multithreaded Windows Applications</a></h3>
 
@@ -16312,7 +16661,7 @@ namespace odb
 
   <p>SQL Server always returns zero as the number of affected rows
      for DDL statements. In particular, this means that the
-     <code>database::execute()</code> (<a href="#3.11">Section 3.11,
+     <code>database::execute()</code> (<a href="#3.12">Section 3.12,
      "Executing Native SQL Statements"</a>) function will always
      return zero for such statements.</p>
 
@@ -16333,6 +16682,16 @@ namespace odb
      that the generated code will be used with SQL Server 2005 or later
      by passing the <code>--mssql-server-version&nbsp;9.0</code> ODB
      compiler option.</p>
+
+  <h3><a name="17.5.7">17.5.7 Long Data and By-Value Accessors/Modifiers</a></h3>
+
+  <p>As discussed in <a href="#12.4.5">Section 12.4.5,
+     "<code>get</code>/<code>set</code>/<code>access</code>"</a>, by-value
+     accessor and modifier expressions cannot be used with data members
+     of long data types. The SQL Server ODB runtime uses streaming for
+     reading/writing long data directly from/to data members. As a result,
+     by-reference accessors and modifiers should be used for these data
+     types.</p>
 
   <h2><a name="17.6">17.6 SQL Server Index Definitions</a></h2>
 
@@ -16453,7 +16812,7 @@ odb --profile boost/date-time ...
      system. All such exceptions derive from the
      <code>odb::boost::exception</code> class which in turn derives from
      the root of the ODB exception hierarchy, class <code>odb::exception</code>
-     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>). The
+     (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>). The
      <code>odb::boost::exception</code> class is defined in the
      <code>&lt;odb/boost/exception.hxx></code> header file and has the
      same interface as <code>odb::exception</code>. The concrete exceptions
@@ -16471,7 +16830,7 @@ odb --profile boost/date-time ...
   <p>The currently supported smart pointers are
      <code>boost::shared_ptr</code> and <code>boost::weak_ptr</code>. For
      more information on using smart pointers as pointers to objects and
-     views, refer to <a href="#3.2">Section 3.2, "Object and View Pointers"</a>
+     views, refer to <a href="#3.3">Section 3.3, "Object and View Pointers"</a>
      and <a href="#6">Chapter 6, "Relationships"</a>. For more information
      on using smart pointers as pointers to values, refer to
      <a href="#7.3">Section 7.3, "Pointers and <code>NULL</code> Value
@@ -16523,7 +16882,7 @@ class employee
 
   <p>Besides providing persistence support for the above smart pointers,
      the <code>smart-ptr</code> sub-profile also changes the default
-     pointer (<a href="#3.2">Section 3.2, "Object and View Pointers"</a>)
+     pointer (<a href="#3.3">Section 3.3, "Object and View Pointers"</a>)
      to <code>boost::shared_ptr</code>. In particular, this means that
      database functions that return dynamically allocated objects and views
      will return them as <code>boost::shared_ptr</code> pointers.  To override
@@ -17008,7 +17367,7 @@ class person
      system. All such exceptions derive from the
      <code>odb::qt::exception</code> class which in turn derives from
      the root of the ODB exception hierarchy, class <code>odb::exception</code>
-     (<a href="#3.13">Section 3.13, "ODB Exceptions"</a>). The
+     (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>). The
      <code>odb::qt::exception</code> class is defined in the
      <code>&lt;odb/qt/exception.hxx></code> header file and has the
      same interface as <code>odb::exception</code>. The concrete exceptions
@@ -17297,7 +17656,7 @@ class Person
   <p>The currently supported smart pointers are
      <code>QSharedPointer</code> and <code>QWeakPointer</code>.
      For more information on using smart pointers as pointers to objects
-     and views, refer to <a href="#3.2">Section 3.2, "Object and View
+     and views, refer to <a href="#3.3">Section 3.3, "Object and View
      Pointers"</a> and <a href="#6">Chapter 6, "Relationships"</a>. For
      more information on using smart pointers as pointers to values, refer
      to <a href="#7.3">Section 7.3, "Pointers and <code>NULL</code> Value
@@ -17349,7 +17708,7 @@ class Employee
 
   <p>Besides providing persistence support for the above smart pointers,
      the <code>smart-ptr</code> sub-profile also changes the default
-     pointer (<a href="#3.2">Section 3.2, "Object and View Pointers"</a>)
+     pointer (<a href="#3.3">Section 3.3, "Object and View Pointers"</a>)
      to <code>QSharedPointer</code>.  In particular, this means that
      database functions that return dynamically allocated objects and views
      will return them as <code>QSharedPointer</code> pointers. To override
