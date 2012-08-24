@@ -671,9 +671,9 @@ parse (tree global_scope, path const& main_file)
   define_fund<fund_double> (double_type_node);
   define_fund<fund_long_double> (long_double_type_node);
 
-  // First collect all the declarations we are interested in
-  // in the line-decl map so that they appear in the source
-  // code order.
+  // First collect all the namespace-level declarations we are
+  // interested in in the line-decl map so that they appear in
+  // the source code order.
   //
   collect (global_scope);
 

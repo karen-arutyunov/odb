@@ -120,7 +120,7 @@ struct ns_loc_pragma
 typedef std::vector<ns_loc_pragma> ns_loc_pragmas;
 extern ns_loc_pragmas ns_loc_pragmas_;
 
-// Pragmas associated with this declaration.
+// Pragmas associated with specific declarations.
 //
 typedef std::map<tree, pragma_set> decl_pragmas;
 extern decl_pragmas decl_pragmas_;
