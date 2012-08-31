@@ -233,20 +233,6 @@ namespace traversal
 
   //
   //
-  struct virtual_data_member: node<semantics::data_member>
-  {
-    virtual void
-    traverse (type&);
-
-    virtual void
-    belongs (type&);
-
-    virtual void
-    belongs (type&, edge_dispatcher&);
-  };
-
-  //
-  //
   struct unsupported_type: node<semantics::unsupported_type> {};
 }
 

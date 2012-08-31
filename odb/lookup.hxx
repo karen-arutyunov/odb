@@ -10,6 +10,7 @@
 #include <string>
 
 #include <odb/cxx-lexer.hxx>
+#include <odb/semantics/elements.hxx>
 
 namespace lookup
 {
@@ -45,6 +46,9 @@ namespace lookup
   // In this case token will be <something-other-than-name> and
   // ptt will be CPP_SCOPE.
   //
+  // The names are appended to the 'name' variable as they are
+  // being resolved.
+  //
   tree
   resolve_scoped_name (cxx_lexer&,
                        cpp_ttype&,
@@ -56,6 +60,39 @@ namespace lookup
                        bool is_type,
                        bool trailing_scope = false,
                        tree* end_scope = 0);
+
+  // The same but using semantic graph instead of GCC tree. Also
+  // throws semantics::unresolved instead of unable_to_resolve.
+  //
+  semantics::node&
+  resolve_scoped_name (cxx_lexer&,
+                       cpp_ttype&,
+                       std::string& tl, // Token literal.
+                       tree& tn,        // Token node.
+                       cpp_ttype& ptt,  // Previous token type.
+                       semantics::scope& start_scope,
+                       std::string& name,
+                       semantics::type_id const&,
+                       bool trailing_scope = false,
+                       semantics::scope** end_scope = 0);
+
+  template <typename T>
+  T&
+  resolve_scoped_name (cxx_lexer& l,
+                       cpp_ttype& tt,
+                       std::string& tl, // Token literal.
+                       tree& tn,        // Token node.
+                       cpp_ttype& ptt,  // Previous token type.
+                       semantics::scope& start_scope,
+                       std::string& name,
+                       bool trailing_scope = false,
+                       semantics::scope** end_scope = 0)
+  {
+    return dynamic_cast<T&> (
+      resolve_scoped_name (
+        l, tt, tl, tn, ptt,
+        start_scope, name, typeid (T), trailing_scope, end_scope));
+  }
 }
 
 #endif // ODB_LOOKUP_HXX

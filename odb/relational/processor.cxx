@@ -491,6 +491,13 @@ namespace relational
       void
       process_access (semantics::data_member& m, std::string const& k)
       {
+        bool virt (m.count ("virtual"));
+
+        // Ignore certain special virtual members.
+        //
+        if (virt && (m.count ("polymorphic-ref") || m.count ("discriminator")))
+          return;
+
         char const* kind (k == "get" ? "accessor" : "modifier");
         semantics::class_& c (dynamic_cast<semantics::class_&> (m.scope ()));
 
@@ -503,10 +510,11 @@ namespace relational
           semantics::access const& a (m.named ().access ());
           member_access& ma (m.set (k, member_access (m.location (), true)));
 
-          // If this member is public or if we are a friend of this
-          // class, then go for the member directly.
+          // If this member is not virtual and is either public or if we
+          // are a friend of this class, then go for the member directly.
           //
-          if (a == semantics::access::public_ || c.get<bool> ("friend"))
+          if (!virt && (a == semantics::access::public_ ||
+                        c.get<bool> ("friend")))
           {
             ma.expr.push_back (cxx_token (0, CPP_KEYWORD, "this"));
             ma.expr.push_back (cxx_token (0, CPP_DOT));
@@ -611,15 +619,29 @@ namespace relational
           {
             location const& l (m.location ());
 
-            error (l) << "data member '" << m.name () << "' is " << a.string ()
-                      << " and no suitable " << kind << " function could be "
-                      << "automatically found" << endl;
+            if (virt)
+            {
+              error (l) << "no suitable " << kind << " function could be "
+                        << "automatically found for virtual data member '"
+                        << m.name () << "'" << endl;
 
-            info (l)  << "consider making class 'odb::access' a friend of "
-                      << "class '" << class_name (c) << "'" << endl;
+              info (l)  << "use '#pragma db " << k << "' to explicitly "
+                        << "specify the " << kind << " function or "
+                        << "expression" << endl;
+            }
+            else
+            {
+              error (l) << "data member '" << m.name () << "' is "
+                        << a.string () << " and no suitable " << kind
+                        << " function could be automatically found" << endl;
 
-            info (l)  << "or use '#pragma db " << k << "' to explicitly "
-                      << "specify the " << kind << " function" << endl;
+              info (l)  << "consider making class 'odb::access' a friend of "
+                        << "class '" << class_name (c) << "'" << endl;
+
+              info (l)  << "or use '#pragma db " << k << "' to explicitly "
+                        << "specify the " << kind << " function or "
+                        << "expression" << endl;
+            }
 
             throw operation_failed ();
           }
@@ -1439,37 +1461,45 @@ namespace relational
         if (m.count ("inverse"))
         {
           string name (m.get<string> ("inverse"));
-          tree decl (
-            lookup_qualified_name (
-              c->tree_node (), get_identifier (name.c_str ()), false, false));
+          location_t loc (m.get<location_t> ("inverse-location"));
 
-          if (decl == error_mark_node || TREE_CODE (decl) != FIELD_DECL)
+          try
           {
-            os << m.file () << ":" << m.line () << ":" << m.column () << ": "
-               << "error: unable to resolve data member '" << name << "' "
-               << "specified with '#pragma db inverse' in class '"
-               << class_fq_name (*c) << "'" << endl;
+            data_member& im (
+              c->lookup<data_member> (name, class_::include_hidden));
+
+            // @@ Would be good to check that the other end is actually
+            // an object pointer, is not marked as transient or inverse,
+            // and points to the correct object. But the other class may
+            // not have been processed yet.
+            //
+            m.remove ("inverse");
+            m.set (kp + (kp.empty () ? "": "-") + "inverse", &im);
+          }
+          catch (semantics::unresolved const& e)
+          {
+            if (e.type_mismatch)
+              error (loc) << "name '" << name << "' in '#pragma db " <<
+                "inverse' does not refer to a data member" << endl;
+            else
+              error (loc) << "unable to resolve data member '" << name <<
+                "' specified with '#pragma db inverse'" << endl;
+
             throw operation_failed ();
           }
-
-          data_member* im (dynamic_cast<data_member*> (unit.find (decl)));
-
-          if (im == 0)
+          catch (semantics::ambiguous const& e)
           {
-            os << m.file () << ":" << m.line () << ":" << m.column () << ": "
-               << "ice: unable to find semantic graph node corresponding to "
-               << "data member '" << name << "' in class '"
-               << class_fq_name (*c) << "'" << endl;
+            error (loc) << "data member name '" << name << "' specified " <<
+              "with '#pragma db inverse' is ambiguous" << endl;
+
+            info (e.first.named ().location ()) << "could resolve to this " <<
+              "data member" << endl;
+
+            info (e.second.named ().location ()) << "or could resolve to " <<
+              "this data member" << endl;
+
             throw operation_failed ();
           }
-
-          // @@ Would be good to check that the other end is actually
-          // an object pointer, is not marked as inverse, and points
-          // to the correct object. But the other class may not have
-          // been processed yet.
-          //
-          m.remove ("inverse");
-          m.set (kp + (kp.empty () ? "": "-") + "inverse", im);
         }
 
         return c;
@@ -1760,6 +1790,9 @@ namespace relational
             //
             try
             {
+              using semantics::scope;
+              using semantics::class_;
+
               if (i->kind != column_expr_part::reference)
                 continue;
 
@@ -1769,8 +1802,7 @@ namespace relational
               tree tn;
               cpp_ttype tt (lex_.next (tl, &tn));
 
-              string name;
-              tree decl (0);
+              data_member* m (0);
               view_object* vo (0);
 
               // Check if this is an alias.
@@ -1787,17 +1819,18 @@ namespace relational
                   //
                   if (lex_.next (tl, &tn) != CPP_SCOPE)
                   {
-                    error (i->loc)
-                      << "member name expected after an alias in db pragma "
-                      << "column" << endl;
+                    error (i->loc) << "member name expected after an alias " <<
+                      "in db pragma column" << endl;
                     throw operation_failed ();
                   }
 
-                  tt = lex_.next (tl, &tn);
+                  if (lex_.next (tl, &tn) != CPP_NAME)
+                    throw lookup::invalid_name ();
 
-                  cpp_ttype ptt; // Not used.
-                  decl = lookup::resolve_scoped_name (
-                    lex_, tt, tl, tn, ptt, vo->obj->tree_node (), name, false);
+                  m = &vo->obj->lookup<data_member> (
+                    tl, scope::include_hidden);
+
+                  tt = lex_.next (tl, &tn);
                 }
               }
 
@@ -1807,45 +1840,36 @@ namespace relational
               {
                 // Also get the object type. We need to do it so that
                 // we can get the correct (derived) table name (the
-                // member can come from a base class).
+                // member itself can come from a base class).
                 //
-                tree type;
+                scope* s;
+                string name;
                 cpp_ttype ptt; // Not used.
-                decl = lookup::resolve_scoped_name (
-                  lex_, tt, tl, tn, ptt, i->scope, name, false, false, &type);
+                m = &lookup::resolve_scoped_name<data_member> (
+                  lex_, tt, tl, tn, ptt,
+                  dynamic_cast<scope&> (*unit.find (i->scope)),
+                  name,
+                  false,
+                  &s);
 
-                type = TYPE_MAIN_VARIANT (type);
-
-                view_object_map::iterator j (omap_.find (type));
+                view_object_map::iterator j (
+                  omap_.find (dynamic_cast<class_*> (s)));
 
                 if (j == omap_.end ())
                 {
-                  error (i->loc)
-                    << "name '" << name << "' in db pragma column does not "
-                    << "refer to a data member of a persistent class that "
-                    << "is used in this view" << endl;
+                  error (i->loc) << "name '" << name << "' in db pragma " <<
+                    "column does not refer to a data member of a " <<
+                    "persistent class that is used in this view" << endl;
                   throw operation_failed ();
                 }
 
                 vo = j->second;
               }
 
-              // Check that we have a data member.
-              //
-              if (TREE_CODE (decl) != FIELD_DECL)
-              {
-                error (i->loc) << "name '" << name << "' in db pragma column "
-                               << "does not refer to a data member" << endl;
-                throw operation_failed ();
-              }
-
-              data_member* m (dynamic_cast<data_member*> (unit.find (decl)));
               i->member_path.push_back (m);
 
               // Figure out the table name/alias for this member.
               //
-              using semantics::class_;
-
               if (class_* root = polymorphic (*vo->obj))
               {
                 // If the object is polymorphic, then figure out which of the
@@ -1882,19 +1906,18 @@ namespace relational
               {
                 lex_.next (tl, &tn); // Get CPP_NAME.
 
-                tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
-
-                decl = lookup_qualified_name (
-                  type, get_identifier (tl.c_str ()), false, false);
-
-                if (decl == error_mark_node || TREE_CODE (decl) != FIELD_DECL)
+                // Check that the outer member is composite and also
+                // unwrap it while at it.
+                //
+                class_* comp (composite_wrapper (utype (*m)));
+                if (comp == 0)
                 {
-                  error (i->loc) << "name '" << tl << "' in db pragma column "
-                                 << "does not refer to a data member" << endl;
+                  error (i->loc) << "data member '" << m->name () << "' " <<
+                    "specified in db pragma column is not composite" << endl;
                   throw operation_failed ();
                 }
 
-                m = dynamic_cast<data_member*> (unit.find (decl));
+                m = &comp->lookup<data_member> (tl, class_::include_hidden);
                 i->member_path.push_back (m);
               }
 
@@ -1909,10 +1932,28 @@ namespace relational
               error (i->loc) << "invalid name in db pragma column" << endl;
               throw operation_failed ();
             }
-            catch (lookup::unable_to_resolve const& e)
+            catch (semantics::unresolved const& e)
             {
-              error (i->loc) << "unable to resolve name '" << e.name ()
-                             << "' in db pragma column" << endl;
+              if (e.type_mismatch)
+                error (i->loc) << "name '" << e.name << "' in db pragma " <<
+                  "column does not refer to a data member" << endl;
+              else
+                error (i->loc) << "unable to resolve data member '" <<
+                  e.name << "' specified with db pragma column" << endl;
+
+              throw operation_failed ();
+            }
+            catch (semantics::ambiguous const& e)
+            {
+              error (i->loc) << "data member name '" << e.first.name () <<
+                "' specified with db pragma column is ambiguous" << endl;
+
+              info (e.first.named ().location ()) << "could resolve to " <<
+                "this data member" << endl;
+
+              info (e.second.named ().location ()) << "or could resolve " <<
+                "to this data member" << endl;
+
               throw operation_failed ();
             }
           }
@@ -2395,7 +2436,8 @@ namespace relational
             size_t l (idm.line ()), col (idm.column ());
 
             semantics::data_member& m (
-              unit.new_node<virtual_data_member> (f, l, col));
+              unit.new_node<semantics::data_member> (f, l, col, tree (0)));
+            m.set ("virtual", true);
 
             // Make it the first member in the class.
             //
@@ -2441,10 +2483,12 @@ namespace relational
             //
             location_t loc (c.get<location_t> ("polymorphic-location"));
             semantics::data_member& m (
-              unit.new_node<virtual_data_member> (
+              unit.new_node<semantics::data_member> (
                 path (LOCATION_FILE (loc)),
                 LOCATION_LINE (loc),
-                LOCATION_COLUMN (loc)));
+                LOCATION_COLUMN (loc),
+                tree (0)));
+            m.set ("virtual", true);
 
             // Insert it after the id member (or first if this id comes
             // from reuse-base).
@@ -2488,7 +2532,6 @@ namespace relational
           // First resolve member names.
           //
           string tl;
-          tree tn;
           cpp_ttype tt;
 
           index::members_type::iterator j (in.members.begin ());
@@ -2501,75 +2544,79 @@ namespace relational
 
             try
             {
-              lex_.start (im.name);
-              tt = lex_.next (tl, &tn);
-
-              // The name was already verified to be syntactically correct so
-              // we don't need to do any error checking.
-              //
-              string name;   // Not used.
-              cpp_ttype ptt; // Not used.
-              tree decl (
-                lookup::resolve_scoped_name (
-                  lex_, tt, tl, tn, ptt, c.tree_node (), name, false));
-
-              // Check that we have a data member.
-              //
-              if (TREE_CODE (decl) != FIELD_DECL)
-              {
-                error (im.loc) << "name '" << tl << "' in db pragma member "
-                               << "does not refer to a data member" << endl;
-                throw operation_failed ();
-              }
-
               using semantics::data_member;
 
-              data_member* m (dynamic_cast<data_member*> (unit.find (decl)));
-              im.path.push_back (m);
+              // The name was already verified to be syntactically correct so
+              // we don't need to do any extra error checking in this area.
+              //
+              lex_.start (im.name);
+              tt = lex_.next (tl);
 
-              if (container (*m))
+              data_member& m (
+                c.lookup<data_member> (tl, type::include_hidden));
+
+              im.path.push_back (&m);
+              tt = lex_.next (tl);
+
+              if (container (m))
                 break;
 
               // Resolve nested members if any.
               //
-              for (; tt == CPP_DOT; tt = lex_.next (tl, &tn))
+              for (; tt == CPP_DOT; tt = lex_.next (tl))
               {
-                lex_.next (tl, &tn); // Get CPP_NAME.
+                lex_.next (tl); // Get CPP_NAME.
 
-                tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
+                data_member& om (*im.path.back ());
 
-                decl = lookup_qualified_name (
-                  type, get_identifier (tl.c_str ()), false, false);
-
-                if (decl == error_mark_node || TREE_CODE (decl) != FIELD_DECL)
+                // Check that the outer member is composite and also
+                // unwrap it while at it.
+                //
+                semantics::class_* comp (composite_wrapper (utype (om)));
+                if (comp == 0)
                 {
-                  error (im.loc) << "name '" << tl << "' in db pragma member "
-                                 << "does not refer to a data member" << endl;
+                  error (im.loc) << "data member '" << om.name () << "' " <<
+                    "specified in db pragma member is not composite" << endl;
                   throw operation_failed ();
                 }
 
-                m = dynamic_cast<data_member*> (unit.find (decl));
-                im.path.push_back (m);
+                data_member& nm (
+                  comp->lookup<data_member> (tl, type::include_hidden));
 
-                if (container (*m))
+                im.path.push_back (&nm);
+
+                if (container (nm))
                 {
-                  tt = lex_.next (tl, &tn); // Get CPP_DOT.
+                  tt = lex_.next (tl); // Get CPP_DOT.
                   break; // Only breaks out of the inner loop.
                 }
               }
 
-              if (container (*m))
+              if (container (*im.path.back ()))
                 break;
             }
-            catch (lookup::invalid_name const&)
+            catch (semantics::unresolved const& e)
             {
-              error (im.loc) << "invalid name in db pragma member" << endl;
+              if (e.type_mismatch)
+                error (im.loc) << "name '" << e.name << "' in db pragma " <<
+                  "member does not refer to a data member" << endl;
+              else
+                error (im.loc) << "unable to resolve data member '" <<
+                  e.name << "' specified with db pragma member" << endl;
+
               throw operation_failed ();
             }
-            catch (lookup::unable_to_resolve const& e)
+            catch (semantics::ambiguous const& e)
             {
-              error (im.loc) << "unable to resolve name '" << e.name ()
-                             << "' in db pragma member" << endl;
+              error (im.loc) << "data member name '" << e.first.name () <<
+                "' specified with db pragma member is ambiguous" << endl;
+
+              info (e.first.named ().location ()) << "could resolve to " <<
+                "this data member" << endl;
+
+              info (e.second.named ().location ()) << "or could resolve " <<
+                "to this data member" << endl;
+
               throw operation_failed ();
             }
           }
@@ -2587,7 +2634,7 @@ namespace relational
               throw operation_failed ();
             }
 
-            if (tt != CPP_DOT || lex_.next (tl, &tn) != CPP_NAME ||
+            if (tt != CPP_DOT || lex_.next (tl) != CPP_NAME ||
                 (tl != "id" && tl != "index"))
             {
               error (j->loc) << ".id or .index special member expected in a "
@@ -2597,7 +2644,7 @@ namespace relational
 
             string n (tl);
 
-            if (lex_.next (tl, &tn) != CPP_EOF)
+            if (lex_.next (tl) != CPP_EOF)
             {
               error (j->loc) << "unexpected text after ." << n << " in "
                              << "db pragma member" << endl;
@@ -2786,18 +2833,15 @@ namespace relational
 
             if (i->alias.empty ())
             {
-              if (!omap.insert (view_object_map::value_type (n, &*i)).second)
+              if (!omap.insert (view_object_map::value_type (&o, &*i)).second)
               {
-                error (i->loc)
-                  << "persistent class '" << i->obj_name << "' is used in "
-                  << "the view more than once" << endl;
+                error (i->loc) << "persistent class '" << i->obj_name <<
+                  "' is used in the view more than once" << endl;
 
-                error (omap[n]->loc)
-                  << "previously used here" << endl;
+                error (omap[&o]->loc) << "previously used here" << endl;
 
-                info (i->loc)
-                  << "use the alias clause to assign it a different name"
-                  << endl;
+                info (i->loc) << "use the alias clause to assign it a " <<
+                  "different name" << endl;
 
                 throw operation_failed ();
               }
@@ -2811,19 +2855,16 @@ namespace relational
                 for (class_* b (&polymorphic_base (o));;
                      b = &polymorphic_base (*b))
                 {
-                  view_object_map::value_type v (b->tree_node (), &*i);
-                  if (!omap.insert (v).second)
+                  if (!omap.insert (
+                        view_object_map::value_type (b, &*i)).second)
                   {
-                    error (i->loc)
-                      << "base class '" << class_name (*b) << "' is "
-                      << "used in the view more than once" << endl;
+                    error (i->loc) << "base class '" << class_name (*b) <<
+                      "' is used in the view more than once" << endl;
 
-                    error (omap[v.first]->loc)
-                      << "previously used here" << endl;
+                    error (omap[b]->loc) << "previously used here" << endl;
 
-                    info (i->loc)
-                      << "use the alias clause to assign it a different name"
-                      << endl;
+                    info (i->loc) << "use the alias clause to assign it a " <<
+                      "different name" << endl;
 
                     throw operation_failed ();
                   }

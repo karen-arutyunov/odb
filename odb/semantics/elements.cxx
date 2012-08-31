@@ -9,7 +9,10 @@
 #include <odb/cxx-lexer.hxx>
 
 #include <odb/semantics/elements.hxx>
+#include <odb/semantics/namespace.hxx>
 #include <odb/semantics/unit.hxx>
+
+using namespace std;
 
 namespace semantics
 {
@@ -319,6 +322,79 @@ namespace semantics
     return i != iterator_map_.end () ? i->second : names_.end ();
   }
 
+  static bool
+  is_base (type_id const& b, compiler::type_info const& d)
+  {
+    using compiler::type_info;
+
+    for (type_info::base_iterator i (d.begin_base ());
+         i != d.end_base (); ++i)
+    {
+      type_info const& ti (i->type_info ());
+
+      if (b == ti.type_id () || is_base (b, ti))
+        return true;
+    }
+
+    return false;
+  }
+
+  names* scope::
+  lookup (string const& name,
+          type_id const& ti,
+          unsigned int flags,
+          bool* hidden) const
+  {
+    names_iterator_pair p (find (name));
+    names* r (0);
+
+    for (names_const_iterator i (p.first); i != p.second; ++i)
+    {
+      type_id const& xti (typeid (i->named ()));
+
+      // If types are equal, then we found a match. Also check if ti is
+      // a base type of xti.
+      //
+      if (xti == ti || is_base (ti, compiler::lookup (xti)))
+      {
+        if (r != 0)
+        {
+          // If both are namespaces, then the one is just an extension
+          // of the other.
+          //
+          if (!(r->named ().is_a<namespace_> () &&
+                i->named ().is_a<namespace_> ()))
+            throw ambiguous (*r, *i);
+        }
+        else
+          r = &*i;
+      }
+    }
+
+    if (r != 0)
+      return r;
+
+    // If we found a name but the types didn't match, then bail out
+    // unless we want hidden names.
+    //
+    if (p.first != p.second)
+    {
+      if (hidden != 0)
+        *hidden = true;
+
+      if ((flags & include_hidden) == 0)
+        return 0;
+    }
+
+    // Look in the outer scope unless requested not to or if this is
+    // the global scope.
+    //
+    if ((flags & exclude_outer) == 0 && !global_scope ())
+      return scope ().lookup (name, ti, flags, hidden);
+
+    return 0;
+  }
+
   void scope::
   add_edge_left (names& e)
   {
@@ -440,14 +516,6 @@ namespace semantics
           type_info ti (typeid (data_member));
           ti.add_base (typeid (nameable));
           ti.add_base (typeid (instance));
-          insert (ti);
-        }
-
-        // virtual_data_member
-        //
-        {
-          type_info ti (typeid (virtual_data_member));
-          ti.add_base (typeid (data_member));
           insert (ti);
         }
 

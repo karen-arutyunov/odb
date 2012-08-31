@@ -2760,11 +2760,16 @@ traverse_view (type& c)
           os << strlit (vq.literal);
       }
       else
+      {
+        semantics::scope& scope (
+          dynamic_cast<semantics::scope&> (*unit.find (vq.scope)));
+
         // Output the pragma location for easier error tracking.
         //
         os << "// From " << location_string (vq.loc, true) << endl
            << translate_expression (
-             c, vq.expr, vq.scope, vq.loc, "query", &ph).value;
+             c, vq.expr, scope, vq.loc, "query", &ph).value;
+      }
 
       os << ");";
 
@@ -2834,9 +2839,12 @@ traverse_view (type& c)
           if (!i->alias.empty ())
             l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
 
+          semantics::scope& scope (
+            dynamic_cast<semantics::scope&> (*unit.find (i->scope)));
+
           expression e (
             translate_expression (
-              c, i->cond, i->scope, i->loc, "table"));
+              c, i->cond, scope, i->loc, "table"));
 
           if (e.kind != expression::literal)
           {
@@ -2897,9 +2905,12 @@ traverse_view (type& c)
           continue;
         }
 
+        semantics::scope& scope (
+          dynamic_cast<semantics::scope&> (*unit.find (i->scope)));
+
         expression e (
           translate_expression (
-            c, i->cond, i->scope, i->loc, "object"));
+            c, i->cond, scope, i->loc, "object"));
 
         // Literal expression.
         //
@@ -3343,11 +3354,14 @@ traverse_view (type& c)
         }
         else
         {
+          semantics::scope& scope (
+            dynamic_cast<semantics::scope&> (*unit.find (vq.scope)));
+
           // Output the pragma location for easier error tracking.
           //
           os << "// From " << location_string (vq.loc, true) << endl
              << translate_expression (
-               c, vq.expr, vq.scope, vq.loc, "query", &ph).value;
+               c, vq.expr, scope, vq.loc, "query", &ph).value;
 
           os << ");";
 
@@ -3494,22 +3508,22 @@ namespace relational
                     string& tl,
                     tree& tn,
                     cpp_ttype& ptt,
-                    tree scope,
+                    semantics::scope& start_scope,
                     location_t loc,
                     string const& prag,
                     bool check_ptr,
                     view_alias_map const& amap,
                     view_object_map const& omap)
     {
+      using semantics::scope;
       using semantics::data_member;
       typedef class_::expression expression;
 
       bool multi_obj ((amap.size () + omap.size ()) > 1);
 
-      string r ("query_columns");
-      string name;
-
       bool fail (false);
+      string name;
+      string r ("query_columns");
       context& ctx (context::current ());
 
       // This code is quite similar to view_data_members in the type
@@ -3517,7 +3531,7 @@ namespace relational
       //
       try
       {
-        tree decl (0);
+        data_member* m (0);
         view_object* vo (0);
 
         // Check if this is an alias.
@@ -3544,17 +3558,18 @@ namespace relational
 
             if (tt != CPP_SCOPE)
             {
-              error (loc)
-                << "member name expected after an alias in db pragma "
-                << prag << endl;
+              error (loc) << "member name expected after an alias in db " <<
+                "pragma " << prag << endl;
               throw operation_failed ();
             }
 
             ptt = tt;
-            tt = l.next (tl, &tn);
+            if (l.next (tl, &tn) != CPP_NAME)
+              throw lookup::invalid_name ();
 
-            decl = lookup::resolve_scoped_name (
-              l, tt, tl, tn, ptt, vo->obj->tree_node (), name, false);
+            m = &vo->obj->lookup<data_member> (tl, scope::include_hidden);
+
+            tt = l.next (tl, &tn);
           }
         }
 
@@ -3564,15 +3579,19 @@ namespace relational
         {
           // Also get the object type. We need to do it so that
           // we can get the correct (derived) object name (the
-          // member can come from a base class).
+          // member itself can come from a base class).
           //
-          tree type;
-          decl = lookup::resolve_scoped_name (
-            l, tt, tl, tn, ptt, scope, name, false, false, &type);
+          scope* s;
+          cpp_ttype ptt; // Not used.
+          m = &lookup::resolve_scoped_name<data_member> (
+            l, tt, tl, tn, ptt,
+            start_scope,
+            name,
+            false,
+            &s);
 
-          type = TYPE_MAIN_VARIANT (type);
-
-          view_object_map::const_iterator i (omap.find (type));
+          view_object_map::const_iterator i (
+            omap.find (dynamic_cast<semantics::class_*> (s)));
 
           if (i == omap.end ())
           {
@@ -3592,26 +3611,7 @@ namespace relational
           }
         }
 
-        // Check that we have a data member.
-        //
-        if (TREE_CODE (decl) != FIELD_DECL)
-        {
-          if (fail)
-          {
-            error (loc)
-              << "name '" << name << "' in db pragma " << prag << " "
-              << "does not refer to a data member" << endl;
-            throw operation_failed ();
-          }
-          else
-            return expression (
-              name + translate_name_trailer (l, tt, tl, tn, ptt));
-        }
-
         expression e (vo);
-
-        data_member* m (dynamic_cast<data_member*> (ctx.unit.find (decl)));
-
         r += "::";
         r += ctx.public_name (*m);
 
@@ -3633,7 +3633,9 @@ namespace relational
           // is_null()/is_not_null() will be valid for composite values
           // as well.
           //
-          if (!context::composite_wrapper (context::utype (*m)))
+          semantics::class_* comp (
+            context::composite_wrapper (context::utype (*m)));
+          if (comp == 0)
             break;
 
           ptt = tt;
@@ -3641,25 +3643,12 @@ namespace relational
 
           if (tt != CPP_NAME)
           {
-            error (loc)
-              << "name expected after '.' in db pragma " << prag << endl;
+            error (loc) << "name expected after '.' in db pragma " <<
+              prag << endl;
             throw operation_failed ();
           }
 
-          tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
-
-          decl = lookup_qualified_name (
-            type, get_identifier (tl.c_str ()), false, false);
-
-          if (decl == error_mark_node || TREE_CODE (decl) != FIELD_DECL)
-          {
-            error (loc)
-              << "name '" << tl << "' in db pragma " << prag << " does not "
-              << "refer to a data member" << endl;
-            throw operation_failed ();
-          }
-
-          m = dynamic_cast<data_member*> (ctx.unit.find (decl));
+          m = &comp->lookup<data_member> (tl, scope::include_hidden);
 
           r += '.';
           r += ctx.public_name (*m);
@@ -3697,33 +3686,47 @@ namespace relational
       }
       catch (lookup::invalid_name const&)
       {
-        if (fail)
-        {
-          error (loc) << "invalid name in db pragma " << prag << endl;
-          throw operation_failed ();
-        }
-        else
+        if (!fail)
           return expression (
             name + translate_name_trailer (l, tt, tl, tn, ptt));
+
+        error (loc) << "invalid name in db pragma " << prag << endl;
+        throw operation_failed ();
       }
-      catch (lookup::unable_to_resolve const& e)
+      catch (semantics::unresolved const& e)
       {
-        if (fail)
-        {
-          error (loc) << "unable to resolve name '" << e.name ()
-                      << "' in db pragma " << prag << endl;
-          throw operation_failed ();
-        }
-        else
+        if (!fail)
           return expression (
             name + translate_name_trailer (l, tt, tl, tn, ptt));
+
+        if (e.type_mismatch)
+          error (loc) << "name '" << e.name << "' in db pragma " << prag <<
+            " does not refer to a data member" << endl;
+        else
+          error (loc) << "unable to resolve data member '" << e.name <<
+            "' specified with db pragma " << prag << endl;
+
+        throw operation_failed ();
+      }
+      catch (semantics::ambiguous const& e)
+      {
+        error (loc) << "data member name '" << e.first.name () << "' " <<
+          "specified with db pragma " << prag << " is ambiguous" << endl;
+
+        info (e.first.named ().location ()) << "could resolve to this " <<
+          "data member" << endl;
+
+        info (e.second.named ().location ()) << "or could resolve to this " <<
+          "data member" << endl;
+
+        throw operation_failed ();
       }
     }
 
     class_::expression class_::
     translate_expression (type& c,
                           cxx_tokens const& ts,
-                          tree scope,
+                          semantics::scope& scope,
                           location_t loc,
                           string const& prag,
                           bool* placeholder)

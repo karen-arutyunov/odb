@@ -32,19 +32,27 @@ public:
 private:
   typedef semantics::access access;
 
-  // Extended GGC tree declaration that is either a tree node or a
-  // pragma. If this declaration is a pragma, then the assoc flag
-  // indicated whether this pragma has been associated with a
-  // declaration.
+  // Extended GGC tree declaration that is either a GCC tree
+  // declaration, a virtual declaration, or a pragma. If it is
+  // a pragma, then the assoc flag indicated whether this pragma
+  // has been associated with a declaration. Otherwise, the assoc
+  // flag indicates whether pragmas have been associated with this
+  // declaration (we use this to ignore certain declarations for
+  // pragma association purposes, e.g., the anonymous type in
+  // struct {...} m_).
   //
   struct tree_decl
   {
     tree decl;
+    virt_declaration const* vdecl;
     pragma const* prag;
     mutable bool assoc; // Allow modification via std::set iterator.
 
-    tree_decl (tree d): decl (d), prag (0) {}
-    tree_decl (pragma const& p): decl (0), prag (&p), assoc (false) {}
+    tree_decl (tree d): decl (d), vdecl (0), prag (0), assoc (false) {}
+    tree_decl (virt_declaration const& d)
+        : decl (0), vdecl (&d), prag (0), assoc (false) {}
+    tree_decl (pragma const& p)
+        : decl (0), vdecl (0), prag (&p), assoc (false) {}
 
     bool
     operator< (tree_decl const& y) const;
@@ -116,7 +124,7 @@ private:
   // Process positioned and named pragmas.
   //
   void
-  process_pragmas (tree,
+  process_pragmas (declaration const&,
                    node&,
                    string const& name,
                    decl_set::const_iterator begin,
@@ -126,7 +134,7 @@ private:
   // Process named pragmas only.
   //
   void
-  process_named_pragmas (tree, node&);
+  process_named_pragmas (declaration const&, node&);
 
   void
   diagnose_unassoc_pragmas (decl_set const&);
@@ -180,8 +188,16 @@ private:
 bool parser::impl::tree_decl::
 operator< (tree_decl const& y) const
 {
-  location_t xloc (decl ? DECL_SOURCE_LOCATION (decl) : prag->loc);
-  location_t yloc (y.decl ? DECL_SOURCE_LOCATION (y.decl) : y.prag->loc);
+  location_t xloc (
+    decl != 0
+    ? DECL_SOURCE_LOCATION (decl)
+    : (vdecl != 0 ? vdecl->loc : prag->loc));
+
+  location_t yloc (
+    y.decl != 0
+    ? DECL_SOURCE_LOCATION (y.decl)
+    : (y.vdecl != 0 ? y.vdecl->loc : y.prag->loc));
+
   return xloc < yloc;
 }
 
@@ -325,6 +341,15 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
     }
   }
 
+  // Add virtual declarations if any.
+  //
+  {
+    virt_declarations::const_iterator i (virt_declarations_.find (c));
+
+    if (i != virt_declarations_.end ())
+      decls.insert (i->second.begin (), i->second.end ());
+  }
+
   // Add location pragmas if any.
   //
   {
@@ -342,8 +367,70 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
   {
     // Skip pragmas.
     //
-    if (i->prag)
+    if (i->prag != 0)
       continue;
+
+    // Handle virtual declarations.
+    //
+    if (i->vdecl != 0)
+    {
+      virt_declaration const& vd (*i->vdecl);
+
+      switch (vd.tree_code)
+      {
+      case FIELD_DECL:
+        {
+          // First check that it doesn't conflict with any of the real
+          // data members defined in this class.
+          //
+          tree d (
+            lookup_qualified_name (
+              c, get_identifier (vd.name.c_str ()), false, false));
+
+          if (d != error_mark_node && TREE_CODE (d) == FIELD_DECL)
+          {
+            error (vd.loc) << "virtual data member declaration '" << vd.name
+                           << "' conflicts with a previous declaration"
+                           << endl;
+
+            location_t l (DECL_SOURCE_LOCATION (d));
+            info (l) << "'" << vd.name << "' was previously declared here"
+                     << endl;
+
+            throw failed ();
+          }
+
+          path file (LOCATION_FILE (vd.loc));
+          size_t line (LOCATION_LINE (vd.loc));
+          size_t clmn (LOCATION_COLUMN (vd.loc));
+
+          access a (access::public_);
+
+          type& type_node (emit_type (vd.type, a, file, line, clmn));
+          data_member& member_node (
+            unit_->new_node<data_member> (file, line, clmn, tree (0)));
+
+          unit_->new_edge<names> (*c_node, member_node, vd.name, a);
+          belongs& edge (unit_->new_edge<belongs> (member_node, type_node));
+
+          // See if there is a name hint for this type.
+          //
+          if (names* hint = unit_->find_hint (vd.type))
+            edge.hint (*hint);
+
+          // Process pragmas that may be associated with this field.
+          //
+          process_pragmas (vd, member_node, vd.name, b, i, e);
+          break;
+        }
+      default:
+        {
+          assert (false);
+          break;
+        }
+      }
+      continue;
+    }
 
     tree d (i->decl);
 
@@ -438,6 +525,7 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
       }
     default:
       {
+        assert (false);
         break;
       }
     }
@@ -657,6 +745,13 @@ parse (tree global_scope, path const& main_file)
   define_fund<fund_bool> (boolean_type_node);
   define_fund<fund_char> (char_type_node);
   define_fund<fund_wchar> (wchar_type_node);
+
+  if (ops_.std () == cxx_version::cxx11)
+  {
+    define_fund<fund_char16> (char16_type_node);
+    define_fund<fund_char32> (char32_type_node);
+  }
+
   define_fund<fund_signed_char> (signed_char_type_node);
   define_fund<fund_unsigned_char> (unsigned_char_type_node);
   define_fund<fund_short> (short_integer_type_node);
@@ -1992,47 +2087,48 @@ emit_type_name (tree type, bool direct)
 }
 
 void parser::impl::
-process_pragmas (tree t,
+process_pragmas (declaration const& decl,
                  node& node,
                  string const& name,
                  decl_set::const_iterator begin,
                  decl_set::const_iterator cur,
                  decl_set::const_iterator /*end*/)
 {
-  // First process the position pragmas by iterating backwards
-  // until we get to the preceding non-pragma declaration.
+  // First process the position pragmas by iterating backwards until
+  // we get to the preceding non-pragma declaration that has been
+  // associated.
   //
   pragma_set prags;
 
   if (cur != begin)
   {
     decl_set::const_iterator i (cur);
-    for (--i; i != begin && i->prag != 0; --i) ;
-
-    // We may stop at pragma if j == b.
-    //
-    if (i->prag == 0)
-      ++i;
+    for (--i; i != begin && (i->prag != 0 || !i->assoc); --i) ;
 
     for (; i != cur; ++i)
     {
+      if (i->prag == 0) // Skip declarations.
+        continue;
+
       assert (!i->assoc);
 
-      if (i->prag->check (t, name, i->prag->pragma_name, i->prag->loc))
+      if (i->prag->check (decl, name, i->prag->pragma_name, i->prag->loc))
         prags.insert (*i->prag);
       else
-        error_++;
+        error_++; // Diagnostic has already been issued.
 
       i->assoc = true; // Mark this pragma as associated.
     }
+
+    cur->assoc = true; // Mark the declaration as associated.
   }
 
-  // Now see if there are any identifier pragmas for this decl.
-  // By doing this after handling the position pragmas we ensure
-  // correct overriding.
+  // Now see if there are any named pragmas for this declaration. By
+  // doing this after handling the position pragmas we ensure correct
+  // overriding.
   //
   {
-    decl_pragmas::const_iterator i (decl_pragmas_.find (t));
+    decl_pragmas::const_iterator i (decl_pragmas_.find (decl));
 
     if (i != decl_pragmas_.end ())
       prags.insert (i->second.begin (), i->second.end ());
@@ -2045,11 +2141,11 @@ process_pragmas (tree t,
 }
 
 void parser::impl::
-process_named_pragmas (tree t, node& node)
+process_named_pragmas (declaration const& decl, node& node)
 {
   pragma_set prags;
 
-  decl_pragmas::const_iterator i (decl_pragmas_.find (t));
+  decl_pragmas::const_iterator i (decl_pragmas_.find (decl));
 
   if (i != decl_pragmas_.end ())
     prags.insert (i->second.begin (), i->second.end ());

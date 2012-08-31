@@ -22,6 +22,12 @@ using namespace cutl;
 
 using container::any;
 
+virt_declarations virt_declarations_;
+loc_pragmas loc_pragmas_;
+decl_pragmas decl_pragmas_;
+ns_loc_pragmas ns_loc_pragmas_;
+pragma_name_set simple_value_pragmas_;
+
 template <typename X>
 void
 accumulate (compiler::context& ctx, string const& k, any const& v, location_t)
@@ -39,13 +45,6 @@ accumulate (compiler::context& ctx, string const& k, any const& v, location_t)
 
   c.push_back (v.value<X> ());
 }
-
-// Lists of pragmas.
-//
-loc_pragmas loc_pragmas_;
-decl_pragmas decl_pragmas_;
-ns_loc_pragmas ns_loc_pragmas_;
-pragma_name_set simple_value_pragmas_;
 
 // Parse a qualified string. It can be in one of the following formats:
 //
@@ -317,6 +316,7 @@ resolve_scoped_name (cxx_lexer& l,
                      cpp_ttype& tt,
                      string& tl,
                      tree& tn,
+                     tree start_scope,
                      string& name,
                      bool is_type,
                      string const& prag,
@@ -328,7 +328,7 @@ resolve_scoped_name (cxx_lexer& l,
     cpp_ttype ptt; // Not used.
     tree r (
       lookup::resolve_scoped_name (
-        l, tt, tl, tn, ptt, current_scope (), name, is_type, trailing_scope));
+        l, tt, tl, tn, ptt, start_scope, name, is_type, trailing_scope));
 
     if (prev_tt != 0)
       *prev_tt = ptt;
@@ -354,18 +354,19 @@ resolve_scoped_name (cxx_lexer& l,
 }
 
 static bool
-check_spec_decl_type (tree d,
+check_spec_decl_type (declaration const& d,
                       string const& name,
                       string const& p,
                       location_t l)
 {
-  int tc (TREE_CODE (d));
+  int tc (d.tree_code ());
+  bool type (TREE_CODE_CLASS (tc) == tcc_type);
 
   if (p == "id")
   {
     // Id can be used for both data members and objects.
     //
-    if (tc != FIELD_DECL && !CLASS_TYPE_P (d))
+    if (tc != FIELD_DECL && tc != RECORD_TYPE)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a data member or class" << endl;
@@ -375,7 +376,6 @@ check_spec_decl_type (tree d,
   else if (p == "auto"      ||
            p == "column"    ||
            p == "inverse"   ||
-           p == "transient" ||
            p == "version"   ||
            p == "index"     ||
            p == "unique"    ||
@@ -390,12 +390,24 @@ check_spec_decl_type (tree d,
       return false;
     }
   }
+  else if (p == "transient")
+  {
+    // Transient can be used for both data members and classes (object,
+    // view, or composite value).
+    //
+    if (tc != FIELD_DECL && tc != RECORD_TYPE)
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a data member or class" << endl;
+      return false;
+    }
+  }
   else if (p == "readonly")
   {
     // Readonly can be used for both data members and classes (object or
     // composite value).
     //
-    if (tc != FIELD_DECL && !CLASS_TYPE_P (d))
+    if (tc != FIELD_DECL && tc != RECORD_TYPE)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a data member or class" << endl;
@@ -433,7 +445,7 @@ check_spec_decl_type (tree d,
     // Table can be used for namespaces, members (container), and types
     // (container, object, or view).
     //
-    if (tc != NAMESPACE_DECL && tc != FIELD_DECL && !TYPE_P (d))
+    if (tc != NAMESPACE_DECL && tc != FIELD_DECL && !type)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a namespace, type, or data member" << endl;
@@ -444,7 +456,7 @@ check_spec_decl_type (tree d,
   {
     // Session can be used only for namespaces and objects.
     //
-    if (tc != NAMESPACE_DECL && !CLASS_TYPE_P (d))
+    if (tc != NAMESPACE_DECL && tc != RECORD_TYPE)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a namespace or class" << endl;
@@ -455,7 +467,7 @@ check_spec_decl_type (tree d,
   {
     // For now schema can be used only for namespaces and objects.
     //
-    if (tc != NAMESPACE_DECL && !CLASS_TYPE_P (d))
+    if (tc != NAMESPACE_DECL && tc != RECORD_TYPE)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a namespace or class" << endl;
@@ -470,7 +482,7 @@ check_spec_decl_type (tree d,
   {
     // Type can be used for both members and types.
     //
-    if (tc != FIELD_DECL && !TYPE_P (d))
+    if (tc != FIELD_DECL && !type)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a type or data member" << endl;
@@ -481,7 +493,7 @@ check_spec_decl_type (tree d,
   {
     // Default can be used for both members and types.
     //
-    if (tc != FIELD_DECL && !TYPE_P (d))
+    if (tc != FIELD_DECL && !type)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a type or data member" << endl;
@@ -496,7 +508,7 @@ check_spec_decl_type (tree d,
     // Container columns can be used for both members (container) and
     // types (container).
     //
-    if (tc != FIELD_DECL && !TYPE_P (d))
+    if (tc != FIELD_DECL && !type)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a type or data member" << endl;
@@ -511,7 +523,7 @@ check_spec_decl_type (tree d,
   {
     // Options can be used for both members and types.
     //
-    if (tc != FIELD_DECL && !TYPE_P (d))
+    if (tc != FIELD_DECL && !type)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a type or data member" << endl;
@@ -526,7 +538,7 @@ check_spec_decl_type (tree d,
     // Null pragmas can be used for both members and types (values,
     // containers, and pointers).
     //
-    if (tc != FIELD_DECL && !TYPE_P (d))
+    if (tc != FIELD_DECL && !type)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a type or data member" << endl;
@@ -538,10 +550,21 @@ check_spec_decl_type (tree d,
     // Unordered can be used for both members (container) and
     // types (container).
     //
-    if (tc != FIELD_DECL && !TYPE_P (d))
+    if (tc != FIELD_DECL && !type)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a type or data member" << endl;
+      return false;
+    }
+  }
+  else if (p == "virtual")
+  {
+    // Virtual is specified for a member.
+    //
+    if (tc != FIELD_DECL)
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a data member" << endl;
       return false;
     }
   }
@@ -555,7 +578,7 @@ check_spec_decl_type (tree d,
 }
 
 static void
-add_pragma (pragma const& prag, tree decl, bool ns)
+add_pragma (pragma const& prag, declaration const& decl, bool ns)
 {
   if (decl)
     decl_pragmas_[decl].insert (prag);
@@ -580,7 +603,7 @@ handle_pragma (cxx_lexer& l,
                string const& p,
                string const& qualifier,
                any& qualifier_value,
-               tree decl,
+               declaration const& decl,
                string const& decl_name,
                bool ns) // True if this is a position namespace pragma.
 {
@@ -860,7 +883,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -876,7 +899,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -918,7 +941,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1010,7 +1033,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -1046,7 +1069,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1083,7 +1106,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1181,7 +1204,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -1193,7 +1216,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -1205,7 +1228,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -1217,7 +1240,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     val = l.location ();
@@ -1230,7 +1253,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1266,7 +1289,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1330,7 +1353,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1349,7 +1372,8 @@ handle_pragma (cxx_lexer& l,
 
     view_object vo;
     vo.kind = view_object::object;
-    vo.obj_node = resolve_scoped_name (l, tt, tl, tn, vo.obj_name, true, p);
+    vo.obj_node = resolve_scoped_name (
+      l, tt, tl, tn, current_scope (), vo.obj_name, true, p);
 
     if (vo.obj_node == 0)
       return; // Diagnostics has already been issued.
@@ -1415,7 +1439,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -1455,7 +1479,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -1471,7 +1495,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1611,7 +1635,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1653,7 +1677,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1711,7 +1735,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1751,7 +1775,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -1769,7 +1793,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1814,7 +1838,8 @@ handle_pragma (cxx_lexer& l,
       {
         // We have a potentially scopped enumerator name.
         //
-        dv.node = resolve_scoped_name (l, tt, tl, tn, dv.value, false, p);
+        dv.node = resolve_scoped_name (
+          l, tt, tl, tn, current_scope (), dv.value, false, p);
 
         if (dv.node == 0)
           return; // Diagnostics has already been issued.
@@ -1892,7 +1917,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
@@ -1926,7 +1951,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -1938,7 +1963,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -1950,7 +1975,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -1962,7 +1987,7 @@ handle_pragma (cxx_lexer& l,
 
     // Make sure we've got the correct declaration type.
     //
-    if (decl != 0 && !check_spec_decl_type (decl, decl_name, p, loc))
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
@@ -2017,12 +2042,13 @@ handle_pragma (cxx_lexer& l,
 //
 
 static bool
-check_qual_decl_type (tree d,
+check_qual_decl_type (declaration const& d,
                       string const& name,
                       string const& p,
                       location_t l)
 {
-  int tc (TREE_CODE (d));
+  int tc (d.tree_code ());
+  bool type (TREE_CODE_CLASS (tc) == tcc_type);
 
   if (p == "map")
   {
@@ -2069,7 +2095,7 @@ check_qual_decl_type (tree d,
   }
   else if (p == "value")
   {
-    if (!TYPE_P (d))
+    if (!type)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a type" << endl;
@@ -2118,7 +2144,8 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
   string tl;
   tree tn;
 
-  tree decl (0), orig_decl (0);
+  declaration decl;
+  tree orig_decl (0);   // Original declarations as used in the pragma.
   string decl_name;
 
   string name (p);                 // Pragma name.
@@ -2141,7 +2168,8 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
     ct.loc = loc;
     val = ct;
     name = "custom-db-types";
-    orig_decl = decl = global_namespace;
+    orig_decl = global_namespace;
+    decl = declaration (orig_decl);
     adder = &accumulate<custom_db_type>;
     tt = l.next (tl, &tn);
   }
@@ -2222,7 +2250,8 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
         // token type (tt) and token literal (tl) variables should contain
         // the correct values.
         //
-        orig_decl = decl = current_scope ();
+        orig_decl = current_scope ();
+        decl = declaration (orig_decl);
       }
       else
       {
@@ -2231,7 +2260,7 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
         //
         cxx_tokens_lexer l;
         l.start (saved_tokens, loc);
-        handle_pragma (l, "index", "member", val, 0, "", false);
+        handle_pragma (l, "index", "member", val, declaration (), "", false);
         return;
       }
     }
@@ -2255,7 +2284,7 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
       {
         cpp_ttype ptt;
         orig_decl = resolve_scoped_name (
-          l, tt, tl, tn, decl_name, true, p, true, &ptt);
+          l, tt, tl, tn, current_scope (), decl_name, true, p, true, &ptt);
 
         if (orig_decl == 0)
           return; // Diagnostics has already been issued.
@@ -2267,9 +2296,9 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
           orig_decl = TREE_TYPE (orig_decl);
 
         if (TYPE_P (orig_decl)) // Can be a template.
-          decl = TYPE_MAIN_VARIANT (orig_decl);
+          decl = declaration (TYPE_MAIN_VARIANT (orig_decl));
         else
-          decl = orig_decl;
+          decl = declaration (orig_decl);
 
         if (tt == CPP_STRING && ptt != CPP_SCOPE)
         {
@@ -2286,7 +2315,10 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
         }
       }
       else
-        orig_decl = decl = current_scope ();
+      {
+        orig_decl = current_scope ();
+        decl = declaration (orig_decl);
+      }
 
       // Make sure we've got the correct declaration type.
       //
@@ -2325,19 +2357,21 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
 
       if (tt == CPP_NAME || tt == CPP_SCOPE)
       {
-        decl = resolve_scoped_name (l, tt, tl, tn, decl_name, false, p);
+        orig_decl = resolve_scoped_name (
+          l, tt, tl, tn, current_scope (), decl_name, false, p);
 
-        if (decl == 0)
+        if (orig_decl == 0)
           return; // Diagnostics has already been issued.
 
         // Make sure we've got the correct declaration type.
         //
-        if (!check_qual_decl_type (decl, decl_name, p, loc))
+        if (!check_qual_decl_type (orig_decl, decl_name, p, loc))
           return;
 
         // Resolve namespace aliases if any.
         //
-        decl = ORIGINAL_NAMESPACE (decl);
+        orig_decl = ORIGINAL_NAMESPACE (orig_decl);
+        decl = declaration (orig_decl);
 
         if (tt != CPP_CLOSE_PAREN)
         {
@@ -2349,7 +2383,8 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
       }
       else if (tt == CPP_CLOSE_PAREN)
       {
-        decl = global_namespace;
+        orig_decl = global_namespace;
+        decl = declaration (orig_decl);
         tt = l.next (tl, &tn);
       }
       else
@@ -2391,7 +2426,8 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
       //
       if (tt == CPP_NAME || tt == CPP_KEYWORD || tt == CPP_SCOPE)
       {
-        orig_decl = resolve_scoped_name (l, tt, tl, tn, decl_name, true, p);
+        orig_decl = resolve_scoped_name (
+          l, tt, tl, tn, current_scope (), decl_name, true, p);
 
         if (orig_decl == 0)
           return; // Diagnostics has already been issued.
@@ -2403,9 +2439,9 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
           orig_decl = TREE_TYPE (orig_decl);
 
         if (TYPE_P (orig_decl)) // Can be a template.
-          decl = TYPE_MAIN_VARIANT (orig_decl);
+          decl = declaration (TYPE_MAIN_VARIANT (orig_decl));
         else
-          decl = orig_decl;
+          decl = declaration (orig_decl);
 
         // Make sure we've got the correct declaration type.
         //
@@ -2438,30 +2474,249 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
     {
       tt = l.next (tl, &tn);
 
-      if (tt == CPP_NAME || tt == CPP_SCOPE)
+      if (tt != CPP_NAME && tt != CPP_SCOPE)
       {
-        decl = resolve_scoped_name (l, tt, tl, tn, decl_name, false, p);
+        error (l) << "data member name expected in db pragma " << p << endl;
+        return;
+      }
 
-        if (decl == 0)
+      // We need to see if this is a virtual data member declaration. Also,
+      // if it is not, then the name can still refer to one so we need to
+      // take extra steps to handle that. But first, we save the name and
+      // look for the 'virtual' specifier.
+      //
+      cxx_tokens name_tokens;
+      for (; tt != CPP_CLOSE_PAREN && tt != CPP_EOF; tt = l.next (tl, &tn))
+        name_tokens.push_back (cxx_token (l.location (), tt, tl, tn));
+
+      if (tt != CPP_CLOSE_PAREN)
+      {
+        error (l) << "')' expected at the end of db pragma " << p << endl;
+        return;
+      }
+
+      // Now scan the remainder of the pragma looking for the 'virtual'
+      // keyword and saving the tokens in between for later.
+      //
+      bool virt (false);
+      size_t balance (0);
+      for (tt = l.next (tl, &tn); tt != CPP_EOF; tt = l.next (tl, &tn))
+      {
+        switch (tt)
+        {
+        case CPP_OPEN_PAREN:
+          {
+            balance++;
+            break;
+          }
+        case CPP_CLOSE_PAREN:
+          {
+            if (balance > 0)
+              balance--;
+            else
+            {
+              error (l) << "unbalanced parenthesis in db pragma " << p << endl;
+              return;
+            }
+            break;
+          }
+        default:
+          {
+            if (balance == 0 && tt == CPP_KEYWORD && tl == "virtual")
+              virt = true;
+            break;
+          }
+        }
+
+        if (virt)
+          break;
+
+        saved_tokens.push_back (cxx_token (l.location (), tt, tl, tn));
+      }
+
+      if (balance != 0)
+      {
+        error (l) << "unbalanced parenthesis in db pragma " << p << endl;
+        return;
+      }
+
+      // Regardless of whether this is a virtual member declaration or a
+      // reference, resolve its scope name (if one is specified), which
+      // should be a class. We will need it in both cases.
+      //
+      tree scope;
+      if (name_tokens.size () > 2) // scope::name
+      {
+        size_t n (name_tokens.size ());
+
+        if (name_tokens[n - 2].type != CPP_SCOPE ||
+            name_tokens[n - 1].type != CPP_NAME)
+        {
+          error (l) << "invalid name in db pragma " << p << endl;
+          return;
+        }
+
+        cxx_tokens scope_tokens (1, name_tokens.back ());
+        name_tokens.pop_back (); // ::
+        name_tokens.pop_back (); // name
+        name_tokens.swap (scope_tokens);
+
+        cxx_tokens_lexer l;
+        l.start (scope_tokens);
+
+        tree tn;
+        string tl;
+        cpp_ttype tt (l.next (tl));
+
+        scope = resolve_scoped_name (
+          l, tt, tl, tn, current_scope (), decl_name, true, p);
+
+        if (scope == 0)
           return; // Diagnostics has already been issued.
+
+        scope = TREE_TYPE (scope);
+
+        if (tt != CPP_EOF)
+        {
+          error (l) << "invalid name in db pragma " << p << endl;
+          return;
+        }
+
+        decl_name += "::";
+      }
+      else
+        scope = current_scope ();
+
+      if (virt)
+      {
+        // Should be a single name.
+        //
+        if (name_tokens.size () > 1 || name_tokens.back ().type != CPP_NAME)
+        {
+          location_t l (name_tokens.back ().loc);
+          error (l) << "invalid name in db pragma " << p << endl;
+          return;
+        }
+        string const& name (name_tokens.back ().literal);
+
+        // Parse the remainder of the virtual specifier.
+        //
+        // virtual(<fq-name>)
+        //
+        tree type;
+        string type_name;
+        {
+          string p (tl);
+          location_t loc (l.location ());
+
+          if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+          {
+            error (l) << "'(' expected after db pragma " << p << endl;
+            return;
+          }
+
+          tt = l.next (tl, &tn);
+
+          // Can be built-in type (e.g., bool).
+          //
+          if (tt == CPP_NAME || tt == CPP_KEYWORD || tt == CPP_SCOPE)
+          {
+            type = resolve_scoped_name (
+              l, tt, tl, tn, current_scope (), type_name, true, p);
+
+            if (type == 0)
+              return; // Diagnostics has already been issued.
+
+            if (TREE_CODE (type) != TYPE_DECL)
+            {
+              error (loc) << "name '" << type_name << "' in db pragma "
+                          << p << " does not refer to a type" << endl;
+              return;
+            }
+
+            type = TREE_TYPE (type);
+          }
+          else
+          {
+            error (l) << "type name expected in db pragma " << p << endl;
+            return;
+          }
+
+          if (tt != CPP_CLOSE_PAREN)
+          {
+            error (l) << "')' expected at the end of db pragma " << p << endl;
+            return;
+          }
+
+          tt = l.next (tl, &tn);
+        }
+
+        pair<virt_declaration_set::iterator, bool> r (
+          virt_declarations_[scope].insert (
+            virt_declaration (loc, name, FIELD_DECL, type)));
+
+        if (!r.second)
+        {
+          error (loc) << "virtual data member declaration '" << name
+                      << "' conflicts with a previous declaration" << endl;
+
+          info (r.first->loc) << "'" << name << "' was previously "
+                              << "declared here" << endl;
+          return;
+        }
+
+        decl_name += name;
+        decl = declaration (*r.first);
+
+        // Mark it as virtual using the standard pragma machinery.
+        //
+        add_pragma (
+          pragma ("virtual", "virtual", true, loc, &check_spec_decl_type, 0),
+          decl,
+          false);
+      }
+      else
+      {
+        // This is not a virtual member declaration but the name can
+        // still refer to one. To handle this look for real and virtual
+        // members in the scope that we just resolved.
+        //
+        if (name_tokens.size () == 1 && name_tokens.back ().type == CPP_NAME)
+        {
+          virt_declarations::iterator i (virt_declarations_.find (scope));
+
+          if (i != virt_declarations_.end ())
+          {
+            virt_declaration_set::iterator j (
+              i->second.find (name_tokens.back ().literal, FIELD_DECL));
+
+            if (j != i->second.end ())
+              decl = declaration (*j);
+          }
+        }
+
+        if (!decl)
+        {
+          cxx_tokens_lexer l;
+          l.start (name_tokens);
+
+          tree tn;
+          string tl;
+          cpp_ttype tt (l.next (tl));
+
+          orig_decl = resolve_scoped_name (
+            l, tt, tl, tn, scope, decl_name, false, p);
+
+          if (orig_decl == 0)
+            return; // Diagnostics has already been issued.
+
+          decl = declaration (orig_decl);
+        }
 
         // Make sure we've got the correct declaration type.
         //
         if (!check_qual_decl_type (decl, decl_name, p, loc))
           return;
-
-        if (tt != CPP_CLOSE_PAREN)
-        {
-          error (l) << "')' expected at the end of db pragma " << p << endl;
-          return;
-        }
-
-        tt = l.next (tl, &tn);
-      }
-      else
-      {
-        error (l) << "data member name expected in db pragma " << p << endl;
-        return;
       }
     }
   }
@@ -2502,7 +2757,7 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
            p == "transient" ||
            p == "version")
   {
-    handle_pragma (l, p, "member", val, 0, "", false);
+    handle_pragma (l, p, "member", val, declaration (), "", false);
     return;
   }
   else
@@ -2894,7 +3149,10 @@ post_process_pragmas ()
   for (decl_pragmas::iterator i (decl_pragmas_.begin ()),
          e (decl_pragmas_.end ()); i != e; ++i)
   {
-    tree type (i->first);
+    if (i->first.virt)
+      continue;
+
+    tree type (i->first.decl.real);
 
     if (!(CLASS_TYPE_P (type) && CLASSTYPE_TEMPLATE_INSTANTIATION (type)))
       continue;

@@ -3447,7 +3447,7 @@ namespace relational
       expression
       translate_expression (type& c,
                             cxx_tokens const&,
-                            tree scope,
+                            semantics::scope& start_scope,
                             location_t loc,
                             string const& prag,
                             bool* placeholder = 0);

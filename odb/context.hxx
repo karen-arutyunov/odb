@@ -162,7 +162,7 @@ typedef std::vector<view_object> view_objects;
 // The view_alias_map does not contain entries for tables.
 //
 typedef std::map<std::string, view_object*> view_alias_map;
-typedef std::map<tree, view_object*> view_object_map;
+typedef std::map<semantics::class_*, view_object*> view_object_map;
 
 //
 //

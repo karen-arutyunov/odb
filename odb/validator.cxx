@@ -54,8 +54,23 @@ namespace
     virtual void
     traverse (type& m)
     {
-      if (transient (m))
-        return;
+      semantics::class_& c (dynamic_cast<semantics::class_&> (m.scope ()));
+
+      // If the class is marked transient, then mark each non-virtual
+      // data member as transient.
+      //
+      {
+        bool t (transient (m));
+
+        if (!t && c.count ("transient") && !m.count ("virtual"))
+        {
+          m.set ("transient", true);
+          t = true;
+        }
+
+        if (t)
+          return;
+      }
 
       count_++;
       semantics::names* hint;
@@ -369,6 +384,19 @@ namespace
         }
       }
 
+      // Check members.
+      //
+      member_.count_ = 0;
+      names (c);
+
+      if (member_.count_ == 0 && !base)
+      {
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " error: no persistent data members in the class" << endl;
+
+        valid_ = false;
+      }
+
       // Check special members.
       //
       semantics::data_member* id (0);
@@ -543,19 +571,6 @@ namespace
       if (poly_root != 0)
         c.set ("polymorphic-root", poly_root);
 
-      // Check members.
-      //
-      member_.count_ = 0;
-      names (c);
-
-      if (member_.count_ == 0 && !base)
-      {
-        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
-           << " error: no persistent data members in the class" << endl;
-
-        valid_ = false;
-      }
-
       // Update features set based on this object.
       //
       if (class_file (c) == unit.file ())
@@ -647,6 +662,19 @@ namespace
         }
       }
 
+      // Check members.
+      //
+      member_.count_ = 0;
+      names (c);
+
+      if (member_.count_ == 0)
+      {
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " error: no persistent data members in the class" << endl;
+
+        valid_ = false;
+      }
+
       // Check id.
       //
       semantics::data_member* id (0);
@@ -672,19 +700,6 @@ namespace
         os << o.file () << ":" << o.line () << ":" << o.column ()
            << ": error: view type data member cannot be designated as a "
            << "version" << endl;
-
-        valid_ = false;
-      }
-
-      // Check members.
-      //
-      member_.count_ = 0;
-      names (c);
-
-      if (member_.count_ == 0)
-      {
-        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
-           << " error: no persistent data members in the class" << endl;
 
         valid_ = false;
       }
@@ -732,6 +747,19 @@ namespace
         }
       }
 
+      // Check members.
+      //
+      member_.count_ = 0;
+      names (c);
+
+      if (member_.count_ == 0 && !base)
+      {
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " error: no persistent data members in the class" << endl;
+
+        valid_ = false;
+      }
+
       // Check id.
       //
       semantics::data_member* id (0);
@@ -757,19 +785,6 @@ namespace
         os << o.file () << ":" << o.line () << ":" << o.column ()
            << ": error: value type data member cannot be designated as a "
            << "version" << endl;
-
-        valid_ = false;
-      }
-
-      // Check members.
-      //
-      member_.count_ = 0;
-      names (c);
-
-      if (member_.count_ == 0 && !base)
-      {
-        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
-           << " error: no persistent data members in the class" << endl;
 
         valid_ = false;
       }

@@ -46,6 +46,16 @@ namespace semantics
     fund_wchar (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
+  struct fund_char16: fund_type
+  {
+    fund_char16 (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+  };
+
+  struct fund_char32: fund_type
+  {
+    fund_char32 (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+  };
+
   struct fund_signed_char: fund_type
   {
     fund_signed_char (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}

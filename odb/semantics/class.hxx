@@ -97,6 +97,19 @@ namespace semantics
     abstract () const;
 
   public:
+    // When doing lookup in class scope, take into account bases.
+    //
+    static unsigned int const exclude_base = 0x04;  // Exclude base classes.
+
+    virtual names*
+    lookup (string const& name,
+            type_id const&,
+            unsigned int flags = 0,
+            bool* hidden = 0) const;
+
+    using scope::lookup;
+
+  public:
     class_ (path const&, size_t line, size_t column, tree);
 
     void

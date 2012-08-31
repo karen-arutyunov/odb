@@ -17,6 +17,7 @@
 #include <cutl/fs/path.hxx>
 #include <cutl/container/graph.hxx>
 #include <cutl/container/pointer-iterator.hxx>
+#include <cutl/compiler/type-id.hxx>
 #include <cutl/compiler/context.hxx>
 
 #include <odb/gcc-fwd.hxx>
@@ -32,6 +33,7 @@ namespace semantics
   using container::graph;
   using container::pointer_iterator;
 
+  using compiler::type_id;
   using compiler::context;
 
   //
@@ -501,6 +503,24 @@ namespace semantics
   };
 
 
+  // Ambiguous name lookup exception.
+  //
+  struct ambiguous
+  {
+    ambiguous (names& f, names& s): first (f), second (s) {}
+    names& first;
+    names& second;
+  };
+
+  // Unresolved name lookup exception.
+  //
+  struct unresolved
+  {
+    unresolved (string const& n, bool tm): name (n), type_mismatch (tm) {}
+    string name;
+    bool type_mismatch; // True if the name resolved but types didn't match.
+  };
+
   //
   //
   class scope: public virtual nameable
@@ -555,11 +575,39 @@ namespace semantics
       return names_.end ();
     }
 
+    // Find a name in this scope.
+    //
+  public:
     virtual names_iterator_pair
     find (string const& name) const;
 
     names_iterator
     find (names&);
+
+    // Lookup a name of the specified type in this scope and, if not
+    // found, in outer scopes.
+    //
+  public:
+    static unsigned int const exclude_outer = 0x01;  // Exclude outer scopes.
+    static unsigned int const include_hidden = 0x02; // Include hidden names.
+
+    virtual names*
+    lookup (string const& name,
+            type_id const&,
+            unsigned int flags = 0,
+            bool* hidden = 0) const;
+
+    template <typename T>
+    T&
+    lookup (string const& name, unsigned int flags = 0) const
+    {
+      bool hidden (false);
+
+      if (names* n = lookup (name, typeid (T), flags, &hidden))
+        return dynamic_cast<T&> (n->named ());
+
+      throw unresolved (name, hidden);
+    }
 
   public:
     scope (path const& file, size_t line, size_t column, tree tn)
@@ -753,17 +801,6 @@ namespace semantics
 
   protected:
     data_member ()
-    {
-    }
-  };
-
-  // Virtual data member (extension to the standard C++ model).
-  //
-  class virtual_data_member: public data_member
-  {
-  public:
-    virtual_data_member (path const& file, size_t line, size_t column)
-        : node (file, line, column, 0)
     {
     }
   };

@@ -15,12 +15,124 @@
 #include <cutl/container/any.hxx>
 #include <cutl/compiler/context.hxx>
 
+struct virt_declaration
+{
+  virt_declaration (location_t l, std::string const& n, int tc, tree t)
+      : loc (l), name (n), tree_code (tc), type (t) {}
+
+  location_t loc;
+  std::string name;
+  int tree_code;
+  tree type;      // Declaration's type.
+};
+
+// Note that we consider virtual declarations with the same name but
+// different tree codes unequal. If that is too loose, then the
+// inserting code must do additional checks.
+//
+struct virt_declaration_comparator
+{
+  bool
+  operator () (virt_declaration const& x, virt_declaration const& y) const
+  {
+    return x.name < y.name || (x.name == y.name && x.tree_code < y.tree_code);
+  }
+};
+
+struct virt_declaration_set:
+  std::set<virt_declaration, virt_declaration_comparator>
+{
+  typedef std::set<virt_declaration, virt_declaration_comparator> base;
+
+  iterator
+  find (std::string const& name, int tree_code) const
+  {
+    return base::find (virt_declaration (0, name, tree_code, 0));
+  }
+};
+
+// Map of scopes (e.g., class, namespace) to sets of virtual declarations.
+//
+typedef std::map<tree, virt_declaration_set> virt_declarations;
+extern virt_declarations virt_declarations_;
+
+// Real or virtual declaration. If it is real, then it is a pointer to
+// the GCC tree node. Otherwise, it is a pointer to virt_declaration
+// from virt_declarations_ above.
+//
+struct declaration
+{
+  declaration (): virt (false) {decl.real = 0;}
+  declaration (tree d): virt (false) {decl.real = d;}
+  declaration (virt_declaration const& d): virt (true) {decl.virt = &d;}
+
+  bool virt;
+
+  union
+  {
+    tree real;
+    virt_declaration const* virt;
+  } decl;
+
+  int
+  tree_code () const
+  {
+    return (virt ? decl.virt->tree_code : TREE_CODE (decl.real));
+  }
+
+  typedef bool declaration::*bool_convertible;
+  operator bool_convertible () const
+  {
+    return ptr () == 0 ? 0 : &declaration::virt;
+  }
+
+public:
+  bool
+  operator== (declaration const& x) const
+  {
+    return virt == x.virt && ptr () == x.ptr ();
+  }
+
+  bool
+  operator!= (declaration const& x) const
+  {
+    return !(*this == x);
+  }
+
+  bool
+  operator< (declaration const& x) const
+  {
+    return virt < x.virt || (virt == x.virt && ptr () < x.ptr ());
+  }
+
+public:
+  void const*
+  ptr () const
+  {
+    return virt
+      ? static_cast<void const*> (decl.virt)
+      : static_cast<void const*> (decl.real);
+  }
+};
+
+inline bool
+operator== (declaration const& x, tree y)
+{
+  return !x.virt && x.decl.real == y;
+}
+
+inline bool
+operator== (tree x, declaration const& y)
+{
+  return !y.virt && y.decl.real == x;
+}
+
 struct pragma
 {
   // Check that the pragma is applicable to the declaration. Return true
   // on success, complain and return false otherwise.
   //
-  typedef bool (*check_func) (tree decl,
+  typedef bool (*check_func) (declaration const& decl,
                               std::string const& decl_name,
                               std::string const& prag_name,
                               location_t);
@@ -120,9 +232,9 @@ struct ns_loc_pragma
 typedef std::vector<ns_loc_pragma> ns_loc_pragmas;
 extern ns_loc_pragmas ns_loc_pragmas_;
 
-// Pragmas associated with specific declarations.
+// Pragmas associated with specific declarations (real or virtual).
 //
-typedef std::map<tree, pragma_set> decl_pragmas;
+typedef std::map<declaration, pragma_set> decl_pragmas;
 extern decl_pragmas decl_pragmas_;
 
 // List of pragma names (in context name form) that disqualify a value
