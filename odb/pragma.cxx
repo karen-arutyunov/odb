@@ -1992,6 +1992,13 @@ handle_pragma (cxx_lexer& l,
 
     tt = l.next (tl, &tn);
   }
+  else if (p == "virtual")
+  {
+    // Stray virtual specifier (i.e., without explicit member name).
+    //
+    error (l) << "virtual member declaration requires name" << endl;
+    return;
+  }
   else
   {
     error (l) << "unknown db pragma " << p << endl;
@@ -2755,7 +2762,8 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
            p == "unordered" ||
            p == "readonly" ||
            p == "transient" ||
-           p == "version")
+           p == "version" ||
+           p == "virtual")
   {
     handle_pragma (l, p, "member", val, declaration (), "", false);
     return;
@@ -3038,6 +3046,12 @@ handle_pragma_db_version (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "version");
 }
+
+extern "C" void
+handle_pragma_db_virtual (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "virtual");
+}
 */
 
 extern "C" void
@@ -3137,6 +3151,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "readonly", handle_pragma_db_readonly);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
   c_register_pragma_with_expansion ("db", "version", handle_pragma_db_version);
+  c_register_pragma_with_expansion ("db", "virtual", handle_pragma_db_virtual);
   */
 }
 
