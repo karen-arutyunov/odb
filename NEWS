@@ -14,7 +14,17 @@ Version 2.1.0
  * New pragmas, get, set, and access, allow the specification of custom
    accessor and modifier expressions for data members in persistent classes,
    composite value types, and views. For more information, refer to Section
-   12.4.5, "get/set/access" in the ODB manual.
+   12.4.5, "get/set/access" in the ODB manual as well as the 'access' example
+   in the odb-examples package.
+
+ * New pragma, virtual, allows the declaration of virtual data members. A
+   virtual data member is an imaginary data member that is only used for
+   the purpose of database persistence. This mechanism can be useful to
+   aggregate or dis-aggregate real data members, implement the pimpl
+   idiom, and to handle third-party types for which names of real data
+   members may not be known. For more information, refer to Section
+   12.4.13, "virtual" in the ODB manual as well as the 'access' and
+   'pimpl' examples in the odb-examples package.
 
  * Support for defining database indexes. Both simple and composite indexes
    can be defined with support for database-specific index types, methods, and
