@@ -707,15 +707,16 @@ for consistency.
         <table class="toc">
           <tr><th>19.1</th><td><a href="#19.1">Smart Pointers Library</a></td></tr>
           <tr><th>19.2</th><td><a href="#19.2">Unordered Containers Library</a></td></tr>
-	  <tr><th>19.3</th><td><a href="#19.3">Optional Library</a></td></tr>
+	  <tr><th>19.3</th><td><a href="#19.3">Multi-Index Container Library</a></td></tr>
+	  <tr><th>19.4</th><td><a href="#19.4">Optional Library</a></td></tr>
           <tr>
-	    <th>19.4</th><td><a href="#19.4">Date Time Library</a>
+	    <th>19.5</th><td><a href="#19.5">Date Time Library</a>
 	      <table class="toc">
-	        <tr><th>19.4.1</th><td><a href="#19.4.1">MySQL Database Type Mapping</a></td></tr>
-		<tr><th>19.4.2</th><td><a href="#19.4.2">SQLite Database Type Mapping</a></td></tr>
-		<tr><th>19.4.3</th><td><a href="#19.4.3">PostgreSQL Database Type Mapping</a></td></tr>
-		<tr><th>19.4.4</th><td><a href="#19.4.4">Oracle Database Type Mapping</a></td></tr>
-		<tr><th>19.4.5</th><td><a href="#19.4.5">SQL Server Database Type Mapping</a></td></tr>
+	        <tr><th>19.5.1</th><td><a href="#19.5.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>19.5.2</th><td><a href="#19.5.2">SQLite Database Type Mapping</a></td></tr>
+		<tr><th>19.5.3</th><td><a href="#19.5.3">PostgreSQL Database Type Mapping</a></td></tr>
+		<tr><th>19.5.4</th><td><a href="#19.5.4">Oracle Database Type Mapping</a></td></tr>
+		<tr><th>19.5.5</th><td><a href="#19.5.5">SQL Server Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -6590,7 +6591,7 @@ namespace odb
      consider using a more efficient implementation of the
      <em>optional value</em> concept such as the
      <code>optional</code> class template from Boost
-     (<a href="#19.3">Section 19.3, "Optional Library"</a>).</p>
+     (<a href="#19.4">Section 19.4, "Optional Library"</a>).</p>
 
   <p>Another common C++ representation of a value that can be
      <code>NULL</code> is a pointer. ODB will automatically
@@ -17208,7 +17209,92 @@ class person
 };
   </pre>
 
-  <h2><a name="19.3">19.3 Optional Library</a></h2>
+  <h2><a name="19.3">19.3 Multi-Index Container Library</a></h2>
+
+  <p>The <code>multi-index</code> sub-profile provides persistence support for
+     <code>boost::multi_index_container</code> from the Boost Multi-Index
+     library. To enable only this profile, pass <code>boost/multi-index</code>
+     to the <code>--profile</code> ODB compiler option. The following example
+     shows how <code>multi_index_container</code> may be used within a
+     persistent object.</p>
+
+  <pre class="cxx">
+namespace mi = boost::multi_index;
+
+#pragma db object
+class person
+{
+  ...
+
+  typedef
+  mi::multi_index_container&lt;
+    std::string,
+    mi::indexed_by&lt;
+      mi::sequenced&lt;>,
+      mi::ordered_unique&lt;mi::identity&lt;std::string> >
+    >
+  > emails;
+
+  emails emails_;
+};
+  </pre>
+
+  <p>Note that a <code>multi_index_container</code> instantiation is
+     stored differently in the database depending on whether it has
+     any <code>sequenced</code> or <code>random_access</code> indexes.
+     If it does, then it is treated as an ordered container
+     (<a href="#5.1">Section 5.1, "Ordered Containers"</a>) with the
+     first such index establishing the order. Otherwise, it is treated
+     as a set container (<a href="#5.2">Section 5.2, "Set and Multiset
+     Containers"</a>).</p>
+
+  <p>Note also that there is a terminology clash between ODB and Boost
+     Multi-Index. The ODB term <em>ordered container</em> translates
+     to Multi-Index terms <em>sequenced index</em> and <em>random access
+     index</em> while the ODB term <em>set container</em> translates
+     to Multi-Index terms <em>ordered index</em> and <em>hashed
+     index</em>.</p>
+
+  <p>The <code>emails</code> container form the above example is stored
+     as an ordered container. In contrast, the following <code>aliases</code>
+     container is stored as a set.</p>
+
+  <pre class="cxx">
+namespace mi = boost::multi_index;
+
+#pragma db value
+struct name
+{
+  std::string first;
+  std::string last;
+};
+
+bool operator&lt; (const name&amp;, const name&amp;);
+
+#pragma db object
+class person
+{
+  ...
+
+  typedef
+  mi::multi_index_container&lt;
+    name,
+    mi::indexed_by&lt;
+      mi::ordered_unique&lt;mi::identity&lt;name> >
+      mi::ordered_non_unique&lt;
+        mi::member&lt;name, std::string, &amp;name::first>
+      >,
+      mi::ordered_non_unique&lt;
+        mi::member&lt;name, std::string, &amp;name::last>
+      >
+    >
+  > aliases;
+
+  aliases aliases_;
+};
+  </pre>
+
+  <h2><a name="19.4">19.4 Optional Library</a></h2>
 
   <p>The <code>optional</code> sub-profile provides persistence support for
      the <code>boost::optional</code> container from the Boost
@@ -17240,7 +17326,7 @@ class person
      this profile is used, the <code>NULL</code> values are automatically
      enabled for data members of the  <code>boost::optional</code> type.</p>
 
-  <h2><a name="19.4">19.4 Date Time Library</a></h2>
+  <h2><a name="19.5">19.5 Date Time Library</a></h2>
 
   <p>The <code>date-time</code> sub-profile provides persistence support for a
      subset of types from the Boost <code>date_time</code> library. It is
@@ -17313,7 +17399,7 @@ namespace odb
      exceptions are thrown are database system dependent and are discussed in
      more detail in the following sub-sections.</p>
 
-  <h3><a name="19.4.1">19.4.1 MySQL Database Type Mapping</a></h3>
+  <h3><a name="19.5.1">19.5.1 MySQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the MySQL database
@@ -17374,7 +17460,7 @@ class person
      the <code>out_of_range</code> exception.  Refer to the MySQL
      documentation for more information on the MySQL data type ranges.</p>
 
-  <h3><a name="19.4.2">19.4.2 SQLite Database Type Mapping</a></h3>
+  <h3><a name="19.5.2">19.5.2 SQLite Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the SQLite database
@@ -17452,7 +17538,7 @@ class person
      will result in the <code>out_of_range</code> exception.</p>
 
 
-  <h3><a name="19.4.3">19.4.3 PostgreSQL Database Type Mapping</a></h3>
+  <h3><a name="19.5.3">19.5.3 PostgreSQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the PostgreSQL database
@@ -17503,7 +17589,7 @@ class person
      result in the <code>special_value</code> exception.</p>
 
 
-  <h3><a name="19.4.4">19.4.4 Oracle Database Type Mapping</a></h3>
+  <h3><a name="19.5.4">19.5.4 Oracle Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the Oracle database
@@ -17565,7 +17651,7 @@ class person
      the <code>special_value</code> exception.</p>
 
 
-  <h3><a name="19.4.5">19.4.5 SQL Server Database Type Mapping</a></h3>
+  <h3><a name="19.5.5">19.5.5 SQL Server Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the SQL Server database

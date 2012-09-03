@@ -40,6 +40,10 @@ Version 2.1.0
    For more information, refer to Section 12.7, "Database Type Mapping
    Pragmas" in the ODB manual.
 
+ * The Boost profile now provides persistence support for the Boost Multi-
+   Index container (boost::multi_index_container). For more information,
+   refer to Section 19.3, "Multi-Index Container Library" in the ODB manual.
+
  * New pragma, definition, allows the specification of an alternative code
    generation location for persistent classes, views, and composite value
    types. This mechanism is primarily useful for converting third-party
