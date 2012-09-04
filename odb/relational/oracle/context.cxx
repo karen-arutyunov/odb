@@ -20,38 +20,41 @@ namespace relational
     {
       struct type_map_entry
       {
-        const char* const cxx_type;
-        const char* const db_type;
-        const char* const db_id_type;
+        char const* const cxx_type;
+        char const* const db_type;
+        char const* const db_id_type;
+        bool const null;
       };
 
       type_map_entry type_map[] =
       {
-        {"bool", "NUMBER(1)", 0},
+        {"bool", "NUMBER(1)", 0, false},
 
-        {"char", "NUMBER(3)", 0},
-        {"signed char", "NUMBER(3)", 0},
-        {"unsigned char", "NUMBER(3)", 0},
+        {"char", "NUMBER(3)", 0, false},
+        {"signed char", "NUMBER(3)", 0, false},
+        {"unsigned char", "NUMBER(3)", 0, false},
 
-        {"short int", "NUMBER(5)", 0},
-        {"short unsigned int", "NUMBER(5)", 0},
+        {"short int", "NUMBER(5)", 0, false},
+        {"short unsigned int", "NUMBER(5)", 0, false},
 
-        {"int", "NUMBER(10)", 0},
-        {"unsigned int", "NUMBER(10)", 0},
+        {"int", "NUMBER(10)", 0, false},
+        {"unsigned int", "NUMBER(10)", 0, false},
 
-        {"long int", "NUMBER(19)", 0},
-        {"long unsigned int", "NUMBER(20)", 0},
+        {"long int", "NUMBER(19)", 0, false},
+        {"long unsigned int", "NUMBER(20)", 0, false},
 
-        {"long long int", "NUMBER(19)", 0},
-        {"long long unsigned int", "NUMBER(20)", 0},
+        {"long long int", "NUMBER(19)", 0, false},
+        {"long long unsigned int", "NUMBER(20)", 0, false},
 
-        {"float", "BINARY_FLOAT", 0},
-        {"double", "BINARY_DOUBLE", 0},
+        {"float", "BINARY_FLOAT", 0, false},
+        {"double", "BINARY_DOUBLE", 0, false},
 
-        {"::std::string", "VARCHAR2(512)", 0},
+        // Oracle treats empty VARCHAR2 (and NVARCHAR2) strings as NULL.
+        //
+        {"::std::string", "VARCHAR2(512)", 0, true},
 
-        {"::size_t", "NUMBER(20)", 0},
-        {"::std::size_t", "NUMBER(20)", 0}
+        {"::size_t", "NUMBER(20)", 0, false},
+        {"::std::size_t", "NUMBER(20)", 0, false}
       };
     }
 
@@ -92,7 +95,8 @@ namespace relational
 
         type_map_type::value_type v (
           e.cxx_type,
-          db_type_type (e.db_type, e.db_id_type ? e.db_id_type : e.db_type));
+          db_type_type (
+            e.db_type, e.db_id_type ? e.db_id_type : e.db_type, e.null));
 
         data_->type_map_.insert (v);
       }

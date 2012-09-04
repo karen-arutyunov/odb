@@ -21,38 +21,39 @@ namespace relational
     {
       struct type_map_entry
       {
-        const char* const cxx_type;
-        const char* const db_type;
-        const char* const db_id_type;
+        char const* const cxx_type;
+        char const* const db_type;
+        char const* const db_id_type;
+        bool const null;
       };
 
       type_map_entry type_map[] =
       {
-        {"bool", "TINYINT(1)", 0},
+        {"bool", "TINYINT(1)", 0, false},
 
-        {"char", "TINYINT", 0},
-        {"signed char", "TINYINT", 0},
-        {"unsigned char", "TINYINT UNSIGNED", 0},
+        {"char", "TINYINT", 0, false},
+        {"signed char", "TINYINT", 0, false},
+        {"unsigned char", "TINYINT UNSIGNED", 0, false},
 
-        {"short int", "SMALLINT", 0},
-        {"short unsigned int", "SMALLINT UNSIGNED", 0},
+        {"short int", "SMALLINT", 0, false},
+        {"short unsigned int", "SMALLINT UNSIGNED", 0, false},
 
-        {"int", "INT", 0},
-        {"unsigned int", "INT UNSIGNED", 0},
+        {"int", "INT", 0, false},
+        {"unsigned int", "INT UNSIGNED", 0, false},
 
-        {"long int", "BIGINT", 0},
-        {"long unsigned int", "BIGINT UNSIGNED", 0},
+        {"long int", "BIGINT", 0, false},
+        {"long unsigned int", "BIGINT UNSIGNED", 0, false},
 
-        {"long long int", "BIGINT", 0},
-        {"long long unsigned int", "BIGINT UNSIGNED", 0},
+        {"long long int", "BIGINT", 0, false},
+        {"long long unsigned int", "BIGINT UNSIGNED", 0, false},
 
-        {"float", "FLOAT", 0},
-        {"double", "DOUBLE", 0},
+        {"float", "FLOAT", 0, false},
+        {"double", "DOUBLE", 0, false},
 
-        {"::std::string", "TEXT", "VARCHAR(255)"},
+        {"::std::string", "TEXT", "VARCHAR(255)", false},
 
-        {"::size_t", "BIGINT UNSIGNED", 0},
-        {"::std::size_t", "BIGINT UNSIGNED", 0}
+        {"::size_t", "BIGINT UNSIGNED", 0, false},
+        {"::std::size_t", "BIGINT UNSIGNED", 0, false}
       };
     }
 
@@ -94,7 +95,8 @@ namespace relational
 
         type_map_type::value_type v (
           e.cxx_type,
-          db_type_type (e.db_type, e.db_id_type ? e.db_id_type : e.db_type));
+          db_type_type (
+            e.db_type, e.db_id_type ? e.db_id_type : e.db_type, e.null));
 
         data_->type_map_.insert (v);
       }

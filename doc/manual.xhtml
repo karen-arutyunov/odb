@@ -13878,13 +13878,13 @@ class object
     <tr>
       <td><code>float</code></td>
       <td><code>REAL</code></td>
-      <td><code>NOT NULL</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
       <td><code>double</code></td>
       <td><code>REAL</code></td>
-      <td><code>NOT NULL</code></td>
+      <td><code>NULL</code></td>
     </tr>
 
     <tr>
@@ -13893,6 +13893,14 @@ class object
       <td><code>NOT NULL</code></td>
     </tr>
   </table>
+
+  <p>SQLite represents <code>NaN</code> <code>FLOAT</code> values
+     as <code>NULL</code> values. As a result, columns of the
+     <code>float</code> and <code>double</code> types are by default
+     declared as <code>NULL</code>. However, you can override this by
+     explicitly declaring them as <code>NOT NULL</code> with the
+     <code>db&nbsp;not_null</code> pragma (<a href="#12.4.6">Section
+     12.4.6, "<code>null/not_null</code>"</a>).</p>
 
   <p>The SQLite ODB runtime library also provides support for mapping the
      <code>std::vector&lt;char></code>,
@@ -15344,13 +15352,13 @@ class object
 
   <p>In Oracle empty <code>VARCHAR2</code> and <code>NVARCHAR2</code>
      strings are represented as <code>NULL</code> values. As a result,
-     in the generated schema, columns of these types are declared as
-     <code>NULL</code> even if explicitly declared as
-     <code>NOT NULL</code> with the <code>db&nbsp;not_null</code> pragma
-     (<a href="#12.4.6">Section 12.4.6, "<code>null/not_null</code>"</a>),
-     except for primary key columns. This also means that for object ids
-     that are mapped to these Oracle types, an empty string is an invalid
-     value.</p>
+     columns of the <code>std::string</code> type are by default declared
+     as <code>NULL</code> except for primary key columns. However, you
+     can override this by explicitly declaring them as <code>NOT NULL</code>
+     with the <code>db&nbsp;not_null</code> pragma (<a href="#12.4.6">Section
+     12.4.6, "<code>null/not_null</code>"</a>). This also means that for
+     object ids that are mapped to these Oracle types, an empty string is
+     an invalid value.</p>
 
   <p>The Oracle ODB runtime library also provides support for mapping the
      <code>std::string</code> type to the Oracle <code>CHAR</code>,

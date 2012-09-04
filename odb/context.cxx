@@ -580,7 +580,7 @@ readonly (semantics::data_member& m)
 }
 
 bool context::
-null (data_member_path const& mp)
+null (data_member_path const& mp) const
 {
   // Outer members can override the null-ability of the inner ones. So
   // start from the most outer member.
@@ -595,9 +595,10 @@ null (data_member_path const& mp)
 }
 
 bool context::
-null (semantics::data_member& m)
+null (semantics::data_member& m) const
 {
-  semantics::type& t (utype (m));
+  semantics::names* hint;
+  semantics::type& t (utype (m, hint));
 
   if (object_pointer (t))
   {
@@ -612,9 +613,7 @@ null (semantics::data_member& m)
         return true;
 
       if (!t.count ("not-null"))
-      {
         return true;
-      }
     }
 
     return false;
@@ -633,6 +632,8 @@ null (semantics::data_member& m)
 
       if (!t.count ("not-null"))
       {
+        semantics::type* pt;
+
         // Check if this type is a wrapper.
         //
         if (t.get<bool> ("wrapper"))
@@ -645,9 +646,25 @@ null (semantics::data_member& m)
 
           // Otherwise, check the wrapped type.
           //
-          if (t.get<semantics::type*> ("wrapper-type")->count ("null"))
+          pt = t.get<semantics::type*> ("wrapper-type");
+          hint = t.get<semantics::names*> ("wrapper-hint");
+          pt = &utype (*pt, hint);
+
+          if (pt->count ("null"))
             return true;
+
+          if (pt->count ("not-null"))
+            return false;
         }
+        else
+          pt = &t;
+
+        // See if this is one of the types with built-in mapping.
+        //
+        type_map_type::const_iterator i (data_->type_map_.find (*pt, hint));
+
+        if (i != data_->type_map_.end ())
+          return i->second.null;
       }
     }
 
@@ -656,13 +673,14 @@ null (semantics::data_member& m)
 }
 
 bool context::
-null (semantics::data_member& m, string const& kp)
+null (semantics::data_member& m, string const& kp) const
 {
   if (kp.empty ())
     return null (m);
 
   semantics::type& c (utype (m));
   semantics::type& t (member_utype (m, kp));
+  semantics::names* hint (0); // No hint for container elements.
 
   if (object_pointer (t))
   {
@@ -705,6 +723,8 @@ null (semantics::data_member& m, string const& kp)
 
         if (!t.count ("not-null"))
         {
+          semantics::type* pt;
+
           // Check if this type is a wrapper.
           //
           if (t.get<bool> ("wrapper"))
@@ -717,12 +737,25 @@ null (semantics::data_member& m, string const& kp)
 
             // Otherwise, check the wrapped type.
             //
-            semantics::type& wt (
-              utype (*t.get<semantics::type*> ("wrapper-type")));
+            pt = t.get<semantics::type*> ("wrapper-type");
+            hint = t.get<semantics::names*> ("wrapper-hint");
+            pt = &utype (*pt, hint);
 
-            if (wt.count ("null"))
+            if (pt->count ("null"))
               return true;
+
+            if (pt->count ("not-null"))
+              return false;
           }
+          else
+            pt = &t;
+
+          // See if this is one of the types with built-in mapping.
+          //
+          type_map_type::const_iterator i (data_->type_map_.find (*pt, hint));
+
+          if (i != data_->type_map_.end ())
+            return i->second.null;
         }
       }
     }
@@ -1511,28 +1544,36 @@ column_options (semantics::data_member& m, string const& kp)
   return r;
 }
 
-string context::
-database_type_impl (semantics::type& t, semantics::names* hint, bool id)
+context::type_map_type::const_iterator context::type_map_type::
+find (semantics::type& t, semantics::names* hint)
 {
-  type_map_type::const_iterator end (data_->type_map_.end ()), i (end);
+  const_iterator e (end ()), i (e);
 
   // First check the hinted name. This allows us to handle things like
   // size_t which is nice to map to the same type irrespective of the
   // actual type. Since this type can be an alias for the one we are
   // interested in, go into nested hints.
   //
-  for (; hint != 0 && i == end; hint = hint->hint ())
+  for (; hint != 0 && i == e; hint = hint->hint ())
   {
-    i = data_->type_map_.find (t.fq_name (hint));
+    i = base::find (t.fq_name (hint));
   }
 
   // If the hinted name didn't work, try the primary name (e.g.,
   // ::std::string) instead of a user typedef (e.g., my_string).
   //
-  if (i == end)
-    i = data_->type_map_.find (t.fq_name ());
+  if (i == e)
+    i = base::find (t.fq_name ());
 
-  if (i != end)
+  return i;
+}
+
+string context::
+database_type_impl (semantics::type& t, semantics::names* hint, bool id)
+{
+  type_map_type::const_iterator i (data_->type_map_.find (t, hint));
+
+  if (i != data_->type_map_.end ())
     return id ? i->second.id_type : i->second.type;
   else
     return string ();

@@ -1298,7 +1298,11 @@ namespace relational
         else
         {
           type = mi.fq_type ();
-          os << "bool is_null;";
+
+          // Indicate to the value_traits whether this column can be NULL.
+          //
+          os << "bool is_null (" <<
+            (null (mi.m, key_prefix_) ? "true" : "false") << ");";
         }
 
         if (comp)

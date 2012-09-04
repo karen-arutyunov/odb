@@ -159,50 +159,6 @@ namespace relational
       };
       entry<create_table> create_table_;
 
-      struct create_column: relational::create_column, context
-      {
-        create_column (base const& x): base (x) {}
-
-        virtual void
-        null (sema_rel::column& c)
-        {
-          // Oracle interprets empty VARCHAR2 and NVARCHAR2 strings as
-          // NULL. As an empty string is valid within the C++ context,
-          // VARCHAR2 and NVARCHAR2 columns are always specified as
-          // nullable, except when are a part of a primary key.
-          //
-          if (!c.null ())
-          {
-            // This should never fail since we have already parsed this.
-            //
-            sql_type const& t (parse_sql_type (c.type ()));
-
-            if (t.type == sql_type::VARCHAR2 || t.type == sql_type::NVARCHAR2)
-            {
-              // See if this column is a part of a primary key.
-              //
-              bool pk (false);
-
-              for (sema_rel::column::contained_iterator i (
-                     c.contained_begin ()); i != c.contained_end (); ++i)
-              {
-                if (i->key ().is_a<sema_rel::primary_key> ())
-                {
-                  pk = true;
-                  break;
-                }
-              }
-
-              if (!pk)
-                return;
-            }
-          }
-
-          base::null (c);
-        }
-      };
-      entry<create_column> create_column_;
-
       struct create_foreign_key: relational::create_foreign_key, context
       {
         create_foreign_key (schema_format f, relational::create_table& ct)

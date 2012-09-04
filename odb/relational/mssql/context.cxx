@@ -20,43 +20,44 @@ namespace relational
     {
       struct type_map_entry
       {
-        const char* const cxx_type;
-        const char* const db_type;
-        const char* const db_id_type;
+        char const* const cxx_type;
+        char const* const db_type;
+        char const* const db_id_type;
+        bool const null;
       };
 
       type_map_entry type_map[] =
       {
-        {"bool", "BIT", 0},
+        {"bool", "BIT", 0, false},
 
-        {"char", "TINYINT", 0},
-        {"signed char", "TINYINT", 0},
-        {"unsigned char", "TINYINT", 0},
+        {"char", "TINYINT", 0, false},
+        {"signed char", "TINYINT", 0, false},
+        {"unsigned char", "TINYINT", 0, false},
 
-        {"short int", "SMALLINT", 0},
-        {"short unsigned int", "SMALLINT", 0},
+        {"short int", "SMALLINT", 0, false},
+        {"short unsigned int", "SMALLINT", 0, false},
 
-        {"int", "INT", 0},
-        {"unsigned int", "INT", 0},
+        {"int", "INT", 0, false},
+        {"unsigned int", "INT", 0, false},
 
-        {"long int", "BIGINT", 0},
-        {"long unsigned int", "BIGINT", 0},
+        {"long int", "BIGINT", 0, false},
+        {"long unsigned int", "BIGINT", 0, false},
 
-        {"long long int", "BIGINT", 0},
-        {"long long unsigned int", "BIGINT", 0},
+        {"long long int", "BIGINT", 0, false},
+        {"long long unsigned int", "BIGINT", 0, false},
 
-        {"float", "REAL", 0},
-        {"double", "FLOAT", 0},
+        {"float", "REAL", 0, false},
+        {"double", "FLOAT", 0, false},
 
-        {"::std::string", "VARCHAR(512)", "VARCHAR(256)"},
-        {"::std::wstring", "NVARCHAR(512)", "NVARCHAR(256)"},
+        {"::std::string", "VARCHAR(512)", "VARCHAR(256)", false},
+        {"::std::wstring", "NVARCHAR(512)", "NVARCHAR(256)", false},
 
-        {"::size_t", "BIGINT", 0},
-        {"::std::size_t", "BIGINT", 0},
+        {"::size_t", "BIGINT", 0, false},
+        {"::std::size_t", "BIGINT", 0, false},
 
         // Windows GUID/UUID (typedef struct _GUID {...} GUID, UUID;).
         //
-        {"::_GUID", "UNIQUEIDENTIFIER", 0}
+        {"::_GUID", "UNIQUEIDENTIFIER", 0, false}
       };
     }
 
@@ -97,7 +98,8 @@ namespace relational
 
         type_map_type::value_type v (
           e.cxx_type,
-          db_type_type (e.db_type, e.db_id_type ? e.db_id_type : e.db_type));
+          db_type_type (
+            e.db_type, e.db_id_type ? e.db_id_type : e.db_type, e.null));
 
         data_->type_map_.insert (v);
       }

@@ -22,35 +22,38 @@ namespace relational
     {
       struct type_map_entry
       {
-        const char* const cxx_type;
-        const char* const db_type;
-        const char* const db_id_type;
+        char const* const cxx_type;
+        char const* const db_type;
+        char const* const db_id_type;
+        bool const null;
       };
 
       type_map_entry type_map[] =
       {
-        {"bool", "INTEGER", 0},
+        {"bool", "INTEGER", 0, false},
 
-        {"char", "INTEGER", 0},
-        {"signed char", "INTEGER", 0},
-        {"unsigned char", "INTEGER", 0},
+        {"char", "INTEGER", 0, false},
+        {"signed char", "INTEGER", 0, false},
+        {"unsigned char", "INTEGER", 0, false},
 
-        {"short int", "INTEGER", 0},
-        {"short unsigned int", "INTEGER", 0},
+        {"short int", "INTEGER", 0, false},
+        {"short unsigned int", "INTEGER", 0, false},
 
-        {"int", "INTEGER", 0},
-        {"unsigned int", "INTEGER", 0},
+        {"int", "INTEGER", 0, false},
+        {"unsigned int", "INTEGER", 0, false},
 
-        {"long int", "INTEGER", 0},
-        {"long unsigned int", "INTEGER", 0},
+        {"long int", "INTEGER", 0, false},
+        {"long unsigned int", "INTEGER", 0, false},
 
-        {"long long int", "INTEGER", 0},
-        {"long long unsigned int", "INTEGER", 0},
+        {"long long int", "INTEGER", 0, false},
+        {"long long unsigned int", "INTEGER", 0, false},
 
-        {"float", "REAL", 0},
-        {"double", "REAL", 0},
+        // SQLite stores NaN as NULL.
+        //
+        {"float", "REAL", 0, true},
+        {"double", "REAL", 0, true},
 
-        {"::std::string", "TEXT", 0}
+        {"::std::string", "TEXT", 0, false}
       };
     }
 
@@ -92,7 +95,8 @@ namespace relational
 
         type_map_type::value_type v (
           e.cxx_type,
-          db_type_type (e.db_type, e.db_id_type ? e.db_id_type : e.db_type));
+          db_type_type (
+            e.db_type, e.db_id_type ? e.db_id_type : e.db_type, e.null));
 
         data_->type_map_.insert (v);
       }

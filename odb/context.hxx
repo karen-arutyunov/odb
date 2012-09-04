@@ -502,14 +502,14 @@ public:
 
   // Null-able.
   //
-  static bool
-  null (data_member_path const&);
+  bool
+  null (data_member_path const&) const;
 
-  static bool
-  null (semantics::data_member&);
+  bool
+  null (semantics::data_member&) const;
 
-  static bool
-  null (semantics::data_member&, string const& key_prefix);
+  bool
+  null (semantics::data_member&, string const& key_prefix) const;
 
   // Optimistic concurrency.
   //
@@ -911,15 +911,23 @@ public:
   struct db_type_type
   {
     db_type_type () {}
-    db_type_type (string const& t, string const& it)
-        : type (t), id_type (it)
+    db_type_type (string const& t, string const& it, bool n)
+        : type (t), id_type (it), null (n)
     {
     }
 
     string type;
     string id_type;
+    bool null;
   };
-  typedef std::map<string, db_type_type> type_map_type;
+
+  struct type_map_type: std::map<string, db_type_type>
+  {
+    typedef std::map<string, db_type_type> base;
+
+    const_iterator
+    find (semantics::type&, semantics::names* hint);
+  };
 
 protected:
   struct data
