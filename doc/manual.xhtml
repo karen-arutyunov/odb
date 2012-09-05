@@ -13905,8 +13905,8 @@ class object
     </tr>
   </table>
 
-  <p>SQLite represents <code>NaN</code> <code>FLOAT</code> values
-     as <code>NULL</code> values. As a result, columns of the
+  <p>SQLite represents the <code>NaN</code> <code>FLOAT</code> value
+     as a <code>NULL</code> value. As a result, columns of the
      <code>float</code> and <code>double</code> types are by default
      declared as <code>NULL</code>. However, you can override this by
      explicitly declaring them as <code>NOT NULL</code> with the
@@ -15362,7 +15362,7 @@ class object
   </table>
 
   <p>In Oracle empty <code>VARCHAR2</code> and <code>NVARCHAR2</code>
-     strings are represented as <code>NULL</code> values. As a result,
+     strings are represented as a <code>NULL</code> value. As a result,
      columns of the <code>std::string</code> type are by default declared
      as <code>NULL</code> except for primary key columns. However, you
      can override this by explicitly declaring them as <code>NOT NULL</code>
@@ -17748,9 +17748,11 @@ class person
      enable only this profile, pass <code>boost/uuid</code> to the
      <code>--profile</code> ODB compiler option.</p>
 
-  <p>By default a data member of the <code>uuid</code> type is mapped to a
+  <p>The manner in which these types are persisted is database system
+     dependent and is discussed in the sub-sections that follow. By
+     default a data member of the <code>uuid</code> type is mapped to a
      database column with <code>NULL</code> enabled and nil <code>uuid</code>
-     instances are stored as <code>NULL</code> values. However, you can
+     instances are stored as a <code>NULL</code> value. However, you can
      change this behavior by declaring the data member <code>NOT NULL</code>
      with the <code>not_null</code> pragma (<a href="#12.4.6">Section
      12.4.6, "<code>null</code>/<code>not_null</code>"</a>). In this
@@ -17909,11 +17911,12 @@ class object
      <code>qt/basic</code> to the <code>--profile</code> ODB compiler
      option.</p>
 
-  <p>The currently supported basic types are <code>QString</code> and
-    <code>QByteArray</code>. The manner in which these types
-     are persisted is database system dependent and is discussed in the
-     sub-sections that follow. The example below shows how
-     <code>QString</code> may be used within a persistent object.</p>
+  <p>The currently supported basic types are <code>QString</code>,
+    <code>QByteArray</code>, and <code>QUuid</code>. The manner in
+     which these types are persisted is database system dependent
+     and is discussed in the sub-sections that follow. The example
+     below shows how <code>QString</code> may be used within a
+     persistent object.</p>
 
   <pre class="cxx">
 #pragma db object
@@ -17921,6 +17924,29 @@ class Person
 {
   ...
   QString name_;
+};
+  </pre>
+
+  <p>By default a data member of the <code>QUuid</code> type is mapped to a
+     database column with <code>NULL</code> enabled and null <code>QUuid</code>
+     instances are stored as a <code>NULL</code> value. However, you can
+     change this behavior by declaring the data member <code>NOT NULL</code>
+     with the <code>not_null</code> pragma (<a href="#12.4.6">Section
+     12.4.6, "<code>null</code>/<code>not_null</code>"</a>). In this
+     case, or if the data member is an object id, the implementation
+     will store null <code>QUuid</code> instances as zero UUID values
+     (<code>{00000000-0000-0000-0000-000000000000}</code>). For example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class object
+{
+  ...
+
+  QUuid x_; // Null values stored as NULL.
+
+  #pragma db not_null
+  QUuid y_; // Null values stored as zero.
 };
   </pre>
 
@@ -17948,11 +17974,17 @@ class Person
       <td><code>BLOB</code></td>
       <td><code>NULL</code></td>
     </tr>
+
+    <tr>
+      <td><code>QUuid</code></td>
+      <td><code>BINARY(16)</code></td>
+      <td><code>NULL</code></td>
+    </tr>
   </table>
 
-  <p>Instances of the <code>QString</code> and <code>QByteArray</code> types
-     are stored as a NULL value if their <code>isNull()</code> member
-     function returns <code>true</code>.</p>
+  <p>Instances of the <code>QString</code> and <code>QByteArray</code>
+     types are stored as a NULL value if their <code>isNull()</code>
+     member function returns <code>true</code>.</p>
 
   <p>Note also that the <code>QString</code> type is mapped
      differently depending on whether a member of this type
@@ -18005,6 +18037,12 @@ class Person
       <td><code>BLOB</code></td>
       <td><code>NULL</code></td>
     </tr>
+
+    <tr>
+      <td><code>QUuid</code></td>
+      <td><code>BLOB</code></td>
+      <td><code>NULL</code></td>
+    </tr>
   </table>
 
   <p>Instances of the <code>QString</code> and <code>QByteArray</code> types
@@ -18033,6 +18071,12 @@ class Person
     <tr>
       <td><code>QByteArray</code></td>
       <td><code>BYTEA</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QUuid</code></td>
+      <td><code>UUID</code></td>
       <td><code>NULL</code></td>
     </tr>
   </table>
@@ -18082,6 +18126,12 @@ class Person
     <tr>
       <td><code>QByteArray</code></td>
       <td><code>BLOB</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QUuid</code></td>
+      <td><code>RAW(16)</code></td>
       <td><code>NULL</code></td>
     </tr>
   </table>
@@ -18135,6 +18185,12 @@ class Person
     <tr>
       <td><code>QByteArray</code></td>
       <td><code>VARBINARY(max)</code></td>
+      <td><code>NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>QUuid</code></td>
+      <td><code>UNIQUEIDENTIFIER</code></td>
       <td><code>NULL</code></td>
     </tr>
   </table>
