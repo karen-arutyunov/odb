@@ -44,6 +44,11 @@ Version 2.1.0
    Index container (boost::multi_index_container). For more information,
    refer to Section 19.3, "Multi-Index Container Library" in the ODB manual.
 
+ * The Boost profile now provides persistence support for the Boost uuid type
+   (boost::uuids::uuid). For more information, refer to Section 19.6, "Uuid
+   Library" in the ODB manual as well as the 'boost' example in the
+   odb-examples package.
+
  * New pragma, definition, allows the specification of an alternative code
    generation location for persistent classes, views, and composite value
    types. This mechanism is primarily useful for converting third-party
