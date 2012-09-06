@@ -48,8 +48,12 @@ namespace odb
       if ((f & SQLITE_OPEN_FULLMUTEX) == 0)
         f |= SQLITE_OPEN_NOMUTEX;
 
+      const string& vfs (db.vfs ());
+
       sqlite3* h (0);
-      int e (sqlite3_open_v2 (n.c_str (), &h, f, 0));
+      int e (
+        sqlite3_open_v2 (
+          n.c_str (), &h, f, (vfs.empty () ? 0 : vfs.c_str ())));
       handle_.reset (h);
 
       if (e != SQLITE_OK)

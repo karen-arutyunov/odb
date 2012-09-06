@@ -38,6 +38,7 @@ namespace odb
       database (const std::string& name,
                 int flags = SQLITE_OPEN_READWRITE,
                 bool foreign_keys = true,
+                const std::string& vfs = "",
                 details::transfer_ptr<connection_factory> =
                   details::transfer_ptr<connection_factory> ());
 
@@ -60,12 +61,12 @@ namespace odb
                 bool erase = false,
                 int flags = SQLITE_OPEN_READWRITE,
                 bool foreign_keys = true,
+                const std::string& vfs = "",
                 details::transfer_ptr<connection_factory> =
                   details::transfer_ptr<connection_factory> ());
 
       static void
       print_usage (std::ostream&);
-
 
     public:
       const std::string&
@@ -84,6 +85,12 @@ namespace odb
       foreign_keys () const
       {
         return foreign_keys_;
+      }
+
+      const std::string&
+      vfs () const
+      {
+        return vfs_;
       }
 
       // Transactions.
@@ -133,6 +140,7 @@ namespace odb
       std::string name_;
       int flags_;
       bool foreign_keys_;
+      std::string vfs_;
       details::unique_ptr<connection_factory> factory_;
     };
   }

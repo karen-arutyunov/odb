@@ -29,10 +29,12 @@ namespace odb
     database (const string& name,
               int flags,
               bool foreign_keys,
+              const string& vfs,
               transfer_ptr<connection_factory> factory)
         : name_ (name),
           flags_ (flags),
           foreign_keys_ (foreign_keys),
+          vfs_ (vfs),
           factory_ (factory.transfer ())
     {
       if (!factory_)
@@ -47,9 +49,11 @@ namespace odb
               bool erase,
               int flags,
               bool foreign_keys,
+              const string& vfs,
               transfer_ptr<connection_factory> factory)
         : flags_ (flags),
           foreign_keys_ (foreign_keys),
+          vfs_ (vfs),
           factory_ (factory.transfer ())
     {
       using namespace details;
