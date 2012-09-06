@@ -454,7 +454,7 @@ for consistency.
 		<tr><th>12.1.3</th><td><a href="#12.1.3"><code>abstract</code></a></td></tr>
 		<tr><th>12.1.4</th><td><a href="#12.1.4"><code>readonly</code></a></td></tr>
 		<tr><th>12.1.5</th><td><a href="#12.1.5"><code>optimistic</code></a></td></tr>
-		<tr><th>12.1.6</th><td><a href="#12.1.6"><code>id</code></a></td></tr>
+		<tr><th>12.1.6</th><td><a href="#12.1.6"><code>no_id</code></a></td></tr>
 		<tr><th>12.1.7</th><td><a href="#12.1.7"><code>callback</code></a></td></tr>
 		<tr><th>12.1.8</th><td><a href="#12.1.8"><code>schema</code></a></td></tr>
 		<tr><th>12.1.9</th><td><a href="#12.1.9"><code>polymorphic</code></a></td></tr>
@@ -2271,7 +2271,7 @@ class person
      default-constructible. It is also possible to declare a persistent
      class without an object id, however, such a class will have limited
      functionality (<a href="#12.1.6">Section 12.1.6,
-     "<code>id</code>"</a>).</p>
+     "<code>no_id</code>"</a>).</p>
 
   <p>The above two pragmas are the minimum required to declare a
      persistent class with an object id. Other pragmas can be used to
@@ -9221,7 +9221,7 @@ class person
     </tr>
 
     <tr>
-      <td><code>id</code></td>
+      <td><code>no_id</code></td>
       <td>persistent class has no object id</td>
       <td><a href="#12.1.6">12.1.6</a></td>
     </tr>
@@ -9435,14 +9435,13 @@ class person
   <p>For a more detailed discussion of optimistic concurrency, refer to
      <a href="#11">Chapter 11, "Optimistic Concurrency"</a>.</p>
 
-  <h3><a name="12.1.6">12.1.6 <code>id</code></a></h3>
+  <h3><a name="12.1.6">12.1.6 <code>no_id</code></a></h3>
 
-  <p>The <code>id</code> specifier specifies that the persistent class
-     has no object id. It should be followed by opening and closing
-     parenthesis. For example:</p>
+  <p>The <code>no_id</code> specifier specifies that the persistent class
+     has no object id. For example:</p>
 
   <pre class="cxx">
-#pragma db object id()
+#pragma db object no_id
 class person
 {
   ...
@@ -10920,8 +10919,8 @@ class person
 
   <p>Normally, every persistent class has a data member designated as an
      object's identifier. However, it is possible to declare a
-     persistent class without an id using the object <code>id</code>
-     specifier (<a href="#12.1.6">Section 12.1.6, "<code>id</code>"</a>).</p>
+     persistent class without an id using the object <code>no_id</code>
+     specifier (<a href="#12.1.6">Section 12.1.6, "<code>no_id</code>"</a>).</p>
 
   <p>Note also that the <code>id</code> specifier cannot be used for data
      members of composite value types or views.</p>

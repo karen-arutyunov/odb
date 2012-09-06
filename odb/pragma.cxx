@@ -362,18 +362,19 @@ check_spec_decl_type (declaration const& d,
   int tc (d.tree_code ());
   bool type (TREE_CODE_CLASS (tc) == tcc_type);
 
-  if (p == "id")
+  if (p == "no_id")
   {
-    // Id can be used for both data members and objects.
+    // No_id can be used on objects only.
     //
-    if (tc != FIELD_DECL && tc != RECORD_TYPE)
+    if (tc != RECORD_TYPE)
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a data member or class" << endl;
       return false;
     }
   }
-  else if (p == "auto"      ||
+  else if (p == "id"        ||
+           p == "auto"      ||
            p == "column"    ||
            p == "inverse"   ||
            p == "version"   ||
@@ -1434,43 +1435,24 @@ handle_pragma (cxx_lexer& l,
   }
   else if (p == "id")
   {
-    // id     (member)
-    // id()   (object)
-
     // Make sure we've got the correct declaration type.
     //
     if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
     tt = l.next (tl, &tn);
+  }
+  else if (p == "no_id")
+  {
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
 
-    if (tt == CPP_OPEN_PAREN)
-    {
-      if (qualifier == "member")
-      {
-        error (l) << "unexpected '(' after db pragma " << p << endl;
-        return;
-      }
+    name = "id";
+    val = false;
 
-      if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
-      {
-        error (l) << "')' expected at the end of db pragma " << p << endl;
-        return;
-      }
-
-      val = false; // Object without id.
-      tt = l.next (tl, &tn);
-    }
-    else
-    {
-      if (qualifier == "object")
-      {
-        error (l) << "expected '(' after db pragma " << p << endl;
-        return;
-      }
-
-      val = true; // Member is object id.
-    }
+    tt = l.next (tl, &tn);
   }
   else if (p == "auto")
   {

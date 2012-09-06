@@ -53,6 +53,9 @@ Version 2.1.0
    more information, refer to Section 20.1, "Basic Types" in the ODB manual
    as well as the 'qt' example in the odb-examples package.
 
+ * The id() pragma that was used to declare a persistent class without an
+   object id has been renamed to no_id.
+
  * New pragma, definition, allows the specification of an alternative code
    generation location for persistent classes, views, and composite value
    types. This mechanism is primarily useful for converting third-party

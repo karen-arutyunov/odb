@@ -423,7 +423,7 @@ namespace
 
           os << c.file () << ":" << c.line () << ":" << c.column () << ":"
              << " info: or explicitly declare that this persistent class "
-             << "has no object id" << endl;
+             << "has no object id with '#pragma db object no_id'" << endl;
 
           valid_ = false;
         }
