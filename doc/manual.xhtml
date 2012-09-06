@@ -9875,7 +9875,7 @@ class employer
   <h3><a name="12.1.12">12.1.12 <code>transient</code></a></h3>
 
   <p>The <code>transient</code> specifier instructs the ODB compiler to
-     treat all non-virtual data member in the persistent class as transient
+     treat all non-virtual data members in the persistent class as transient
      (<a href="#12.4.1">Section 12.4.1, "<code>transient</code>"</a>).
      This specifier is primarily useful when declaring virtual data
      members, as discussed in <a href="#12.4.13">Section 12.4.13,
@@ -10006,7 +10006,7 @@ class employer
   <h3><a name="12.2.7">12.2.7 <code>transient</code></a></h3>
 
   <p>The <code>transient</code> specifier instructs the ODB compiler
-     to treat all non-virtual data member in the view class as transient
+     to treat all non-virtual data members in the view class as transient
      (<a href="#12.4.1">Section 12.4.1, "<code>transient</code>"</a>).
      This specifier is primarily useful when declaring virtual data
      members, as discussed in <a href="#12.4.13">Section 12.4.13,
@@ -10462,7 +10462,7 @@ class object
   <h3><a name="12.3.8">12.3.8 <code>transient</code></a></h3>
 
   <p>The <code>transient</code> specifier instructs the ODB compiler
-     to treat all non-virtual data member in the composite value type
+     to treat all non-virtual data members in the composite value type
      as transient (<a href="#12.4.1">Section 12.4.1,
      "<code>transient</code>"</a>). This specifier is primarily useful
      when declaring virtual data members, as discussed in
@@ -11196,9 +11196,9 @@ class person
   <p>Accessor and modifier expressions can be used with data members
      of simple value, composite value, container, and object pointer
      types. They can be used for data members in persistent classes,
-     composite value types, and views. There is also a related to
-     accessors and modifiers mechanism called virtual data members
-     which is discussed in <a href="#12.4.13">Section 12.4.13,
+     composite value types, and views. There is also a mechanism
+     related to accessors and modifiers called virtual data members
+     and which is discussed in <a href="#12.4.13">Section 12.4.13,
      "<code>virtual</code>"</a>.</p>
 
   <p>There are, however, certain limitations when it comes to using
@@ -11623,12 +11623,12 @@ class person
      no virtual function call overhead is incurred when using virtual
      data members.</p>
 
-  <p>To declare a virtual data members we must specify the data
+  <p>To declare a virtual data member we must specify the data
      member name using the <code>member</code> specifier. We must
      also specify the data member type with the <code>virtual</code>
      specifier. Finally, the virtual data member declaration must
      also specify the accessor and modifier expressions, unless
-     suitable accessor and modifier functions can be automatically
+     suitable accessor and modifier functions can automatically be
      found by the ODB compiler (<a href="#12.4.5">Section 12.4.5,
      "<code>get</code>/<code>set</code>/<code>access</code>"</a>).
      For example:</p>
@@ -17272,7 +17272,7 @@ class person
      to Multi-Index terms <em>ordered index</em> and <em>hashed
      index</em>.</p>
 
-  <p>The <code>emails</code> container form the above example is stored
+  <p>The <code>emails</code> container from the above example is stored
      as an ordered container. In contrast, the following <code>aliases</code>
      container is stored as a set.</p>
 
