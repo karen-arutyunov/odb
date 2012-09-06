@@ -13982,6 +13982,7 @@ namespace odb
       database (const std::string&amp; name,
                 int flags = SQLITE_OPEN_READWRITE,
                 bool foreign_keys = true,
+                const std::string&amp; vfs = "",
                 std::[auto|unique]_ptr&lt;connection_factory> = 0);
 
       database (int&amp; argc,
@@ -13989,6 +13990,7 @@ namespace odb
                 bool erase = false,
                 int flags = SQLITE_OPEN_READWRITE,
                 bool foreign_keys = true,
+                const std::string&amp; vfs = "",
                 std::[auto|unique]_ptr&lt;connection_factory> = 0);
 
       static void
@@ -14031,7 +14033,11 @@ namespace odb
      argument specifies whether foreign key constraints checking
      should be enabled. See <a href="#14.5.3">Section 14.5.3,
      "Foreign Key Constraints"</a> for more information on foreign
-     keys.</p>
+     keys. The <code>vfs</code> argument specifies the SQLite
+     virtual file system module that should be used to access the
+     database. If this argument is empty, then the default vfs module
+     is used. Again, refer to the <code>sqlite3_open_v2()</code> function
+     documentation for detail.</p>
 
   <p>The following example shows how we can open the <code>test.db</code>
      database in the read-write mode and create it if it does not exist:</p>
