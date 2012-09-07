@@ -13985,6 +13985,14 @@ namespace odb
                 const std::string&amp; vfs = "",
                 std::[auto|unique]_ptr&lt;connection_factory> = 0);
 
+#ifdef _WIN32
+      database (const std::wstring&amp; name,
+                int flags = SQLITE_OPEN_READWRITE,
+                bool foreign_keys = true,
+                const std::string&amp; vfs = "",
+                std::[auto|unique]_ptr&lt;connection_factory> = 0);
+#endif
+
       database (int&amp; argc,
                 char* argv[],
                 bool erase = false,
@@ -14049,7 +14057,11 @@ auto_ptr&lt;odb::database> db (
     SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE));
   </pre>
 
-  <p>The second constructor extracts the database parameters from the
+  <p>The second constructor is the same as the first except that the database
+     name is passes as <code>std::wstring</code>. This constructor is only
+     available when compiling for Windows.</p>
+
+  <p>The third constructor extracts the database parameters from the
      command line. The following options are recognized:</p>
 
   <pre class="terminal">
@@ -14081,13 +14093,13 @@ auto_ptr&lt;odb::database> db (
      the first constructor. Flags from the command line always override
      the corresponding values specified with this argument.</p>
 
-  <p>The second constructor throws the <code>odb::sqlite::cli_exception</code>
+  <p>The third constructor throws the <code>odb::sqlite::cli_exception</code>
      exception if the SQLite option values are missing or invalid.
      See <a href="#14.4">Section 14.4, "SQLite Exceptions"</a>
      for more information on this exception.</p>
 
   <p>The static <code>print_usage()</code> function prints the list of options
-     with short descriptions that are recognized by the second constructor.</p>
+     with short descriptions that are recognized by the third constructor.</p>
 
   <p>The last argument to all of the constructors is a pointer to the
      connection factory. In C++98, it is <code>std::auto_ptr</code> while
