@@ -42,6 +42,15 @@ namespace odb
                 details::transfer_ptr<connection_factory> =
                   details::transfer_ptr<connection_factory> ());
 
+#ifdef _WIN32
+      database (const std::wstring& name,
+                int flags = SQLITE_OPEN_READWRITE,
+                bool foreign_keys = true,
+                const std::string& vfs = "",
+                details::transfer_ptr<connection_factory> =
+                  details::transfer_ptr<connection_factory> ());
+#endif
+
       // Extract the database parameters from the command line. The
       // following options are recognized:
       //

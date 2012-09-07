@@ -2,6 +2,13 @@
 // copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
+#ifdef _WIN32
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  include <windows.h> // WideCharToMultiByte
+#endif
+
 #include <sstream>
 
 #include <odb/sqlite/database.hxx>
@@ -42,6 +49,62 @@ namespace odb
 
       factory_->database (*this);
     }
+
+#ifdef _WIN32
+    database::
+    database (const wstring& name,
+              int flags,
+              bool foreign_keys,
+              const string& vfs,
+              transfer_ptr<connection_factory> factory)
+        : flags_ (flags),
+          foreign_keys_ (foreign_keys),
+          vfs_ (vfs),
+          factory_ (factory.transfer ())
+    {
+      // Convert UTF-16 name to UTF-8 using the WideCharToMultiByte() Win32
+      // function.
+      //
+      int n (
+        WideCharToMultiByte (
+          CP_UTF8,
+          0,
+          name.c_str (),
+          static_cast<int> (name.size ()),
+          0,
+          0,
+          0,
+          0));
+
+      if (n == 0)
+        throw database_exception (
+          SQLITE_CANTOPEN, SQLITE_CANTOPEN, "unable to open database file");
+
+      // This string is not shared so we are going to modify the underlying
+      // buffer directly.
+      //
+      name_.resize (static_cast<string::size_type> (n));
+
+      n = WideCharToMultiByte (
+        CP_UTF8,
+        0,
+        name.c_str (),
+        static_cast<int> (name.size ()),
+        const_cast<char*> (name_.c_str ()),
+        n,
+        0,
+        0);
+
+      if (n == 0)
+        throw database_exception (
+          SQLITE_CANTOPEN, SQLITE_CANTOPEN, "unable to open database file");
+
+      if (!factory_)
+        factory_.reset (new connection_pool_factory ());
+
+      factory_->database (*this);
+    }
+#endif
 
     database::
     database (int& argc,
