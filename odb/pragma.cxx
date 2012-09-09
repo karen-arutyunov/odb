@@ -2640,7 +2640,7 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
           tt = l.next (tl, &tn);
         }
 
-        pair<virt_declaration_set::iterator, bool> r (
+        pair<virt_declaration_set::const_iterator, bool> r (
           virt_declarations_[scope].insert (
             virt_declaration (loc, name, FIELD_DECL, type)));
 
@@ -2676,7 +2676,7 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
 
           if (i != virt_declarations_.end ())
           {
-            virt_declaration_set::iterator j (
+            virt_declaration_set::const_iterator j (
               i->second.find (name_tokens.back ().literal, FIELD_DECL));
 
             if (j != i->second.end ())

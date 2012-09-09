@@ -13,6 +13,7 @@
 #include <string>
 
 #include <cutl/container/any.hxx>
+#include <cutl/container/multi-index.hxx>
 #include <cutl/compiler/context.hxx>
 
 struct virt_declaration
@@ -30,25 +31,37 @@ struct virt_declaration
 // different tree codes unequal. If that is too loose, then the
 // inserting code must do additional checks.
 //
-struct virt_declaration_comparator
+struct virt_declaration_set
 {
-  bool
-  operator () (virt_declaration const& x, virt_declaration const& y) const
+  typedef cutl::container::key<std::string, int> key;
+  typedef std::map<key, virt_declaration> map;
+  typedef cutl::container::map_const_iterator<map> const_iterator;
+
+  std::pair<const_iterator, bool>
+  insert (const virt_declaration& v)
   {
-    return x.name < y.name || (x.name == y.name && x.tree_code < y.tree_code);
+    std::pair<map::iterator, bool> r (
+      map_.insert (map::value_type (key (v.name, v.tree_code), v)));
+
+    const_iterator i (r.first);
+
+    if (r.second)
+      r.first->first.assign (i->name, i->tree_code);
+
+    return std::make_pair (i, r.second);
   }
-};
 
-struct virt_declaration_set:
-  std::set<virt_declaration, virt_declaration_comparator>
-{
-  typedef std::set<virt_declaration, virt_declaration_comparator> base;
-
-  iterator
+  const_iterator
   find (std::string const& name, int tree_code) const
   {
-    return base::find (virt_declaration (0, name, tree_code, 0));
+    return map_.find (key (name, tree_code));
   }
+
+  const_iterator begin () const {return map_.begin ();}
+  const_iterator end () const {return map_.end ();}
+
+private:
+  map map_;
 };
 
 // Map of scopes (e.g., class, namespace) to sets of virtual declarations.
