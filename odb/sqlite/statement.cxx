@@ -125,6 +125,15 @@ namespace odb
                                    SQLITE_STATIC);
             break;
           }
+        case bind::text16:
+          {
+            e = sqlite3_bind_text16 (stmt_,
+                                     j,
+                                     b.buffer,
+                                     static_cast<int> (*b.size),
+                                     SQLITE_STATIC);
+            break;
+          }
         case bind::blob:
           {
             e = sqlite3_bind_blob (stmt_,
@@ -189,17 +198,28 @@ namespace odb
             break;
           }
         case bind::text:
+        case bind::text16:
         case bind::blob:
           {
-            // SQLite documentation recommends that we first call *_text()
-            // or *_blob() function in order to force the type conversion,
-            // if any.
+            // SQLite documentation recommends that we first call *_text(),
+            // *_text16(), or *_blob() function in order to force the type
+            // conversion, if any.
             //
-            const void* d (b.type == bind::text
-                           ? sqlite3_column_text (stmt_, j)
-                           : sqlite3_column_blob (stmt_, j));
+            const void* d;
 
-            *b.size = static_cast<size_t> (sqlite3_column_bytes (stmt_, j));
+            if (b.type != bind::text16)
+            {
+              d = b.type == bind::text
+                ? sqlite3_column_text (stmt_, j)
+                : sqlite3_column_blob (stmt_, j);
+              *b.size = static_cast<size_t> (sqlite3_column_bytes (stmt_, j));
+            }
+            else
+            {
+              d = sqlite3_column_text16 (stmt_, j);
+              *b.size = static_cast<size_t> (
+                sqlite3_column_bytes16 (stmt_, j));
+            }
 
             if (*b.size > b.capacity)
             {

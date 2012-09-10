@@ -46,6 +46,42 @@ namespace odb
         memcpy (b.data (), v, n);
     }
 
+#ifdef _WIN32
+    //
+    // default_value_traits<std::wstring>
+    //
+
+    void default_value_traits<wstring, id_text>::
+    set_image (buffer& b, size_t& n, bool& is_null, const wstring& v)
+    {
+      is_null = false;
+      n = v.size () * 2;
+
+      if (n > b.capacity ())
+        b.capacity (n);
+
+      if (n != 0)
+        memcpy (b.data (), v.c_str (), n);
+    }
+
+    //
+    // c_wstring_value_traits
+    //
+
+    void c_wstring_value_traits::
+    set_image (buffer& b, size_t& n, bool& is_null, const wchar_t* v)
+    {
+      is_null = false;
+      n = wcslen (v) * 2;
+
+      if (n > b.capacity ())
+        b.capacity (n);
+
+      if (n != 0)
+        memcpy (b.data (), v, n);
+    }
+#endif // _WIN32
+
     //
     // default_value_traits<vector<char>, id_blob>
     //

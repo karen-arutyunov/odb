@@ -20,6 +20,7 @@
 #include <odb/details/wrapper-p.hxx>
 
 #include <odb/sqlite/version.hxx>
+#include <odb/sqlite/sqlite-types.hxx>
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
@@ -38,20 +39,27 @@ namespace odb
     // image_traits
     //
 
-    template <database_type_id>
+    template <typename T, database_type_id>
     struct image_traits;
 
-    template <>
-    struct image_traits<id_integer> {typedef long long image_type;};
+    template <typename T>
+    struct image_traits<T, id_integer> {typedef long long image_type;};
 
-    template <>
-    struct image_traits<id_real> {typedef double image_type;};
+    template <typename T>
+    struct image_traits<T, id_real> {typedef double image_type;};
 
-    template <>
-    struct image_traits<id_text> {typedef details::buffer image_type;};
+    template <typename T>
+    struct image_traits<T, id_text>
+    {
+      typedef details::buffer image_type;
 
-    template <>
-    struct image_traits<id_blob> {typedef details::buffer image_type;};
+      // By default the text is in UTF-8.
+      //
+      static const bind::buffer_type bind_value = bind::text;
+    };
+
+    template <typename T>
+    struct image_traits<T, id_blob> {typedef details::buffer image_type;};
 
     //
     // value_traits
@@ -97,7 +105,7 @@ namespace odb
 
       typedef W value_type;
       typedef wrapped_type query_type;
-      typedef typename image_traits<ID>::image_type image_type;
+      typedef typename image_traits<wrapped_type, ID>::image_type image_type;
 
       typedef value_traits<wrapped_type, ID> vtraits;
 
@@ -136,7 +144,7 @@ namespace odb
 
       typedef W value_type;
       typedef wrapped_type query_type;
-      typedef typename image_traits<ID>::image_type image_type;
+      typedef typename image_traits<wrapped_type, ID>::image_type image_type;
 
       typedef value_traits<wrapped_type, ID> vtraits;
 
@@ -184,7 +192,7 @@ namespace odb
     {
       typedef T value_type;
       typedef T query_type;
-      typedef typename image_traits<ID>::image_type image_type;
+      typedef typename image_traits<T, ID>::image_type image_type;
 
       static void
       set_value (T& v, const image_type& i, bool is_null)
@@ -304,6 +312,92 @@ namespace odb
     struct default_value_traits<const char[n], id_text>: c_string_value_traits
     {
     };
+
+#ifdef _WIN32
+    // std::wstring specialization. Using UTF-16 binding.
+    //
+    template <>
+    struct image_traits<std::wstring, id_text>
+    {
+      typedef details::buffer image_type;
+      static const bind::buffer_type bind_value = bind::text16;
+    };
+
+    template <>
+    struct LIBODB_SQLITE_EXPORT default_value_traits<std::wstring, id_text>
+    {
+      typedef std::wstring value_type;
+      typedef std::wstring query_type;
+      typedef details::buffer image_type;
+
+      static void
+      set_value (std::wstring& v,
+                 const details::buffer& b,
+                 std::size_t n,
+                 bool is_null)
+      {
+        if (!is_null)
+          v.assign (reinterpret_cast<const wchar_t*> (b.data ()), n / 2);
+        else
+          v.erase ();
+      }
+
+      static void
+      set_image (details::buffer&,
+                 std::size_t& n,
+                 bool& is_null,
+                 const std::wstring&);
+    };
+
+    // const wchar_t* specialization
+    //
+    template <>
+    struct c_wstring_image_traits
+    {
+      typedef details::buffer image_type;
+      static const bind::buffer_type bind_value = bind::text16;
+    };
+
+    struct LIBODB_SQLITE_EXPORT c_wstring_value_traits
+    {
+      typedef const wchar_t* value_type;
+      typedef const wchar_t* query_type;
+      typedef details::buffer image_type;
+
+      static void
+      set_image (details::buffer&,
+                 std::size_t& n,
+                 bool& is_null,
+                 const wchar_t*);
+    };
+
+    template <>
+    struct image_traits<const wchar_t*, id_text>: c_wstring_image_traits {};
+
+    template <>
+    struct LIBODB_SQLITE_EXPORT default_value_traits<const wchar_t*, id_text>:
+      c_wstring_value_traits
+    {
+    };
+
+    template <std::size_t n>
+    struct image_traits<wchar_t[n], id_text>: c_wstring_image_traits {};
+
+    template <std::size_t n>
+    struct default_value_traits<wchar_t[n], id_text>:
+      c_wstring_value_traits
+    {
+    };
+
+    template <std::size_t n>
+    struct image_traits<const wchar_t[n], id_text>: c_wstring_image_traits {};
+
+    template <std::size_t n>
+    struct default_value_traits<const wchar_t[n], id_text>:
+      c_wstring_value_traits
+    {
+    };
+#endif // _WIN32
 
     // std::vector<char> (buffer) specialization.
     //

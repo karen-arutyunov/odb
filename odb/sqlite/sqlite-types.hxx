@@ -22,7 +22,8 @@ namespace odb
       {
         integer, // Buffer is long long; size, capacity, truncated are unused.
         real,    // Buffer is double; size, capacity, truncated are unused.
-        text,    // Buffer is a char array.
+        text,    // Buffer is a UTF-8 char array.
+        text16,  // Buffer is a UTF-16 2-byte char array (sizes in bytes).
         blob     // Buffer is a char array.
       };
 

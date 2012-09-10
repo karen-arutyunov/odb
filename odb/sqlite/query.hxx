@@ -1225,7 +1225,7 @@ namespace odb
       virtual void
       bind (sqlite::bind* b)
       {
-        b->type = sqlite::bind::text;
+        b->type = image_traits<T, id_text>::bind_value;
         b->buffer = buffer_.data ();
         b->size = &size_;
       }
