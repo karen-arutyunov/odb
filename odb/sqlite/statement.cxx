@@ -191,6 +191,14 @@ namespace odb
         case bind::text:
         case bind::blob:
           {
+            // SQLite documentation recommends that we first call *_text()
+            // or *_blob() function in order to force the type conversion,
+            // if any.
+            //
+            const void* d (b.type == bind::text
+                           ? sqlite3_column_text (stmt_, j)
+                           : sqlite3_column_blob (stmt_, j));
+
             *b.size = static_cast<size_t> (sqlite3_column_bytes (stmt_, j));
 
             if (*b.size > b.capacity)
@@ -201,10 +209,6 @@ namespace odb
               r = false;
               continue;
             }
-
-            const void* d (b.type == bind::text
-                           ? sqlite3_column_text (stmt_, j)
-                           : sqlite3_column_blob (stmt_, j));
 
             memcpy (b.buffer, d, *b.size);
             break;
