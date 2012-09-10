@@ -53,7 +53,8 @@ namespace relational
         {"float", "REAL", 0, true},
         {"double", "REAL", 0, true},
 
-        {"::std::string", "TEXT", 0, false}
+        {"::std::string", "TEXT", 0, false},
+        {"::std::wstring", "TEXT", 0, false}
       };
     }
 

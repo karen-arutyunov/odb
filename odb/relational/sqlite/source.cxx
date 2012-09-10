@@ -51,7 +51,9 @@ namespace relational
         virtual void
         traverse_text (member_info& mi)
         {
-          os << b << ".type = sqlite::bind::text;"
+          os << b << ".type = sqlite::image_traits<" << endl
+             << "  " << mi.fq_type () << "," << endl
+             << "  sqlite::id_text>::bind_value;"
              << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"
              << b << ".capacity = " << arg << "." << mi.var <<

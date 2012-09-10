@@ -13901,6 +13901,12 @@ class object
       <td><code>TEXT</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
+
+    <tr>
+      <td><code>std::wstring (Windows only)</code></td>
+      <td><code>TEXT</code></td>
+      <td><code>NOT NULL</code></td>
+    </tr>
   </table>
 
   <p>SQLite represents the <code>NaN</code> <code>FLOAT</code> value
@@ -14030,8 +14036,8 @@ namespace odb
      header file to make this class available in your application.</p>
 
   <p>The first constructor opens the specified SQLite database. The
-     <code>name</code> argument is the database file
-     name to open. If this argument is empty, then a temporary,
+     <code>name</code> argument is the database file name to open in
+     the UTF-8 encoding. If this argument is empty, then a temporary,
      on-disk database is created. If this argument is the
      <code>:memory:</code> special value, then a temporary, in-memory
      database is created. The <code>flags</code> argument allows us to
@@ -14058,8 +14064,8 @@ auto_ptr&lt;odb::database> db (
   </pre>
 
   <p>The second constructor is the same as the first except that the database
-     name is passes as <code>std::wstring</code>. This constructor is only
-     available when compiling for Windows.</p>
+     name is passes as <code>std::wstring</code> in the UTF-16 encoding. This
+     constructor is only available when compiling for Windows.</p>
 
   <p>The third constructor extracts the database parameters from the
      command line. The following options are recognized:</p>
