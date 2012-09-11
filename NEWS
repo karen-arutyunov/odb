@@ -59,6 +59,15 @@ Version 2.1.0
    Ability to specify the virtual filesystem (vfs) module in the database
    constructor (Section 14.2, "SQLite Database Class").
 
+ * Support for mapping C++11 std::array<char, N> and std::array<unsigned
+   char, N> types to BLOB/BINARY database types. For more information,
+   refer to Section [13-17].1, "<Database> Type Mapping" the ODB manual.
+
+ * Support for mapping the char[16] array to PostgreSQL UUID and SQL Server
+   UNIQUEIDENTIFIER types. For more information, refer to Sections 15.1,
+   "PostgreSQL Type Mapping" and 17.1, "SQL Server Type Mapping" in the
+   ODB manual.
+
  * The id() pragma that was used to declare a persistent class without an
    object id has been renamed to no_id.
 

@@ -13244,13 +13244,15 @@ class person
      <code>NCHAR</code>, and <code>NVARCHAR</code> types, as well as for
      mapping the <code>std::vector&lt;char></code>,
      <code>std::vector&lt;unsigned&nbsp;char></code>,
-     <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types
-     to the MySQL BLOB types. However, these mappings are not enabled by
-     default (in particular, by default, <code>std::vector</code> will
-     be treated as a container). To enable the alternative mappings for these
-     types we need to specify the database type explicitly using the
-     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section
-     12.4.3, "<code>type</code>"</a>), for example:</p>
+     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
+     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
+     types to the MySQL BLOB types. However, these mappings are not enabled
+     by default (in particular, by default, <code>std::vector</code> and
+     <code>std::array</code> will be treated as containers). To enable the
+     alternative mappings for these types we need to specify the database
+     type explicitly using the <code>db&nbsp;type</code> pragma
+     (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
+     example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -13264,8 +13266,8 @@ class object
   #pragma db type("BLOB")
   std::vector&lt;char> buf_;
 
-  #pragma db type("BLOB")
-  unsigned char[16] uuid_;
+  #pragma db type("BINARY(16)")
+  unsigned char uuid_[16];
 };
   </pre>
 
@@ -13920,13 +13922,15 @@ class object
   <p>The SQLite ODB runtime library also provides support for mapping the
      <code>std::vector&lt;char></code>,
      <code>std::vector&lt;unsigned&nbsp;char></code>,
-     <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types to
-     the SQLite BLOB type. However, this mapping is not enabled by default
-     (in particular, by default, <code>std::vector</code> will be treated
-     as a container). To enable the BLOB mapping for these types we need
-     to specify the database type explicitly using the
-     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
-     "<code>type</code>"</a>), for example:</p>
+     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
+     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
+     types to the SQLite BLOB type. However, this mapping is not enabled
+     by default (in particular, by default, <code>std::vector</code> and
+     <code>std::array</code> will be treated as containers). To enable the
+     BLOB mapping for these types we need to specify the database type
+     explicitly using the <code>db&nbsp;type</code> pragma
+     (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
+     example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -13938,7 +13942,7 @@ class object
   std::vector&lt;char> buf_;
 
   #pragma db type("BLOB")
-  unsigned char[16] uuid_;
+  unsigned char uuid_[16];
 };
   </pre>
 
@@ -14711,16 +14715,19 @@ class object
 
   <p>The PostgreSQL ODB runtime library also provides support for mapping
      the <code>std::string</code> type to the PostgreSQL <code>CHAR</code>
-     and <code>VARCHAR</code> types, as well as for mapping the
-     <code>std::vector&lt;char></code>,
+     and <code>VARCHAR</code> types as well as the <code>char[16]</code>
+     array to the PostgreSQL <code>UUID</code> type. There is also support
+     for mapping the <code>std::vector&lt;char></code>,
      <code>std::vector&lt;unsigned&nbsp;char></code>,
-     <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types to
-     the PostgreSQL <code>BYTEA</code> type. However, these mappings are not
-     enabled by default (in particular, by default, <code>std::vector</code>
-     will be treated as a container). To enable the alternative mappings for
-     these types we need to specify the database type explicitly
-     using the <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section
-     12.4.3, "<code>type</code>"</a>), for example:</p>
+     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
+     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
+     types to the PostgreSQL <code>BYTEA</code> type. However, these mappings
+     are not enabled by default (in particular, by default,
+     <code>std::vector</code> and <code>std::array</code> will be treated
+     as containers). To enable the alternative mappings for these types we
+     need to specify the database type explicitly using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>), for example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -14731,11 +14738,14 @@ class object
   #pragma db type("CHAR(2)")
   std::string state_;
 
+  #pragma db type("UUID")
+  char uuid_[16];
+
   #pragma db type("BYTEA")
   std::vector&lt;char> buf_;
 
   #pragma db type("BYTEA")
-  unsigned char[16] uuid_;
+  unsigned char data_[256];
 };
   </pre>
 
@@ -15398,14 +15408,15 @@ class object
      <code>NCLOB</code> types, as well as for mapping the
      <code>std::vector&lt;char></code>,
      <code>std::vector&lt;unsigned&nbsp;char></code>,
-     <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types to
-     the Oracle <code>BLOB</code> and <code>RAW</code> types. However, these
-     mappings are not enabled by default (in particular, by default,
-     <code>std::vector</code> will be treated as a container). To enable the
-     alternative mappings for these types we need to specify the
-     database type explicitly using the <code>db&nbsp;type</code> pragma
-     (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
-     example:</p>
+     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
+     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
+     types to the Oracle <code>BLOB</code> and <code>RAW</code> types.
+     However, these mappings are not enabled by default (in particular, by
+     default, <code>std::vector</code> and <code>std::array</code> will be
+     treated as containers). To enable the alternative mappings for these
+     types we need to specify the database type explicitly using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>), for example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -15420,7 +15431,7 @@ class object
   std::vector&lt;char> buf_;
 
   #pragma db type("RAW(16)")
-  unsigned char[16] uuid_;
+  unsigned char uuid_[16];
 };
   </pre>
 
@@ -16231,15 +16242,18 @@ class object
      <code>std::string</code> type to the SQL Server <code>CHAR</code> and
      <code>TEXT</code> types as well as <code>std::wstring</code>
      to <code>NCHAR</code> and <code>NTEXT</code>. There is also support
-     for mapping the <code>std::vector&lt;char></code>,
+     for mapping the <code>char[16]</code> array to the SQL Server
+     <code>UNIQUEIDENTIFIER</code> type as well as the
+     <code>std::vector&lt;char></code>,
      <code>std::vector&lt;unsigned&nbsp;char></code>,
-     <code>char[N]</code>, and <code>unsigned&nbsp;char[N]</code> types to
-     the SQL Server <code>BINARY</code>,  <code>VARBINARY</code>, and
-     <code>IMAGE</code> types. However, these
-     mappings are not enabled by default (in particular, by default,
-     <code>std::vector</code> will be treated as a container). To enable the
-     alternative mappings for these types we need to specify the
-     database type explicitly using the <code>db&nbsp;type</code> pragma
+     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
+     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
+     types to the SQL Server <code>BINARY</code>, <code>VARBINARY</code>, and
+     <code>IMAGE</code> types. However, these mappings are not enabled
+     by default (in particular, by default, <code>std::vector</code> and
+     <code>std::array</code> will be treated as containers). To enable the
+     alternative mappings for these types we need to specify the database
+     type explicitly using the <code>db&nbsp;type</code> pragma
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
      example:</p>
 
@@ -16252,11 +16266,14 @@ class object
   #pragma db type ("CHAR(5)")
   std::string str_;
 
+  #pragma db type("UNIQUEIDENTIFIER")
+  char uuid_[16];
+
   #pragma db type("VARBINARY(max)")
   std::vector&lt;char> buf_;
 
-  #pragma db type("BINARY(16)")
-  unsigned char[16] uuid_;
+  #pragma db type("BINARY(256)")
+  unsigned char data_[256];
 };
   </pre>
 
