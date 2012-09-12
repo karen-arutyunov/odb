@@ -11,6 +11,12 @@ using namespace std;
 void
 process_options (options& o)
 {
+  // If --generate-schema-only was specified, then set --generate-schema
+  // as well.
+  //
+  if (o.generate_schema_only ())
+    o.generate_schema (true);
+
   // Set the default schema format depending on the database.
   //
   if (o.generate_schema () && o.schema_format ().empty ())

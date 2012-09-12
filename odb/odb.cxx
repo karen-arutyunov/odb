@@ -56,7 +56,7 @@ typedef vector<path> paths;
 // Escape backslashes in the path.
 //
 static string
-escape_path (path const& p);
+escape_path (string const&);
 
 // Search the PATH environment variable for the file.
 //
@@ -664,6 +664,23 @@ main (int argc, char* argv[])
     size_t svc_file_pos (args.size ());
     args.push_back ("");
 
+    // If compiling multiple input files at once, pass them also with
+    // the --svc-file option.
+    //
+    bool at_once (ops.at_once () && plugin_args.size () - end > 1);
+    if (at_once)
+    {
+      if (ops.output_name ().empty ())
+      {
+        e << "error: --output-name required when compiling multiple " <<
+          "input files at once (--at-once)" << endl;
+        return 1;
+      }
+
+      for (size_t i (end); i < plugin_args.size (); ++i)
+        args.push_back (encode_plugin_option ("svc-file", plugin_args[i]));
+    }
+
     // Create an execvp-compatible argument array.
     //
     typedef vector<char const*> cstrings;
@@ -684,26 +701,31 @@ main (int argc, char* argv[])
 
     for (; end < plugin_args.size (); ++end)
     {
-      path input (plugin_args[end]);
+      string name (at_once ? ops.output_name () : plugin_args[end]);
 
       // Set the --svc-file option.
       //
-      args[svc_file_pos] = encode_plugin_option ("svc-file", input.string ());
+      args[svc_file_pos] = encode_plugin_option ("svc-file", name);
       exec_args[svc_file_pos] = args[svc_file_pos].c_str ();
 
       //
       //
-      ifstream ifs (input.string ().c_str (), ios_base::in | ios_base::binary);
+      ifstream ifs;
 
-      if (!ifs.is_open ())
+      if (!at_once)
       {
-        e << input << ": error: unable to open in read mode" << endl;
-        return 1;
+        ifs.open (name.c_str (), ios_base::in | ios_base::binary);
+
+        if (!ifs.is_open ())
+        {
+          e << name << ": error: unable to open in read mode" << endl;
+          return 1;
+        }
       }
 
       if (v)
       {
-        e << "Compiling " << input << endl;
+        e << "Compiling " << name << endl;
         for (cstrings::const_iterator i (exec_args.begin ());
              i != exec_args.end (); ++i)
         {
@@ -796,21 +818,36 @@ main (int argc, char* argv[])
           os << endl;
         }
 
-        // Write the synthesized translation unit to stdout.
-        //
-        os << "#line 1 \"" << escape_path (input) << "\"" << endl;
-
-        if (!(os << ifs.rdbuf ()))
+        if (at_once)
         {
-          e << input << ": error: io failure" << endl;
-          fb.close ();
-          wait_process (pi, argv[0]);
-          return 1;
-        }
+          // Include all the input files (no need to escape).
+          //
+          os << "#line 1 \"<command-line>\"" << endl;
 
-        // Add a new line in case the input file doesn't end with one.
-        //
-        os << endl;
+          bool b (ops.include_with_brackets ());
+          char op (b ? '<' : '"'), cl (b ? '>' : '"');
+
+          for (; end < plugin_args.size (); ++end)
+            os << "#include " << op << plugin_args[end] << cl << endl;
+        }
+        else
+        {
+          // Write the synthesized translation unit to stdout.
+          //
+          os << "#line 1 \"" << escape_path (name) << "\"" << endl;
+
+          if (!(os << ifs.rdbuf ()))
+          {
+            e << name << ": error: io failure" << endl;
+            fb.close ();
+            wait_process (pi, argv[0]);
+            return 1;
+          }
+
+          // Add a new line in case the input file doesn't end with one.
+          //
+          os << endl;
+        }
 
         // Add custom epilogue if any.
         //
@@ -1187,17 +1224,16 @@ profile_paths (strings const& sargs, char const* name)
 //
 
 static string
-escape_path (path const& p)
+escape_path (string const& p)
 {
   string r;
-  string const& s (p.string ());
 
-  for (size_t i (0); i < s.size (); ++i)
+  for (size_t i (0); i < p.size (); ++i)
   {
-    if (s[i] == '\\')
+    if (p[i] == '\\')
       r += "\\\\";
     else
-      r += s[i];
+      r += p[i];
   }
 
   return r;

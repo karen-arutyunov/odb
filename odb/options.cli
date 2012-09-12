@@ -81,6 +81,13 @@ class options
      Use the \cb{--schema-format} option to alter the default schema format."
   };
 
+  bool --generate-schema-only
+  {
+    "Generate only the database schema. Note that this option is only valid
+     when generating schema as a standalone SQL file (see \cb{--schema-format}
+     for details)."
+  };
+
   std::set< ::schema_format> --schema-format
   {
     "<format>",
@@ -156,6 +163,18 @@ class options
      profile."
   };
 
+  bool --at-once
+  {
+    "Generate code for all the input files as well as for all the files that
+     they include at once. The result is a single set of source/schema files
+     that contain all the generated code. If more than one input file is
+     specified together with this option, then the \cb{--output-name} option
+     must also be specified in order to provide the base name for the output
+     files. In this case, the directory part of such a base name is used as
+     the location of the combined file. This can be important for the
+     \cb{#include} directive resolution."
+  };
+
   qname --schema
   {
     "<schema>",
@@ -191,6 +210,13 @@ class options
   {
     "<dir>",
     "Write the generated files to <dir> instead of the current directory."
+  };
+
+  std::string --output-name
+  {
+    "<name>",
+    "Use <name> instead of the input file to construct the names of the
+     generated files."
   };
 
   std::string --odb-file-suffix = "-odb"

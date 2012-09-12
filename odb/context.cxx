@@ -2100,28 +2100,3 @@ process_include_path (string const& ip, bool prefix, char open)
 
   return r;
 }
-
-// namespace
-//
-
-void namespace_::
-traverse (type& ns)
-{
-  // Only traverse namespaces from the main file.
-  //
-  if (ns.file () == unit.file ())
-  {
-    string name (ns.name ());
-
-    if (name.empty ())
-      os << "namespace";
-    else
-      os << "namespace " << name;
-
-    os << "{";
-
-    traversal::namespace_::traverse (ns);
-
-    os << "}";
-  }
-}

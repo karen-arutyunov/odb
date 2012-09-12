@@ -970,7 +970,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (class_file (c) != unit.file ())
+        if (!options.at_once () && class_file (c) != unit.file ())
           return;
 
         if (object (c))
@@ -1224,7 +1224,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (class_file (c) != unit.file ())
+        if (!options.at_once () && class_file (c) != unit.file ())
           return;
 
         if (object (c))

@@ -573,7 +573,7 @@ namespace
 
       // Update features set based on this object.
       //
-      if (class_file (c) == unit.file ())
+      if (options.at_once () || class_file (c) == unit.file ())
       {
         if (poly_root != 0)
           features.polymorphic_object = true;
@@ -706,7 +706,7 @@ namespace
 
       // Update features set based on this view.
       //
-      if (class_file (c) == unit.file ())
+      if (options.at_once () || class_file (c) == unit.file ())
       {
         features.view = true;
       }
@@ -1251,6 +1251,21 @@ validate (options const& ops,
           unsigned short pass)
 {
   bool valid (true);
+
+  // Validate options.
+  //
+  if (ops.generate_schema_only () &&
+      (ops.schema_format ().size () != 1 ||
+       *ops.schema_format ().begin () != schema_format::sql))
+  {
+    cerr << "error: --generate-schema-only is only valid when generating " <<
+      "schema as a standalone SQL file" << endl;
+    valid = false;
+  }
+
+  if (!valid)
+    throw failed ();
+
   auto_ptr<context> ctx (create_context (cerr, u, ops, f, 0));
 
   if (pass == 1)

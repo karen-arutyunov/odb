@@ -3340,7 +3340,7 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (class_file (c) != unit.file ())
+        if (!options.at_once () && class_file (c) != unit.file ())
           return;
 
         context::top_object = context::cur_object = &c;

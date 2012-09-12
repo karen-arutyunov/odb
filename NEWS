@@ -68,6 +68,19 @@ Version 2.1.0
    "PostgreSQL Type Mapping" and 17.1, "SQL Server Type Mapping" in the
    ODB manual.
 
+ * New option, --output-name, specifies the alternative base name used to
+   construct the names of the generated files. Refer to the ODB compiler
+   command line interface documentation (man pages) for details.
+
+ * New option, --generate-schema-only, instructs the ODB compiler to
+   generate the database schema only. Refer to the ODB compiler command
+   line interface documentation (man pages) for details.
+
+ * New option, --at-once, triggers the generation of code for all the input
+   files as well as for all the files that they include at once. Refer to
+   the ODB compiler command line interface documentation (man pages) for
+   details.
+
  * The id() pragma that was used to declare a persistent class without an
    object id has been renamed to no_id.
 

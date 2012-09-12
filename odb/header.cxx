@@ -17,8 +17,12 @@ namespace header
     ostream& os (ctx.os);
 
     os << "#include <memory>" << endl
-       << "#include <cstddef>" << endl // std::size_t
-       << endl;
+       << "#include <cstddef>" << endl; // std::size_t
+
+    if (ctx.features.polymorphic_object)
+      os << "#include <string>" << endl; // For discriminator.
+
+    os << endl;
 
     os << "#include <odb/core.hxx>" << endl
        << "#include <odb/traits.hxx>" << endl

@@ -599,7 +599,7 @@ check (semantics::typedefs& t)
   //
   if (!included_)
   {
-    if (class_file (*ci) != unit.file ())
+    if (!options.at_once () && class_file (*ci) != unit.file ())
       return false;
   }
 

@@ -25,6 +25,7 @@ using namespace std;
 using namespace cutl;
 
 using semantics::path;
+typedef vector<path> paths;
 
 namespace
 {
@@ -67,7 +68,8 @@ void generator::
 generate (options const& ops,
           features& fts,
           semantics::unit& unit,
-          path const& p)
+          path const& p,
+          paths const& inputs)
 {
   try
   {
@@ -95,7 +97,9 @@ generate (options const& ops,
 
     // Output files.
     //
-    path file (p.leaf ());
+    path file (ops.output_name ().empty ()
+               ? p.leaf ()
+               : path (ops.output_name ()).leaf ());
     string base (file.base ().string ());
 
     fs::auto_removes auto_rm;
@@ -122,52 +126,69 @@ generate (options const& ops,
       sql_path = dir / sql_path;
     }
 
-    //
-    //
-    ofstream hxx (hxx_path.string ().c_str ());
+    bool gen_cxx (!ops.generate_schema_only ());
 
-    if (!hxx.is_open ())
+    //
+    //
+    ofstream hxx;
+
+    if (gen_cxx)
     {
-      cerr << "error: unable to open '" << hxx_path << "' in write mode"
-           << endl;
-      throw failed ();
+      hxx.open (hxx_path.string ().c_str (), ios_base::out);
+
+      if (!hxx.is_open ())
+      {
+        cerr << "error: unable to open '" << hxx_path << "' in write mode"
+             << endl;
+        throw failed ();
+      }
+
+      auto_rm.add (hxx_path);
     }
 
-    auto_rm.add (hxx_path);
-
     //
     //
-    ofstream ixx (ixx_path.string ().c_str ());
+    ofstream ixx;
 
-    if (!ixx.is_open ())
+    if (gen_cxx)
     {
-      cerr << "error: unable to open '" << ixx_path << "' in write mode"
-           << endl;
-      throw failed ();
+      ixx.open (ixx_path.string ().c_str (), ios_base::out);
+
+      if (!ixx.is_open ())
+      {
+        cerr << "error: unable to open '" << ixx_path << "' in write mode"
+             << endl;
+        throw failed ();
+      }
+
+      auto_rm.add (ixx_path);
     }
 
-    auto_rm.add (ixx_path);
-
     //
     //
-    ofstream cxx (cxx_path.string ().c_str ());
+    ofstream cxx;
 
-    if (!cxx.is_open ())
+    if (gen_cxx)
     {
-      cerr << "error: unable to open '" << cxx_path << "' in write mode"
-           << endl;
-      throw failed ();
+      cxx.open (cxx_path.string ().c_str (), ios_base::out);
+
+      if (!cxx.is_open ())
+      {
+        cerr << "error: unable to open '" << cxx_path << "' in write mode"
+             << endl;
+        throw failed ();
+      }
+
+      auto_rm.add (cxx_path);
     }
 
-    auto_rm.add (cxx_path);
-
     //
     //
-    bool sql_schema (ops.generate_schema () &&
-                     ops.schema_format ().count (schema_format::sql));
+    bool gen_sql_schema (ops.generate_schema () &&
+                         ops.schema_format ().count (schema_format::sql));
     ofstream sql;
 
-    if (sql_schema)
+    if (gen_sql_schema)
     {
       sql.open (sql_path.string ().c_str (), ios_base::out);
 
@@ -183,12 +204,13 @@ generate (options const& ops,
 
     //
     //
-    bool sep_schema (ops.generate_schema () &&
-                     ops.schema_format ().count (schema_format::separate));
+    bool gen_sep_schema (gen_cxx &&
+                         ops.generate_schema () &&
+                         ops.schema_format ().count (schema_format::separate));
 
     ofstream sch;
 
-    if (sep_schema)
+    if (gen_sep_schema)
     {
       sch.open (sch_path.string ().c_str (), ios_base::out);
 
@@ -204,11 +226,14 @@ generate (options const& ops,
 
     // Print C++ headers.
     //
-    hxx << file_header;
-    ixx << file_header;
-    cxx << file_header;
+    if (gen_cxx)
+    {
+      hxx << file_header;
+      ixx << file_header;
+      cxx << file_header;
+    }
 
-    if (sep_schema)
+    if (gen_sep_schema)
       sch << file_header;
 
     typedef compiler::ostream_filter<compiler::cxx_indenter, char> ind_filter;
@@ -224,6 +249,7 @@ generate (options const& ops,
 
     // HXX
     //
+    if (gen_cxx)
     {
       auto_ptr<context> ctx (
         create_context (hxx, unit, ops, fts, model.get ()));
@@ -257,15 +283,25 @@ generate (options const& ops,
           << "// End prologue." << endl
           << endl;
 
-      hxx << "#include " << ctx->process_include_path (file.string ()) << endl
-          << endl;
+      // Include main file(s).
+      //
+      for (paths::const_iterator i (inputs.begin ()); i != inputs.end (); ++i)
+        hxx << "#include " << ctx->process_include_path (i->string ()) << endl;
+
+      hxx << endl;
+
 
       {
         // We don't want to indent prologues/epilogues.
         //
         ind_filter ind (ctx->os);
 
-        include::generate (true);
+        // There are no -odb.hxx includes if we are generating code for
+        // everything.
+        //
+        if (!ops.at_once ())
+          include::generate (true);
+
         header::generate ();
 
         switch (ops.database ())
@@ -307,6 +343,7 @@ generate (options const& ops,
 
     // IXX
     //
+    if (gen_cxx)
     {
       auto_ptr<context> ctx (
         create_context (ixx, unit, ops, fts, model.get ()));
@@ -359,6 +396,7 @@ generate (options const& ops,
 
     // CXX
     //
+    if (gen_cxx)
     {
       auto_ptr<context> ctx (
         create_context (cxx, unit, ops, fts, model.get ()));
@@ -385,7 +423,11 @@ generate (options const& ops,
         //
         ind_filter ind (ctx->os);
 
-        include::generate (false);
+        // There are no -odb.hxx includes if we are generating code for
+        // everything.
+        //
+        if (!ops.at_once ())
+          include::generate (false);
 
         switch (ops.database ())
         {
@@ -420,7 +462,7 @@ generate (options const& ops,
 
     // SCH
     //
-    if (sep_schema)
+    if (gen_sep_schema)
     {
       auto_ptr<context> ctx (
         create_context (sch, unit, ops, fts, model.get ()));
@@ -482,7 +524,7 @@ generate (options const& ops,
 
     // SQL
     //
-    if (sql_schema)
+    if (gen_sql_schema)
     {
       auto_ptr<context> ctx (
         create_context (sql, unit, ops, fts, model.get ()));

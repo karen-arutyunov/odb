@@ -37,7 +37,9 @@ typedef vector<path> paths;
 int plugin_is_GPL_compatible;
 auto_ptr<options const> options_;
 paths profile_paths_;
-path file_; // File being compiled.
+path file_;    // File being compiled.
+paths inputs_; // List of input files in at-once mode or just file_.
+
 
 // A prefix of the _cpp_file struct. This struct is not part of the
 // public interface so we have to resort to this technique (based on
@@ -136,7 +138,7 @@ gate_callback (void*, void*)
     // Generate.
     //
     generator g;
-    g.generate (*options_, f, *u, file_);
+    g.generate (*options_, f, *u, file_, inputs_);
   }
   catch (cutl::re::format const& e)
   {
@@ -221,7 +223,14 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
 
         if (strcmp (a.key, "svc-file") == 0)
         {
-          file_ = path (v);
+          // First is the main file. Subsequent are inputs in the at-once
+          // mode.
+          //
+          if (file_.empty ())
+            file_ = path (v);
+          else
+            inputs_.push_back (path (v));
+
           continue;
         }
 
@@ -237,6 +246,9 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
           argv.push_back (const_cast<char*> (argv_str.back ().c_str ()));
         }
       }
+
+      if (inputs_.empty ())
+        inputs_.push_back (file_);
 
       // Two-phase options parsing, similar to the driver.
       //

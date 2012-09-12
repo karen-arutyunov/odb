@@ -5,6 +5,8 @@
 #ifndef ODB_GENERATOR_HXX
 #define ODB_GENERATOR_HXX
 
+#include <vector>
+
 #include <odb/options.hxx>
 #include <odb/features.hxx>
 #include <odb/semantics/unit.hxx>
@@ -18,7 +20,8 @@ public:
   generate (options const&,
             features&,
             semantics::unit&,
-            semantics::path const&);
+            semantics::path const& file,
+            std::vector<semantics::path> const& inputs);
 
   generator () {}
 

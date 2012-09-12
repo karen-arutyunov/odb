@@ -1050,12 +1050,4 @@ has (Y& y)
   return false;
 }
 
-// Standard namespace traverser.
-//
-struct namespace_: traversal::namespace_, context
-{
-  virtual void
-  traverse (type&);
-};
-
 #endif // ODB_CONTEXT_HXX
