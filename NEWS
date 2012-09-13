@@ -81,6 +81,10 @@ Version 2.1.0
    the ODB compiler command line interface documentation (man pages) for
    details.
 
+ * New ODB manual section, 6.3 "Circular Relationships", explains how to
+   handle persistent classes with circular dependencies that are defined
+   in separate headers.
+
  * The id() pragma that was used to declare a persistent class without an
    object id has been renamed to no_id.
 

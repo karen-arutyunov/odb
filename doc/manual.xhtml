@@ -379,8 +379,9 @@ for consistency.
               </table>
             </td>
           </tr>
-          <tr><th>6.3</th><td><a href="#6.3">Lazy Pointers</a></td></tr>
-          <tr><th>6.4</th><td><a href="#6.4">Using Custom Smart Pointers</a></td></tr>
+	  <tr><th>6.3</th><td><a href="#6.3">Circular Relationships</a></td></tr>
+          <tr><th>6.4</th><td><a href="#6.4">Lazy Pointers</a></td></tr>
+          <tr><th>6.5</th><td><a href="#6.5">Using Custom Smart Pointers</a></td></tr>
         </table>
       </td>
     </tr>
@@ -2537,7 +2538,7 @@ namespace accounting
      provide support for smart pointers found in these frameworks and
      libraries (<a href="#III">Part III, "Profiles"</a>). It is also
      easy to add support for our own smart pointers, as described in
-     <a href="#6.4"> Section 6.4, "Using Custom Smart Pointers"</a>.</p>
+     <a href="#6.5"> Section 6.5, "Using Custom Smart Pointers"</a>.</p>
 
   <h2><a name="3.4">3.4 Database</a></h2>
 
@@ -4972,11 +4973,11 @@ private:
      for <code>shared_ptr</code>/<code>weak_ptr</code> (TR1 or C++11),
      <code>std::unique_ptr</code> (C++11),
      <code>std::auto_ptr</code>, and raw pointers. Plus, ODB profile
-     libraries, that available for commonly used frameworks and libraries
+     libraries, that are available for commonly used frameworks and libraries
      (such as Boost and Qt), provide support for smart pointers found in these
      frameworks and libraries (<a href="#III">Part III, "Profiles"</a>). It is
      also easy to add support for a custom smart pointer as discussed later
-     in <a href="#6.4"> Section 6.4, "Using Custom Smart Pointers"</a>. Any
+     in <a href="#6.5"> Section 6.5, "Using Custom Smart Pointers"</a>. Any
      supported smart pointer can be used in a data member as long as it can be
      explicitly constructed from the canonical object pointer
      (<a href="#3.3">Section 3.3, "Object and View Pointers"</a>).  For
@@ -4994,7 +4995,7 @@ private:
      is not loaded automatically when the containing object is loaded.
      Instead, we have to explicitly request the instantiation of the
      pointed-to object. Lazy pointers are discussed in
-     detail in <a href="#6.3">Section 6.3, "Lazy Pointers"</a>.</p>
+     detail in <a href="#6.4">Section 6.4, "Lazy Pointers"</a>.</p>
 
   <p>As a simple example, consider the following employee-employer
      relationship. Code examples presented in this chapter
@@ -5416,7 +5417,7 @@ t.commit ();
      loaded <code>employee</code> object preventing its immediate
      deletion. Another way to resolve this problem is to avoid
      immediate loading of the pointed-to objects using lazy weak
-     pointers. Lazy pointers are discussed in <a href="#6.3">Section 6.3,
+     pointers. Lazy pointers are discussed in <a href="#6.4">Section 6.4,
      "Lazy Pointers"</a> later in this chapter.</p>
 
   <p>Above, to model a bidirectional relationship in persistent classes,
@@ -5689,7 +5690,160 @@ CREATE TABLE employee (
   id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
   </pre>
 
-  <h2><a name="6.3">6.3 Lazy Pointers</a></h2>
+  <h2><a name="6.3">6.3 Circular Relationships</a></h2>
+
+  <p>A relationship between two persistent classes is circular if each
+     of them references the other. Bidirectional relationships are
+     always circular. A unidirectional relationship combined with
+     inheritance (<a href="#8">Chapter 8, "Inheritance"</a>) can also
+     be circular. For example, the <code>employee</code> class could
+     derive from <code>person</code> which, in turn, could contain a
+     pointer to <code>employee</code>.</p>
+
+  <p>We don't need to do anything extra if persistent classes with
+     circular dependencies are defined in the same header
+     file. Specifically, ODB will make sure that the database tables
+     and foreign key constraints are created in the correct order. As a
+     result, unless you have good reasons not to, it is recommended that
+     you keep persistent classes with circular dependencies in the same
+     header file.</p>
+
+  <p>If you have to keep such classes in separate header files, then
+     there are two extra steps that you may need to take in order to
+     use these classes with ODB. Consider again the example from
+     <a href="#6.2.1">Section 6.2.1, "One-to-One Relationships"</a>
+     but this time with the classes defined in separate headers:</p>
+
+  <pre class="cxx">
+// position.hxx
+//
+class employee;
+
+#pragma db object
+class position
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db inverse(position_)
+  weak_ptr&lt;employee> employee_;
+};
+  </pre>
+
+  <pre class="cxx">
+// employee.hxx
+//
+#include "position.hxx"
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id
+  unsigned long id_;
+
+  #pragma db not_null
+  shared_ptr&lt;position> position_;
+};
+  </pre>
+
+  <p>Note that the <code>position.hxx</code> header contains only the forward
+     declaration for <code>employee</code>. While this is sufficient to
+     define a valid, from the C++ point of view, <code>position</code> class,
+     the ODB compiler needs to "see" the definitions of the pointed-to
+     persistent classes. There are several ways we can fulfil this
+     requirement. The easiest is to simply include <code>employee.hxx</code>
+     at the end of <code>position.hxx</code>:</p>
+
+  <pre class="cxx">
+// position.hxx
+//
+class employee;
+
+#pragma db object
+class position
+{
+  ...
+};
+
+#include "employee.hxx"
+  </pre>
+
+  <p>We can also limit this inclusion only to the time when
+     <code>position.hxx</code> is compiled with the ODB compiler:</p>
+
+  <pre class="cxx">
+// position.hxx
+//
+
+...
+
+#ifdef ODB_COMPILER
+#  include "employee.hxx"
+#endif
+  </pre>
+
+  <p>Finally, if we don't want to modify <code>position.hxx</code>,
+     then we can add <code>employee.hxx</code> to the ODB compilation
+     process with the <code>--odb-epilogue</code> option. For example:</p>
+
+  <pre class="terminal">
+odb ... --odb-epilogue "#include \"employee.hxx\"" position.hxx
+  </pre>
+
+  <p>Note also that in this example we didn't have to do anything extra
+     for <code>employee.hxx</code> because it already includes
+     <code>position.hxx</code>. However, if instead it relied only
+     on the forward declaration of the <code>position</code> class,
+     then we would have to handle it in the same way as
+     <code>position.hxx</code>.</p>
+
+  <p>The other difficulty with separately defined classes involving
+     circular relationships has to do with the correct order of foreign
+     key constraint creation in the generated database schema. In
+     the above example, if we generate the database schema as
+     standalone SQL files, then we will end up with two such files:
+     <code>position.sql</code> and <code>employee.sql</code>.
+     If we try to execute <code>employee.sql</code> first, then
+     we will get an error indicating that the table corresponding to
+     the <code>position</code> class and referenced by the foreign
+     key constraint corresponding to the <code>position_</code>
+     pointer does not yet exist.</p>
+
+  <p>Note that there is no such problem if the database schema
+     is embedded in the generated C++ code instead of being produced
+     as standalone SQL files. In this case, the ODB compiler is
+     able to ensure the correct creation order even if the classes
+     are defined in separate header files.</p>
+
+  <p>In certain cases, for example, a bidirectional relationship
+     with an inverse side, this problem can be resolved by executing
+     the database schema creation files in the correct order. In our
+     example, this would be <code>position.sql</code> first
+     and <code>employee.sql</code> second. However, this approach
+     doesn't scale beyond simple object models.</p>
+
+  <p>A more robust solution to this problem is to generate the database
+     schema for all the persistent classes into a single SQL file. This
+     way, the ODB compiler can again ensure the correct creation order
+     of tables and foreign keys. To instruct the ODB compiler to produce
+     a combined schema file for several headers we can use the
+     <code>--generate-schema-only</code> and <code>--at-once</code>
+     options. For example:</p>
+
+  <pre class="terminal">
+odb ... --generate-schema-only --at-once --output-name schema \
+position.hxx employee.hxx
+  </pre>
+
+  <p>The result of the above command is a single <code>schema.sql</code>
+     file that contains the database creation code for both
+     <code>position</code> and <code>employee</code> classes.</p>
+
+  <h2><a name="6.4">6.4 Lazy Pointers</a></h2>
 
   <p>Consider again the bidirectional, one-to-many employer-employee
      relationship that was presented earlier in this chapter:</p>
@@ -5981,7 +6135,7 @@ db.persist (e);
 t.commit ();
   </pre>
 
-  <h2><a name="6.4">6.4 Using Custom Smart Pointers</a></h2>
+  <h2><a name="6.5">6.5 Using Custom Smart Pointers</a></h2>
 
   <p>While the ODB runtime and profile libraries provide support for
      the majority of widely-used pointers, it is also easy to add
@@ -8654,7 +8808,7 @@ t.commit ();
 
 
   <p>The per-object caching policies depend on the object pointer kind
-     (<a href="#6.4">Section 6.4, "Using Custom Smart Pointers"</a>).
+     (<a href="#6.5">Section 6.5, "Using Custom Smart Pointers"</a>).
      Objects with a unique pointer, such as <code>std::auto_ptr</code>
      or <code>std::unique_ptr</code>, as an object pointer are never
      cached since it is not possible to have two such pointers pointing
@@ -17205,7 +17359,7 @@ class person
      <code>odb::boost::lazy_weak_ptr</code>. You will need to include the
      <code>&lt;odb/boost/lazy-ptr.hxx></code> header file to make the lazy
      variants available in your application. For the description of the lazy
-     pointer interface and semantics refer to <a href="#6.3">Section 6.3,
+     pointer interface and semantics refer to <a href="#6.4">Section 6.4,
      "Lazy Pointers"</a>. The following example shows how we can use these
      smart pointers to establish a relationship between persistent objects.</p>
 
@@ -18302,7 +18456,7 @@ class person
      and <code>QLazyWeakPointer</code>. You will need to include the
      <code>&lt;odb/qt/lazy-ptr.hxx></code> header file to make the lazy
      variants available in your application. For the description of the lazy
-     pointer interface and semantics refer to <a href="#6.3">Section 6.3,
+     pointer interface and semantics refer to <a href="#6.4">Section 6.4,
      "Lazy Pointers"</a>. The following example shows how we can use these
      smart pointers to establish a relationship between persistent objects.</p>
 
