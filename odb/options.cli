@@ -102,6 +102,16 @@ class options
      formats."
   };
 
+  bool --omit-drop
+  {
+    "Omit \cb{DROP} statements from the generated database schema."
+  };
+
+  bool --omit-create
+  {
+    "Omit \cb{CREATE} statements from the generated database schema."
+  };
+
   std::string --schema-name = ""
   {
     "<name>",

@@ -797,7 +797,7 @@ namespace relational
       post ()
       {
         if (!first_) // Ignore empty statements.
-          os << strlit (line_) << ");" << endl;
+          os << strlit (line_) << ");";
       }
 
     private:
@@ -873,10 +873,12 @@ namespace relational
            << "{"
            << "ODB_POTENTIALLY_UNUSED (db);"
            << "ODB_POTENTIALLY_UNUSED (pass);"
+           << "ODB_POTENTIALLY_UNUSED (drop);"
            << endl;
 
         // Drop.
         //
+        if (!options.omit_drop ())
         {
           bool close (false);
 
@@ -904,11 +906,16 @@ namespace relational
 
         // Create.
         //
+        if (!options.omit_create ())
         {
           bool close (false);
 
-          os << "else"
-             << "{";
+          if (options.omit_drop ())
+            os << "if (!drop)";
+          else
+            os << "else";
+
+          os << "{";
 
           for (unsigned short pass (1); pass < 3; ++pass)
           {

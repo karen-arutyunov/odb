@@ -284,12 +284,15 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      hxx << "// Begin prologue." << endl
-          << "//" << endl;
-      append (hxx, ops.hxx_prologue (), ops.hxx_prologue_file ());
-      hxx << "//" << endl
-          << "// End prologue." << endl
-          << endl;
+      if (!ops.hxx_prologue ().empty () || !ops.hxx_prologue_file ().empty ())
+      {
+        hxx << "// Begin prologue." << endl
+            << "//" << endl;
+        append (hxx, ops.hxx_prologue (), ops.hxx_prologue_file ());
+        hxx << "//" << endl
+            << "// End prologue." << endl
+            << endl;
+      }
 
       // Include main file(s).
       //
@@ -331,12 +334,15 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      hxx << "// Begin epilogue." << endl
-          << "//" << endl;
-      append (hxx, ops.hxx_epilogue (), ops.hxx_epilogue_file ());
-      hxx << "//" << endl
-          << "// End epilogue." << endl
-          << endl;
+      if (!ops.hxx_epilogue ().empty () || !ops.hxx_epilogue_file ().empty ())
+      {
+        hxx << "// Begin epilogue." << endl
+            << "//" << endl;
+        append (hxx, ops.hxx_epilogue (), ops.hxx_epilogue_file ());
+        hxx << "//" << endl
+            << "// End epilogue." << endl
+            << endl;
+      }
 
       hxx << "#include <odb/post.hxx>" << endl
           << endl;
@@ -360,12 +366,15 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      ixx << "// Begin prologue." << endl
-          << "//" << endl;
-      append (ixx, ops.ixx_prologue (), ops.ixx_prologue_file ());
-      ixx << "//" << endl
-          << "// End prologue." << endl
-          << endl;
+      if (!ops.ixx_prologue ().empty () || !ops.ixx_prologue_file ().empty ())
+      {
+        ixx << "// Begin prologue." << endl
+            << "//" << endl;
+        append (ixx, ops.ixx_prologue (), ops.ixx_prologue_file ());
+        ixx << "//" << endl
+            << "// End prologue." << endl
+            << endl;
+      }
 
       {
         // We don't want to indent prologues/epilogues.
@@ -390,11 +399,14 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      ixx << "// Begin epilogue." << endl
-          << "//" << endl;
-      append (ixx, ops.ixx_epilogue (), ops.ixx_epilogue_file ());
-      ixx << "//" << endl
-          << "// End epilogue." << endl;
+      if (!ops.ixx_epilogue ().empty () || !ops.ixx_epilogue_file ().empty ())
+      {
+        ixx << "// Begin epilogue." << endl
+            << "//" << endl;
+        append (ixx, ops.ixx_epilogue (), ops.ixx_epilogue_file ());
+        ixx << "//" << endl
+            << "// End epilogue." << endl;
+      }
 
       if (ops.show_sloc ())
         cerr << ixx_name << ": " << sloc.stream ().count () << endl;
@@ -416,12 +428,15 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      cxx << "// Begin prologue." << endl
-          << "//" << endl;
-      append (cxx, ops.cxx_prologue (), ops.cxx_prologue_file ());
-      cxx << "//" << endl
-          << "// End prologue." << endl
-          << endl;
+      if (!ops.cxx_prologue ().empty () || !ops.cxx_prologue_file ().empty ())
+      {
+        cxx << "// Begin prologue." << endl
+            << "//" << endl;
+        append (cxx, ops.cxx_prologue (), ops.cxx_prologue_file ());
+        cxx << "//" << endl
+            << "// End prologue." << endl
+            << endl;
+      }
 
       cxx << "#include " << ctx->process_include_path (hxx_name) << endl
           << endl;
@@ -453,12 +468,15 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      cxx << "// Begin epilogue." << endl
-          << "//" << endl;
-      append (cxx, ops.cxx_epilogue (), ops.cxx_epilogue_file ());
-      cxx << "//" << endl
-          << "// End epilogue." << endl
-          << endl;
+      if (!ops.cxx_epilogue ().empty () || !ops.cxx_epilogue_file ().empty ())
+      {
+        cxx << "// Begin epilogue." << endl
+            << "//" << endl;
+        append (cxx, ops.cxx_epilogue (), ops.cxx_epilogue_file ());
+        cxx << "//" << endl
+            << "// End epilogue." << endl
+            << endl;
+      }
 
       cxx << "#include <odb/post.hxx>" << endl;
 
@@ -477,19 +495,21 @@ generate (options const& ops,
 
       sloc_filter sloc (ctx->os);
 
-      // Copy prologue.
-      //
       sch << "#include <odb/pre.hxx>" << endl
           << endl;
 
       // Copy prologue.
       //
-      sch << "// Begin prologue." << endl
-          << "//" << endl;
-      append (sch, ops.schema_prologue (), ops.schema_prologue_file ());
-      sch << "//" << endl
-          << "// End prologue." << endl
-          << endl;
+      if (!ops.schema_prologue ().empty () ||
+          !ops.schema_prologue_file ().empty ())
+      {
+        sch << "// Begin prologue." << endl
+            << "//" << endl;
+        append (sch, ops.schema_prologue (), ops.schema_prologue_file ());
+        sch << "//" << endl
+            << "// End prologue." << endl
+            << endl;
+      }
 
       sch << "#include " << ctx->process_include_path (hxx_name) << endl
           << endl;
@@ -515,12 +535,16 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      sch << "// Begin epilogue." << endl
-          << "//" << endl;
-      append (sch, ops.schema_epilogue (), ops.schema_epilogue_file ());
-      sch << "//" << endl
-          << "// End epilogue." << endl
-          << endl;
+      if (!ops.schema_epilogue ().empty () ||
+          !ops.schema_epilogue_file ().empty ())
+      {
+        sch << "// Begin epilogue." << endl
+            << "//" << endl;
+        append (sch, ops.schema_epilogue (), ops.schema_epilogue_file ());
+        sch << "//" << endl
+            << "// End epilogue." << endl
+            << endl;
+      }
 
       sch << "#include <odb/post.hxx>" << endl;
 
@@ -547,30 +571,50 @@ generate (options const& ops,
         {
           relational::schema::generate_prologue ();
 
-          sql << "/* Begin prologue." << endl
-              << " */" << endl;
-          append (sql, ops.sql_prologue (), ops.sql_prologue_file ());
-          sql << "/*" << endl
-              << " * End prologue. */" << endl
-              << endl;
+          // Copy prologue.
+          //
+          if (!ops.sql_prologue ().empty () ||
+              !ops.sql_prologue_file ().empty ())
+          {
+            sql << "/* Begin prologue." << endl
+                << " */" << endl;
+            append (sql, ops.sql_prologue (), ops.sql_prologue_file ());
+            sql << "/*" << endl
+                << " * End prologue. */" << endl
+                << endl;
+          }
 
-          relational::schema::generate_drop ();
+          if (!ops.omit_drop ())
+            relational::schema::generate_drop ();
 
-          sql << "/* Begin interlude." << endl
-              << " */" << endl;
-          append (sql, ops.sql_interlude (), ops.sql_interlude_file ());
-          sql << "/*" << endl
-              << " * End interlude. */" << endl
-              << endl;
+          // Copy interlude.
+          //
+          if (!ops.sql_interlude ().empty () ||
+              !ops.sql_interlude_file ().empty ())
+          {
+            sql << "/* Begin interlude." << endl
+                << " */" << endl;
+            append (sql, ops.sql_interlude (), ops.sql_interlude_file ());
+            sql << "/*" << endl
+                << " * End interlude. */" << endl
+                << endl;
+          }
 
-          relational::schema::generate_create ();
+          if (!ops.omit_create ())
+            relational::schema::generate_create ();
 
-          sql << "/* Begin epilogue." << endl
-              << " */" << endl;
-          append (sql, ops.sql_epilogue (), ops.sql_epilogue_file ());
-          sql << "/*" << endl
-              << " * End epilogue. */" << endl
-              << endl;
+          // Copy epilogue.
+          //
+          if (!ops.sql_epilogue ().empty () ||
+              !ops.sql_epilogue_file ().empty ())
+          {
+            sql << "/* Begin epilogue." << endl
+                << " */" << endl;
+            append (sql, ops.sql_epilogue (), ops.sql_epilogue_file ());
+            sql << "/*" << endl
+                << " * End epilogue. */" << endl
+                << endl;
+          }
 
           relational::schema::generate_epilogue ();
           break;

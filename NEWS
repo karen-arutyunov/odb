@@ -85,6 +85,9 @@ Version 2.1.0
    of custom SQL between the DROP and CREATE statements in the generated
    database schema file.
 
+ * New options, --omit-drop and --omit-create, trigger the omission of DROP
+   and CREATE statements, respectively, from the generated database schema.
+
  * New ODB manual section, 6.3 "Circular Relationships", explains how to
    handle persistent classes with circular dependencies that are defined
    in separate headers.
