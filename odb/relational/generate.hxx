@@ -44,7 +44,16 @@ namespace relational
   namespace schema
   {
     void
-    generate ();
+    generate_prologue ();
+
+    void
+    generate_drop ();
+
+    void
+    generate_create ();
+
+    void
+    generate_epilogue ();
   }
 }
 

@@ -294,6 +294,15 @@ class options
     "Insert <text> at the beginning of the generated database schema file."
   };
 
+  // Interludes.
+  //
+  std::vector<std::string> --sql-interlude
+  {
+    "<text>",
+    "Insert <text> after all the \cb{DROP} and before any \cb{CREATE}
+     statements in the generated database schema file."
+  };
+
   // Epilogues.
   //
   std::vector<std::string> --hxx-epilogue
@@ -361,6 +370,15 @@ class options
     "<file>",
     "Insert the content of <file> at the beginning of the generated
      database schema file."
+  };
+
+  // Interlude files.
+  //
+  std::string --sql-interlude-file
+  {
+    "<file>",
+    "Insert the content of <file> after all the \cb{DROP} and before any
+     \cb{CREATE} statements in the generated database schema file."
   };
 
   // Epilogue files.

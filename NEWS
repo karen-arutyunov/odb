@@ -81,6 +81,10 @@ Version 2.1.0
    the ODB compiler command line interface documentation (man pages) for
    details.
 
+ * New options, --sql-interlude and --sql-interlude-file, allow the insertion
+   of custom SQL between the DROP and CREATE statements in the generated
+   database schema file.
+
  * New ODB manual section, 6.3 "Circular Relationships", explains how to
    handle persistent classes with circular dependencies that are defined
    in separate headers.
