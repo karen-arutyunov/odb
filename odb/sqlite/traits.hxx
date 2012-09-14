@@ -357,7 +357,6 @@ namespace odb
 
     // const wchar_t* specialization
     //
-    template <>
     struct c_wstring_image_traits
     {
       typedef details::buffer image_type;
