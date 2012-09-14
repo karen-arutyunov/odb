@@ -1204,10 +1204,11 @@ namespace relational
             if (!ma.synthesized)
               os << "// From " << location_string (ma.loc, true) << endl;
 
-            // Use the original type to form the const reference.
+            // Use the original type to form the const reference. VC++
+            // cannot grok the constructor syntax.
             //
-            os << member_ref_type (mi.m, true, "v") << " (" << endl
-               << ma.translate ("o") << ");"
+            os << member_ref_type (mi.m, true, "v") << " =" << endl
+               << "  " << ma.translate ("o") << ";"
                << endl;
 
             member = "v";
@@ -1526,9 +1527,11 @@ namespace relational
                << endl;
           else
           {
-            // Use the original type to form the reference.
+            // Use the original type to form the reference. VC++ cannot
+            // grok the constructor syntax.
             //
-            os << member_ref_type (mi.m, false, "v") << " (" << endl;
+            os << member_ref_type (mi.m, false, "v") << " =" << endl
+               << "  ";
 
             // If this member is const and we have a synthesized direct
             // access, then cast away constness. Otherwise, we assume
@@ -1544,7 +1547,7 @@ namespace relational
             if (cast)
               os << ")";
 
-            os << ");"
+            os << ";"
                << endl;
           }
 
@@ -3108,7 +3111,10 @@ namespace relational
                << endl;
           else
           {
-            os << member_ref_type (m, call_ != load_call, "v") << " (" << endl;
+            // VC++ cannot grok the constructor syntax.
+            //
+            os << member_ref_type (m, call_ != load_call, "v") << " =" << endl
+               << "  ";
 
             // If this member is const and we have a synthesized direct
             // access, then cast away constness. Otherwise, we assume
@@ -3125,7 +3131,7 @@ namespace relational
             if (cast)
               os << ")";
 
-            os << ");"
+            os << ";"
                << endl;
           }
 
