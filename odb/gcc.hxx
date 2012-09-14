@@ -63,12 +63,20 @@ extern "C"
 } // extern "C"
 #endif
 
+// Only since GCC 4.7.0.
+//
 #ifndef LOCATION_COLUMN
 #define LOCATION_COLUMN(LOC) (expand_location (LOC).column)
 #endif
 
 #ifndef DECL_SOURCE_COLUMN
 #define DECL_SOURCE_COLUMN(NODE) LOCATION_COLUMN (DECL_SOURCE_LOCATION (NODE))
+#endif
+
+// Only since GCC 4.6.0.
+//
+#ifndef DECL_CHAIN
+#define DECL_CHAIN(x) TREE_CHAIN(x)
 #endif
 
 #endif // ODB_GCC_HXX
