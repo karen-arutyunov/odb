@@ -382,6 +382,8 @@ namespace relational
           else if (id == "TEXT")
           {
             r_.type = sql_type::TEXT;
+            r_.has_prec = true;
+            r_.prec = 0;
           }
           else if (id == "NCHAR")
           {
@@ -406,6 +408,8 @@ namespace relational
           else if (id == "NTEXT")
           {
             r_.type = sql_type::NTEXT;
+            r_.has_prec = true;
+            r_.prec = 0;
           }
           else if (id == "NATIONAL")
           {
@@ -417,6 +421,8 @@ namespace relational
             if (id == "TEXT")
             {
               r_.type = sql_type::NTEXT;
+              r_.has_prec = true;
+              r_.prec = 0;
             }
             else if (id == "CHAR" ||
                      id == "CHARACTER")
@@ -467,6 +473,8 @@ namespace relational
           else if (id == "IMAGE")
           {
             r_.type = sql_type::IMAGE;
+            r_.has_prec = true;
+            r_.prec = 0;
           }
           else if (id == "DATE")
           {
