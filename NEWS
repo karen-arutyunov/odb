@@ -32,7 +32,7 @@ Version 2.1.0
    Pragmas" as well as Sections [13-17].16, "<Database> Index Definition"
    in the ODB manual.
 
- * Support for mapping additional database types, such as geospatial types,
+ * Support for mapping extended database types, such as geospatial types,
    user-defined types, and collections. This mechanism allows you to map
    any database type to one of the types for which ODB provides built-in
    support (normally string or binary). The text or binary representation

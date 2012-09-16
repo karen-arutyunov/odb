@@ -12882,13 +12882,13 @@ class object
      mapping between two database types. For each database system
      ODB provides built-in support for a core set of database types,
      such as integers, strings, binary, etc. However, many database
-     systems provide additional types such as extensions (geospatial,
-     key-value stores, etc.), user-defined types, and collections (arrays,
-     table types, etc). In order to support such additional types, ODB
-     allows us to map them to one of the built-in types, normally
+     systems provide extended types such as geospatial types,
+     user-defined types, and collections (arrays, table types,
+     key-value stores, etc). In order to support such extended types,
+     ODB allows us to map them to one of the built-in types, normally
      a string or a binary. Given the text or binary representation
      of the data we can then extract it into our chosen C++ data type
-     and thus establish a mapping between an additional database type and
+     and thus establish a mapping between an extended database type and
      its C++ equivalent.</p>
 
   <p>The <code>map</code> pragma has the following format:</p>
@@ -13075,7 +13075,7 @@ class object
      in a similar way. The <code>odb-tests</code> package contains a
      set of tests in the <code>&lt;database>/custom</code> directories that,
      for each database, shows how to provide custom mapping for some of
-     the additional types.</p>
+     the extended types.</p>
 
   <h2><a name="12.8">12.8 C++ Compiler Warnings</a></h2>
 
