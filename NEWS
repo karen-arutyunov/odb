@@ -1,15 +1,16 @@
 Version 2.1.0
 
- * ODB compiler is now capable of automatically discovering accessor and
+ * The ODB compiler is now capable of automatically discovering accessor and
    modifier functions for inaccessible data members in persistent classes,
    composite value types, and views. It will then use these accessors and
-   modifiers in the generated code. The names of these functions are derived
-   from the data member names and by default the ODB compiler will look for
-   names in the form: get_foo/set_foo, getFoo/setFoo, getfoo/setfoo, and
-   just foo. You can also add custom name derivations with the
-   --accessor-regex and --modifier-regex ODB compiler options. For more
-   information, refer to Section 3.2, "Declaring Persistent Objects and
-   Values" in the ODB manual.
+   modifiers in the generated code instead of trying to access such data
+   members directly. The names of these functions are derived from the
+   data member names and, by default, the ODB compiler will look for names
+   in the form: get_foo/set_foo, getFoo/setFoo, getfoo/setfoo, and just
+   foo. You can also add custom name derivations with the --accessor-regex
+   and --modifier-regex ODB compiler options. For more information, refer
+   to Section 3.2, "Declaring Persistent Objects and Values" in the ODB
+   manual.
 
  * New pragmas, get, set, and access, allow the specification of custom
    accessor and modifier expressions for data members in persistent classes,
@@ -20,17 +21,17 @@ Version 2.1.0
  * New pragma, virtual, allows the declaration of virtual data members. A
    virtual data member is an imaginary data member that is only used for
    the purpose of database persistence. This mechanism can be useful to
-   aggregate or dis-aggregate real data members, implement the pimpl
-   idiom, and to handle third-party types for which names of real data
-   members may not be known. For more information, refer to Section
-   12.4.13, "virtual" in the ODB manual as well as the 'access' and
-   'pimpl' examples in the odb-examples package.
+   aggregate or dis-aggregate real data members, implement the pimpl idiom,
+   and to handle third-party types for which names of real data members may
+   not be known. For more information, refer to Section 12.4.13, "virtual"
+   in the ODB manual as well as the 'access' and 'pimpl' examples in the
+   odb-examples package.
 
  * Support for defining database indexes. Both simple and composite indexes
-   can be defined with support for database-specific index types, methods, and
-   options. For more information, refer to Section 12.6, "Index Definition
-   Pragmas" as well as Sections [13-17].16, "<Database> Index Definition"
-   in the ODB manual.
+   can be defined with support for database-specific index types, methods,
+   and options. For more information, refer to Section 12.6, "Index
+   Definition Pragmas" as well as Sections [13-17].16, "<Database> Index
+   Definition" in the ODB manual.
 
  * Support for mapping extended database types, such as geospatial types,
    user-defined types, and collections. This mechanism allows you to map
@@ -46,8 +47,8 @@ Version 2.1.0
 
  * The Boost profile now provides persistence support for the Boost uuid type
    (boost::uuids::uuid). For more information, refer to Section 19.6, "Uuid
-   Library" in the ODB manual as well as the 'boost' example in the
-   odb-examples package.
+   Library" in the ODB manual as well as the 'boost' example in the odb-
+   examples package.
 
  * The Qt profile now provides persistence support for the QUuid type. For
    more information, refer to Section 20.1, "Basic Types" in the ODB manual
@@ -57,11 +58,11 @@ Version 2.1.0
    (Section 14.1, "SQLite Type Mapping"). Ability to pass the database
    name as std::wstring on Windows (Section 14.2, "SQLite Database Class").
    Ability to specify the virtual filesystem (vfs) module in the database
-   constructor (Section 14.2, "SQLite Database Class").
+   constructors (Section 14.2, "SQLite Database Class").
 
  * Support for mapping C++11 std::array<char, N> and std::array<unsigned
    char, N> types to BLOB/BINARY database types. For more information,
-   refer to Section [13-17].1, "<Database> Type Mapping" the ODB manual.
+   refer to Sections [13-17].1, "<Database> Type Mapping" in the ODB manual.
 
  * Support for mapping the char[16] array to PostgreSQL UUID and SQL Server
    UNIQUEIDENTIFIER types. For more information, refer to Sections 15.1,
@@ -88,7 +89,7 @@ Version 2.1.0
  * New options, --omit-drop and --omit-create, trigger the omission of DROP
    and CREATE statements, respectively, from the generated database schema.
 
- * New ODB manual section, 6.3 "Circular Relationships", explains how to
+ * New ODB manual Section, 6.3 "Circular Relationships", explains how to
    handle persistent classes with circular dependencies that are defined
    in separate headers.
 
@@ -96,18 +97,18 @@ Version 2.1.0
    object id has been renamed to no_id.
 
  * New pragma, definition, allows the specification of an alternative code
-   generation location for persistent classes, views, and composite value
+   generation point for persistent classes, views, and composite value
    types. This mechanism is primarily useful for converting third-party
    types to ODB composite value types. For more information, refer to
    Section 12.3.7, "Definition" in the ODB manual.
 
- * The session constructor now accepts an options bool argument (true by
+ * The session constructor now accepts an optional bool argument (true by
    default) which indicates whether to make this session current for this
    thread. For more information, refer to Chapter 10, "Session" in the ODB
    manual.
 
  * Simplified Oracle automatically-assigned object id implementation that
-   doesn't use triggers.
+   does not rely on triggers.
 
  * Support for mapping boost::posix_time::ptime and QDateTime to the DATE
    Oracle type. For more information, refer to Sections 19.4.4 (Boost) and
