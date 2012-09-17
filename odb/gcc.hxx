@@ -18,11 +18,12 @@
 
 #include <bversion.h>
 
-// GCC 4.7 can be built using either C or C++ compiler.
+// GCC 4.7 can be built using either C or C++ compiler. From 4.8 it
+// is always built as C++.
 //
 #if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
 #  define ODB_GCC_PLUGIN_C
-#else
+#elif BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 7
 #  include <config.h>
 #  ifndef ENABLE_BUILD_WITH_CXX
 #    define ODB_GCC_PLUGIN_C
