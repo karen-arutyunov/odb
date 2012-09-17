@@ -5,6 +5,7 @@
 #include <odb/gcc.hxx>
 
 #include <cctype> // std::isalnum
+#include <limits>
 #include <vector>
 #include <sstream>
 
@@ -1800,7 +1801,7 @@ handle_pragma (cxx_lexer& l,
     case CPP_STRING:
       {
         dv.kind = default_value::string;
-        dv.value = tl;
+        dv.literal = tl;
         tt = l.next (tl, &tn);
         break;
       }
@@ -1820,10 +1821,10 @@ handle_pragma (cxx_lexer& l,
       {
         // We have a potentially scopped enumerator name.
         //
-        dv.node = resolve_scoped_name (
-          l, tt, tl, tn, current_scope (), dv.value, false, p);
+        dv.enum_value = resolve_scoped_name (
+          l, tt, tl, tn, current_scope (), dv.literal, false, p);
 
-        if (dv.node == 0)
+        if (dv.enum_value == 0)
           return; // Diagnostics has already been issued.
 
         dv.kind = default_value::enumerator;
@@ -1833,7 +1834,7 @@ handle_pragma (cxx_lexer& l,
     case CPP_PLUS:
       {
         if (tt == CPP_MINUS)
-          dv.value = "-";
+          dv.literal = "-";
 
         tt = l.next (tl, &tn);
 
@@ -1849,17 +1850,52 @@ handle_pragma (cxx_lexer& l,
       }
     case CPP_NUMBER:
       {
-        int tc (TREE_CODE (tn));
-
-        if (tc != INTEGER_CST && tc != REAL_CST)
+        ///////
+        switch (TREE_CODE (tn))
         {
-          error (l) << "unexpected numeric constant in db pragma " << p
-                    << endl;
-          return;
+        case INTEGER_CST:
+          {
+            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (tn));
+            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (tn));
+
+            unsigned long long l (hwl);
+            unsigned long long h (hwh);
+            unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+            dv.int_value = (h << width) + l;
+            dv.kind = default_value::integer;
+            break;
+          }
+        case REAL_CST:
+          {
+            REAL_VALUE_TYPE d (TREE_REAL_CST (tn));
+
+            if (REAL_VALUE_ISINF (d))
+              dv.float_value = numeric_limits<double>::infinity ();
+            else if (REAL_VALUE_ISNAN (d))
+              dv.float_value = numeric_limits<double>::quiet_NaN ();
+            else
+            {
+              char tmp[256];
+              real_to_decimal (tmp, &d, sizeof (tmp), 0, true);
+              istringstream is (tmp);
+              is >> dv.float_value;
+            }
+
+            if (dv.literal == "-")
+              dv.float_value = -dv.float_value;
+
+            dv.kind = default_value::floating;
+            break;
+          }
+        default:
+          {
+            error (l) << "unexpected numeric constant in db pragma " << p
+                      << endl;
+            return;
+          }
         }
 
-        dv.node = tn;
-        dv.kind = default_value::number;
         tt = l.next (tl, &tn);
         break;
       }
@@ -1870,7 +1906,7 @@ handle_pragma (cxx_lexer& l,
         if (tt == CPP_KEYWORD && (tl == "true" || tl == "false"))
         {
           dv.kind = default_value::boolean;
-          dv.value = tl;
+          dv.literal = tl;
           tt = l.next (tl, &tn);
         }
         else

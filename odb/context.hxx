@@ -117,15 +117,22 @@ struct default_value
   {
     reset,   // Default value reset.
     null,
-    boolean,
-    number,  // Integer of floating-point number. Value contains sign.
-    string,
-    enumerator // Value is the name, node is the tree node.
+    boolean,  // Literal contains value (true or false).
+    integer,  // Integer number. Literal contains sign.
+    floating, // Floating-point number.
+    string,   // Literal contains value.
+    enumerator // Literal is the name, enum_value is the tree node.
   };
 
   kind_type kind;
-  std::string value;
-  tree node;
+  std::string literal;
+
+  union
+  {
+    tree enum_value;
+    unsigned long long int_value;
+    double float_value;
+  };
 };
 
 // Database potentially-qualified name.

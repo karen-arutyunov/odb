@@ -2,12 +2,6 @@
 // copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <odb/gcc.hxx>
-
-#include <cassert>
-#include <limits>
-#include <sstream>
-
 #include <odb/diagnostics.hxx>
 
 #include <odb/relational/model.hxx>
@@ -39,77 +33,31 @@ namespace relational
       {
       case default_value::reset:
         {
-          // No default value.
-          return "";
+          return ""; // No default value.
         }
       case default_value::null:
         {
           return default_null (m);
-          break;
         }
       case default_value::boolean:
         {
-          return default_bool (m, dv->value == "true");
-          break;
+          return default_bool (m, dv->literal == "true");
         }
-      case default_value::number:
+      case default_value::integer:
         {
-          tree n (dv->node);
-
-          switch (TREE_CODE (n))
-          {
-          case INTEGER_CST:
-            {
-              HOST_WIDE_INT hwl (TREE_INT_CST_LOW (n));
-              HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (n));
-
-              unsigned long long l (hwl);
-              unsigned long long h (hwh);
-              unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-              unsigned long long v ((h << width) + l);
-
-              return default_integer (m, v, dv->value == "-");
-              break;
-            }
-          case REAL_CST:
-            {
-              double v;
-
-              REAL_VALUE_TYPE d (TREE_REAL_CST (n));
-
-              if (REAL_VALUE_ISINF (d))
-                v = numeric_limits<double>::infinity ();
-              else if (REAL_VALUE_ISNAN (d))
-                v = numeric_limits<double>::quiet_NaN ();
-              else
-              {
-                char tmp[256];
-                real_to_decimal (tmp, &d, sizeof (tmp), 0, true);
-                istringstream is (tmp);
-                is >> v;
-              }
-
-              if (dv->value == "-")
-                v = -v;
-
-              return default_float (m, v);
-              break;
-            }
-          default:
-            assert (false);
-          }
-          break;
+          return default_integer (m, dv->int_value, dv->literal == "-");
+        }
+      case default_value::floating:
+        {
+          return default_float (m, dv->float_value);
         }
       case default_value::string:
         {
-          return default_string (m, dv->value);
-          break;
+          return default_string (m, dv->literal);
         }
       case default_value::enumerator:
         {
-          return default_enum (m, dv->node, dv->value);
-          break;
+          return default_enum (m, dv->enum_value, dv->literal);
         }
       }
 
