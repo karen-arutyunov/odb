@@ -10,6 +10,8 @@
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/error.hxx>
 
+#include <odb/sqlite/details/config.hxx> // LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
+
 using namespace std;
 
 namespace odb
@@ -281,10 +283,12 @@ namespace odb
 
       unsigned long long r (0);
 
-      // Only the first call to sqlite3_step() can return SQLITE_LOCKED.
-      //
       int e;
       sqlite3* h (conn_.handle ());
+
+#ifdef LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
+      // Only the first call to sqlite3_step() can return SQLITE_LOCKED.
+      //
       while ((e = sqlite3_step (stmt_)) == SQLITE_LOCKED)
       {
         if (sqlite3_extended_errcode (h) != SQLITE_LOCKED_SHAREDCACHE)
@@ -293,6 +297,9 @@ namespace odb
         sqlite3_reset (stmt_);
         conn_.wait ();
       }
+#else
+      e = sqlite3_step (stmt_);
+#endif
 
       for (; e == SQLITE_ROW; e = sqlite3_step (stmt_))
         r++;
@@ -303,8 +310,7 @@ namespace odb
         translate_error (e, conn_);
 
       if (!result_set_)
-        r = static_cast<unsigned long long> (
-          sqlite3_changes (conn_.handle ()));
+        r = static_cast<unsigned long long> (sqlite3_changes (h));
 
       return r;
     }
@@ -377,6 +383,8 @@ namespace odb
       if (!done_)
       {
         int e;
+
+#ifdef LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
         sqlite3* h (conn_.handle ());
         while ((e = sqlite3_step (stmt_)) == SQLITE_LOCKED)
         {
@@ -386,6 +394,9 @@ namespace odb
           sqlite3_reset (stmt_);
           conn_.wait ();
         }
+#else
+        e = sqlite3_step (stmt_);
+#endif
 
         if (e != SQLITE_ROW)
         {
@@ -447,6 +458,8 @@ namespace odb
       bind_param (param_.bind, param_.count);
 
       int e;
+
+#ifdef LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
       sqlite3* h (conn_.handle ());
       while ((e = sqlite3_step (stmt_)) == SQLITE_LOCKED)
       {
@@ -456,6 +469,9 @@ namespace odb
         sqlite3_reset (stmt_);
         conn_.wait ();
       }
+#else
+      e = sqlite3_step (stmt_);
+#endif
 
       sqlite3_reset (stmt_);
 
@@ -512,6 +528,8 @@ namespace odb
 
       int e;
       sqlite3* h (conn_.handle ());
+
+#ifdef LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
       while ((e = sqlite3_step (stmt_)) == SQLITE_LOCKED)
       {
         if (sqlite3_extended_errcode (h) != SQLITE_LOCKED_SHAREDCACHE)
@@ -520,14 +538,16 @@ namespace odb
         sqlite3_reset (stmt_);
         conn_.wait ();
       }
+#else
+      e = sqlite3_step (stmt_);
+#endif
 
       sqlite3_reset (stmt_);
 
       if (e != SQLITE_DONE)
         translate_error (e, conn_);
 
-      return static_cast<unsigned long long> (
-        sqlite3_changes (conn_.handle ()));
+      return static_cast<unsigned long long> (sqlite3_changes (h));
     }
 
     // delete_statement
@@ -560,6 +580,8 @@ namespace odb
 
       int e;
       sqlite3* h (conn_.handle ());
+
+#ifdef LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
       while ((e = sqlite3_step (stmt_)) == SQLITE_LOCKED)
       {
         if (sqlite3_extended_errcode (h) != SQLITE_LOCKED_SHAREDCACHE)
@@ -568,14 +590,16 @@ namespace odb
         sqlite3_reset (stmt_);
         conn_.wait ();
       }
+#else
+      e = sqlite3_step (stmt_);
+#endif
 
       sqlite3_reset (stmt_);
 
       if (e != SQLITE_DONE)
         translate_error (e, conn_);
 
-      return static_cast<unsigned long long> (
-        sqlite3_changes (conn_.handle ()));
+      return static_cast<unsigned long long> (sqlite3_changes (h));
     }
   }
 }

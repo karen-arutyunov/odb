@@ -45,8 +45,10 @@ namespace odb
       // A connection can only be used by a single thread at a time. So
       // disable locking in SQLite unless explicitly requested.
       //
+#if defined(SQLITE_OPEN_NOMUTEX)
       if ((f & SQLITE_OPEN_FULLMUTEX) == 0)
         f |= SQLITE_OPEN_NOMUTEX;
+#endif
 
       const string& vfs (db.vfs ());
 

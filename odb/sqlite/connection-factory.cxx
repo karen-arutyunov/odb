@@ -7,6 +7,8 @@
 #include <odb/sqlite/database.hxx>
 #include <odb/sqlite/connection-factory.hxx>
 
+#include <odb/sqlite/details/config.hxx> // LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
+
 using namespace std;
 
 namespace odb
@@ -117,8 +119,10 @@ namespace odb
 
       // Unless explicitly disabled, enable shared cache.
       //
+#ifdef LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
       if ((db_->flags () & SQLITE_OPEN_PRIVATECACHE) == 0)
         extra_flags_ |= SQLITE_OPEN_SHAREDCACHE;
+#endif
     }
 
     //
@@ -190,8 +194,10 @@ namespace odb
 
       // Unless explicitly disabled, enable shared cache.
       //
+#ifdef LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
       if ((db_->flags () & SQLITE_OPEN_PRIVATECACHE) == 0)
         extra_flags_ |= SQLITE_OPEN_SHAREDCACHE;
+#endif
 
       if (min_ > 0)
       {

@@ -10,6 +10,8 @@
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/exceptions.hxx>
 
+#include <odb/sqlite/details/config.hxx> // LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
+
 using namespace std;
 
 namespace odb
@@ -20,7 +22,14 @@ namespace odb
     translate_error (int e, connection& c)
     {
       sqlite3* h (c.handle ());
+
+      // Extended error codes are only available in 3.6.5 and later.
+      //
+#if SQLITE_VERSION_NUMBER >= 3006005
       int ee (sqlite3_extended_errcode (h));
+#else
+      int ee (0);
+#endif
       string m;
 
       switch (e)
@@ -40,9 +49,10 @@ namespace odb
         }
       case SQLITE_LOCKED:
         {
+#ifdef LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
           if (ee != SQLITE_LOCKED_SHAREDCACHE)
             throw deadlock (); // The DROP TABLE special case.
-
+#endif
           // Getting SQLITE_LOCKED_SHAREDCACHE here means we don't have
           // the unlock notify support. Translate this to timeout.
           //
@@ -51,8 +61,10 @@ namespace odb
       case SQLITE_BUSY:
       case SQLITE_IOERR:
         {
+#if SQLITE_VERSION_NUMBER >= 3006005
           if (e != SQLITE_IOERR || ee == SQLITE_IOERR_BLOCKED)
             throw timeout ();
+#endif
 
           // Fall throught.
         }
