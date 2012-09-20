@@ -1138,7 +1138,7 @@ profile_paths (strings const& sargs, char const* name)
   if (!wait_process (pi, name))
   {
     // Things didn't go well and ss should contain the diagnostics.
-    // In case it is empty, issue our won.
+    // In case it is empty, issue our own.
     //
     if (!ss.str ().empty ())
       cerr << ss.rdbuf ();
