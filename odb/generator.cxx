@@ -297,7 +297,8 @@ generate (options const& ops,
       // Include main file(s).
       //
       for (paths::const_iterator i (inputs.begin ()); i != inputs.end (); ++i)
-        hxx << "#include " << ctx->process_include_path (i->string ()) << endl;
+        hxx << "#include " <<
+          ctx->process_include_path (i->leaf ().string ()) << endl;
 
       hxx << endl;
 
