@@ -29,7 +29,7 @@
 
 // ODB compiler version: interface version plus the bugfix version.
 //
-#define ODB_COMPILER_VERSION     2010000
-#define ODB_COMPILER_VERSION_STR "2.1.0"
+#define ODB_COMPILER_VERSION     2010100
+#define ODB_COMPILER_VERSION_STR "2.1.1"
 
 #endif // ODB_VERSION_HXX
