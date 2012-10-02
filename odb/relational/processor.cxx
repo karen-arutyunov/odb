@@ -746,19 +746,54 @@ namespace relational
         }
 
         // Check that the member type is default-constructible if we
-        // have a by value  modifier.
+        // have a by value modifier.
         //
         if (k == "set" && ma.placeholder ())
         {
-          // Assume all other types are default-constructible.
-          //
           semantics::class_* c (dynamic_cast<semantics::class_*> (&utype (m)));
 
-          if (c != 0 && !c->default_ctor ())
+          // Assume all other types are default-constructible.
+          //
+          if (c != 0)
           {
-            error (ma.loc) << "modifier expression requires member type "
-                           << "to be default-constructible" << endl;
-            throw operation_failed ();
+            // If this type is a class template instantiation, then make
+            // sure it is instantiated. While types used in real members
+            // will be instantiated, this is not necessarily the case for
+            // virtual members. Without the instantiation we won't be able
+            // to detect whether the type has the default ctor.
+            //
+            // It would have been cleaner to do it in post_process_pragmas()
+            // but there we don't yet know whether we need the default ctor.
+            // And it is a good idea not to require instantiability unless
+            // we really need it.
+            //
+            tree type (c->tree_node ());
+
+            if (!COMPLETE_TYPE_P (type) &&
+                CLASSTYPE_TEMPLATE_INSTANTIATION (type))
+            {
+              // Reset input location so that we get nice diagnostics in
+              // case of an error. Use the location of the virtual pragma.
+              //
+              location_t loc (m.get<location_t> ("virtual-location"));
+              input_location = loc;
+
+              if (instantiate_class_template (type) == error_mark_node ||
+                  errorcount != 0 ||
+                  !COMPLETE_TYPE_P (type))
+              {
+                error (loc) << "unable to instantiate virtual data member " <<
+                  "type" << endl;
+                throw operation_failed ();
+              }
+            }
+
+            if (!c->default_ctor ())
+            {
+              error (ma.loc) << "modifier expression requires member type " <<
+                "to be default-constructible" << endl;
+              throw operation_failed ();
+            }
           }
         }
       }
