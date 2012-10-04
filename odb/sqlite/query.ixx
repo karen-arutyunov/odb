@@ -6,6 +6,12 @@ namespace odb
 {
   namespace sqlite
   {
+    inline void query_base::
+    init_parameters () const
+    {
+      return parameters_->init ();
+    }
+
     inline binding& query_base::
     parameters_binding () const
     {

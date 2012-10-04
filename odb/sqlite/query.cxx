@@ -92,19 +92,13 @@ namespace odb
       p->bind (b);
     }
 
-    query_params::binding_type& query_params::
-    binding ()
+    void query_params::
+    init ()
     {
-      size_t n (params_.size ());
-      binding_type& r (binding_);
-
-      if (n == 0)
-        return r;
-
       bool inc_ver (false);
       sqlite::bind* b (&bind_[0]);
 
-      for (size_t i (0); i < n; ++i)
+      for (size_t i (0); i < params_.size (); ++i)
       {
         query_param& p (*params_[i]);
 
@@ -119,9 +113,7 @@ namespace odb
       }
 
       if (inc_ver)
-        r.version++;
-
-      return r;
+        binding_.version++;
     }
 
     // query_base

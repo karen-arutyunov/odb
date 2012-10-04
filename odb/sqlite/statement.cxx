@@ -245,21 +245,21 @@ namespace odb
     //
 
     generic_statement::
-    generic_statement (connection& conn, const string& text)
+    generic_statement (connection_type& conn, const string& text)
         : statement (conn, text),
           result_set_ (stmt_ ? sqlite3_column_count (stmt_) != 0: false)
     {
     }
 
     generic_statement::
-    generic_statement (connection& conn, const char* text)
+    generic_statement (connection_type& conn, const char* text)
         : statement (conn, text),
           result_set_ (stmt_ ? sqlite3_column_count (stmt_) != 0: false)
     {
     }
 
     generic_statement::
-    generic_statement (connection& conn,
+    generic_statement (connection_type& conn,
                        const char* text,
                        std::size_t text_size)
         : statement (conn, text, text_size),
@@ -319,7 +319,7 @@ namespace odb
     //
 
     select_statement::
-    select_statement (connection& conn,
+    select_statement (connection_type& conn,
                       const string& text,
                       binding& param,
                       binding& result)
@@ -328,7 +328,7 @@ namespace odb
     }
 
     select_statement::
-    select_statement (connection& conn,
+    select_statement (connection_type& conn,
                       const char* text,
                       binding& param,
                       binding& result)
@@ -337,13 +337,15 @@ namespace odb
     }
 
     select_statement::
-    select_statement (connection& conn, const string& text, binding& result)
+    select_statement (connection_type& conn,
+                      const string& text,
+                      binding& result)
         : statement (conn, text), param_ (0), result_ (result)
     {
     }
 
     select_statement::
-    select_statement (connection& conn, const char* text, binding& result)
+    select_statement (connection_type& conn, const char* text, binding& result)
         : statement (conn, text), param_ (0), result_ (result)
     {
     }
@@ -433,13 +435,15 @@ namespace odb
     //
 
     insert_statement::
-    insert_statement (connection& conn, const string& text, binding& param)
+    insert_statement (connection_type& conn,
+                      const string& text,
+                      binding& param)
         : statement (conn, text), param_ (param)
     {
     }
 
     insert_statement::
-    insert_statement (connection& conn, const char* text, binding& param)
+    insert_statement (connection_type& conn, const char* text, binding& param)
         : statement (conn, text), param_ (param)
     {
     }
@@ -502,13 +506,15 @@ namespace odb
     //
 
     update_statement::
-    update_statement (connection& conn, const string& text, binding& param)
+    update_statement (connection_type& conn,
+                      const string& text,
+                      binding& param)
         : statement (conn, text), param_ (param)
     {
     }
 
     update_statement::
-    update_statement (connection& conn, const char* text, binding& param)
+    update_statement (connection_type& conn, const char* text, binding& param)
         : statement (conn, text), param_ (param)
     {
     }
@@ -554,13 +560,15 @@ namespace odb
     //
 
     delete_statement::
-    delete_statement (connection& conn, const string& text, binding& param)
+    delete_statement (connection_type& conn,
+                      const string& text,
+                      binding& param)
         : statement (conn, text), param_ (param)
     {
     }
 
     delete_statement::
-    delete_statement (connection& conn, const char* text, binding& param)
+    delete_statement (connection_type& conn, const char* text, binding& param)
         : statement (conn, text), param_ (param)
     {
     }

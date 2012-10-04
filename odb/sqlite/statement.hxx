@@ -33,6 +33,8 @@ namespace odb
     class LIBODB_SQLITE_EXPORT statement: public odb::statement
     {
     public:
+      typedef sqlite::connection connection_type;
+
       virtual
       ~statement () = 0;
 
@@ -44,6 +46,12 @@ namespace odb
 
       virtual const char*
       text () const;
+
+      virtual connection_type&
+      connection ()
+      {
+        return conn_;
+      }
 
       // Cached state (public part).
       //
@@ -69,19 +77,21 @@ namespace odb
       }
 
     protected:
-      statement (connection& conn, const std::string& text)
+      statement (connection_type& conn, const std::string& text)
         : conn_ (conn)
       {
         init (text.c_str (), text.size ());
       }
 
-      statement (connection& conn, const char* text)
+      statement (connection_type& conn, const char* text)
         : conn_ (conn)
       {
         init (text, std::strlen (text));
       }
 
-      statement (connection& conn, const char* text, std::size_t text_size)
+      statement (connection_type& conn,
+                 const char* text,
+                 std::size_t text_size)
         : conn_ (conn)
       {
         init (text, text_size);
@@ -142,9 +152,9 @@ namespace odb
       finilize ();
 
     protected:
-      friend class connection;
+      friend class sqlite::connection;
 
-      connection& conn_;
+      connection_type& conn_; // Cached static type.
       auto_handle<sqlite3_stmt> stmt_;
 
       bool active_;
@@ -199,9 +209,11 @@ namespace odb
     class LIBODB_SQLITE_EXPORT generic_statement: public statement
     {
     public:
-      generic_statement (connection&, const std::string& text);
-      generic_statement (connection&, const char* text);
-      generic_statement (connection&, const char* text, std::size_t text_size);
+      generic_statement (connection_type&, const std::string& text);
+      generic_statement (connection_type&, const char* text);
+      generic_statement (connection_type&,
+                         const char* text,
+                         std::size_t text_size);
 
       unsigned long long
       execute ();
@@ -217,21 +229,23 @@ namespace odb
     class LIBODB_SQLITE_EXPORT select_statement: public statement
     {
     public:
-      select_statement (connection& conn,
+      select_statement (connection_type& conn,
                         const std::string& text,
                         binding& param,
                         binding& result);
 
-      select_statement (connection& conn,
+      select_statement (connection_type& conn,
                         const char* text,
                         binding& param,
                         binding& result);
 
-      select_statement (connection& conn,
+      select_statement (connection_type& conn,
                         const std::string& text,
                         binding& result);
 
-      select_statement (connection& conn, const char* text, binding& result);
+      select_statement (connection_type& conn,
+                        const char* text,
+                        binding& result);
 
       // Common select interface expected by the generated code.
       //
@@ -310,11 +324,13 @@ namespace odb
     class LIBODB_SQLITE_EXPORT insert_statement: public statement
     {
     public:
-      insert_statement (connection& conn,
+      insert_statement (connection_type& conn,
                         const std::string& text,
                         binding& param);
 
-      insert_statement (connection& conn, const char* text, binding& param);
+      insert_statement (connection_type& conn,
+                        const char* text,
+                        binding& param);
 
       // Return true if successful and false if the row is a duplicate.
       // All other errors are reported by throwing exceptions.
@@ -336,11 +352,13 @@ namespace odb
     class LIBODB_SQLITE_EXPORT update_statement: public statement
     {
     public:
-      update_statement (connection& conn,
+      update_statement (connection_type& conn,
                         const std::string& text,
                         binding& param);
 
-      update_statement (connection& conn, const char* text, binding& param);
+      update_statement (connection_type& conn,
+                        const char* text,
+                        binding& param);
 
       unsigned long long
       execute ();
@@ -356,11 +374,13 @@ namespace odb
     class LIBODB_SQLITE_EXPORT delete_statement: public statement
     {
     public:
-      delete_statement (connection& conn,
+      delete_statement (connection_type& conn,
                         const std::string& text,
                         binding& param);
 
-      delete_statement (connection& conn, const char* text, binding& param);
+      delete_statement (connection_type& conn,
+                        const char* text,
+                        binding& param);
 
       unsigned long long
       execute ();

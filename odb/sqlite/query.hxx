@@ -82,8 +82,11 @@ namespace odb
     public:
       typedef sqlite::binding binding_type;
 
+      void
+      init ();
+
       binding_type&
-      binding ();
+      binding () {return binding_;}
 
     private:
       friend class query_base;
@@ -201,6 +204,11 @@ namespace odb
 
       const char*
       clause_prefix () const;
+
+      // Initialize the by-reference parameters from bound variables.
+      //
+      void
+      init_parameters () const;
 
       binding&
       parameters_binding () const;
