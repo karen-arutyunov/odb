@@ -680,13 +680,27 @@ traverse_object (type& c)
   //
   if (options.generate_query ())
   {
-    os << "static result<object_type>" << endl
-       << "query (database&, const query_base_type&);"
-       << endl;
+    if (!options.omit_unprepared ())
+    {
+      os << "static result<object_type>" << endl
+         << "query (database&, const query_base_type&);"
+         << endl;
 
-    os << "static unsigned long long" << endl
-       << "erase_query (database&, const query_base_type&);"
-       << endl;
+      os << "static unsigned long long" << endl
+         << "erase_query (database&, const query_base_type&);"
+         << endl;
+    }
+
+    if (!options.omit_prepared ())
+    {
+      os << "static odb::details::shared_ptr<prepared_query_impl>" << endl
+         << "prepare_query (connection&, const char*, const query_base_type&);"
+         << endl;
+
+      os << "static odb::details::shared_ptr<result_impl>" << endl
+         << "execute_query (prepared_query_impl&);"
+         << endl;
+    }
   }
 
   // create_schema ()

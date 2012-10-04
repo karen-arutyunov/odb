@@ -58,6 +58,16 @@ class options
      and can only load objects via their ids."
   };
 
+  bool --omit-prepared
+  {
+    "Omit prepared query execution support code."
+  };
+
+  bool --omit-unprepared
+  {
+    "Omit un-prepared (once-off) query execution support code."
+  };
+
   bool --generate-session | -e
   {
     "Generate session support code. With this option session support will

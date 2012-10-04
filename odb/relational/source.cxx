@@ -2564,60 +2564,6 @@ traverse_object (type& c)
 
   if (options.generate_query ())
   {
-    // query ()
-    //
-    os << "result< " << traits << "::object_type >" << endl
-       << traits << "::" << endl
-       << "query (database&, const query_base_type& q)"
-       << "{"
-       << "using namespace " << db << ";"
-       << "using odb::details::shared;"
-       << "using odb::details::shared_ptr;"
-       << endl
-       << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
-       << endl
-       << "statements_type& sts (" << endl
-       << "conn.statement_cache ().find_object<object_type> ());"
-       << endl;
-
-    // Rebind the image if necessary.
-    //
-    os << "image_type& im (sts.image ());"
-       << "binding& imb (sts.select_image_binding (" <<
-      (poly_derived ? "depth" : "") << "));"
-       << endl;
-
-    if (poly_derived)
-    {
-      os << "if (imb.version == 0 ||" << endl
-         << "check_version (sts.select_image_versions (), im))"
-         << "{"
-         << "bind (imb.bind, 0, 0, im, statement_select);"
-         << "update_version (sts.select_image_versions ()," << endl
-         << "im," << endl
-         << "sts.select_image_bindings ());"
-         << "}";
-    }
-    else
-    {
-      os << "if (im.version != sts.select_image_version () ||" << endl
-         << "imb.version == 0)"
-         << "{"
-         << "bind (imb.bind, im, statement_select);"
-         << "sts.select_image_version (im.version);"
-         << "imb.version++;"
-         << "}";
-    }
-
-    os << "shared_ptr<select_statement> st (" << endl
-       << "new (shared) select_statement (" << endl;
-    object_query_statement_ctor_args (c);
-    os << "));" << endl
-       << "st->execute ();";
-
-    post_query_ (c);
-
     char const* result_type;
     if (poly)
       result_type = "polymorphic_object_result_impl<object_type>";
@@ -2626,30 +2572,219 @@ traverse_object (type& c)
     else
       result_type = "no_id_object_result_impl<object_type>";
 
-    os << endl
-       << "shared_ptr< odb::" << result_type << " > r (" << endl
-       << "new (shared) " << db << "::" << result_type << " (" << endl
-       << "q, st, sts));"
-       << endl
-       << "return result<object_type> (r);"
-       << "}";
-
-    // erase_query
+    // Unprepared.
     //
-    os << "unsigned long long " << traits << "::" << endl
-       << "erase_query (database&, const query_base_type& q)"
-       << "{"
-       << "using namespace " << db << ";"
-       << endl
-       << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
-       << endl
-       << "delete_statement st (" << endl;
-    object_erase_query_statement_ctor_args (c);
-    os << ");"
-       << endl
-       << "return st.execute ();"
-       << "}";
+    if (!options.omit_unprepared ())
+    {
+      // query ()
+      //
+      os << "result< " << traits << "::object_type >" << endl
+         << traits << "::" << endl
+         << "query (database&, const query_base_type& q)"
+         << "{"
+         << "using namespace " << db << ";"
+         << "using odb::details::shared;"
+         << "using odb::details::shared_ptr;"
+         << endl
+         << db << "::connection& conn (" << endl
+         << db << "::transaction::current ().connection ());"
+         << endl
+         << "statements_type& sts (" << endl
+         << "conn.statement_cache ().find_object<object_type> ());"
+         << endl;
+
+      // Rebind the image if necessary.
+      //
+      os << "image_type& im (sts.image ());"
+         << "binding& imb (sts.select_image_binding (" <<
+        (poly_derived ? "depth" : "") << "));"
+         << endl;
+
+      if (poly_derived)
+      {
+        os << "if (imb.version == 0 ||" << endl
+           << "check_version (sts.select_image_versions (), im))"
+           << "{"
+           << "bind (imb.bind, 0, 0, im, statement_select);"
+           << "update_version (sts.select_image_versions ()," << endl
+           << "im," << endl
+           << "sts.select_image_bindings ());"
+           << "}";
+      }
+      else
+      {
+        os << "if (im.version != sts.select_image_version () ||" << endl
+           << "imb.version == 0)"
+           << "{"
+           << "bind (imb.bind, im, statement_select);"
+           << "sts.select_image_version (im.version);"
+           << "imb.version++;"
+           << "}";
+      }
+
+      os << "q.init_parameters ();"
+         << "shared_ptr<select_statement> st (" << endl
+         << "new (shared) select_statement (" << endl;
+      object_query_statement_ctor_args (c, "q");
+      os << "));" << endl
+         << "st->execute ();";
+
+      post_query_ (c, true);
+
+      os << endl
+         << "shared_ptr< odb::" << result_type << " > r (" << endl
+         << "new (shared) " << db << "::" << result_type << " (" << endl
+         << "q, st, sts));"
+         << endl
+         << "return result<object_type> (r);"
+         << "}";
+
+      // erase_query
+      //
+      os << "unsigned long long " << traits << "::" << endl
+         << "erase_query (database&, const query_base_type& q)"
+         << "{"
+         << "using namespace " << db << ";"
+         << endl
+         << db << "::connection& conn (" << endl
+         << db << "::transaction::current ().connection ());"
+         << endl
+         << "q.init_parameters ();"
+         << "delete_statement st (" << endl;
+      object_erase_query_statement_ctor_args (c, "q");
+      os << ");"
+         << endl
+         << "return st.execute ();"
+         << "}";
+    }
+
+    // Prepared. Very similar to unprepared but has some annoying variations
+    // that make it difficult to factor out something common.
+    //
+    if (!options.omit_prepared ())
+    {
+      os << "odb::details::shared_ptr<prepared_query_impl>" << endl
+         << traits << "::" << endl
+         << "prepare_query (connection& c, const char* n, " <<
+        "const query_base_type& q)"
+         << "{"
+         << "using namespace " << db << ";"
+         << "using odb::details::shared;"
+         << "using odb::details::shared_ptr;"
+         << endl
+         << db << "::connection& conn (" << endl
+         << "static_cast<" << db << "::connection&> (c));"
+         << endl
+         << "statements_type& sts (" << endl
+         << "conn.statement_cache ().find_object<object_type> ());"
+         << endl;
+
+      // Rebind the image if necessary.
+      //
+      os << "image_type& im (sts.image ());"
+         << "binding& imb (sts.select_image_binding (" <<
+        (poly_derived ? "depth" : "") << "));"
+         << endl;
+
+      if (poly_derived)
+      {
+        os << "if (imb.version == 0 ||" << endl
+           << "check_version (sts.select_image_versions (), im))"
+           << "{"
+           << "bind (imb.bind, 0, 0, im, statement_select);"
+           << "update_version (sts.select_image_versions ()," << endl
+           << "im," << endl
+           << "sts.select_image_bindings ());"
+           << "}";
+      }
+      else
+      {
+        os << "if (im.version != sts.select_image_version () ||" << endl
+           << "imb.version == 0)"
+           << "{"
+           << "bind (imb.bind, im, statement_select);"
+           << "sts.select_image_version (im.version);"
+           << "imb.version++;"
+           << "}";
+      }
+
+      os << "shared_ptr<" << db << "::prepared_query_impl> r (" << endl
+         << "new (shared) " << db << "::prepared_query_impl);"
+         << "r->name = n;"
+         << "r->execute = &execute_query;"
+         << "r->query = q;"
+         << "r->stmt.reset (" << endl
+         << "new (shared) select_statement (" << endl;
+      object_query_statement_ctor_args (c, "r->query");
+      os << "));"
+         << endl
+         << "return r;"
+         << "}";
+
+      os << "odb::details::shared_ptr<result_impl>" << endl
+         << traits << "::" << endl
+         << "execute_query (prepared_query_impl& q)"
+         << "{"
+         << "using namespace " << db << ";"
+         << "using odb::details::shared;"
+         << "using odb::details::shared_ptr;"
+         << endl
+         << db << "::prepared_query_impl& pq (" << endl
+         << "static_cast<" << db << "::prepared_query_impl&> (q));"
+         << "shared_ptr<select_statement>& st (pq.stmt);"
+         << endl
+         << db << "::connection& conn (" << endl
+         << db << "::transaction::current ().connection ());"
+         << endl
+         << "// The connection used by the current transaction and the" << endl
+         << "// one used to prepare this statement must be the same." << endl
+         << "//" << endl
+         << "assert (&conn == &st->connection ());"
+         << endl
+         << "statements_type& sts (" << endl
+         << "conn.statement_cache ().find_object<object_type> ());"
+         << endl;
+
+      // Rebind the image if necessary.
+      //
+      os << "image_type& im (sts.image ());"
+         << "binding& imb (sts.select_image_binding (" <<
+        (poly_derived ? "depth" : "") << "));"
+         << endl;
+
+      if (poly_derived)
+      {
+        os << "if (imb.version == 0 ||" << endl
+           << "check_version (sts.select_image_versions (), im))"
+           << "{"
+           << "bind (imb.bind, 0, 0, im, statement_select);"
+           << "update_version (sts.select_image_versions ()," << endl
+           << "im," << endl
+           << "sts.select_image_bindings ());"
+           << "}";
+      }
+      else
+      {
+        os << "if (im.version != sts.select_image_version () ||" << endl
+           << "imb.version == 0)"
+           << "{"
+           << "bind (imb.bind, im, statement_select);"
+           << "sts.select_image_version (im.version);"
+           << "imb.version++;"
+           << "}";
+      }
+
+      os << "pq.query.init_parameters ();"
+         << "st->execute ();";
+      post_query_ (c, false);
+
+      os << endl
+         << "return shared_ptr<result_impl> (" << endl
+         << "new (shared) " << db << "::" << result_type << " (" << endl
+         << "pq.query, st, sts));"
+         << "}";
+    }
+
   }
 
   if (embedded_schema)
@@ -3396,52 +3531,56 @@ traverse_view (type& c)
 
   // query ()
   //
-  os << "result< " << traits << "::view_type >" << endl
-     << traits << "::" << endl
-     << "query (database&, const query_base_type& q)"
-     << "{"
-     << "using namespace " << db << ";"
-     << "using odb::details::shared;"
-     << "using odb::details::shared_ptr;"
-     << endl
-     << db << "::connection& conn (" << endl
-     << db << "::transaction::current ().connection ());"
-     << endl
-     << "view_statements< view_type >& sts (" << endl
-     << "conn.statement_cache ().find_view<view_type> ());"
-     << endl
-     << "image_type& im (sts.image ());"
-     << "binding& imb (sts.image_binding ());"
-     << endl
-     << "if (im.version != sts.image_version () || imb.version == 0)"
-     << "{"
-     << "bind (imb.bind, im);"
-     << "sts.image_version (im.version);"
-     << "imb.version++;"
-     << "}";
+  if (!options.omit_unprepared ())
+  {
+    os << "result< " << traits << "::view_type >" << endl
+       << traits << "::" << endl
+       << "query (database&, const query_base_type& q)"
+       << "{"
+       << "using namespace " << db << ";"
+       << "using odb::details::shared;"
+       << "using odb::details::shared_ptr;"
+       << endl
+       << db << "::connection& conn (" << endl
+       << db << "::transaction::current ().connection ());"
+       << endl
+       << "view_statements< view_type >& sts (" << endl
+       << "conn.statement_cache ().find_view<view_type> ());"
+       << endl
+       << "image_type& im (sts.image ());"
+       << "binding& imb (sts.image_binding ());"
+       << endl
+       << "if (im.version != sts.image_version () || imb.version == 0)"
+       << "{"
+       << "bind (imb.bind, im);"
+       << "sts.image_version (im.version);"
+       << "imb.version++;"
+       << "}";
 
-  if (vq.kind == view_query::runtime)
-    os << "const query_base_type& qs (q);";
-  else
-    os << "const query_base_type& qs (query_statement (q));";
+    if (vq.kind == view_query::runtime)
+      os << "const query_base_type& qs (q);";
+    else
+      os << "const query_base_type& qs (query_statement (q));";
 
-  os << "shared_ptr<select_statement> st (" << endl
-     << "new (shared) select_statement (" << endl;
+    os << "qs.init_parameters ();"
+       << "shared_ptr<select_statement> st (" << endl
+       << "new (shared) select_statement (" << endl;
 
-  view_query_statement_ctor_args (c);
+    view_query_statement_ctor_args (c);
 
-  os << "));" << endl
-     << "st->execute ();";
+    os << "));" << endl
+       << "st->execute ();";
 
-  post_query_ (c);
+    post_query_ (c, true);
 
-  os << endl
-     << "shared_ptr< odb::view_result_impl<view_type> > r (" << endl
-     << "new (shared) " << db << "::view_result_impl<view_type> (" << endl
-     << "qs, st, sts));"
-     << endl
-     << "return result<view_type> (r);"
-     << "}";
+    os << endl
+       << "shared_ptr< odb::view_result_impl<view_type> > r (" << endl
+       << "new (shared) " << db << "::view_result_impl<view_type> (" << endl
+       << "qs, st, sts));"
+       << endl
+       << "return result<view_type> (r);"
+       << "}";
+  }
 }
 
 namespace relational

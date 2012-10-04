@@ -829,9 +829,10 @@ namespace relational
         }
 
         virtual void
-        post_query_ (type&)
+        post_query_ (type&, bool once_off)
         {
-          os << "st->deallocate ();";
+          if (once_off)
+            os << "st->deallocate ();";
         }
       };
       entry<class_> class_entry_;

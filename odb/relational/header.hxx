@@ -1124,9 +1124,10 @@ namespace relational
 
         // query ()
         //
-        os << "static result<view_type>" << endl
-           << "query (database&, const query_base_type&);"
-           << endl;
+        if (!options.omit_unprepared ())
+          os << "static result<view_type>" << endl
+             << "query (database&, const query_base_type&);"
+             << endl;
 
         view_public_extra_post (c);
 
@@ -1445,8 +1446,12 @@ namespace relational
       generate ()
       {
         os << "#include <odb/details/buffer.hxx>" << endl
-           << "#include <odb/details/unused.hxx>" << endl
-           << endl;
+           << "#include <odb/details/unused.hxx>" << endl;
+
+        if (options.generate_query ())
+          os << "#include <odb/details/shared-ptr.hxx>" << endl;
+
+        os << endl;
 
         os << "#include <odb/" << db << "/version.hxx>" << endl
            << "#include <odb/" << db << "/forward.hxx>" << endl

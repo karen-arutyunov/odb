@@ -3406,7 +3406,7 @@ namespace relational
       //
 
       virtual void
-      post_query_ (type&)
+      post_query_ (type&, bool /*once_off*/)
       {
       }
 
@@ -3425,20 +3425,20 @@ namespace relational
       }
 
       virtual void
-      object_query_statement_ctor_args (type&)
+      object_query_statement_ctor_args (type&, std::string const& q)
       {
-        os << "sts.connection ()," << endl
-           << "query_statement + q.clause ()," << endl
-           << "q.parameters_binding ()," << endl
+        os << "conn," << endl
+           << "query_statement + " << q << ".clause ()," << endl
+           << q << ".parameters_binding ()," << endl
            << "imb";
       }
 
       virtual void
-      object_erase_query_statement_ctor_args (type&)
+      object_erase_query_statement_ctor_args (type&, std::string const& q)
       {
         os << "conn," << endl
-           << "erase_query_statement + q.clause ()," << endl
-           << "q.parameters_binding ()";
+           << "erase_query_statement + " << q << ".clause ()," << endl
+           << q << ".parameters_binding ()";
       }
 
       virtual void
@@ -3456,7 +3456,7 @@ namespace relational
       virtual void
       view_query_statement_ctor_args (type&)
       {
-        os << "sts.connection ()," << endl
+        os << "conn," << endl
            << "qs.clause ()," << endl
            << "qs.parameters_binding ()," << endl
            << "imb";
@@ -3663,9 +3663,6 @@ namespace relational
         if (embedded_schema)
           os << "#include <odb/schema-catalog-impl.hxx>" << endl;
 
-        if (options.generate_query ())
-          os << "#include <odb/details/shared-ptr.hxx>" << endl;
-
         os << endl;
 
         os << "#include <odb/" << db << "/traits.hxx>" << endl
@@ -3692,6 +3689,9 @@ namespace relational
 
         if (options.generate_query ())
         {
+          if (!options.omit_prepared ())
+            os << "#include <odb/" << db << "/prepared-query.hxx>" << endl;
+
           if (features.simple_object)
             os << "#include <odb/" << db << "/simple-object-result.hxx>" << endl;
 
