@@ -65,7 +65,6 @@ traverse (semantics::class_& c)
   {
     // Ignore transient bases.
     //
-    assert (context::top_object != 0);
     return;
   }
   else if (k == class_composite)
@@ -366,10 +365,7 @@ traverse (semantics::class_& c)
   // Ignore transient bases.
   //
   if (k == class_other)
-  {
-    assert (context::top_object != 0);
     return;
-  }
 
   bool f (top_level_);
 
