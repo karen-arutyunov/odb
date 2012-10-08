@@ -10,7 +10,7 @@
 #include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
-#include <odb/sqlite/forward.hxx> // query, query_params
+#include <odb/sqlite/forward.hxx> // query_base, query_params
 #include <odb/sqlite/statement.hxx>
 
 #include <odb/sqlite/details/export.hxx>
@@ -22,7 +22,8 @@ namespace odb
     class LIBODB_SQLITE_EXPORT result_impl_base
     {
     public:
-      result_impl_base (const query&, details::shared_ptr<select_statement>);
+      result_impl_base (const query_base&,
+                        details::shared_ptr<select_statement>);
 
     protected:
       // We need to hold on to the query parameters because SQLite uses

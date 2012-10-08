@@ -156,7 +156,7 @@ namespace odb
     {
     public:
       typedef T object_type;
-      typedef odb::object_traits<object_type> object_traits;
+      typedef object_traits_impl<object_type, id_sqlite> object_traits;
       typedef typename object_traits::id_type id_type;
       typedef typename object_traits::pointer_type pointer_type;
       typedef typename object_traits::id_image_type id_image_type;

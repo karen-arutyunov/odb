@@ -21,7 +21,7 @@ namespace odb
 
     template <typename T>
     no_id_object_result_impl<T>::
-    no_id_object_result_impl (const query& q,
+    no_id_object_result_impl (const query_base& q,
                               details::shared_ptr<select_statement> statement,
                               statements_type& statements)
         : base_type (statements.connection ().database ()),

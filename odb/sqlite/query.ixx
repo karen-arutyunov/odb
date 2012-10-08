@@ -6,20 +6,20 @@ namespace odb
 {
   namespace sqlite
   {
-    inline binding& query::
+    inline binding& query_base::
     parameters_binding () const
     {
       return parameters_->binding ();
     }
 
-    inline details::shared_ptr<query_params> query::
+    inline details::shared_ptr<query_params> query_base::
     parameters () const
     {
       return parameters_;
     }
 
     template <typename T, database_type_id ID>
-    inline void query::
+    inline void query_base::
     append (val_bind<T> v, const char* conv)
     {
       add (
@@ -29,7 +29,7 @@ namespace odb
     }
 
     template <typename T, database_type_id ID>
-    inline void query::
+    inline void query_base::
     append (ref_bind<T> r, const char* conv)
     {
       add (

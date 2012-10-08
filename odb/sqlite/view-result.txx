@@ -21,7 +21,7 @@ namespace odb
 
     template <typename T>
     view_result_impl<T>::
-    view_result_impl (const query& q,
+    view_result_impl (const query_base& q,
                  details::shared_ptr<select_statement> statement,
                  statements_type& statements)
         : base_type (statements.connection ().database ()),

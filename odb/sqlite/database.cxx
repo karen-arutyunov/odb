@@ -38,7 +38,8 @@ namespace odb
               bool foreign_keys,
               const string& vfs,
               transfer_ptr<connection_factory> factory)
-        : name_ (name),
+        : odb::database (id_sqlite),
+          name_ (name),
           flags_ (flags),
           foreign_keys_ (foreign_keys),
           vfs_ (vfs),
@@ -57,7 +58,8 @@ namespace odb
               bool foreign_keys,
               const string& vfs,
               transfer_ptr<connection_factory> factory)
-        : flags_ (flags),
+        : odb::database (id_sqlite),
+          flags_ (flags),
           foreign_keys_ (foreign_keys),
           vfs_ (vfs),
           factory_ (factory.transfer ())
@@ -114,7 +116,8 @@ namespace odb
               bool foreign_keys,
               const string& vfs,
               transfer_ptr<connection_factory> factory)
-        : flags_ (flags),
+        : odb::database (id_sqlite),
+          flags_ (flags),
           foreign_keys_ (foreign_keys),
           vfs_ (vfs),
           factory_ (factory.transfer ())

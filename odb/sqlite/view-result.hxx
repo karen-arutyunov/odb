@@ -14,7 +14,7 @@
 #include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
-#include <odb/sqlite/forward.hxx> // query, view_statements
+#include <odb/sqlite/forward.hxx> // query_base, view_statements
 #include <odb/sqlite/statement.hxx>
 
 namespace odb
@@ -29,9 +29,9 @@ namespace odb
       typedef odb::view_result_impl<T> base_type;
 
       typedef typename base_type::view_type view_type;
-      typedef typename base_type::view_traits view_traits;
-
       typedef typename base_type::pointer_type pointer_type;
+
+      typedef view_traits_impl<view_type, id_sqlite> view_traits;
       typedef typename base_type::pointer_traits pointer_traits;
 
       typedef view_statements<view_type> statements_type;
@@ -39,7 +39,7 @@ namespace odb
       virtual
       ~view_result_impl ();
 
-      view_result_impl (const query&,
+      view_result_impl (const query_base&,
                         details::shared_ptr<select_statement>,
                         statements_type&);
 

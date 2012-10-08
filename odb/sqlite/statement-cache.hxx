@@ -69,7 +69,7 @@ namespace odb
       }
 
       template <typename T>
-      typename object_traits<T>::statements_type&
+      typename object_traits_impl<T, id_sqlite>::statements_type&
       find_object ();
 
       template <typename T>
