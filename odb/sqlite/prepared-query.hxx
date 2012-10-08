@@ -22,7 +22,7 @@ namespace odb
   {
     struct LIBODB_SQLITE_EXPORT prepared_query_impl: odb::prepared_query_impl
     {
-      sqlite::query query;
+      sqlite::query_base query;
       details::shared_ptr<select_statement> stmt;
     };
   }
