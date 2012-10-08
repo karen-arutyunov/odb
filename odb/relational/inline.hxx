@@ -121,7 +121,8 @@ namespace relational
       virtual void
       traverse_composite (member_info& mi)
       {
-        string traits ("composite_value_traits< " + mi.fq_type () + " >");
+        string traits ("composite_value_traits< " + mi.fq_type () + ", id_" +
+                       db.string () + " >");
 
         if (get_)
           os << "r = r && " << traits << "::get_null (" <<
@@ -145,7 +146,8 @@ namespace relational
         if (!composite (c))
           return;
 
-        string traits ("composite_value_traits< " + class_fq_name (c) + " >");
+        string traits ("composite_value_traits< " + class_fq_name (c) +
+                       ", id_" + db.string () + " >");
 
         // If the derived value type is readonly, then set will never be
         // called with sk == statement_update.
@@ -245,12 +247,12 @@ namespace relational
 
         string const& type (class_fq_name (c));
         string traits ("access::object_traits< " + type + " >");
+        string traits_impl ("access::object_traits_impl< " + type +
+                            ", id_" + db.string () + " >");
 
         os << "// " << class_name (c) << endl
            << "//" << endl
            << endl;
-
-        object_extra (c);
 
         // id (object_type)
         //
@@ -285,6 +287,8 @@ namespace relational
           os << "}";
         }
 
+        object_extra (c);
+
         if (id != 0 && base_id)
         {
           if (!poly_derived)
@@ -294,12 +298,12 @@ namespace relational
             if (options.generate_query ())
             {
               os << "inline" << endl
-                 << traits << "::id_type" << endl
-                 << traits << "::" << endl
+                 << traits_impl << "::id_type" << endl
+                 << traits_impl << "::" << endl
                  << "id (const image_type& i)"
                  << "{"
-                 << "return object_traits< " << class_fq_name (*base) <<
-                " >::id (i);"
+                 << "return object_traits_impl< " << class_fq_name (*base) <<
+                ", id_" << db << " >::id (i);"
                  << "}";
             }
 
@@ -308,12 +312,12 @@ namespace relational
             if (optimistic != 0)
             {
               os << "inline" << endl
-                 << traits << "::version_type" << endl
-                 << traits << "::" << endl
+                 << traits_impl << "::version_type" << endl
+                 << traits_impl << "::" << endl
                  << "version (const image_type& i)"
                  << "{"
-                 << "return object_traits< " << class_fq_name (*base) <<
-                " >::version (i);"
+                 << "return object_traits_impl< " << class_fq_name (*base) <<
+                ", id_" << db << " >::version (i);"
                  << "}";
             }
           }
@@ -321,21 +325,21 @@ namespace relational
           // bind (id_image_type)
           //
           os << "inline" << endl
-             << "void " << traits << "::" << endl
+             << "void " << traits_impl << "::" << endl
              << "bind (" << bind_vector << " b, id_image_type& i" <<
             (optimistic != 0 ? ", bool bv" : "") << ")"
              << "{"
-             << "object_traits< " << class_fq_name (*base) <<
-            " >::bind (b, i" << (optimistic != 0 ? ", bv" : "") << ");"
+             << "object_traits_impl< " << class_fq_name (*base) << ", id_" <<
+            db << " >::bind (b, i" << (optimistic != 0 ? ", bv" : "") << ");"
              << "}";
 
           os << "inline" << endl
-             << "void " << traits << "::" << endl
+             << "void " << traits_impl << "::" << endl
              << "init (id_image_type& i, const id_type& id" <<
             (optimistic != 0 ? ", const version_type* v" : "") << ")"
              << "{"
-             << "object_traits< " << class_fq_name (*base) <<
-            " >::init (i, id" << (optimistic != 0 ? ", v" : "") << ");"
+             << "object_traits_impl< " << class_fq_name (*base) << ", id_" <<
+            db << " >::init (i, id" << (optimistic != 0 ? ", v" : "") << ");"
              << "}";
         }
 
@@ -346,7 +350,7 @@ namespace relational
           // check_version
           //
           os << "inline" << endl
-             << "bool " << traits << "::" << endl
+             << "bool " << traits_impl << "::" << endl
              << "check_version (const std::size_t* v, const image_type& i)"
              << "{"
              << "return ";
@@ -366,7 +370,7 @@ namespace relational
           // update_version
           //
           os << "inline" << endl
-             << "void " << traits << "::" << endl
+             << "void " << traits_impl << "::" << endl
              << "update_version (std::size_t* v, const image_type& i, " <<
             db << "::binding* b)"
              << "{";
@@ -401,7 +405,7 @@ namespace relational
         if (id != 0 && !poly && optimistic == 0)
         {
           os << "inline" << endl
-             << "void " << traits << "::" << endl
+             << "void " << traits_impl << "::" << endl
              << "erase (database& db, const object_type& obj)"
              << "{"
              << "callback (db, obj, callback_event::pre_erase);"
@@ -413,7 +417,7 @@ namespace relational
         // callback ()
         //
         os << "inline" << endl
-           << "void " << traits << "::" << endl
+           << "void " << traits_impl << "::" << endl
            << "callback (database& db, object_type& x, callback_event e)"
            <<  endl
            << "{"
@@ -425,7 +429,7 @@ namespace relational
         os << "}";
 
         os << "inline" << endl
-           << "void " << traits << "::" << endl
+           << "void " << traits_impl << "::" << endl
            << "callback (database& db, const object_type& x, callback_event e)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (db);"
@@ -440,7 +444,7 @@ namespace relational
         if (id != 0 && !(poly_derived || has_a (c, test_container)))
         {
           os << "inline" << endl
-             << "void " << traits << "::" << endl
+             << "void " << traits_impl << "::" << endl
              << "load_ (";
 
           if (poly && !poly_derived)
@@ -458,13 +462,13 @@ namespace relational
           // root_image ()
           //
           os << "inline" << endl
-             << traits << "::root_traits::image_type&" << endl
-             << traits << "::" << endl
+             << traits_impl << "::root_traits::image_type&" << endl
+             << traits_impl << "::" << endl
              << "root_image (image_type& i)"
              << "{";
 
           if (poly_derived)
-            os << "return object_traits<base_type>::root_image (*i.base);";
+            os << "return base_traits::root_image (*i.base);";
           else
             os << "return i;";
 
@@ -473,15 +477,13 @@ namespace relational
           // clone_image ()
           //
           os << "inline" << endl
-             << traits << "::image_type*" << endl
-             << traits << "::" << endl
+             << traits_impl << "::image_type*" << endl
+             << traits_impl << "::" << endl
              << "clone_image (const image_type& i)"
              << "{";
 
           if (poly_derived)
-            os << "typedef object_traits<base_type> base_traits;"
-               << endl
-               << "details::unique_ptr<base_traits::image_type> p (" << endl
+            os << "details::unique_ptr<base_traits::image_type> p (" << endl
                << "base_traits::clone_image (*i.base));"
                << "image_type* c (new image_type (i));"
                << "c->base = p.release ();"
@@ -494,14 +496,12 @@ namespace relational
           // copy_image ()
           //
           os << "inline" << endl
-             << "void " << traits << "::" << endl
+             << "void " << traits_impl << "::" << endl
              << "copy_image (image_type& d, const image_type& s)"
              << "{";
 
           if (poly_derived)
-            os << "typedef object_traits<base_type> base_traits;"
-               << endl
-               << "base_traits::image_type* b (d.base);"
+            os << "base_traits::image_type* b (d.base);"
                << "base_traits::copy_image (*b, *s.base);"
                << "d = s;" // Overwrites the base pointer.
                << "d.base = b;";
@@ -513,12 +513,12 @@ namespace relational
           // free_image ()
           //
           os << "inline" << endl
-             << "void " << traits << "::" << endl
+             << "void " << traits_impl << "::" << endl
              << "free_image (image_type* i)"
              << "{";
 
           if (poly_derived)
-            os << "object_traits<base_type>::free_image (i->base);";
+            os << "base_traits::free_image (i->base);";
 
           os << "delete i;"
              << "}";
@@ -534,7 +534,8 @@ namespace relational
       traverse_view (type& c)
       {
         string const& type (class_fq_name (c));
-        string traits ("access::view_traits< " + type + " >");
+        string traits ("access::view_traits_impl< " + type + ", id_" +
+                       db.string () + " >");
 
         os << "// " << class_name (c) << endl
            << "//" << endl
@@ -561,7 +562,8 @@ namespace relational
       traverse_composite (type& c)
       {
         string const& type (class_fq_name (c));
-        string traits ("access::composite_value_traits< " + type + " >");
+        string traits ("access::composite_value_traits< " + type + ", id_" +
+                       db.string () + " >");
 
         os << "// " << class_name (c) << endl
            << "//" << endl

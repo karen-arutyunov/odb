@@ -64,9 +64,11 @@ namespace relational
         string const& type (class_fq_name (c));
 
         if (obj)
-          os << "object_traits< " << type << " >::image_type";
+          os << "object_traits_impl< " << type << ", id_" << db <<
+            " >::image_type";
         else
-          os << "composite_value_traits< " << type << " >::image_type";
+          os << "composite_value_traits< " << type << ", id_" << db <<
+            " >::image_type";
       }
 
     private:
@@ -117,7 +119,7 @@ namespace relational
         os << "{";
 
         if (poly_derived)
-          os << "object_traits<base_type>::image_type* base;"
+          os << "base_traits::image_type* base;"
              << endl;
 
         names (c);
@@ -173,7 +175,7 @@ namespace relational
         }
 
         os << (ptr_ ? "pointer_query_columns" : "query_columns") << "< " <<
-          class_fq_name (c) << ", ";
+          class_fq_name (c) << ", id_" << db << ", ";
 
         // If our base is polymorphic, then it has its own table/alias.
         //
@@ -213,7 +215,7 @@ namespace relational
             << "//" << endl
             << "typedef " <<
           (ptr_ ? "pointer_query_columns" : "query_columns") << "< " <<
-          class_fq_name (c) << ", ";
+          class_fq_name (c) << ", id_" << db << ", ";
 
         if (polymorphic (c))
           os << "typename A::base_traits";
@@ -246,7 +248,8 @@ namespace relational
         if (ptr_)
         {
           os << "template <typename A>" << endl
-             << "struct pointer_query_columns< " << type << ", A >";
+             << "struct pointer_query_columns< " << type << ", id_" << db <<
+            ", A >";
 
           // If we don't have pointers (in the whole hierarchy), then
           // pointer_query_columns and query_columns are the same.
@@ -254,7 +257,7 @@ namespace relational
           if (!has_a (c, test_pointer | include_base))
           {
             os << ":" << endl
-               << "  query_columns< " << type << ", A >"
+               << "  query_columns< " << type << ", id_" << db << ", A >"
                << "{"
                << "};";
           }
@@ -298,7 +301,8 @@ namespace relational
             // table alias (A) template argument.
             //
             os << "template <>" << endl
-               << "struct query_columns_base< " << type << " >"
+               << "struct query_columns_base< " << type << ", id_" <<
+              db << " >"
                << "{";
 
             instance<query_columns_base> t;
@@ -308,11 +312,11 @@ namespace relational
           }
 
           os << "template <typename A>" << endl
-             << "struct query_columns< " << type << ", A >";
+             << "struct query_columns< " << type << ", id_" << db << ", A >";
 
           if (has_ptr)
             os << ":" << endl
-               << "  query_columns_base< " << type << " >";
+               << "  query_columns_base< " << type << ", id_" << db << " >";
 
           {
             instance<query_columns_bases> b (ptr_, !has_ptr);
@@ -540,10 +544,11 @@ namespace relational
           string const& type (class_fq_name (b));
 
           if (object (b))
-            os << ": access::object_traits< " << type << " >::" << name;
+            os << ": access::object_traits_impl< " << type << ", id_" <<
+              db << " >::" << name;
           else
-            os << ": access::composite_value_traits< " << type << " >::" <<
-              public_name (m) << "_traits"; // No prefix_.
+            os << ": access::composite_value_traits< " << type << ", id_" <<
+              db << " >::" << public_name (m) << "_traits"; // No prefix_.
         }
 
         os << "{";
@@ -1012,24 +1017,38 @@ namespace relational
         os << "// " << class_name (c) << endl
            << "//" << endl;
 
+        // class_traits
+        //
         os << "template <>" << endl
            << "struct class_traits< " << type << " >"
            << "{"
            << "static const class_kind kind = class_view;"
            << "};";
 
+        // view_traits
+        //
         os << "template <>" << endl
            << "class access::view_traits< " << type << " >"
            << "{"
            << "public:" << endl;
 
-        view_public_extra_pre (c);
-
         // view_type & pointer_type
         //
         os << "typedef " << type << " view_type;"
-           << "typedef " << c.get<string> ("object-pointer") << " pointer_type;"
-           << endl;
+           << "typedef " << c.get<string> ("object-pointer") << " pointer_type;";
+
+        os << "};";
+
+        // view_traits_impl
+        //
+        os << "template <>" << endl
+           << "class access::view_traits_impl< " << type << ", id_" <<
+          db << " >:" << endl
+           << "  public access::view_traits< " << type << " >"
+           << "{"
+           << "public:" << endl;
+
+        view_public_extra_pre (c);
 
         // image_type
         //
@@ -1041,7 +1060,7 @@ namespace relational
 
         // query_base_type and query_columns (definition generated by class2).
         //
-        os << "typedef " << db << "::query query_base_type;"
+        os << "typedef " << db << "::query_base query_base_type;"
            << "struct query_columns";
 
         if (c.get<size_t> ("object-count") == 0)
@@ -1112,6 +1131,16 @@ namespace relational
         view_public_extra_post (c);
 
         os << "};";
+
+        // view_traits_impl< , id_default>
+        //
+        os << "template <>" << endl
+           << "class access::view_traits_impl< " << type << ", " <<
+          "id_default >:" << endl
+           << "  public access::view_traits_impl< " << type << ", " <<
+          "id_" << db << " >"
+           << "{"
+           << "};";
       }
 
       virtual void
@@ -1129,7 +1158,8 @@ namespace relational
            << "};";
 
         os << "template <>" << endl
-           << "class access::composite_value_traits< " << type << " >"
+           << "class access::composite_value_traits< " << type << ", " <<
+          "id_" << db << " >"
            << "{"
            << "public:" << endl;
 
@@ -1306,7 +1336,8 @@ namespace relational
             }
           }
 
-          os << "struct access::view_traits< " << type << " >::query_columns";
+          os << "struct access::view_traits_impl< " << type << ", id_" <<
+            db << " >::query_columns";
 
           if (obj_count > 1)
           {
@@ -1329,19 +1360,20 @@ namespace relational
                  << "//" << endl
                  << "typedef" << endl
                  << "odb::pointer_query_columns<" << endl
-                 << "  " << otype << "," << endl;
+                 << "  " << otype << "," << endl
+                 << "  id_" << db << "," << endl;
 
               if (alias && (polymorphic (o) ||
                             table.qualified () ||
                             i->alias != table.uname ()))
               {
                 string tag (escape (i->alias + "_alias_tag"));
-                os << "  odb::alias_traits< " << otype << ", " <<
-                  tag << " > >" << endl;
+                os << "  odb::alias_traits< " << otype << ", id_" << db <<
+                  ", " << tag << " > >" << endl;
               }
               else
-                os << "  odb::access::object_traits< " << otype <<
-                  " > >" << endl;
+                os << "  odb::access::object_traits_impl< " << otype <<
+                  ", id_" << db << " > >" << endl;
 
               os << oname << ";"
                  << endl;
@@ -1370,18 +1402,20 @@ namespace relational
 
             os << ":" << endl
                << "  odb::pointer_query_columns<" << endl
-               << "    " << otype << "," << endl;
+               << "    " << otype << "," << endl
+               << "    id_" << db << "," << endl;
 
             if (alias && (polymorphic (o) ||
                           table.qualified () ||
                           vo->alias != table.uname ()))
             {
               string tag (escape (vo->alias + "_alias_tag"));
-              os << "    odb::alias_traits< " << otype << ", " <<
-                tag << " > >";
+              os << "    odb::alias_traits< " << otype << ", id_" <<
+                db << ", " << tag << " > >";
             }
             else
-              os << "    odb::access::object_traits< " << otype << " > >";
+              os << "    odb::access::object_traits_impl< " << otype <<
+                ", id_" << db << " > >";
 
             os << "{"
                << "};";

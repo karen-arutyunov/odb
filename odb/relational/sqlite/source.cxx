@@ -117,7 +117,7 @@ namespace relational
         traverse_composite (member_info& mi)
         {
           os << "if (composite_value_traits< " << mi.fq_type () <<
-            " >::grow (" << endl
+            ", id_sqlite >::grow (" << endl
              << "i." << mi.var << "value, t + " << index_ << "UL))"
              << "{"
              << "grew = true;"

@@ -49,7 +49,8 @@ traverse_object (type& c)
   }
 
   string const& type (class_fq_name (c));
-  string traits ("access::object_traits< " + type + " >");
+  string traits ("access::object_traits_impl< " + type + ", id_" +
+                 db.string () + " >");
   column_count_type const& cc (column_count (c));
 
   os << "// " << class_name (c) << endl
@@ -187,7 +188,7 @@ traverse_object (type& c)
          << "//" << endl
          << "if (--d != 0)"
          << "{"
-         << "if (object_traits<base_type>::grow (*i.base, " <<
+         << "if (base_traits::grow (*i.base, " <<
         "t + " << cols << "UL" <<
         (poly_base != poly_root ? ", d" : "") << "))" << endl
          << "i.base->version++;"
@@ -268,7 +269,7 @@ traverse_object (type& c)
     os << "// " << class_name (*poly_base) << " base" << endl
        << "//" << endl
        << "if (sk == statement_select)" << endl
-       << "object_traits<base_type>::";
+       << "base_traits::";
 
     if (poly_base == poly_root)
       os << "bind (b + n, *i.base, sk);";
@@ -360,7 +361,7 @@ traverse_object (type& c)
     os << "// " << class_name (*poly_base) << " base" << endl
        << "//" << endl
        << "if (--d != 0)" << endl
-       << "object_traits<base_type>::init (o, *i.base, db" <<
+       << "base_traits::init (o, *i.base, db" <<
       (poly_base != poly_root ? ", d" : "") << ");"
        << endl;
   }
@@ -450,7 +451,8 @@ traverse_object (type& c)
        << "typeid (" << type << ")," << endl;
 
     if (poly_derived)
-      os << "&object_traits< " << class_fq_name (*poly_base) << " >::info";
+      os << "&object_traits_impl< " << class_fq_name (*poly_base) <<
+        ", id_" << db << " >::info";
     else
       os << "0";
 
@@ -463,7 +465,7 @@ traverse_object (type& c)
       os << "," << endl
          << strlit (string (n, 2, string::npos)) << "," << endl
          << "&odb::create_impl< " << type << " >," << endl
-         << "&odb::dispatch_impl< " << type << " >," << endl;
+         << "&odb::dispatch_impl< " << type << ", id_" << db << " >," << endl;
 
       if (poly_derived)
         os << "&statements_type::delayed_loader";
@@ -883,7 +885,7 @@ traverse_object (type& c)
   // hierarchy.
   //
   if (poly_derived)
-    os << "object_traits<base_type>::persist (db, obj, false, false);"
+    os << "base_traits::persist (db, obj, false, false);"
        << endl;
 
   os << "image_type& im (sts.image ());"
@@ -1135,7 +1137,7 @@ traverse_object (type& c)
         //
         if (!readonly_base)
         {
-          os << "object_traits<base_type>::update (db, obj, false, false);"
+          os << "base_traits::update (db, obj, false, false);"
              << endl;
         }
         else
@@ -1550,7 +1552,7 @@ traverse_object (type& c)
       // Call our base last (we erase polymorphic objects from base
       // to derived in order not to trigger cascading deletes).
       //
-      os << "object_traits<base_type>::erase (db, id, false, false);"
+      os << "base_traits::erase (db, id, false, false);"
          << endl;
     }
 
@@ -1787,7 +1789,7 @@ traverse_object (type& c)
         // Call our base last (we erase polymorphic objects from base
         // to derived in order not to trigger cascading deletes).
         //
-        os << "object_traits<base_type>::erase (db, obj, false, false);"
+        os << "base_traits::erase (db, obj, false, false);"
            << endl;
       }
 
@@ -2349,7 +2351,7 @@ traverse_object (type& c)
 
     if (poly_derived)
       os << "if (--d != 0)" << endl
-         << "object_traits<base_type>::load_ (sts.base_statements (), obj" <<
+         << "base_traits::load_ (sts.base_statements (), obj" <<
         (poly_base != poly_root ? ", d" : "") << ");"
          << endl;
 
@@ -2658,7 +2660,8 @@ void relational::source::class_::
 traverse_view (type& c)
 {
   string const& type (class_fq_name (c));
-  string traits ("access::view_traits< " + type + " >");
+  string traits ("access::view_traits_impl< " + type + ", id_" +
+                 db.string () + " >");
 
   os << "// " << class_name (c) << endl
      << "//" << endl

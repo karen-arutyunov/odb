@@ -202,7 +202,8 @@ namespace relational
     void member_image_type::
     traverse_composite (member_info& mi)
     {
-      type_ = "composite_value_traits< " + mi.fq_type () + " >::image_type";
+      type_ = "composite_value_traits< " + mi.fq_type () +
+        ", id_mssql >::image_type";
     }
 
     void member_image_type::

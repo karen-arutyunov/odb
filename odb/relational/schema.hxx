@@ -864,7 +864,8 @@ namespace relational
         ++end; // Transform the range from [begin, end] to [begin, end).
 
         string const& type (class_fq_name (c));
-        string traits ("access::object_traits< " + type + " >");
+        string traits ("access::object_traits_impl< " + type + ", id_" +
+                       db.string () + " >");
 
         // create_schema ()
         //
@@ -941,6 +942,7 @@ namespace relational
 
         os << "static const schema_catalog_entry" << endl
            << "schema_catalog_entry_" << flat_name (type) << "_ (" << endl
+           << "id_" << db << "," << endl
            << strlit (options.schema_name ()) << "," << endl
            << "&" << traits << "::create_schema);"
            << endl;

@@ -937,8 +937,9 @@ namespace relational
       virtual void
       traverse_composite (member_info& mi)
       {
-        os << "composite_value_traits< " << mi.fq_type () <<
-          " >::bind (b + n, " << arg << "." << mi.var << "value, sk);";
+        os << "composite_value_traits< " << mi.fq_type () << ", id_" <<
+          db << " >::bind (" << endl
+           << "b + n, " << arg << "." << mi.var << "value, sk);";
       }
 
     protected:
@@ -973,8 +974,12 @@ namespace relational
           os << "if (sk != statement_update)"
              << "{";
 
-        os << (obj ? "object" : "composite_value") << "_traits< " <<
-          class_fq_name (c) << " >::bind (b + n, i, sk);";
+        if (obj)
+          os << "object_traits_impl< ";
+        else
+          os << "composite_value_traits< ";
+
+        os << class_fq_name (c) << ", id_" << db << " >::bind (b + n, i, sk);";
 
         column_count_type const& cc (column_count (c));
 
@@ -1067,8 +1072,15 @@ namespace relational
         os << "// " << class_name (c) << " base" << endl
            << "//" << endl;
 
-        os << "if (" << (obj ? "object" : "composite_value") << "_traits< " <<
-          class_fq_name (c) << " >::grow (i, t + " << index_ << "UL))" << endl
+        os << "if (";
+
+        if (obj)
+          os << "object_traits_impl< ";
+        else
+          os << "composite_value_traits< ";
+
+        os << class_fq_name (c) << ", id_" << db << " >::grow (" << endl
+           << "i, t + " << index_ << "UL))" << endl
            << "grew = true;"
            << endl;
 
@@ -1232,10 +1244,11 @@ namespace relational
           if (null (mi.m, key_prefix_) &&
               mi.wrapper->template get<bool> ("wrapper-null-handler"))
           {
-            os << "if (wrapper_traits< " + wt + " >::get_null (" <<
+            os << "if (wrapper_traits< " << wt << " >::get_null (" <<
               member << "))" << endl
-               << "composite_value_traits< " + mi.fq_type () + " >::" <<
-              "set_null (i." << mi.var << "value, sk);"
+               << "composite_value_traits< " << mi.fq_type () << ", id_" <<
+              db << " >::set_null (" << endl
+               << "i." << mi.var << "value, sk);"
                << "else"
                << "{";
           }
@@ -1307,7 +1320,8 @@ namespace relational
         }
 
         if (comp)
-          traits = "composite_value_traits< " + type + " >";
+          traits = "composite_value_traits< " + type + ", id_" +
+            db.string () + " >";
         else
         {
           db_type_id = member_database_type_id_->database_type_id (mi.m);
@@ -1403,8 +1417,12 @@ namespace relational
         if (generate_grow)
           os << "if (";
 
-        os << (obj ? "object" : "composite_value") << "_traits< " <<
-          class_fq_name (c) << " >::init (i, o, sk)";
+        if (obj)
+          os << "object_traits_impl< ";
+        else
+          os << "composite_value_traits< ";
+
+        os << class_fq_name (c) << ", id_" << db << " >::init (i, o, sk)";
 
         if (generate_grow)
           os << ")" << endl
@@ -1571,9 +1589,10 @@ namespace relational
           if (null (mi.m, key_prefix_) &&
               mi.wrapper->template get<bool> ("wrapper-null-handler"))
           {
-            os << "if (composite_value_traits< " + mi.fq_type () + " >::" <<
-              "get_null (i." << mi.var << "value))" << endl
-               << "wrapper_traits< " + wt + " >::set_null (" << member + ");"
+            os << "if (composite_value_traits< " << mi.fq_type () <<
+              ", id_" << db << " >::get_null (" << endl
+               << "i." << mi.var << "value))" << endl
+               << "wrapper_traits< " << wt << " >::set_null (" << member + ");"
                << "else" << endl;
           }
 
@@ -1595,8 +1614,9 @@ namespace relational
           os << "if (";
 
           if (comp)
-            os << "composite_value_traits< " + type + " >::get_null (i." <<
-              mi.var << "value)";
+            os << "composite_value_traits< " << type << ", id_" << db <<
+              " >::get_null (" << endl
+               << "i." << mi.var << "value)";
           else
             get_null (mi);
 
@@ -1618,7 +1638,8 @@ namespace relational
           type = mi.fq_type ();
 
         if (comp)
-          traits = "composite_value_traits< " + type + " >";
+          traits = "composite_value_traits< " + type + ", id_" +
+            db.string () + " >";
         else
         {
           db_type_id = member_database_type_id_->database_type_id (mi.m);
@@ -1730,9 +1751,14 @@ namespace relational
           return;
 
         os << "// " << class_name (c) << " base" << endl
-           << "//" << endl
-           << (obj ? "object" : "composite_value") << "_traits< " <<
-          class_fq_name (c) << " >::init (o, i, db);"
+           << "//" << endl;
+
+        if (obj)
+          os << "object_traits_impl< ";
+        else
+          os << "composite_value_traits< ";
+
+        os << class_fq_name (c) << ", id_" << db << " >::init (o, i, db);"
            << endl;
       }
     };
@@ -1750,12 +1776,11 @@ namespace relational
             false),
             c_ (c)
       {
-        string const& type (class_fq_name (c));
+        scope_ = object (c)
+          ? "access::object_traits_impl< "
+          : "access::composite_value_traits< ";
 
-        if (object (c))
-          scope_ = "access::object_traits< " + type + " >";
-        else
-          scope_ = "access::composite_value_traits< " + type + " >";
+        scope_ += class_fq_name (c) + ", id_" + db.string () + " >";
       }
 
       // Unless the database system can execute several interleaving
@@ -3469,7 +3494,8 @@ namespace relational
       traverse_composite (type& c)
       {
         string const& type (class_fq_name (c));
-        string traits ("access::composite_value_traits< " + type + " >");
+        string traits ("access::composite_value_traits< " + type + ", id_" +
+                       db.string () + " >");
 
         os << "// " << class_name (c) << endl
            << "//" << endl

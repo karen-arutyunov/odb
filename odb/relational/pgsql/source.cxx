@@ -289,7 +289,7 @@ namespace relational
         traverse_composite (member_info& mi)
         {
           os << "if (composite_value_traits< " << mi.fq_type () <<
-            " >::grow (" << endl
+            ", id_pgsql >::grow (" << endl
              << "i." << mi.var << "value, t + " << index_ << "UL))"
              << "{"
              << "grew = true;"
@@ -636,7 +636,7 @@ namespace relational
 
           string const& n (class_fq_name (c));
           string const& fn (flat_name (n));
-          string traits ("access::object_traits< " + n + " >");
+          string traits ("access::object_traits_impl< " + n + ", id_pgsql >");
 
           os << "const char " << traits << "::" << endl
              << "persist_statement_name[] = " << strlit (fn + "_persist") << ";"
@@ -786,7 +786,7 @@ namespace relational
         {
           string const& n (class_fq_name (c));
           string const& fn (flat_name (n));
-          string traits ("access::view_traits< " + n + " >");
+          string traits ("access::view_traits_impl< " + n + ", id_pgsql >");
 
           os << "const char " << traits << "::" << endl
              << "query_statement_name[] = " << strlit (fn + "_query") << ";"

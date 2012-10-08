@@ -88,8 +88,8 @@ namespace relational
   {
     string const& fq_name (class_fq_name (c));
     string guard (
-      make_guard (
-        "ODB_ALIAS_TRAITS_" + alias + "_FOR_" + flat_name (fq_name)));
+      make_guard ("ODB_" + string (db.string ()) + "_ALIAS_TRAITS_" +
+                  alias + "_FOR_" + flat_name (fq_name)));
 
     if (specs_.find (guard) != specs_.end ())
       return;
@@ -107,19 +107,20 @@ namespace relational
        << "#define " << guard << endl;
 
     os << "template <bool d>" << endl
-       << "struct alias_traits< " << fq_name << ", " << tag << ", d >"
+       << "struct alias_traits< " << fq_name << ", id_" << db << ", " <<
+      tag << ", d >"
        << "{"
        << "static const char table_name[];";
 
     if (poly_derived)
       os << "typedef alias_traits< " << class_fq_name (*poly_base) << ", " <<
-        tag << " > base_traits;";
+        "id_" << db << ", " << tag << " > base_traits;";
 
     os << "};";
 
     os << "template <bool d>" << endl
-       << "const char alias_traits< " << fq_name << ", " << tag <<
-      ", d >::" << endl
+       << "const char alias_traits< " << fq_name << ", id_" << db << ", " <<
+      tag << ", d >::" << endl
        << "table_name[] = ";
 
     if (poly_root != 0)
@@ -146,7 +147,8 @@ namespace relational
   query_columns_base (semantics::class_& c) //@@ context::{cur,top}_object
       : decl_ (false)
   {
-    scope_ = "query_columns_base< " + class_fq_name (c) + " >";
+    scope_ = "query_columns_base< " + class_fq_name (c) + ", id_" +
+      db.string () + " >";
   }
 
   void query_columns_base::
@@ -244,7 +246,8 @@ namespace relational
       string const& fq_name (class_fq_name (c));
 
       os << "typedef" << endl
-         << "odb::alias_traits< " << fq_name << ", " << tag << " >" << endl
+         << "odb::alias_traits< " << fq_name << ", id_" << db << ", " <<
+        tag << " >" << endl
          << name << "_alias_;"
          << endl;
 
@@ -254,6 +257,7 @@ namespace relational
            << "odb::query_pointer<" << endl
            << "  odb::pointer_query_columns<" << endl
            << "    " << fq_name << "," << endl
+           << "    id_" << db << "," << endl
            << "    " << name << "_alias_ > >" << endl
            << name << "_type_ ;"
            << endl
@@ -284,7 +288,7 @@ namespace relational
       : ptr_ (ptr), decl_ (false), in_ptr_ (false)
   {
     scope_ = ptr ? "pointer_query_columns" : "query_columns";
-    scope_ += "< " + class_fq_name (c) + ", A >";
+    scope_ += "< " + class_fq_name (c) + ", id_" + db.string () + ", A >";
   }
 
   void query_columns::
@@ -474,6 +478,7 @@ namespace relational
              << "odb::query_pointer<" << endl
              << "  odb::pointer_query_columns<" << endl
              << "    " << class_fq_name (c) << "," << endl
+             << "    id_" << db << "," << endl
              << "    " << name << "_alias_ > >" << endl
              << name << "_pointer_type_;"
              << endl;
@@ -519,6 +524,7 @@ namespace relational
              << "odb::query_pointer<" << endl
              << "  odb::pointer_query_columns<" << endl
              << "    " << class_fq_name (c) << "," << endl
+             << "    id_" << db << "," << endl
              << "    " << name << "_alias_ > >" << endl
              << name << "_pointer_type_;"
              << endl;
