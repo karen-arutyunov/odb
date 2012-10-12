@@ -288,6 +288,20 @@ namespace odb
       result<T>
       query (const sqlite::query<T>&);
 
+      // Query preparation.
+      //
+      template <typename T>
+      prepared_query<T>
+      prepare_query (const char* name, const char*);
+
+      template <typename T>
+      prepared_query<T>
+      prepare_query (const char* name, const std::string&);
+
+      template <typename T>
+      prepared_query<T>
+      prepare_query (const char* name, const sqlite::query<T>&);
+
       // Transactions.
       //
     public:

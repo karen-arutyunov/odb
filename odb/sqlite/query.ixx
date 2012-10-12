@@ -18,7 +18,7 @@ namespace odb
       return parameters_->binding ();
     }
 
-    inline details::shared_ptr<query_params> query_base::
+    inline const details::shared_ptr<query_params>& query_base::
     parameters () const
     {
       return parameters_;

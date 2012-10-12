@@ -96,7 +96,6 @@ namespace odb
     init ()
     {
       bool inc_ver (false);
-      sqlite::bind* b (&bind_[0]);
 
       for (size_t i (0); i < params_.size (); ++i)
       {
@@ -106,7 +105,7 @@ namespace odb
         {
           if (p.init ())
           {
-            p.bind (b + i);
+            p.bind (&bind_[i]);
             inc_ver = true;
           }
         }

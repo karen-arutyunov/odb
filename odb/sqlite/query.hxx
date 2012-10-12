@@ -213,7 +213,7 @@ namespace odb
       binding&
       parameters_binding () const;
 
-      details::shared_ptr<query_params>
+      const details::shared_ptr<query_params>&
       parameters () const;
 
     public:

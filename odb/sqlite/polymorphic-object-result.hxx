@@ -47,9 +47,10 @@ namespace odb
       virtual
       ~polymorphic_object_result_impl ();
 
-      polymorphic_object_result_impl (const query_base&,
-                                      details::shared_ptr<select_statement>,
-                                      statements_type&);
+      polymorphic_object_result_impl (
+        const query_base&,
+        const details::shared_ptr<select_statement>&,
+        statements_type&);
 
       virtual void
       load (object_type*, bool fetch);

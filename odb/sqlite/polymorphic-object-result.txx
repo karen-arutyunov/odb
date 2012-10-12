@@ -23,9 +23,10 @@ namespace odb
 
     template <typename T>
     polymorphic_object_result_impl<T>::
-    polymorphic_object_result_impl (const query_base& q,
-                                    details::shared_ptr<select_statement> st,
-                                    statements_type& sts)
+    polymorphic_object_result_impl (
+      const query_base& q,
+      const details::shared_ptr<select_statement>& st,
+      statements_type& sts)
         : base_type (sts.connection ().database ()),
           result_impl_base (q, st),
           statements_ (sts)

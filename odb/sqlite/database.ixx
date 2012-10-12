@@ -2,6 +2,8 @@
 // copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
+#include <odb/sqlite/transaction.hxx>
+
 namespace odb
 {
   namespace sqlite
@@ -392,6 +394,30 @@ namespace odb
       // here; object_traits::query () does this.
       //
       return query_<T, id_sqlite>::call (*this, q);
+    }
+
+    template <typename T>
+    inline prepared_query<T> database::
+    prepare_query (const char* n, const char* q)
+    {
+      return prepare_query<T> (n, sqlite::query<T> (q));
+    }
+
+    template <typename T>
+    inline prepared_query<T> database::
+    prepare_query (const char* n, const std::string& q)
+    {
+      return prepare_query<T> (n, sqlite::query<T> (q));
+    }
+
+    template <typename T>
+    inline prepared_query<T> database::
+    prepare_query (const char* n, const sqlite::query<T>& q)
+    {
+      // Throws if not in transaction.
+      //
+      sqlite::connection& c (transaction::current ().connection ());
+      return c.prepare_query (n, q);
     }
   }
 }

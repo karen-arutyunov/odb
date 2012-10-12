@@ -11,7 +11,7 @@ namespace odb
   {
     result_impl_base::
     result_impl_base (const query_base& q,
-                      details::shared_ptr<select_statement> s)
+                      const details::shared_ptr<select_statement>& s)
         : params_ (q.parameters ()), statement_ (s)
     {
     }

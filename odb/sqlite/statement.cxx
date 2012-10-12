@@ -29,6 +29,20 @@ namespace odb
     }
 
     void statement::
+    cached (bool cached)
+    {
+      assert (cached);
+
+      if (!cached_)
+      {
+        if (!active_)
+          list_remove ();
+
+        cached_ = true;
+      }
+    }
+
+    void statement::
     init (const char* text, std::size_t text_size)
     {
       int e;
@@ -46,9 +60,7 @@ namespace odb
         translate_error (e, conn_);
 
       stmt_.reset (stmt);
-
       active_ = false;
-      cached_ = false;
 
       prev_ = 0;
       next_ = this;

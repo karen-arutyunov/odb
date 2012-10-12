@@ -23,7 +23,7 @@ namespace odb
     {
     public:
       result_impl_base (const query_base&,
-                        details::shared_ptr<select_statement>);
+                        const details::shared_ptr<select_statement>&);
 
     protected:
       // We need to hold on to the query parameters because SQLite uses

@@ -8,11 +8,9 @@
 #include <odb/pre.hxx>
 
 #include <odb/prepared-query.hxx>
-#include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/query.hxx>
-#include <odb/sqlite/statement.hxx>
 
 #include <odb/sqlite/details/export.hxx>
 
@@ -22,8 +20,10 @@ namespace odb
   {
     struct LIBODB_SQLITE_EXPORT prepared_query_impl: odb::prepared_query_impl
     {
+      virtual
+      ~prepared_query_impl ();
+
       sqlite::query_base query;
-      details::shared_ptr<select_statement> stmt;
     };
   }
 }

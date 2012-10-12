@@ -13,6 +13,7 @@
 #include <odb/sqlite/transaction.hxx>
 #include <odb/sqlite/statement.hxx>
 #include <odb/sqlite/statement-cache.hxx>
+#include <odb/sqlite/prepared-query.hxx>
 #include <odb/sqlite/error.hxx>
 #include <odb/sqlite/exceptions.hxx> // deadlock
 
@@ -101,6 +102,9 @@ namespace odb
     connection::
     ~connection ()
     {
+      // Destroy prepared query statements before freeing the connections.
+      //
+      prepared_map_.clear ();
     }
 
     transaction_impl* connection::

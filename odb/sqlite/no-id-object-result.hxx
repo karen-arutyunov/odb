@@ -41,7 +41,7 @@ namespace odb
       ~no_id_object_result_impl ();
 
       no_id_object_result_impl (const query_base&,
-                                details::shared_ptr<select_statement>,
+                                const details::shared_ptr<select_statement>&,
                                 statements_type&);
 
       virtual void

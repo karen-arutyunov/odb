@@ -53,28 +53,11 @@ namespace odb
         return conn_;
       }
 
-      // Cached state (public part).
-      //
     public:
-      bool
-      cached () const
-      {
-        return cached_;
-      }
+      using odb::statement::cached;
 
-      void
-      cached (bool cached)
-      {
-        assert (cached);
-
-        if (!cached_)
-        {
-          if (!active_)
-            list_remove ();
-
-          cached_ = true;
-        }
-      }
+      virtual void
+      cached (bool);
 
     protected:
       statement (connection_type& conn, const std::string& text)
@@ -154,11 +137,10 @@ namespace odb
     protected:
       friend class sqlite::connection;
 
-      connection_type& conn_; // Cached static type.
+      connection_type& conn_;
       auto_handle<sqlite3_stmt> stmt_;
 
       bool active_;
-      bool cached_;
 
     private:
       void
