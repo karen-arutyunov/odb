@@ -794,14 +794,19 @@ namespace relational
         }
 
         virtual void
-        object_query_statement_ctor_args (type&)
+        object_query_statement_ctor_args (type&, string const& q, bool prep)
         {
-          os << "sts.connection ()," << endl
-             << "query_statement_name," << endl
-             << "query_statement + q.clause ()," << endl
-             << "q.parameter_types ()," << endl
-             << "q.parameter_count ()," << endl
-             << "q.parameters_binding ()," << endl
+          os << "sts.connection ()," << endl;
+
+          if (prep)
+            os << "n," << endl;
+          else
+            os << "query_statement_name," << endl;
+
+          os << "query_statement + " << q << ".clause ()," << endl
+             << q << ".parameter_types ()," << endl
+             << q << ".parameter_count ()," << endl
+             << q << ".parameters_binding ()," << endl
              << "imb";
         }
 
@@ -817,14 +822,19 @@ namespace relational
         }
 
         virtual void
-        view_query_statement_ctor_args (type&)
+        view_query_statement_ctor_args (type&, string const& q, bool prep)
         {
-          os << "sts.connection ()," << endl
-             << "query_statement_name," << endl
-             << "qs.clause ()," << endl
-             << "qs.parameter_types ()," << endl
-             << "qs.parameter_count ()," << endl
-             << "qs.parameters_binding ()," << endl
+          os << "sts.connection ()," << endl;
+
+          if (prep)
+            os << "n," << endl;
+          else
+            os << "query_statement_name," << endl;
+
+          os << q << ".clause ()," << endl
+             << q << ".parameter_types ()," << endl
+             << q << ".parameter_count ()," << endl
+             << q << ".parameters_binding ()," << endl
              << "imb";
         }
 

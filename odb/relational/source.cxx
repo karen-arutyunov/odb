@@ -2625,7 +2625,7 @@ traverse_object (type& c)
       os << "q.init_parameters ();"
          << "shared_ptr<select_statement> st (" << endl
          << "new (shared) select_statement (" << endl;
-      object_query_statement_ctor_args (c, "q");
+      object_query_statement_ctor_args (c, "q", false);
       os << "));" << endl
          << "st->execute ();";
 
@@ -2638,30 +2638,30 @@ traverse_object (type& c)
          << endl
          << "return result<object_type> (r);"
          << "}";
-
-      // erase_query
-      //
-      os << "unsigned long long " << traits << "::" << endl
-         << "erase_query (database&, const query_base_type& q)"
-         << "{"
-         << "using namespace " << db << ";"
-         << endl
-         << db << "::connection& conn (" << endl
-         << db << "::transaction::current ().connection ());"
-         << endl
-         << "q.init_parameters ();"
-         << "delete_statement st (" << endl;
-      object_erase_query_statement_ctor_args (c, "q");
-      os << ");"
-         << endl
-         << "return st.execute ();"
-         << "}";
     }
+
+    // erase_query
+    //
+    os << "unsigned long long " << traits << "::" << endl
+       << "erase_query (database&, const query_base_type& q)"
+       << "{"
+       << "using namespace " << db << ";"
+       << endl
+       << db << "::connection& conn (" << endl
+       << db << "::transaction::current ().connection ());"
+       << endl
+       << "q.init_parameters ();"
+       << "delete_statement st (" << endl;
+    object_erase_query_statement_ctor_args (c);
+    os << ");"
+       << endl
+       << "return st.execute ();"
+       << "}";
 
     // Prepared. Very similar to unprepared but has some annoying variations
     // that make it difficult to factor out something common.
     //
-    if (!options.omit_prepared ())
+    if (options.generate_prepared ())
     {
       os << "odb::details::shared_ptr<prepared_query_impl>" << endl
          << traits << "::" << endl
@@ -2715,7 +2715,7 @@ traverse_object (type& c)
          << "r->query = q;"
          << "r->stmt.reset (" << endl
          << "new (shared) select_statement (" << endl;
-      object_query_statement_ctor_args (c, "r->query");
+      object_query_statement_ctor_args (c, "r->query", true);
       os << "));"
          << endl
          << "return r;"
@@ -2731,7 +2731,9 @@ traverse_object (type& c)
          << endl
          << db << "::prepared_query_impl& pq (" << endl
          << "static_cast<" << db << "::prepared_query_impl&> (q));"
-         << "shared_ptr<select_statement>& st (pq.stmt);"
+         << "shared_ptr<select_statement> st (" << endl
+         << "odb::details::inc_ref (" << endl
+         << "static_cast<select_statement*> (pq.stmt.get ())));"
          << endl
          << db << "::connection& conn (" << endl
          << db << "::transaction::current ().connection ());"
@@ -2784,7 +2786,6 @@ traverse_object (type& c)
          << "pq.query, st, sts));"
          << "}";
     }
-
   }
 
   if (embedded_schema)
@@ -3529,7 +3530,7 @@ traverse_view (type& c)
        << "}";
   }
 
-  // query ()
+  // Unprepared.
   //
   if (!options.omit_unprepared ())
   {
@@ -3544,7 +3545,7 @@ traverse_view (type& c)
        << db << "::connection& conn (" << endl
        << db << "::transaction::current ().connection ());"
        << endl
-       << "view_statements< view_type >& sts (" << endl
+       << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_view<view_type> ());"
        << endl
        << "image_type& im (sts.image ());"
@@ -3565,9 +3566,7 @@ traverse_view (type& c)
     os << "qs.init_parameters ();"
        << "shared_ptr<select_statement> st (" << endl
        << "new (shared) select_statement (" << endl;
-
-    view_query_statement_ctor_args (c);
-
+    view_query_statement_ctor_args (c, "qs", false);
     os << "));" << endl
        << "st->execute ();";
 
@@ -3579,6 +3578,107 @@ traverse_view (type& c)
        << "qs, st, sts));"
        << endl
        << "return result<view_type> (r);"
+       << "}";
+  }
+
+  // Prepared. Very similar to unprepared but has some annoying variations
+  // that make it difficult to factor out something common.
+  //
+  if (options.generate_prepared ())
+  {
+    os << "odb::details::shared_ptr<prepared_query_impl>" << endl
+       << traits << "::" << endl
+       << "prepare_query (connection& c, const char* n, " <<
+      "const query_base_type& q)"
+       << "{"
+       << "using namespace " << db << ";"
+       << "using odb::details::shared;"
+       << "using odb::details::shared_ptr;"
+       << endl
+       << db << "::connection& conn (" << endl
+       << "static_cast<" << db << "::connection&> (c));"
+       << endl
+       << "statements_type& sts (" << endl
+       << "conn.statement_cache ().find_view<view_type> ());"
+       << endl;
+
+    // Rebind the image if necessary.
+    //
+    os << "image_type& im (sts.image ());"
+       << "binding& imb (sts.image_binding ());"
+       << endl
+       << "if (im.version != sts.image_version () || imb.version == 0)"
+       << "{"
+       << "bind (imb.bind, im);"
+       << "sts.image_version (im.version);"
+       << "imb.version++;"
+       << "}";
+
+    os << "shared_ptr<" << db << "::prepared_query_impl> r (" << endl
+       << "new (shared) " << db << "::prepared_query_impl);"
+       << "r->name = n;"
+       << "r->execute = &execute_query;";
+
+    if (vq.kind == view_query::runtime)
+      os << "r->query = q;";
+    else
+      os << "r->query = query_statement (q);";
+
+    os << "r->stmt.reset (" << endl
+       << "new (shared) select_statement (" << endl;
+    view_query_statement_ctor_args (c, "r->query", true);
+    os << "));"
+       << endl
+       << "return r;"
+       << "}";
+
+    os << "odb::details::shared_ptr<result_impl>" << endl
+       << traits << "::" << endl
+       << "execute_query (prepared_query_impl& q)"
+       << "{"
+       << "using namespace " << db << ";"
+       << "using odb::details::shared;"
+       << "using odb::details::shared_ptr;"
+       << endl
+       << db << "::prepared_query_impl& pq (" << endl
+       << "static_cast<" << db << "::prepared_query_impl&> (q));"
+       << "shared_ptr<select_statement> st (" << endl
+       << "odb::details::inc_ref (" << endl
+       << "static_cast<select_statement*> (pq.stmt.get ())));"
+       << endl
+       << db << "::connection& conn (" << endl
+       << db << "::transaction::current ().connection ());"
+       << endl
+       << "// The connection used by the current transaction and the" << endl
+       << "// one used to prepare this statement must be the same." << endl
+       << "//" << endl
+       << "assert (&conn == &st->connection ());"
+       << endl
+       << "statements_type& sts (" << endl
+       << "conn.statement_cache ().find_view<view_type> ());"
+       << endl;
+
+    // Rebind the image if necessary.
+    //
+    os << "image_type& im (sts.image ());"
+       << "binding& imb (sts.image_binding ());"
+       << endl
+       << "if (im.version != sts.image_version () || imb.version == 0)"
+       << "{"
+       << "bind (imb.bind, im);"
+       << "sts.image_version (im.version);"
+       << "imb.version++;"
+       << "}";
+
+    os << "pq.query.init_parameters ();"
+       << "st->execute ();";
+
+    post_query_ (c, false);
+
+    os << endl
+       << "return shared_ptr<result_impl> (" << endl
+       << "new (shared) " << db << "::view_result_impl<view_type> (" << endl
+       << "pq.query, st, sts));"
        << "}";
   }
 }

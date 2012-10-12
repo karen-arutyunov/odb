@@ -3425,7 +3425,9 @@ namespace relational
       }
 
       virtual void
-      object_query_statement_ctor_args (type&, std::string const& q)
+      object_query_statement_ctor_args (type&,
+                                        std::string const& q,
+                                        bool /*prepared*/)
       {
         os << "conn," << endl
            << "query_statement + " << q << ".clause ()," << endl
@@ -3434,11 +3436,11 @@ namespace relational
       }
 
       virtual void
-      object_erase_query_statement_ctor_args (type&, std::string const& q)
+      object_erase_query_statement_ctor_args (type&)
       {
         os << "conn," << endl
-           << "erase_query_statement + " << q << ".clause ()," << endl
-           << q << ".parameters_binding ()";
+           << "erase_query_statement + q.clause ()," << endl
+           << "q.parameters_binding ()";
       }
 
       virtual void
@@ -3454,11 +3456,13 @@ namespace relational
       }
 
       virtual void
-      view_query_statement_ctor_args (type&)
+      view_query_statement_ctor_args (type&,
+                                      string const& q,
+                                      bool /*prepared*/)
       {
         os << "conn," << endl
-           << "qs.clause ()," << endl
-           << "qs.parameters_binding ()," << endl
+           << q << ".clause ()," << endl
+           << q << ".parameters_binding ()," << endl
            << "imb";
       }
 
@@ -3689,7 +3693,7 @@ namespace relational
 
         if (options.generate_query ())
         {
-          if (!options.omit_prepared ())
+          if (options.generate_prepared ())
             os << "#include <odb/" << db << "/prepared-query.hxx>" << endl;
 
           if (features.simple_object)

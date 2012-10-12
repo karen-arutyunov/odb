@@ -58,9 +58,9 @@ class options
      and can only load objects via their ids."
   };
 
-  bool --omit-prepared
+  bool --generate-prepared
   {
-    "Omit prepared query execution support code."
+    "Generate prepared query execution support code."
   };
 
   bool --omit-unprepared

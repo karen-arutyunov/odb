@@ -60,7 +60,7 @@ namespace header
 
     if (ctx.options.generate_query ())
     {
-      if (!ctx.options.omit_prepared ())
+      if (ctx.options.generate_prepared ())
         os << "#include <odb/prepared-query.hxx>" << endl;
 
       os << "#include <odb/result.hxx>" << endl;
