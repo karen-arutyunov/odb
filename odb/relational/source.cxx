@@ -2709,7 +2709,7 @@ traverse_object (type& c)
       }
 
       os << "shared_ptr<" << db << "::prepared_query_impl> r (" << endl
-         << "new (shared) " << db << "::prepared_query_impl);"
+         << "new (shared) " << db << "::prepared_query_impl (conn));"
          << "r->name = n;"
          << "r->execute = &execute_query;"
          << "r->query = q;"
@@ -3615,7 +3615,7 @@ traverse_view (type& c)
        << "}";
 
     os << "shared_ptr<" << db << "::prepared_query_impl> r (" << endl
-       << "new (shared) " << db << "::prepared_query_impl);"
+       << "new (shared) " << db << "::prepared_query_impl (conn));"
        << "r->name = n;"
        << "r->execute = &execute_query;";
 

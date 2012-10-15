@@ -1,3 +1,9 @@
+Version 2.2.0
+
+ * Support for early connection release. Now the database connection is
+   released when commit()/rollback() is called rather than when the
+   transaction instance goes out of scope.
+
 Version 2.1.0
 
  * The ODB compiler is now capable of automatically discovering accessor and
