@@ -88,8 +88,6 @@ namespace odb
               conn_,
               object_traits::persist_statement,
               insert_image_binding_));
-
-          persist_->cached (true);
         }
 
         return *persist_;

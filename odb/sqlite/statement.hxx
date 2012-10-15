@@ -53,12 +53,6 @@ namespace odb
         return conn_;
       }
 
-    public:
-      using odb::statement::cached;
-
-      virtual void
-      cached (bool);
-
     protected:
       statement (connection_type& conn, const std::string& text)
         : conn_ (conn)
@@ -118,21 +112,11 @@ namespace odb
       {
         if (active_)
         {
-          if (stmt_ != 0)
-            sqlite3_reset (stmt_);
-
-          if (cached_)
-            list_remove ();
-
+          sqlite3_reset (stmt_);
+          list_remove ();
           active_ = false;
         }
       }
-
-      // Cached state (protected part).
-      //
-    protected:
-      void
-      finilize ();
 
     protected:
       friend class sqlite::connection;
@@ -146,38 +130,29 @@ namespace odb
       void
       init (const char* text, std::size_t text_size);
 
-      // Doubly-linked list of active/uncached statements.
+      // Doubly-linked list of active statements.
       //
     private:
-      void list_add ()
+      void
+      list_add ()
       {
-        if (next_ == this)
-        {
-          next_ = conn_.statements_;
-          conn_.statements_ = this;
+        next_ = conn_.statements_;
+        conn_.statements_ = this;
 
-          if (next_ != 0)
-            next_->prev_ = this;
-        }
+        if (next_ != 0)
+          next_->prev_ = this;
       }
 
-      void list_remove ()
+      void
+      list_remove ()
       {
-        if (next_ != this)
-        {
-          if (prev_ == 0)
-            conn_.statements_ = next_;
-          else
-          {
-            prev_->next_ = next_;
-          }
+        (prev_ == 0 ? conn_.statements_ : prev_->next_) = next_;
 
-          if (next_ != 0)
-            next_->prev_ = prev_;
+        if (next_ != 0)
+          next_->prev_ = prev_;
 
-          prev_ = 0;
-          next_ = this;
-        }
+        prev_ = 0;
+        next_ = this;
       }
 
       // prev_ == 0 means we are the first element.

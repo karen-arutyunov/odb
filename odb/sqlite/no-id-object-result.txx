@@ -20,11 +20,25 @@ namespace odb
     }
 
     template <typename T>
+    void no_id_object_result_impl<T>::
+    invalidate ()
+    {
+      if (!this->end_)
+      {
+        statement_->free_result ();
+        this->end_ = true;
+      }
+
+      params_.reset ();
+      statement_.reset ();
+    }
+
+    template <typename T>
     no_id_object_result_impl<T>::
     no_id_object_result_impl (const query_base& q,
                               const details::shared_ptr<select_statement>& s,
                               statements_type& sts)
-        : base_type (sts.connection ().database ()),
+        : base_type (sts.connection ()),
           result_impl_base (q, s),
           statements_ (sts)
     {
@@ -64,11 +78,9 @@ namespace odb
         }
       }
 
-      odb::database& db (this->database ());
-
-      object_traits::callback (db, obj, callback_event::pre_load);
-      object_traits::init (obj, im, &db);
-      object_traits::callback (db, obj, callback_event::post_load);
+      object_traits::callback (this->db_, obj, callback_event::pre_load);
+      object_traits::init (obj, im, &this->db_);
+      object_traits::callback (this->db_, obj, callback_event::post_load);
     }
 
     template <typename T>

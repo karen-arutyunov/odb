@@ -107,8 +107,6 @@ namespace odb
               object_traits::find_discriminator_statement,
               discriminator_id_image_binding_,
               discriminator_image_binding_));
-
-          find_discriminator_->cached (true);
         }
 
         return *find_discriminator_;
@@ -296,8 +294,6 @@ namespace odb
               conn_,
               object_traits::persist_statement,
               insert_image_binding_));
-
-          persist_->cached (true);
         }
 
         return *persist_;
@@ -317,8 +313,6 @@ namespace odb
               object_traits::find_statements[i],
               root_statements_.id_image_binding (),
               select_image_bindings_[i]));
-
-          p->cached (true);
         }
 
         return *p;
@@ -334,8 +328,6 @@ namespace odb
               conn_,
               object_traits::update_statement,
               update_image_binding_));
-
-          update_->cached (true);
         }
 
         return *update_;
@@ -351,8 +343,6 @@ namespace odb
               conn_,
               object_traits::erase_statement,
               root_statements_.id_image_binding ()));
-
-          erase_->cached (true);
         }
 
         return *erase_;

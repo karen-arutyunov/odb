@@ -123,7 +123,7 @@ namespace odb
       wait ();
 
     public:
-      // Reset active and finalize uncached statements.
+      // Reset active statements.
       //
       void
       clear ();
@@ -159,7 +159,10 @@ namespace odb
       friend void
       connection_unlock_callback (void**, int);
 
-      // Linked list of active and uncached statements currently associated
+    private:
+      friend class transaction_impl; // invalidate_results()
+
+      // Linked list of active statements currently associated
       // with this connection.
       //
     private:

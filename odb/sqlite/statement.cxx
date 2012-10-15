@@ -24,22 +24,18 @@ namespace odb
     statement::
     ~statement ()
     {
-      if (stmt_ != 0)
-        finilize ();
-    }
-
-    void statement::
-    cached (bool cached)
-    {
-      assert (cached);
-
-      if (!cached_)
       {
-        if (!active_)
-          list_remove ();
-
-        cached_ = true;
+        odb::tracer* t;
+        if ((t = conn_.transaction_tracer ()) ||
+            (t = conn_.tracer ()) ||
+            (t = conn_.database ().tracer ()))
+          t->deallocate (conn_, *this);
       }
+
+      if (next_ != this)
+        list_remove ();
+
+      stmt_.reset ();
     }
 
     void statement::
@@ -65,8 +61,6 @@ namespace odb
       prev_ = 0;
       next_ = this;
 
-      list_add (); // Add to the list because we are uncached.
-
       {
         odb::tracer* t;
         if ((t = conn_.transaction_tracer ()) ||
@@ -74,21 +68,6 @@ namespace odb
             (t = conn_.database ().tracer ()))
           t->prepare (conn_, *this);
       }
-    }
-
-    void statement::
-    finilize ()
-    {
-      {
-        odb::tracer* t;
-        if ((t = conn_.transaction_tracer ()) ||
-            (t = conn_.tracer ()) ||
-            (t = conn_.database ().tracer ()))
-          t->deallocate (conn_, *this);
-      }
-
-      list_remove ();
-      stmt_.reset ();
     }
 
     const char* statement::

@@ -67,10 +67,15 @@ namespace odb
     void transaction_impl::
     commit ()
     {
-      // Reset active and finilize uncached statements. Active statements
-      // will prevent COMMIT from completing (write statements) or releasing
-      // the locks (read statements). Finilization of uncached statements is
-      // needed to release the connection.
+      // Invalidate query results.
+      //
+      connection_->invalidate_results ();
+
+      // Reset active statements. Active statements will prevent COMMIT
+      // from completing (write statements) or releasing the locks (read
+      // statements). Normally, a statement is automatically reset on
+      // completion, however, if an exception is thrown, that may not
+      // happen.
       //
       connection_->clear ();
 
@@ -84,9 +89,15 @@ namespace odb
     void transaction_impl::
     rollback ()
     {
-      // Reset active and finilize uncached statements. Active statements
-      // will prevent ROLLBACK from completing. Finilization of uncached
-      // statements is needed to release the connection.
+      // Invalidate query results.
+      //
+      connection_->invalidate_results ();
+
+      // Reset active statements. Active statements will prevent ROLLBACK
+      // from completing (write statements) or releasing the locks (read
+      // statements). Normally, a statement is automatically reset on
+      // completion, however, if an exception is thrown, that may not
+      // happen.
       //
       connection_->clear ();
 

@@ -68,6 +68,7 @@ namespace odb
     {
       c->factory_ = 0;
       connection_.reset (inc_ref (c));
+      connection_->recycle ();
       mutex_.unlock ();
       return false;
     }
@@ -224,7 +225,10 @@ namespace odb
       in_use_--;
 
       if (keep)
+      {
         connections_.push_back (pooled_connection_ptr (inc_ref (c)));
+        connections_.back ()->recycle ();
+      }
 
       if (waiters_ != 0)
         cond_.signal ();

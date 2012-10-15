@@ -104,7 +104,8 @@ namespace odb
     {
       // Destroy prepared query statements before freeing the connections.
       //
-      prepared_map_.clear ();
+      recycle ();
+      clear_prepared_map ();
     }
 
     transaction_impl* connection::
@@ -176,15 +177,8 @@ namespace odb
       // The current first statement will remove itself from the list
       // and make the second statement (if any) the new first.
       //
-      while (statement* s = statements_)
-      {
-        if (!s->cached ())
-          s->finilize ();
-        else if (s->active ())
-          s->reset ();
-        else
-          assert (false); // Statement is neither active nor unached.
-      }
+      while (statements_ != 0)
+        statements_->reset ();
     }
   }
 }
