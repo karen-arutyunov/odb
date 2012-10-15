@@ -39,10 +39,11 @@ namespace odb
     polymorphic_object_result_impl<T>::
     polymorphic_object_result_impl (
       const query_base& q,
-      const details::shared_ptr<select_statement>& st,
+      const details::shared_ptr<select_statement>& s,
       statements_type& sts)
         : base_type (sts.connection ()),
-          result_impl_base (q, st),
+          params_ (q.parameters ()),
+          statement_ (s),
           statements_ (sts)
     {
     }

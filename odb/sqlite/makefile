@@ -13,7 +13,6 @@ exceptions.cxx               \
 prepared-query.cxx           \
 query.cxx                    \
 query-const-expr.cxx         \
-result.cxx                   \
 simple-object-statements.cxx \
 statement.cxx                \
 statements-base.cxx          \

@@ -14,8 +14,7 @@
 #include <odb/details/shared-ptr.hxx>
 
 #include <odb/sqlite/version.hxx>
-#include <odb/sqlite/forward.hxx> // query_base
-#include <odb/sqlite/result.hxx>
+#include <odb/sqlite/forward.hxx> // query_base, query_params
 #include <odb/sqlite/statement.hxx>
 
 namespace odb
@@ -23,8 +22,7 @@ namespace odb
   namespace sqlite
   {
     template <typename T>
-    class no_id_object_result_impl: public odb::no_id_object_result_impl<T>,
-                                    public result_impl_base
+    class no_id_object_result_impl: public odb::no_id_object_result_impl<T>
     {
     public:
       typedef odb::no_id_object_result_impl<T> base_type;
@@ -62,6 +60,11 @@ namespace odb
       using base_type::current;
 
     private:
+      // We need to hold on to the query parameters because SQLite uses
+      // the parameter buffers to find each next row.
+      //
+      details::shared_ptr<query_params> params_;
+      details::shared_ptr<select_statement> statement_;
       statements_type& statements_;
     };
   }
