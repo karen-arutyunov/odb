@@ -344,6 +344,7 @@ for consistency.
           <tr><th>4.2</th><td><a href="#4.2">Parameter Binding</a></td></tr>
           <tr><th>4.3</th><td><a href="#4.3">Executing a Query</a></td></tr>
           <tr><th>4.4</th><td><a href="#4.4">Query Result</a></td></tr>
+	  <tr><th>4.5</th><td><a href="#4.5">Prepared Queries</a></td></tr>
         </table>
       </td>
     </tr>
@@ -683,7 +684,7 @@ for consistency.
                 <tr><th>17.5.1</th><td><a href="#17.5.1">Query Result Caching</a></td></tr>
 		<tr><th>17.5.2</th><td><a href="#17.5.2">Foreign Key Constraints</a></td></tr>
 		<tr><th>17.5.3</th><td><a href="#17.5.3">Unique Constraint Violations</a></td></tr>
-		<tr><th>17.5.4</th><td><a href="#17.5.4">Multithreaded Windows Applications</a></td></tr>
+		<tr><th>17.5.4</th><td><a href="#17.5.4">Multi-threaded Windows Applications</a></td></tr>
 		<tr><th>17.5.5</th><td><a href="#17.5.5">Affected Row Count and DDL Statements</a></td></tr>
 		<tr><th>17.5.6</th><td><a href="#17.5.6">Long Data and Automatically Assigned Object Ids</a></td></tr>
 		<tr><th>17.5.7</th><td><a href="#17.5.7">Long Data and By-Value Accessors/Modifiers</a></td></tr>
@@ -3897,6 +3898,26 @@ namespace odb
     what () const throw ();
   };
 
+  // Prepared query support exceptions.
+  //
+  struct prepared_already_cached: exception
+  {
+    const char*
+    name () const;
+
+    virtual const char*
+    what () const throw ();
+  };
+
+  struct prepared_type_mismatch: exception
+  {
+    const char*
+    name () const;
+
+    virtual const char*
+    what () const throw ();
+  };
+
   // Schema catalog exceptions.
   //
   struct unknown_schema: exception
@@ -3988,6 +4009,14 @@ namespace odb
      class. For more information on polymorphism support, refer to
      <a href="#8.2">Section 8.2, "Polymorphism Inheritance"</a>.</p>
 
+  <p>The <code>prepared_already_cached</code> exception is thrown by the
+     <code>cache_query()</code> function if a prepared query with the
+     specified name is already cached. The <code>prepared_type_mismatch</code>
+     exception is thrown by the <code>lookup_query()</code> function if
+     the specified prepared query object type or parameters type
+     does not match the one in the cache. Refer to <a href="#4.5">Section
+     4.5, "Prepared Queries"</a> for details.</p>
+
   <p>The <code>unknown_schema</code> exception is thrown by the
      <code>odb::schema_catalog</code> class if a schema with the specified
      name is not found. Refer to <a href="#3.4">Section 3.4, "Database"</a>
@@ -4077,7 +4106,7 @@ namespace odb
      example:</p>
 
   <pre class="cxx">
-  query q ("first = 'John'" + (query::age &lt; query::_ref (age)));
+  query q ("first = 'John' AND" + (query::age &lt; query::_ref (age)));
   </pre>
 
   <h2><a name="4.1">4.1 ODB Query Language</a></h2>
@@ -4312,7 +4341,9 @@ namespace odb
 
   <p>Normally, we would create a named query instance if we are
      planning to run the same query multiple times and would use the
-     in-line version for those that are executed only once. A named
+     in-line version for those that are executed only once (see also
+     <a href="#4.5">Section 4.5, "Prepared Queries"</a> for a more
+     optimal way to re-execute the same query multiple times). A named
      query instance that does not have any by-reference parameters is
      immutable and can be shared between multiple threads without
      synchronization. On the other hand, a query instance with
@@ -4592,6 +4623,442 @@ namespace odb
       cout &lt;&lt; i->first () &lt;&lt; endl; // Object loaded.
     }
   }
+  </pre>
+
+
+  <h2><a name="4.5">4.5 Prepared Queries</a></h2>
+
+  <p>Most modern relational database systems have the notion of a prepared
+     statement. Prepared statements allow us to perform the potentially
+     expensive tasks of parsing SQL, preparing the query execution
+     plan, etc., once and then executing the same query multiple
+     times, potentially using different values for parameters in
+     each execution.</p>
+
+  <p>In ODB all the non-query database operations such as
+     <code>persist()</code>, <code>load()</code>, <code>update()</code>,
+     etc., are implemented in terms of prepared statements that are
+     cached and reused. While the <code>query()</code> database
+     operation also uses the prepared statement, this statement
+     is not cached or reused by default since ODB has no knowledge
+     of whether a query will be executed multiple times or only
+     once. Instead, ODB provides a mechanism, called prepared queries,
+     that allows us to prepare a query once and execute it multiple
+     times. In other words, ODB prepared queries are a thin wrapper
+     around the underlying database's prepared statement functionality.</p>
+
+  <p>In most cases ODB shields the application developer from database
+     connection management and multi-threading issues. However, when it
+     comes to prepared queries, a basic understanding of how ODB manages
+     these aspects is required. Conceptually, the <code>odb::database</code>
+     class represents a specific database, that is, a data store. However,
+     underneath, it maintains one or more connections to this database.
+     A connection can be used only by a single thread at a time. When
+     we start a transaction (by calling <code>database::begin()</code>),
+     the transaction instance obtains a connection and holds on to it
+     until the transaction is committed or rolled back. During this time
+     no other thread can use this connection. When the transaction
+     releases the connection, it may be closed or reused by another
+     transaction in this or another thread. What exactly happens to
+     a connection after it has been released depends on the connection
+     factory that is used by the <code>odb::database</code> instance.
+     For more information on connection factories, refer to
+     <a href="#II">Part II, "Database Systems"</a>.</p>
+
+  <p>A query prepared on one connection cannot be executed on another.
+     In other words, a prepared query is associated with the connection.
+     One important implication of this restriction is that we cannot
+     prepare a query in one transaction and then try to execute it
+     in another without making sure that both transactions use the
+     same connection.</p>
+
+  <p>To enable the prepared query functionality we need to specify
+     the <code>--generate-prepared</code> ODB compiler option. If
+     we are planning to always prepare our queries, then we can
+     disable the once-off query execution support by also specifying
+     the <code>--omit-unprepared</code> option.</p>
+
+  <p>To prepare a query we use the <code>prepare_query()</code> function
+     template. This function can be called on both the <code>odb::database</code>
+     and <code>odb::connection</code> instances. The <code>odb::database</code>
+     version simply obtains the connection used by the currently active
+     transaction and calls the corresponding <code>odb::connection</code>
+     version. If no transaction is currently active, then this function
+     throws the <code>odb::not_in_transaction</code> exception
+     (<a href="#3.5">Section 3.5, "Transactions"</a>). The
+     <code>prepare_query()</code> function has the following signature:</p>
+
+  <pre class="cxx">
+  template &lt;typename T>
+  prepared_query&lt;T>
+  prepare_query (const char* name, const odb::query&lt;T>&amp;);
+  </pre>
+
+  <p>The first argument to the <code>prepare_query()</code> function is
+     the prepared query name. This name is used as a key for prepared
+     query caching (discussed later) and must be unique. For some databases,
+     notably PostgreSQL, it is also used as a name of the underlying prepared
+     statement. The name <code>"<i>object</i>_query"</code> (e.g.,
+     <code>"person_query"</code>) is reserved for the once-off queries
+     executed by the <code>database::query()</code> function. Note that
+     the <code>prepare_query()</code> function makes only a shallow copy
+     of this argument, which means that the name must be valid for the
+     lifetime of the returned <code>prepared_query</code> instance.</p>
+
+  <p>The second argument to the <code>prepare_query()</code> function
+     is the query criteria. It has the same semantics as in the
+     <code>query()</code> function discussed in <a href="#4.3">Section
+     4.3, "Executing a Query"</a>. Similar to <code>query()</code>, we
+     also have to explicitly specify the object type that we will be
+     querying. For example:</p>
+
+  <pre class="cxx">
+typedef odb::query&lt;person> query;
+typedef odb::prepared_query&lt;person> prep_query;
+
+prep_query pq (
+  db.prepare_query&lt;person> ("person-age-query", query::age > 50));
+  </pre>
+
+  <p>The result of executing the <code>prepare_query()</code> function is
+     the <code>prepared_query</code> instance that represent the prepared
+     query. It is best to view <code>prepared_query</code> as a handle to
+     the underlying prepared statement. While we can make a copy of it or
+     assign one <code>prepared_query</code> to another, the two instances
+     will refer to the same prepared statement. Once the last instance of
+     <code>prepared_query</code> referencing a specific prepared statement
+     is destroyed, this statement is released. The <code>prepared_query</code>
+     class template has the following interface:</p>
+
+  <pre class="cxx">
+namespace odb
+{
+  template &lt;typename T>
+  struct prepared_query
+  {
+    prepared_query ();
+
+    prepared_query (const prepared_query&amp;)
+    prepared_query&amp; operator= (const prepared_query&amp;)
+
+    result&lt;T>
+    execute (bool cache = true);
+
+    const char*
+    name () const;
+
+    statement&amp;
+    statement () const;
+
+    operator unspecified_bool_type () const;
+  };
+}
+  </pre>
+
+  <p>The default constructor creates an empty <code>prepared_query</code>
+     instance, that is, an instance that does not reference a prepared
+     statement and therefore cannot be executed. The only way to create
+     a non-empty prepared query is by calling the <code>prepare_query()</code>
+     function discussed above. To test whether the prepared query is empty,
+     we can use the implicit conversion operator to a boolean type. For
+     example:</p>
+
+  <pre class="cxx">
+  prepared_query&lt;person> pq;
+
+  if (pq)
+  {
+    // Not empty.
+    ...
+  }
+  </pre>
+
+  <p>The <code>execute()</code> function executes the query and returns
+     the result instance. The <code>cache</code> argument indicates
+     whether the result should be cached and has the same semantics
+     as in the <code>query()</code> function. In fact, conceptually,
+     <code>prepare_query()</code> and <code>execute()</code> are just
+     the <code>query()</code> function split into two:
+     <code>prepare_query()</code> takes the first
+     <code>query()</code> argument (the query condition) while
+     <code>execute()</code> takes the second (the cache flag). Note
+     also that re-executing a prepared query invalidates the
+     previous execution result, whether cached or uncached. </p>
+
+  <p>The <code>name()</code> function returns the prepared query name.
+     This is the same name as was passed as the first argument in the
+     <code>prepare_query()</code> call. The <code>statement()</code>
+     function returns a reference to the underlying prepared statement.
+     Note also that calling any of these functions on an empty
+     <code>prepared_query</code> instance results in undefined behavior.</p>
+
+  <p>The simplest use-case for a prepared query is the need to
+     execute the same query multiple times within a single transaction.
+     Consider the following example that queries for people that are older
+     than a number of different ages. This and subsequent code fragments
+     are taken from the <code>prepared</code> example in the
+     <code>odb-examples</code> package.</p>
+
+  <pre class="cxx">
+typedef odb::query&lt;person> query;
+typedef odb::prepared_query&lt;person> prep_query;
+typedef odb::result&lt;person> result;
+
+transaction t (db.begin ());
+
+unsigned short age;
+query q (query::age > query::_ref (age));
+prep_query pq (db.prepare_query&lt;person> ("person-age-query", q));
+
+for (age = 90; age > 40; age -= 10)
+{
+  result r (pq.execute ());
+  ...
+}
+
+t.commit ();
+  </pre>
+
+  <p>Another scenario is the need to reuse the same query in multiple
+     transactions that are executed at once. As was mentioned above,
+     in this case we need to make sure that the prepared query and
+     all the transactions use the same connection. Consider an
+     alternative version of the above example that executes each
+     query in a separate transaction:</p>
+
+  <pre class="cxx">
+connection_ptr conn (db.connection ());
+
+unsigned short age;
+query q (query::age > query::_ref (age));
+prep_query pq (conn->prepare_query&lt;person> ("person-age-query", q));
+
+for (age = 90; age > 40; age -= 10)
+{
+  transaction t (conn->begin ());
+
+  result r (pq.execute ());
+  ...
+
+  t.commit ();
+}
+  </pre>
+
+
+  <p>Note that with this approach we hold on to the database connection
+     until all the transactions involving the prepared query are
+     executed. In particular, this means that while we are busy, the
+     connection cannot be reused by another thread. Therefore, this
+     approach is only recommended if all the transactions are executed
+     close to each other. Also note that an uncached (see below)
+     prepared query is invalidated once we release the connection
+     on which it was prepared.</p>
+
+  <p>If we need to reuse a prepared query in transactions that are
+     executed at various times, potentially in different threads, then
+     the recommended approach is to cache the prepared query on the
+     connection. To support this functionality the <code>odb::database</code>
+     and <code>odb::connection</code> classes provide the following
+     function templates. Similar to <code>prepare_query()</code>,
+     the <code>odb::database</code> versions of the below
+     functions call the corresponding <code>odb::connection</code>
+     versions using the currently active transaction to resolve
+     the connection.</p>
+
+  <pre class="cxx">
+  template &lt;typename T>
+  void
+  cache_query (const prepared_query&lt;T>&amp;);
+
+  template &lt;typename T, typename P>
+  void
+  cache_query (const prepared_query&lt;T>&amp;,
+               std::[auto|unique]_ptr&lt;P> params);
+
+  template &lt;typename T>
+  prepared_query&lt;T>
+  lookup_query (const char* name) const;
+
+  template &lt;typename T, typename P>
+  prepared_query&lt;T>
+  lookup_query (const char* name, P*&amp; params) const;
+  </pre>
+
+  <p>The <code>cache_query()</code> function caches the passed prepared
+     query on the connection. The second overloaded version of
+     <code>cache_query()</code> also takes a pointer to the
+     by-reference query parameters. In C++98 it should be
+     <code>std::auto_ptr</code> while in C++11 <code>std::auto_ptr</code>
+     or <code>std::unique_ptr</code> can be used. The
+     <code>cache_query()</code> function assumes ownership of the
+     passed <code>params</code> argument. If a prepared query
+     with the same name is already cached on this connection,
+     then the <code>odb::prepared_already_cached</code> exception
+     is thrown.</p>
+
+  <p>The <code>lookup_query()</code> function looks up a previously
+     cached prepared query given its name. The second overloaded
+     version of <code>lookup_query()</code> also returns a pointer
+     to the by-reference query parameters. If a prepared query
+     with this name has not been cached, then an empty
+     <code>prepared_query</code> instance is returned. If a
+     prepared query with this name has been cached but either
+     the object type or the parameters type does not match
+     that which was cached, then the <code>odb::prepared_type_mismatch</code>
+     exception is thrown.</p>
+
+  <p>As a first example of the prepared query cache functionality,
+     consider the case that does not use any by-reference parameters:</p>
+
+  <pre class="cxx">
+for (unsigned short i (0); i &lt; 5; ++i)
+{
+  transaction t (db.begin ());
+
+  prep_query pq (db.lookup_query&lt;person> ("person-age-query"));
+
+  if (!pq)
+  {
+    pq = db.prepare_query&lt;person> (
+      "person-val-age-query", query::age > 50);
+    db.cache_query (pq);
+  }
+
+  result r (pq.execute ());
+  ...
+
+  t.commit ();
+
+  // Do some other work.
+  //
+  ...
+}
+  </pre>
+
+  <p>The following example shows how to do the same but for a query that
+     includes by-reference parameters. In this case the parameters are
+     cached together with the prepared query.</p>
+
+  <pre class="cxx">
+for (unsigned short age (90); age > 40; age -= 10)
+{
+  transaction t (db.begin ());
+
+  unsigned short* age_param;
+  prep_query pq (
+    db.lookup_query&lt;person> ("person-age-query", age_param));
+
+  if (!pq)
+  {
+    auto_ptr&lt;unsigned short> p (new unsigned short);
+    age_param = p.get ();
+    query q (query::age > query::_ref (*age_param));
+    pq = db.prepare_query&lt;person> ("person-age-query", q);
+    db.cache_query (pq, p); // Assumes ownership of p.
+  }
+
+  *age_param = age; // Initialize the parameter.
+  result r (pq.execute ());
+  ...
+
+  t.commit ();
+
+  // Do some other work.
+  //
+  ...
+}
+  </pre>
+
+  <p>As is evident from the above examples, when we use a prepared
+     query cache, each transaction that executes a query must also
+     include code that prepares and caches this query if it hasn't already
+     been done. If a prepared query is used in a single place in the
+     application, then this is normally not an issue since all the
+     relevant code is kept in one place. However, if the same query
+     is used in several different places in the application, then
+     we may end up duplicating the same preparation and caching
+     code, which makes it hard to maintain.</p>
+
+  <p>To resolve this issue ODB allows us to register a prepared
+     query factory that will be called to prepare and cache a
+     query during the call to <code>lookup_query()</code>. To
+     register a factory we use the <code>database::query_factory()</code>
+     function. In C++98 it has the following signature:</p>
+
+  <pre class="cxx">
+  void
+  query_factory (const char* name,
+                 void (*factory) (const char* name, connection&amp;));
+  </pre>
+
+  <p>While in C++11 it uses the <code>std::function</code> class
+     template:</p>
+
+  <pre class="cxx">
+  void
+  query_factory (const char* name,
+                 std::function&lt;void (const char* name, connection&amp;)>);
+  </pre>
+
+  <p>The first argument to the <code>query_factory()</code> function is
+     the prepared query name that this factory will be called to prepare
+     and cache. An empty name is treated as a fallback wildcard factory
+     that is capable of preparing any query. The second argument is the
+     factory function or, in C++11, function object or lambda.</p>
+
+  <p>The example fragment shows how we can use the prepared query
+     factory:</p>
+
+  <pre class="cxx">
+struct params
+{
+  unsigned short age;
+  string first;
+};
+
+static void
+query_factory (const char* name, connection&amp; c)
+{
+  auto_ptr&lt;params> p (new params);
+  query q (query::age > query::_ref (p->age) &amp;&amp;
+           query::first == query::_ref (p->first));
+  prep_query pq (c.prepare_query&lt;person> (name, q));
+  c.cache_query (pq, p);
+}
+
+db.query_factory ("person-age-name-query", &amp;query_factory);
+
+for (unsigned short age (90); age > 40; age -= 10)
+{
+  transaction t (db.begin ());
+
+  params* p;
+  prep_query pq (db.lookup_query&lt;person> ("person-age-name-query", p));
+  assert (pq);
+
+  p->age = age;
+  p->first = "John";
+  result r (pq.execute ());
+  ...
+
+  t.commit ();
+}
+  </pre>
+
+  <p>In C++11 we could have instead used a lambda function as well as
+     <code>unique_ptr</code> rather than <code>auto_ptr</code>:</p>
+
+  <pre>
+db.query_factory (
+  "person-age-name-query",
+  [] (const char* name, connection&amp; c)
+  {
+    unique_ptr&lt;params> p (new params);
+    query q (query::age > query::_ref (p->age) &amp;&amp;
+             query::first == query::_ref (p->first));
+    prep_query pq (c.prepare_query&lt;person> (name, q));
+    c.cache_query (pq, std::move (p));
+  });
   </pre>
 
   <!-- CHAPTER -->
@@ -17153,9 +17620,9 @@ namespace odb
      errors to the <code>object_already_persistent</code> exception
      (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>).</p>
 
-  <h3><a name="17.5.4">17.5.4 Multithreaded Windows Applications</a></h3>
+  <h3><a name="17.5.4">17.5.4 Multi-threaded Windows Applications</a></h3>
 
-  <p>Multithreaded Windows applications must use the
+  <p>Multi-threaded Windows applications must use the
      <code>_beginthread()</code>/<code>_beginthreadex()</code> and
      <code>_endthread()</code>/<code>_endthreadex()</code> CRT functions
      instead of the <code>CreateThread()</code> and <code>EndThread()</code>

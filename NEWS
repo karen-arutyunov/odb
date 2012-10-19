@@ -1,5 +1,12 @@
 Version 2.2.0
 
+ * Support for prepared queries. Prepared queries are a thin wrapper around
+   the underlying database system's prepared statements functionality. They
+   provide a way to perform potentially expensive query preparations tasks
+   only once and then executing the query multiple time. For more information,
+   refer to Section 4.5, "Prepared Queries" in the ODB manual as well as the
+   'prepared' example in the odb-examples package.
+
  * Support for early connection release. Now the database connection is
    released when commit()/rollback() is called rather than when the
    transaction instance goes out of scope.
