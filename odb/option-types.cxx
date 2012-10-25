@@ -52,6 +52,7 @@ operator>> (istream& is, cxx_version& v)
 
 static const char* database_[] =
 {
+  "common",
   "mssql",
   "mysql",
   "oracle",
@@ -87,6 +88,50 @@ operator>> (istream& is, database& db)
 
 ostream&
 operator<< (ostream& os, database db)
+{
+  return os << db.string ();
+}
+
+//
+// multi_database
+//
+
+static const char* multi_database_[] =
+{
+  "dynamic",
+  "static",
+  "disabled"
+};
+
+const char* multi_database::
+string () const
+{
+  return multi_database_[v_];
+}
+
+istream&
+operator>> (istream& is, multi_database& db)
+{
+  string s;
+  is >> s;
+
+  if (!is.fail ())
+  {
+    const char** e (
+      multi_database_ + sizeof (multi_database_) / sizeof (char*) - 1);
+    const char** i (lower_bound (multi_database_, e, s));
+
+    if (i != e && *i == s)
+      db = multi_database::value (i - multi_database_);
+    else
+      is.setstate (istream::failbit);
+  }
+
+  return is;
+}
+
+ostream&
+operator<< (ostream& os, multi_database db)
 {
   return os << db.string ();
 }

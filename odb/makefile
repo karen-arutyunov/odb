@@ -200,7 +200,8 @@ $(gen): cli_options +=  \
 --generate-file-scanner \
 --include-with-brackets \
 --include-prefix odb    \
---guard-prefix ODB
+--guard-prefix ODB      \
+--cxx-prologue '\#include <odb/option-parsers.hxx>'
 
 $(call include-dep,$(cxx_pod) $(cxx_dod) $(cxx_cod),\
 $(cxx_pobj) $(cxx_dobj) $(cxx_cobj),$(gen))

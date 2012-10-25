@@ -14,68 +14,6 @@ namespace relational
   namespace inline_
   {
     //
-    //
-    struct callback_calls: traversal::class_, virtual context
-    {
-      typedef callback_calls base;
-
-      callback_calls ()
-      {
-        *this >> inherits_ >> *this;
-      }
-
-      callback_calls (callback_calls const&)
-          : root_context (), //@@ -Wextra
-            context ()
-      {
-        *this >> inherits_ >> *this;
-      }
-
-      virtual void
-      traverse (type& c, bool constant)
-      {
-        const_ = constant;
-        traverse (c);
-      }
-
-      virtual void
-      traverse (type& c)
-      {
-        bool obj (object (c));
-
-        // Ignore transient bases.
-        //
-        if (!(obj || view (c)))
-          return;
-
-        if (c.count ("callback"))
-        {
-          string name (c.get<string> ("callback"));
-
-          // In case of the const instance, we only generate the call if
-          // there is a const callback.
-          //
-          string const& type (class_fq_name (c));
-
-          if (const_)
-          {
-            if (c.count ("callback-const"))
-              os << "static_cast< const " << type << "& > (x)." <<
-                name << " (e, db);";
-          }
-          else
-            os << "static_cast< " << type << "& > (x)." << name << " (e, db);";
-        }
-        else if (obj)
-          inherits (c);
-      }
-
-    protected:
-      bool const_;
-      traversal::inherits inherits_;
-    };
-
-    //
     // get/set null (composite value only)
     //
 
@@ -211,7 +149,7 @@ namespace relational
 
         if (object (c))
           traverse_object (c);
-        if (view (c))
+        else if (view (c))
           traverse_view (c);
         else if (composite (c))
           traverse_composite (c);
@@ -228,11 +166,11 @@ namespace relational
       traverse_object (type& c)
       {
         semantics::data_member* id (id_member (c));
-        bool base_id (id ? &id->scope () != &c : false); // Comes from base.
+        bool base_id (id && &id->scope () != &c); // Comes from base.
 
         semantics::data_member* optimistic (context::optimistic (c));
 
-        // Base class the contains the object id and version for optimistic
+        // Base class that contains the object id and version for optimistic
         // concurrency.
         //
         type* base (
@@ -246,46 +184,12 @@ namespace relational
         bool reuse_abst (abst && !poly);
 
         string const& type (class_fq_name (c));
-        string traits ("access::object_traits< " + type + " >");
-        string traits_impl ("access::object_traits_impl< " + type +
-                            ", id_" + db.string () + " >");
+        string traits ("access::object_traits_impl< " + type + ", id_" +
+                       db.string () + " >");
 
         os << "// " << class_name (c) << endl
            << "//" << endl
            << endl;
-
-        // id (object_type)
-        //
-        if (id != 0 || !reuse_abst)
-        {
-          os << "inline" << endl
-             << traits << "::id_type" << endl
-             << traits << "::" << endl
-             << "id (const object_type&" << (id != 0 ? " o" : "") << ")"
-             << "{";
-
-          if (id != 0)
-          {
-            if (base_id)
-              os << "return object_traits< " << class_fq_name (*base) <<
-                " >::id (o);";
-            else
-            {
-              // Get the id using the accessor expression. If this is not
-              // a synthesized expression, then output its location for
-              // easier error tracking.
-              //
-              member_access& ma (id->get<member_access> ("get"));
-
-              if (!ma.synthesized)
-                os << "// From " << location_string (ma.loc, true) << endl;
-
-              os << "return " << ma.translate ("o") << ";";
-            }
-          }
-
-          os << "}";
-        }
 
         object_extra (c);
 
@@ -298,8 +202,8 @@ namespace relational
             if (options.generate_query ())
             {
               os << "inline" << endl
-                 << traits_impl << "::id_type" << endl
-                 << traits_impl << "::" << endl
+                 << traits << "::id_type" << endl
+                 << traits << "::" << endl
                  << "id (const image_type& i)"
                  << "{"
                  << "return object_traits_impl< " << class_fq_name (*base) <<
@@ -312,8 +216,8 @@ namespace relational
             if (optimistic != 0)
             {
               os << "inline" << endl
-                 << traits_impl << "::version_type" << endl
-                 << traits_impl << "::" << endl
+                 << traits << "::version_type" << endl
+                 << traits << "::" << endl
                  << "version (const image_type& i)"
                  << "{"
                  << "return object_traits_impl< " << class_fq_name (*base) <<
@@ -325,7 +229,7 @@ namespace relational
           // bind (id_image_type)
           //
           os << "inline" << endl
-             << "void " << traits_impl << "::" << endl
+             << "void " << traits << "::" << endl
              << "bind (" << bind_vector << " b, id_image_type& i" <<
             (optimistic != 0 ? ", bool bv" : "") << ")"
              << "{"
@@ -334,7 +238,7 @@ namespace relational
              << "}";
 
           os << "inline" << endl
-             << "void " << traits_impl << "::" << endl
+             << "void " << traits << "::" << endl
              << "init (id_image_type& i, const id_type& id" <<
             (optimistic != 0 ? ", const version_type* v" : "") << ")"
              << "{"
@@ -350,7 +254,7 @@ namespace relational
           // check_version
           //
           os << "inline" << endl
-             << "bool " << traits_impl << "::" << endl
+             << "bool " << traits << "::" << endl
              << "check_version (const std::size_t* v, const image_type& i)"
              << "{"
              << "return ";
@@ -370,7 +274,7 @@ namespace relational
           // update_version
           //
           os << "inline" << endl
-             << "void " << traits_impl << "::" << endl
+             << "void " << traits << "::" << endl
              << "update_version (std::size_t* v, const image_type& i, " <<
             db << "::binding* b)"
              << "{";
@@ -394,7 +298,6 @@ namespace relational
           os << "}";
         }
 
-        //
         // The rest does not apply to reuse-abstract objects.
         //
         if (reuse_abst)
@@ -405,7 +308,7 @@ namespace relational
         if (id != 0 && !poly && optimistic == 0)
         {
           os << "inline" << endl
-             << "void " << traits_impl << "::" << endl
+             << "void " << traits << "::" << endl
              << "erase (database& db, const object_type& obj)"
              << "{"
              << "callback (db, obj, callback_event::pre_erase);"
@@ -414,37 +317,12 @@ namespace relational
              << "}";
         }
 
-        // callback ()
-        //
-        os << "inline" << endl
-           << "void " << traits_impl << "::" << endl
-           << "callback (database& db, object_type& x, callback_event e)"
-           <<  endl
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (db);"
-           << "ODB_POTENTIALLY_UNUSED (x);"
-           << "ODB_POTENTIALLY_UNUSED (e);"
-           << endl;
-        callback_calls_->traverse (c, false);
-        os << "}";
-
-        os << "inline" << endl
-           << "void " << traits_impl << "::" << endl
-           << "callback (database& db, const object_type& x, callback_event e)"
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (db);"
-           << "ODB_POTENTIALLY_UNUSED (x);"
-           << "ODB_POTENTIALLY_UNUSED (e);"
-           << endl;
-        callback_calls_->traverse (c, true);
-        os << "}";
-
         // load_()
         //
         if (id != 0 && !(poly_derived || has_a (c, test_container)))
         {
           os << "inline" << endl
-             << "void " << traits_impl << "::" << endl
+             << "void " << traits << "::" << endl
              << "load_ (";
 
           if (poly && !poly_derived)
@@ -462,8 +340,8 @@ namespace relational
           // root_image ()
           //
           os << "inline" << endl
-             << traits_impl << "::root_traits::image_type&" << endl
-             << traits_impl << "::" << endl
+             << traits << "::root_traits::image_type&" << endl
+             << traits << "::" << endl
              << "root_image (image_type& i)"
              << "{";
 
@@ -477,8 +355,8 @@ namespace relational
           // clone_image ()
           //
           os << "inline" << endl
-             << traits_impl << "::image_type*" << endl
-             << traits_impl << "::" << endl
+             << traits << "::image_type*" << endl
+             << traits << "::" << endl
              << "clone_image (const image_type& i)"
              << "{";
 
@@ -496,7 +374,7 @@ namespace relational
           // copy_image ()
           //
           os << "inline" << endl
-             << "void " << traits_impl << "::" << endl
+             << "void " << traits << "::" << endl
              << "copy_image (image_type& d, const image_type& s)"
              << "{";
 
@@ -513,7 +391,7 @@ namespace relational
           // free_image ()
           //
           os << "inline" << endl
-             << "void " << traits_impl << "::" << endl
+             << "void " << traits << "::" << endl
              << "free_image (image_type* i)"
              << "{";
 
@@ -542,20 +420,6 @@ namespace relational
            << endl;
 
         view_extra (c);
-
-        // callback ()
-        //
-        os << "inline" << endl
-           << "void " << traits << "::" << endl
-           << "callback (database& db, view_type& x, callback_event e)"
-           <<  endl
-           << "{"
-           << "ODB_POTENTIALLY_UNUSED (db);"
-           << "ODB_POTENTIALLY_UNUSED (x);"
-           << "ODB_POTENTIALLY_UNUSED (e);"
-           << endl;
-        callback_calls_->traverse (c, false);
-        os << "}";
       }
 
       virtual void
@@ -604,8 +468,6 @@ namespace relational
       }
 
     private:
-      instance<callback_calls> callback_calls_;
-
       instance<null_base> get_null_base_;
       traversal::inherits get_null_base_inherits_;
       instance<null_member> get_null_member_;

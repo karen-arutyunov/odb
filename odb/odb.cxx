@@ -123,6 +123,7 @@ profile_paths (strings const& args, char const* name);
 
 static char const* const db_macro[] =
 {
+  "-DODB_DATABASE_COMMON",
   "-DODB_DATABASE_MSSQL",
   "-DODB_DATABASE_MYSQL",
   "-DODB_DATABASE_ORACLE",
@@ -491,7 +492,9 @@ main (int argc, char* argv[])
     oi[1].option = "-p";
     oi[2].option = "--profile";
 
-    database db;
+    vector<database> dbs;
+    bool show_sloc;
+    size_t sloc_limit;
     {
       oi[1].search_func = &profile_search_ignore;
       oi[2].search_func = &profile_search_ignore;
@@ -527,14 +530,24 @@ main (int argc, char* argv[])
 
       // Check that required options were specifed.
       //
-      if (!ops.database_specified ())
+      dbs = ops.database ();
+
+      if (dbs.empty ())
       {
         e << argv[0] << ": error: no database specified with the --database "
           << "option" << endl;
         return 1;
       }
 
-      db = ops.database ();
+      if (dbs.size () > 1 && !ops.multi_database_specified ())
+      {
+        e << argv[0] << ": error: --multi-database option required when " <<
+          "multiple databases are specified"<< endl;
+        return 1;
+      }
+
+      show_sloc = ops.show_sloc ();
+      sloc_limit = ops.sloc_limit_specified () ? ops.sloc_limit () : 0;
 
       // Translate some ODB options to GCC options.
       //
@@ -566,26 +579,15 @@ main (int argc, char* argv[])
         e << " " << *i << endl;
     }
 
-    // Second parse.
+    // Pass profile search paths (svc-path option).
     //
-    profile_data pd (prof_paths, db, argv[0]);
-    oi[1].search_func = &profile_search;
-    oi[2].search_func = &profile_search;
-    oi[1].arg = &pd;
-    oi[2].arg = &pd;
-
-    cli::argv_file_scanner scan (ac, &av[0], oi, 3);
-    options ops (scan);
-
-    size_t end (scan.end () - 1); // We have one less in plugin_args.
-
-    if (end == plugin_args.size ())
+    for (paths::const_iterator i (prof_paths.begin ());
+         i != prof_paths.end (); ++i)
     {
-      e << argv[0] << ": error: input file expected" << endl;
-      return 1;
+      args.push_back (encode_plugin_option ("svc-path", i->string ()));
     }
 
-    // Add ODB macros.
+    // Add common ODB macros.
     //
     args.push_back ("-DODB_COMPILER");
 
@@ -595,396 +597,428 @@ main (int argc, char* argv[])
       args.push_back ("-DODB_COMPILER_VERSION=" + ostr.str ());
     }
 
-    args.push_back (db_macro[ops.database ()]);
-
-    // Encode plugin options.
-    //
-    cli::options const& desc (options::description ());
-    for (size_t i (0); i < end; ++i)
-    {
-      string k, v;
-      string a (plugin_args[i]);
-
-      // Ignore certain options.
-      //
-      if (a == "--")
-      {
-        // Ignore the option seperator since GCC doesn't understand it.
-        //
-        continue;
-      }
-      else if (a == "--std")
-      {
-        // Translated to GCC -std=.
-        //
-        ++i;
-        continue;
-      }
-
-      cli::options::const_iterator it (desc.find (a));
-
-      if (it == desc.end ())
-      {
-        e << argv[0] << ": ice: unexpected option '" << a << "'" << endl;
-        return 1;
-      }
-
-      if (a.size () > 2 && a[0] == '-' && a[1] == '-')
-        k = string (a, 2); // long format
-      else
-        k = string (a, 1); // short format
-
-      // If there are more arguments then we may have a value.
-      //
-      if (!it->flag ())
-      {
-        if (i + 1 == end)
-        {
-          e << argv[0] << ": ice: expected argument for '" << a << "'" << endl;
-          return 1;
-        }
-
-        v = plugin_args[++i];
-      }
-
-      args.push_back (encode_plugin_option (k, v));
-    }
-
-    // Pass profile search paths (svc-path option).
-    //
-    for (paths::const_iterator i (prof_paths.begin ());
-         i != prof_paths.end (); ++i)
-    {
-      args.push_back (encode_plugin_option ("svc-path", i->string ()));
-    }
-
-    // Reserve space for and remember the position of the svc-file
-    // option.
-    //
-    size_t svc_file_pos (args.size ());
-    args.push_back ("");
-
-    // If compiling multiple input files at once, pass them also with
-    // the --svc-file option.
-    //
-    bool at_once (ops.at_once () && plugin_args.size () - end > 1);
-    if (at_once)
-    {
-      if (ops.output_name ().empty ())
-      {
-        e << "error: --output-name required when compiling multiple " <<
-          "input files at once (--at-once)" << endl;
-        return 1;
-      }
-
-      for (size_t i (end); i < plugin_args.size (); ++i)
-        args.push_back (encode_plugin_option ("svc-file", plugin_args[i]));
-    }
-
-    // Create an execvp-compatible argument array.
-    //
-    typedef vector<char const*> cstrings;
-    cstrings exec_args;
-
-    for (strings::const_iterator i (args.begin ()), end (args.end ());
-         i != end; ++i)
-    {
-      exec_args.push_back (i->c_str ());
-    }
-
-    exec_args.push_back ("-"); // Compile stdin.
-    exec_args.push_back (0);
-
-    // Iterate over the input files and compile each of them.
+    // Compile for each database.
     //
     size_t sloc_total (0);
 
-    for (; end < plugin_args.size (); ++end)
+    for (vector<database>::iterator i (dbs.begin ()); i != dbs.end (); ++i)
     {
-      string name (at_once ? ops.output_name () : plugin_args[end]);
+      database db (*i);
+      strings db_args (args);
 
-      // Set the --svc-file option.
+      // Add database-specific ODB macro.
       //
-      args[svc_file_pos] = encode_plugin_option ("svc-file", name);
-      exec_args[svc_file_pos] = args[svc_file_pos].c_str ();
+      db_args.push_back (db_macro[db]);
 
+      // Second parse.
       //
-      //
-      ifstream ifs;
+      profile_data pd (prof_paths, db, argv[0]);
+      oi[1].search_func = &profile_search;
+      oi[2].search_func = &profile_search;
+      oi[1].arg = &pd;
+      oi[2].arg = &pd;
 
-      if (!at_once)
+      cli::argv_file_scanner scan (ac, &av[0], oi, 3);
+      options ops (scan);
+
+      size_t end (scan.end () - 1); // We have one less in plugin_args.
+
+      if (end == plugin_args.size ())
       {
-        ifs.open (name.c_str (), ios_base::in | ios_base::binary);
-
-        if (!ifs.is_open ())
-        {
-          e << name << ": error: unable to open in read mode" << endl;
-          return 1;
-        }
+        e << argv[0] << ": error: input file expected" << endl;
+        return 1;
       }
 
-      if (v)
-      {
-        e << "Compiling " << name << endl;
-        for (cstrings::const_iterator i (exec_args.begin ());
-             i != exec_args.end (); ++i)
-        {
-          if (*i != 0)
-            e << *i << (*(i + 1) != 0 ? ' ' : '\n');
-        }
-      }
-
-      process_info pi (start_process (&exec_args[0], argv[0], false, true));
-
-      {
-        __gnu_cxx::stdio_filebuf<char> fb (
-          pi.out_fd, ios_base::out | ios_base::binary);
-        ostream os (&fb);
-
-        if (!ops.trace ())
-        {
-          // Add the standard prologue.
-          //
-          os << "#line 1 \"<standard-odb-prologue>\"" << endl;
-
-          // Make sure ODB compiler and libodb versions are compatible.
-          //
-          os << "#include <odb/version.hxx>" << endl
-             << endl
-             << "#if ODB_VERSION != " << ODB_VERSION << endl
-             << "#  error incompatible ODB compiler and runtime " <<
-            "versions" << endl
-             << "#endif" << endl
-             << endl;
-
-          // Add ODB compiler metaprogramming tests.
-          //
-          os << "namespace odb" << endl
-             << "{" << endl
-             << "namespace compiler" << endl
-             << "{" << endl;
-
-          // operator< test, used in validator.
-          //
-          os << "template <typename T>" << endl
-             << "bool" << endl
-             << "has_lt_operator (const T& x, const T& y)" << endl
-             << "{"  << endl
-             << "bool r (x < y);"  << endl
-             << "return r;"  << endl
-             << "}" << endl;
-
-          os << "}" << endl
-             << "}" << endl;
-        }
-
-        // Add custom prologue if any.
-        //
-        // NOTE: if you change the format, you also need to update code
-        // in include.cxx
-        //
-        strings const& pro (ops.odb_prologue ());
-        for (size_t i (0); i < pro.size (); ++i)
-        {
-          os << "#line 1 \"<odb-prologue-" << i + 1 << ">\"" << endl
-             << pro[i]
-             << endl;
-        }
-
-        strings const& prof (ops.odb_prologue_file ());
-        for (size_t i (0); i < prof.size (); ++i)
-        {
-          os << "#line 1 \"<odb-prologue-" << pro.size () + i + 1 << ">\""
-             << endl;
-
-          ifstream ifs (prof[i].c_str (), ios_base::in | ios_base::binary);
-
-          if (!ifs.is_open ())
-          {
-            e << prof[i] << ": error: unable to open in read mode" << endl;
-            fb.close ();
-            wait_process (pi, argv[0]);
-            return 1;
-          }
-
-          if (!(os << ifs.rdbuf ()))
-          {
-            e << prof[i] << ": error: io failure" << endl;
-            fb.close ();
-            wait_process (pi, argv[0]);
-            return 1;
-          }
-
-          os << endl;
-        }
-
-        if (at_once)
-        {
-          // Include all the input files (no need to escape).
-          //
-          os << "#line 1 \"<command-line>\"" << endl;
-
-          bool b (ops.include_with_brackets ());
-          char op (b ? '<' : '"'), cl (b ? '>' : '"');
-
-          for (; end < plugin_args.size (); ++end)
-            os << "#include " << op << plugin_args[end] << cl << endl;
-        }
-        else
-        {
-          // Write the synthesized translation unit to stdout.
-          //
-          os << "#line 1 \"" << escape_path (name) << "\"" << endl;
-
-          if (!(os << ifs.rdbuf ()))
-          {
-            e << name << ": error: io failure" << endl;
-            fb.close ();
-            wait_process (pi, argv[0]);
-            return 1;
-          }
-
-          // Add a new line in case the input file doesn't end with one.
-          //
-          os << endl;
-        }
-
-        // Add custom epilogue if any.
-        //
-        // NOTE: if you change the format, you also need to update code
-        // in include.cxx
-        //
-        strings const& epi (ops.odb_epilogue ());
-        for (size_t i (0); i < epi.size (); ++i)
-        {
-          os << "#line 1 \"<odb-epilogue-" << i + 1 << ">\"" << endl
-             << epi[i]
-             << endl;
-        }
-
-        strings const& epif (ops.odb_epilogue_file ());
-        for (size_t i (0); i < epif.size (); ++i)
-        {
-          os << "#line 1 \"<odb-epilogue-" << epi.size () + i + 1 << ">\""
-             << endl;
-
-          ifstream ifs (epif[i].c_str (), ios_base::in | ios_base::binary);
-
-          if (!ifs.is_open ())
-          {
-            e << epif[i] << ": error: unable to open in read mode" << endl;
-            fb.close ();
-            wait_process (pi, argv[0]);
-            return 1;
-          }
-
-          if (!(os << ifs.rdbuf ()))
-          {
-            e << epif[i] << ": error: io failure" << endl;
-            fb.close ();
-            wait_process (pi, argv[0]);
-            return 1;
-          }
-
-          os << endl;
-        }
-
-        if (!ops.trace ())
-        {
-          // Add the standard epilogue at the end so that we see all
-          // the declarations.
-          //
-          os << "#line 1 \"<standard-odb-epilogue>\"" << endl;
-
-          // Includes for standard smart pointers. The Boost TR1 header
-          // may or may not delegate to the GCC implementation. In either
-          // case, the necessary declarations will be provided so we don't
-          // need to do anything.
-          //
-          os << "#include <memory>" << endl
-             << "#ifndef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
-             << "#  include <tr1/memory>" << endl
-             << "#endif" << endl;
-
-          // Standard wrapper traits.
-          //
-          os << "#include <odb/wrapper-traits.hxx>" << endl
-             << "#include <odb/tr1/wrapper-traits.hxx>" << endl;
-
-          // Standard pointer traits.
-          //
-          os << "#include <odb/pointer-traits.hxx>" << endl
-             << "#include <odb/tr1/pointer-traits.hxx>" << endl;
-
-          // Standard container traits.
-          //
-          os << "#include <odb/container-traits.hxx>" << endl;
-        }
-      }
-
-      // Filter the output stream looking for communication from the
-      // plugin.
+      // Encode plugin options.
       //
+      cli::options const& desc (options::description ());
+      for (size_t i (0); i < end; ++i)
       {
-        __gnu_cxx::stdio_filebuf<char> fb (pi.in_ofd, ios_base::in);
-        istream is (&fb);
+        string k, v;
+        string a (plugin_args[i]);
 
-        for (bool first (true); !is.eof (); )
+        // Ignore certain options.
+        //
+        if (a == "--")
         {
-          string line;
-          getline (is, line);
-
-          if (is.fail () && !is.eof ())
+          // Ignore the option seperator since GCC doesn't understand it.
+          //
+          continue;
+        }
+        else if (a == "--std")
+        {
+          // Translated to GCC -std=.
+          //
+          ++i;
+          continue;
+        }
+        else if (a == "-d" || a == "--databse")
+        {
+          // Ignore all other databases.
+          //
+          if (plugin_args[i + 1] != db.string ())
           {
-            e << argv[0] << ": error: io failure while parsing output" << endl;
-            wait_process (pi, argv[0]);
-            return 1;
-          }
-
-          if (line.compare (0, 9, "odb:sloc:") == 0)
-          {
-            if (ops.show_sloc () || ops.sloc_limit_specified ())
-            {
-              size_t n;
-              istringstream is (string (line, 9, string::npos));
-
-              if (!(is >> n && is.eof ()))
-              {
-                e << argv[0] << ": error: invalid odb:sloc value" << endl;
-                wait_process (pi, argv[0]);
-                return 1;
-              }
-
-              sloc_total += n;
-            }
-
+            ++i;
             continue;
           }
-
-          if (first)
-            first = false;
-          else
-            cout << endl;
-
-          cout << line;
         }
+
+        cli::options::const_iterator it (desc.find (a));
+
+        if (it == desc.end ())
+        {
+          e << argv[0] << ": ice: unexpected option '" << a << "'" << endl;
+          return 1;
+        }
+
+        if (a.size () > 2 && a[0] == '-' && a[1] == '-')
+          k = string (a, 2); // long format
+        else
+          k = string (a, 1); // short format
+
+        // If there are more arguments then we may have a value.
+        //
+        if (!it->flag ())
+        {
+          if (i + 1 == end)
+          {
+            e << argv[0] << ": ice: expected argument for '" << a << "'"
+              << endl;
+            return 1;
+          }
+
+          v = plugin_args[++i];
+        }
+
+        db_args.push_back (encode_plugin_option (k, v));
       }
 
-      if (!wait_process (pi, argv[0]))
-        return 1;
-    }
+      // Reserve space for and remember the position of the svc-file
+      // option.
+      //
+      size_t svc_file_pos (db_args.size ());
+      db_args.push_back ("");
+
+      // If compiling multiple input files at once, pass them also with
+      // the --svc-file option.
+      //
+      bool at_once (ops.at_once () && plugin_args.size () - end > 1);
+      if (at_once)
+      {
+        if (ops.output_name ().empty ())
+        {
+          e << "error: --output-name required when compiling multiple " <<
+            "input files at once (--at-once)" << endl;
+          return 1;
+        }
+
+        for (size_t i (end); i < plugin_args.size (); ++i)
+          db_args.push_back (
+            encode_plugin_option ("svc-file", plugin_args[i]));
+      }
+
+      // Create an execvp-compatible argument array.
+      //
+      typedef vector<char const*> cstrings;
+      cstrings exec_args;
+
+      for (strings::const_iterator i (db_args.begin ()), end (db_args.end ());
+           i != end; ++i)
+      {
+        exec_args.push_back (i->c_str ());
+      }
+
+      exec_args.push_back ("-"); // Compile stdin.
+      exec_args.push_back (0);
+
+      // Iterate over the input files and compile each of them.
+      //
+      for (; end < plugin_args.size (); ++end)
+      {
+        string name (at_once ? ops.output_name () : plugin_args[end]);
+
+        // Set the --svc-file option.
+        //
+        db_args[svc_file_pos] = encode_plugin_option ("svc-file", name);
+        exec_args[svc_file_pos] = db_args[svc_file_pos].c_str ();
+
+        //
+        //
+        ifstream ifs;
+
+        if (!at_once)
+        {
+          ifs.open (name.c_str (), ios_base::in | ios_base::binary);
+
+          if (!ifs.is_open ())
+          {
+            e << name << ": error: unable to open in read mode" << endl;
+            return 1;
+          }
+        }
+
+        if (v)
+        {
+          e << "Compiling " << name << endl;
+          for (cstrings::const_iterator i (exec_args.begin ());
+               i != exec_args.end (); ++i)
+          {
+            if (*i != 0)
+              e << *i << (*(i + 1) != 0 ? ' ' : '\n');
+          }
+        }
+
+        process_info pi (start_process (&exec_args[0], argv[0], false, true));
+
+        {
+          __gnu_cxx::stdio_filebuf<char> fb (
+            pi.out_fd, ios_base::out | ios_base::binary);
+          ostream os (&fb);
+
+          if (!ops.trace ())
+          {
+            // Add the standard prologue.
+            //
+            os << "#line 1 \"<standard-odb-prologue>\"" << endl;
+
+            // Make sure ODB compiler and libodb versions are compatible.
+            //
+            os << "#include <odb/version.hxx>" << endl
+               << endl
+               << "#if ODB_VERSION != " << ODB_VERSION << endl
+               << "#  error incompatible ODB compiler and runtime " <<
+              "versions" << endl
+               << "#endif" << endl
+               << endl;
+
+            // Add ODB compiler metaprogramming tests.
+            //
+            os << "namespace odb" << endl
+               << "{" << endl
+               << "namespace compiler" << endl
+               << "{" << endl;
+
+            // operator< test, used in validator.
+            //
+            os << "template <typename T>" << endl
+               << "bool" << endl
+               << "has_lt_operator (const T& x, const T& y)" << endl
+               << "{"  << endl
+               << "bool r (x < y);"  << endl
+               << "return r;"  << endl
+               << "}" << endl;
+
+            os << "}" << endl
+               << "}" << endl;
+          }
+
+          // Add custom prologue if any.
+          //
+          // NOTE: if you change the format, you also need to update code
+          // in include.cxx
+          //
+          strings const& pro (ops.odb_prologue ());
+          for (size_t i (0); i < pro.size (); ++i)
+          {
+            os << "#line 1 \"<odb-prologue-" << i + 1 << ">\"" << endl
+               << pro[i] << endl;
+          }
+
+          strings const& prof (ops.odb_prologue_file ());
+          for (size_t i (0); i < prof.size (); ++i)
+          {
+            os << "#line 1 \"<odb-prologue-" << pro.size () + i + 1 << ">\""
+               << endl;
+
+            ifstream ifs (prof[i].c_str (), ios_base::in | ios_base::binary);
+
+            if (!ifs.is_open ())
+            {
+              e << prof[i] << ": error: unable to open in read mode" << endl;
+              fb.close ();
+              wait_process (pi, argv[0]);
+              return 1;
+            }
+
+            if (!(os << ifs.rdbuf ()))
+            {
+              e << prof[i] << ": error: io failure" << endl;
+              fb.close ();
+              wait_process (pi, argv[0]);
+              return 1;
+            }
+
+            os << endl;
+          }
+
+          if (at_once)
+          {
+            // Include all the input files (no need to escape).
+            //
+            os << "#line 1 \"<command-line>\"" << endl;
+
+            bool b (ops.include_with_brackets ());
+            char op (b ? '<' : '"'), cl (b ? '>' : '"');
+
+            for (; end < plugin_args.size (); ++end)
+              os << "#include " << op << plugin_args[end] << cl << endl;
+          }
+          else
+          {
+            // Write the synthesized translation unit to stdout.
+            //
+            os << "#line 1 \"" << escape_path (name) << "\"" << endl;
+
+            if (!(os << ifs.rdbuf ()))
+            {
+              e << name << ": error: io failure" << endl;
+              fb.close ();
+              wait_process (pi, argv[0]);
+              return 1;
+            }
+
+            // Add a new line in case the input file doesn't end with one.
+            //
+            os << endl;
+          }
+
+          // Add custom epilogue if any.
+          //
+          // NOTE: if you change the format, you also need to update code
+          // in include.cxx
+          //
+          strings const& epi (ops.odb_epilogue ());
+          for (size_t i (0); i < epi.size (); ++i)
+          {
+            os << "#line 1 \"<odb-epilogue-" << i + 1 << ">\"" << endl
+               << epi[i] << endl;
+          }
+
+          strings const& epif (ops.odb_epilogue_file ());
+          for (size_t i (0); i < epif.size (); ++i)
+          {
+            os << "#line 1 \"<odb-epilogue-" << epi.size () + i + 1 << ">\""
+               << endl;
+
+            ifstream ifs (epif[i].c_str (), ios_base::in | ios_base::binary);
+
+            if (!ifs.is_open ())
+            {
+              e << epif[i] << ": error: unable to open in read mode" << endl;
+              fb.close ();
+              wait_process (pi, argv[0]);
+              return 1;
+            }
+
+            if (!(os << ifs.rdbuf ()))
+            {
+              e << epif[i] << ": error: io failure" << endl;
+              fb.close ();
+              wait_process (pi, argv[0]);
+              return 1;
+            }
+
+            os << endl;
+          }
+
+          if (!ops.trace ())
+          {
+            // Add the standard epilogue at the end so that we see all
+            // the declarations.
+            //
+            os << "#line 1 \"<standard-odb-epilogue>\"" << endl;
+
+            // Includes for standard smart pointers. The Boost TR1 header
+            // may or may not delegate to the GCC implementation. In either
+            // case, the necessary declarations will be provided so we don't
+            // need to do anything.
+            //
+            os << "#include <memory>" << endl
+               << "#ifndef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
+               << "#  include <tr1/memory>" << endl
+               << "#endif" << endl;
+
+            // Standard wrapper traits.
+            //
+            os << "#include <odb/wrapper-traits.hxx>" << endl
+               << "#include <odb/tr1/wrapper-traits.hxx>" << endl;
+
+            // Standard pointer traits.
+            //
+            os << "#include <odb/pointer-traits.hxx>" << endl
+               << "#include <odb/tr1/pointer-traits.hxx>" << endl;
+
+            // Standard container traits.
+            //
+            os << "#include <odb/container-traits.hxx>" << endl;
+          }
+        }
+
+        // Filter the output stream looking for communication from the
+        // plugin.
+        //
+        {
+          __gnu_cxx::stdio_filebuf<char> fb (pi.in_ofd, ios_base::in);
+          istream is (&fb);
+
+          for (bool first (true); !is.eof (); )
+          {
+            string line;
+            getline (is, line);
+
+            if (is.fail () && !is.eof ())
+            {
+              e << argv[0] << ": error: io failure while parsing output"
+                << endl;
+              wait_process (pi, argv[0]);
+              return 1;
+            }
+
+            if (line.compare (0, 9, "odb:sloc:") == 0)
+            {
+              if (show_sloc || sloc_limit != 0)
+              {
+                size_t n;
+                istringstream is (string (line, 9, string::npos));
+
+                if (!(is >> n && is.eof ()))
+                {
+                  e << argv[0] << ": error: invalid odb:sloc value" << endl;
+                  wait_process (pi, argv[0]);
+                  return 1;
+                }
+
+                sloc_total += n;
+              }
+
+              continue;
+            }
+
+            if (first)
+              first = false;
+            else
+              cout << endl;
+
+            cout << line;
+          }
+        }
+
+        if (!wait_process (pi, argv[0]))
+          return 1;
+      } // End input file loop.
+    } // End database loop.
 
     // Handle SLOC.
     //
-    if (ops.show_sloc ())
+    if (show_sloc)
       e << "total: " << sloc_total << endl;
 
-    if (ops.sloc_limit_specified () && ops.sloc_limit () < sloc_total)
+    if (sloc_limit != 0 && sloc_limit < sloc_total)
     {
-      e << argv[0] << ": error: SLOC limit of " << ops.sloc_limit ()
-        << " lines has been exceeded" << endl;
+      e << argv[0] << ": error: SLOC limit of " << sloc_limit << " lines " <<
+        "has been exceeded" << endl;
 
-      if (!ops.show_sloc ())
+      if (!show_sloc)
         e << argv[0] << ": info: use the --show-sloc option to see the "
           << "current total" << endl;
 

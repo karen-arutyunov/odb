@@ -821,233 +821,13 @@ namespace
   // Pass 2.
   //
 
-  struct data_member2: traversal::data_member, context
-  {
-    data_member2 (bool& valid)
-        : valid_ (valid)
-    {
-    }
-
-    virtual void
-    traverse (type& m)
-    {
-      if (transient (m))
-        return;
-
-      if (null (m))
-      {
-        if (semantics::class_* c = composite_wrapper (utype (m)))
-        {
-          if (has_a (*c, test_container))
-          {
-            os << m.file () << ":" << m.line () << ":" << m.column () << ":"
-               << " error: composite member containing containers cannot "
-               << "be null" << endl;
-
-            os << c->file () << ":" << c->line () << ":" << c->column () << ":"
-               << " info: composite value type is defined here" << endl;
-
-            valid_ = false;
-          }
-        }
-      }
-    }
-
-    bool& valid_;
-  };
-
-  struct object_no_id_members: object_members_base
-  {
-    object_no_id_members (bool& valid)
-        : object_members_base (false, false, true), valid_ (valid), dm_ (0)
-    {
-    }
-
-    virtual void
-    traverse_pointer (semantics::data_member& m, semantics::class_&)
-    {
-      if (inverse (m))
-      {
-        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
-
-        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-           << " error: inverse object pointer member '" << member_prefix_
-           << m.name () << "' in an object without an object id" << endl;
-
-        valid_ = false;
-      }
-    }
-
-    virtual void
-    traverse_container (semantics::data_member& m, semantics::type&)
-    {
-      semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
-
-      os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-         << " error: container member '" << member_prefix_ << m.name ()
-         << "' in an object without an object id" << endl;
-
-      valid_ = false;
-    }
-
-    virtual void
-    traverse_composite (semantics::data_member* m, semantics::class_& c)
-    {
-      semantics::data_member* old_dm (dm_);
-
-      if (dm_ == 0)
-        dm_ = m;
-
-      object_members_base::traverse_composite (m, c);
-
-      dm_ = old_dm;
-    }
-
-  private:
-    bool& valid_;
-    semantics::data_member* dm_; // Direct object data member.
-  };
-
-  struct composite_id_members: object_members_base
-  {
-    composite_id_members (bool& valid)
-        : object_members_base (false, false, true), valid_ (valid), dm_ (0)
-    {
-    }
-
-    virtual void
-    traverse_pointer (semantics::data_member& m, semantics::class_&)
-    {
-      semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
-
-      os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-         << " error: object pointer member '" << member_prefix_ << m.name ()
-         << "' in a composite value type that is used as an object id" << endl;
-
-      valid_ = false;
-    }
-
-    virtual void
-    traverse_simple (semantics::data_member& m)
-    {
-      if (readonly (member_path_, member_scope_))
-      {
-        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
-
-        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-           << " error: readonly member '" << member_prefix_ << m.name ()
-           << "' in a composite value type that is used as an object id"
-           << endl;
-
-        valid_ = false;
-      }
-    }
-
-    virtual void
-    traverse_container (semantics::data_member& m, semantics::type&)
-    {
-      semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
-
-      os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-         << " error: container member '" << member_prefix_ << m.name ()
-         << "' in a composite value type that is used as an object id" << endl;
-
-      valid_ = false;
-    }
-
-    virtual void
-    traverse_composite (semantics::data_member* m, semantics::class_& c)
-    {
-      semantics::data_member* old_dm (dm_);
-
-      if (dm_ == 0)
-        dm_ = m;
-
-      object_members_base::traverse_composite (m, c);
-
-      dm_ = old_dm;
-    }
-
-  private:
-    bool& valid_;
-    semantics::data_member* dm_; // Direct composite member.
-  };
-
-  struct view_members: object_members_base
-  {
-    view_members (bool& valid)
-        : object_members_base (false, false, true), valid_ (valid), dm_ (0)
-    {
-    }
-
-    virtual void
-    traverse_simple (semantics::data_member& m)
-    {
-      if (object_pointer (utype (m)))
-      {
-        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
-
-        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-           << " error: view data member '" << member_prefix_ << m.name ()
-           << "' is an object pointer" << endl;
-
-        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-           << ": info: views cannot contain object pointers" << endl;
-
-        valid_ = false;
-      }
-    }
-
-    virtual void
-    traverse_container (semantics::data_member& m, semantics::type&)
-    {
-      semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
-
-      os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-         << " error: view data member '" << member_prefix_ << m.name ()
-         << "' is a container" << endl;
-
-      os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-         << ": info: views cannot contain containers" << endl;
-
-      valid_ = false;
-    }
-
-    virtual void
-    traverse_composite (semantics::data_member* m, semantics::class_& c)
-    {
-      semantics::data_member* old_dm (dm_);
-
-      if (dm_ == 0)
-        dm_ = m;
-
-      object_members_base::traverse_composite (m, c);
-
-      dm_ = old_dm;
-    }
-
-  private:
-    bool& valid_;
-    semantics::data_member* dm_; // Direct view data member.
-  };
-
-  //
-  //
   struct class2: traversal::class_, context
   {
     class2 (bool& valid)
-        : valid_ (valid),
-          data_member_ (valid),
-          object_no_id_members_ (valid),
-          composite_id_members_ (valid),
-          view_members_ (valid)
+        : valid_ (valid), has_lt_operator_ (0)
     {
-      *this >> data_member_names_ >> data_member_;
-
-      // Find the has_lt_operator function template..
+      // Find the has_lt_operator function template.
       //
-      has_lt_operator_ = 0;
-
       tree odb (
         lookup_qualified_name (
           global_namespace, get_identifier ("odb"), false, false));
@@ -1098,148 +878,79 @@ namespace
     virtual void
     traverse_object (type& c)
     {
-      semantics::data_member* id (id_member (c));
-
-      if (id != 0)
+      if (semantics::data_member* id = id_member (c))
       {
-        if (semantics::class_* cm = composite_wrapper (utype (*id)))
+        semantics::type& t (utype (*id));
+
+        // If this is a session object, make sure that the id type can
+        // be compared.
+        //
+        if (session (c) && has_lt_operator_ != 0)
         {
-          // Composite id cannot be auto.
-          //
-          if (auto_ (*id))
+          tree args (make_tree_vec (1));
+          TREE_VEC_ELT (args, 0) = t.tree_node ();
+
+          tree inst (
+            instantiate_template (
+              has_lt_operator_, args, tf_none));
+
+          bool v (inst != error_mark_node);
+
+          if (v &&
+              DECL_TEMPLATE_INSTANTIATION (inst) &&
+              !DECL_TEMPLATE_INSTANTIATED (inst))
           {
+            // Instantiate this function template to see if the value type
+            // provides operator<. Unfortunately, GCC instantiate_decl()
+            // does not provide any control over the diagnostics it issues
+            // in case of an error. To work around this, we are going to
+            // temporarily redirect diagnostics to /dev/null, which is
+            // where asm_out_file points to (see plugin.cxx).
+            //
+            int ec (errorcount);
+            FILE* s (global_dc->printer->buffer->stream);
+            global_dc->printer->buffer->stream = asm_out_file;
+
+            instantiate_decl (inst, false, false);
+
+            global_dc->printer->buffer->stream = s;
+            v = (ec == errorcount);
+          }
+
+          if (!v)
+          {
+            os << t.file () << ":" << t.line () << ":" << t.column ()
+               << ": error: value type that is used as object id in "
+               << "persistent class with session support does not define "
+               << "the less than (<) comparison" << endl;
+
+            os << t.file () << ":" << t.line () << ":" << t.column ()
+               << ": info: provide operator< for this value type" << endl;
+
             os << id->file () << ":" << id->line () << ":" << id->column ()
-               << ": error: composite id cannot be automatically assigned"
-               << endl;
+               << ": info: id member is defined here" << endl;
+
+            os << c.file () << ":" << c.line () << ":" << c.column ()
+               << ": info: persistent class is defined here" << endl;
 
             valid_ = false;
           }
-
-          // Make sure we don't have any containers or pointers in this
-          // composite value type.
-          //
-          if (valid_)
-          {
-            composite_id_members_.traverse (*cm);
-
-            if (!valid_)
-              os << id->file () << ":" << id->line () << ":" << id->column ()
-                 << ": info: composite id is defined here" << endl;
-          }
-
-          // Check that the composite value type is default-constructible.
-          //
-          if (!cm->default_ctor ())
-          {
-            os << cm->file () << ":" << cm->line () << ":" << cm->column ()
-               << ": error: composite value type that is used as object id "
-               << "is not default-constructible" << endl;
-
-            os << cm->file () << ":" << cm->line () << ":" << cm->column ()
-               << ": info: provide default constructor for this value type"
-               << endl;
-
-            os << id->file () << ":" << id->line () << ":" << id->column ()
-               << ": info: composite id is defined here" << endl;
-
-            valid_ = false;
-          }
-
-          // If this is a session object, make sure that the composite
-          // value can be compared.
-          //
-          if (session (c) && has_lt_operator_ != 0)
-          {
-            tree args (make_tree_vec (1));
-            TREE_VEC_ELT (args, 0) = cm->tree_node ();
-
-            tree inst (
-              instantiate_template (
-                has_lt_operator_, args, tf_none));
-
-            bool v (inst != error_mark_node);
-
-            if (v &&
-                DECL_TEMPLATE_INSTANTIATION (inst) &&
-                !DECL_TEMPLATE_INSTANTIATED (inst))
-            {
-              // Instantiate this function template to see if the value type
-              // provides operator<. Unfortunately, GCC instantiate_decl()
-              // does not provide any control over the diagnostics it issues
-              // in case of an error. To work around this, we are going to
-              // temporarily redirect diagnostics to /dev/null, which is
-              // where asm_out_file points to (see plugin.cxx).
-              //
-              int ec (errorcount);
-              FILE* s (global_dc->printer->buffer->stream);
-              global_dc->printer->buffer->stream = asm_out_file;
-
-              instantiate_decl (inst, false, false);
-
-              global_dc->printer->buffer->stream = s;
-              v = (ec == errorcount);
-            }
-
-            if (!v)
-            {
-              os << cm->file () << ":" << cm->line () << ":" << cm->column ()
-                 << ": error: composite value type that is used as object id "
-                 << "in persistent class with session support does not "
-                 << "define the less than (<) comparison"
-                 << endl;
-
-              os << cm->file () << ":" << cm->line () << ":" << cm->column ()
-                 << ": info: provide operator< for this value type" << endl;
-
-              os << id->file () << ":" << id->line () << ":" << id->column ()
-                 << ": info: composite id is defined here" << endl;
-
-              os << c.file () << ":" << c.line () << ":" << c.column ()
-                 << ": info: persistent class is defined here" << endl;
-
-              valid_ = false;
-            }
-          }
         }
       }
-      else
-      {
-        if (!abstract (c))
-        {
-          // Make sure we don't have any containers or inverse pointers.
-          //
-          object_no_id_members_.traverse (c);
-        }
-      }
-
-      names (c);
     }
 
     virtual void
-    traverse_view (type& c)
+    traverse_view (type&)
     {
-      // Make sure we don't have any containers or object pointers.
-      //
-      view_members_.traverse (c);
-
-      names (c);
     }
 
     virtual void
-    traverse_composite (type& c)
+    traverse_composite (type&)
     {
-      names (c);
     }
 
     bool& valid_;
     tree has_lt_operator_;
-
-    data_member2 data_member_;
-    traversal::names data_member_names_;
-
-    object_no_id_members object_no_id_members_;
-    composite_id_members composite_id_members_;
-    view_members view_members_;
   };
 }
 
@@ -1251,6 +962,7 @@ validate (options const& ops,
           unsigned short pass)
 {
   bool valid (true);
+  database db (ops.database ()[0]);
 
   // Validate options.
   //
@@ -1260,6 +972,25 @@ validate (options const& ops,
   {
     cerr << "error: --generate-schema-only is only valid when generating " <<
       "schema as a standalone SQL file" << endl;
+    valid = false;
+  }
+
+  // Multi-database support options.
+  //
+  if (ops.multi_database () == multi_database::dynamic &&
+      ops.default_database_specified () &&
+      ops.default_database () != database::common)
+  {
+    cerr << "error: when dynamic multi-database support is used, the " <<
+      "default database can only be 'common'" << endl;
+    valid = false;
+  }
+
+  if (db == database::common &&
+      ops.multi_database () == multi_database::disabled)
+  {
+    cerr << "error: 'common' database is only valid with multi-database " <<
+      "support enabled" << endl;
     valid = false;
   }
 
@@ -1319,13 +1050,29 @@ validate (options const& ops,
   if (!valid)
     throw failed ();
 
-  try
+  switch (db)
   {
-    relational::validator v;
-    v.validate (ops, f, u, p, pass);
-  }
-  catch (relational::validator::failed const&)
-  {
-    throw failed ();
+  case database::common:
+    {
+      break;
+    }
+  case database::mssql:
+  case database::mysql:
+  case database::oracle:
+  case database::pgsql:
+  case database::sqlite:
+    {
+      try
+      {
+        relational::validator v;
+        v.validate (ops, f, u, p, pass);
+      }
+      catch (relational::validator::failed const&)
+      {
+        throw failed ();
+      }
+
+      break;
+    }
   }
 }

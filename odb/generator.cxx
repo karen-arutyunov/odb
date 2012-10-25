@@ -78,6 +78,8 @@ generate (options const& ops,
 {
   try
   {
+    database db (ops.database ()[0]);
+
     // First create the database model.
     //
     cutl::shared_ptr<semantics::relational::model> model;
@@ -86,8 +88,12 @@ generate (options const& ops,
     {
       auto_ptr<context> ctx (create_context (cerr, unit, ops, fts, 0));
 
-      switch (ops.database ())
+      switch (db)
       {
+      case database::common:
+        {
+          break; // No schema for common.
+        }
       case database::mssql:
       case database::mysql:
       case database::oracle:
@@ -109,11 +115,11 @@ generate (options const& ops,
 
     fs::auto_removes auto_rm;
 
-    string hxx_name (base + ops.odb_file_suffix () + ops.hxx_suffix ());
-    string ixx_name (base + ops.odb_file_suffix () + ops.ixx_suffix ());
-    string cxx_name (base + ops.odb_file_suffix () + ops.cxx_suffix ());
-    string sch_name (base + ops.schema_file_suffix () + ops.cxx_suffix ());
-    string sql_name (base + ops.sql_suffix ());
+    string hxx_name (base + ops.odb_file_suffix ()[db] + ops.hxx_suffix ());
+    string ixx_name (base + ops.odb_file_suffix ()[db] + ops.ixx_suffix ());
+    string cxx_name (base + ops.odb_file_suffix ()[db] + ops.cxx_suffix ());
+    string sch_name (base + ops.schema_file_suffix ()[db] + ops.cxx_suffix ());
+    string sql_name (base + ops.sql_file_suffix ()[db] + ops.sql_suffix ());
 
     path hxx_path (hxx_name);
     path ixx_path (ixx_name);
@@ -173,7 +179,7 @@ generate (options const& ops,
     //
     ofstream cxx;
 
-    if (gen_cxx)
+    if (gen_cxx && db != database::common)
     {
       cxx.open (cxx_path.string ().c_str (), ios_base::out);
 
@@ -190,7 +196,8 @@ generate (options const& ops,
     //
     //
     bool gen_sql_schema (ops.generate_schema () &&
-                         ops.schema_format ().count (schema_format::sql));
+                         ops.schema_format ().count (schema_format::sql) &&
+                         db != database::common);
     ofstream sql;
 
     if (gen_sql_schema)
@@ -209,9 +216,11 @@ generate (options const& ops,
 
     //
     //
-    bool gen_sep_schema (gen_cxx &&
-                         ops.generate_schema () &&
-                         ops.schema_format ().count (schema_format::separate));
+    bool gen_sep_schema (
+      gen_cxx &&
+      ops.generate_schema () &&
+      ops.schema_format ().count (schema_format::separate) &&
+      db != database::common);
 
     ofstream sch;
 
@@ -235,7 +244,9 @@ generate (options const& ops,
     {
       hxx << cxx_file_header;
       ixx << cxx_file_header;
-      cxx << cxx_file_header;
+
+      if (db != database::common)
+        cxx << cxx_file_header;
     }
 
     if (gen_sep_schema)
@@ -299,9 +310,7 @@ generate (options const& ops,
       for (paths::const_iterator i (inputs.begin ()); i != inputs.end (); ++i)
         hxx << "#include " <<
           ctx->process_include_path (i->leaf ().string ()) << endl;
-
       hxx << endl;
-
 
       {
         // We don't want to indent prologues/epilogues.
@@ -314,16 +323,31 @@ generate (options const& ops,
         if (!ops.at_once ())
           include::generate (true);
 
-        header::generate ();
-
-        switch (ops.database ())
+        switch (db)
         {
+        case database::common:
+          {
+            header::generate ();
+            break;
+          }
         case database::mssql:
         case database::mysql:
         case database::oracle:
         case database::pgsql:
         case database::sqlite:
           {
+            if (ops.multi_database () == multi_database::disabled)
+              header::generate ();
+            else
+            {
+              string n (base +
+                        ops.odb_file_suffix ()[database::common] +
+                        ops.hxx_suffix ());
+
+              hxx << "#include " << ctx->process_include_path (n) << endl
+                  << endl;
+            }
+
             relational::header::generate ();
             break;
           }
@@ -382,16 +406,22 @@ generate (options const& ops,
         //
         ind_filter ind (ctx->os);
 
-        inline_::generate ();
-
-        switch (ops.database ())
+        switch (db)
         {
+        case database::common:
+          {
+            inline_::generate ();
+            break;
+          }
         case database::mssql:
         case database::mysql:
         case database::oracle:
         case database::pgsql:
         case database::sqlite:
           {
+            if (ops.multi_database () == multi_database::disabled)
+              inline_::generate ();
+
             relational::inline_::generate ();
             break;
           }
@@ -417,7 +447,7 @@ generate (options const& ops,
 
     // CXX
     //
-    if (gen_cxx)
+    if (gen_cxx && db != database::common)
     {
       auto_ptr<context> ctx (
         create_context (cxx, unit, ops, fts, model.get ()));
@@ -453,8 +483,12 @@ generate (options const& ops,
         if (!ops.at_once ())
           include::generate (false);
 
-        switch (ops.database ())
+        switch (db)
         {
+        case database::common:
+          {
+            assert (false);
+          }
         case database::mssql:
         case database::mysql:
         case database::oracle:
@@ -520,8 +554,12 @@ generate (options const& ops,
         //
         ind_filter ind (ctx->os);
 
-        switch (ops.database ())
+        switch (db)
         {
+        case database::common:
+          {
+            assert (false);
+          }
         case database::mssql:
         case database::mysql:
         case database::oracle:
@@ -562,8 +600,12 @@ generate (options const& ops,
       auto_ptr<context> ctx (
         create_context (sql, unit, ops, fts, model.get ()));
 
-      switch (ops.database ())
+      switch (db)
       {
+      case database::common:
+        {
+          assert (false);
+        }
       case database::mssql:
       case database::mysql:
       case database::oracle:

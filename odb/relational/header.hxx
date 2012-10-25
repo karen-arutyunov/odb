@@ -1233,8 +1233,7 @@ namespace relational
       virtual void
       generate ()
       {
-        os << "#include <odb/details/buffer.hxx>" << endl
-           << "#include <odb/details/unused.hxx>" << endl;
+        os << "#include <odb/details/buffer.hxx>" << endl;
 
         if (options.generate_query ())
           os << "#include <odb/details/shared-ptr.hxx>" << endl;

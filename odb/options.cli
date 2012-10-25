@@ -45,11 +45,26 @@ class options
   //
   // Plugin options.
   //
-  ::database --database | -d
+  std::vector< ::database > --database | -d
   {
     "<db>",
     "Generate code for the <db> database. Valid values are \cb{mssql},
-     \cb{mysql}, \cb{oracle}, \cb{pgsql}, and \cb{sqlite}."
+     \cb{mysql}, \cb{oracle}, \cb{pgsql}, \cb{sqlite}, and \cb{common}."
+  };
+
+  ::multi_database --multi-database | -m = ::multi_database::disabled
+  {
+    "<type>",
+    "Enable multi-database support and specify its type. Valid values
+     for this option are \cb{static} and \cb{dynamic}."
+  };
+
+  ::database --default-database
+  {
+    "<db>",
+    "When static multi-database support is used, specify the database that
+     should be made the default. When dynamic multi-database support is used,
+     \cb{common} is always made the default database."
   };
 
   bool --generate-query | -q
@@ -239,14 +254,21 @@ class options
      generated files."
   };
 
-  std::string --odb-file-suffix = "-odb"
+  database_map<std::string> --odb-file-suffix
   {
     "<suffix>",
     "Use <suffix> instead of the default \cb{-odb} to construct the names
      of the generated C++ files."
   };
 
-  std::string --schema-file-suffix = "-schema"
+  database_map<std::string> --sql-file-suffix
+  {
+    "<suffix>",
+    "Use <suffix> to construct the name of the generated schema SQL file.
+     By default no suffix is used."
+  };
+
+  database_map<std::string> --schema-file-suffix
   {
     "<suffix>",
     "Use <suffix> instead of the default \cb{-schema} to construct the name

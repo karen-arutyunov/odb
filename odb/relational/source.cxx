@@ -18,8 +18,8 @@ traverse_object (type& c)
   using semantics::data_member;
 
   data_member* id (id_member (c));
-  bool auto_id (id ? id->count ("auto") : false);
-  bool base_id (id ? &id->scope () != &c : false); // Comes from base.
+  bool auto_id (id && auto_ (*id));
+  bool base_id (id && &id->scope () != &c); // Comes from base.
   member_access* id_ma (id ? &id->get<member_access> ("get") : 0);
 
   bool has_ptr (has_a (c, test_pointer));

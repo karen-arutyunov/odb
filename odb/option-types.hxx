@@ -5,7 +5,9 @@
 #ifndef ODB_OPTION_TYPES_HXX
 #define ODB_OPTION_TYPES_HXX
 
+#include <map>
 #include <iosfwd>
+#include <cassert>
 
 #include <odb/semantics/relational/name.hxx>
 
@@ -40,6 +42,7 @@ struct database
   {
     // Keep in alphabetic order.
     //
+    common,
     mssql,
     mysql,
     oracle,
@@ -62,6 +65,53 @@ operator>> (std::istream&, database&);
 
 std::ostream&
 operator<< (std::ostream&, database);
+
+//
+//
+template <typename V>
+struct database_map: std::map<database, V>
+{
+  typedef std::map<database, V> base_type;
+
+  using base_type::operator[];
+
+  V const&
+  operator[] (database const& k) const
+  {
+    typename base_type::const_iterator i (this->find (k));
+    assert (i != this->end ());
+    return i->second;
+  }
+};
+
+//
+//
+struct multi_database
+{
+  enum value
+  {
+    // Keep in alphabetic order.
+    //
+    dynamic,
+    static_,
+    disabled // Special value.
+  };
+
+  multi_database (value v = disabled) : v_ (v) {}
+  operator value () const {return v_;}
+
+  const char*
+  string () const;
+
+private:
+  value v_;
+};
+
+std::istream&
+operator>> (std::istream&, multi_database&);
+
+std::ostream&
+operator<< (std::ostream&, multi_database);
 
 //
 //

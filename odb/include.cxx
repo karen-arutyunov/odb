@@ -688,7 +688,7 @@ namespace include
       }
 
       path f (inc->path_.base ());
-      f += ctx.options.odb_file_suffix ();
+      f += ctx.options.odb_file_suffix ()[ctx.options.database ()[0]];
       f += ctx.options.hxx_suffix ();
 
       char o (inc->type_ == include_directive::quote ? '"' : '<');

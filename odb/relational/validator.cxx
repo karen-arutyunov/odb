@@ -21,11 +21,228 @@ namespace relational
     // Pass 2.
     //
 
+    struct data_member2: traversal::data_member, context
+    {
+      data_member2 (bool& valid)
+          : valid_ (valid)
+      {
+      }
+
+      virtual void
+      traverse (type& m)
+      {
+        if (transient (m))
+          return;
+
+        if (null (m))
+        {
+          if (semantics::class_* c = composite_wrapper (utype (m)))
+          {
+            if (has_a (*c, test_container))
+            {
+              os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+                 << " error: composite member containing containers cannot "
+                 << "be null" << endl;
+
+              os << c->file () << ":" << c->line () << ":" << c->column ()
+                 << ": info: composite value type is defined here" << endl;
+
+              valid_ = false;
+            }
+          }
+        }
+      }
+
+      bool& valid_;
+    };
+
+    struct object_no_id_members: object_members_base
+    {
+      object_no_id_members (bool& valid)
+          : object_members_base (false, false, true), valid_ (valid), dm_ (0)
+      {
+      }
+
+      virtual void
+      traverse_pointer (semantics::data_member& m, semantics::class_&)
+      {
+        if (inverse (m))
+        {
+          semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+          os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+             << " error: inverse object pointer member '" << member_prefix_
+             << m.name () << "' in an object without an object id" << endl;
+
+          valid_ = false;
+        }
+      }
+
+      virtual void
+      traverse_container (semantics::data_member& m, semantics::type&)
+      {
+        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << " error: container member '" << member_prefix_ << m.name ()
+           << "' in an object without an object id" << endl;
+
+        valid_ = false;
+      }
+
+      virtual void
+      traverse_composite (semantics::data_member* m, semantics::class_& c)
+      {
+        semantics::data_member* old_dm (dm_);
+
+        if (dm_ == 0)
+          dm_ = m;
+
+        object_members_base::traverse_composite (m, c);
+
+        dm_ = old_dm;
+      }
+
+    private:
+      bool& valid_;
+      semantics::data_member* dm_; // Direct object data member.
+    };
+
+    struct composite_id_members: object_members_base
+    {
+      composite_id_members (bool& valid)
+          : object_members_base (false, false, true), valid_ (valid), dm_ (0)
+      {
+      }
+
+      virtual void
+      traverse_pointer (semantics::data_member& m, semantics::class_&)
+      {
+        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << " error: object pointer member '" << member_prefix_ << m.name ()
+           << "' in a composite value type that is used as an object id"
+           << endl;
+
+        valid_ = false;
+      }
+
+      virtual void
+      traverse_simple (semantics::data_member& m)
+      {
+        if (readonly (member_path_, member_scope_))
+        {
+          semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+          os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+             << " error: readonly member '" << member_prefix_ << m.name ()
+             << "' in a composite value type that is used as an object id"
+             << endl;
+
+          valid_ = false;
+        }
+      }
+
+      virtual void
+      traverse_container (semantics::data_member& m, semantics::type&)
+      {
+        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << " error: container member '" << member_prefix_ << m.name ()
+           << "' in a composite value type that is used as an object id"
+           << endl;
+
+        valid_ = false;
+      }
+
+      virtual void
+      traverse_composite (semantics::data_member* m, semantics::class_& c)
+      {
+        semantics::data_member* old_dm (dm_);
+
+        if (dm_ == 0)
+          dm_ = m;
+
+        object_members_base::traverse_composite (m, c);
+
+        dm_ = old_dm;
+      }
+
+    private:
+      bool& valid_;
+      semantics::data_member* dm_; // Direct composite member.
+    };
+
+    struct view_members: object_members_base
+    {
+      view_members (bool& valid)
+          : object_members_base (false, false, true), valid_ (valid), dm_ (0)
+      {
+      }
+
+      virtual void
+      traverse_simple (semantics::data_member& m)
+      {
+        if (object_pointer (utype (m)))
+        {
+          semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+          os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+             << " error: view data member '" << member_prefix_ << m.name ()
+             << "' is an object pointer" << endl;
+
+          os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+             << ": info: views cannot contain object pointers" << endl;
+
+          valid_ = false;
+        }
+      }
+
+      virtual void
+      traverse_container (semantics::data_member& m, semantics::type&)
+      {
+        semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+
+        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << " error: view data member '" << member_prefix_ << m.name ()
+           << "' is a container" << endl;
+
+        os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
+           << ": info: views cannot contain containers" << endl;
+
+        valid_ = false;
+      }
+
+      virtual void
+      traverse_composite (semantics::data_member* m, semantics::class_& c)
+      {
+        semantics::data_member* old_dm (dm_);
+
+        if (dm_ == 0)
+          dm_ = m;
+
+        object_members_base::traverse_composite (m, c);
+
+        dm_ = old_dm;
+      }
+
+    private:
+      bool& valid_;
+      semantics::data_member* dm_; // Direct view data member.
+    };
+
     struct class2: traversal::class_, context
     {
       class2 (bool& valid)
-          : valid_ (valid)
+          : valid_ (valid),
+            data_member_ (valid),
+            object_no_id_members_ (valid),
+            composite_id_members_ (valid),
+            view_members_ (valid)
       {
+        *this >> data_member_names_ >> data_member_;
       }
 
       virtual void
@@ -56,6 +273,66 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
+        semantics::data_member* id (id_member (c));
+
+        if (id != 0)
+        {
+          if (semantics::class_* cm = composite_wrapper (utype (*id)))
+          {
+            // Composite id cannot be auto.
+            //
+            if (auto_ (*id))
+            {
+              os << id->file () << ":" << id->line () << ":" << id->column ()
+                 << ": error: composite id cannot be automatically assigned"
+                 << endl;
+
+              valid_ = false;
+            }
+
+            // Make sure we don't have any containers or pointers in this
+            // composite value type.
+            //
+            if (valid_)
+            {
+              composite_id_members_.traverse (*cm);
+
+              if (!valid_)
+                os << id->file () << ":" << id->line () << ":" << id->column ()
+                   << ": info: composite id is defined here" << endl;
+            }
+
+            // Check that the composite value type is default-constructible.
+            //
+            if (!cm->default_ctor ())
+            {
+              os << cm->file () << ":" << cm->line () << ":" << cm->column ()
+                 << ": error: composite value type that is used as object id "
+                 << "is not default-constructible" << endl;
+
+              os << cm->file () << ":" << cm->line () << ":" << cm->column ()
+                 << ": info: provide default constructor for this value type"
+                 << endl;
+
+              os << id->file () << ":" << id->line () << ":" << id->column ()
+                 << ": info: composite id is defined here" << endl;
+
+              valid_ = false;
+            }
+          }
+        }
+        else
+        {
+          if (!abstract (c))
+          {
+            // Make sure we don't have any containers or inverse pointers.
+            //
+            object_no_id_members_.traverse (c);
+          }
+        }
+
+        names (c);
+
         // Validate indexes.
         //
         {
@@ -90,17 +367,30 @@ namespace relational
       }
 
       virtual void
-      traverse_view (type&)
+      traverse_view (type& c)
       {
+        // Make sure we don't have any containers or object pointers.
+        //
+        view_members_.traverse (c);
+
+        names (c);
       }
 
       virtual void
-      traverse_composite (type&)
+      traverse_composite (type& c)
       {
+        names (c);
       }
 
     public:
       bool& valid_;
+
+      data_member2 data_member_;
+      traversal::names data_member_names_;
+
+      object_no_id_members object_no_id_members_;
+      composite_id_members composite_id_members_;
+      view_members view_members_;
     };
   }
 

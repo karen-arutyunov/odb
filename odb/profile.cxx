@@ -12,8 +12,6 @@
 
 using namespace std;
 
-
-
 static bool
 exist (profile_data::path const& p)
 {
@@ -64,6 +62,12 @@ profile_search (char const* prof, void* arg)
 
   if (i == end)
   {
+    // Ignore the case where we didn't find the profile and this is the
+    // common database.
+    //
+    if (pd->db == database::common)
+      return string ();
+
     cerr << pd->name << ": error: unable to locate options file for profile '"
          << prof << "'" << endl;
     throw profile_failure ();

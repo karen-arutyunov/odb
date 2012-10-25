@@ -386,8 +386,13 @@ create_context (ostream& os,
 {
   auto_ptr<context> r;
 
-  switch (ops.database ())
+  switch (ops.database ()[0])
   {
+  case database::common:
+    {
+      r.reset (new context (os, unit, ops, f));
+      break;
+    }
   case database::mssql:
     {
       r.reset (new relational::mssql::context (os, unit, ops, f, m));
@@ -436,7 +441,7 @@ context (ostream& os_,
       unit (u),
       options (ops),
       features (f),
-      db (options.database ()),
+      db (options.database ()[0]),
       keyword_set (data_->keyword_set_),
       include_regex (data_->include_regex_),
       accessor_regex (data_->accessor_regex_),

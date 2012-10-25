@@ -268,7 +268,7 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
         cli::argv_file_scanner scan (argc, &argv[0], oi, 3);
         options ops (scan);
         assert (ops.database_specified ());
-        db = ops.database ();
+        db = ops.database ()[0];
       }
 
       profile_data pd (profile_paths_, db, "odb plugin");

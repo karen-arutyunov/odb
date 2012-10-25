@@ -13,15 +13,14 @@ traverse_object (type& c)
   using semantics::data_member;
 
   data_member* id (id_member (c));
-  bool auto_id (id ? id->count ("auto") : false);
-  bool base_id (id ? &id->scope () != &c : false); // Comes from base.
+  bool auto_id (id && auto_ (*id));
+  bool base_id (id && &id->scope () != &c); // Comes from base.
 
   data_member* optimistic (context::optimistic (c));
 
   type* poly_root (polymorphic (c));
   bool poly (poly_root != 0);
   bool poly_derived (poly && poly_root != &c);
-  type* poly_base (poly_derived ? &polymorphic_base (c) : 0);
   data_member* discriminator (poly ? context::discriminator (*poly_root) : 0);
 
   bool abst (abstract (c));
@@ -32,196 +31,6 @@ traverse_object (type& c)
 
   os << "// " << class_name (c) << endl
      << "//" << endl;
-
-  // class_traits
-  //
-  os << "template <>" << endl
-     << "struct class_traits< " << type << " >"
-     << "{"
-     << "static const class_kind kind = class_object;"
-     << "};";
-
-  // object_traits
-  //
-  os << "template <>" << endl
-     << "class access::object_traits< " << type << " >"
-     << "{"
-     << "public:" << endl;
-
-  // object_type & pointer_type
-  //
-  os << "typedef " << type << " object_type;"
-     << "typedef " << c.get<string> ("object-pointer") << " pointer_type;"
-     << "typedef odb::pointer_traits<pointer_type> pointer_traits;"
-     << endl;
-
-  // polymorphic, root_type, base_type, etc.
-  //
-  os << "static const bool polymorphic = " << (poly ? "true" : "false") << ";"
-     << endl;
-
-  if (poly)
-  {
-    os << "typedef " << class_fq_name (*poly_root) << " root_type;";
-
-    if (poly_derived)
-    {
-      os << "typedef " << class_fq_name (*poly_base) << " base_type;"
-         << "typedef object_traits<root_type>::discriminator_type " <<
-        "discriminator_type;"
-         << "typedef polymorphic_concrete_info<root_type> info_type;";
-
-      if (abst)
-        os << "typedef polymorphic_abstract_info<root_type> " <<
-          "abstract_info_type;";
-
-      // Calculate our hierarchy depth (number of classes).
-      //
-      size_t depth (polymorphic_depth (c));
-
-      os << endl
-         << "static const std::size_t depth = " << depth << "UL;";
-    }
-    else
-    {
-      semantics::names* hint;
-      semantics::type& t (utype (*discriminator, hint));
-
-      os << "typedef " << t.fq_name (hint) << " discriminator_type;"
-         << "typedef polymorphic_map<object_type> map_type;"
-         << "typedef polymorphic_concrete_info<object_type> info_type;";
-
-      if (abst)
-        os << "typedef polymorphic_abstract_info<object_type> " <<
-          "abstract_info_type;";
-
-      os << endl
-         << "static const std::size_t depth = 1UL;";
-    }
-
-    os << endl;
-  }
-
-  // id_type, version_type, etc.
-  //
-  if (id != 0)
-  {
-    if (base_id)
-    {
-      semantics::class_& b (
-        dynamic_cast<semantics::class_&> (id->scope ()));
-      string const& type (class_fq_name (b));
-
-      os << "typedef object_traits< " << type << " >::id_type id_type;";
-
-      if (optimistic != 0)
-        os << "typedef object_traits< " << type << " >::version_type " <<
-          "version_type;";
-
-      os << endl;
-
-      if (poly_derived)
-        os << "static const bool auto_id = false;";
-      else
-        os << "static const bool auto_id = object_traits< " << type <<
-          " >::auto_id;";
-    }
-    else
-    {
-      {
-        semantics::names* hint;
-        semantics::type& t (utype (*id, hint));
-        os << "typedef " << t.fq_name (hint) << " id_type;";
-      }
-
-      if (optimistic != 0)
-      {
-        semantics::names* hint;
-        semantics::type& t (utype (*optimistic, hint));
-        os << "typedef " << t.fq_name (hint) << " version_type;";
-      }
-
-      os << endl
-         << "static const bool auto_id = " << (auto_id ? "true;" : "false;");
-    }
-
-    os << endl;
-  }
-  else if (!reuse_abst)
-  {
-    // Object without id.
-    //
-    os << "typedef void id_type;"
-       << endl
-       << "static const bool auto_id = false;"
-       << endl;
-  }
-
-  // abstract
-  //
-  os << "static const bool abstract = " << (abst ? "true" : "false") << ";"
-     << endl;
-
-  // id ()
-  //
-  if (id != 0 || !reuse_abst)
-  {
-    // We want to generate a dummy void id() accessor even if this
-    // object has no id to help us in the runtime. This way we can
-    // write generic code that will work for both void and non-void
-    // ids.
-    //
-    os << "static id_type" << endl
-       << "id (const object_type&);"
-       << endl;
-  }
-
-  if (!reuse_abst)
-  {
-    // Cache traits typedefs.
-    //
-    if (id == 0)
-    {
-      os << "typedef" << endl
-         << "no_id_pointer_cache_traits<pointer_type>" << endl
-         << "pointer_cache_traits;"
-         << endl
-         << "typedef" << endl
-         << "no_id_reference_cache_traits<object_type>" << endl
-         << "reference_cache_traits;"
-         << endl;
-    }
-    else
-    {
-      char const* p (session (c) ? "odb::" : "no_op_");
-
-      if (poly_derived)
-      {
-        os << "typedef" << endl
-           << p << "pointer_cache_traits<" <<
-          "object_traits<root_type>::pointer_type>" << endl
-           << "pointer_cache_traits;"
-           << endl
-           << "typedef" << endl
-           << p << "reference_cache_traits<root_type>" << endl
-           << "reference_cache_traits;"
-           << endl;
-      }
-      else
-      {
-        os << "typedef" << endl
-           << p << "pointer_cache_traits<pointer_type>" << endl
-           << "pointer_cache_traits;"
-           << endl
-           << "typedef" << endl
-           << p << "reference_cache_traits<object_type>" << endl
-           << "reference_cache_traits;"
-           << endl;
-      }
-    }
-  }
-
-  os << "};";
 
   // pointer_query_columns & query_columns
   //
@@ -584,16 +393,6 @@ traverse_object (type& c)
   // Functions (concrete).
   //
 
-  // callback ()
-  //
-  os << "static void" << endl
-     << "callback (database&, object_type&, callback_event);"
-     <<  endl;
-
-  os << "static void" << endl
-     << "callback (database&, const object_type&, callback_event);"
-     <<  endl;
-
   // persist ()
   //
   os << "static void" << endl
@@ -814,13 +613,17 @@ traverse_object (type& c)
   //
   // Note that it is not generated for reuse-abstract classes.
   //
-  os << "template <>" << endl
-     << "class access::object_traits_impl< " << type << ", " <<
-    "id_default >:" << endl
-     << "  public access::object_traits_impl< " << type << ", " <<
-    "id_" << db << " >"
-     << "{"
-     << "};";
+  if (options.default_database_specified () &&
+      options.default_database () == db)
+  {
+    os << "template <>" << endl
+       << "class access::object_traits_impl< " << type << ", " <<
+      "id_default >:" << endl
+       << "  public access::object_traits_impl< " << type << ", " <<
+      "id_" << db << " >"
+       << "{"
+       << "};";
+  }
 }
 
 void relational::header::class1::
@@ -830,28 +633,6 @@ traverse_view (type& c)
 
   os << "// " << class_name (c) << endl
      << "//" << endl;
-
-  // class_traits
-  //
-  os << "template <>" << endl
-     << "struct class_traits< " << type << " >"
-     << "{"
-     << "static const class_kind kind = class_view;"
-     << "};";
-
-  // view_traits
-  //
-  os << "template <>" << endl
-     << "class access::view_traits< " << type << " >"
-     << "{"
-     << "public:" << endl;
-
-  // view_type & pointer_type
-  //
-  os << "typedef " << type << " view_type;"
-     << "typedef " << c.get<string> ("object-pointer") << " pointer_type;";
-
-  os << "};";
 
   // view_traits_impl
   //
@@ -933,12 +714,6 @@ traverse_view (type& c)
   // Functions.
   //
 
-  // callback ()
-  //
-  os << "static void" << endl
-     << "callback (database&, view_type&, callback_event);"
-     <<  endl;
-
   // query ()
   //
   if (!options.omit_unprepared ())
@@ -963,12 +738,17 @@ traverse_view (type& c)
 
   // view_traits_impl< , id_default>
   //
-  os << "template <>" << endl
-     << "class access::view_traits_impl< " << type << ", id_default >:" << endl
-     << "  public access::view_traits_impl< " << type << ", " <<
-    "id_" << db << " >"
-     << "{"
-     << "};";
+  if (options.default_database_specified () &&
+      options.default_database () == db)
+  {
+    os << "template <>" << endl
+       << "class access::view_traits_impl< " << type << ", " <<
+      "id_default >:" << endl
+       << "  public access::view_traits_impl< " << type << ", " <<
+      "id_" << db << " >"
+       << "{"
+       << "};";
+  }
 }
 
 void relational::header::class1::
@@ -978,12 +758,6 @@ traverse_composite (type& c)
 
   os << "// " << class_name (c) << endl
      << "//" << endl;
-
-  os << "template <>" << endl
-     << "struct class_traits< " << type << " >"
-     << "{"
-     << "static const class_kind kind = class_composite;"
-     << "};";
 
   os << "template <>" << endl
      << "class access::composite_value_traits< " << type << ", " <<

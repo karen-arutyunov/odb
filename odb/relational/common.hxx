@@ -336,7 +336,7 @@ namespace relational
     static B*
     create (B const& prototype)
     {
-      database db (context::current ().options.database ());
+      database db (context::current ().options.database ()[0]);
 
       if (map_ != 0)
       {
