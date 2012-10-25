@@ -28,6 +28,7 @@ loc_pragmas loc_pragmas_;
 decl_pragmas decl_pragmas_;
 ns_loc_pragmas ns_loc_pragmas_;
 pragma_name_set simple_value_pragmas_;
+database pragma_db_;
 
 template <typename X>
 void
@@ -602,7 +603,8 @@ add_pragma (pragma const& prag, declaration const& decl, bool ns)
 
 static void
 handle_pragma (cxx_lexer& l,
-               string const& p,
+               string db,
+               string p,
                string const& qualifier,
                any& qualifier_value,
                declaration const& decl,
@@ -612,6 +614,36 @@ handle_pragma (cxx_lexer& l,
   cpp_ttype tt;
   string tl;
   tree tn;
+
+  // See if there is a database prefix. The db argument may already
+  // contain it.
+  //
+  if (db.empty () &&
+      (p == "mysql"  ||
+       p == "sqlite" ||
+       p == "pgsql"  ||
+       p == "oracle" ||
+       p == "mssql"))
+  {
+    tt = l.next (tl);
+
+    if (tt != CPP_COLON)
+    {
+      error (l) << "':' expected after database prefix " << p << endl;
+      return;
+    }
+
+    // Specifier prefix.
+    //
+    db = p;
+    tt = l.next (p);
+
+    if (tt != CPP_NAME && tt != CPP_KEYWORD)
+    {
+      error (l) << "expected specifier after databas prefix " << db << endl;
+      return;
+    }
+  }
 
   string name (p);                           // Pragma name.
   any val;                                   // Pragma value.
@@ -926,8 +958,10 @@ handle_pragma (cxx_lexer& l,
     //
     if (p == "access")
     {
-      add_pragma (
-        pragma (p, "get", val, loc, &check_spec_decl_type, 0), decl, ns);
+      if (db.empty () || db == pragma_db_.string ())
+        add_pragma (
+          pragma (p, "get", val, loc, &check_spec_decl_type, 0), decl, ns);
+
       name = "set";
     }
 
@@ -1014,10 +1048,15 @@ handle_pragma (cxx_lexer& l,
     // Add the "table" pragma.
     //
     if (vo.alias.empty () && vo.cond.empty ())
-      add_pragma (
-        pragma (p, name, vo.tbl_name, loc, &check_spec_decl_type, 0),
-        decl,
-        ns);
+    {
+      if (db.empty () || db == pragma_db_.string ())
+      {
+        add_pragma (
+          pragma (p, name, vo.tbl_name, loc, &check_spec_decl_type, 0),
+          decl,
+          ns);
+      }
+    }
 
     vo.scope = current_scope ();
     vo.loc = loc;
@@ -2025,7 +2064,7 @@ handle_pragma (cxx_lexer& l,
 
   // Add the pragma unless was indicated otherwise.
   //
-  if (!name.empty ())
+  if (!name.empty () && (db.empty () || db == pragma_db_.string ()))
   {
     // If the value is not specified and we don't use a custom adder,
     // then make it bool (flag).
@@ -2051,6 +2090,7 @@ handle_pragma (cxx_lexer& l,
   if (tt == CPP_NAME || tt == CPP_KEYWORD)
   {
     handle_pragma (l,
+                   "",
                    tl,
                    qualifier,
                    qualifier_value,
@@ -2163,7 +2203,7 @@ add_qual_entry (compiler::context& ctx,
 }
 
 static void
-handle_pragma_qualifier (cxx_lexer& l, string const& p)
+handle_pragma_qualifier (cxx_lexer& l, string p)
 {
   cpp_ttype tt;
   string tl;
@@ -2173,9 +2213,62 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
   tree orig_decl (0);   // Original declarations as used in the pragma.
   string decl_name;
 
+  // Check for a database prefix.
+  //
+  string db;
+
+  if (p == "mysql"  ||
+      p == "sqlite" ||
+      p == "pgsql"  ||
+      p == "oracle" ||
+      p == "mssql")
+  {
+    tt = l.next (tl);
+
+    if (tt == CPP_COLON)
+    {
+      // Specifier prefix.
+      //
+      db = p;
+      tt = l.next (p);
+    }
+    else
+    {
+      // Qualifier prefix. Ignore the rest if the databases don't match.
+      //
+      if (p != pragma_db_.string ())
+        return;
+
+      p = tl;
+    }
+
+    if (tt != CPP_NAME && tt != CPP_KEYWORD)
+    {
+      error (l) << "expected specifier after db " << db << " pragma" << endl;
+      return;
+    }
+
+    // Make sure a qualifier prefix is not used before a specifier.
+    //
+    if (!db.empty () &&
+        (p == "map"       ||
+         p == "namespace" ||
+         p == "object"    ||
+         p == "view"      ||
+         p == "value"     ||
+         p == "member"))
+    {
+      error (l) << "specifier prefix '" << db << ":' used before qualifier " <<
+        p << endl;
+      return;
+    }
+  }
+
+  //
+  //
   string name (p);                 // Pragma name.
   any val;                         // Pragma value.
-  location_t loc (l. location ()); // Pragma location.
+  location_t loc (l.location ());  // Pragma location.
   pragma::add_func adder (0);      // Custom context adder.
   bool ns (false);                 // Namespace location pragma.
 
@@ -2275,6 +2368,16 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
         // token type (tt) and token literal (tl) variables should contain
         // the correct values.
         //
+
+        // Also check that no specifier prefix was used for this qualifer.
+        //
+        if (!db.empty ())
+        {
+          error (loc) << "specifier prefix '" << db << ":' used before " <<
+            "qualifier index" << endl;
+          return;
+        }
+
         orig_decl = current_scope ();
         decl = declaration (orig_decl);
       }
@@ -2285,7 +2388,8 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
         //
         cxx_tokens_lexer l;
         l.start (saved_tokens, loc);
-        handle_pragma (l, "index", "member", val, declaration (), "", false);
+        handle_pragma (
+          l, db, "index", "member", val, declaration (), "", false);
         return;
       }
     }
@@ -2783,7 +2887,7 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
            p == "version" ||
            p == "virtual")
   {
-    handle_pragma (l, p, "member", val, declaration (), "", false);
+    handle_pragma (l, db, p, "member", val, declaration (), "", false);
     return;
   }
   else
@@ -2792,11 +2896,12 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
     return;
   }
 
+  // Record this pragma. Delay this until after we process the
+  // specifiers for value (see comment below for the reason).
+  //
   if (adder == 0)
     val = orig_decl;
 
-  // Record this pragma.
-  //
   pragma prag (p,
                name, // For now no need to translate '_' to '-'.
                val,
@@ -2804,29 +2909,37 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
                &check_qual_decl_type,
                adder != 0 ? adder : &add_qual_entry);
 
-  any* pval;
-
-  if (decl)
-    pval = &decl_pragmas_[decl].insert (prag).value;
-  else
+  tree scope;
+  if (!decl)
   {
-    tree scope (current_scope ());
+    scope = current_scope ();
 
-    if (!ns)
-    {
-      if (!CLASS_TYPE_P (scope))
-        scope = global_namespace;
+    if (!ns && !CLASS_TYPE_P (scope))
+      scope = global_namespace;
+  }
 
-      pragma_list& pl (loc_pragmas_[scope]);
-      pl.push_back (prag);
-      pval = &pl.back ().value;
-    }
+  any* pval;
+  if (p != "value")
+  {
+    if (decl)
+      pval = &decl_pragmas_[decl].insert (prag).value;
     else
     {
-      ns_loc_pragmas_.push_back (ns_loc_pragma (scope, prag));
-      pval = &ns_loc_pragmas_.back ().pragma.value;
+      if (!ns)
+      {
+        pragma_list& pl (loc_pragmas_[scope]);
+        pl.push_back (prag);
+        pval = &pl.back ().value;
+      }
+      else
+      {
+        ns_loc_pragmas_.push_back (ns_loc_pragma (scope, prag));
+        pval = &ns_loc_pragmas_.back ().pragma.value;
+      }
     }
   }
+  else
+    pval = &val;
 
   // See if there are any saved tokens to replay.
   //
@@ -2840,7 +2953,7 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
 
     if (tt == CPP_NAME || tt == CPP_KEYWORD)
     {
-      handle_pragma (l, tl, p, *pval, decl, decl_name, ns);
+      handle_pragma (l, "", tl, p, *pval, decl, decl_name, ns);
 
       if (errorcount != 0) // Avoid parsing the rest if there was an error.
         return;
@@ -2852,15 +2965,85 @@ handle_pragma_qualifier (cxx_lexer& l, string const& p)
     }
   }
 
+  size_t count;
   if (tt == CPP_NAME || tt == CPP_KEYWORD)
   {
-    handle_pragma (l, tl, p, *pval, decl, decl_name, ns);
+    if (decl)
+      count = decl_pragmas_[decl].size ();
+    else
+      count = loc_pragmas_[scope].size ();
+
+    handle_pragma (l, "", tl, p, *pval, decl, decl_name, ns);
   }
   else if (tt != CPP_EOF)
+  {
     error (l) << "unexpected text after " << p << " in db pragma" << endl;
+    return;
+  }
+
+  // Record the value pragma. Here things are complicated by the fact
+  // that we use the value pragma by itself to signify a composite value
+  // type declaration. Consider this example:
+  //
+  // #pragma db value pgsql:type("POINT")
+  // class point {...};
+  //
+  // Should this class be considered composite value type in other
+  // databases (because that's what would happen by default)? Probably
+  // not. So to overcome this we are going detect and ignore cases where
+  // (a) some specifiers followed the value qualifier but (b) none of
+  // them are for the database that we are compiling.
+  //
+  if (p == "value")
+  {
+    if (decl)
+    {
+      pragma_set& ps (decl_pragmas_[decl]);
+
+      if (tt == CPP_EOF || ps.size () > count)
+        ps.insert (prag);
+    }
+    else
+    {
+      pragma_list& pl (loc_pragmas_[scope]);
+
+      if (tt == CPP_EOF || pl.size () > count)
+        pl.push_back (prag);
+    }
+  }
 }
 
 /*
+extern "C" void
+handle_pragma_db_mysql (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "mysql");
+}
+
+extern "C" void
+handle_pragma_db_sqlite (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "sqlite");
+}
+
+extern "C" void
+handle_pragma_db_pgsql (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "pgsql");
+}
+
+extern "C" void
+handle_pragma_db_oracle (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "oracle");
+}
+
+extern "C" void
+handle_pragma_db_mssql (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "mssql");
+}
+
 extern "C" void
 handle_pragma_db_map (cpp_reader* r)
 {
@@ -3083,10 +3266,7 @@ handle_pragma_db (cpp_reader*)
 
   if (tt != CPP_NAME && tt != CPP_KEYWORD)
   {
-    if (tt == CPP_EOF)
-      error (l) << "expected specifier after db pragma" << endl;
-    else
-      error (l) << "unexpected token after db pragma" << endl;
+    error (l) << "expected specifier after db pragma" << endl;
     return;
   }
 
@@ -3135,6 +3315,11 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion (0, "db", handle_pragma_db);
 
   /*
+  c_register_pragma_with_expansion ("db", "mysql", handle_pragma_db_mysql);
+  c_register_pragma_with_expansion ("db", "sqlite", handle_pragma_db_sqlite);
+  c_register_pragma_with_expansion ("db", "pgsql", handle_pragma_db_pgsql);
+  c_register_pragma_with_expansion ("db", "oracle", handle_pragma_db_oracle);
+  c_register_pragma_with_expansion ("db", "mssql", handle_pragma_db_mssql);
   c_register_pragma_with_expansion ("db", "map", handle_pragma_db_map);
   c_register_pragma_with_expansion ("db", "namespace", handle_pragma_db_namespace);
   c_register_pragma_with_expansion ("db", "object", handle_pragma_db_object);

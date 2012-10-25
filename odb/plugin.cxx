@@ -286,6 +286,7 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
       process_options (*ops);
 
       options_ = ops;
+      pragma_db_ = db;
     }
 
     if (options_->trace ())

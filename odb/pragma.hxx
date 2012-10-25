@@ -12,6 +12,8 @@
 #include <vector>
 #include <string>
 
+#include <odb/option-types.hxx> // database
+
 #include <cutl/container/any.hxx>
 #include <cutl/container/multi-index.hxx>
 #include <cutl/compiler/context.hxx>
@@ -255,6 +257,11 @@ extern decl_pragmas decl_pragmas_;
 //
 typedef std::set<std::string> pragma_name_set;
 extern pragma_name_set simple_value_pragmas_;
+
+// Database we are generating code for. Used to ignore database-specific
+// pragmas.
+//
+extern database pragma_db_;
 
 extern "C" void
 register_odb_pragmas (void*, void*);
