@@ -22,9 +22,9 @@ process_options (options& o)
 
   // Set the default schema format depending on the database.
   //
-  if (o.generate_schema () && o.schema_format ().empty ())
+  if (o.generate_schema () && o.schema_format ()[db].empty ())
   {
-    set<schema_format> f;
+    set<schema_format>& f (o.schema_format ()[db]);
 
     switch (db)
     {
@@ -46,9 +46,12 @@ process_options (options& o)
         break;
       }
     }
-
-    o.schema_format (f);
   }
+
+  // Set default --schema-name value.
+  //
+  if (o.schema_name ().count (db) == 0)
+    o.schema_name ()[db] = "";
 
   // Set default --*--file-suffix values.
   //

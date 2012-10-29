@@ -817,38 +817,45 @@ main (int argc, char* argv[])
           // NOTE: if you change the format, you also need to update code
           // in include.cxx
           //
-          strings const& pro (ops.odb_prologue ());
-          for (size_t i (0); i < pro.size (); ++i)
+          size_t pro_count (1);
+          if (ops.odb_prologue ().count (db) != 0)
           {
-            os << "#line 1 \"<odb-prologue-" << i + 1 << ">\"" << endl
-               << pro[i] << endl;
+            strings const& pro (ops.odb_prologue ()[db]);
+            for (size_t i (0); i < pro.size (); ++i, ++pro_count)
+            {
+              os << "#line 1 \"<odb-prologue-" << pro_count << ">\"" << endl
+                 << pro[i] << endl;
+            }
           }
 
-          strings const& prof (ops.odb_prologue_file ());
-          for (size_t i (0); i < prof.size (); ++i)
+          if (ops.odb_prologue_file ().count (db) != 0)
           {
-            os << "#line 1 \"<odb-prologue-" << pro.size () + i + 1 << ">\""
-               << endl;
-
-            ifstream ifs (prof[i].c_str (), ios_base::in | ios_base::binary);
-
-            if (!ifs.is_open ())
+            strings const& prof (ops.odb_prologue_file ()[db]);
+            for (size_t i (0); i < prof.size (); ++i, ++pro_count)
             {
-              e << prof[i] << ": error: unable to open in read mode" << endl;
-              fb.close ();
-              wait_process (pi, argv[0]);
-              return 1;
-            }
+              os << "#line 1 \"<odb-prologue-" << pro_count << ">\""
+                 << endl;
 
-            if (!(os << ifs.rdbuf ()))
-            {
-              e << prof[i] << ": error: io failure" << endl;
-              fb.close ();
-              wait_process (pi, argv[0]);
-              return 1;
-            }
+              ifstream ifs (prof[i].c_str (), ios_base::in | ios_base::binary);
 
-            os << endl;
+              if (!ifs.is_open ())
+              {
+                e << prof[i] << ": error: unable to open in read mode" << endl;
+                fb.close ();
+                wait_process (pi, argv[0]);
+                return 1;
+              }
+
+              if (!(os << ifs.rdbuf ()))
+              {
+                e << prof[i] << ": error: io failure" << endl;
+                fb.close ();
+                wait_process (pi, argv[0]);
+                return 1;
+              }
+
+              os << endl;
+            }
           }
 
           if (at_once)
@@ -887,38 +894,45 @@ main (int argc, char* argv[])
           // NOTE: if you change the format, you also need to update code
           // in include.cxx
           //
-          strings const& epi (ops.odb_epilogue ());
-          for (size_t i (0); i < epi.size (); ++i)
+          size_t epi_count (1);
+          if (ops.odb_epilogue ().count (db) != 0)
           {
-            os << "#line 1 \"<odb-epilogue-" << i + 1 << ">\"" << endl
-               << epi[i] << endl;
+            strings const& epi (ops.odb_epilogue ()[db]);
+            for (size_t i (0); i < epi.size (); ++i, ++epi_count)
+            {
+              os << "#line 1 \"<odb-epilogue-" << epi_count << ">\"" << endl
+                 << epi[i] << endl;
+            }
           }
 
-          strings const& epif (ops.odb_epilogue_file ());
-          for (size_t i (0); i < epif.size (); ++i)
+          if (ops.odb_epilogue_file ().count (db) != 0)
           {
-            os << "#line 1 \"<odb-epilogue-" << epi.size () + i + 1 << ">\""
-               << endl;
-
-            ifstream ifs (epif[i].c_str (), ios_base::in | ios_base::binary);
-
-            if (!ifs.is_open ())
+            strings const& epif (ops.odb_epilogue_file ()[db]);
+            for (size_t i (0); i < epif.size (); ++i, ++epi_count)
             {
-              e << epif[i] << ": error: unable to open in read mode" << endl;
-              fb.close ();
-              wait_process (pi, argv[0]);
-              return 1;
-            }
+              os << "#line 1 \"<odb-epilogue-" << epi_count << ">\""
+                 << endl;
 
-            if (!(os << ifs.rdbuf ()))
-            {
-              e << epif[i] << ": error: io failure" << endl;
-              fb.close ();
-              wait_process (pi, argv[0]);
-              return 1;
-            }
+              ifstream ifs (epif[i].c_str (), ios_base::in | ios_base::binary);
 
-            os << endl;
+              if (!ifs.is_open ())
+              {
+                e << epif[i] << ": error: unable to open in read mode" << endl;
+                fb.close ();
+                wait_process (pi, argv[0]);
+                return 1;
+              }
+
+              if (!(os << ifs.rdbuf ()))
+              {
+                e << epif[i] << ": error: io failure" << endl;
+                fb.close ();
+                wait_process (pi, argv[0]);
+                return 1;
+              }
+
+              os << endl;
+            }
           }
 
           if (!ops.trace ())

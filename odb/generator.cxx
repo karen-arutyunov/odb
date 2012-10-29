@@ -25,6 +25,7 @@ using namespace std;
 using namespace cutl;
 
 using semantics::path;
+typedef vector<string> strings;
 typedef vector<path> paths;
 
 namespace
@@ -52,20 +53,21 @@ namespace
   }
 
   void
-  append (ostream& os, vector<string> const& text, string const& file)
+  append (ostream& os, strings const& text)
   {
-    for (vector<string>::const_iterator i (text.begin ());
+    for (strings::const_iterator i (text.begin ());
          i != text.end (); ++i)
     {
       os << *i << endl;
     }
+  }
 
-    if (!file.empty ())
-    {
-      ifstream ifs;
-      open (ifs, file);
-      os << ifs.rdbuf ();
-    }
+  void
+  append (ostream& os, string const& file)
+  {
+    ifstream ifs;
+    open (ifs, file);
+    os << ifs.rdbuf ();
   }
 }
 
@@ -196,7 +198,7 @@ generate (options const& ops,
     //
     //
     bool gen_sql_schema (ops.generate_schema () &&
-                         ops.schema_format ().count (schema_format::sql) &&
+                         ops.schema_format ()[db].count (schema_format::sql) &&
                          db != database::common);
     ofstream sql;
 
@@ -219,7 +221,7 @@ generate (options const& ops,
     bool gen_sep_schema (
       gen_cxx &&
       ops.generate_schema () &&
-      ops.schema_format ().count (schema_format::separate) &&
+      ops.schema_format ()[db].count (schema_format::separate) &&
       db != database::common);
 
     ofstream sch;
@@ -295,14 +297,22 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      if (!ops.hxx_prologue ().empty () || !ops.hxx_prologue_file ().empty ())
       {
-        hxx << "// Begin prologue." << endl
-            << "//" << endl;
-        append (hxx, ops.hxx_prologue (), ops.hxx_prologue_file ());
-        hxx << "//" << endl
-            << "// End prologue." << endl
-            << endl;
+        bool p (ops.hxx_prologue ().count (db) != 0);
+        bool pf (ops.hxx_prologue_file ().count (db) != 0);
+
+        if (p || pf)
+        {
+          hxx << "// Begin prologue." << endl
+              << "//" << endl;
+          if (p)
+            append (hxx, ops.hxx_prologue ()[db]);
+          if (pf)
+            append (hxx, ops.hxx_prologue_file ()[db]);
+          hxx << "//" << endl
+              << "// End prologue." << endl
+              << endl;
+        }
       }
 
       // Include main file(s).
@@ -359,14 +369,22 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      if (!ops.hxx_epilogue ().empty () || !ops.hxx_epilogue_file ().empty ())
       {
-        hxx << "// Begin epilogue." << endl
-            << "//" << endl;
-        append (hxx, ops.hxx_epilogue (), ops.hxx_epilogue_file ());
-        hxx << "//" << endl
-            << "// End epilogue." << endl
-            << endl;
+        bool e (ops.hxx_epilogue ().count (db) != 0);
+        bool ef (ops.hxx_epilogue_file ().count (db) != 0);
+
+        if (e || ef)
+        {
+          hxx << "// Begin epilogue." << endl
+              << "//" << endl;
+          if (e)
+            append (hxx, ops.hxx_epilogue ()[db]);
+          if (ef)
+            append (hxx, ops.hxx_epilogue_file ()[db]);
+          hxx << "//" << endl
+              << "// End epilogue." << endl
+              << endl;
+        }
       }
 
       hxx << "#include <odb/post.hxx>" << endl
@@ -391,14 +409,22 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      if (!ops.ixx_prologue ().empty () || !ops.ixx_prologue_file ().empty ())
       {
-        ixx << "// Begin prologue." << endl
-            << "//" << endl;
-        append (ixx, ops.ixx_prologue (), ops.ixx_prologue_file ());
-        ixx << "//" << endl
-            << "// End prologue." << endl
-            << endl;
+        bool p (ops.ixx_prologue ().count (db) != 0);
+        bool pf (ops.ixx_prologue_file ().count (db) != 0);
+
+        if (p || pf)
+        {
+          ixx << "// Begin prologue." << endl
+              << "//" << endl;
+          if (p)
+            append (ixx, ops.ixx_prologue ()[db]);
+          if (pf)
+            append (ixx, ops.ixx_prologue_file ()[db]);
+          ixx << "//" << endl
+              << "// End prologue." << endl
+              << endl;
+        }
       }
 
       {
@@ -430,13 +456,22 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      if (!ops.ixx_epilogue ().empty () || !ops.ixx_epilogue_file ().empty ())
       {
-        ixx << "// Begin epilogue." << endl
-            << "//" << endl;
-        append (ixx, ops.ixx_epilogue (), ops.ixx_epilogue_file ());
-        ixx << "//" << endl
-            << "// End epilogue." << endl;
+        bool e (ops.ixx_epilogue ().count (db) != 0);
+        bool ef (ops.ixx_epilogue_file ().count (db) != 0);
+
+        if (e || ef)
+        {
+          ixx << "// Begin epilogue." << endl
+              << "//" << endl;
+          if (e)
+            append (ixx, ops.ixx_epilogue ()[db]);
+          if (ef)
+            append (ixx, ops.ixx_epilogue_file ()[db]);
+          ixx << "//" << endl
+              << "// End epilogue." << endl
+              << endl;
+        }
       }
 
       if (ops.show_sloc ())
@@ -459,14 +494,22 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      if (!ops.cxx_prologue ().empty () || !ops.cxx_prologue_file ().empty ())
       {
-        cxx << "// Begin prologue." << endl
-            << "//" << endl;
-        append (cxx, ops.cxx_prologue (), ops.cxx_prologue_file ());
-        cxx << "//" << endl
-            << "// End prologue." << endl
-            << endl;
+        bool p (ops.cxx_prologue ().count (db) != 0);
+        bool pf (ops.cxx_prologue_file ().count (db) != 0);
+
+        if (p || pf)
+        {
+          cxx << "// Begin prologue." << endl
+              << "//" << endl;
+          if (p)
+            append (cxx, ops.cxx_prologue ()[db]);
+          if (pf)
+            append (cxx, ops.cxx_prologue_file ()[db]);
+          cxx << "//" << endl
+              << "// End prologue." << endl
+              << endl;
+        }
       }
 
       cxx << "#include " << ctx->process_include_path (hxx_name) << endl
@@ -503,14 +546,22 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      if (!ops.cxx_epilogue ().empty () || !ops.cxx_epilogue_file ().empty ())
       {
-        cxx << "// Begin epilogue." << endl
-            << "//" << endl;
-        append (cxx, ops.cxx_epilogue (), ops.cxx_epilogue_file ());
-        cxx << "//" << endl
-            << "// End epilogue." << endl
-            << endl;
+        bool e (ops.cxx_epilogue ().count (db) != 0);
+        bool ef (ops.cxx_epilogue_file ().count (db) != 0);
+
+        if (e || ef)
+        {
+          cxx << "// Begin epilogue." << endl
+              << "//" << endl;
+          if (e)
+            append (cxx, ops.cxx_epilogue ()[db]);
+          if (ef)
+            append (cxx, ops.cxx_epilogue_file ()[db]);
+          cxx << "//" << endl
+              << "// End epilogue." << endl
+              << endl;
+        }
       }
 
       cxx << "#include <odb/post.hxx>" << endl;
@@ -535,15 +586,22 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      if (!ops.schema_prologue ().empty () ||
-          !ops.schema_prologue_file ().empty ())
       {
-        sch << "// Begin prologue." << endl
-            << "//" << endl;
-        append (sch, ops.schema_prologue (), ops.schema_prologue_file ());
-        sch << "//" << endl
-            << "// End prologue." << endl
-            << endl;
+        bool p (ops.schema_prologue ().count (db) != 0);
+        bool pf (ops.schema_prologue_file ().count (db) != 0);
+
+        if (p || pf)
+        {
+          sch << "// Begin prologue." << endl
+              << "//" << endl;
+          if (p)
+            append (sch, ops.schema_prologue ()[db]);
+          if (pf)
+            append (sch, ops.schema_prologue_file ()[db]);
+          sch << "//" << endl
+              << "// End prologue." << endl
+              << endl;
+        }
       }
 
       sch << "#include " << ctx->process_include_path (hxx_name) << endl
@@ -574,15 +632,22 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      if (!ops.schema_epilogue ().empty () ||
-          !ops.schema_epilogue_file ().empty ())
       {
-        sch << "// Begin epilogue." << endl
-            << "//" << endl;
-        append (sch, ops.schema_epilogue (), ops.schema_epilogue_file ());
-        sch << "//" << endl
-            << "// End epilogue." << endl
-            << endl;
+        bool e (ops.schema_epilogue ().count (db) != 0);
+        bool ef (ops.schema_epilogue_file ().count (db) != 0);
+
+        if (e || ef)
+        {
+          sch << "// Begin epilogue." << endl
+              << "//" << endl;
+          if (e)
+            append (sch, ops.schema_epilogue ()[db]);
+          if (ef)
+            append (sch, ops.schema_epilogue_file ()[db]);
+          sch << "//" << endl
+              << "// End epilogue." << endl
+              << endl;
+        }
       }
 
       sch << "#include <odb/post.hxx>" << endl;
@@ -616,15 +681,22 @@ generate (options const& ops,
 
           // Copy prologue.
           //
-          if (!ops.sql_prologue ().empty () ||
-              !ops.sql_prologue_file ().empty ())
           {
-            sql << "/* Begin prologue." << endl
-                << " */" << endl;
-            append (sql, ops.sql_prologue (), ops.sql_prologue_file ());
-            sql << "/*" << endl
-                << " * End prologue. */" << endl
-                << endl;
+            bool p (ops.sql_prologue ().count (db) != 0);
+            bool pf (ops.sql_prologue_file ().count (db) != 0);
+
+            if (p || pf)
+            {
+              sql << "/* Begin prologue." << endl
+                  << " */" << endl;
+              if (p)
+                append (sql, ops.sql_prologue ()[db]);
+              if (pf)
+                append (sql, ops.sql_prologue_file ()[db]);
+              sql << "/*" << endl
+                  << " * End prologue. */" << endl
+                  << endl;
+            }
           }
 
           if (!ops.omit_drop ())
@@ -632,15 +704,22 @@ generate (options const& ops,
 
           // Copy interlude.
           //
-          if (!ops.sql_interlude ().empty () ||
-              !ops.sql_interlude_file ().empty ())
           {
-            sql << "/* Begin interlude." << endl
-                << " */" << endl;
-            append (sql, ops.sql_interlude (), ops.sql_interlude_file ());
-            sql << "/*" << endl
-                << " * End interlude. */" << endl
-                << endl;
+            bool i (ops.sql_interlude ().count (db) != 0);
+            bool ifl (ops.sql_interlude_file ().count (db) != 0);
+
+            if (i || ifl)
+            {
+              sql << "/* Begin interlude." << endl
+                  << " */" << endl;
+              if (i)
+                append (sql, ops.sql_interlude ()[db]);
+              if (ifl)
+                append (sql, ops.sql_interlude_file ()[db]);
+              sql << "/*" << endl
+                  << " * End interlude. */" << endl
+                  << endl;
+            }
           }
 
           if (!ops.omit_create ())
@@ -648,15 +727,22 @@ generate (options const& ops,
 
           // Copy epilogue.
           //
-          if (!ops.sql_epilogue ().empty () ||
-              !ops.sql_epilogue_file ().empty ())
           {
-            sql << "/* Begin epilogue." << endl
-                << " */" << endl;
-            append (sql, ops.sql_epilogue (), ops.sql_epilogue_file ());
-            sql << "/*" << endl
-                << " * End epilogue. */" << endl
-                << endl;
+            bool e (ops.sql_epilogue ().count (db) != 0);
+            bool ef (ops.sql_epilogue_file ().count (db) != 0);
+
+            if (e || ef)
+            {
+              sql << "/* Begin epilogue." << endl
+                  << " */" << endl;
+              if (e)
+                append (sql, ops.sql_epilogue ()[db]);
+              if (ef)
+                append (sql, ops.sql_epilogue_file ()[db]);
+              sql << "/*" << endl
+                  << " * End epilogue. */" << endl
+                  << endl;
+            }
           }
 
           relational::schema::generate_epilogue ();

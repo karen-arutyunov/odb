@@ -45,7 +45,7 @@ class options
   //
   // Plugin options.
   //
-  std::vector< ::database > --database | -d
+  std::vector< ::database> --database | -d
   {
     "<db>",
     "Generate code for the <db> database. Valid values are \cb{mssql},
@@ -113,7 +113,7 @@ class options
      for details)."
   };
 
-  std::set< ::schema_format> --schema-format
+  database_map<std::set< ::schema_format> > --schema-format
   {
     "<format>",
     "Generate the database schema in the specified format. Pass \cb{sql} as
@@ -137,7 +137,7 @@ class options
     "Omit \cb{CREATE} statements from the generated database schema."
   };
 
-  std::string --schema-name = ""
+  database_map<std::string> --schema-name
   {
     "<name>",
     "Use <name> as the database schema name. Schema names are primarily
@@ -210,7 +210,7 @@ class options
      \cb{#include} directive resolution."
   };
 
-  qname --schema
+  database_map<qname> --schema
   {
     "<schema>",
     "Specify a database schema (database namespace) that should be
@@ -220,7 +220,7 @@ class options
      \cb{--schema-name} option."
   };
 
-  std::string --table-prefix
+  database_map<std::string> --table-prefix
   {
     "<prefix>",
     "Add <prefix> to table and index names. The prefix is added to both
@@ -306,31 +306,31 @@ class options
 
   // Prologues.
   //
-  std::vector<std::string> --hxx-prologue
+  database_map<std::vector<std::string> > --hxx-prologue
   {
     "<text>",
     "Insert <text> at the beginning of the generated C++ header file."
   };
 
-  std::vector<std::string> --ixx-prologue
+  database_map<std::vector<std::string> > --ixx-prologue
   {
     "<text>",
     "Insert <text> at the beginning of the generated C++ inline file."
   };
 
-  std::vector<std::string> --cxx-prologue
+  database_map<std::vector<std::string> > --cxx-prologue
   {
     "<text>",
     "Insert <text> at the beginning of the generated C++ source file."
   };
 
-  std::vector<std::string> --schema-prologue
+  database_map<std::vector<std::string> > --schema-prologue
   {
     "<text>",
     "Insert <text> at the beginning of the generated schema C++ source file."
   };
 
-  std::vector<std::string> --sql-prologue
+  database_map<std::vector<std::string> > --sql-prologue
   {
     "<text>",
     "Insert <text> at the beginning of the generated database schema file."
@@ -338,7 +338,7 @@ class options
 
   // Interludes.
   //
-  std::vector<std::string> --sql-interlude
+  database_map<std::vector<std::string> > --sql-interlude
   {
     "<text>",
     "Insert <text> after all the \cb{DROP} and before any \cb{CREATE}
@@ -347,31 +347,31 @@ class options
 
   // Epilogues.
   //
-  std::vector<std::string> --hxx-epilogue
+  database_map<std::vector<std::string> > --hxx-epilogue
   {
     "<text>",
     "Insert <text> at the end of the generated C++ header file."
   };
 
-  std::vector<std::string> --ixx-epilogue
+  database_map<std::vector<std::string> > --ixx-epilogue
   {
     "<text>",
     "Insert <text> at the end of the generated C++ inline file."
   };
 
-  std::vector<std::string> --cxx-epilogue
+  database_map<std::vector<std::string> > --cxx-epilogue
   {
     "<text>",
     "Insert <text> at the end of the generated C++ source file."
   };
 
-  std::vector<std::string> --schema-epilogue
+  database_map<std::vector<std::string> > --schema-epilogue
   {
     "<text>",
     "Insert <text> at the end of the generated schema C++ source file."
   };
 
-  std::vector<std::string> --sql-epilogue
+  database_map<std::vector<std::string> > --sql-epilogue
   {
     "<text>",
     "Insert <text> at the end of the generated database schema file."
@@ -379,35 +379,35 @@ class options
 
   // Prologue files.
   //
-  std::string --hxx-prologue-file
+  database_map<std::string> --hxx-prologue-file
   {
     "<file>",
     "Insert the content of <file> at the beginning of the generated C++
      header file."
   };
 
-  std::string --ixx-prologue-file
+  database_map<std::string> --ixx-prologue-file
   {
     "<file>",
     "Insert the content of <file> at the beginning of the generated C++
      inline file."
   };
 
-  std::string --cxx-prologue-file
+  database_map<std::string> --cxx-prologue-file
   {
     "<file>",
     "Insert the content of <file> at the beginning of the generated C++
      source file."
   };
 
-  std::string --schema-prologue-file
+  database_map<std::string> --schema-prologue-file
   {
     "<file>",
     "Insert the content of <file> at the beginning of the generated schema
      C++ source file."
   };
 
-  std::string --sql-prologue-file
+  database_map<std::string> --sql-prologue-file
   {
     "<file>",
     "Insert the content of <file> at the beginning of the generated
@@ -416,7 +416,7 @@ class options
 
   // Interlude files.
   //
-  std::string --sql-interlude-file
+  database_map<std::string> --sql-interlude-file
   {
     "<file>",
     "Insert the content of <file> after all the \cb{DROP} and before any
@@ -425,35 +425,35 @@ class options
 
   // Epilogue files.
   //
-  std::string --hxx-epilogue-file
+  database_map<std::string> --hxx-epilogue-file
   {
     "<file>",
     "Insert the content of <file> at the end of the generated C++ header
      file."
   };
 
-  std::string --ixx-epilogue-file
+  database_map<std::string> --ixx-epilogue-file
   {
     "<file>",
     "Insert the content of <file> at the end of the generated C++ inline
      file."
   };
 
-  std::string --cxx-epilogue-file
+  database_map<std::string> --cxx-epilogue-file
   {
     "<file>",
     "Insert the content of <file> at the end of the generated C++ source
      file."
   };
 
-  std::string --schema-epilogue-file
+  database_map<std::string> --schema-epilogue-file
   {
     "<file>",
     "Insert the content of <file> at the end of the generated schema C++
      source file."
   };
 
-  std::string --sql-epilogue-file
+  database_map<std::string> --sql-epilogue-file
   {
     "<file>",
     "Insert the content of <file> at the end of the generated database
@@ -462,7 +462,7 @@ class options
 
   // ODB compilation prologue/epilogue.
   //
-  std::vector<std::string> --odb-prologue
+  database_map<std::vector<std::string> > --odb-prologue
   {
     "<text>",
     "Compile <text> before the input header file. This option allows you
@@ -470,7 +470,7 @@ class options
      to the ODB compilation process."
   };
 
-  std::vector<std::string> --odb-prologue-file
+  database_map<std::vector<std::string> > --odb-prologue-file
   {
     "<file>",
     "Compile <file> contents before the input header file. Prologue files
@@ -478,7 +478,7 @@ class options
      option)."
   };
 
-  std::vector<std::string> --odb-epilogue
+  database_map<std::vector<std::string> > --odb-epilogue
   {
     "<text>",
     "Compile <text> after the input header file. This option allows you
@@ -486,7 +486,7 @@ class options
      to the ODB compilation process."
   };
 
-  std::vector<std::string> --odb-epilogue-file
+  database_map<std::vector<std::string> > --odb-epilogue-file
   {
     "<file>",
     "Compile <file> contents after the input header file. Epilogue files

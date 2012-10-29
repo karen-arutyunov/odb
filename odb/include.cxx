@@ -169,6 +169,7 @@ namespace
     {
       string f (file);
       size_t n (f.size ());
+      database db (options_.database ()[0]);
 
       // Check if we have a synthesized prologue/epilogue fragment.
       //
@@ -201,18 +202,18 @@ namespace
               size_t size (options_.odb_prologue ().size ());
 
               if (n < size)
-                ss << options_.odb_prologue ()[n];
+                ss << options_.odb_prologue ()[db][n];
               else
-                f = options_.odb_prologue_file ()[n - size];
+                f = options_.odb_prologue_file ()[db][n - size];
             }
             else
             {
               size_t size (options_.odb_epilogue ().size ());
 
               if (n < size)
-                ss << options_.odb_epilogue ()[n];
+                ss << options_.odb_epilogue ()[db][n];
               else
-                f = options_.odb_epilogue_file ()[n - size];
+                f = options_.odb_epilogue_file ()[db][n - size];
             }
 
             if (f.empty ())

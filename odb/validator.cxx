@@ -968,7 +968,7 @@ validate (options const& ops,
   //
   if (ops.generate_schema_only () &&
       (ops.schema_format ().size () != 1 ||
-       *ops.schema_format ().begin () != schema_format::sql))
+       *ops.schema_format ()[db].begin () != schema_format::sql))
   {
     cerr << "error: --generate-schema-only is only valid when generating " <<
       "schema as a standalone SQL file" << endl;

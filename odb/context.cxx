@@ -446,10 +446,12 @@ context (ostream& os_,
       include_regex (data_->include_regex_),
       accessor_regex (data_->accessor_regex_),
       modifier_regex (data_->modifier_regex_),
-      embedded_schema (ops.generate_schema () &&
-                       ops.schema_format ().count (schema_format::embedded)),
-      separate_schema (ops.generate_schema () &&
-                       ops.schema_format ().count (schema_format::separate)),
+      embedded_schema (
+        ops.generate_schema () &&
+        ops.schema_format ()[db].count (schema_format::embedded)),
+      separate_schema (
+        ops.generate_schema () &&
+        ops.schema_format ()[db].count (schema_format::separate)),
       top_object (data_->top_object_),
       cur_object (data_->cur_object_)
 {
@@ -1146,9 +1148,9 @@ schema (semantics::scope& s) const
   // If we are still not fully qualified, add the schema that was
   // specified on the command line.
   //
-  if (!r.fully_qualified () && options.schema_specified ())
+  if (!r.fully_qualified () && options.schema ().count (db) != 0)
   {
-    qname n (options.schema ());
+    qname n (options.schema ()[db]);
     n.append (r);
     n.swap (r);
   }
@@ -1189,8 +1191,8 @@ table_name_prefix (semantics::scope& s) const
 
   // Add the prefix that was specified on the command line.
   //
-  if (options.table_prefix_specified ())
-    r = options.table_prefix () + r;
+  if (options.table_prefix ().count (db) != 0)
+    r = options.table_prefix ()[db] + r;
 
   s.set ("table-prefix", r);
   return r;
