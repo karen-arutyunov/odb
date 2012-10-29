@@ -1666,7 +1666,8 @@ namespace relational
           semantics::type& pt (member_utype (mi.m, key_prefix_));
 
           if (lazy_pointer (pt))
-            os << member << " = ptr_traits::pointer_type (*db, id);";
+            os << member << " = ptr_traits::pointer_type (" << endl
+               << "*static_cast<" << db << "::database*> (db), id);";
           else
           {
             os << "// If a compiler error points to the line below, then" << endl
@@ -1674,7 +1675,8 @@ namespace relational
                << "// cannot be initialized from an object pointer." << endl
                << "//" << endl
                << member << " = ptr_traits::pointer_type (" << endl
-               << "db->load< obj_traits::object_type > (id));";
+               << "static_cast<" << db << "::database*> (db)->load<" << endl
+               << "  obj_traits::object_type > (id));";
 
             // If we are loading into an eager weak pointer, make sure there
             // is someone else holding a strong pointer to it (normally a
