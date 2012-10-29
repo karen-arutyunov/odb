@@ -2965,7 +2965,7 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
     }
   }
 
-  size_t count;
+  size_t count (0);
   if (tt == CPP_NAME || tt == CPP_KEYWORD)
   {
     if (decl)
