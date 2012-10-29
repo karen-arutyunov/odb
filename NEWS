@@ -1,5 +1,9 @@
 Version 2.2.0
 
+ * Static multi-database support. It allows an application to simultaneously
+   work with multiple database systems using their static interfaces (i.e.,
+   odb::<database>::database instead of odb::database).
+
  * Support for prepared queries. Prepared queries are a thin wrapper around
    the underlying database system's prepared statements functionality. They
    provide a way to perform potentially expensive query preparations tasks
