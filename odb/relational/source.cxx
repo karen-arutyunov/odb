@@ -37,6 +37,7 @@ traverse_object (type& c)
 
   bool abst (abstract (c));
   bool reuse_abst (abst && !poly);
+  bool readonly (context::readonly (c));
 
   bool grow (false);
   bool grow_id (false);
@@ -223,7 +224,7 @@ traverse_object (type& c)
      << "using namespace " << db << ";"
      << endl;
 
-  if (readonly (c))
+  if (readonly)
     os << "assert (sk != statement_update);"
        << endl;
 
@@ -252,7 +253,7 @@ traverse_object (type& c)
   {
     // The id reference comes last in the update statement.
     //
-    if (!readonly (c))
+    if (!readonly)
       os << "// " << id->name () << endl
          << "//" << endl
          << "if (sk == statement_update)"
@@ -321,7 +322,7 @@ traverse_object (type& c)
      << "using namespace " << db << ";"
      << endl;
 
-  if (readonly (c))
+  if (readonly)
     os << "assert (sk != statement_update);"
        << endl;
 
@@ -1061,8 +1062,6 @@ traverse_object (type& c)
 
   // update ()
   //
-  bool readonly (context::readonly (c));
-
   if (id != 0 && (!readonly || poly))
   {
     os << "void " << traits << "::" << endl
@@ -2788,8 +2787,69 @@ traverse_object (type& c)
     }
   }
 
+  // Generate embedded schema.
+  //
   if (embedded_schema)
     schema_->traverse (c);
+
+  // Generate function table registration for dynamic multi-database
+  // support.
+  //
+  if (options.multi_database () == multi_database::dynamic)
+  {
+    string fn (flat_name (type));
+    string dt ("access::object_traits_impl< " + type + ", id_default >");
+
+    os << "static const" << endl
+       << dt << "::" << endl
+       << "function_table_type function_table_" << fn << "_ ="
+       << "{";
+
+    // persist ()
+    //
+    os << "&" << traits << "::persist";
+
+    if (id != 0)
+    {
+      // find (id)
+      //
+      if (c.default_ctor ())
+        os << "," << endl
+           << "&" << traits << "::find";
+
+      // find (id, obj)
+      //
+      os << "," << endl
+         << "&" << traits << "::find";
+
+      // reload ()
+      //
+      os << "," << endl
+         << "&" << traits << "::reload";
+
+      // update ()
+      //
+      if (!readonly || poly)
+        os << "," << endl
+           << "&" << traits << "::update";
+
+      // erase ()
+      //
+      os << "," << endl
+         << "&" << traits << "::erase";
+
+      os << "," << endl
+         << "&" << traits << "::erase";
+    }
+
+    os << "};";
+
+    os << "static const function_table_entry< " << type << ", " <<
+      "id_" << db << " >" << endl
+       << "function_table_entry_" << fn << "_ (" << endl
+       << "&function_table_" << fn << "_);"
+       << endl;
+  }
 }
 
 void relational::source::class_::

@@ -96,6 +96,7 @@ traverse_object (type& c)
   using semantics::data_member;
 
   data_member* id (id_member (c));
+  bool auto_id (id && auto_ (*id));
   bool base_id (id && &id->scope () != &c); // Comes from base.
 
   // Base class that contains the object id.
@@ -175,6 +176,100 @@ traverse_object (type& c)
      << endl;
   callback_calls_.traverse (c, true);
   os << "}";
+
+  // The rest only applies to dynamic milti-database support.
+  //
+  if (options.multi_database () != multi_database::dynamic)
+    return;
+
+  traits = "access::object_traits_impl< " + type + ", id_default >";
+
+  //
+  // Forwarding functions.
+  //
+
+  // persist ()
+  //
+  os << "inline" << endl
+     << "void " << traits << "::" << endl
+     << "persist (database& db, " << (auto_id ? "" : "const ") <<
+    "object_type& o)"
+     << "{"
+     << "function_table[db.id ()]->persist (db, o" <<
+    (poly ? ", true, true" : "") << ");"
+     << "}";
+
+  if (id != 0)
+  {
+    // find (id)
+    //
+    if (c.default_ctor ())
+    {
+      os << "inline" << endl
+         << traits << "::pointer_type" << endl
+         << traits << "::" << endl
+         << "find (database& db, const id_type& id)"
+         << "{"
+         << "return function_table[db.id ()]->find1 (db, id);"
+         << "}";
+    }
+
+    // find (id, obj)
+    //
+    os << "inline" << endl
+       << "bool " << traits << "::" << endl
+       << "find (database& db, const id_type& id, object_type& o)"
+       << "{"
+       << "return function_table[db.id ()]->find2 (db, id, o" <<
+      (poly ? ", true" : "") << ");"
+       << "}";
+
+    // reload ()
+    //
+    os << "inline" << endl
+       << "bool " << traits << "::" << endl
+       << "reload (database& db, object_type& o)"
+       << "{"
+       << "return function_table[db.id ()]->reload (db, o" <<
+      (poly ? ", true" : "") << ");"
+       << "}";
+
+    // update ()
+    //
+    // In case of a polymorphic object, we generate update() even if it is
+    // readonly since the potentially-readwrite base will rely on it to
+    // initialize the id image.
+    //
+    //
+    if (!readonly (c) || poly)
+    {
+      os << "inline" << endl
+         << "void " << traits << "::" << endl
+         << "update (database& db, const object_type& o)"
+         << "{"
+         << "function_table[db.id ()]->update (db, o" <<
+        (poly ? ", true, true" : "") << ");"
+         << "}";
+    }
+
+    // erase ()
+    //
+    os << "inline" << endl
+       << "void " << traits << "::" << endl
+       << "erase (database& db, const id_type& id)"
+       << "{"
+       << "function_table[db.id ()]->erase1 (db, id" <<
+      (poly ? ", true, true" : "") << ");"
+       << "}";
+
+    os << "inline" << endl
+       << "void " << traits << "::" << endl
+       << "erase (database& db, const object_type& o)"
+       << "{"
+       << "function_table[db.id ()]->erase2 (db, o" <<
+      (poly ? ", true, true" : "") << ");"
+       << "}";
+  }
 }
 
 void inline_::class_::
@@ -209,6 +304,10 @@ namespace inline_
   {
     context ctx;
     ostream& os (ctx.os);
+
+    if (ctx.options.multi_database () == multi_database::dynamic)
+      os << "#include <odb/database.hxx>" << endl
+         << endl;
 
     traversal::unit unit;
     traversal::defines unit_defines;

@@ -81,6 +81,7 @@ generate (options const& ops,
   try
   {
     database db (ops.database ()[0]);
+    multi_database md (ops.multi_database ());
 
     // First create the database model.
     //
@@ -181,7 +182,7 @@ generate (options const& ops,
     //
     ofstream cxx;
 
-    if (gen_cxx && db != database::common)
+    if (gen_cxx && (db != database::common || md == multi_database::dynamic))
     {
       cxx.open (cxx_path.string ().c_str (), ios_base::out);
 
@@ -346,7 +347,7 @@ generate (options const& ops,
         case database::pgsql:
         case database::sqlite:
           {
-            if (ops.multi_database () == multi_database::disabled)
+            if (md == multi_database::disabled)
               header::generate ();
             else
             {
@@ -445,7 +446,7 @@ generate (options const& ops,
         case database::pgsql:
         case database::sqlite:
           {
-            if (ops.multi_database () == multi_database::disabled)
+            if (md == multi_database::disabled)
               inline_::generate ();
 
             relational::inline_::generate ();
@@ -482,7 +483,7 @@ generate (options const& ops,
 
     // CXX
     //
-    if (gen_cxx && db != database::common)
+    if (gen_cxx && (db != database::common || md == multi_database::dynamic))
     {
       auto_ptr<context> ctx (
         create_context (cxx, unit, ops, fts, model.get ()));
@@ -530,7 +531,10 @@ generate (options const& ops,
         {
         case database::common:
           {
-            assert (false);
+            // Dynamic multi-database support.
+            //
+            source::generate ();
+            break;
           }
         case database::mssql:
         case database::mysql:

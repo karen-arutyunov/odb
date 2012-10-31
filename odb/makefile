@@ -19,6 +19,7 @@ lookup.cxx                           \
 include.cxx                          \
 header.cxx                           \
 inline.cxx                           \
+source.cxx                           \
 validator.cxx                        \
 processor.cxx                        \
 generator.cxx                        \

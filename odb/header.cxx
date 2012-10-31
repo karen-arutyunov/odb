@@ -203,62 +203,182 @@ traverse_object (type& c)
        << endl;
   }
 
-  if (!reuse_abst)
+  // The rest does not apply to reuse-abstract objects.
+  //
+  if (reuse_abst)
   {
-    // Cache traits typedefs.
-    //
-    if (id == 0)
+    os << "};";
+    return;
+  }
+
+  // Cache traits typedefs.
+  //
+  if (id == 0)
+  {
+    os << "typedef" << endl
+       << "no_id_pointer_cache_traits<pointer_type>" << endl
+       << "pointer_cache_traits;"
+       << endl
+       << "typedef" << endl
+       << "no_id_reference_cache_traits<object_type>" << endl
+       << "reference_cache_traits;"
+       << endl;
+  }
+  else
+  {
+    char const* p (session (c) ? "odb::" : "no_op_");
+
+    if (poly_derived)
     {
       os << "typedef" << endl
-         << "no_id_pointer_cache_traits<pointer_type>" << endl
+         << p << "pointer_cache_traits<" <<
+        "object_traits<root_type>::pointer_type>" << endl
          << "pointer_cache_traits;"
          << endl
          << "typedef" << endl
-         << "no_id_reference_cache_traits<object_type>" << endl
+         << p << "reference_cache_traits<root_type>" << endl
          << "reference_cache_traits;"
          << endl;
     }
     else
     {
-      char const* p (session (c) ? "odb::" : "no_op_");
-
-      if (poly_derived)
-      {
-        os << "typedef" << endl
-           << p << "pointer_cache_traits<" <<
-          "object_traits<root_type>::pointer_type>" << endl
-           << "pointer_cache_traits;"
-           << endl
-           << "typedef" << endl
-           << p << "reference_cache_traits<root_type>" << endl
-           << "reference_cache_traits;"
-           << endl;
-      }
-      else
-      {
-        os << "typedef" << endl
-           << p << "pointer_cache_traits<pointer_type>" << endl
-           << "pointer_cache_traits;"
-           << endl
-           << "typedef" << endl
-           << p << "reference_cache_traits<object_type>" << endl
-           << "reference_cache_traits;"
-           << endl;
-      }
+      os << "typedef" << endl
+         << p << "pointer_cache_traits<pointer_type>" << endl
+         << "pointer_cache_traits;"
+         << endl
+         << "typedef" << endl
+         << p << "reference_cache_traits<object_type>" << endl
+         << "reference_cache_traits;"
+         << endl;
     }
-
-    // callback ()
-    //
-    os << "static void" << endl
-       << "callback (database&, object_type&, callback_event);"
-       <<  endl;
-
-    os << "static void" << endl
-       << "callback (database&, const object_type&, callback_event);"
-       <<  endl;
   }
 
+  // callback ()
+  //
+  os << "static void" << endl
+     << "callback (database&, object_type&, callback_event);"
+     <<  endl;
+
+  os << "static void" << endl
+     << "callback (database&, const object_type&, callback_event);"
+     <<  endl;
+
   os << "};";
+
+  // The rest only applies to dynamic milti-database support.
+  //
+  if (options.multi_database () != multi_database::dynamic)
+    return;
+
+  // object_traits_impl
+  //
+  os << "template <>" << endl
+     << "class access::object_traits_impl< " << type << ", " <<
+    "id_default >:" << endl
+     << "  public access::object_traits< " << type << " >"
+     << "{"
+     << "public:" << endl;
+
+  // function_table_type
+  //
+  os << "struct function_table_type"
+     << "{";
+
+  // persist ()
+  //
+  os << "void (*persist) (database&, " << (auto_id ? "" : "const ") <<
+    "object_type&" << (poly ? ", bool, bool" : "") << ");";
+
+  if (id != 0)
+  {
+    // find (id)
+    //
+    if (c.default_ctor ())
+      os << "pointer_type (*find1) (database&, const id_type&);";
+
+    // find (id, obj)
+    //
+    os << "bool (*find2) (database&, const id_type&, object_type&" <<
+      (poly ? ", bool" : "") << ");";
+
+    // reload ()
+    //
+    os << "bool (*reload) (database&, object_type&" <<
+      (poly ? ", bool" : "") << ");";
+
+    // update ()
+    //
+    if (!readonly (c) || poly)
+    {
+      os << "void (*update) (database&, const object_type&" <<
+        (poly ? ", bool, bool" : "") << ");";
+    }
+
+    // erase ()
+    //
+    os << "void (*erase1) (database&, const id_type&" <<
+      (poly ? ", bool, bool" : "") << ");";
+
+    os << "void (*erase2) (database&, const object_type&" <<
+      (poly ? ", bool, bool" : "") << ");";
+  }
+
+  os << "};" // function_table_type
+     << "static const function_table_type* function_table[database_count];"
+     << endl;
+
+  //
+  // Forwarding functions.
+  //
+
+  // persist ()
+  //
+  os << "static void" << endl
+     << "persist (database&, " << (auto_id ? "" : "const ") << "object_type&);"
+     << endl;
+
+  if (id != 0)
+  {
+    // find (id)
+    //
+    if (c.default_ctor ())
+      os << "static pointer_type" << endl
+         << "find (database&, const id_type&);"
+         << endl;
+
+    // find (id, obj)
+    //
+    os << "static bool" << endl
+       << "find (database&, const id_type&, object_type&);"
+       << endl;
+
+    // reload ()
+    //
+    os << "static bool" << endl
+       << "reload (database&, object_type&);"
+       << endl;
+
+    // update ()
+    //
+    if (!readonly (c) || poly)
+    {
+      os << "static void" << endl
+         << "update (database&, const object_type&);"
+         << endl;
+    }
+
+    // erase ()
+    //
+    os << "static void" << endl
+       << "erase (database&, const id_type&);"
+       << endl;
+
+    os << "static void" << endl
+       << "erase (database&, const object_type&);"
+       << endl;
+  }
+
+  os << "};"; // object_traits_impl
 }
 
 void header::class_::

@@ -3669,6 +3669,9 @@ namespace relational
         if (embedded_schema)
           os << "#include <odb/schema-catalog-impl.hxx>" << endl;
 
+        if (options.multi_database () == multi_database::dynamic)
+          os << "#include <odb/function-table.hxx>" << endl;
+
         os << endl;
 
         os << "#include <odb/" << db << "/traits.hxx>" << endl

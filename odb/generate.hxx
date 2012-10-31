@@ -23,4 +23,10 @@ namespace inline_
   generate ();
 }
 
+namespace source
+{
+  void
+  generate ();
+}
+
 #endif // ODB_GENERATE_HXX
