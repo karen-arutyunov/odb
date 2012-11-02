@@ -222,33 +222,32 @@ namespace relational
     }
   };
 
-  // Generate alias tags and alias_traits specializations for pointers
-  // in this objects.
+  // Generate alias_traits specializations for pointers in this objects.
   //
   struct query_alias_traits: object_columns_base, virtual context
   {
     typedef query_alias_traits base;
 
-    query_alias_traits (std::set<string>& tags, std::set<string>& specs)
-        : tags_ (tags), specs_ (specs) {}
+    query_alias_traits (semantics::class_&, bool decl);
 
     virtual void
     traverse_object (semantics::class_&);
 
     virtual void
+    traverse_composite (semantics::data_member*, semantics::class_&);
+
+    virtual void
     traverse_pointer (semantics::data_member&, semantics::class_&);
 
     virtual void
-    generate (string const& alias, semantics::class_&);
+    generate_decl (string const& tag, semantics::class_&);
 
-  private:
-    void
-    generate_specialization (string const& alias,
-                             string const& tag,
-                             semantics::class_&);
+    virtual void
+    generate_def (string const& tag, semantics::class_&, string const& alias);
 
-    std::set<string>& tags_;
-    std::set<string>& specs_;
+  protected:
+    bool decl_;
+    string scope_;
   };
 
   //
@@ -257,8 +256,7 @@ namespace relational
   {
     typedef query_columns_base base;
 
-    query_columns_base ();
-    query_columns_base (semantics::class_&);
+    query_columns_base (semantics::class_&, bool decl);
 
     virtual void
     traverse_object (semantics::class_&);
@@ -272,6 +270,7 @@ namespace relational
   protected:
     bool decl_;
     string scope_;
+    string tag_scope_;
   };
 
   //

@@ -22,8 +22,6 @@ traverse_object (type& c)
   bool base_id (id && &id->scope () != &c); // Comes from base.
   member_access* id_ma (id ? &id->get<member_access> ("get") : 0);
 
-  bool has_ptr (has_a (c, test_pointer));
-
   data_member* opt (optimistic (c));
   member_access* opt_ma_get (opt ? &opt->get<member_access> ("get") : 0);
   member_access* opt_ma_set (opt ? &opt->get<member_access> ("set") : 0);
@@ -61,16 +59,30 @@ traverse_object (type& c)
   object_extra (c);
 
   //
-  // Query.
+  // Query (abstract and concrete).
   //
 
   if (options.generate_query ())
   {
+    bool has_ptr (has_a (c, test_pointer | exclude_base));
+
+    // Generate alias_traits specializations. While the class
+    // is generated even if our base has a pointer, there is
+    // not source code if we don't have pointers ourselves.
+    //
+    if (has_ptr)
+    {
+      bool false_ (false); //@@ (im)perfect forwarding
+      instance<query_alias_traits> t (c, false_);
+      t->traverse (c);
+    }
+
     // query_columns_base
     //
     if (has_ptr)
     {
-      instance<query_columns_base> t (c);
+      bool false_ (false); //@@ (im)perfect forwarding.
+      instance<query_columns_base> t (c, false_);
       t->traverse (c);
     }
   }
@@ -2864,6 +2876,39 @@ traverse_view (type& c)
      << endl;
 
   view_extra (c);
+
+  if (c.get<size_t> ("object-count") != 0)
+  {
+    view_objects& objs (c.get<view_objects> ("objects"));
+
+    // Generate alias_traits specializations.
+    //
+    {
+      bool false_ (false); //@@ (im)perfect forwarding
+      instance<query_alias_traits> at (c, false_);
+
+      for (view_objects::const_iterator i (objs.begin ());
+           i < objs.end ();
+           ++i)
+      {
+        if (i->kind != view_object::object)
+          continue; // Skip tables.
+
+        if (i->alias.empty ())
+          continue;
+
+        semantics::class_& o (*i->obj);
+        qname const& t (table_name (o));
+
+        // Check that the alias is not the same as the table name
+        // (if this is a polymorphic object, then the alias is just
+        // a prefix).
+        //
+        if (polymorphic (o) || t.qualified () || i->alias != t.uname ())
+          at->generate_def (i->alias, o, i->alias);
+      }
+    }
+  }
 
   //
   // Functions.

@@ -17,12 +17,40 @@ namespace relational
   // query_alias_traits
   //
 
+  query_alias_traits::
+  query_alias_traits (semantics::class_& c, bool decl)
+      : decl_ (decl)
+  {
+    scope_ = "access::";
+    scope_ += (object (c) ? "object_traits_impl" : "view_traits_impl");
+    scope_ += "< " + class_fq_name (c) + ", id_" + db.string () + " >";
+  }
+
   void query_alias_traits::
   traverse_object (semantics::class_& c)
   {
     // We don't want to traverse bases.
     //
     names (c);
+  }
+
+  void query_alias_traits::
+  traverse_composite (semantics::data_member* m, semantics::class_& c)
+  {
+    // Base type.
+    //
+    if (m == 0)
+    {
+      object_columns_base::traverse_composite (m, c);
+      return;
+    }
+
+    string old_scope (scope_);
+    scope_ += "::" + public_name (*m) + "_tag";
+
+    object_columns_base::traverse_composite (m, c);
+
+    scope_ = old_scope;
   }
 
   void query_alias_traits::
@@ -33,94 +61,84 @@ namespace relational
     if (m.count ("polymorphic-ref"))
       return;
 
-    // Come up with a table alias. Generally, we want it to be based
-    // on the column name. This is straightforward for single-column
-    // references. In case of a composite id, we will need to use the
-    // column prefix which is based on the data member name, unless
-    // overridden by the user. In the latter case the prefix can be
-    // empty, in which case we will just fall back on the member's
-    // public name.
-    //
-    string alias;
-    {
-      string n;
-
-      if (composite_wrapper (utype (*id_member (c))))
-      {
-        n = column_prefix (m, key_prefix_, default_name_);
-
-        if (n.empty ())
-          n = public_name_db (m);
-        else
-          n.resize (n.size () - 1); // Remove trailing underscore.
-      }
-      else
-        n = column_name (m, key_prefix_, default_name_);
-
-      alias = compose_name (column_prefix_, n);
-    }
-
-    generate (alias, c);
-  }
-
-  void query_alias_traits::
-  generate (string const& alias, semantics::class_& c)
-  {
-    string tag (escape (alias + "_alias_tag"));
-
-    if (tags_.find (tag) == tags_.end ())
-    {
-      os << "class " << tag << ";"
-         << endl;
-
-      tags_.insert (tag);
-    }
-
-    // Generate the alias_traits specialization.
-    //
-    generate_specialization (alias, tag, c);
-  }
-
-  void query_alias_traits::
-  generate_specialization (string const& alias,
-                           string const& tag,
-                           semantics::class_& c)
-  {
-    string const& fq_name (class_fq_name (c));
-    string guard (
-      make_guard ("ODB_" + string (db.string ()) + "_ALIAS_TRAITS_" +
-                  alias + "_FOR_" + flat_name (fq_name)));
-
-    if (specs_.find (guard) != specs_.end ())
-      return;
+    if (decl_)
+      generate_decl (public_name (m), c);
     else
-      specs_.insert (guard);
+    {
+      // Come up with a table alias. Generally, we want it to be based
+      // on the column name. This is straightforward for single-column
+      // references. In case of a composite id, we will need to use the
+      // column prefix which is based on the data member name, unless
+      // overridden by the user. In the latter case the prefix can be
+      // empty, in which case we will just fall back on the member's
+      // public name.
+      //
+      string alias;
+      {
+        string n;
 
+        if (composite_wrapper (utype (*id_member (c))))
+        {
+          n = column_prefix (m, key_prefix_, default_name_);
+
+          if (n.empty ())
+            n = public_name_db (m);
+          else
+            n.resize (n.size () - 1); // Remove trailing underscore.
+        }
+        else
+          n = column_name (m, key_prefix_, default_name_);
+
+        alias = compose_name (column_prefix_, n);
+      }
+
+      generate_def (public_name (m), c, alias);
+    }
+  }
+
+  void query_alias_traits::
+  generate_decl (string const& tag, semantics::class_& c)
+  {
     semantics::class_* poly_root (polymorphic (c));
     bool poly_derived (poly_root != 0 && poly_root != &c);
     semantics::class_* poly_base (poly_derived ? &polymorphic_base (c) : 0);
 
     if (poly_derived)
-      generate_specialization (alias, tag, *poly_base);
+      generate_decl (tag, *poly_base);
 
-    os << "#ifndef " << guard << endl
-       << "#define " << guard << endl;
-
-    os << "template <bool d>" << endl
-       << "struct alias_traits< " << fq_name << ", id_" << db << ", " <<
-      tag << ", d >"
+    os << "template <>" << endl
+       << "struct alias_traits<" << endl
+       << "  " << class_fq_name (c) << "," << endl
+       << "  id_" << db << "," << endl
+       << "  " << scope_ << "::" << tag << "_tag>"
        << "{"
        << "static const char table_name[];";
 
     if (poly_derived)
-      os << "typedef alias_traits< " << class_fq_name (*poly_base) << ", " <<
-        "id_" << db << ", " << tag << " > base_traits;";
+      os << endl
+         << "typedef alias_traits<" << endl
+         << "  " << class_fq_name (*poly_base) << "," << endl
+         << "  id_" << db << "," << endl
+         << "  " << scope_ << "::" << tag << "_tag>" << endl
+         << "base_traits;";
 
     os << "};";
+  }
 
-    os << "template <bool d>" << endl
-       << "const char alias_traits< " << fq_name << ", id_" << db << ", " <<
-      tag << ", d >::" << endl
+  void query_alias_traits::
+  generate_def (string const& tag, semantics::class_& c, string const& alias)
+  {
+    semantics::class_* poly_root (polymorphic (c));
+    bool poly_derived (poly_root != 0 && poly_root != &c);
+    semantics::class_* poly_base (poly_derived ? &polymorphic_base (c) : 0);
+
+    if (poly_derived)
+      generate_def (tag, *poly_base, alias);
+
+    os << "const char alias_traits<"
+       << "  " << class_fq_name (c) << "," << endl
+       << "  id_" << db << "," << endl
+       << "  " << scope_ << "::" << tag << "_tag>::" << endl
        << "table_name[] = ";
 
     if (poly_root != 0)
@@ -129,25 +147,22 @@ namespace relational
       os << strlit (quote_id (alias));
 
     os << ";"
-       << "#endif // " << guard << endl
        << endl;
   }
-
 
   // query_columns_base
   //
 
   query_columns_base::
-  query_columns_base ()
-      : decl_ (true)
+  query_columns_base (semantics::class_& c, bool decl)
+      : decl_ (decl)
   {
-  }
+    string const& n (class_fq_name (c));
 
-  query_columns_base::
-  query_columns_base (semantics::class_& c) //@@ context::{cur,top}_object
-      : decl_ (false)
-  {
-    scope_ = "query_columns_base< " + class_fq_name (c) + ", id_" +
+    if (!decl)
+      scope_ = "query_columns_base< " + n + ", id_" + db.string () + " >";
+
+    tag_scope_ = "access::object_traits_impl< " + n + ", id_" +
       db.string () + " >";
   }
 
@@ -184,17 +199,25 @@ namespace relational
          << "struct " << name << "_base_"
          << "{";
 
+      string old_tag_scope (tag_scope_);
+      tag_scope_ += "::" + name + "_tag";
+
       object_columns_base::traverse_composite (m, c);
+
+      tag_scope_ = old_tag_scope;
 
       os << "};";
     }
     else
     {
       string old_scope (scope_);
+      string old_tag_scope (tag_scope_);
       scope_ += "::" + name + "_base_";
+      tag_scope_ += "::" + name + "_tag";
 
       object_columns_base::traverse_composite (m, c);
 
+      tag_scope_ = old_tag_scope;
       scope_ = old_scope;
     }
   }
@@ -215,39 +238,13 @@ namespace relational
       os << "// " << name << endl
          << "//" << endl;
 
-      // Come up with a table alias. Generally, we want it to be based
-      // on the column name. This is straightforward for single-column
-      // references. In case of a composite id, we will need to use the
-      // column prefix which is based on the data member name, unless
-      // overridden by the user. In the latter case the prefix can be
-      // empty, in which case we will just fall back on the member's
-      // public name.
-      //
-      string alias;
-      {
-        string n;
-
-        if (composite_wrapper (utype (*id_member (c))))
-        {
-          n = column_prefix (m, key_prefix_, default_name_);
-
-          if (n.empty ())
-            n = public_name_db (m);
-          else
-            n.resize (n.size () - 1); // Remove trailing underscore.
-        }
-        else
-          n = column_name (m, key_prefix_, default_name_);
-
-        alias = compose_name (column_prefix_, n);
-      }
-
-      string tag (escape (alias + "_alias_tag"));
       string const& fq_name (class_fq_name (c));
 
       os << "typedef" << endl
-         << "odb::alias_traits< " << fq_name << ", id_" << db << ", " <<
-        tag << " >" << endl
+         << "odb::alias_traits<" << endl
+         << "  " << fq_name << "," << endl
+         << "  id_" << db << "," << endl
+         << "  " << tag_scope_ << "::" << name << "_tag>" << endl
          << name << "_alias_;"
          << endl;
 

@@ -142,6 +142,62 @@ namespace relational
     };
 
     //
+    // query_tags
+    //
+
+    struct query_tags: object_columns_base, virtual context
+    {
+      typedef query_tags base;
+
+      virtual void
+      traverse_object (semantics::class_& c)
+      {
+        names (c); // We don't want to traverse bases.
+      }
+
+      virtual void
+      traverse_composite (semantics::data_member* m, semantics::class_& c)
+      {
+        // Base type.
+        //
+        if (m == 0)
+        {
+          object_columns_base::traverse_composite (m, c);
+          return;
+        }
+
+        // Don't generate an empty struct if we don't have any pointers.
+        //
+        if (!has_a (c, test_pointer))
+          return;
+
+        os << "struct " << public_name (*m) << "_tag"
+           << "{";
+
+        object_columns_base::traverse_composite (m, c);
+
+        os << "};";
+      }
+
+      virtual void
+      traverse_pointer (semantics::data_member& m, semantics::class_&)
+      {
+        // Ignore polymorphic id references.
+        //
+        if (m.count ("polymorphic-ref"))
+          return;
+
+        generate (public_name (m));
+      }
+
+      virtual void
+      generate (string const& name)
+      {
+        os << "struct " << name << "_tag;";
+      }
+    };
+
+    //
     // query_columns_type
     //
 
@@ -305,7 +361,8 @@ namespace relational
               db << " >"
                << "{";
 
-            instance<query_columns_base> t;
+            bool true_ (true); //@@ (im)perfect forwarding.
+            instance<query_columns_base> t (c, true_);
             t->traverse (c);
 
             os << "};";
@@ -1072,7 +1129,8 @@ namespace relational
           //
           if (has_ptr)
           {
-            instance<query_alias_traits> t (alias_tags_, alias_specs_);
+            bool true_ (true); //@@ (im)perfect forwarding
+            instance<query_alias_traits> t (c, true_);
             t->traverse (c);
 
             query_columns_type_->traverse (c);
@@ -1098,10 +1156,11 @@ namespace relational
 
           view_objects& objs (c.get<view_objects> ("objects"));
 
-          // Generate the alias tags and alias_traits specializations.
+          // Generate alias_traits specializations.
           //
           {
-            instance<query_alias_traits> at (alias_tags_, alias_specs_);
+            bool true_ (true); //@@ (im)perfect forwarding
+            instance<query_alias_traits> at (c, true_);
 
             for (view_objects::const_iterator i (objs.begin ());
                  i < objs.end ();
@@ -1121,7 +1180,7 @@ namespace relational
               // a prefix).
               //
               if (polymorphic (o) || t.qualified () || i->alias != t.uname ())
-                at->generate (i->alias, o);
+                at->generate_decl (i->alias, o);
             }
           }
 
@@ -1156,9 +1215,10 @@ namespace relational
                             table.qualified () ||
                             i->alias != table.uname ()))
               {
-                string tag (escape (i->alias + "_alias_tag"));
-                os << "  odb::alias_traits< " << otype << ", id_" << db <<
-                  ", " << tag << " > >" << endl;
+                os << "  odb::alias_traits< " << otype << "," << endl
+                   << "    id_" << db << "," << endl
+                   << "    access::view_traits_impl< " << type << ", id_" <<
+                  db << " >::" << i->alias << "_tag> >" << endl;
               }
               else
                 os << "  odb::access::object_traits_impl< " << otype <<
@@ -1198,9 +1258,11 @@ namespace relational
                           table.qualified () ||
                           vo->alias != table.uname ()))
             {
-              string tag (escape (vo->alias + "_alias_tag"));
-              os << "    odb::alias_traits< " << otype << ", id_" <<
-                db << ", " << tag << " > >";
+              os << "    odb::alias_traits<" << endl
+                 << "      " << otype << "," << endl
+                 << "      id_" << db << "," << endl
+                 << "      access::view_traits_impl< " << type << ", id_" <<
+                db << " >::" << vo->alias << "_tag> >";
             }
             else
               os << "    odb::access::object_traits_impl< " << otype <<
@@ -1221,9 +1283,6 @@ namespace relational
 
     private:
       instance<query_columns_type> query_columns_type_;
-
-      std::set<string> alias_tags_;
-      std::set<string> alias_specs_;
     };
 
     struct include: virtual context
