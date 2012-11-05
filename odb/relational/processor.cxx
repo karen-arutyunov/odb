@@ -495,7 +495,7 @@ namespace relational
         semantics::names* ih (0);
         semantics::names* kh (0);
 
-        if (t.count ("container"))
+        if (t.count ("container-kind"))
         {
           ck = t.get<container_kind_type> ("container-kind");
           vt = t.get<semantics::type*> ("value-tree-type");
