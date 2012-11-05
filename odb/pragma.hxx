@@ -252,16 +252,11 @@ extern ns_loc_pragmas ns_loc_pragmas_;
 typedef std::map<declaration, pragma_set> decl_pragmas;
 extern decl_pragmas decl_pragmas_;
 
-// List of pragma names (in context name form) that disqualify a value
-// type from being treated as composite (i.e., simple value pragmas).
-//
-typedef std::set<std::string> pragma_name_set;
-extern pragma_name_set simple_value_pragmas_;
-
-// Database we are generating code for. Used to ignore database-specific
-// pragmas.
+// Database we are generating code for as well as multi-database support.
+// Used to ignore database-specific pragmas.
 //
 extern database pragma_db_;
+extern multi_database pragma_multi_;
 
 extern "C" void
 register_odb_pragmas (void*, void*);

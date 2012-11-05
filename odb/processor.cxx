@@ -19,6 +19,16 @@ using namespace std;
 
 namespace
 {
+  // Indirect (dynamic) context values.
+  //
+  static semantics::type*
+  id_tree_type ()
+  {
+    context& c (context::current ());
+    semantics::data_member& id (*context::id_member (*c.top_object));
+    return &id.type ();
+  }
+
   struct data_member: traversal::data_member, context
   {
     virtual void
@@ -29,6 +39,64 @@ namespace
 
       process_access (m, "get");
       process_access (m, "set");
+
+      // We don't need to do any further processing for common if we
+      // are generating static multi-database code.
+      //
+      if (options.database ()[0] == database::common &&
+          options.multi_database () == multi_database::static_)
+        return;
+
+      semantics::names* hint;
+      semantics::type& t (utype (m, hint));
+
+      // Handle wrappers.
+      //
+      semantics::type* wt (0), *qwt (0);
+      semantics::names* whint (0);
+      if (process_wrapper (t))
+      {
+        qwt = t.get<semantics::type*> ("wrapper-type");
+        whint = t.get<semantics::names*> ("wrapper-hint");
+        wt = &utype (*qwt, whint);
+      }
+
+      // If the type is const and the member is not id, version, or
+      // inverse, then mark it as readonly. In case of a wrapper,
+      // both the wrapper type and the wrapped type must be const.
+      // To see why, consider these possibilities:
+      //
+      // auto_ptr<const T> - can modify by setting a new pointer
+      // const auto_ptr<T> - can modify by changing the pointed-to value
+      //
+      if (const_type (m.type ()) &&
+          !(id (m) || version (m) || m.count ("inverse")))
+      {
+        if (qwt == 0 || const_type (*qwt))
+          m.set ("readonly", true);
+      }
+
+      if (composite_wrapper (t))
+        return;
+
+      // Process object pointer. The resulting column will be a simple
+      // or composite value.
+      //
+      if (process_object_pointer (m, t))
+        return;
+
+      // Before checking if this is a container, check if this member
+      // or its type were deduced to be a simple value based on the
+      // pragmas. This is necessary because a container member (e.g.,
+      // vector<char>) can be "overridden" into a simple value (e.g.,
+      // BLOB) with a pragma.
+      //
+      if (m.count ("simple") ||
+          t.count ("simple") ||
+          (wt != 0 && wt->count ("simple")))
+        return;
+
+      process_container (m, (wt != 0 ? *wt : t));
     }
 
     //
@@ -518,6 +586,933 @@ namespace
         }
       }
     }
+
+    //
+    // Process wrapper.
+    //
+
+    bool
+    process_wrapper (semantics::type& t)
+    {
+      if (t.count ("wrapper"))
+        return t.get<bool> ("wrapper");
+
+      // Check this type with wrapper_traits.
+      //
+      tree inst (instantiate_template (wrapper_traits_, t.tree_node ()));
+
+      if (inst == 0)
+      {
+        t.set ("wrapper", false);
+        return false;
+      }
+
+      // @@ This points to the primary template, not the specialization.
+      //
+      tree decl (TYPE_NAME (inst));
+
+      string f (DECL_SOURCE_FILE (decl));
+      size_t l (DECL_SOURCE_LINE (decl));
+      size_t c (DECL_SOURCE_COLUMN (decl));
+
+      // Get the wrapped type.
+      //
+      try
+      {
+        tree decl (
+          lookup_qualified_name (
+            inst, get_identifier ("wrapped_type"), true, false));
+
+        if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
+          throw operation_failed ();
+
+        // The wrapped_type alias is a typedef in an instantiation
+        // that we just instantiated dynamically. As a result there
+        // is no semantic graph edges corresponding to this typedef
+        // since we haven't parsed it yet. So to get the tree node
+        // that can actually be resolved to the graph node, we use
+        // the source type of this typedef.
+        //
+        tree type (DECL_ORIGINAL_TYPE (decl));
+
+        semantics::type& wt (
+          dynamic_cast<semantics::type&> (*unit.find (type)));
+
+        // Find the hint.
+        //
+        semantics::names* wh (0);
+
+        for (tree ot (DECL_ORIGINAL_TYPE (decl));
+             ot != 0;
+             ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
+        {
+          if ((wh = unit.find_hint (ot)))
+            break;
+
+          decl = TYPE_NAME (ot);
+        }
+
+        t.set ("wrapper-type", &wt);
+        t.set ("wrapper-hint", wh);
+      }
+      catch (operation_failed const&)
+      {
+        os << f << ":" << l << ":" << c << ": error: "
+           << "wrapper_traits specialization does not define the "
+           << "wrapped_type type" << endl;
+        throw;
+      }
+
+      // Get the null_handler flag.
+      //
+      bool null_handler (false);
+
+      try
+      {
+        tree nh (
+          lookup_qualified_name (
+            inst, get_identifier ("null_handler"), false, false));
+
+        if (nh == error_mark_node || TREE_CODE (nh) != VAR_DECL)
+          throw operation_failed ();
+
+        // Instantiate this decalaration so that we can get its value.
+        //
+        if (DECL_TEMPLATE_INSTANTIATION (nh) &&
+            !DECL_TEMPLATE_INSTANTIATED (nh) &&
+            !DECL_EXPLICIT_INSTANTIATION (nh))
+          instantiate_decl (nh, false, false);
+
+        tree init (DECL_INITIAL (nh));
+
+        if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
+          throw operation_failed ();
+
+        unsigned long long e;
+
+        {
+          HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
+          HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
+
+          unsigned long long l (hwl);
+          unsigned long long h (hwh);
+          unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+          e = (h << width) + l;
+        }
+
+        null_handler = static_cast<bool> (e);
+        t.set ("wrapper-null-handler", null_handler);
+      }
+      catch (operation_failed const&)
+      {
+        os << f << ":" << l << ":" << c << ": error: "
+           << "wrapper_traits specialization does not define the "
+           << "null_handler constant" << endl;
+        throw;
+      }
+
+      // Get the null_default flag.
+      //
+      if (null_handler)
+      {
+        try
+        {
+          tree nh (
+            lookup_qualified_name (
+              inst, get_identifier ("null_default"), false, false));
+
+          if (nh == error_mark_node || TREE_CODE (nh) != VAR_DECL)
+            throw operation_failed ();
+
+          // Instantiate this decalaration so that we can get its value.
+          //
+          if (DECL_TEMPLATE_INSTANTIATION (nh) &&
+              !DECL_TEMPLATE_INSTANTIATED (nh) &&
+              !DECL_EXPLICIT_INSTANTIATION (nh))
+            instantiate_decl (nh, false, false);
+
+          tree init (DECL_INITIAL (nh));
+
+          if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
+            throw operation_failed ();
+
+          unsigned long long e;
+
+          {
+            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
+            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
+
+            unsigned long long l (hwl);
+            unsigned long long h (hwh);
+            unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+            e = (h << width) + l;
+          }
+
+          t.set ("wrapper-null-default", static_cast<bool> (e));
+        }
+        catch (operation_failed const&)
+        {
+          os << f << ":" << l << ":" << c << ": error: "
+             << "wrapper_traits specialization does not define the "
+             << "null_default constant" << endl;
+          throw;
+        }
+      }
+
+      // Check if the wrapper is a TR1 template instantiation.
+      //
+      if (tree ti = TYPE_TEMPLATE_INFO (t.tree_node ()))
+      {
+        tree decl (TI_TEMPLATE (ti)); // DECL_TEMPLATE
+
+        // Get to the most general template declaration.
+        //
+        while (DECL_TEMPLATE_INFO (decl))
+          decl = DECL_TI_TEMPLATE (decl);
+
+        bool& tr1 (features.tr1_pointer);
+        bool& boost (features.boost_pointer);
+
+        string n (decl_as_string (decl, TFF_PLAIN_IDENTIFIER));
+
+        // In case of a boost TR1 implementation, we cannot distinguish
+        // between the boost:: and std::tr1:: usage since the latter is
+        // just a using-declaration for the former.
+        //
+        tr1 = tr1
+          || n.compare (0, 8, "std::tr1") == 0
+          || n.compare (0, 10, "::std::tr1") == 0;
+
+        boost = boost
+          || n.compare (0, 17, "boost::shared_ptr") == 0
+          || n.compare (0, 19, "::boost::shared_ptr") == 0;
+      }
+
+      t.set ("wrapper", true);
+      return true;
+    }
+
+    //
+    // Process object pointer.
+    //
+
+    semantics::class_*
+    process_object_pointer (semantics::data_member& m,
+                            semantics::type& t,
+                            string const& kp = string ())
+    {
+      // The overall idea is as follows: try to instantiate the pointer
+      // traits class template. If we are successeful, then get the
+      // element type and see if it is an object.
+      //
+      using semantics::class_;
+      using semantics::data_member;
+
+      class_* c (0);
+
+      if (t.count ("element-type"))
+        c = t.get<class_*> ("element-type");
+      else
+      {
+        tree inst (instantiate_template (pointer_traits_, t.tree_node ()));
+
+        if (inst == 0)
+          return 0;
+
+        // @@ This points to the primary template, not the specialization.
+        //
+        tree decl (TYPE_NAME (inst));
+
+        string fl (DECL_SOURCE_FILE (decl));
+        size_t ln (DECL_SOURCE_LINE (decl));
+        size_t cl (DECL_SOURCE_COLUMN (decl));
+
+        // Get the element type.
+        //
+        tree tn (0);
+        try
+        {
+          tree decl (
+            lookup_qualified_name (
+              inst, get_identifier ("element_type"), true, false));
+
+          if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
+            throw operation_failed ();
+
+          tn = TYPE_MAIN_VARIANT (TREE_TYPE (decl));
+
+          // Check if the pointer is a TR1 template instantiation.
+          //
+          if (tree ti = TYPE_TEMPLATE_INFO (t.tree_node ()))
+          {
+            decl = TI_TEMPLATE (ti); // DECL_TEMPLATE
+
+            // Get to the most general template declaration.
+            //
+            while (DECL_TEMPLATE_INFO (decl))
+              decl = DECL_TI_TEMPLATE (decl);
+
+            bool& tr1 (features.tr1_pointer);
+            bool& boost (features.boost_pointer);
+
+            string n (decl_as_string (decl, TFF_PLAIN_IDENTIFIER));
+
+            // In case of a boost TR1 implementation, we cannot distinguish
+            // between the boost:: and std::tr1:: usage since the latter is
+            // just a using-declaration for the former.
+            //
+            tr1 = tr1
+              || n.compare (0, 8, "std::tr1") == 0
+              || n.compare (0, 10, "::std::tr1") == 0;
+
+            boost = boost
+              || n.compare (0, 17, "boost::shared_ptr") == 0
+              || n.compare (0, 19, "::boost::shared_ptr") == 0;
+          }
+        }
+        catch (operation_failed const&)
+        {
+          os << fl << ":" << ln << ":" << cl << ": error: pointer_traits "
+             << "specialization does not define the 'element_type' type"
+             << endl;
+          throw;
+        }
+
+        c = dynamic_cast<class_*> (unit.find (tn));
+
+        if (c == 0 || !object (*c))
+          return 0;
+
+        t.set ("element-type", c);
+
+        // Determine the pointer kind.
+        //
+        try
+        {
+          tree kind (
+            lookup_qualified_name (
+              inst, get_identifier ("kind"), false, false));
+
+          if (kind == error_mark_node || TREE_CODE (kind) != VAR_DECL)
+            throw operation_failed ();
+
+          // Instantiate this decalaration so that we can get its value.
+          //
+          if (DECL_TEMPLATE_INSTANTIATION (kind) &&
+              !DECL_TEMPLATE_INSTANTIATED (kind) &&
+              !DECL_EXPLICIT_INSTANTIATION (kind))
+            instantiate_decl (kind, false, false);
+
+          tree init (DECL_INITIAL (kind));
+
+          if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
+            throw operation_failed ();
+
+          unsigned long long e;
+
+          {
+            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
+            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
+
+            unsigned long long l (hwl);
+            unsigned long long h (hwh);
+            unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+            e = (h << width) + l;
+          }
+
+          pointer_kind_type pk = static_cast<pointer_kind_type> (e);
+          t.set ("pointer-kind", pk);
+        }
+        catch (operation_failed const&)
+        {
+          os << fl << ":" << ln << ":" << cl << ": error: pointer_traits "
+             << "specialization does not define the 'kind' constant" << endl;
+          throw;
+        }
+
+        // Get the lazy flag.
+        //
+        try
+        {
+          tree lazy (
+            lookup_qualified_name (
+              inst, get_identifier ("lazy"), false, false));
+
+          if (lazy == error_mark_node || TREE_CODE (lazy) != VAR_DECL)
+            throw operation_failed ();
+
+          // Instantiate this decalaration so that we can get its value.
+          //
+          if (DECL_TEMPLATE_INSTANTIATION (lazy) &&
+              !DECL_TEMPLATE_INSTANTIATED (lazy) &&
+              !DECL_EXPLICIT_INSTANTIATION (lazy))
+            instantiate_decl (lazy, false, false);
+
+          tree init (DECL_INITIAL (lazy));
+
+          if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
+            throw operation_failed ();
+
+          unsigned long long e;
+
+          {
+            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
+            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
+
+            unsigned long long l (hwl);
+            unsigned long long h (hwh);
+            unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+            e = (h << width) + l;
+          }
+
+          t.set ("pointer-lazy", static_cast<bool> (e));
+        }
+        catch (operation_failed const&)
+        {
+          os << fl << ":" << ln << ":" << cl << ": error: pointer_traits "
+             << "specialization does not define the 'kind' constant" << endl;
+          throw;
+        }
+      }
+
+      // Make sure the pointed-to class is complete.
+      //
+      if (!c->complete ())
+      {
+        os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+           << "error: pointed-to class '" << class_fq_name (*c) << "' "
+           << "is incomplete" << endl;
+
+        os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+           << "info: class '" << class_name (*c) << "' is declared here"
+           << endl;
+
+        os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+           << "info: consider including its definition with the "
+           << "--odb-epilogue option" << endl;
+
+        throw operation_failed ();
+      }
+
+      // Make sure the pointed-to class is not reuse-abstract.
+      //
+      if (abstract (*c) && !polymorphic (*c))
+      {
+        os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+           << "error: pointed-to class '" << class_fq_name (*c) << "' "
+           << "is abstract" << endl;
+
+        os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+           << "info: class '" << class_name (*c) << "' is defined here"
+           << endl;
+
+        throw operation_failed ();
+      }
+
+      // Make sure the pointed-to class has object id.
+      //
+      if (id_member (*c) == 0)
+      {
+        os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+           << "error: pointed-to class '" << class_fq_name (*c) << "' "
+           << "has no object id" << endl;
+
+        os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+           << "info: class '" << class_name (*c) << "' is defined here"
+           << endl;
+
+        throw operation_failed ();
+      }
+
+      // See if this is the inverse side of a bidirectional relationship.
+      // If so, then resolve the member and cache it in the context.
+      //
+      if (m.count ("inverse"))
+      {
+        string name (m.get<string> ("inverse"));
+        location_t loc (m.get<location_t> ("inverse-location"));
+
+        try
+        {
+          data_member& im (
+            c->lookup<data_member> (name, class_::include_hidden));
+
+          // @@ Would be good to check that the other end is actually
+          // an object pointer, is not marked as transient or inverse,
+          // and points to the correct object. But the other class may
+          // not have been processed yet.
+          //
+          m.remove ("inverse");
+          m.set (kp + (kp.empty () ? "": "-") + "inverse", &im);
+        }
+        catch (semantics::unresolved const& e)
+        {
+          if (e.type_mismatch)
+            error (loc) << "name '" << name << "' in '#pragma db " <<
+              "inverse' does not refer to a data member" << endl;
+          else
+            error (loc) << "unable to resolve data member '" << name <<
+              "' specified with '#pragma db inverse'" << endl;
+
+          throw operation_failed ();
+        }
+        catch (semantics::ambiguous const& e)
+        {
+          error (loc) << "data member name '" << name << "' specified " <<
+            "with '#pragma db inverse' is ambiguous" << endl;
+
+          info (e.first.named ().location ()) << "could resolve to this " <<
+            "data member" << endl;
+
+          info (e.second.named ().location ()) << "or could resolve to " <<
+            "this data member" << endl;
+
+          throw operation_failed ();
+        }
+      }
+
+      return c;
+    }
+
+    //
+    // Process container.
+    //
+
+    void
+    process_container_value (semantics::type& t,
+                             semantics::data_member& m,
+                             string const& prefix,
+                             bool obj_ptr)
+    {
+      process_wrapper (t);
+
+      if (composite_wrapper (t))
+        return;
+
+      if (obj_ptr)
+        process_object_pointer (m, t, prefix);
+    }
+
+    bool
+    process_container (semantics::data_member& m, semantics::type& t)
+    {
+      // The overall idea is as follows: try to instantiate the container
+      // traits class template. If we are successeful, then this is a
+      // container type and we can extract the various information from
+      // the instantiation. Otherwise, this is not a container.
+      //
+
+      container_kind_type ck;
+      semantics::type* vt (0);
+      semantics::type* it (0);
+      semantics::type* kt (0);
+
+      semantics::names* vh (0);
+      semantics::names* ih (0);
+      semantics::names* kh (0);
+
+      if (t.count ("container-kind"))
+      {
+        ck = t.get<container_kind_type> ("container-kind");
+        vt = t.get<semantics::type*> ("value-tree-type");
+        vh = t.get<semantics::names*> ("value-tree-hint");
+
+        if (ck == ck_ordered)
+        {
+          it = t.get<semantics::type*> ("index-tree-type");
+          ih = t.get<semantics::names*> ("index-tree-hint");
+        }
+
+        if (ck == ck_map || ck == ck_multimap)
+        {
+          kt = t.get<semantics::type*> ("key-tree-type");
+          kh = t.get<semantics::names*> ("key-tree-hint");
+        }
+      }
+      else
+      {
+        tree inst (instantiate_template (container_traits_, t.tree_node ()));
+
+        if (inst == 0)
+          return false;
+
+        // @@ This points to the primary template, not the specialization.
+        //
+        tree decl (TYPE_NAME (inst));
+
+        string f (DECL_SOURCE_FILE (decl));
+        size_t l (DECL_SOURCE_LINE (decl));
+        size_t c (DECL_SOURCE_COLUMN (decl));
+
+        // Determine the container kind.
+        //
+        try
+        {
+          tree kind (
+            lookup_qualified_name (
+              inst, get_identifier ("kind"), false, false));
+
+          if (kind == error_mark_node || TREE_CODE (kind) != VAR_DECL)
+            throw operation_failed ();
+
+
+          // Instantiate this decalaration so that we can get its value.
+          //
+          if (DECL_TEMPLATE_INSTANTIATION (kind) &&
+              !DECL_TEMPLATE_INSTANTIATED (kind) &&
+              !DECL_EXPLICIT_INSTANTIATION (kind))
+            instantiate_decl (kind, false, false);
+
+          tree init (DECL_INITIAL (kind));
+
+          if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
+            throw operation_failed ();
+
+          unsigned long long e;
+
+          {
+            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
+            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
+
+            unsigned long long l (hwl);
+            unsigned long long h (hwh);
+            unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+            e = (h << width) + l;
+          }
+
+          ck = static_cast<container_kind_type> (e);
+        }
+        catch (operation_failed const&)
+        {
+          os << f << ":" << l << ":" << c << ": error: "
+             << "container_traits specialization does not define the "
+             << "container kind constant" << endl;
+
+          throw;
+        }
+
+        t.set ("container-kind", ck);
+
+        // Mark id column as not null.
+        //
+        t.set ("id-not-null", true);
+
+        // Get the value type.
+        //
+        try
+        {
+          tree decl (
+            lookup_qualified_name (
+              inst, get_identifier ("value_type"), true, false));
+
+          if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
+            throw operation_failed ();
+
+          tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
+          vt = &dynamic_cast<semantics::type&> (*unit.find (type));
+
+          // Find the hint.
+          //
+          for (tree ot (DECL_ORIGINAL_TYPE (decl));
+               ot != 0;
+               ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
+          {
+            if ((vh = unit.find_hint (ot)))
+              break;
+
+            decl = TYPE_NAME (ot);
+          }
+        }
+        catch (operation_failed const&)
+        {
+          os << f << ":" << l << ":" << c << ": error: "
+             << "container_traits specialization does not define the "
+             << "value_type type" << endl;
+
+          throw;
+        }
+
+        t.set ("value-tree-type", vt);
+        t.set ("value-tree-hint", vh);
+
+        // If we have a set container, automatically mark the value
+        // column as not null. If we already have an explicit null for
+        // this column, issue an error.
+        //
+        if (ck == ck_set)
+        {
+          if (t.count ("value-null"))
+          {
+            os << t.file () << ":" << t.line () << ":" << t.column () << ":"
+               << " error: set container cannot contain null values" << endl;
+
+            throw operation_failed ();
+          }
+          else
+            t.set ("value-not-null", true);
+        }
+
+        // Issue a warning if we are relaxing null-ness in the
+        // container type.
+        //
+        if (t.count ("value-null") && vt->count ("not-null"))
+        {
+          os << t.file () << ":" << t.line () << ":" << t.column () << ":"
+             << " warning: container value declared null while its type "
+             << "is declared not null" << endl;
+        }
+
+        // Get the index type for ordered containers.
+        //
+        if (ck == ck_ordered)
+        {
+          try
+          {
+            tree decl (
+              lookup_qualified_name (
+                inst, get_identifier ("index_type"), true, false));
+
+            if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
+              throw operation_failed ();
+
+            tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
+            it = &dynamic_cast<semantics::type&> (*unit.find (type));
+
+            // Find the hint.
+            //
+            for (tree ot (DECL_ORIGINAL_TYPE (decl));
+                 ot != 0;
+                 ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
+            {
+              if ((ih = unit.find_hint (ot)))
+                break;
+
+              decl = TYPE_NAME (ot);
+            }
+          }
+          catch (operation_failed const&)
+          {
+            os << f << ":" << l << ":" << c << ": error: "
+               << "container_traits specialization does not define the "
+               << "index_type type" << endl;
+
+            throw;
+          }
+
+          t.set ("index-tree-type", it);
+          t.set ("index-tree-hint", ih);
+          t.set ("index-not-null", true);
+        }
+
+        // Get the key type for maps.
+        //
+        if (ck == ck_map || ck == ck_multimap)
+        {
+          try
+          {
+            tree decl (
+              lookup_qualified_name (
+                inst, get_identifier ("key_type"), true, false));
+
+            if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
+              throw operation_failed ();
+
+            tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
+            kt = &dynamic_cast<semantics::type&> (*unit.find (type));
+
+            // Find the hint.
+            //
+            for (tree ot (DECL_ORIGINAL_TYPE (decl));
+                 ot != 0;
+                 ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
+            {
+              if ((kh = unit.find_hint (ot)))
+                break;
+
+              decl = TYPE_NAME (ot);
+            }
+          }
+          catch (operation_failed const&)
+          {
+            os << f << ":" << l << ":" << c << ": error: "
+               << "container_traits specialization does not define the "
+               << "key_type type" << endl;
+
+            throw;
+          }
+
+          t.set ("key-tree-type", kt);
+          t.set ("key-tree-hint", kh);
+          t.set ("key-not-null", true);
+        }
+      }
+
+      // Process member data.
+      //
+      m.set ("id-tree-type", &id_tree_type);
+
+      process_container_value (*vt, m, "value", true);
+
+      if (it != 0)
+        process_container_value (*it, m, "index", false);
+
+      if (kt != 0)
+        process_container_value (*kt, m, "key", false);
+
+      // If this is an inverse side of a bidirectional object relationship
+      // and it is an ordered container, mark it as unordred since there is
+      // no concept of order in this construct.
+      //
+      if (ck == ck_ordered && m.count ("value-inverse"))
+        m.set ("unordered", true);
+
+      // Issue an error if we have a null column in a set container.
+      // This can only happen if the value is declared as null in
+      // the member.
+      //
+      if (ck == ck_set && m.count ("value-null"))
+      {
+        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+           << " error: set container cannot contain null values" << endl;
+
+        throw operation_failed ();
+      }
+
+      // Issue a warning if we are relaxing null-ness in the member.
+      //
+      if (m.count ("value-null") &&
+          (t.count ("value-not-null") || vt->count ("not-null")))
+      {
+        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+           << " warning: container value declared null while the container "
+           << "type or value type declares it as not null" << endl;
+      }
+
+      return true;
+    }
+
+    //
+    // Implementation details (c-tor, helpers).
+    //
+
+    data_member ()
+    {
+      // Find the odb namespace.
+      //
+      tree odb = lookup_qualified_name (
+        global_namespace, get_identifier ("odb"), false, false);
+
+      if (odb == error_mark_node)
+      {
+        os << unit.file () << ": error: unable to resolve odb namespace"
+           << endl;
+
+        throw operation_failed ();
+      }
+
+      // Find wrapper traits.
+      //
+      wrapper_traits_ = lookup_qualified_name (
+        odb, get_identifier ("wrapper_traits"), true, false);
+
+      if (wrapper_traits_ == error_mark_node ||
+          !DECL_CLASS_TEMPLATE_P (wrapper_traits_))
+      {
+        os << unit.file () << ": error: unable to resolve wrapper_traits "
+           << "in the odb namespace" << endl;
+
+        throw operation_failed ();
+      }
+
+      // Find pointer traits.
+      //
+      pointer_traits_ = lookup_qualified_name (
+        odb, get_identifier ("pointer_traits"), true, false);
+
+      if (pointer_traits_ == error_mark_node ||
+          !DECL_CLASS_TEMPLATE_P (pointer_traits_))
+      {
+        os << unit.file () << ": error: unable to resolve pointer_traits "
+           << "in the odb namespace" << endl;
+
+        throw operation_failed ();
+      }
+
+      // Find the access class.
+      //
+      tree access = lookup_qualified_name (
+        odb, get_identifier ("access"), true, false);
+
+      if (access == error_mark_node)
+      {
+        os << unit.file () << ": error: unable to resolve access class"
+           << "in the odb namespace" << endl;
+
+        throw operation_failed ();
+      }
+
+      access = TREE_TYPE (access);
+
+      // Find container_traits.
+      //
+      container_traits_ = lookup_qualified_name (
+        access, get_identifier ("container_traits"), true, false);
+
+      if (container_traits_ == error_mark_node ||
+          !DECL_CLASS_TEMPLATE_P (container_traits_))
+      {
+        os << unit.file () << ": error: unable to resolve container_traits "
+           << "in the odb namespace" << endl;
+
+        throw operation_failed ();
+      }
+    }
+
+    static tree
+    instantiate_template (tree t, tree arg)
+    {
+      tree args (make_tree_vec (1));
+      TREE_VEC_ELT (args, 0) = arg;
+
+      // This step should succeed regardles of whether there is a
+      // specialization for this type.
+      //
+      tree inst (
+        lookup_template_class (t, args, 0, 0, 0, tf_warning_or_error));
+
+      if (inst == error_mark_node)
+      {
+        // Diagnostics has already been issued by lookup_template_class.
+        //
+        throw operation_failed ();
+      }
+
+      inst = TYPE_MAIN_VARIANT (inst);
+
+      // The instantiation may already be complete if it matches a
+      // (complete) specialization or was used before.
+      //
+      if (!COMPLETE_TYPE_P (inst))
+        inst = instantiate_class_template (inst);
+
+      // If we cannot instantiate this type, assume there is no suitable
+      // specialization for it.
+      //
+      if (inst == error_mark_node || !COMPLETE_TYPE_P (inst))
+        return 0;
+
+      return inst;
+    }
+
+  private:
+    tree wrapper_traits_;
+    tree pointer_traits_;
+    tree container_traits_;
   };
 
   struct class_: traversal::class_, context
@@ -583,6 +1578,8 @@ namespace
 
       if (k == class_object)
         traverse_object (c);
+      else if (k == class_view)
+        traverse_view (c);
 
       names (c);
     }
@@ -728,6 +1725,124 @@ namespace
         }
       }
     }
+
+    //
+    // View.
+    //
+
+    virtual void
+    traverse_view (type& c)
+    {
+      // Resolve referenced objects from tree nodes to semantic graph
+      // nodes. Also populate maps and compute counts.
+      //
+      view_alias_map& amap (c.set ("alias-map", view_alias_map ()));
+      view_object_map& omap (c.set ("object-map", view_object_map ()));
+
+      size_t& obj_count (c.set ("object-count", size_t (0)));
+      size_t& tbl_count (c.set ("table-count", size_t (0)));
+
+      if (c.count ("objects"))
+      {
+        using semantics::class_;
+
+        view_objects& objs (c.get<view_objects> ("objects"));
+
+        for (view_objects::iterator i (objs.begin ()); i != objs.end (); ++i)
+        {
+          if (i->kind != view_object::object)
+          {
+            tbl_count++;
+            continue;
+          }
+          else
+            obj_count++;
+
+          tree n (TYPE_MAIN_VARIANT (i->obj_node));
+
+          if (TREE_CODE (n) != RECORD_TYPE)
+          {
+            error (i->loc) << "name '" << i->obj_name << "' in db pragma " <<
+              "object does not name a class" << endl;
+
+            throw operation_failed ();
+          }
+
+          class_& o (dynamic_cast<class_&> (*unit.find (n)));
+
+          if (!object (o))
+          {
+            error (i->loc) << "name '" << i->obj_name << "' in db pragma " <<
+              "object does not name a persistent class" << endl;
+
+            info (o.location ()) << "class '" << i->obj_name << "' is " <<
+              "defined here" << endl;
+
+            throw operation_failed ();
+          }
+
+          i->obj = &o;
+
+          if (i->alias.empty ())
+          {
+            if (!omap.insert (view_object_map::value_type (&o, &*i)).second)
+            {
+              error (i->loc) << "persistent class '" << i->obj_name <<
+                "' is used in the view more than once" << endl;
+
+              error (omap[&o]->loc) << "previously used here" << endl;
+
+              info (i->loc) << "use the alias clause to assign it a " <<
+                "different name" << endl;
+
+              throw operation_failed ();
+            }
+
+            // Also add the bases of a polymorphic object.
+            //
+            class_* poly_root (polymorphic (o));
+
+            if (poly_root != 0 && poly_root != &o)
+            {
+              for (class_* b (&polymorphic_base (o));;
+                   b = &polymorphic_base (*b))
+              {
+                if (!omap.insert (view_object_map::value_type (b, &*i)).second)
+                {
+                  error (i->loc) << "base class '" << class_name (*b) <<
+                    "' is used in the view more than once" << endl;
+
+                  error (omap[b]->loc) << "previously used here" << endl;
+
+                  info (i->loc) << "use the alias clause to assign it a " <<
+                    "different name" << endl;
+
+                  throw operation_failed ();
+                }
+
+                if (b == poly_root)
+                  break;
+              }
+            }
+          }
+          else
+          {
+            if (!amap.insert (
+                  view_alias_map::value_type (i->alias, &*i)).second)
+            {
+              error (i->loc) << "alias '" << i->alias << "' is used in " <<
+                "the view more than once" << endl;
+
+              throw operation_failed ();
+            }
+          }
+        }
+      }
+    }
+
+    //
+    // Assign object/view pointer.
+    //
 
     void
     assign_pointer (type& c)

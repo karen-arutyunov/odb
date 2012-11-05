@@ -60,10 +60,26 @@ static const char* database_[] =
   "sqlite"
 };
 
+static const char* database_name_[] =
+{
+  "Common Interface",
+  "SQL Server",
+  "MySQL",
+  "Oracle",
+  "PostgreSQL",
+  "SQLite"
+};
+
 const char* database::
 string () const
 {
   return database_[v_];
+}
+
+const char* database::
+name () const
+{
+  return database_name_[v_];
 }
 
 istream&

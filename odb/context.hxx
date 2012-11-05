@@ -380,6 +380,18 @@ public:
       : 0;
   }
 
+  static semantics::type*
+  wrapper (semantics::type& t, semantics::names*& hint)
+  {
+    if (t.count ("wrapper") && t.get<bool> ("wrapper"))
+    {
+      hint = t.get<semantics::names*> ("wrapper-hint");
+      return t.get<semantics::type*> ("wrapper-type");
+    }
+    else
+      return 0;
+  }
+
   // Composite value type is a class type that was explicitly marked
   // as value type and there was no database type mapping provided for
   // it by the user (specifying the database type makes the value type
@@ -428,9 +440,8 @@ public:
   container (semantics::data_member& m)
   {
     // The same type can be used as both a container and a simple value.
-    // If the member has defines the database type, then it is the latter.
     //
-    if (m.count ("type") || m.count ("id-type"))
+    if (m.count ("simple"))
       return 0;
 
     semantics::type* t (&utype (m));

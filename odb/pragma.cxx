@@ -27,8 +27,9 @@ virt_declarations virt_declarations_;
 loc_pragmas loc_pragmas_;
 decl_pragmas decl_pragmas_;
 ns_loc_pragmas ns_loc_pragmas_;
-pragma_name_set simple_value_pragmas_;
+
 database pragma_db_;
+multi_database pragma_multi_;
 
 template <typename X>
 void
@@ -568,6 +569,18 @@ check_spec_decl_type (declaration const& d,
     {
       error (l) << "name '" << name << "' in db pragma " << p << " does "
                 << "not refer to a data member" << endl;
+      return false;
+    }
+  }
+  else if (p == "simple" ||
+           p == "container")
+  {
+    // Apply to both members and types.
+    //
+    if (tc != FIELD_DECL && !type)
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a type or data member" << endl;
       return false;
     }
   }
@@ -2085,6 +2098,62 @@ handle_pragma (cxx_lexer& l,
       pragma (p, name, val, loc, &check_spec_decl_type, adder), decl, ns);
   }
 
+  // Mark the type or member as simple value or container, depending
+  // on the pragma. For static multi-database support we only do it
+  // if the pragma applies to this database since in this case we can
+  // have different mappings for different databases (e.g., composite
+  // in one and simple in another). For dynamic multi-database support
+  // we do this regardless of the database since here the mapping
+  // should the consistent.
+  //
+  // @@ Did we add new simple value or container pragmas and forgot to
+  //    account for them here?
+  //
+  if ((qualifier == "value" || qualifier == "member") &&
+      (pragma_multi_ == multi_database::dynamic || db.empty () ||
+       db == pragma_db_.string ()))
+  {
+    // We assume a data member is simple only if the database type was
+    // specified explicitly.
+    //
+    if (name == "type"     ||
+        name == "id-type"  ||
+        (qualifier == "value" &&
+         (name == "null"     ||
+          name == "not-null" ||
+          name == "default"  ||
+          name == "options")))
+    {
+      add_pragma (pragma (p, "simple", true, loc, &check_spec_decl_type, 0),
+                  decl,
+                  false);
+    }
+    else if (name == "table"      ||
+             name == "value-type" ||
+             name == "index-type" ||
+             name == "key-type"   ||
+
+             name == "value-null" ||
+             name == "value-not-null" ||
+
+             name == "value-column" ||
+             name == "index-column" ||
+             name == "key-column"   ||
+             name == "index-column" ||
+
+             name == "value-options" ||
+             name == "index-options" ||
+             name == "key-options"   ||
+             name == "index-options" ||
+
+             name == "unordered")
+    {
+      add_pragma (pragma (p, "container", true, loc, &check_spec_decl_type, 0),
+                  decl,
+                  false);
+    }
+  }
+
   // See if there are any more pragmas.
   //
   if (tt == CPP_NAME || tt == CPP_KEYWORD)
@@ -3276,34 +3345,6 @@ handle_pragma_db (cpp_reader*)
 extern "C" void
 register_odb_pragmas (void*, void*)
 {
-  // Initialize the list of simple value pragmas.
-  //
-  //@@ Did we add new simple value pragmas and forgot to account for
-  //   them here?
-  //
-  simple_value_pragmas_.insert ("table");
-  simple_value_pragmas_.insert ("type");
-  simple_value_pragmas_.insert ("id-type");
-  simple_value_pragmas_.insert ("value-type");
-  simple_value_pragmas_.insert ("index-type");
-  simple_value_pragmas_.insert ("key-type");
-  simple_value_pragmas_.insert ("value-column");
-  simple_value_pragmas_.insert ("index-column");
-  simple_value_pragmas_.insert ("key-column");
-  simple_value_pragmas_.insert ("id-column");
-  simple_value_pragmas_.insert ("default");
-  simple_value_pragmas_.insert ("null");
-  simple_value_pragmas_.insert ("not-null");
-  simple_value_pragmas_.insert ("value-null");
-  simple_value_pragmas_.insert ("value-not-null");
-  simple_value_pragmas_.insert ("options");
-  simple_value_pragmas_.insert ("value-options");
-  simple_value_pragmas_.insert ("index-options");
-  simple_value_pragmas_.insert ("key-options");
-  simple_value_pragmas_.insert ("id-options");
-  simple_value_pragmas_.insert ("unordered");
-
-
   // GCC has a limited number of pragma slots and we have exhausted them.
   // A workaround is to make 'db' a pragma rather than a namespace. This
   // way we only have one pragma but the drawback of this approach is the
@@ -3387,15 +3428,10 @@ post_process_pragmas ()
 
       if (name == "value")
         p = &*j;
-      else
+      else if (name == "simple" || name == "container")
       {
-        // Make sure it is not one of the simple value pragmas.
-        //
-        if (simple_value_pragmas_.find (name) != simple_value_pragmas_.end ())
-        {
-          p = 0;
-          break;
-        }
+        p = 0;
+        break;
       }
     }
 

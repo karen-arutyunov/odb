@@ -56,6 +56,11 @@ struct database
   const char*
   string () const;
 
+  // Full name (e.g., PostgreSQL).
+  //
+  const char*
+  name () const;
+
 private:
   value v_;
 };

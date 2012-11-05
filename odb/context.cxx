@@ -1068,23 +1068,7 @@ type_val_type (semantics::type& t,
 bool context::
 composite_ (semantics::class_& c)
 {
-  bool r (true);
-
-  if (c.count ("value"))
-  {
-    for (pragma_name_set::const_iterator i (simple_value_pragmas_.begin ()),
-           e (simple_value_pragmas_.end ()); i != e; ++i)
-    {
-      if (c.count (*i))
-      {
-        r = false;
-        break;
-      }
-    }
-  }
-  else
-    r = false;
-
+  bool r (c.count ("value") && !c.count ("simple") && !c.count ("container"));
   c.set ("composite-value", r);
   return r;
 }
