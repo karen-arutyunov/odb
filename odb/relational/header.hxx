@@ -142,62 +142,6 @@ namespace relational
     };
 
     //
-    // query_tags
-    //
-
-    struct query_tags: object_columns_base, virtual context
-    {
-      typedef query_tags base;
-
-      virtual void
-      traverse_object (semantics::class_& c)
-      {
-        names (c); // We don't want to traverse bases.
-      }
-
-      virtual void
-      traverse_composite (semantics::data_member* m, semantics::class_& c)
-      {
-        // Base type.
-        //
-        if (m == 0)
-        {
-          object_columns_base::traverse_composite (m, c);
-          return;
-        }
-
-        // Don't generate an empty struct if we don't have any pointers.
-        //
-        if (!has_a (c, test_pointer))
-          return;
-
-        os << "struct " << public_name (*m) << "_tag"
-           << "{";
-
-        object_columns_base::traverse_composite (m, c);
-
-        os << "};";
-      }
-
-      virtual void
-      traverse_pointer (semantics::data_member& m, semantics::class_&)
-      {
-        // Ignore polymorphic id references.
-        //
-        if (m.count ("polymorphic-ref"))
-          return;
-
-        generate (public_name (m));
-      }
-
-      virtual void
-      generate (string const& name)
-      {
-        os << "struct " << name << "_tag;";
-      }
-    };
-
-    //
     // query_columns_type
     //
 

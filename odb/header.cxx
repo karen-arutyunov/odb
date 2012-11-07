@@ -203,6 +203,21 @@ traverse_object (type& c)
        << endl;
   }
 
+  // Query.
+  //
+  if (options.generate_query ())
+  {
+    // Generate object pointer tags here if we are generating dynamic
+    // multi-database support.
+    //
+    if (options.multi_database () == multi_database::dynamic &&
+        has_a (c, test_pointer | exclude_base))
+    {
+      query_tags t;
+      t.traverse (c);
+    }
+  }
+
   // The rest does not apply to reuse-abstract objects.
   //
   if (reuse_abst)
@@ -409,6 +424,15 @@ traverse_view (type& c)
   os << "typedef " << type << " view_type;"
      << "typedef " << c.get<string> ("object-pointer") << " pointer_type;"
      << endl;
+
+  // Generate associated object tags here if we are generating dynamic
+  // multi-database support.
+  //
+  if (options.multi_database () == multi_database::dynamic)
+  {
+    query_tags t;
+    t.traverse (c);
+  }
 
   // callback ()
   //

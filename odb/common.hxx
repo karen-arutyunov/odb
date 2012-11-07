@@ -426,4 +426,98 @@ private:
   bool included_;
 };
 
+// Generate query tags for object pointers.
+//
+struct query_tags: object_columns_base, virtual context
+{
+  typedef query_tags base;
+
+  query_tags (): nl_ (false) {}
+
+  virtual void
+  traverse (semantics::class_& c)
+  {
+    if (object (c))
+    {
+      object_columns_base::traverse (c);
+    }
+    else if (c.get<size_t> ("object-count") != 0) // View.
+    {
+      view_objects& objs (c.get<view_objects> ("objects"));
+
+      for (view_objects::const_iterator i (objs.begin ());
+           i < objs.end ();
+           ++i)
+      {
+        if (i->kind != view_object::object)
+          continue; // Skip tables.
+
+        if (i->alias.empty ())
+          continue;
+
+        generate (i->alias);
+      }
+    }
+
+    if (nl_)
+      os << endl;
+  }
+
+  virtual void
+  traverse_object (semantics::class_& c)
+  {
+    names (c); // We don't want to traverse bases.
+  }
+
+  virtual void
+  traverse_composite (semantics::data_member* m, semantics::class_& c)
+  {
+    // Base type.
+    //
+    if (m == 0)
+    {
+      object_columns_base::traverse_composite (m, c);
+      return;
+    }
+
+    // Don't generate an empty struct if we don't have any pointers.
+    //
+    if (!has_a (c, test_pointer))
+      return;
+
+    if (nl_)
+      os << endl;
+
+    os << "struct " << public_name (*m) << "_tag"
+       << "{";
+
+    object_columns_base::traverse_composite (m, c);
+
+    os << "};";
+
+    nl_ = false;
+  }
+
+  virtual void
+  traverse_pointer (semantics::data_member& m, semantics::class_&)
+  {
+    // Ignore polymorphic id references.
+    //
+    if (m.count ("polymorphic-ref"))
+      return;
+
+    generate (public_name (m));
+  }
+
+  virtual void
+  generate (string const& name)
+  {
+    os << "struct " << name << "_tag;";
+    nl_ = true;
+  }
+
+private:
+  bool nl_;
+};
+
 #endif // ODB_COMMON_HXX
