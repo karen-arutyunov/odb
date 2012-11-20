@@ -265,6 +265,12 @@ namespace relational
           if (container (mi))
             return false;
 
+          // Ignore polymorphic id references; they are not returned by
+          // the select statement.
+          //
+          if (mi.ptr != 0 && mi.m.count ("polymorphic-ref"))
+            return false;
+
           ostringstream ostr;
           ostr << "t[" << index_ << "UL]";
           e = ostr.str ();
