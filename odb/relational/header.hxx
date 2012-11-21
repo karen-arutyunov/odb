@@ -141,216 +141,6 @@ namespace relational
       traversal::names names_member_;
     };
 
-    //
-    // query_columns_type
-    //
-
-    struct query_columns_bases: traversal::class_, virtual context
-    {
-      typedef query_columns_bases base;
-
-      query_columns_bases (bool ptr, bool first = true)
-          : ptr_ (ptr), first_ (first)
-      {
-      }
-
-      virtual void
-      traverse (type& c)
-      {
-        // Ignore transient bases. Not used for views.
-        //
-        if (!object (c))
-          return;
-
-        if (first_)
-        {
-          os << ":" << endl
-             << "  ";
-          first_ = false;
-        }
-        else
-        {
-          os << "," << endl
-             << "  ";
-        }
-
-        os << (ptr_ ? "pointer_query_columns" : "query_columns") << "< " <<
-          class_fq_name (c) << ", id_" << db << ", ";
-
-        // If our base is polymorphic, then it has its own table/alias.
-        //
-        if (polymorphic (c))
-          os << "typename A::base_traits";
-        else
-          os << "A";
-
-        os << " >";
-      }
-
-    private:
-      bool ptr_;
-      bool first_;
-    };
-
-    struct query_columns_base_aliases: traversal::class_, virtual context
-    {
-      typedef query_columns_base_aliases base;
-
-      query_columns_base_aliases (bool ptr)
-          : ptr_ (ptr)
-      {
-      }
-
-      virtual void
-      traverse (type& c)
-      {
-        // Ignore transient bases. Not used for views.
-        //
-        if (!object (c))
-          return;
-
-        string const& name (class_name (c));
-
-        os  << "// " << name << endl
-            << "//" << endl
-            << "typedef " <<
-          (ptr_ ? "pointer_query_columns" : "query_columns") << "< " <<
-          class_fq_name (c) << ", id_" << db << ", ";
-
-        if (polymorphic (c))
-          os << "typename A::base_traits";
-        else
-          os << "A";
-
-        os << " > " << name << ";"
-           << endl;
-      }
-
-    private:
-      bool ptr_;
-    };
-
-    struct query_columns_type: traversal::class_, virtual context
-    {
-      typedef query_columns_type base;
-
-      // Depending on the ptr argument, generate query_columns or
-      // pointer_query_columns specialization. The latter is used
-      // for object pointers where we don't support nested pointers.
-      //
-      query_columns_type (bool ptr): ptr_ (ptr) {}
-
-      virtual void
-      traverse (type& c)
-      {
-        string const& type (class_fq_name (c));
-
-        if (ptr_)
-        {
-          os << "template <typename A>" << endl
-             << "struct pointer_query_columns< " << type << ", id_" << db <<
-            ", A >";
-
-          // If we don't have pointers (in the whole hierarchy), then
-          // pointer_query_columns and query_columns are the same.
-          //
-          if (!has_a (c, test_pointer | include_base))
-          {
-            os << ":" << endl
-               << "  query_columns< " << type << ", id_" << db << ", A >"
-               << "{"
-               << "};";
-          }
-          else
-          {
-            {
-              instance<query_columns_bases> b (ptr_);
-              traversal::inherits i (*b);
-              inherits (c, i);
-            }
-
-            os << "{";
-
-            {
-              instance<query_columns_base_aliases> b (ptr_);
-              traversal::inherits i (*b);
-              inherits (c, i);
-            }
-
-            {
-              instance<query_columns> t (ptr_);
-              t->traverse (c);
-            }
-
-            os << "};";
-
-            {
-              instance<query_columns> t (ptr_, c);
-              t->traverse (c);
-            }
-          }
-        }
-        else
-        {
-          bool has_ptr (has_a (c, test_pointer | exclude_base));
-
-          if (has_ptr)
-          {
-            // This class contains everything for inverse pointers and
-            // aliases for non-inverse ones. It doesn't depend on the
-            // table alias (A) template argument.
-            //
-            os << "template <>" << endl
-               << "struct query_columns_base< " << type << ", id_" <<
-              db << " >"
-               << "{";
-
-            bool true_ (true); //@@ (im)perfect forwarding.
-            instance<query_columns_base> t (c, true_);
-            t->traverse (c);
-
-            os << "};";
-          }
-
-          os << "template <typename A>" << endl
-             << "struct query_columns< " << type << ", id_" << db << ", A >";
-
-          if (has_ptr)
-            os << ":" << endl
-               << "  query_columns_base< " << type << ", id_" << db << " >";
-
-          {
-            instance<query_columns_bases> b (ptr_, !has_ptr);
-            traversal::inherits i (*b);
-            inherits (c, i);
-          }
-
-          os << "{";
-
-          {
-            instance<query_columns_base_aliases> b (ptr_);
-            traversal::inherits i (*b);
-            inherits (c, i);
-          }
-
-          {
-            instance<query_columns> t (ptr_);
-            t->traverse (c);
-          }
-
-          os << "};";
-
-          {
-            instance<query_columns> t (ptr_, c);
-            t->traverse (c);
-          }
-        }
-      }
-
-    public:
-      bool ptr_;
-    };
-
     // Member-specific traits types for container members.
     //
     struct container_traits: object_members_base, virtual context
@@ -957,8 +747,8 @@ namespace relational
           : id_image_member_ ("id_"),
             version_image_member_ ("version_"),
             discriminator_image_member_ ("discriminator_"),
-            query_columns_type_ (false),
-            pointer_query_columns_type_ (true)
+            query_columns_type_ (false, true),
+            pointer_query_columns_type_ (true, true)
       {
       }
 
@@ -968,8 +758,8 @@ namespace relational
             id_image_member_ ("id_"),
             version_image_member_ ("version_"),
             discriminator_image_member_ ("discriminator_"),
-            query_columns_type_ (false),
-            pointer_query_columns_type_ (true)
+            query_columns_type_ (false, true),
+            pointer_query_columns_type_ (true, true)
       {
       }
 
@@ -1032,12 +822,17 @@ namespace relational
     {
       typedef class2 base;
 
-      class2 (): query_columns_type_ (false) {}
+      class2 ()
+          : query_columns_type_ (false, true),
+            view_query_columns_type_ (true)
+      {
+      }
 
       class2 (class_ const&)
           : root_context (), //@@ -Wextra
             context (),
-            query_columns_type_ (false)
+            query_columns_type_ (false, true),
+            view_query_columns_type_ (true)
       {
       }
 
@@ -1072,13 +867,7 @@ namespace relational
           // in pass 1 (see the comment in class1 for details).
           //
           if (has_ptr)
-          {
-            bool true_ (true); //@@ (im)perfect forwarding
-            instance<query_alias_traits> t (c, true_);
-            t->traverse (c);
-
             query_columns_type_->traverse (c);
-          }
         }
 
         // Move header comment out of if-block if adding any code here.
@@ -1087,134 +876,14 @@ namespace relational
       virtual void
       traverse_view (type& c)
       {
-        string const& type (class_fq_name (c));
-
         // query_columns
         //
-        size_t obj_count (c.get<size_t> ("object-count"));
-
-        if (obj_count != 0)
+        if (c.get<size_t> ("object-count") != 0)
         {
           os << "// " << class_name (c) << endl
              << "//" << endl;
 
-          view_objects& objs (c.get<view_objects> ("objects"));
-
-          // Generate alias_traits specializations.
-          //
-          {
-            bool true_ (true); //@@ (im)perfect forwarding
-            instance<query_alias_traits> at (c, true_);
-
-            for (view_objects::const_iterator i (objs.begin ());
-                 i < objs.end ();
-                 ++i)
-            {
-              if (i->kind != view_object::object)
-                continue; // Skip tables.
-
-              if (i->alias.empty ())
-                continue;
-
-              semantics::class_& o (*i->obj);
-              qname const& t (table_name (o));
-
-              // Check that the alias is not the same as the table name
-              // (if this is a polymorphic object, then the alias is just
-              // a prefix).
-              //
-              if (polymorphic (o) || t.qualified () || i->alias != t.uname ())
-                at->generate_decl (i->alias, o);
-            }
-          }
-
-          os << "struct access::view_traits_impl< " << type << ", id_" <<
-            db << " >::query_columns";
-
-          if (obj_count > 1)
-          {
-            os << "{";
-
-            for (view_objects::const_iterator i (objs.begin ());
-                 i < objs.end ();
-                 ++i)
-            {
-              if (i->kind != view_object::object)
-                continue; // Skip tables.
-
-              bool alias (!i->alias.empty ());
-              semantics::class_& o (*i->obj);
-              string const& oname (alias ? i->alias : class_name (o));
-              string const& otype (class_fq_name (o));
-              qname const& table (table_name (o));
-
-              os << "// " << oname << endl
-                 << "//" << endl
-                 << "typedef" << endl
-                 << "odb::pointer_query_columns<" << endl
-                 << "  " << otype << "," << endl
-                 << "  id_" << db << "," << endl;
-
-              if (alias && (polymorphic (o) ||
-                            table.qualified () ||
-                            i->alias != table.uname ()))
-              {
-                os << "  odb::alias_traits< " << otype << "," << endl
-                   << "    id_" << db << "," << endl
-                   << "    access::view_traits_impl< " << type << ", id_" <<
-                  db << " >::" << i->alias << "_tag> >" << endl;
-              }
-              else
-                os << "  odb::access::object_traits_impl< " << otype <<
-                  ", id_" << db << " > >" << endl;
-
-              os << oname << ";"
-                 << endl;
-            }
-
-            os << "};";
-          }
-          else
-          {
-            // For a single object view we generate a shortcut without
-            // an intermediate typedef.
-            //
-            view_object const* vo (0);
-            for (view_objects::const_iterator i (objs.begin ());
-                 vo == 0 && i < objs.end ();
-                 ++i)
-            {
-              if (i->kind == view_object::object)
-                vo = &*i;
-            }
-
-            bool alias (!vo->alias.empty ());
-            semantics::class_& o (*vo->obj);
-            string const& otype (class_fq_name (o));
-            qname const& table (table_name (o));
-
-            os << ":" << endl
-               << "  odb::pointer_query_columns<" << endl
-               << "    " << otype << "," << endl
-               << "    id_" << db << "," << endl;
-
-            if (alias && (polymorphic (o) ||
-                          table.qualified () ||
-                          vo->alias != table.uname ()))
-            {
-              os << "    odb::alias_traits<" << endl
-                 << "      " << otype << "," << endl
-                 << "      id_" << db << "," << endl
-                 << "      access::view_traits_impl< " << type << ", id_" <<
-                db << " >::" << vo->alias << "_tag> >";
-            }
-            else
-              os << "    odb::access::object_traits_impl< " << otype <<
-                ", id_" << db << " > >";
-
-            os << "{"
-               << "};";
-          }
+          view_query_columns_type_->traverse (c);
         }
 
         // Move header comment out of if-block if adding any code here.
@@ -1227,6 +896,7 @@ namespace relational
 
     private:
       instance<query_columns_type> query_columns_type_;
+      instance<view_query_columns_type> view_query_columns_type_;
     };
 
     struct include: virtual context
@@ -1236,12 +906,8 @@ namespace relational
       virtual void
       generate ()
       {
-        os << "#include <odb/details/buffer.hxx>" << endl;
-
-        if (options.generate_query ())
-          os << "#include <odb/details/shared-ptr.hxx>" << endl;
-
-        os << endl;
+        os << "#include <odb/details/buffer.hxx>" << endl
+           << endl;
 
         os << "#include <odb/" << db << "/version.hxx>" << endl
            << "#include <odb/" << db << "/forward.hxx>" << endl
@@ -1249,7 +915,12 @@ namespace relational
            << "#include <odb/" << db << "/" << db << "-types.hxx>" << endl;
 
         if (options.generate_query ())
+        {
           os << "#include <odb/" << db << "/query.hxx>" << endl;
+
+          if (multi_dynamic)
+            os << "#include <odb/" << db << "/query-dynamic.hxx>" << endl;
+        }
 
         os << endl;
       }

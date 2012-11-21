@@ -322,7 +322,7 @@ namespace relational
 
     struct query_columns: relational::query_columns, context
     {
-      query_columns (base const& x): base (x) {}
+      query_columns (base const& x): base_impl (x) {}
 
       virtual string
       database_type_id (semantics::data_member& m)

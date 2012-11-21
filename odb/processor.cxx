@@ -43,8 +43,7 @@ namespace
       // We don't need to do any further processing for common if we
       // are generating static multi-database code.
       //
-      if (options.database ()[0] == database::common &&
-          options.multi_database () == multi_database::static_)
+      if (multi_static && options.database ()[0] == database::common)
         return;
 
       semantics::names* hint;

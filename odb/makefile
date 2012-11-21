@@ -12,10 +12,12 @@ sql-token.cxx                        \
 sql-lexer.cxx                        \
 context.cxx                          \
 common.cxx                           \
+common-query.cxx                     \
 location.cxx                         \
 diagnostics.cxx                      \
 emitter.cxx                          \
 lookup.cxx                           \
+instance.cxx                         \
 include.cxx                          \
 header.cxx                           \
 inline.cxx                           \
@@ -31,6 +33,7 @@ pragma.cxx
 #
 cxx_ptun +=                          \
 relational/common.cxx                \
+relational/common-query.cxx          \
 relational/context.cxx               \
 relational/processor.cxx             \
 relational/header.cxx                \

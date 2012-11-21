@@ -993,6 +993,9 @@ public:
   bool embedded_schema;
   bool separate_schema;
 
+  bool multi_static;
+  bool multi_dynamic;
+
   // Outermost object or view currently being traversed.
   //
   semantics::class_*& top_object;

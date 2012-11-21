@@ -452,6 +452,8 @@ context (ostream& os_,
       separate_schema (
         ops.generate_schema () &&
         ops.schema_format ()[db].count (schema_format::separate)),
+      multi_static (ops.multi_database () == multi_database::static_),
+      multi_dynamic (ops.multi_database () == multi_database::dynamic),
       top_object (data_->top_object_),
       cur_object (data_->cur_object_)
 {
@@ -501,6 +503,8 @@ context ()
     modifier_regex (current ().modifier_regex),
     embedded_schema (current ().embedded_schema),
     separate_schema (current ().separate_schema),
+    multi_static (current ().multi_static),
+    multi_dynamic (current ().multi_dynamic),
     top_object (current ().top_object),
     cur_object (current ().cur_object)
 {

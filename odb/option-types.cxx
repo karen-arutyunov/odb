@@ -2,7 +2,6 @@
 // copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <string>
 #include <istream>
 #include <ostream>
 #include <algorithm> // std::lower_bound
@@ -21,7 +20,7 @@ static const char* cxx_version_[] =
   "c++11"
 };
 
-const char* cxx_version::
+string cxx_version::
 string () const
 {
   return cxx_version_[v_];
@@ -70,13 +69,13 @@ static const char* database_name_[] =
   "SQLite"
 };
 
-const char* database::
+string database::
 string () const
 {
   return database_[v_];
 }
 
-const char* database::
+string database::
 name () const
 {
   return database_name_[v_];
@@ -119,7 +118,7 @@ static const char* multi_database_[] =
   "disabled"
 };
 
-const char* multi_database::
+string multi_database::
 string () const
 {
   return multi_database_[v_];
@@ -163,7 +162,7 @@ static const char* schema_format_[] =
   "sql"
 };
 
-const char* schema_format::
+string schema_format::
 string () const
 {
   return schema_format_[v_];

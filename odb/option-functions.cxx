@@ -71,12 +71,9 @@ process_options (options& o)
   }
   else
   {
-    o.odb_file_suffix ().insert (
-      make_pair (db, string ("-odb-") + db.string ()));
-    o.sql_file_suffix ().insert (
-      make_pair (db, string ("-") + db.string ()));
-    o.schema_file_suffix ().insert (
-      make_pair (db, string ("-schema-") + db.string ()));
+    o.odb_file_suffix ().insert (make_pair (db, "-odb-" + db.string ()));
+    o.sql_file_suffix ().insert (make_pair (db, "-" + db.string ()));
+    o.schema_file_suffix ().insert (make_pair (db, "-schema-" + db.string ()));
   }
 
   // Set default --default-database value.

@@ -7,7 +7,9 @@
 
 #include <map>
 #include <iosfwd>
+#include <string>
 #include <cassert>
+
 
 #include <odb/semantics/relational/name.hxx>
 
@@ -24,7 +26,7 @@ struct cxx_version
   cxx_version (value v = value (0)) : v_ (v) {}
   operator value () const {return v_;}
 
-  const char*
+  std::string
   string () const;
 
 private:
@@ -53,12 +55,12 @@ struct database
   database (value v = value (0)) : v_ (v) {}
   operator value () const {return v_;}
 
-  const char*
+  std::string
   string () const;
 
   // Full name (e.g., PostgreSQL).
   //
-  const char*
+  std::string
   name () const;
 
 private:
@@ -105,7 +107,7 @@ struct multi_database
   multi_database (value v = disabled) : v_ (v) {}
   operator value () const {return v_;}
 
-  const char*
+  std::string
   string () const;
 
 private:
@@ -134,7 +136,7 @@ struct schema_format
   schema_format (value v = value (0)) : v_ (v) {}
   operator value () const {return v_;}
 
-  const char*
+  std::string
   string () const;
 
 private:

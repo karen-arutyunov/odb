@@ -1325,7 +1325,7 @@ namespace relational
         else
         {
           db_type_id = member_database_type_id_->database_type_id (mi.m);
-          traits = string (db.string ()) + "::value_traits<\n    "
+          traits = db.string () + "::value_traits<\n    "
             + type + ",\n    "
             + db_type_id + " >";
         }
@@ -1643,7 +1643,7 @@ namespace relational
         else
         {
           db_type_id = member_database_type_id_->database_type_id (mi.m);
-          traits = string (db.string ()) + "::value_traits<\n    "
+          traits = db.string () + "::value_traits<\n    "
             + type + ",\n    "
             + db_type_id + " >";
         }
@@ -3245,6 +3245,8 @@ namespace relational
     //
     struct persist_statement_params: object_columns_base, virtual context
     {
+      typedef persist_statement_params base;
+
       persist_statement_params (string& params, query_parameters& qp)
           : params_ (params), qp_ (qp)
       {
@@ -3292,7 +3294,9 @@ namespace relational
       typedef class_ base;
 
       class_ ()
-          : grow_base_ (index_),
+          : query_columns_type_ (false, false),
+            view_query_columns_type_ (false),
+            grow_base_ (index_),
             grow_member_ (index_),
             grow_version_member_ (index_, "version_"),
             grow_discriminator_member_ (index_, "discriminator_"),
@@ -3314,6 +3318,8 @@ namespace relational
       class_ (class_ const&)
           : root_context (), //@@ -Wextra
             context (),
+            query_columns_type_ (false, false),
+            view_query_columns_type_ (false),
             grow_base_ (index_),
             grow_member_ (index_),
             grow_version_member_ (index_, "version_"),
@@ -3607,6 +3613,9 @@ namespace relational
       }
 
     private:
+      instance<query_columns_type> query_columns_type_;
+      instance<view_query_columns_type> view_query_columns_type_;
+
       size_t index_;
       instance<grow_base> grow_base_;
       traversal::inherits grow_base_inherits_;
@@ -3669,7 +3678,7 @@ namespace relational
         if (embedded_schema)
           os << "#include <odb/schema-catalog-impl.hxx>" << endl;
 
-        if (options.multi_database () == multi_database::dynamic)
+        if (multi_dynamic)
           os << "#include <odb/function-table.hxx>" << endl;
 
         os << endl;

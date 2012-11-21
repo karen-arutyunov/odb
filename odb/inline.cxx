@@ -179,10 +179,10 @@ traverse_object (type& c)
 
   // The rest only applies to dynamic milti-database support.
   //
-  if (options.multi_database () != multi_database::dynamic)
+  if (!multi_dynamic)
     return;
 
-  traits = "access::object_traits_impl< " + type + ", id_default >";
+  traits = "access::object_traits_impl< " + type + ", id_common >";
 
   //
   // Forwarding functions.
@@ -270,6 +270,49 @@ traverse_object (type& c)
       (poly ? ", true, true" : "") << ");"
        << "}";
   }
+
+  if (options.generate_query ())
+  {
+    if (!options.omit_unprepared ())
+    {
+      os << "inline" << endl
+         << "result< " << traits << "::object_type >" << endl
+         << traits << "::" << endl
+         << "query (database& db, const query_base_type& q)"
+         << "{"
+         << "return function_table[db.id ()]->query (db, q);"
+         << "}";
+    }
+
+    os << "inline" << endl
+       << "unsigned long long " << traits << "::" << endl
+       << "erase_query (database& db, const query_base_type& q)"
+       << "{"
+       << "return function_table[db.id ()]->erase_query (db, q);"
+       << "}";
+
+    if (options.generate_prepared ())
+    {
+      os << "inline" << endl
+         << "odb::details::shared_ptr<prepared_query_impl>" << endl
+         << traits << "::" << endl
+         << "prepare_query (connection& c, const char* n, " <<
+        "const query_base_type& q)"
+         << "{"
+         << "return function_table[c.database ().id ()]->prepare_query (" <<
+        "c, n, q);"
+         << "}";
+
+      os << "inline" << endl
+         << "odb::details::shared_ptr<result_impl>" << endl
+         << traits << "::" << endl
+         << "execute_query (prepared_query_impl& pq)"
+         << "{"
+         << "return function_table[pq.conn.database ().id ()]->" <<
+        "execute_query (pq);"
+         << "}";
+    }
+  }
 }
 
 void inline_::class_::
@@ -295,6 +338,50 @@ traverse_view (type& c)
      << endl;
   callback_calls_.traverse (c, false);
   os << "}";
+
+  // The rest only applies to dynamic milti-database support.
+  //
+  if (!multi_dynamic)
+    return;
+
+  traits = "access::view_traits_impl< " + type + ", id_common >";
+
+  //
+  // Forwarding functions.
+  //
+
+  if (!options.omit_unprepared ())
+  {
+    os << "inline" << endl
+       << "result< " << traits << "::view_type >" << endl
+       << traits << "::" << endl
+       << "query (database& db, const query_base_type& q)"
+       << "{"
+       << "return function_table[db.id ()]->query (db, q);"
+       << "}";
+  }
+
+  if (options.generate_prepared ())
+  {
+    os << "inline" << endl
+       << "odb::details::shared_ptr<prepared_query_impl>" << endl
+       << traits << "::" << endl
+       << "prepare_query (connection& c, const char* n, " <<
+      "const query_base_type& q)"
+       << "{"
+       << "return function_table[c.database ().id ()]->prepare_query (" <<
+      "c, n, q);"
+       << "}";
+
+    os << "inline" << endl
+       << "odb::details::shared_ptr<result_impl>" << endl
+       << traits << "::" << endl
+       << "execute_query (prepared_query_impl& pq)"
+       << "{"
+       << "return function_table[pq.conn.database ().id ()]->" <<
+      "execute_query (pq);"
+       << "}";
+  }
 }
 
 namespace inline_
@@ -305,7 +392,7 @@ namespace inline_
     context ctx;
     ostream& os (ctx.os);
 
-    if (ctx.options.multi_database () == multi_database::dynamic)
+    if (ctx.multi_dynamic)
       os << "#include <odb/database.hxx>" << endl
          << endl;
 

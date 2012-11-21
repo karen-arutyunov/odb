@@ -10,8 +10,12 @@ using namespace std;
 
 namespace header
 {
-  struct class_: traversal::class_, virtual context
+  struct class1: traversal::class_, virtual context
   {
+    class1 ()
+        : query_columns_type_ (false, true),
+          pointer_query_columns_type_ (true, true) {}
+
     virtual void
     traverse (type& c)
     {
@@ -30,12 +34,13 @@ namespace header
     void
     traverse_view (type&);
 
-    void
-    traverse_composite (type&);
+  private:
+    instance<query_columns_type> query_columns_type_;
+    instance<query_columns_type> pointer_query_columns_type_;
   };
 }
 
-void header::class_::
+void header::class1::
 traverse_object (type& c)
 {
   using semantics::data_member;
@@ -210,8 +215,7 @@ traverse_object (type& c)
     // Generate object pointer tags here if we are generating dynamic
     // multi-database support.
     //
-    if (options.multi_database () == multi_database::dynamic &&
-        has_a (c, test_pointer | exclude_base))
+    if (multi_dynamic && has_a (c, test_pointer | exclude_base))
     {
       query_tags t;
       t.traverse (c);
@@ -220,79 +224,113 @@ traverse_object (type& c)
 
   // The rest does not apply to reuse-abstract objects.
   //
-  if (reuse_abst)
+  if (!reuse_abst)
   {
-    os << "};";
-    return;
-  }
-
-  // Cache traits typedefs.
-  //
-  if (id == 0)
-  {
-    os << "typedef" << endl
-       << "no_id_pointer_cache_traits<pointer_type>" << endl
-       << "pointer_cache_traits;"
-       << endl
-       << "typedef" << endl
-       << "no_id_reference_cache_traits<object_type>" << endl
-       << "reference_cache_traits;"
-       << endl;
-  }
-  else
-  {
-    char const* p (session (c) ? "odb::" : "no_op_");
-
-    if (poly_derived)
+    // Cache traits typedefs.
+    //
+    if (id == 0)
     {
       os << "typedef" << endl
-         << p << "pointer_cache_traits<" <<
-        "object_traits<root_type>::pointer_type>" << endl
+         << "no_id_pointer_cache_traits<pointer_type>" << endl
          << "pointer_cache_traits;"
          << endl
          << "typedef" << endl
-         << p << "reference_cache_traits<root_type>" << endl
+         << "no_id_reference_cache_traits<object_type>" << endl
          << "reference_cache_traits;"
          << endl;
     }
     else
     {
-      os << "typedef" << endl
-         << p << "pointer_cache_traits<pointer_type>" << endl
-         << "pointer_cache_traits;"
-         << endl
-         << "typedef" << endl
-         << p << "reference_cache_traits<object_type>" << endl
-         << "reference_cache_traits;"
-         << endl;
+      char const* p (session (c) ? "odb::" : "no_op_");
+
+      if (poly_derived)
+      {
+        os << "typedef" << endl
+           << p << "pointer_cache_traits<" <<
+          "object_traits<root_type>::pointer_type>" << endl
+           << "pointer_cache_traits;"
+           << endl
+           << "typedef" << endl
+           << p << "reference_cache_traits<root_type>" << endl
+           << "reference_cache_traits;"
+           << endl;
+      }
+      else
+      {
+        os << "typedef" << endl
+           << p << "pointer_cache_traits<pointer_type>" << endl
+           << "pointer_cache_traits;"
+           << endl
+           << "typedef" << endl
+           << p << "reference_cache_traits<object_type>" << endl
+           << "reference_cache_traits;"
+           << endl;
+      }
     }
+
+    // callback ()
+    //
+    os << "static void" << endl
+       << "callback (database&, object_type&, callback_event);"
+       <<  endl;
+
+    os << "static void" << endl
+       << "callback (database&, const object_type&, callback_event);"
+       <<  endl;
   }
-
-  // callback ()
-  //
-  os << "static void" << endl
-     << "callback (database&, object_type&, callback_event);"
-     <<  endl;
-
-  os << "static void" << endl
-     << "callback (database&, const object_type&, callback_event);"
-     <<  endl;
 
   os << "};";
 
   // The rest only applies to dynamic milti-database support.
   //
-  if (options.multi_database () != multi_database::dynamic)
+  if (!multi_dynamic)
+    return;
+
+  // pointer_query_columns & query_columns
+  //
+  if (options.generate_query ())
+  {
+    // If we don't have object pointers, then also generate
+    // query_columns (in this case pointer_query_columns and
+    // query_columns are the same and the former inherits from
+    // the latter). Otherwise we have to postpone query_columns
+    // generation until the second pass to deal with forward-
+    // declared objects.
+    //
+    if (!has_a (c, test_pointer | include_base))
+      query_columns_type_->traverse (c);
+
+    pointer_query_columns_type_->traverse (c);
+  }
+
+  // We don't need to generate object_traits_impl for reuse-abstract
+  // objects.
+  //
+  if (reuse_abst)
     return;
 
   // object_traits_impl
   //
   os << "template <>" << endl
      << "class access::object_traits_impl< " << type << ", " <<
-    "id_default >:" << endl
+    "id_common >:" << endl
      << "  public access::object_traits< " << type << " >"
      << "{"
      << "public:" << endl;
+
+  if (options.generate_query ())
+  {
+    // base_traits is needed for query support.
+    //
+    if (poly_derived)
+      os << "typedef object_traits_impl<base_type, id_common> base_traits;"
+         << endl;
+
+    // query_base_type
+    //
+    os << "typedef odb::query_base query_base_type;"
+       << endl;
+  }
 
   // function_table_type
   //
@@ -336,6 +374,28 @@ traverse_object (type& c)
 
     os << "void (*erase2) (database&, const object_type&" <<
       (poly ? ", bool, bool" : "") << ");";
+  }
+
+  if (options.generate_query ())
+  {
+    if (!options.omit_unprepared ())
+      os << "result<object_type> (*query) (database&, const query_base_type&);"
+         << endl;
+
+    os << "unsigned long long (*erase_query) (database&, " <<
+      "const query_base_type&);"
+       << endl;
+
+    if (options.generate_prepared ())
+    {
+      os << "odb::details::shared_ptr<prepared_query_impl> " <<
+        "(*prepare_query) (connection&, const char*, const query_base_type&);"
+         << endl;
+
+      os << "odb::details::shared_ptr<result_impl> (*execute_query) ("
+        "prepared_query_impl&);"
+         << endl;
+    }
   }
 
   os << "};" // function_table_type
@@ -393,10 +453,35 @@ traverse_object (type& c)
        << endl;
   }
 
+  if (options.generate_query ())
+  {
+    if (!options.omit_unprepared ())
+    {
+      os << "static result<object_type>" << endl
+         << "query (database&, const query_base_type&);"
+         << endl;
+    }
+
+    os << "static unsigned long long" << endl
+       << "erase_query (database&, const query_base_type&);"
+       << endl;
+
+    if (options.generate_prepared ())
+    {
+      os << "static odb::details::shared_ptr<prepared_query_impl>" << endl
+         << "prepare_query (connection&, const char*, const query_base_type&);"
+         << endl;
+
+      os << "static odb::details::shared_ptr<result_impl>" << endl
+         << "execute_query (prepared_query_impl&);"
+         << endl;
+    }
+  }
+
   os << "};"; // object_traits_impl
 }
 
-void header::class_::
+void header::class1::
 traverse_view (type& c)
 {
   string const& type (class_fq_name (c));
@@ -428,7 +513,7 @@ traverse_view (type& c)
   // Generate associated object tags here if we are generating dynamic
   // multi-database support.
   //
-  if (options.multi_database () == multi_database::dynamic)
+  if (multi_dynamic)
   {
     query_tags t;
     t.traverse (c);
@@ -441,6 +526,152 @@ traverse_view (type& c)
      <<  endl;
 
   os << "};";
+
+  // The rest only applies to dynamic milti-database support.
+  //
+  if (!multi_dynamic)
+    return;
+
+  size_t obj_count (c.get<size_t> ("object-count"));
+
+  // view_traits_impl
+  //
+  os << "template <>" << endl
+     << "class access::view_traits_impl< " << type << ", id_common >:" << endl
+     << "  public access::view_traits< " << type << " >"
+     << "{"
+     << "public:" << endl;
+
+  // query_base_type and query_columns (definition generated by class2).
+  //
+  os << "typedef odb::query_base query_base_type;"
+     << "struct query_columns";
+
+  if (obj_count == 0)
+    os << "{"
+       << "};";
+  else
+    os << ";"
+       << endl;
+
+  // function_table_type
+  //
+  os << "struct function_table_type"
+     << "{";
+
+  if (!options.omit_unprepared ())
+    os << "result<view_type> (*query) (database&, const query_base_type&);"
+       << endl;
+
+  if (options.generate_prepared ())
+  {
+    os << "odb::details::shared_ptr<prepared_query_impl> " <<
+      "(*prepare_query) (connection&, const char*, const query_base_type&);"
+       << endl;
+
+    os << "odb::details::shared_ptr<result_impl> (*execute_query) ("
+      "prepared_query_impl&);"
+       << endl;
+  }
+
+  os << "};" // function_table_type
+     << "static const function_table_type* function_table[database_count];"
+     << endl;
+
+  //
+  // Forwarding functions.
+  //
+
+  if (!options.omit_unprepared ())
+    os << "static result<view_type>" << endl
+       << "query (database&, const query_base_type&);"
+       << endl;
+
+  if (options.generate_prepared ())
+  {
+    os << "static odb::details::shared_ptr<prepared_query_impl>" << endl
+       << "prepare_query (connection&, const char*, const query_base_type&);"
+       << endl;
+
+    os << "static odb::details::shared_ptr<result_impl>" << endl
+       << "execute_query (prepared_query_impl&);"
+       << endl;
+  }
+
+  os << "};";
+}
+
+namespace header
+{
+  struct class2: traversal::class_, virtual context
+  {
+    class2 ()
+        : query_columns_type_ (false, true),
+          view_query_columns_type_ (true)
+    {
+    }
+
+    virtual void
+    traverse (type& c)
+    {
+      if (!options.at_once () && class_file (c) != unit.file ())
+        return;
+
+      if (object (c))
+        traverse_object (c);
+      else if (view (c))
+        traverse_view (c);
+    }
+
+    void
+    traverse_object (type&);
+
+    void
+    traverse_view (type&);
+
+  private:
+    instance<query_columns_type> query_columns_type_;
+    instance<view_query_columns_type> view_query_columns_type_;
+  };
+}
+
+void header::class2::
+traverse_object (type& c)
+{
+  if (options.generate_query ())
+  {
+    bool has_ptr (has_a (c, test_pointer | include_base));
+
+    if (has_ptr)
+      os << "// " << class_name (c) << endl
+         << "//" << endl;
+
+    // query_columns
+    //
+    // If we don't have any pointers, then query_columns is generated
+    // in pass 1 (see the comment in class1 for details).
+    //
+    if (has_ptr)
+      query_columns_type_->traverse (c);
+  }
+
+  // Move header comment out of if-block if adding any code here.
+}
+
+void header::class2::
+traverse_view (type& c)
+{
+  // query_columns
+  //
+  if (c.get<size_t> ("object-count") != 0)
+  {
+    os << "// " << class_name (c) << endl
+       << "//" << endl;
+
+    view_query_columns_type_->traverse (c);
+  }
+
+  // Move header comment out of if-block if adding any code here.
 }
 
 namespace header
@@ -495,6 +726,9 @@ namespace header
 
     if (ctx.options.generate_query ())
     {
+      if (ctx.multi_dynamic)
+        os << "#include <odb/query-dynamic.hxx>" << endl;
+
       if (ctx.options.generate_prepared ())
         os << "#include <odb/prepared-query.hxx>" << endl;
 
@@ -514,32 +748,60 @@ namespace header
     }
 
     os << endl
-       << "#include <odb/details/unused.hxx>" << endl
-       << endl;
+       << "#include <odb/details/unused.hxx>" << endl;
 
-    // Generate common code.
-    //
-    traversal::unit unit;
-    traversal::defines unit_defines;
-    typedefs unit_typedefs (false);
-    traversal::namespace_ ns;
-    class_ c;
+    if (ctx.options.generate_query ())
+      os << "#include <odb/details/shared-ptr.hxx>" << endl;
 
-    unit >> unit_defines >> ns;
-    unit_defines >> c;
-    unit >> unit_typedefs >> c;
-
-    traversal::defines ns_defines;
-    typedefs ns_typedefs (false);
-
-    ns >> ns_defines >> ns;
-    ns_defines >> c;
-    ns >> ns_typedefs >> c;
+    os << endl;
 
     os << "namespace odb"
        << "{";
 
-    unit.dispatch (ctx.unit);
+    // Generate common code.
+    //
+    {
+      traversal::unit unit;
+      traversal::defines unit_defines;
+      typedefs unit_typedefs (false);
+      traversal::namespace_ ns;
+      class1 c;
+
+      unit >> unit_defines >> ns;
+      unit_defines >> c;
+      unit >> unit_typedefs >> c;
+
+      traversal::defines ns_defines;
+      typedefs ns_typedefs (false);
+
+      ns >> ns_defines >> ns;
+      ns_defines >> c;
+      ns >> ns_typedefs >> c;
+
+      unit.dispatch (ctx.unit);
+    }
+
+    if (ctx.multi_dynamic)
+    {
+      traversal::unit unit;
+      traversal::defines unit_defines;
+      typedefs unit_typedefs (false);
+      traversal::namespace_ ns;
+      class2 c;
+
+      unit >> unit_defines >> ns;
+      unit_defines >> c;
+      unit >> unit_typedefs >> c;
+
+      traversal::defines ns_defines;
+      typedefs ns_typedefs (false);
+
+      ns >> ns_defines >> ns;
+      ns_defines >> c;
+      ns >> ns_typedefs >> c;
+
+      unit.dispatch (ctx.unit);
+    }
 
     os << "}";
   }

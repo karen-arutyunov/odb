@@ -62,30 +62,10 @@ traverse_object (type& c)
   // Query (abstract and concrete).
   //
 
+  // query_columns
+  //
   if (options.generate_query ())
-  {
-    bool has_ptr (has_a (c, test_pointer | exclude_base));
-
-    // Generate alias_traits specializations. While the class
-    // is generated even if our base has a pointer, there is
-    // not source code if we don't have pointers ourselves.
-    //
-    if (has_ptr)
-    {
-      bool false_ (false); //@@ (im)perfect forwarding
-      instance<query_alias_traits> t (c, false_);
-      t->traverse (c);
-    }
-
-    // query_columns_base
-    //
-    if (has_ptr)
-    {
-      bool false_ (false); //@@ (im)perfect forwarding.
-      instance<query_columns_base> t (c, false_);
-      t->traverse (c);
-    }
-  }
+    query_columns_type_->traverse (c);
 
   //
   // Containers (abstract and concrete).
@@ -2649,6 +2629,16 @@ traverse_object (type& c)
          << endl
          << "return result<object_type> (r);"
          << "}";
+
+      // query(odb::query_base)
+      //
+      if (multi_dynamic)
+        os << "result< " << traits << "::object_type >" << endl
+           << traits << "::" << endl
+           << "query (database& db, const odb::query_base& q)"
+           << "{"
+           << "return query (db, query_base_type (q));"
+           << "}";
     }
 
     // erase_query
@@ -2669,11 +2659,22 @@ traverse_object (type& c)
        << "return st.execute ();"
        << "}";
 
+    // erase_query(odb::query_base)
+    //
+    if (multi_dynamic)
+      os << "unsigned long long " << traits << "::" << endl
+         << "erase_query (database& db, const odb::query_base& q)"
+         << "{"
+         << "return erase_query (db, query_base_type (q));"
+         << "}";
+
     // Prepared. Very similar to unprepared but has some annoying variations
     // that make it difficult to factor out something common.
     //
     if (options.generate_prepared ())
     {
+      // prepare_query
+      //
       os << "odb::details::shared_ptr<prepared_query_impl>" << endl
          << traits << "::" << endl
          << "prepare_query (connection& c, const char* n, " <<
@@ -2732,6 +2733,19 @@ traverse_object (type& c)
          << "return r;"
          << "}";
 
+      // prepare_query(odb::query_base)
+      //
+      if (multi_dynamic)
+        os << "odb::details::shared_ptr<prepared_query_impl>" << endl
+           << traits << "::" << endl
+           << "prepare_query (connection& c, const char* n, " <<
+          "const odb::query_base& q)"
+           << "{"
+           << "return prepare_query (c, n, query_base_type (q));"
+           << "}";
+
+      // execute_query
+      //
       os << "odb::details::shared_ptr<result_impl>" << endl
          << traits << "::" << endl
          << "execute_query (prepared_query_impl& q)"
@@ -2807,10 +2821,10 @@ traverse_object (type& c)
   // Generate function table registration for dynamic multi-database
   // support.
   //
-  if (options.multi_database () == multi_database::dynamic)
+  if (multi_dynamic)
   {
     string fn (flat_name (type));
-    string dt ("access::object_traits_impl< " + type + ", id_default >");
+    string dt ("access::object_traits_impl< " + type + ", id_common >");
 
     os << "static const" << endl
        << dt << "::" << endl
@@ -2854,9 +2868,28 @@ traverse_object (type& c)
          << "&" << traits << "::erase";
     }
 
+    if (options.generate_query ())
+    {
+      if (!options.omit_unprepared ())
+        os << "," << endl
+           << "&" << traits << "::query";
+
+      os << "," << endl
+         << "&" << traits << "::erase_query";
+
+      if (options.generate_prepared ())
+      {
+        os << "," << endl
+           << "&" << traits << "::prepare_query";
+
+        os << "," << endl
+           << "&" << traits << "::execute_query";
+      }
+    }
+
     os << "};";
 
-    os << "static const function_table_entry< " << type << ", " <<
+    os << "static const object_function_table_entry< " << type << ", " <<
       "id_" << db << " >" << endl
        << "function_table_entry_" << fn << "_ (" << endl
        << "&function_table_" << fn << "_);"
@@ -2877,38 +2910,10 @@ traverse_view (type& c)
 
   view_extra (c);
 
+  // query_columns
+  //
   if (c.get<size_t> ("object-count") != 0)
-  {
-    view_objects& objs (c.get<view_objects> ("objects"));
-
-    // Generate alias_traits specializations.
-    //
-    {
-      bool false_ (false); //@@ (im)perfect forwarding
-      instance<query_alias_traits> at (c, false_);
-
-      for (view_objects::const_iterator i (objs.begin ());
-           i < objs.end ();
-           ++i)
-      {
-        if (i->kind != view_object::object)
-          continue; // Skip tables.
-
-        if (i->alias.empty ())
-          continue;
-
-        semantics::class_& o (*i->obj);
-        qname const& t (table_name (o));
-
-        // Check that the alias is not the same as the table name
-        // (if this is a polymorphic object, then the alias is just
-        // a prefix).
-        //
-        if (polymorphic (o) || t.qualified () || i->alias != t.uname ())
-          at->generate_def (i->alias, o, i->alias);
-      }
-    }
-  }
+    view_query_columns_type_->traverse (c);
 
   //
   // Functions.
@@ -3684,6 +3689,16 @@ traverse_view (type& c)
        << endl
        << "return result<view_type> (r);"
        << "}";
+
+    // query(odb::query_base)
+    //
+    if (multi_dynamic)
+      os << "result< " << traits << "::view_type >" << endl
+         << traits << "::" << endl
+         << "query (database& db, const odb::query_base& q)"
+         << "{"
+         << "return query (db, query_base_type (q));"
+         << "}";
   }
 
   // Prepared. Very similar to unprepared but has some annoying variations
@@ -3691,6 +3706,8 @@ traverse_view (type& c)
   //
   if (options.generate_prepared ())
   {
+    // prepare_query
+    //
     os << "odb::details::shared_ptr<prepared_query_impl>" << endl
        << traits << "::" << endl
        << "prepare_query (connection& c, const char* n, " <<
@@ -3737,6 +3754,19 @@ traverse_view (type& c)
        << "return r;"
        << "}";
 
+    // prepare_query(odb::query_base)
+    //
+    if (multi_dynamic)
+      os << "odb::details::shared_ptr<prepared_query_impl>" << endl
+         << traits << "::" << endl
+         << "prepare_query (connection& c, const char* n, " <<
+        "const odb::query_base& q)"
+         << "{"
+         << "return prepare_query (c, n, query_base_type (q));"
+         << "}";
+
+    // execute_query
+    //
     os << "odb::details::shared_ptr<result_impl>" << endl
        << traits << "::" << endl
        << "execute_query (prepared_query_impl& q)"
@@ -3785,6 +3815,40 @@ traverse_view (type& c)
        << "new (shared) " << db << "::view_result_impl<view_type> (" << endl
        << "pq.query, st, sts));"
        << "}";
+  }
+
+  // Generate function table registration for dynamic multi-database
+  // support.
+  //
+  if (multi_dynamic)
+  {
+    string fn (flat_name (type));
+    string dt ("access::view_traits_impl< " + type + ", id_common >");
+
+    os << "static const" << endl
+       << dt << "::" << endl
+       << "function_table_type function_table_" << fn << "_ ="
+       << "{";
+
+    if (!options.omit_unprepared ())
+      os << "&" << traits << "::query";
+
+    if (options.generate_prepared ())
+    {
+      if (!options.omit_unprepared ())
+        os << "," << endl;
+
+      os << "&" << traits << "::prepare_query" << "," << endl
+         << "&" << traits << "::execute_query";
+    }
+
+    os << "};";
+
+    os << "static const view_function_table_entry< " << type << ", " <<
+      "id_" << db << " >" << endl
+       << "function_table_entry_" << fn << "_ (" << endl
+       << "&function_table_" << fn << "_);"
+       << endl;
   }
 }
 

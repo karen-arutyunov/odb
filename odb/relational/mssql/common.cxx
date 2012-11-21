@@ -473,7 +473,7 @@ namespace relational
 
     struct query_columns: relational::query_columns, context
     {
-      query_columns (base const& x): base (x) {}
+      query_columns (base const& x): base_impl (x) {}
 
       virtual string
       database_type_id (semantics::data_member& m)
@@ -482,20 +482,26 @@ namespace relational
       }
 
       virtual void
-      column_ctor (string const& type, string const& base)
+      column_ctor (string const& type, string const& name, string const& base)
       {
-        os << type << " (const char* t," << endl
+        os << name << " (";
+
+        if (multi_dynamic)
+          os << "odb::query_column< " << type << " >& qc," << endl;
+
+        os << "const char* t," << endl
            << "const char* c," << endl
            << "const char* conv," << endl
            << "unsigned short p = 0," << endl
            << "unsigned short s = 0xFFFF)" << endl
-           << "  : " << base << " (t, c, conv, p, s)"
+           << "  : " << base << " (" << (multi_dynamic ? "qc, " : "") <<
+          "t, c, conv, p, s)"
            << "{"
            << "}";
       }
 
       virtual void
-      column_ctor_extra (semantics::data_member& m)
+      column_ctor_args_extra (semantics::data_member& m)
       {
         // For some types we need to pass precision and scale.
         //

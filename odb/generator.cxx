@@ -513,8 +513,23 @@ generate (options const& ops,
         }
       }
 
-      cxx << "#include " << ctx->process_include_path (hxx_name) << endl
-          << endl;
+      // Include query columns implementations for explicit instantiations.
+      //
+      string impl_guard;
+      if (md == multi_database::dynamic)
+      {
+        impl_guard = ctx->make_guard (
+          "ODB_" + db.string () + "_QUERY_COLUMNS_DEF");
+
+        cxx << "#define " << impl_guard << endl;
+      }
+
+      cxx << "#include " << ctx->process_include_path (hxx_name) << endl;
+
+      if (!impl_guard.empty ())
+        cxx << "#undef " << impl_guard << endl;
+
+      cxx << endl;
 
       {
         // We don't want to indent prologues/epilogues.

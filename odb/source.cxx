@@ -13,6 +13,12 @@ namespace source
 {
   struct class_: traversal::class_, virtual context
   {
+    class_ ()
+        : query_columns_type_ (false, false),
+          view_query_columns_type_ (false)
+    {
+    }
+
     virtual void
     traverse (type& c)
     {
@@ -30,6 +36,10 @@ namespace source
 
     void
     traverse_view (type&);
+
+  private:
+    instance<query_columns_type> query_columns_type_;
+    instance<view_query_columns_type> view_query_columns_type_;
   };
 }
 
@@ -40,18 +50,27 @@ traverse_object (type& c)
   bool abst (abstract (c));
   bool reuse_abst (abst && !poly);
 
-  // The rest only applies to dynamic milti-database support and non-
-  // reuse-abstract objects.
+  // The rest only applies to dynamic milti-database support.
   //
-  if (reuse_abst || options.multi_database () != multi_database::dynamic)
+  if (!multi_dynamic)
     return;
-
-  string const& type (class_fq_name (c));
-  string traits ("access::object_traits_impl< " + type + ", id_default >");
 
   os << "// " << class_name (c) << endl
      << "//" << endl
      << endl;
+
+  // query_columns
+  //
+  if (options.generate_query ())
+    query_columns_type_->traverse (c);
+
+  // The rest does not apply to reuse-abstract objects.
+  //
+  if (reuse_abst)
+    return;
+
+  string const& type (class_fq_name (c));
+  string traits ("access::object_traits_impl< " + type + ", id_common >");
 
   os << "const " << traits << "::" << endl
      << "function_table_type*" << endl
@@ -61,8 +80,28 @@ traverse_object (type& c)
 }
 
 void source::class_::
-traverse_view (type&)
+traverse_view (type& c)
 {
+  // The rest only applies to dynamic milti-database support.
+  //
+  if (!multi_dynamic)
+    return;
+
+  os << "// " << class_name (c) << endl
+     << "//" << endl
+     << endl;
+
+  if (c.get<size_t> ("object-count") != 0)
+    view_query_columns_type_->traverse (c);
+
+  string const& type (class_fq_name (c));
+  string traits ("access::view_traits_impl< " + type + ", id_common >");
+
+  os << "const " << traits << "::" << endl
+     << "function_table_type*" << endl
+     << traits << "::" << endl
+     << "function_table[database_count];"
+     << endl;
 }
 
 namespace source

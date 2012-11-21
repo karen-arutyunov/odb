@@ -60,6 +60,16 @@ traverse_object (type& c)
 
   object_public_extra_pre (c);
 
+  // For dynamic multi-database support also generate common traits
+  // alias (used in query aliasing).
+  //
+  if (options.generate_query () && multi_dynamic)
+  {
+    os << "typedef access::object_traits_impl< " << type << ", " <<
+      "id_common > common_traits;"
+       << endl;
+  }
+
   // Polymorphic root_traits, base_traits, and discriminator_image_type.
   //
   if (poly)
@@ -155,8 +165,7 @@ traverse_object (type& c)
     // Generate object pointer tags here unless we are generating dynamic
     // multi-database support, in which case they generated in object_traits.
     //
-    if (options.multi_database () != multi_database::dynamic &&
-        has_a (c, test_pointer | exclude_base))
+    if (!multi_dynamic && has_a (c, test_pointer | exclude_base))
     {
       query_tags t;   // Not customizable.
       t.traverse (c);
@@ -501,17 +510,33 @@ traverse_object (type& c)
       os << "static result<object_type>" << endl
          << "query (database&, const query_base_type&);"
          << endl;
+
+      if (multi_dynamic)
+        os << "static result<object_type>" << endl
+           << "query (database&, const odb::query_base&);"
+           << endl;
     }
 
     os << "static unsigned long long" << endl
        << "erase_query (database&, const query_base_type&);"
        << endl;
 
+    if (multi_dynamic)
+      os << "static unsigned long long" << endl
+         << "erase_query (database&, const odb::query_base&);"
+         << endl;
+
     if (options.generate_prepared ())
     {
       os << "static odb::details::shared_ptr<prepared_query_impl>" << endl
          << "prepare_query (connection&, const char*, const query_base_type&);"
          << endl;
+
+      if (multi_dynamic)
+        os << "static odb::details::shared_ptr<prepared_query_impl>" << endl
+           << "prepare_query (connection&, const char*, " <<
+          "const odb::query_base&);"
+           << endl;
 
       os << "static odb::details::shared_ptr<result_impl>" << endl
          << "execute_query (prepared_query_impl&);"
@@ -626,7 +651,7 @@ traverse_object (type& c)
   os << "};";
 
 
-  // object_traits_impl< , id_default>
+  // object_traits_impl< , id_common>
   //
   // Note that it is not generated for reuse-abstract classes.
   //
@@ -635,7 +660,7 @@ traverse_object (type& c)
   {
     os << "template <>" << endl
        << "class access::object_traits_impl< " << type << ", " <<
-      "id_default >:" << endl
+      "id_common >:" << endl
        << "  public access::object_traits_impl< " << type << ", " <<
       "id_" << db << " >"
        << "{"
@@ -663,6 +688,16 @@ traverse_view (type& c)
 
   view_public_extra_pre (c);
 
+  // For dynamic multi-database support also generate common traits
+  // alias (used in query aliasing).
+  //
+  if (multi_dynamic)
+  {
+    os << "typedef access::view_traits_impl< " << type << ", " <<
+      "id_common > common_traits;"
+       << endl;
+  }
+
   // image_type
   //
   image_type_->traverse (c);
@@ -677,7 +712,7 @@ traverse_view (type& c)
   // Generate associated object tags here unless we are generating dynamic
   // multi-database support, in which case they generated in object_traits.
   //
-  if (options.multi_database () != multi_database::dynamic)
+  if (!multi_dynamic)
   {
     query_tags t;   // Not customizable.
     t.traverse (c);
@@ -744,15 +779,28 @@ traverse_view (type& c)
   // query ()
   //
   if (!options.omit_unprepared ())
+  {
     os << "static result<view_type>" << endl
        << "query (database&, const query_base_type&);"
        << endl;
+
+    if (multi_dynamic)
+      os << "static result<view_type>" << endl
+         << "query (database&, const odb::query_base&);"
+         << endl;
+  }
 
   if (options.generate_prepared ())
   {
     os << "static odb::details::shared_ptr<prepared_query_impl>" << endl
        << "prepare_query (connection&, const char*, const query_base_type&);"
        << endl;
+
+    if (multi_dynamic)
+      os << "static odb::details::shared_ptr<prepared_query_impl>" << endl
+         << "prepare_query (connection&, const char*, " <<
+        "const odb::query_base&);"
+         << endl;
 
     os << "static odb::details::shared_ptr<result_impl>" << endl
        << "execute_query (prepared_query_impl&);"
@@ -763,14 +811,14 @@ traverse_view (type& c)
 
   os << "};";
 
-  // view_traits_impl< , id_default>
+  // view_traits_impl< , id_common>
   //
   if (options.default_database_specified () &&
       options.default_database () == db)
   {
     os << "template <>" << endl
        << "class access::view_traits_impl< " << type << ", " <<
-      "id_default >:" << endl
+      "id_common >:" << endl
        << "  public access::view_traits_impl< " << type << ", " <<
       "id_" << db << " >"
        << "{"
