@@ -230,6 +230,25 @@ class options
      then you should include it into the prefix value."
   };
 
+  // Export control.
+  //
+  std::string --export-symbol
+  {
+    "<symbol>",
+    "Insert <symbol> in places where DLL export/import control statements
+     (\cb{__declspec(dllexport/dllimport)}) are necessary. See also the
+     \cb{--extern-symbol} option below."
+  };
+
+  std::string --extern-symbol
+  {
+    "<symbol>",
+    "If <symbol> is defined, insert it in places where a template
+     instantiation must be declared \cb{extern}. This option is normally
+     used together with \cb{--export-symbol} when both multi-database
+     support and queries are enabled."
+  };
+
   // Language.
   //
   cxx_version --std = cxx_version::cxx98

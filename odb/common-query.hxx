@@ -79,7 +79,10 @@ struct query_columns_base: object_columns_base, virtual context
 {
   typedef query_columns_base base;
 
-  query_columns_base (semantics::class_&, bool decl);
+  // If inst is true, then we generate extern template declarations
+  // in the header.
+  //
+  query_columns_base (semantics::class_&, bool decl, bool inst);
 
   virtual void
   traverse_object (semantics::class_&);
@@ -90,8 +93,12 @@ struct query_columns_base: object_columns_base, virtual context
   virtual void
   traverse_pointer (semantics::data_member&, semantics::class_&);
 
+  virtual void
+  generate_inst (semantics::data_member&, semantics::class_&);
+
 protected:
   bool decl_;
+  bool inst_;
   string const_; // Const prefix or empty.
   string scope_;
 };
@@ -176,7 +183,7 @@ struct query_columns_base_insts: traversal::class_, virtual context
 {
   typedef query_columns_base_insts base;
 
-  query_columns_base_insts (bool ptr, string const& alias);
+  query_columns_base_insts (bool ptr, bool decl, string const& alias);
   query_columns_base_insts (query_columns_base_insts const&);
 
   virtual void
@@ -184,6 +191,7 @@ struct query_columns_base_insts: traversal::class_, virtual context
 
 private:
   bool ptr_;
+  bool decl_;
   string alias_;
   traversal::inherits inherits_;
 };
@@ -202,7 +210,11 @@ struct query_columns_type: traversal::class_, virtual context
   // If decl is false then generate definitions (only needed for
   // query_columns so ptr should be false).
   //
-  query_columns_type (bool ptr, bool decl): ptr_ (ptr), decl_ (decl) {}
+  // If inst if true, then generate extern template declarations
+  // in the header (ptr and decl should be false).
+  //
+  query_columns_type (bool ptr, bool decl, bool inst)
+      : ptr_ (ptr), decl_ (decl), inst_ (inst) {}
 
   virtual void
   traverse (type&);
@@ -210,9 +222,13 @@ struct query_columns_type: traversal::class_, virtual context
   virtual void
   generate_impl (type&);
 
+  virtual void
+  generate_inst (type&);
+
 public:
   bool ptr_;
   bool decl_;
+  bool inst_;
 };
 
 // Generate the query_columns class for views.
@@ -231,6 +247,9 @@ struct view_query_columns_type: traversal::class_, virtual context
 
   void
   generate_def (type&);
+
+  void
+  generate_inst (type&);
 
 public:
   bool decl_;

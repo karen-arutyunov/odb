@@ -14,7 +14,7 @@ namespace source
   struct class_: traversal::class_, virtual context
   {
     class_ ()
-        : query_columns_type_ (false, false),
+        : query_columns_type_ (false, false, false),
           view_query_columns_type_ (false)
     {
     }

@@ -442,6 +442,7 @@ context (ostream& os_,
       options (ops),
       features (f),
       db (options.database ()[0]),
+      exp (data_->exp_),
       keyword_set (data_->keyword_set_),
       include_regex (data_->include_regex_),
       accessor_regex (data_->accessor_regex_),
@@ -459,6 +460,11 @@ context (ostream& os_,
 {
   assert (current_ == 0);
   current_ = this;
+
+  // Export control.
+  //
+  if (!ops.export_symbol ().empty ())
+    exp = ops.export_symbol () + " ";
 
   for (size_t i (0); i < sizeof (keywords) / sizeof (char*); ++i)
     data_->keyword_set_.insert (keywords[i]);
@@ -497,6 +503,7 @@ context ()
     options (current ().options),
     features (current ().features),
     db (current ().db),
+    exp (current ().exp),
     keyword_set (current ().keyword_set),
     include_regex (current ().include_regex),
     accessor_regex (current ().accessor_regex),
@@ -1870,6 +1877,36 @@ string context::
 strlit (string const& str)
 {
   return strlit_ascii (str);
+}
+
+void context::
+inst_header (bool decl)
+{
+  string const& ext (options.extern_symbol ());
+
+  if (decl && !ext.empty ())
+    os << ext << " ";
+
+  os << "template struct";
+
+  if (!exp.empty ())
+  {
+    // If we are generating an explicit instantiation directive rather
+    // than the extern template declaration, then omit the export symbol
+    // if we already have it in the header (i.e., extern symbol specified
+    // and defined). If we don't do that, then we get GCC warnings saying
+    // that the second set of visibility attributes is ignored.
+    //
+    if (!decl && !ext.empty ())
+      os << endl
+         << "#ifndef " << ext << endl
+         << options.export_symbol () << endl
+         << "#endif" << endl;
+    else
+      os << " " << exp;
+  }
+  else
+    os << " ";
 }
 
 namespace

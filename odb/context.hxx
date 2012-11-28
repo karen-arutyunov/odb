@@ -712,6 +712,13 @@ public:
   static string
   strlit (string const&);
 
+public:
+  // Generate explicit instantiation headers with all the necessary
+  // extern and export symbols.
+  //
+  void
+  inst_header (bool decl);
+
   // Counts and other information.
   //
 public:
@@ -964,6 +971,8 @@ protected:
     semantics::class_* top_object_;
     semantics::class_* cur_object_;
 
+    string exp_;
+
     keyword_set_type keyword_set_;
     type_map_type type_map_;
 
@@ -983,6 +992,8 @@ public:
   options_type const& options;
   features_type& features;
   database const db;
+
+  string& exp;
 
   keyword_set_type const& keyword_set;
 

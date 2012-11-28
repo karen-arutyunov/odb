@@ -52,8 +52,8 @@ traverse_object (type& c)
   // object_traits_impl
   //
   os << "template <>" << endl
-     << "class access::object_traits_impl< " << type << ", id_" << db <<
-    " >:"  << endl
+     << "class " << exp << "access::object_traits_impl< " << type << ", " <<
+    "id_" << db << " >:"  << endl
      << "  public access::object_traits< " << type << " >"
      << "{"
      << "public:" << endl;
@@ -680,8 +680,8 @@ traverse_view (type& c)
   // view_traits_impl
   //
   os << "template <>" << endl
-     << "class access::view_traits_impl< " << type << ", id_" <<
-    db << " >:" << endl
+     << "class " << exp << "access::view_traits_impl< " << type << ", " <<
+    "id_" << db << " >:" << endl
      << "  public access::view_traits< " << type << " >"
      << "{"
      << "public:" << endl;
@@ -834,9 +834,13 @@ traverse_composite (type& c)
   os << "// " << class_name (c) << endl
      << "//" << endl;
 
+  // While composite_value_traits is not used directly by user code, we
+  // still need to export it if the generated code for the same database
+  // is split into several DLLs.
+  //
   os << "template <>" << endl
-     << "class access::composite_value_traits< " << type << ", " <<
-    "id_" << db << " >"
+     << "class " << exp << "access::composite_value_traits< " << type <<
+    ", id_" << db << " >"
      << "{"
      << "public:" << endl;
 

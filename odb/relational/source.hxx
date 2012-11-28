@@ -3294,7 +3294,7 @@ namespace relational
       typedef class_ base;
 
       class_ ()
-          : query_columns_type_ (false, false),
+          : query_columns_type_ (false, false, false),
             view_query_columns_type_ (false),
             grow_base_ (index_),
             grow_member_ (index_),
@@ -3318,7 +3318,7 @@ namespace relational
       class_ (class_ const&)
           : root_context (), //@@ -Wextra
             context (),
-            query_columns_type_ (false, false),
+            query_columns_type_ (false, false, false),
             view_query_columns_type_ (false),
             grow_base_ (index_),
             grow_member_ (index_),

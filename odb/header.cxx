@@ -13,8 +13,8 @@ namespace header
   struct class1: traversal::class_, virtual context
   {
     class1 ()
-        : query_columns_type_ (false, true),
-          pointer_query_columns_type_ (true, true) {}
+        : query_columns_type_ (false, true, false),
+          pointer_query_columns_type_ (true, true, false) {}
 
     virtual void
     traverse (type& c)
@@ -76,7 +76,7 @@ traverse_object (type& c)
   // object_traits
   //
   os << "template <>" << endl
-     << "class access::object_traits< " << type << " >"
+     << "class " << exp << "access::object_traits< " << type << " >"
      << "{"
      << "public:" << endl;
 
@@ -312,7 +312,7 @@ traverse_object (type& c)
   // object_traits_impl
   //
   os << "template <>" << endl
-     << "class access::object_traits_impl< " << type << ", " <<
+     << "class " << exp << "access::object_traits_impl< " << type << ", " <<
     "id_common >:" << endl
      << "  public access::object_traits< " << type << " >"
      << "{"
@@ -500,7 +500,7 @@ traverse_view (type& c)
   // view_traits
   //
   os << "template <>" << endl
-     << "class access::view_traits< " << type << " >"
+     << "class " << exp << "access::view_traits< " << type << " >"
      << "{"
      << "public:" << endl;
 
@@ -537,7 +537,8 @@ traverse_view (type& c)
   // view_traits_impl
   //
   os << "template <>" << endl
-     << "class access::view_traits_impl< " << type << ", id_common >:" << endl
+     << "class " << exp << "access::view_traits_impl< " << type << ", " <<
+    "id_common >:" << endl
      << "  public access::view_traits< " << type << " >"
      << "{"
      << "public:" << endl;
@@ -606,7 +607,8 @@ namespace header
   struct class2: traversal::class_, virtual context
   {
     class2 ()
-        : query_columns_type_ (false, true),
+        : query_columns_type_ (false, true, false),
+          query_columns_type_inst_ (false, false, true),
           view_query_columns_type_ (true)
     {
     }
@@ -631,6 +633,7 @@ namespace header
 
   private:
     instance<query_columns_type> query_columns_type_;
+    instance<query_columns_type> query_columns_type_inst_;
     instance<view_query_columns_type> view_query_columns_type_;
   };
 }
@@ -640,19 +643,20 @@ traverse_object (type& c)
 {
   if (options.generate_query ())
   {
-    bool has_ptr (has_a (c, test_pointer | include_base));
-
-    if (has_ptr)
-      os << "// " << class_name (c) << endl
-         << "//" << endl;
+    os << "// " << class_name (c) << endl
+       << "//" << endl;
 
     // query_columns
     //
     // If we don't have any pointers, then query_columns is generated
     // in pass 1 (see the comment in class1 for details).
     //
-    if (has_ptr)
+    if (has_a (c, test_pointer | include_base))
       query_columns_type_->traverse (c);
+
+    // Generate extern template declarations.
+    //
+    query_columns_type_inst_->traverse (c);
   }
 
   // Move header comment out of if-block if adding any code here.

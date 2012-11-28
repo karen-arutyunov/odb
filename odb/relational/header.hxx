@@ -747,8 +747,8 @@ namespace relational
           : id_image_member_ ("id_"),
             version_image_member_ ("version_"),
             discriminator_image_member_ ("discriminator_"),
-            query_columns_type_ (false, true),
-            pointer_query_columns_type_ (true, true)
+            query_columns_type_ (false, true, false),
+            pointer_query_columns_type_ (true, true, false)
       {
       }
 
@@ -758,8 +758,8 @@ namespace relational
             id_image_member_ ("id_"),
             version_image_member_ ("version_"),
             discriminator_image_member_ ("discriminator_"),
-            query_columns_type_ (false, true),
-            pointer_query_columns_type_ (true, true)
+            query_columns_type_ (false, true, false),
+            pointer_query_columns_type_ (true, true, false)
       {
       }
 
@@ -823,7 +823,8 @@ namespace relational
       typedef class2 base;
 
       class2 ()
-          : query_columns_type_ (false, true),
+          : query_columns_type_ (false, true, false),
+            query_columns_type_inst_ (false, false, true),
             view_query_columns_type_ (true)
       {
       }
@@ -831,7 +832,8 @@ namespace relational
       class2 (class_ const&)
           : root_context (), //@@ -Wextra
             context (),
-            query_columns_type_ (false, true),
+            query_columns_type_ (false, true, false),
+            query_columns_type_inst_ (false, false, true),
             view_query_columns_type_ (true)
       {
       }
@@ -855,19 +857,21 @@ namespace relational
       {
         if (options.generate_query ())
         {
-          bool has_ptr (has_a (c, test_pointer | include_base));
-
-          if (has_ptr)
-            os << "// " << class_name (c) << endl
-               << "//" << endl;
+          os << "// " << class_name (c) << endl
+             << "//" << endl;
 
           // query_columns
           //
           // If we don't have any pointers, then query_columns is generated
           // in pass 1 (see the comment in class1 for details).
           //
-          if (has_ptr)
+          if (has_a (c, test_pointer | include_base))
             query_columns_type_->traverse (c);
+
+          // Generate extern template declarations.
+          //
+          if (multi_dynamic)
+            query_columns_type_inst_->traverse (c);
         }
 
         // Move header comment out of if-block if adding any code here.
@@ -896,6 +900,7 @@ namespace relational
 
     private:
       instance<query_columns_type> query_columns_type_;
+      instance<query_columns_type> query_columns_type_inst_;
       instance<view_query_columns_type> view_query_columns_type_;
     };
 

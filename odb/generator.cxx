@@ -516,7 +516,7 @@ generate (options const& ops,
       // Include query columns implementations for explicit instantiations.
       //
       string impl_guard;
-      if (md == multi_database::dynamic)
+      if (md == multi_database::dynamic && ops.extern_symbol ().empty ())
       {
         impl_guard = ctx->make_guard (
           "ODB_" + db.string () + "_QUERY_COLUMNS_DEF");
