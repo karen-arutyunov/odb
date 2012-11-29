@@ -9,7 +9,6 @@
 
 #include <sqlite3.h>
 
-#include <odb/forward.hxx>
 #include <odb/connection.hxx>
 
 #include <odb/details/mutex.hxx>

@@ -12,6 +12,7 @@
 #include <odb/exceptions.hxx>
 
 #include <odb/sqlite/version.hxx>
+#include <odb/sqlite/forward.hxx>
 #include <odb/sqlite/details/export.hxx>
 
 namespace odb
@@ -65,6 +66,12 @@ namespace odb
     private:
       std::string what_;
     };
+
+    namespace core
+    {
+      using sqlite::database_exception;
+      using sqlite::cli_exception;
+    }
   }
 }
 

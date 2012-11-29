@@ -1395,6 +1395,11 @@ namespace odb
       {
       }
     };
+
+    namespace core
+    {
+      using sqlite::query;
+    }
   }
 
   // Derive odb::query from odb::sqlite::query so that it can be

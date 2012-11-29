@@ -14,10 +14,10 @@
 #include <cstring> // std::strlen, std::memcpy
 #include <cassert>
 
-#include <odb/forward.hxx>
 #include <odb/statement.hxx>
 
 #include <odb/sqlite/version.hxx>
+#include <odb/sqlite/forward.hxx>
 #include <odb/sqlite/binding.hxx>
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/auto-handle.hxx>

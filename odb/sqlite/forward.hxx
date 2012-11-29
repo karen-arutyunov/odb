@@ -13,6 +13,13 @@ namespace odb
 {
   namespace sqlite
   {
+    namespace core
+    {
+      using namespace odb::common;
+    }
+
+    //
+    //
     class database;
     class connection;
     typedef details::shared_ptr<connection> connection_ptr;
@@ -20,6 +27,15 @@ namespace odb
     class statement;
     class transaction;
     class tracer;
+
+    namespace core
+    {
+      using sqlite::database;
+      using sqlite::connection;
+      using sqlite::connection_ptr;
+      using sqlite::transaction;
+      using sqlite::statement;
+    }
 
     // Implementation details.
     //
