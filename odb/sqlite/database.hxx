@@ -268,7 +268,11 @@ namespace odb
 
       template <typename T>
       unsigned long long
-      erase_query (const sqlite::query<T>&);
+      erase_query (const sqlite::query_base&);
+
+      template <typename T>
+      unsigned long long
+      erase_query (const odb::query_base&);
 
       // Query API.
       //
@@ -286,7 +290,11 @@ namespace odb
 
       template <typename T>
       result<T>
-      query (const sqlite::query<T>&);
+      query (const sqlite::query_base&);
+
+      template <typename T>
+      result<T>
+      query (const odb::query_base&);
 
       // Query preparation.
       //
@@ -300,7 +308,11 @@ namespace odb
 
       template <typename T>
       prepared_query<T>
-      prepare_query (const char* name, const sqlite::query<T>&);
+      prepare_query (const char* name, const sqlite::query_base&);
+
+      template <typename T>
+      prepared_query<T>
+      prepare_query (const char* name, const odb::query_base&);
 
       // Transactions.
       //
