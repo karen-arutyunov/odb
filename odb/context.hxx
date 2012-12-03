@@ -972,6 +972,7 @@ protected:
     semantics::class_* cur_object_;
 
     string exp_;
+    string ext_;
 
     keyword_set_type keyword_set_;
     type_map_type type_map_;
@@ -993,7 +994,8 @@ public:
   features_type& features;
   database const db;
 
-  string& exp;
+  string& exp; // Export symbol (with trailing space if specified).
+  string& ext; // Extern symbol.
 
   keyword_set_type const& keyword_set;
 

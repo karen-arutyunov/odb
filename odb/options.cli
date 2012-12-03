@@ -232,7 +232,7 @@ class options
 
   // Export control.
   //
-  std::string --export-symbol
+  database_map<std::string> --export-symbol
   {
     "<symbol>",
     "Insert <symbol> in places where DLL export/import control statements
@@ -240,7 +240,7 @@ class options
      \cb{--extern-symbol} option below."
   };
 
-  std::string --extern-symbol
+  database_map<std::string> --extern-symbol
   {
     "<symbol>",
     "If <symbol> is defined, insert it in places where a template

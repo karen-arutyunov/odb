@@ -53,6 +53,14 @@ process_options (options& o)
   if (o.schema_name ().count (db) == 0)
     o.schema_name ()[db] = "";
 
+  // Set default --{export,extern}-symbol values.
+  //
+  if (o.export_symbol ().count (db) == 0)
+    o.export_symbol ()[db] = "";
+
+  if (o.extern_symbol ().count (db) == 0)
+    o.extern_symbol ()[db] = "";
+
   // Set default --*--file-suffix values.
   //
   {

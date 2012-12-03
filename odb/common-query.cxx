@@ -835,9 +835,9 @@ traverse (type& c)
   {
     // If we have the extern symbol, generate extern template declarations.
     //
-    if (!options.extern_symbol ().empty ())
+    if (!ext.empty ())
     {
-      os << "#ifdef " << options.extern_symbol () << endl
+      os << "#ifdef " << ext << endl
          << endl;
 
       if (has_a (c, test_pointer | exclude_base))
@@ -851,7 +851,7 @@ traverse (type& c)
 
       generate_inst (c);
 
-      os << "#endif // " << options.extern_symbol () << endl
+      os << "#endif // " << ext << endl
          << endl;
     }
   }
@@ -897,7 +897,7 @@ generate_impl (type& c)
   // instantiations in multiple places and we will avoid the VC++
   // warning C4661 (no definition provided).
   //
-  if (multi_dynamic && options.extern_symbol ().empty ())
+  if (multi_dynamic && ext.empty ())
   {
     guard = make_guard ("ODB_" + db.string () + "_QUERY_COLUMNS_DEF");
 
@@ -1006,14 +1006,14 @@ generate_decl (type& c)
   // Do it before query_columns since the inheritance will trigger
   // instantiation and we won't be able to change visibility (GCC).
   //
-  if (obj_count != 0 && multi_dynamic && !options.extern_symbol ().empty ())
+  if (obj_count != 0 && multi_dynamic && !ext.empty ())
   {
-    os << "#ifdef " << options.extern_symbol () << endl
+    os << "#ifdef " << ext << endl
        << endl;
 
     generate_inst (c);
 
-    os << "#endif // " << options.extern_symbol () << endl
+    os << "#endif // " << ext << endl
        << endl;
   }
 

@@ -443,6 +443,7 @@ context (ostream& os_,
       features (f),
       db (options.database ()[0]),
       exp (data_->exp_),
+      ext (data_->ext_),
       keyword_set (data_->keyword_set_),
       include_regex (data_->include_regex_),
       accessor_regex (data_->accessor_regex_),
@@ -463,8 +464,10 @@ context (ostream& os_,
 
   // Export control.
   //
-  if (!ops.export_symbol ().empty ())
-    exp = ops.export_symbol () + " ";
+  if (!ops.export_symbol ()[db].empty ())
+    exp = ops.export_symbol ()[db] + " ";
+
+  ext = ops.extern_symbol ()[db];
 
   for (size_t i (0); i < sizeof (keywords) / sizeof (char*); ++i)
     data_->keyword_set_.insert (keywords[i]);
@@ -504,6 +507,7 @@ context ()
     features (current ().features),
     db (current ().db),
     exp (current ().exp),
+    ext (current ().ext),
     keyword_set (current ().keyword_set),
     include_regex (current ().include_regex),
     accessor_regex (current ().accessor_regex),
@@ -1882,8 +1886,6 @@ strlit (string const& str)
 void context::
 inst_header (bool decl)
 {
-  string const& ext (options.extern_symbol ());
-
   if (decl && !ext.empty ())
     os << ext << " ";
 
@@ -1900,7 +1902,7 @@ inst_header (bool decl)
     if (!decl && !ext.empty ())
       os << endl
          << "#ifndef " << ext << endl
-         << options.export_symbol () << endl
+         << options.export_symbol ()[db] << endl
          << "#endif" << endl;
     else
       os << " " << exp;
