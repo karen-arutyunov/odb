@@ -61,7 +61,7 @@ process_options (options& o)
   if (o.extern_symbol ().count (db) == 0)
     o.extern_symbol ()[db] = "";
 
-  // Set default --*--file-suffix values.
+  // Set default --*-file-suffix values.
   //
   {
     database cm (database::common);
