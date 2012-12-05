@@ -49,14 +49,23 @@ class options
   {
     "<db>",
     "Generate code for the <db> database. Valid values are \cb{mssql},
-     \cb{mysql}, \cb{oracle}, \cb{pgsql}, \cb{sqlite}, and \cb{common}."
+     \cb{mysql}, \cb{oracle}, \cb{pgsql}, \cb{sqlite}, and \cb{common}
+     (multi-database mode only)."
   };
 
   ::multi_database --multi-database | -m = ::multi_database::disabled
   {
     "<type>",
     "Enable multi-database support and specify its type. Valid values
-     for this option are \cb{static} and \cb{dynamic}."
+     for this option are \cb{static} and \cb{dynamic}.
+
+     In the multi-database mode, options that determine the kind (for
+     example, \cb{--schema-format}), names (for example,
+     \cb{--odb-file-suffix}), or content (for example, prologue and
+     epilogue options) of the output files can be prefixed with the
+     database name followed by a colon, for example, \cb{mysql:value}.
+     This restricts the value of such an option to only apply to
+     generated files corresponding to this database."
   };
 
   ::database --default-database
@@ -276,22 +285,29 @@ class options
   database_map<std::string> --odb-file-suffix
   {
     "<suffix>",
-    "Use <suffix> instead of the default \cb{-odb} to construct the names
-     of the generated C++ files."
+    "Use <suffix> to construct the names of the generated C++ files. In
+     the single-database mode the default value for this option is \cb{-odb}.
+     In the multi-database mode it is \cb{-odb} for the files corresponding
+     to the \cb{common} database and \c{\b{-odb-}\i{db}} (where \ci{db} is
+     the database name) for other databases."
   };
 
   database_map<std::string> --sql-file-suffix
   {
     "<suffix>",
     "Use <suffix> to construct the name of the generated schema SQL file.
-     By default no suffix is used."
+     In the single-database mode by default no suffix is used. In the
+     multi-database mode the default value for this option is
+     \c{\b{-}\i{db}} (where \ci{db} is the database name)."
   };
 
   database_map<std::string> --schema-file-suffix
   {
     "<suffix>",
-    "Use <suffix> instead of the default \cb{-schema} to construct the name
-     of the generated schema C++ source file. See the \cb{--schema-format}
+    "Use <suffix> to construct the name of the generated schema C++ source
+     file. In the single-database mode the default value for this option is
+     \cb{-schema}. In the multi-database mode it is \c{\b{-schema-}\i{db}}
+     (where \ci{db} is the database name). See the \cb{--schema-format}
      option for details."
   };
 

@@ -311,7 +311,8 @@ for consistency.
           <tr><th>2.6</th><td><a href="#2.6">Updating Persistent Objects</a></td></tr>
 	  <tr><th>2.7</th><td><a href="#2.7">Defining and Using Views</a></td></tr>
           <tr><th>2.8</th><td><a href="#2.8">Deleting Persistent Objects</a></td></tr>
-          <tr><th>2.9</th><td><a href="#2.9">Summary</a></td></tr>
+	  <tr><th>2.9</th><td><a href="#2.9">Accessing Multiple Databases</a></td></tr>
+          <tr><th>2.10</th><td><a href="#2.10">Summary</a></td></tr>
         </table>
       </td>
     </tr>
@@ -580,118 +581,133 @@ for consistency.
     </tr>
 
     <tr>
-      <th>13</th><td><a href="#13">MySQL Database</a>
+      <th>13</th><td><a href="#13">Multi-Database Support</a>
         <table class="toc">
-          <tr><th>13.1</th><td><a href="#13.1">MySQL Type Mapping</a></td></tr>
-          <tr><th>13.2</th><td><a href="#13.2">MySQL Database Class</a></td></tr>
-          <tr><th>13.3</th><td><a href="#13.3">MySQL Connection and Connection Factory</a></td></tr>
-	  <tr><th>13.4</th><td><a href="#13.4">MySQL Exceptions</a></td></tr>
+          <tr><th>13.1</th><td><a href="#13.1">Static Multi-Database Support</a></td></tr>
+          <tr>
+            <th>13.2</th><td><a href="#13.2">Dynamic Multi-Database Support</a>
+              <table class="toc">
+                <tr><th>13.2.2</th><td><a href="#13.2.2">13.2.2 Dynamic Loading of Database Support Code</a></td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>14</th><td><a href="#14">MySQL Database</a>
+        <table class="toc">
+          <tr><th>14.1</th><td><a href="#14.1">MySQL Type Mapping</a></td></tr>
+          <tr><th>14.2</th><td><a href="#14.2">MySQL Database Class</a></td></tr>
+          <tr><th>14.3</th><td><a href="#14.3">MySQL Connection and Connection Factory</a></td></tr>
+	  <tr><th>14.4</th><td><a href="#14.4">MySQL Exceptions</a></td></tr>
 	  <tr>
-            <th>13.5</th><td><a href="#13.5">MySQL Limitations</a>
+            <th>14.5</th><td><a href="#14.5">MySQL Limitations</a>
               <table class="toc">
-                <tr><th>13.5.1</th><td><a href="#13.5.1">Foreign Key Constraints</a></td></tr>
+                <tr><th>14.5.1</th><td><a href="#14.5.1">Foreign Key Constraints</a></td></tr>
               </table>
             </td>
           </tr>
-          <tr><th>13.6</th><td><a href="#13.6">MySQL Index Definition</a></td></tr>
+          <tr><th>14.6</th><td><a href="#14.6">MySQL Index Definition</a></td></tr>
         </table>
       </td>
     </tr>
 
     <tr>
-      <th>14</th><td><a href="#14">SQLite Database</a>
+      <th>15</th><td><a href="#15">SQLite Database</a>
         <table class="toc">
-          <tr><th>14.1</th><td><a href="#14.1">SQLite Type Mapping</a></td></tr>
-          <tr><th>14.2</th><td><a href="#14.2">SQLite Database Class</a></td></tr>
-          <tr><th>14.3</th><td><a href="#14.3">SQLite Connection and Connection Factory</a></td></tr>
-	  <tr><th>14.4</th><td><a href="#14.4">SQLite Exceptions</a></td></tr>
+          <tr><th>15.1</th><td><a href="#15.1">SQLite Type Mapping</a></td></tr>
+          <tr><th>15.2</th><td><a href="#15.2">SQLite Database Class</a></td></tr>
+          <tr><th>15.3</th><td><a href="#15.3">SQLite Connection and Connection Factory</a></td></tr>
+	  <tr><th>15.4</th><td><a href="#15.4">SQLite Exceptions</a></td></tr>
           <tr>
-            <th>14.5</th><td><a href="#14.5">SQLite Limitations</a>
-              <table class="toc">
-                <tr><th>14.5.1</th><td><a href="#14.5.1">Query Result Caching</a></td></tr>
-		<tr><th>14.5.2</th><td><a href="#14.5.2">Automatic Assignment of Object Ids</a></td></tr>
-		<tr><th>14.5.3</th><td><a href="#14.5.3">Foreign Key Constraints</a></td></tr>
-		<tr><th>14.5.4</th><td><a href="#14.5.4">Constraint Violations</a></td></tr>
-		<tr><th>14.5.5</th><td><a href="#14.5.5">Sharing of Queries</a></td></tr>
-              </table>
-            </td>
-          </tr>
-          <tr><th>14.6</th><td><a href="#14.6">SQLite Index Definition</a></td></tr>
-        </table>
-      </td>
-    </tr>
-
-    <tr>
-      <th>15</th><td><a href="#15">PostgreSQL Database</a>
-        <table class="toc">
-          <tr><th>15.1</th><td><a href="#15.1">PostgreSQL Type Mapping</a></td></tr>
-          <tr><th>15.2</th><td><a href="#15.2">PostgreSQL Database Class</a></td></tr>
-          <tr><th>15.3</th><td><a href="#15.3">PostgreSQL Connection and Connection Factory</a></td></tr>
-	  <tr><th>15.4</th><td><a href="#15.4">PostgreSQL Exceptions</a></td></tr>
-          <tr>
-            <th>15.5</th><td><a href="#15.5">PostgreSQL Limitations</a>
+            <th>15.5</th><td><a href="#15.5">SQLite Limitations</a>
               <table class="toc">
                 <tr><th>15.5.1</th><td><a href="#15.5.1">Query Result Caching</a></td></tr>
-                <tr><th>15.5.2</th><td><a href="#15.5.2">Foreign Key Constraints</a></td></tr>
-		<tr><th>15.5.3</th><td><a href="#15.5.3">Unique Constraint Violations</a></td></tr>
-		<tr><th>15.5.4</th><td><a href="#15.5.4">Date-Time Format</a></td></tr>
-		<tr><th>15.5.5</th><td><a href="#15.5.5">Timezones</a></td></tr>
-		<tr><th>15.5.6</th><td><a href="#15.5.6"><code>NUMERIC</code> Type Support</a></td></tr>
+		<tr><th>15.5.2</th><td><a href="#15.5.2">Automatic Assignment of Object Ids</a></td></tr>
+		<tr><th>15.5.3</th><td><a href="#15.5.3">Foreign Key Constraints</a></td></tr>
+		<tr><th>15.5.4</th><td><a href="#15.5.4">Constraint Violations</a></td></tr>
+		<tr><th>15.5.5</th><td><a href="#15.5.5">Sharing of Queries</a></td></tr>
               </table>
             </td>
           </tr>
-	  <tr><th>15.6</th><td><a href="#15.6">PostgreSQL Index Definition</a></td></tr>
+          <tr><th>15.6</th><td><a href="#15.6">SQLite Index Definition</a></td></tr>
         </table>
       </td>
     </tr>
 
     <tr>
-      <th>16</th><td><a href="#16">Oracle Database</a>
+      <th>16</th><td><a href="#16">PostgreSQL Database</a>
         <table class="toc">
-          <tr><th>16.1</th><td><a href="#16.1">Oracle Type Mapping</a></td></tr>
-          <tr><th>16.2</th><td><a href="#16.2">Oracle Database Class</a></td></tr>
-          <tr><th>16.3</th><td><a href="#16.3">Oracle Connection and Connection Factory</a></td></tr>
-	  <tr><th>16.4</th><td><a href="#16.4">Oracle Exceptions</a></td></tr>
+          <tr><th>16.1</th><td><a href="#16.1">PostgreSQL Type Mapping</a></td></tr>
+          <tr><th>16.2</th><td><a href="#16.2">PostgreSQL Database Class</a></td></tr>
+          <tr><th>16.3</th><td><a href="#16.3">PostgreSQL Connection and Connection Factory</a></td></tr>
+	  <tr><th>16.4</th><td><a href="#16.4">PostgreSQL Exceptions</a></td></tr>
           <tr>
-            <th>16.5</th><td><a href="#16.5">Oracle Limitations</a>
+            <th>16.5</th><td><a href="#16.5">PostgreSQL Limitations</a>
               <table class="toc">
-                <tr><th>16.5.1</th><td><a href="#16.5.1">Identifier Truncation</a></td></tr>
-		<tr><th>16.5.2</th><td><a href="#16.5.2">Query Result Caching</a></td></tr>
-		<tr><th>16.5.3</th><td><a href="#16.5.3">Foreign Key Constraints</a></td></tr>
-		<tr><th>16.5.4</th><td><a href="#16.5.4">Unique Constraint Violations</a></td></tr>
-		<tr><th>16.5.5</th><td><a href="#16.5.5">Large <code>FLOAT</code> and <code>NUMBER</code> Types</a></td></tr>
-		<tr><th>16.5.6</th><td><a href="#16.5.6">Timezones</a></td></tr>
-		<tr><th>16.5.7</th><td><a href="#16.5.7"><code>LONG</code> Types</a></td></tr>
-		<tr><th>16.5.8</th><td><a href="#16.5.8">LOB Types and By-Value Accessors/Modifiers</a></td></tr>
+                <tr><th>16.5.1</th><td><a href="#16.5.1">Query Result Caching</a></td></tr>
+                <tr><th>16.5.2</th><td><a href="#16.5.2">Foreign Key Constraints</a></td></tr>
+		<tr><th>16.5.3</th><td><a href="#16.5.3">Unique Constraint Violations</a></td></tr>
+		<tr><th>16.5.4</th><td><a href="#16.5.4">Date-Time Format</a></td></tr>
+		<tr><th>16.5.5</th><td><a href="#16.5.5">Timezones</a></td></tr>
+		<tr><th>16.5.6</th><td><a href="#16.5.6"><code>NUMERIC</code> Type Support</a></td></tr>
               </table>
             </td>
           </tr>
-	  <tr><th>16.6</th><td><a href="#16.6">Oracle Index Definition</a></td></tr>
+	  <tr><th>16.6</th><td><a href="#16.6">PostgreSQL Index Definition</a></td></tr>
         </table>
       </td>
     </tr>
 
     <tr>
-      <th>17</th><td><a href="#17">Microsoft SQL Server Database</a>
+      <th>17</th><td><a href="#17">Oracle Database</a>
         <table class="toc">
-          <tr><th>17.1</th><td><a href="#17.1">SQL Server Type Mapping</a></td></tr>
-          <tr><th>17.2</th><td><a href="#17.2">SQL Server Database Class</a></td></tr>
-          <tr><th>17.3</th><td><a href="#17.3">SQL Server Connection and Connection Factory</a></td></tr>
-	  <tr><th>17.4</th><td><a href="#17.4">SQL Server Exceptions</a></td></tr>
+          <tr><th>17.1</th><td><a href="#17.1">Oracle Type Mapping</a></td></tr>
+          <tr><th>17.2</th><td><a href="#17.2">Oracle Database Class</a></td></tr>
+          <tr><th>17.3</th><td><a href="#17.3">Oracle Connection and Connection Factory</a></td></tr>
+	  <tr><th>17.4</th><td><a href="#17.4">Oracle Exceptions</a></td></tr>
           <tr>
-            <th>17.5</th><td><a href="#17.5">SQL Server Limitations</a>
+            <th>17.5</th><td><a href="#17.5">Oracle Limitations</a>
               <table class="toc">
-                <tr><th>17.5.1</th><td><a href="#17.5.1">Query Result Caching</a></td></tr>
-		<tr><th>17.5.2</th><td><a href="#17.5.2">Foreign Key Constraints</a></td></tr>
-		<tr><th>17.5.3</th><td><a href="#17.5.3">Unique Constraint Violations</a></td></tr>
-		<tr><th>17.5.4</th><td><a href="#17.5.4">Multi-threaded Windows Applications</a></td></tr>
-		<tr><th>17.5.5</th><td><a href="#17.5.5">Affected Row Count and DDL Statements</a></td></tr>
-		<tr><th>17.5.6</th><td><a href="#17.5.6">Long Data and Automatically Assigned Object Ids</a></td></tr>
-		<tr><th>17.5.7</th><td><a href="#17.5.7">Long Data and By-Value Accessors/Modifiers</a></td></tr>
+                <tr><th>17.5.1</th><td><a href="#17.5.1">Identifier Truncation</a></td></tr>
+		<tr><th>17.5.2</th><td><a href="#17.5.2">Query Result Caching</a></td></tr>
+		<tr><th>17.5.3</th><td><a href="#17.5.3">Foreign Key Constraints</a></td></tr>
+		<tr><th>17.5.4</th><td><a href="#17.5.4">Unique Constraint Violations</a></td></tr>
+		<tr><th>17.5.5</th><td><a href="#17.5.5">Large <code>FLOAT</code> and <code>NUMBER</code> Types</a></td></tr>
+		<tr><th>17.5.6</th><td><a href="#17.5.6">Timezones</a></td></tr>
+		<tr><th>17.5.7</th><td><a href="#17.5.7"><code>LONG</code> Types</a></td></tr>
+		<tr><th>17.5.8</th><td><a href="#17.5.8">LOB Types and By-Value Accessors/Modifiers</a></td></tr>
               </table>
             </td>
           </tr>
-          <tr><th>17.6</th><td><a href="#17.6">SQL Server Index Definition</a></td></tr>
+	  <tr><th>17.6</th><td><a href="#17.6">Oracle Index Definition</a></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <th>18</th><td><a href="#18">Microsoft SQL Server Database</a>
+        <table class="toc">
+          <tr><th>18.1</th><td><a href="#18.1">SQL Server Type Mapping</a></td></tr>
+          <tr><th>18.2</th><td><a href="#18.2">SQL Server Database Class</a></td></tr>
+          <tr><th>18.3</th><td><a href="#18.3">SQL Server Connection and Connection Factory</a></td></tr>
+	  <tr><th>18.4</th><td><a href="#18.4">SQL Server Exceptions</a></td></tr>
+          <tr>
+            <th>18.5</th><td><a href="#18.5">SQL Server Limitations</a>
+              <table class="toc">
+                <tr><th>18.5.1</th><td><a href="#18.5.1">Query Result Caching</a></td></tr>
+		<tr><th>18.5.2</th><td><a href="#18.5.2">Foreign Key Constraints</a></td></tr>
+		<tr><th>18.5.3</th><td><a href="#18.5.3">Unique Constraint Violations</a></td></tr>
+		<tr><th>18.5.4</th><td><a href="#18.5.4">Multi-threaded Windows Applications</a></td></tr>
+		<tr><th>18.5.5</th><td><a href="#18.5.5">Affected Row Count and DDL Statements</a></td></tr>
+		<tr><th>18.5.6</th><td><a href="#18.5.6">Long Data and Automatically Assigned Object Ids</a></td></tr>
+		<tr><th>18.5.7</th><td><a href="#18.5.7">Long Data and By-Value Accessors/Modifiers</a></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr><th>18.6</th><td><a href="#18.6">SQL Server Index Definition</a></td></tr>
         </table>
       </td>
     </tr>
@@ -701,35 +717,35 @@ for consistency.
     </tr>
 
     <tr>
-      <th>18</th><td><a href="#18">Profiles Introduction</a></td>
+      <th>19</th><td><a href="#19">Profiles Introduction</a></td>
     </tr>
 
     <tr>
-      <th>19</th><td><a href="#19">Boost Profile</a>
+      <th>20</th><td><a href="#20">Boost Profile</a>
         <table class="toc">
-          <tr><th>19.1</th><td><a href="#19.1">Smart Pointers Library</a></td></tr>
-          <tr><th>19.2</th><td><a href="#19.2">Unordered Containers Library</a></td></tr>
-	  <tr><th>19.3</th><td><a href="#19.3">Multi-Index Container Library</a></td></tr>
-	  <tr><th>19.4</th><td><a href="#19.4">Optional Library</a></td></tr>
+          <tr><th>20.1</th><td><a href="#20.1">Smart Pointers Library</a></td></tr>
+          <tr><th>20.2</th><td><a href="#20.2">Unordered Containers Library</a></td></tr>
+	  <tr><th>20.3</th><td><a href="#20.3">Multi-Index Container Library</a></td></tr>
+	  <tr><th>20.4</th><td><a href="#20.4">Optional Library</a></td></tr>
           <tr>
-	    <th>19.5</th><td><a href="#19.5">Date Time Library</a>
+	    <th>20.5</th><td><a href="#20.5">Date Time Library</a>
 	      <table class="toc">
-	        <tr><th>19.5.1</th><td><a href="#19.5.1">MySQL Database Type Mapping</a></td></tr>
-		<tr><th>19.5.2</th><td><a href="#19.5.2">SQLite Database Type Mapping</a></td></tr>
-		<tr><th>19.5.3</th><td><a href="#19.5.3">PostgreSQL Database Type Mapping</a></td></tr>
-		<tr><th>19.5.4</th><td><a href="#19.5.4">Oracle Database Type Mapping</a></td></tr>
-		<tr><th>19.5.5</th><td><a href="#19.5.5">SQL Server Database Type Mapping</a></td></tr>
+	        <tr><th>20.5.1</th><td><a href="#20.5.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>20.5.2</th><td><a href="#20.5.2">SQLite Database Type Mapping</a></td></tr>
+		<tr><th>20.5.3</th><td><a href="#20.5.3">PostgreSQL Database Type Mapping</a></td></tr>
+		<tr><th>20.5.4</th><td><a href="#20.5.4">Oracle Database Type Mapping</a></td></tr>
+		<tr><th>20.5.5</th><td><a href="#20.5.5">SQL Server Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
           <tr>
-	    <th>19.6</th><td><a href="#19.6">Uuid Library</a>
+	    <th>20.6</th><td><a href="#20.6">Uuid Library</a>
 	      <table class="toc">
-	        <tr><th>19.6.1</th><td><a href="#19.6.1">MySQL Database Type Mapping</a></td></tr>
-		<tr><th>19.6.2</th><td><a href="#19.6.2">SQLite Database Type Mapping</a></td></tr>
-		<tr><th>19.6.3</th><td><a href="#19.6.3">PostgreSQL Database Type Mapping</a></td></tr>
-		<tr><th>19.6.4</th><td><a href="#19.6.4">Oracle Database Type Mapping</a></td></tr>
-		<tr><th>19.6.5</th><td><a href="#19.6.5">SQL Server Database Type Mapping</a></td></tr>
+	        <tr><th>20.6.1</th><td><a href="#20.6.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>20.6.2</th><td><a href="#20.6.2">SQLite Database Type Mapping</a></td></tr>
+		<tr><th>20.6.3</th><td><a href="#20.6.3">PostgreSQL Database Type Mapping</a></td></tr>
+		<tr><th>20.6.4</th><td><a href="#20.6.4">Oracle Database Type Mapping</a></td></tr>
+		<tr><th>20.6.5</th><td><a href="#20.6.5">SQL Server Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -738,29 +754,29 @@ for consistency.
     </tr>
 
     <tr>
-      <th>20</th><td><a href="#20">Qt Profile</a>
+      <th>21</th><td><a href="#21">Qt Profile</a>
         <table class="toc">
           <tr>
-	    <th>20.1</th><td><a href="#20.1">Basic Types Library</a>
+	    <th>21.1</th><td><a href="#21.1">Basic Types Library</a>
 	      <table class="toc">
-	        <tr><th>20.1.1</th><td><a href="#20.1.1">MySQL Database Type Mapping</a></td></tr>
-		<tr><th>20.1.2</th><td><a href="#20.1.2">SQLite Database Type Mapping</a></td></tr>
-		<tr><th>20.1.3</th><td><a href="#20.1.3">PostgreSQL Database Type Mapping</a></td></tr>
-		<tr><th>20.1.4</th><td><a href="#20.1.4">Oracle Database Type Mapping</a></td></tr>
-		<tr><th>20.1.5</th><td><a href="#20.1.5">SQL Server Database Type Mapping</a></td></tr>
+	        <tr><th>21.1.1</th><td><a href="#21.1.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>21.1.2</th><td><a href="#21.1.2">SQLite Database Type Mapping</a></td></tr>
+		<tr><th>21.1.3</th><td><a href="#21.1.3">PostgreSQL Database Type Mapping</a></td></tr>
+		<tr><th>21.1.4</th><td><a href="#21.1.4">Oracle Database Type Mapping</a></td></tr>
+		<tr><th>21.1.5</th><td><a href="#21.1.5">SQL Server Database Type Mapping</a></td></tr>
               </table>
 	    </td>
 	  </tr>
-          <tr><th>20.2</th><td><a href="#20.2">Smart Pointers Library</a></td></tr>
-          <tr><th>20.3</th><td><a href="#20.3">Containers Library</a></td></tr>
+          <tr><th>21.2</th><td><a href="#21.2">Smart Pointers Library</a></td></tr>
+          <tr><th>21.3</th><td><a href="#21.3">Containers Library</a></td></tr>
           <tr>
-	    <th>20.4</th><td><a href="#20.4">Date Time Library</a>
+	    <th>21.4</th><td><a href="#21.4">Date Time Library</a>
 	      <table class="toc">
-	        <tr><th>20.4.1</th><td><a href="#20.4.1">MySQL Database Type Mapping</a></td></tr>
-		<tr><th>20.4.2</th><td><a href="#20.4.2">SQLite Database Type Mapping</a></td></tr>
-		<tr><th>20.4.3</th><td><a href="#20.4.3">PostgreSQL Database Type Mapping</a></td></tr>
-		<tr><th>20.4.4</th><td><a href="#20.4.4">Oracle Database Type Mapping</a></td></tr>
-		<tr><th>20.4.5</th><td><a href="#20.4.5">SQL Server Database Type Mapping</a></td></tr>
+	        <tr><th>21.4.1</th><td><a href="#21.4.1">MySQL Database Type Mapping</a></td></tr>
+		<tr><th>21.4.2</th><td><a href="#21.4.2">SQLite Database Type Mapping</a></td></tr>
+		<tr><th>21.4.3</th><td><a href="#21.4.3">PostgreSQL Database Type Mapping</a></td></tr>
+		<tr><th>21.4.4</th><td><a href="#21.4.4">Oracle Database Type Mapping</a></td></tr>
+		<tr><th>21.4.5</th><td><a href="#21.4.5">SQL Server Database Type Mapping</a></td></tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -1529,7 +1545,7 @@ main (int argc, char* argv[])
      database name, etc., from the command line. In your own applications
      you may prefer to use other <code>mysql::database</code>
      constructors which allow you to pass this information directly
-     (<a href="#13.2">Section 13.2, "MySQL Database Class"</a>).</p>
+     (<a href="#14.2">Section 14.2, "MySQL Database Class"</a>).</p>
 
   <p>Next, we create three <code>person</code> objects. Right now they are
      transient objects, which means that if we terminate the application
@@ -2039,7 +2055,155 @@ max age: 33
     }
   </pre>
 
-  <h2><a name="2.9">2.9 Summary</a></h2>
+  <h2><a name="2.9">2.9 Working with Multiple Databases</a></h2>
+
+  <p>Accessing multiple databases (that is, data stores) is simply a
+     matter of creating multiple <code>odb::&lt;db>::database</code>
+     instances representing each database. For example:</p>
+
+  <pre class="cxx">
+odb::mysql::database db1 ("john", "secret", "test_db1");
+odb::mysql::database db2 ("john", "secret", "test_db2");
+  </pre>
+
+  <p>A more interesting question is how we access multiple database
+     systems (that is, database implementations) from the same application.
+     For example, our application may need to store some objects in a
+     remote MySQL database and others in a local SQLite file. Or, our
+     application may need to be able to store its objects in a database
+     system that is selected by the user at runtime.</p>
+
+  <p>ODB provides comprehensive multi-database support that ranges from
+     tight integration with specific database systems to being able to
+     write database-agnostic code and loading individual database systems
+     support dynamically. While all these aspects are covered in detail
+     in <a href="#13">Chapter 13, "Multi-Database Support"</a>, in this
+     section we will get a taste of this functionality by extending our
+     "Hello World" example to be able to store its data either in MySQL
+     or PostgreSQL (other database systems supported by ODB can be added
+     in a similar manner).</p>
+
+  <p>The first step in adding multi-database support is to re-compile
+     our <code>person.hxx</code> header to generate database support
+     code for additional database systems:</p>
+
+  <pre class="terminal">
+odb --multi-database dynamic -d common -d mysql -d pgsql \
+--generate-query --generate-schema person.hxx
+  </pre>
+
+  <p>The <code>--multi-database</code> ODB compiler option turns on
+     multi-database support. For now it is not important what the
+     <code>dynamic</code> value that we passed to this option means,
+     but if you are curious, see Chapter 13. The result of this
+     command are three sets of generated files: <code>person-odb.?xx</code>
+     (common interface; corresponds to the <code>common</code> database),
+     <code>person-odb-mysql.?xx</code> (MySQL support code), and
+     <code>person-odb-pgsql.?xx</code> (PostgreSQL support code). There
+     are also two schema files: <code>person-mysql.sql</code> and
+     <code>person-pgsql.sql</code>.</p>
+
+  <p>The only part that we need to change in <code>driver.cxx</code>
+     is how we create the database instance. Specifically, this line:</p>
+
+  <pre class="cxx">
+auto_ptr&lt;database> db (new odb::mysql::database (argc, argv));
+  </pre>
+
+  <p>Now our example is capable of storing its data either in MySQL or
+     PostgreSQL so we need to somehow allow the caller to specify which
+     database we must use. To keep things simple, we will make the first
+     command line argument specify the database system we must use while
+     the rest will contain the database-specific options which we will
+     pass to the <code>odb::&lt;db>::database</code> constructor as
+     before. Let's put all this logic into a separate function which we
+     will call <code>create_database()</code>. Here is what the beginning
+     of our modified <code>driver.cxx</code> will look like (the remainder
+     is unchanged):</p>
+
+  <pre class="cxx">
+// driver.cxx
+//
+
+#include &lt;string>
+#include &lt;memory>   // std::auto_ptr
+#include &lt;iostream>
+
+#include &lt;odb/database.hxx>
+#include &lt;odb/transaction.hxx>
+
+#include &lt;odb/mysql/database.hxx>
+#include &lt;odb/pgsql/database.hxx>
+
+#include "person.hxx"
+#include "person-odb.hxx"
+
+using namespace std;
+using namespace odb::core;
+
+auto_ptr&lt;database>
+create_database (int argc, char* argv[])
+{
+  auto_ptr&lt;database> r;
+
+  if (argc &lt; 2)
+  {
+    cerr &lt;&lt; "error: database system name expected" &lt;&lt; endl;
+    return r;
+  }
+
+  string db (argv[1]);
+
+  if (db == "mysql")
+    r.reset (new odb::mysql::database (argc, argv));
+  else if (db == "pgsql")
+    r.reset (new odb::pgsql::database (argc, argv));
+  else
+    cerr &lt;&lt; "error: unknown database system " &lt;&lt; db &lt;&lt; endl;
+
+  return r;
+}
+
+int
+main (int argc, char* argv[])
+{
+  try
+  {
+    auto_ptr&lt;database> db (create_database (argc, argv));
+
+    if (db.get () == 0)
+      return 1; // Diagnostics has already been issued.
+
+    ...
+  </pre>
+
+  <p>And that's it. The only thing left is to build and run our
+     example:</p>
+
+  <pre class="terminal">
+c++ -c driver.cxx
+c++ -c person-odb.cxx
+c++ -c person-odb-mysql.cxx
+c++ -c person-odb-pgsql.cxx
+c++ -o driver driver.o person-odb.o person-odb-mysql.o \
+person-odb-pgsql.o -lodb-mysql -lodb-pgsql -lodb
+  </pre>
+
+  <p>Here is how we can access a MySQL database:</p>
+
+  <pre class="terminal">
+mysql --user=odb_test --database=odb_test &lt; person-mysql.sql
+./driver mysql --user odb_test --database odb_test
+  </pre>
+
+  <p>Or a PostgreSQL database:</p>
+
+  <pre class="terminal">
+psql --user=odb_test --dbname=odb_test -f person-pgsql.sql
+./driver pgsql --user odb_test --database odb_test
+  </pre>
+
+  <h2><a name="2.10">2.10 Summary</a></h2>
 
   <p>This chapter presented a very simple application which, nevertheless,
      exercised all of the core database functions: <code>persist()</code>,
@@ -4698,7 +4862,7 @@ namespace odb
      the prepared query name. This name is used as a key for prepared
      query caching (discussed later) and must be unique. For some databases,
      notably PostgreSQL, it is also used as a name of the underlying prepared
-     statement. The name <code>"<i>object</i>_query"</code> (e.g.,
+     statement. The name <code>"<i>object</i>_query"</code> (for example,
      <code>"person_query"</code>) is reserved for the once-off queries
      executed by the <code>database::query()</code> function. Note that
      the <code>prepare_query()</code> function makes only a shallow copy
@@ -7223,7 +7387,7 @@ namespace odb
      consider using a more efficient implementation of the
      <em>optional value</em> concept such as the
      <code>optional</code> class template from Boost
-     (<a href="#19.4">Section 19.4, "Optional Library"</a>).</p>
+     (<a href="#20.4">Section 20.4, "Optional Library"</a>).</p>
 
   <p>Another common C++ representation of a value that can be
      <code>NULL</code> is a pointer. ODB will automatically
@@ -13718,18 +13882,20 @@ class person
       <span style="font-weight: normal;">DATABASE SYSTEMS</span></a></h1>
 
   <p>Part II covers topics specific to the database system
-     implementations and their support in ODB. In particular, it
-     describes the system-specific <code>database</code> classes
-     as well as the default mapping between basic C++ value types
-     and native database types. Part II consists of the following
-     chapters.</p>
+     implementations and their support in ODB. The first chapter in
+     Part II discusses how to use multiple database systems in the
+     same application. The subsequent chapters describe the system-specific
+     <code>database</code> classes as well as the default mapping
+     between basic C++ value types and native database types. Part
+     II consists of the following chapters.</p>
 
   <table class="toc">
-    <tr><th>13</th><td><a href="#13">MySQL Database</a></td></tr>
-    <tr><th>14</th><td><a href="#14">SQLite Database</a></td></tr>
-    <tr><th>15</th><td><a href="#15">PostgreSQL Database</a></td></tr>
-    <tr><th>16</th><td><a href="#16">Oracle Database</a></td></tr>
-    <tr><th>17</th><td><a href="#17">Microsoft SQL Server Database</a></td></tr>
+    <tr><th>13</th><td><a href="#13">Multi-Database Support</a></td></tr>
+    <tr><th>14</th><td><a href="#14">MySQL Database</a></td></tr>
+    <tr><th>15</th><td><a href="#15">SQLite Database</a></td></tr>
+    <tr><th>16</th><td><a href="#16">PostgreSQL Database</a></td></tr>
+    <tr><th>17</th><td><a href="#17">Oracle Database</a></td></tr>
+    <tr><th>18</th><td><a href="#18">Microsoft SQL Server Database</a></td></tr>
   </table>
 
 
@@ -13737,7 +13903,719 @@ class person
 
 
   <hr class="page-break"/>
-  <h1><a name="13">13 MySQL Database</a></h1>
+  <h1><a name="13">13 Multi-Database Support</a></h1>
+
+  <p>Some applications may need to access multiple database systems, either
+     simultaneously or one at a time. For example, an application may
+     utilize an embedded database such as SQLite as a local cache and use
+     a client-server database such as PostgreSQL for more permanent
+     but slower to access remote storage. Or an application may need
+     to be able to store its data in any database selected at runtime
+     by the user. Yet another scenario is the data migration from one
+     database system to another. In this case, multi-database support
+     is only required for a short period. It is also plausible that an
+     application implements all three of these scenarios, that is, it
+     uses SQLite as a local cache, allows the user to select the remote
+     database system, and supports data migration from one remote database
+     system to another.</p>
+
+  <p>ODB provides two types of multi-database support: <em>static</em>
+     and <em>dynamic</em>. With static support we use the
+     database system-specific interfaces to perform database
+     operations. That is, instead of using <code>odb::database</code>,
+     <code>odb::transaction</code>, or <code>odb::query</code>, we
+     would use, for example, <code>odb::sqlite::database</code>,
+     <code>odb::sqlite::transaction</code>, or
+     <code>odb::sqlite::query</code> to access an SQLite database.</p>
+
+  <p>In contrast, with <em>dynamic</em> multi-database support we can
+     use the common interface to access any database without having to
+     know which one it is. At runtime, ODB will automatically dispatch
+     a call on the common interface to the specific database implementation
+     based on the actual <code>database</code> instance being
+     used. In fact, this mechanism is very similar to C++ virtual
+     functions.</p>
+
+  <p>Both static and dynamic multi-database support have a different set
+     of advantages and disadvantages which makes them more or less suitable
+     for different use cases. Static support has zero overhead compared
+     to single-database support and allows us to use database
+     system-specific features, extensions, etc. At the same time, the
+     code that we write will be tied to the specific database system.
+     As a result, this type of multi-database support is more
+     suitable for situations where different parts of an application
+     access different but specific database systems. For example,
+     using SQLite as a local cache most likely falls into this
+     category since we are using a specific database system (SQLite)
+     and the code that will check the cache will most likely (but
+     not necessarily) be separate from the code that interact with
+     the remote database. Another example where static multi-database
+     support might be more suitable is a once-off data migration from
+     one database system to another. In this case both the source and
+     target are specific database systems. In contrast, if data migration
+     from one database system to another is a general feature in an
+     application, then dynamic multi-database support might be more
+     suitable.</p>
+
+  <p>The main advantage of dynamic multi-database support is the
+     database system-independence of the code that we write. The same
+     application code will work with any database system supported by
+     ODB and the generated database support code can be packaged into
+     separate libraries and loaded dynamically by the application. The
+     disadvantages of dynamic support are slight overhead and certain
+     limitations in functionality compared to static support (see
+     <a href="#13.2">Section 13.2, "Dynamic Multi-Database Support"</a>
+     for details). As a result, dynamic multi-database support is most
+     suitable to situations where we need the same code to
+     work with a range of database systems. For example, if your
+     application must be able to store its data in any database
+     selected by the user, then dynamic support is probably the
+     best option.</p>
+
+  <p>Note also that it is possible to mix and match static and dynamic
+     support in the same application. In fact, dynamic support is built
+     on top of static support so it is possible to use the same database
+     system both "statically" and "dynamically". In particular, the ability
+     to "drop down" from dynamic to static support can be used to overcome
+     the functionality limitations mentioned above. Finally,
+     single-database support is just a special case of static
+     multi-database support with a single database system.</p>
+
+  <p>By default ODB assumes single-database support. To enable
+     multi-database support we use the <code>--multi-database</code>
+     (or <code>-m</code>) ODB compiler option. This option is also used to
+     specify the support type: <code>static</code> or <code>dynamic</code>.
+     For example:</p>
+
+  <pre class="terminal">
+odb -m static ... person.hxx
+  </pre>
+
+  <p>With multi-database support enabled, we can now generate the database
+     support code for several database systems. This can be accomplished
+     either with a single ODB compiler invocation by specifying multiple
+     <code>--database</code> (or <code>-d</code>) options or with multiple
+     ODB compiler invocations. Both approaches produce the same result,
+     for example:</p>
+
+  <pre class="terminal">
+odb -m static -d common -d sqlite -d pgsql person.hxx
+  </pre>
+
+  <p>Is equivalent to:</p>
+
+  <pre class="terminal">
+odb -m static -d common person.hxx
+odb -m static -d sqlite person.hxx
+odb -m static -d pgsql person.hxx
+  </pre>
+
+  <p>Notice that the first <code>-d</code> option has <code>common</code>
+     as its value. This is not a real database system. Rather, it instructs
+     the ODB compiler to generate code that is common to all the database
+     systems and, in case of dynamic support, is also the common
+     interfaces.</p>
+
+  <p>If you look at the result of the above commands, you will also notice
+     changes in the output file names. In the single-database mode the ODB
+     compiler produces a single set of the <code>person-odb.?xx</code> files
+     which contain both the common as well as the database specific
+     generated code (since there is only one database system in use,
+     there is no reason to split the two). In contrast, in the
+     multi-database mode, the <code>person-odb.?xx</code> set of files
+     contains the common code while the database system-specific code is
+     written to files in the form <code>person-odb-&lt;db>.?xx</code>.
+     That is, <code>person-odb-sqlite.?xx</code> for SQLite,
+     <code>person-odb-pgsql.?xx</code> for PostgreSQL, etc.</p>
+
+  <p>If we need dynamic support for some databases and static for
+     others, then the <code>common</code> code must be generated
+     in the dynamic mode. For example, if we need static support
+     for SQLite and dynamic support for PostgreSQL and Oracle, then
+     the ODB compiler invocations could look like this:</p>
+
+  <pre class="terminal">
+odb -m dynamic -d common person.hxx
+odb -m static -d sqlite person.hxx
+odb -m dynamic -d pgsql person.hxx
+odb -m dynamic -d oracle person.hxx
+  </pre>
+
+  <p>With multi-database support enabled, it is possible to restrict ODB
+     pragmas to apply only to a specific database system (unrestricted
+     pragmas apply to all the databases). For example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db pgsql:type("VARCHAR(128)") sqlite:type("TEXT")
+  std::string name_;
+
+  unsigned short age_;
+
+  #pragma db pgsql index member(age_)
+};
+  </pre>
+
+  <p>Above, the pragma for the <code>name_</code> data member shows the
+     use of a database prefix (for example, <code>pgsql:</code>) that
+     only applies to the specifier that follows. The pragma that defines
+     an index on the <code>age_</code> data member shows the use of a
+     database prefix that applies to the whole pragma. In this case the
+     database name must immediately follow the <code>db</code> keyword.</p>
+
+
+  <p>Similar to pragmas, ODB compiler options that determine the kind
+     (for example, <code>--schema-format</code>), names (for example,
+     <code>--odb-file-suffix</code>), or content (for example, prologue
+     and epilogue options) of the output files can be prefixed with the
+     database name. For example:</p>
+
+  <pre class="terminal">
+odb --odb-file-suffix common:-odb-common ...
+  </pre>
+
+  <p>Dynamic multi-database support requires consistent mapping across
+     all the databases. That is, the same classes and data members
+     should be mapped to objects, simple/composite values, etc., for
+     all the databases. In contrast, static multi-database support
+     does not have this restriction. Specifically, with static support,
+     some data members can be transient for some database systems.
+     Similarly, the same class (for example, <code>point</code>) can
+     be mapped to a simple value in one database (for example, to the
+     <code>POINT</code> PostgreSQL type) and to a composite value
+     in another (for example, in SQLite, which does not have a
+     built-in point type).</p>
+
+  <p>The following sections discuss static and dynamic multi-database
+     support in more detail.</p>
+
+
+  <h2><a name="13.1">13.1 Static Multi-Database Support</a></h2>
+
+  <p>With static multi-database support, instead of including
+     <code>person-odb.hxx</code>, application source code has
+     to include <code>person-odb-&lt;db>.hxx</code> header files
+     corresponding to the database systems that will be used.</p>
+
+  <p>The application code has to also use database system-specific
+     interfaces when performing database operations. As an example,
+     consider the following transaction in a single-database
+     application. It uses the common interfaces, that is, classes
+     from the <code>odb</code> namespace.</p>
+
+  <pre class="cxx">
+#include "person-odb.hxx"
+
+odb::database&amp; db = ...
+
+typedef odb::query&lt;person> query;
+typedef odb::result&lt;person> result;
+
+odb::transaction t (db.begin ());
+result r (db.query&lt;person> (query::age &lt; 30));
+...
+t.commit ();
+  </pre>
+
+  <p>In an application that employs static multi-database support
+     the same transaction for SQLite would be rewritten like this:</p>
+
+  <pre class="cxx">
+#include "person-odb-sqlite.hxx"
+
+odb::sqlite::database&amp; db = ...
+
+typedef odb::sqlite::query&lt;person> query;
+typedef odb::result&lt;person> result;      // odb:: not odb::sqlite::
+
+odb::sqlite::transaction t (db.begin ());
+result r (db.query&lt;person> (query::age &lt; 30));
+...
+t.commit ();
+  </pre>
+
+  <p>That is, the <code>database</code>, <code>transaction</code>, and
+     <code>query</code> classes now come from the <code>odb::sqlite</code>
+     namespace instead of <code>odb</code>. Other classes that have
+     database system-specific interfaces are <code>connection</code>,
+     <code>statement</code>, and <code>tracer</code>. Note that
+     all of them derive from the corresponding common versions. It
+     is also possible to use common <code>transaction</code>,
+     <code>connection</code>, and <code>statement</code> classes
+     with static support, if desired.</p>
+
+  <p>Notice that we didn't use the <code>odb::sqlite</code> namespace
+     for the <code>result</code> class template. This is because
+     <code>result</code> is database system-independent. All other
+     classes defined in namespace <code>odb</code>, except those
+     specifically mentioned above, are database system-independent.
+     In particular, <code>result</code>, <code>prepared_query</code>,
+     <code>session</code>, <code>schema_catalog</code>, and all the
+     exceptions are database system-independent.</p>
+
+  <p>Writing <code>odb::sqlite::</code> before every name can quickly
+     become burdensome. As we have seen before, in single-database
+     applications that use the common interface we can add the
+     <code>using namespace</code> directive to avoid qualifying
+     each name. For example:</p>
+
+  <pre class="cxx">
+#include "person-odb.hxx"
+
+odb::database&amp; db = ...
+
+{
+  using namespace odb::core;
+
+  typedef query&lt;person> person_query;
+  typedef result&lt;person> person_result;
+
+  transaction t (db.begin ());
+  person_result r (db.query&lt;person> (person_query::age &lt; 30));
+  ...
+  t.commit ();
+}
+  </pre>
+
+  <p>A similar mechanism is available in multi-database support. Each
+     database runtime defines the <code>odb::&lt;db>::core</code>
+     namespace that contains all the database system-independent
+     names as well as the database system-specific ones for this
+     database. Here is how we can rewire the above transaction
+     using this approach:</p>
+
+  <pre class="cxx">
+#include "person-odb-sqlite.hxx"
+
+odb::sqlite::database&amp; db = ...
+
+{
+  using namespace odb::sqlite::core;
+
+  typedef query&lt;person> person_query;
+  typedef result&lt;person> person_result;
+
+  transaction t (db.begin ());
+  person_result r (db.query&lt;person> (person_query::age &lt; 30));
+  ...
+  t.commit ();
+}
+  </pre>
+
+  <p>If the <code>using namespace</code> directive cannot be used, for
+     example, because the same code fragment accesses several databases,
+     then we can still make the namespace qualifications more concise
+     by assigning shorter aliases to database namespaces. For example:</p>
+
+  <pre class="cxx">
+#include "person-odb-pgsql.hxx"
+#include "person-odb-sqlite.hxx"
+
+namespace pg = odb::pgsql;
+namespace sl = odb::sqlite;
+
+pg::database&amp; pg_db = ...
+sl::database&amp; sl_db = ...
+
+typedef pg::query&lt;person> pg_query;
+typedef sl::query&lt;person> sl_query;
+typedef odb::result&lt;person> result;
+
+// First check the local cache.
+//
+odb::transaction t (sl_db.begin ()); // Note: using common transaction.
+result r (sl_db.query&lt;person> (sl_query::age &lt; 30));
+
+// If no hits, try the remote database.
+//
+if (r.empty ())
+{
+  t.commit ();              // End the SQLite transaction.
+  t.reset (pg_db.begin ()); // Start the PostgreSQL transaction.
+
+  r = pg_db.query&lt;person> (pg_query::age &lt; 30);
+}
+
+// Handle the result.
+//
+...
+
+t.commit ();
+  </pre>
+
+  <p>With static multi-database support we can make one of the databases
+     the default database with the <code>--default-database</code> option.
+     The default database can be accessed via the common interface, just
+     like with single-database support. For example:</p>
+
+  <pre class="terminal">
+odb -m static -d common -d pgsql -d sqlite --default-database pgsql ...
+  </pre>
+
+  <p>The default database mechanism can be useful when one of the
+     databases is primary or when retrofitting multi-database support
+     into an existing single-database application. For example, if
+     we are adding SQLite as a local cache into an existing
+     application that uses PostgreSQL as its only database, then
+     by making PostgreSQL the default database we avoid having to
+     change all the existing code. Note that if dynamic multi-database
+     support is enabled, then the common (dynamic) interface is always
+     made the default database.</p>
+
+  <h2><a name="13.2">13.2 Dynamic Multi-Database Support</a></h2>
+
+  <p>With dynamic multi-database support, application source code only
+     needs to include the <code>person-odb.hxx</code> header file, just
+     like with single-database support. In particular, we don't need
+     to include any of the <code>person-odb-&lt;db>.hxx</code> files
+     unless we would also like to use certain database systems in the
+     static multi-database mode.</p>
+
+  <p>When performing database operations, the application code
+     uses the common interfaces from the <code>odb</code> namespace,
+     just like with single-database support. As an example, consider
+     a function that can be used to load an object either from a local
+     SQLite cache or a remote PostgreSQL database (in reality, this
+     function can be used with any database system support by ODB
+     provided we generated the database support code for this database
+     and linked it into our application):</p>
+
+  <pre class="cxx">
+#include "person-odb.hxx"
+
+std::unique_ptr&lt;person>
+load (odb::database&amp; db, const std::string&amp; name)
+{
+  odb::transaction t (db.begin ());
+  std::unique_ptr&lt;person> p (db.find (name));
+  t.commit ();
+  return p;
+}
+
+odb::pgsql::database&amp; pg_db = ...
+odb::sqlite::database&amp; sl_db = ...
+
+// First try the local cache.
+//
+std::unique_ptr&lt;person> p (load (sl_db, "John Doe"));
+
+// If not found, try the remote database.
+//
+if (p == 0)
+  p = load (pg_db, "John Doe");
+
+...
+  </pre>
+
+  <p>As you can see, we can use dynamic multi-database support just like
+     single-database support except that now our code can work with
+     different database systems. Note, however, one difference: with
+     single-database support we could perform database operations using
+     either the common <code>odb::database</code> or a database system-specific
+     (for example, <code>odb::sqlite::database</code>) interface
+     with the same effect. In contrast, with dynamic multi-database support,
+     the use of the database system-specific interface results in the
+     switch to the static mode (for which, as was mentioned earlier, we would
+     need to include the corresponding <code>person-odb-&lt;db>.hxx</code>
+     header file). As we will discuss shortly, switching from dynamic to
+     static mode can be used to overcome limitations imposed by dynamic
+     multi-database support.</p>
+
+  <p>Dynamic multi-database support has certain overheads and limitations
+     compared to static support. For database operations, the generated code
+     maintains function tables that are used to dispatch calls to the database
+     system-specific implementations. In single-database and static
+     multi-database support, the <code>query</code> type implements a thin
+     wrapper around the underlying database system's <code>SELECT</code>
+     statement. With dynamic multi-database support, because the
+     underlying database system is only known at query execution
+     (or preparation) time, the <code>query</code> type stores a
+     database system-independent representation of the query that
+     is then translated to the database system-specific form. Because
+     of this database system-independent representation, dynamic
+     support queries have a number of limitations. Specifically, dynamic
+     queries do not support parameter binding in native query fragments.
+     They also make copies of by-value parameterd (by-reference parameters
+     can be used to remove this overhead). Finally, parameters of array
+     types (for example, <code>char[256]</code>) can only be bound
+     by-reference.</p>
+
+  <p>As we mentioned earlier, switching from dynamic to static mode
+     can be an effective way to overcome these limitations. As an
+     example, consider a function that prints the list of people of
+     a certain age. The caller also specified the limit on the number
+     of entries to print. Some database systems, for example, PostgreSQL,
+     allow us to propagate this limit to the database server with the
+     <code>LIMIT</code> clause. To add this clause we would need to
+     construct a native query fragment and, as we discussed above, we
+     won't be able to bind a parameter (the limit) while in the dynamic
+     mode. The following implementation shows how we can overcome this
+     by switching to the static mode and using the PostgreSQL-specific
+     interface:</p>
+
+  <pre class="cxx">
+#include "person-odb.hxx"
+#include "person-odb-pgsql.hxx" // Needed for static mode.
+
+void
+print (odb::database&amp; db, unsigned short age, unsigned long limit)
+{
+  typedef odb::query&lt;person> query;
+  typedef odb::result&lt;person> result;
+
+  odb::transaction t (db.begin ());
+
+  query q (query::age == age);
+  result r;
+
+  if (db.id () == odb::id_pgsql)
+  {
+    // We are using PostgreSQL. Drop down to the static mode and
+    // add the LIMIT clause to the query.
+    //
+    namespace pg = odb::pgsql;
+    typedef pg::query&lt;person> pg_query;
+
+    pg::database&amp; pg_db (static_cast&lt;pg::database&amp;> (db));
+    pg_query pg_q (pg_query (q) + "LIMIT" + pg_query::_val (limit));
+    r = pg_db.query&lt;person> (pg_q);
+  }
+  else
+    r = db.query&lt;person> (q);
+
+  // Handle the result up to the limit elements.
+  //
+  ...
+
+  t.commit ();
+}
+
+odb::pgsql::database&amp; pg_db = ...
+odb::sqlite::database&amp; sl_db = ...
+
+print (sl_db, 30, 100);
+print (sl_db, 30, 100);
+  </pre>
+
+  <p>A few things to note about this example. First, we use the
+     <code>database::id()</code> function to determine the actual database
+     system we use. This function has the following signature:</p>
+
+  <pre class="cxx">
+namespace odb
+{
+  enum database_id
+  {
+    id_mysql,
+    id_sqlite,
+    id_pgsql,
+    id_oracle,
+    id_mssql,
+    id_common
+  };
+
+  class database
+  {
+  public:
+    ...
+
+    database_id
+    id () const;
+  }
+}
+  </pre>
+
+  <p>Note that <code>database::id()</code> can never return the
+     <code>id_common</code> value.</p>
+
+  <p>The other thing to note is how we translate the dynamic query
+     to the database system-specific one (the <code>pg_query (q)</code>
+     expression). Every <code>odb::&lt;db>::query</code> class provides
+     such a translation constructor.</p>
+
+  <h3><a name="13.2.2">13.2.2 Dynamic Loading of Database Support Code</a></h3>
+
+  <p>With dynamic multi-database support, the generated database support
+     code automatically registers itself with the function tables that
+     we mentioned earlier. This makes it possible to package the generated
+     code for each database into a separate dynamic-link library (Windows
+     DLL) or dynamic shared object (Unix DSO; collectively referred to as
+     DLLs from now on) and load/unload them from the application
+     dynamically using APIs such as Win32 <code>LoadLibrary()</code> or
+     POSIX <code>dlopen()</code>. This allows the application address
+     space to contain code only for database systems that are actually
+     needed in any particular moment. Another advantage of this approach
+     is the ability to distribute individual database system support
+     separately.</p>
+
+  <p>This section provides an overview of how to package the generated
+     database support code into DLLs for both Windows and Unix using
+     GNU/Linux as an example. Note also that if static multi-database
+     support is used for a particular database system, then the dynamic
+     loading cannot be used for this database. It is, however, still
+     possible to package the generated code into a DLL but this DLL
+     will have to be linked to the executable at link-time rather
+     than at runtime. If dynamic loading is desirable in this situation,
+     then another alternative would be to package the functionality
+     that requires static support together with the database support
+     code into the DLL and import this functionality dynamically
+     using the <code>GetProcAddress()</code> (Win32) or <code>dlsym()</code>
+     (Unix) function.</p>
+
+  <p>The first step in packaging the generated code into DLLs is to
+     set up the symbol exporting. This step is required for
+     Windows DLLs but is optional for Unix DSOs. Most modern Unix
+     systems (such as GNU/Linux) provide control over symbol
+     visibility, which is a mechanism similar to Windows symbol
+     exporting. Notable advantages of using this mechanism to
+     explicitly specify which symbols are visible include
+     smaller Unix DSOs and faster load times. If, however, you are
+     not planning to control symbol visibility on Unix, then you can
+     skip directly to the second step below.</p>
+
+  <p>An important point to understand is that we only need to export
+     the common interface, that is, the classes defined in the
+     <code>person-odb.hxx</code> header. In particular, we don't need
+     to export the database system-specific classes defined in
+     the <code>person-odb-&lt;db>.hxx</code>, unless we are also using
+     this database in the static mode (in which case, the procedure
+     described below will need to be repeated for that database as
+     well).</p>
+
+  <p>The ODB compiler provides two command line options,
+     <code>--export-symbol</code> and <code>--extern-symbol</code>,
+     which can be used to insert the export and extern
+     macros in all the necessary places in the generated header file.
+     You are probably familiar with the concept of export macro which
+     expands to an export directive if we are building the DLL and to
+     an import directive if we are building client code. The
+     extern macro is a supplementary mechanism which is necessary to
+     export explicit template instantiations used by the generated
+     code when query support is enabled. As we will see shortly, the
+     extern macro must expand into the <code>extern</code> C++ keyword
+     in certain situations and must be left undefined in others. To
+     manage all these macro definitions, it is customary to create the
+     so called export header. Based on a single macro that is normally
+     defined in the project file or on the command line and which
+     indicates whether we are building the DLL or client code, the
+     export header file sets the export and extern macros to their
+     appropriate values. Continuing with our person example, on Windows
+     the export header, which we will call <code>person-export.hxx</code>,
+     could look like this:</p>
+
+  <pre class="cxx">
+// person-export.hxx
+//
+// Define PERSON_BUILD_DLL if we are building the DLL. Leave it
+// undefined in client code.
+//
+#ifndef PERSON_EXPORT_HXX
+#define PERSON_EXPORT_HXX
+
+#ifdef PERSON_BUILD_DLL
+#  define PERSON_EXPORT __declspec(dllexport)
+#else
+#  define PERSON_EXPORT __declspec(dllimport)
+#  define PERSON_EXTERN extern
+#endif
+
+#endif // PERSON_EXPORT_HXX
+  </pre>
+
+  <p>The equivalent export header for GCC on GNU/Linux is shown below.
+     Note also that on GNU/Linux, by default, all symbols are visible
+     and we need to add the GCC <code>-fvisibility=hidden</code> option to
+     make them hidden by default.</p>
+
+  <pre class="cxx">
+// person-export.hxx
+//
+#ifndef PERSON_EXPORT_HXX
+#define PERSON_EXPORT_HXX
+
+#define PERSON_EXPORT __attribute__ ((visibility ("default")))
+#define PERSON_EXTERN extern
+
+#endif // PERSON_EXPORT_HXX
+  </pre>
+
+  <p>Next we need to export the <code>person</code> persistent class
+     using the export macro and re-compile our <code>person.hxx</code> file
+     with the <code>--export-symbol</code> and <code>--extern-symbol</code>
+     options. We will also need to include <code>person-export.hxx</code>
+     into the generated <code>person-odb.hxx</code> file. For that we use
+     the <code>--hxx-prologue</code> option. Here is how we can do
+     this with multiple invocations of the ODB compiler:</p>
+
+  <pre class="terminal">
+odb -m dynamic -d common --hxx-prologue "#include \"person-export.hxx\"" \
+--export-symbol PERSON_EXPORT --extern-symbol PERSON_EXTERN person.hxx
+
+odb -m dynamic -d sqlite person.hxx
+odb -m dynamic -d pgsql person.hxx
+  </pre>
+
+  <p>It is also possible to achieve the same with a single invocation.
+     Here we need to restrict some option values to apply only to the
+     <code>common</code> database:</p>
+
+  <pre class="terminal">
+odb -m dynamic -d common -d sqlite -d pgsql \
+--hxx-prologue "common:#include \"person-export.hxx\"" \
+--export-symbol common:PERSON_EXPORT --extern-symbol common:PERSON_EXTERN \
+person.hxx
+  </pre>
+
+  <p>The second step in packaging the generated code into DLLs is to
+     decide where to place the generated common interface code. One
+     option is to place it into a DLL of its own so that we will end
+     up with (replace <code>*.dll</code> with <code>lib*.so</code> for
+     Unix): <code>person.dll</code> plus <code>person-sqlite.dll</code> and
+     <code>person-pgsql.dll</code>, which both link to <code>person.dll</code>,
+     as well as <code>person.exe</code>, which links to <code>person.dll</code>
+     and dynamically loads <code>person-sqlite.dll</code>
+     and/or <code>person-pgsql.dll</code>. If this is the organization
+     that you prefer, then the next step is to build all the DLLs as you
+     normally would any other DLL, placing <code>person-odb.cxx</code>
+     and <code>person.cxx</code> into <code>person.dll</code>,
+     <code>person-odb-sqlite.cxx</code> into <code>person-sqlite.dll</code>,
+     etc. Note that in the pure dynamic multi-database support,
+     <code>person-sqlite.dll</code> and <code>person-pgsql.dll</code>
+     do not export any symbols.</p>
+
+  <p>We can improve on the above organization by getting rid of
+     <code>person.dll</code>, which is not really necessary unless
+     we have multiple executables sharing the same database support.
+     To achieve this, we will place <code>person-odb.cxx</code> into
+     <code>person.exe</code> and export its symbols from the executable
+     instead of a DLL. Exporting symbols from an executable is a seldom
+     used functionality, especially on Windows, however, it is well
+     supported on both Windows and most Unix platforms. Note also that
+     this approach won't work if we also use one of the databases in the
+     static mode.</p>
+
+  <p>On Windows all we have to do is place <code>person-odb.cxx</code>
+     into the executable and compile it as we would in a DLL (that is,
+     with the <code>PERSON_BUILD_DLL</code> macro defined). If Windows
+     linker detects that an executable exports any symbols, then it
+     will automatically create the corresponding import library
+     (<code>person.lib</code> in our case). We then use this import
+     library to build <code>person-sqlite.dll</code> and
+     <code>person-pgsql.dll</code> as before.</p>
+
+  <p>To export symbols from an executable on GNU/Linux all we need to
+     do is add the <code>-rdynamic</code> option when linking our
+     executable.</p>
+
+  <!-- CHAPTER -->
+
+
+  <hr class="page-break"/>
+  <h1><a name="14">14 MySQL Database</a></h1>
 
   <p>To generate support code for the MySQL database you will need
      to pass the "<code>--database&nbsp;mysql</code>"
@@ -13746,7 +14624,7 @@ class person
      library (<code>libodb-mysql</code>). All MySQL-specific ODB
      classes are defined in the <code>odb::mysql</code> namespace.</p>
 
-  <h2><a name="13.1">13.1 MySQL Type Mapping</a></h2>
+  <h2><a name="14.1">14.1 MySQL Type Mapping</a></h2>
 
   <p>The following table summarizes the default mapping between basic
      C++ value types and MySQL database types. This mapping can be
@@ -13939,7 +14817,7 @@ class object
      <a href="#12.7">Section 12.7, "Database Type Mapping
      Pragmas"</a>.</p>
 
-  <h2><a name="13.2">13.2 MySQL Database Class</a></h2>
+  <h2><a name="14.2">14.2 MySQL Database Class</a></h2>
 
   <p>The MySQL <code>database</code> class has the following
      interface:</p>
@@ -14099,7 +14977,7 @@ namespace odb
 
   <p>This constructor throws the <code>odb::mysql::cli_exception</code>
      exception if the MySQL option values are missing or invalid.
-     See section <a href="#13.4">Section 13.4, "MySQL Exceptions"</a>
+     See section <a href="#14.4">Section 14.4, "MySQL Exceptions"</a>
      for more information on this exception.</p>
 
   <p>The static <code>print_usage()</code> function prints the list of options
@@ -14118,10 +14996,10 @@ namespace odb
   <p>The <code>connection()</code> function returns a pointer to the
      MySQL database connection encapsulated by the
      <code>odb::mysql::connection</code> class. For more information
-     on <code>mysql::connection</code>, refer to <a href="#13.3">Section
-     13.3, "MySQL Connection and Connection Factory"</a>.</p>
+     on <code>mysql::connection</code>, refer to <a href="#14.3">Section
+     14.3, "MySQL Connection and Connection Factory"</a>.</p>
 
-  <h2><a name="13.3">13.3 MySQL Connection and Connection Factory</a></h2>
+  <h2><a name="14.3">14.3 MySQL Connection and Connection Factory</a></h2>
 
   <p>The <code>mysql::connection</code> class has the following interface:</p>
 
@@ -14313,7 +15191,7 @@ main (int argc, char* argv[])
 }
   </pre>
 
-  <h2><a name="13.4">13.4 MySQL Exceptions</a></h2>
+  <h2><a name="14.4">14.4 MySQL Exceptions</a></h2>
 
   <p>The MySQL ODB runtime library defines the following MySQL-specific
      exceptions:</p>
@@ -14365,12 +15243,12 @@ namespace odb
      <code>what()</code> function returns a human-readable description
      of an error.</p>
 
-  <h2><a name="13.5">13.5 MySQL Limitations</a></h2>
+  <h2><a name="14.5">14.5 MySQL Limitations</a></h2>
 
   <p>The following sections describe MySQL-specific limitations imposed
      by the current MySQL and ODB runtime versions.</p>
 
-  <h3><a name="13.5.1">13.5.1 Foreign Key Constraints</a></h3>
+  <h3><a name="14.5.1">14.5.1 Foreign Key Constraints</a></h3>
 
   <p>ODB relies on standard SQL behavior which requires that foreign
      key constraints checking is deferred until the transaction is
@@ -14381,7 +15259,7 @@ namespace odb
      foreign key definitions commented out. They are retained only
      for documentation.</p>
 
-  <h2><a name="13.6">13.6 MySQL Index Definitions</a></h2>
+  <h2><a name="14.6">14.6 MySQL Index Definitions</a></h2>
 
   <p>When the <code>index</code> pragma (<a href="#12.6">Section 12.6,
      "Index Definition Pragmas"</a>) is used to define a MySQL index,
@@ -14410,7 +15288,7 @@ class object
 
 
   <hr class="page-break"/>
-  <h1><a name="14">14 SQLite Database</a></h1>
+  <h1><a name="15">15 SQLite Database</a></h1>
 
   <p>To generate support code for the SQLite database you will need
      to pass the "<code>--database&nbsp;sqlite</code>"
@@ -14419,7 +15297,7 @@ class object
      library (<code>libodb-sqlite</code>). All SQLite-specific ODB
      classes are defined in the <code>odb::sqlite</code> namespace.</p>
 
-  <h2><a name="14.1">14.1 SQLite Type Mapping</a></h2>
+  <h2><a name="15.1">15.1 SQLite Type Mapping</a></h2>
 
   <p>The following table summarizes the default mapping between basic
      C++ value types and SQLite database types. This mapping can be
@@ -14597,7 +15475,7 @@ class object
      <a href="#12.7">Section 12.7, "Database Type Mapping
      Pragmas"</a>.</p>
 
-  <h2><a name="14.2">14.2 SQLite Database Class</a></h2>
+  <h2><a name="15.2">15.2 SQLite Database Class</a></h2>
 
   <p>The SQLite <code>database</code> class has the following
      interface:</p>
@@ -14670,7 +15548,7 @@ namespace odb
      values, refer to the <code>sqlite3_open_v2()</code> function description
      in the SQLite C API documentation. The <code>foreign_keys</code>
      argument specifies whether foreign key constraints checking
-     should be enabled. See <a href="#14.5.3">Section 14.5.3,
+     should be enabled. See <a href="#15.5.3">Section 15.5.3,
      "Foreign Key Constraints"</a> for more information on foreign
      keys. The <code>vfs</code> argument specifies the SQLite
      virtual file system module that should be used to access the
@@ -14726,7 +15604,7 @@ auto_ptr&lt;odb::database> db (
 
   <p>The third constructor throws the <code>odb::sqlite::cli_exception</code>
      exception if the SQLite option values are missing or invalid.
-     See <a href="#14.4">Section 14.4, "SQLite Exceptions"</a>
+     See <a href="#15.4">Section 15.4, "SQLite Exceptions"</a>
      for more information on this exception.</p>
 
   <p>The static <code>print_usage()</code> function prints the list of options
@@ -14755,10 +15633,10 @@ auto_ptr&lt;odb::database> db (
   <p>The <code>connection()</code> function returns a pointer to the
      SQLite database connection encapsulated by the
      <code>odb::sqlite::connection</code> class. For more information
-     on <code>sqlite::connection</code>, refer to <a href="#14.3">Section
-     14.3, "SQLite Connection and Connection Factory"</a>.</p>
+     on <code>sqlite::connection</code>, refer to <a href="#15.3">Section
+     15.3, "SQLite Connection and Connection Factory"</a>.</p>
 
-  <h2><a name="14.3">14.3 SQLite Connection and Connection Factory</a></h2>
+  <h2><a name="15.3">15.3 SQLite Connection and Connection Factory</a></h2>
 
   <p>The <code>sqlite::connection</code> class has the following interface:</p>
 
@@ -14803,7 +15681,7 @@ namespace odb
      functions allow us to start an immediate and an exclusive SQLite
      transaction on the connection, respectively. Their semantics are
      equivalent to the corresponding functions defined in the
-     <code>sqlite::database</code> class (<a href="#14.2">Section 14.2,
+     <code>sqlite::database</code> class (<a href="#15.2">Section 15.2,
      "SQLite Database Class"</a>). The <code>handle()</code> accessor
      returns the SQLite handle corresponding to the connection.</p>
 
@@ -15003,7 +15881,7 @@ main (int argc, char* argv[])
 }
   </pre>
 
-  <h2><a name="14.4">14.4 SQLite Exceptions</a></h2>
+  <h2><a name="15.4">15.4 SQLite Exceptions</a></h2>
 
   <p>The SQLite ODB runtime library defines the following SQLite-specific
      exceptions:</p>
@@ -15056,12 +15934,12 @@ namespace odb
      of an error.</p>
 
 
-  <h2><a name="14.5">14.5 SQLite Limitations</a></h2>
+  <h2><a name="15.5">15.5 SQLite Limitations</a></h2>
 
   <p>The following sections describe SQLite-specific limitations imposed by
      the current SQLite and ODB runtime versions.</p>
 
-  <h3><a name="14.5.1">14.5.1 Query Result Caching</a></h3>
+  <h3><a name="15.5.1">15.5.1 Query Result Caching</a></h3>
 
   <p>SQLite ODB runtime implementation does not perform query result caching
      (<a href="#4.4">Section 4.4, "Query Result"</a>) even when explicitly
@@ -15076,7 +15954,7 @@ namespace odb
      thrown. Future versions of the SQLite ODB runtime library may add support
      for result caching.</p>
 
-  <h3><a name="14.5.2">14.5.2 Automatic Assignment of Object Ids</a></h3>
+  <h3><a name="15.5.2">15.5.2 Automatic Assignment of Object Ids</a></h3>
 
   <p>Due to SQLite API limitations, every automatically assigned object id
      (<a href="#12.4.2">Section 12.4.2, "<code>auto</code>"</a>) should have
@@ -15102,7 +15980,7 @@ class person
 };
   </pre>
 
-  <h3><a name="14.5.3">14.5.3 Foreign Key Constraints</a></h3>
+  <h3><a name="15.5.3">15.5.3 Foreign Key Constraints</a></h3>
 
   <p>By default the SQLite ODB runtime enables foreign key constraints
      checking (<code>PRAGMA foreign_keys=ON</code>). You can disable foreign
@@ -15166,7 +16044,7 @@ CREATE TABLE Employee (
   </pre>
 
 
-  <h3><a name="14.5.4">14.5.4 Constraint Violations</a></h3>
+  <h3><a name="15.5.4">15.5.4 Constraint Violations</a></h3>
 
   <p>Due to the granularity of the SQLite error codes, it is impossible
      to distinguish between the duplicate primary key and other constraint
@@ -15175,7 +16053,7 @@ CREATE TABLE Employee (
      <code>object_already_persistent</code> exception (<a href="#3.14">Section
      3.14, "ODB Exceptions"</a>).</p>
 
-  <h3><a name="14.5.5">14.5.5 Sharing of Queries</a></h3>
+  <h3><a name="15.5.5">15.5.5 Sharing of Queries</a></h3>
 
   <p>As discussed in <a href="#4.3">Section 4.3, "Executing a Query"</a>, a
      query instance that does not have any by-reference parameters is
@@ -15184,7 +16062,7 @@ CREATE TABLE Employee (
      functionality. Future versions of the library will remove this
      limitation.</p>
 
-  <h2><a name="14.6">14.6 SQLite Index Definitions</a></h2>
+  <h2><a name="15.6">15.6 SQLite Index Definitions</a></h2>
 
   <p>When the <code>index</code> pragma (<a href="#12.6">Section 12.6,
      "Index Definition Pragmas"</a>) is used to define an SQLite index,
@@ -15213,7 +16091,7 @@ class object
 
 
   <hr class="page-break"/>
-  <h1><a name="15">15 PostgreSQL Database</a></h1>
+  <h1><a name="16">16 PostgreSQL Database</a></h1>
 
   <p>To generate support code for the PostgreSQL database you will need
      to pass the "<code>--database&nbsp;pgsql</code>"
@@ -15227,7 +16105,7 @@ class object
      of the messaging protocol version 3.0. For this reason, ODB supports
      only PostgreSQL version 7.4 and later.</p>
 
-  <h2><a name="15.1">15.1 PostgreSQL Type Mapping</a></h2>
+  <h2><a name="16.1">16.1 PostgreSQL Type Mapping</a></h2>
 
   <p>The following table summarizes the default mapping between basic
      C++ value types and PostgreSQL database types. This mapping can be
@@ -15405,7 +16283,7 @@ class object
      For more information, refer to <a href="#12.7">Section 12.7,
      "Database Type Mapping Pragmas"</a>.</p>
 
-  <h2><a name="15.2">15.2 PostgreSQL Database Class</a></h2>
+  <h2><a name="16.2">16.2 PostgreSQL Database Class</a></h2>
 
   <p>The PostgreSQL <code>database</code> class has the following
      interface:</p>
@@ -15525,7 +16403,7 @@ namespace odb
 
   <p>This constructor throws the <code>odb::pgsql::cli_exception</code>
      exception if the PostgreSQL option values are missing or invalid.
-     See section <a href="#15.4">Section 15.4, "PostgreSQL Exceptions"</a>
+     See section <a href="#16.4">Section 16.4, "PostgreSQL Exceptions"</a>
      for more information on this exception.</p>
 
   <p>The static <code>print_usage()</code> function prints the list of options
@@ -15551,10 +16429,10 @@ namespace odb
   <p>The <code>connection()</code> function returns a pointer to the
      PostgreSQL database connection encapsulated by the
      <code>odb::pgsql::connection</code> class. For more information
-     on <code>pgsql::connection</code>, refer to <a href="#15.3">Section
-     15.3, "PostgreSQL Connection and Connection Factory"</a>.</p>
+     on <code>pgsql::connection</code>, refer to <a href="#16.3">Section
+     16.3, "PostgreSQL Connection and Connection Factory"</a>.</p>
 
-  <h2><a name="15.3">15.3 PostgreSQL Connection and Connection Factory</a></h2>
+  <h2><a name="16.3">16.3 PostgreSQL Connection and Connection Factory</a></h2>
 
   <p>The <code>pgsql::connection</code> class has the following interface:</p>
 
@@ -15735,7 +16613,7 @@ main (int argc, char* argv[])
 }
   </pre>
 
-  <h2><a name="15.4">15.4 PostgreSQL Exceptions</a></h2>
+  <h2><a name="16.4">16.4 PostgreSQL Exceptions</a></h2>
 
   <p>The PostgreSQL ODB runtime library defines the following
      PostgreSQL-specific exceptions:</p>
@@ -15784,12 +16662,12 @@ namespace odb
      <code>what()</code> function returns a human-readable description
      of an error.</p>
 
-  <h2><a name="15.5">15.5 PostgreSQL Limitations</a></h2>
+  <h2><a name="16.5">16.5 PostgreSQL Limitations</a></h2>
 
   <p>The following sections describe PostgreSQL-specific limitations imposed
      by the current PostgreSQL and ODB runtime versions.</p>
 
-  <h3><a name="15.5.1">15.5.1 Query Result Caching</a></h3>
+  <h3><a name="16.5.1">16.5.1 Query Result Caching</a></h3>
 
   <p>The PostgreSQL ODB runtime implementation will always return a
      cached query result (<a href="#4.4">Section 4.4, "Query Result"</a>)
@@ -15797,7 +16675,7 @@ namespace odb
      PostgreSQL client library (<code>libpq</code>) which does not
      support uncached (streaming) query results.</p>
 
-  <h3><a name="15.5.2">15.5.2 Foreign Key Constraints</a></h3>
+  <h3><a name="16.5.2">16.5.2 Foreign Key Constraints</a></h3>
 
   <p>ODB relies on standard SQL behavior which requires that
      foreign key constraints checking is deferred until the
@@ -15815,7 +16693,7 @@ CREATE TABLE Employee (
   employer BIGINT REFERENCES Employer(id) INITIALLY DEFERRED);
   </pre>
 
-  <h3><a name="15.5.3">15.5.3 Unique Constraint Violations</a></h3>
+  <h3><a name="16.5.3">16.5.3 Unique Constraint Violations</a></h3>
 
   <p>Due to the granularity of the PostgreSQL error codes, it is impossible
      to distinguish between the duplicate primary key and other unique
@@ -15824,7 +16702,7 @@ CREATE TABLE Employee (
      errors to the <code>object_already_persistent</code> exception
      (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>).</p>
 
-  <h3><a name="15.5.4">15.5.4 Date-Time Format</a></h3>
+  <h3><a name="16.5.4">16.5.4 Date-Time Format</a></h3>
 
   <p>ODB expects the PostgreSQL server to use integers as a binary
      format for the date-time types, which is the default for most
@@ -15839,14 +16717,14 @@ CREATE TABLE Employee (
 SHOW integer_datetimes
   </pre>
 
-  <h3><a name="15.5.5">15.5.5 Timezones</a></h3>
+  <h3><a name="16.5.5">16.5.5 Timezones</a></h3>
 
   <p>ODB does not currently natively support the PostgreSQL date-time types
      with timezone information. However, these types can be accessed by
      mapping them to one of the natively supported types, as discussed
      in <a href="#12.7">Section 12.7, "Database Type Mapping Pragmas"</a>.</p>
 
-  <h3><a name="15.5.6">15.5.6 <code>NUMERIC</code> Type Support</a></h3>
+  <h3><a name="16.5.6">16.5.6 <code>NUMERIC</code> Type Support</a></h3>
 
   <p>Support for the PostgreSQL <code>NUMERIC</code> type is limited
      to providing a binary buffer containing the binary representation
@@ -15858,7 +16736,7 @@ SHOW integer_datetimes
      Type Mapping Pragmas"</a>.</p>
 
 
-  <h2><a name="15.6">15.6 PostgreSQL Index Definitions</a></h2>
+  <h2><a name="16.6">16.6 PostgreSQL Index Definitions</a></h2>
 
   <p>When the <code>index</code> pragma (<a href="#12.6">Section 12.6,
      "Index Definition Pragmas"</a>) is used to define a PostgreSQL index,
@@ -15897,7 +16775,7 @@ class object
 
 
   <hr class="page-break"/>
-  <h1><a name="16">16 Oracle Database</a></h1>
+  <h1><a name="17">17 Oracle Database</a></h1>
 
   <p>To generate support code for the Oracle database you will need
      to pass the "<code>--database&nbsp;oracle</code>"
@@ -15906,7 +16784,7 @@ class object
      library (<code>libodb-oracle</code>). All Oracle-specific ODB
      classes are defined in the <code>odb::oracle</code> namespace.</p>
 
-  <h2><a name="16.1">16.1 Oracle Type Mapping</a></h2>
+  <h2><a name="17.1">17.1 Oracle Type Mapping</a></h2>
 
   <p>The following table summarizes the default mapping between basic
      C++ value types and Oracle database types. This mapping can be
@@ -16081,7 +16959,7 @@ class object
      <a href="#12.7">Section 12.7, "Database Type Mapping
      Pragmas"</a>.</p>
 
-  <h2><a name="16.2">16.2 Oracle Database Class</a></h2>
+  <h2><a name="17.2">17.2 Oracle Database Class</a></h2>
 
   <p>The Oracle <code>database</code> class encapsulates the OCI environment
      handle as well as the database connection string and user credentials
@@ -16206,7 +17084,7 @@ namespace odb
 
   <p>This constructor throws the <code>odb::oracle::cli_exception</code>
      exception if the Oracle option values are missing or invalid. See section
-     <a href="#16.4">Section 16.4, "Oracle Exceptions"</a> for more
+     <a href="#17.4">Section 17.4, "Oracle Exceptions"</a> for more
      information on this exception.</p>
 
   <p>The static <code>print_usage()</code> function prints the list of options
@@ -16256,10 +17134,10 @@ namespace odb
   <p>The <code>connection()</code> function returns a pointer to the
      Oracle database connection encapsulated by the
      <code>odb::oracle::connection</code> class. For more information
-     on <code>oracle::connection</code>, refer to <a href="#16.3">Section
-     16.3, "Oracle Connection and Connection Factory"</a>.</p>
+     on <code>oracle::connection</code>, refer to <a href="#17.3">Section
+     17.3, "Oracle Connection and Connection Factory"</a>.</p>
 
-  <h2><a name="16.3">16.3 Oracle Connection and Connection Factory</a></h2>
+  <h2><a name="17.3">17.3 Oracle Connection and Connection Factory</a></h2>
 
   <p>The <code>oracle::connection</code> class has the following interface:</p>
 
@@ -16461,7 +17339,7 @@ main (int argc, char* argv[])
 }
   </pre>
 
-  <h2><a name="16.4">16.4 Oracle Exceptions</a></h2>
+  <h2><a name="17.4">17.4 Oracle Exceptions</a></h2>
 
   <p>The Oracle ODB runtime library defines the following
      Oracle-specific exceptions:</p>
@@ -16542,12 +17420,12 @@ namespace odb
      condition. The <code>what()</code> function returns a human-readable
      description of an error.</p>
 
-  <h2><a name="16.5">16.5 Oracle Limitations</a></h2>
+  <h2><a name="17.5">17.5 Oracle Limitations</a></h2>
 
   <p>The following sections describe Oracle-specific limitations imposed
      by the current Oracle and ODB runtime versions.</p>
 
-  <h3><a name="16.5.1">16.5.1 Identifier Truncation</a></h3>
+  <h3><a name="17.5.1">17.5.1 Identifier Truncation</a></h3>
 
   <p>Oracle limits the length of database identifiers (table, column, etc.,
      names) to 30 characters. The ODB compiler automatically truncates
@@ -16592,7 +17470,7 @@ class long_class_name
 };
   </pre>
 
-  <h3><a name="16.5.2">16.5.2 Query Result Caching</a></h3>
+  <h3><a name="17.5.2">17.5.2 Query Result Caching</a></h3>
 
   <p>Oracle ODB runtime implementation does not perform query result caching
      (<a href="#4.4">Section 4.4, "Query Result"</a>) even when explicitly
@@ -16607,7 +17485,7 @@ class long_class_name
      always thrown. Future versions of the Oracle ODB runtime library
      may add support for result caching.</p>
 
-  <h3><a name="16.5.3">16.5.3 Foreign Key Constraints</a></h3>
+  <h3><a name="17.5.3">17.5.3 Foreign Key Constraints</a></h3>
 
   <p>ODB relies on standard SQL behavior which requires that
      foreign key constraints checking is deferred until the
@@ -16626,7 +17504,7 @@ CREATE TABLE Employee (
            DEFERRABLE INITIALLY DEFERRED);
   </pre>
 
-  <h3><a name="16.5.4">16.5.4 Unique Constraint Violations</a></h3>
+  <h3><a name="17.5.4">17.5.4 Unique Constraint Violations</a></h3>
 
   <p>Due to the granularity of the Oracle error codes, it is impossible
      to distinguish between the duplicate primary key and other unique
@@ -16635,7 +17513,7 @@ CREATE TABLE Employee (
      errors to the <code>object_already_persistent</code> exception
      (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>).</p>
 
-  <h3><a name="16.5.5">16.5.5 Large <code>FLOAT</code> and
+  <h3><a name="17.5.5">17.5.5 Large <code>FLOAT</code> and
       <code>NUMBER</code> Types</a></h3>
 
   <p>The Oracle <code>FLOAT</code> type with a binary precision greater
@@ -16661,21 +17539,21 @@ CREATE TABLE Employee (
      without any range and scale) can be extracted into the C++
      <code>float</code> and <code>double</code> types.</p>
 
-  <h3><a name="16.5.6">16.5.6 Timezones</a></h3>
+  <h3><a name="17.5.6">17.5.6 Timezones</a></h3>
 
   <p>ODB does not currently support the Oracle date-time types with timezone
      information. However, these types can be accessed by mapping them to
      one of the natively supported types, as discussed in
      <a href="#12.7">Section 12.7, "Database Type Mapping Pragmas"</a>.</p>
 
-  <h3><a name="16.5.7">16.5.7 <code>LONG</code> Types</a></h3>
+  <h3><a name="17.5.7">17.5.7 <code>LONG</code> Types</a></h3>
 
   <p>ODB does not support the deprecated Oracle <code>LONG</code> and
      <code>LONG RAW</code> data types. However, these types can be accessed
      by mapping them to one of the natively supported types, as discussed
      in <a href="#12.7">Section 12.7, "Database Type Mapping Pragmas"</a>.</p>
 
-  <h3><a name="16.5.8">16.5.8 LOB Types and By-Value Accessors/Modifiers</a></h3>
+  <h3><a name="17.5.8">17.5.8 LOB Types and By-Value Accessors/Modifiers</a></h3>
 
   <p>As discussed in <a href="#12.4.5">Section 12.4.5,
      "<code>get</code>/<code>set</code>/<code>access</code>"</a>, by-value
@@ -16686,7 +17564,7 @@ CREATE TABLE Employee (
      data members. As a result, by-reference accessors and modifiers
      should be used for these data types.</p>
 
-  <h2><a name="16.6">16.6 Oracle Index Definitions</a></h2>
+  <h2><a name="17.6">17.6 Oracle Index Definitions</a></h2>
 
   <p>When the <code>index</code> pragma (<a href="#12.6">Section 12.6,
      "Index Definition Pragmas"</a>) is used to define an Oracle index,
@@ -16720,7 +17598,7 @@ class object
 
 
   <hr class="page-break"/>
-  <h1><a name="17">17 Microsoft SQL Server Database</a></h1>
+  <h1><a name="18">18 Microsoft SQL Server Database</a></h1>
 
   <p>To generate support code for the SQL Server database you will need
      to pass the "<code>--database&nbsp;mssql</code>"
@@ -16729,7 +17607,7 @@ class object
      library (<code>libodb-mssql</code>). All SQL Server-specific ODB
      classes are defined in the <code>odb::mssql</code> namespace.</p>
 
-  <h2><a name="17.1">17.1 SQL Server Type Mapping</a></h2>
+  <h2><a name="18.1">18.1 SQL Server Type Mapping</a></h2>
 
   <p>The following table summarizes the default mapping between basic
      C++ value types and SQL Server database types. This mapping can be
@@ -16938,7 +17816,7 @@ class object
      than once as part of a query result iteration (<a href="#4.4">Section
      4.4, "Query Result"</a>). Any such attempt will result in the
      <code>odb::mssql::long_data_reload</code> exception
-     (<a href="#17.4">Section 17.4, "SQL Server Exceptions"</a>). For
+     (<a href="#18.4">Section 18.4, "SQL Server Exceptions"</a>). For
      example:</p>
 
   <pre class="cxx">
@@ -16996,7 +17874,7 @@ t.commit ();
      For more information, refer to <a href="#12.7">Section 12.7, "Database
      Type Mapping Pragmas"</a>.</p>
 
-  <h2><a name="17.2">17.2 SQL Server Database Class</a></h2>
+  <h2><a name="18.2">18.2 SQL Server Database Class</a></h2>
 
   <p>The SQL Server <code>database</code> class encapsulates the ODBC
      environment handle as well as the server instance address and
@@ -17273,7 +18151,7 @@ odb::mssql::database dbA ("test",
 
   <p>This constructor throws the <code>odb::mssql::cli_exception</code>
      exception if the SQL Server option values are missing or invalid. See
-     section <a href="#17.4">Section 17.4, "SQL Server Exceptions"</a> for
+     section <a href="#18.4">Section 18.4, "SQL Server Exceptions"</a> for
      more information on this exception.</p>
 
   <p>The static <code>print_usage()</code> function prints the list of options
@@ -17301,10 +18179,10 @@ odb::mssql::database dbA ("test",
   <p>The <code>connection()</code> function returns a pointer to the
      SQL Server database connection encapsulated by the
      <code>odb::mssql::connection</code> class. For more information
-     on <code>mssql::connection</code>, refer to <a href="#17.3">Section
-     17.3, "SQL Server Connection and Connection Factory"</a>.</p>
+     on <code>mssql::connection</code>, refer to <a href="#18.3">Section
+     18.3, "SQL Server Connection and Connection Factory"</a>.</p>
 
-  <h2><a name="17.3">17.3 SQL Server Connection and Connection Factory</a></h2>
+  <h2><a name="18.3">18.3 SQL Server Connection and Connection Factory</a></h2>
 
   <p>The <code>mssql::connection</code> class has the following interface:</p>
 
@@ -17499,7 +18377,7 @@ main (int argc, char* argv[])
 }
   </pre>
 
-  <h2><a name="17.4">17.4 SQL Server Exceptions</a></h2>
+  <h2><a name="18.4">18.4 SQL Server Exceptions</a></h2>
 
   <p>The SQL Server ODB runtime library defines the following
      SQL Server-specific exceptions:</p>
@@ -17580,14 +18458,14 @@ namespace odb
   <p>The <code>odb::mssql::long_data_reload</code> is thrown if an
      attempt is made to re-load an object or view with long data as
      part of a query result iteration. For more information, refer
-     to <a href="#17.1">Section 17.1, "SQL Server Type Mapping"</a>.</p>
+     to <a href="#18.1">Section 18.1, "SQL Server Type Mapping"</a>.</p>
 
-  <h2><a name="17.5">17.5 SQL Server Limitations</a></h2>
+  <h2><a name="18.5">18.5 SQL Server Limitations</a></h2>
 
   <p>The following sections describe SQL Server-specific limitations imposed
      by the current SQL Server and ODB runtime versions.</p>
 
-  <h3><a name="17.5.1">17.5.1 Query Result Caching</a></h3>
+  <h3><a name="18.5.1">18.5.1 Query Result Caching</a></h3>
 
   <p>SQL Server ODB runtime implementation does not perform query result
      caching (<a href="#4.4">Section 4.4, "Query Result"</a>) even when
@@ -17602,7 +18480,7 @@ namespace odb
      3.14, "ODB Exceptions"</a>) is always thrown. Future versions of the
      SQL Server ODB runtime library may add support for result caching.</p>
 
-  <h3><a name="17.5.2">17.5.2 Foreign Key Constraints</a></h3>
+  <h3><a name="18.5.2">18.5.2 Foreign Key Constraints</a></h3>
 
   <p>ODB relies on standard SQL behavior which requires that foreign
      key constraints checking is deferred until the transaction is
@@ -17611,7 +18489,7 @@ namespace odb
      the ODB compiler for SQL Server have foreign key definitions
      commented out. They are retained only for documentation.</p>
 
-  <h3><a name="17.5.3">17.5.3 Unique Constraint Violations</a></h3>
+  <h3><a name="18.5.3">18.5.3 Unique Constraint Violations</a></h3>
 
   <p>Due to the granularity of the ODBC error codes, it is impossible
      to distinguish between the duplicate primary key and other unique
@@ -17620,7 +18498,7 @@ namespace odb
      errors to the <code>object_already_persistent</code> exception
      (<a href="#3.14">Section 3.14, "ODB Exceptions"</a>).</p>
 
-  <h3><a name="17.5.4">17.5.4 Multi-threaded Windows Applications</a></h3>
+  <h3><a name="18.5.4">18.5.4 Multi-threaded Windows Applications</a></h3>
 
   <p>Multi-threaded Windows applications must use the
      <code>_beginthread()</code>/<code>_beginthreadex()</code> and
@@ -17629,7 +18507,7 @@ namespace odb
      Win32 functions to start and terminate threads. This is a limitation of
      the ODBC implementation on Windows.</p>
 
-  <h3><a name="17.5.5">17.5.5 Affected Row Count and DDL Statements</a></h3>
+  <h3><a name="18.5.5">18.5.5 Affected Row Count and DDL Statements</a></h3>
 
   <p>SQL Server always returns zero as the number of affected rows
      for DDL statements. In particular, this means that the
@@ -17637,7 +18515,7 @@ namespace odb
      "Executing Native SQL Statements"</a>) function will always
      return zero for such statements.</p>
 
-  <h3><a name="17.5.6">17.5.6 Long Data and Automatically Assigned Object Ids</a></h3>
+  <h3><a name="18.5.6">18.5.6 Long Data and Automatically Assigned Object Ids</a></h3>
 
   <p>SQL Server 2005 has a bug that causes it to fail on an <code>INSERT</code>
      statement with the <code>OUTPUT</code> clause (used to return
@@ -17655,7 +18533,7 @@ namespace odb
      by passing the <code>--mssql-server-version&nbsp;9.0</code> ODB
      compiler option.</p>
 
-  <h3><a name="17.5.7">17.5.7 Long Data and By-Value Accessors/Modifiers</a></h3>
+  <h3><a name="18.5.7">18.5.7 Long Data and By-Value Accessors/Modifiers</a></h3>
 
   <p>As discussed in <a href="#12.4.5">Section 12.4.5,
      "<code>get</code>/<code>set</code>/<code>access</code>"</a>, by-value
@@ -17665,7 +18543,7 @@ namespace odb
      by-reference accessors and modifiers should be used for these data
      types.</p>
 
-  <h2><a name="17.6">17.6 SQL Server Index Definitions</a></h2>
+  <h2><a name="18.6">18.6 SQL Server Index Definitions</a></h2>
 
   <p>When the <code>index</code> pragma (<a href="#12.6">Section 12.6,
      "Index Definition Pragmas"</a>) is used to define an SQL Server index,
@@ -17702,9 +18580,9 @@ class object
      and libraries. It consists of the following chapters.</p>
 
   <table class="toc">
-    <tr><th>18</th><td><a href="#18">Profiles Introduction</a></td></tr>
-    <tr><th>19</th><td><a href="#19">Boost Profile</a></td></tr>
-    <tr><th>20</th><td><a href="#20">Qt Profile</a></td></tr>
+    <tr><th>19</th><td><a href="#19">Profiles Introduction</a></td></tr>
+    <tr><th>20</th><td><a href="#20">Boost Profile</a></td></tr>
+    <tr><th>21</th><td><a href="#21">Qt Profile</a></td></tr>
   </table>
 
 
@@ -17712,7 +18590,7 @@ class object
 
 
   <hr class="page-break"/>
-  <h1><a name="18">18 Profiles Introduction</a></h1>
+  <h1><a name="19">19 Profiles Introduction</a></h1>
 
   <p>ODB profiles are a generic mechanism for integrating ODB with
      widely-used C++ frameworks and libraries. A profile provides glue
@@ -17766,7 +18644,7 @@ odb --profile boost/date-time ...
 
 
   <hr class="page-break"/>
-  <h1><a name="19">19 Boost Profile</a></h1>
+  <h1><a name="20">20 Boost Profile</a></h1>
 
   <p>The ODB profile implementation for Boost is provided by the
      <code>libodb-boost</code> library and consists of multiple sub-profiles
@@ -17791,7 +18669,7 @@ odb --profile boost/date-time ...
      that can be thrown by the Boost sub-profiles are described in the
      following sections.</p>
 
-  <h2><a name="19.1">19.1 Smart Pointers Library</a></h2>
+  <h2><a name="20.1">20.1 Smart Pointers Library</a></h2>
 
   <p>The <code>smart-ptr</code> sub-profile provides persistence
      support for a subset of smart pointers from the Boost
@@ -17861,7 +18739,7 @@ class employee
      this behavior, add the <code>--default-pointer</code> option specifying
      the alternative pointer type after the <code>--profile</code> option.</p>
 
-  <h2><a name="19.2">19.2 Unordered Containers Library</a></h2>
+  <h2><a name="20.2">20.2 Unordered Containers Library</a></h2>
 
   <p>The <code>unordered</code> sub-profile provides persistence support for
      the containers from the Boost <code>unordered</code> library. To enable
@@ -17887,7 +18765,7 @@ class person
 };
   </pre>
 
-  <h2><a name="19.3">19.3 Multi-Index Container Library</a></h2>
+  <h2><a name="20.3">20.3 Multi-Index Container Library</a></h2>
 
   <p>The <code>multi-index</code> sub-profile provides persistence support for
      <code>boost::multi_index_container</code> from the Boost Multi-Index
@@ -17972,7 +18850,7 @@ class person
 };
   </pre>
 
-  <h2><a name="19.4">19.4 Optional Library</a></h2>
+  <h2><a name="20.4">20.4 Optional Library</a></h2>
 
   <p>The <code>optional</code> sub-profile provides persistence support for
      the <code>boost::optional</code> container from the Boost
@@ -18004,7 +18882,7 @@ class person
      this profile is used, the <code>NULL</code> values are automatically
      enabled for data members of the  <code>boost::optional</code> type.</p>
 
-  <h2><a name="19.5">19.5 Date Time Library</a></h2>
+  <h2><a name="20.5">20.5 Date Time Library</a></h2>
 
   <p>The <code>date-time</code> sub-profile provides persistence support for a
      subset of types from the Boost <code>date_time</code> library. It is
@@ -18077,7 +18955,7 @@ namespace odb
      exceptions are thrown are database system dependent and are discussed in
      more detail in the following sub-sections.</p>
 
-  <h3><a name="19.5.1">19.5.1 MySQL Database Type Mapping</a></h3>
+  <h3><a name="20.5.1">20.5.1 MySQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the MySQL database
@@ -18138,7 +19016,7 @@ class person
      the <code>out_of_range</code> exception.  Refer to the MySQL
      documentation for more information on the MySQL data type ranges.</p>
 
-  <h3><a name="19.5.2">19.5.2 SQLite Database Type Mapping</a></h3>
+  <h3><a name="20.5.2">20.5.2 SQLite Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the SQLite database
@@ -18216,7 +19094,7 @@ class person
      will result in the <code>out_of_range</code> exception.</p>
 
 
-  <h3><a name="19.5.3">19.5.3 PostgreSQL Database Type Mapping</a></h3>
+  <h3><a name="20.5.3">20.5.3 PostgreSQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the PostgreSQL database
@@ -18267,7 +19145,7 @@ class person
      result in the <code>special_value</code> exception.</p>
 
 
-  <h3><a name="19.5.4">19.5.4 Oracle Database Type Mapping</a></h3>
+  <h3><a name="20.5.4">20.5.4 Oracle Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the Oracle database
@@ -18329,7 +19207,7 @@ class person
      the <code>special_value</code> exception.</p>
 
 
-  <h3><a name="19.5.5">19.5.5 SQL Server Database Type Mapping</a></h3>
+  <h3><a name="20.5.5">20.5.5 SQL Server Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Boost <code>date_time</code> types and the SQL Server database
@@ -18400,7 +19278,7 @@ class person
      <code>posix_time::time_duration</code> value out of this range will
      result in the <code>value_out_of_range</code> exception.</p>
 
-  <h2><a name="19.6">19.6 Uuid Library</a></h2>
+  <h2><a name="20.6">20.6 Uuid Library</a></h2>
 
   <p>The <code>uuid</code> sub-profile provides persistence support for the
      <code>uuid</code> type from the Boost <code>uuid</code> library. To
@@ -18432,7 +19310,7 @@ class object
 };
   </pre>
 
-  <h3><a name="19.6.1">19.6.1 MySQL Database Type Mapping</a></h3>
+  <h3><a name="20.6.1">20.6.1 MySQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the Boost
      <code>uuid</code> type and the MySQL database type.</p>
@@ -18452,7 +19330,7 @@ class object
     </tr>
   </table>
 
-  <h3><a name="19.6.2">19.6.2 SQLite Database Type Mapping</a></h3>
+  <h3><a name="20.6.2">20.6.2 SQLite Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the Boost
      <code>uuid</code> type and the SQLite database type.</p>
@@ -18472,7 +19350,7 @@ class object
     </tr>
   </table>
 
-  <h3><a name="19.6.3">19.6.3 PostgreSQL Database Type Mapping</a></h3>
+  <h3><a name="20.6.3">20.6.3 PostgreSQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the Boost
      <code>uuid</code> type and the PostgreSQL database type.</p>
@@ -18492,7 +19370,7 @@ class object
     </tr>
   </table>
 
-  <h3><a name="19.6.4">19.6.4 Oracle Database Type Mapping</a></h3>
+  <h3><a name="20.6.4">20.6.4 Oracle Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the Boost
      <code>uuid</code> type and the Oracle database type.</p>
@@ -18512,7 +19390,7 @@ class object
     </tr>
   </table>
 
-  <h3><a name="19.6.5">19.6.5 SQL Server Database Type Mapping</a></h3>
+  <h3><a name="20.6.5">20.6.5 SQL Server Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the Boost
      <code>uuid</code> type and the SQL Server database type.</p>
@@ -18537,7 +19415,7 @@ class object
 
 
   <hr class="page-break"/>
-  <h1><a name="20">20 Qt Profile</a></h1>
+  <h1><a name="21">21 Qt Profile</a></h1>
 
   <p>The ODB profile implementation for Qt is provided by the
      <code>libodb-qt</code> library and consists of multiple sub-profiles
@@ -18563,7 +19441,7 @@ class object
      that can be thrown by the Qt sub-profiles are described in the
      following sections.</p>
 
-  <h2><a name="20.1">20.1 Basic Types</a></h2>
+  <h2><a name="21.1">21.1 Basic Types</a></h2>
 
   <p>The <code>basic</code> sub-profile provides persistence support for basic
      types defined by Qt. To enable only this profile, pass
@@ -18609,7 +19487,7 @@ class object
 };
   </pre>
 
-  <h3><a name="20.1.1">20.1.1 MySQL Database Type Mapping</a></h3>
+  <h3><a name="21.1.1">21.1.1 MySQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported basic Qt types and the MySQL database types.</p>
@@ -18672,7 +19550,7 @@ class Person
   </pre>
 
 
-  <h3><a name="20.1.2">20.1.2 SQLite Database Type Mapping</a></h3>
+  <h3><a name="21.1.2">21.1.2 SQLite Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported basic Qt types and the SQLite database types.</p>
@@ -18708,7 +19586,7 @@ class Person
      are stored as a NULL value if their <code>isNull()</code> member
      function returns <code>true</code>.</p>
 
-  <h3><a name="20.1.3">20.1.3 PostgreSQL Database Type Mapping</a></h3>
+  <h3><a name="21.1.3">21.1.3 PostgreSQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported basic Qt types and the PostgreSQL database types.</p>
@@ -18763,7 +19641,7 @@ class Person
 };
   </pre>
 
-  <h3><a name="20.1.4">20.1.4 Oracle Database Type Mapping</a></h3>
+  <h3><a name="21.1.4">21.1.4 Oracle Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported basic Qt types and the Oracle database types.</p>
@@ -18822,7 +19700,7 @@ class Person
 };
   </pre>
 
-  <h3><a name="20.1.5">20.1.5 SQL Server Database Type Mapping</a></h3>
+  <h3><a name="21.1.5">21.1.5 SQL Server Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported basic Qt types and the SQL Server database types.</p>
@@ -18889,7 +19767,7 @@ class Person
 };
   </pre>
 
-  <h2><a name="20.2">20.2 Smart Pointers</a></h2>
+  <h2><a name="21.2">21.2 Smart Pointers</a></h2>
 
   <p>The <code>smart-ptr</code> sub-profile provides persistence support the
      Qt smart pointers. To enable only this profile, pass
@@ -18958,7 +19836,7 @@ class Employee
      this behavior, add the <code>--default-pointer</code> option specifying
      the alternative pointer type after the <code>--profile</code> option.</p>
 
-  <h2><a name="20.3">20.3 Containers Library</a></h2>
+  <h2><a name="21.3">21.3 Containers Library</a></h2>
 
   <p>The <code>container</code> sub-profile provides persistence support for
      Qt containers. To enable only this profile, pass
@@ -18983,7 +19861,7 @@ class Person
 };
   </pre>
 
-  <h2><a name="20.4">20.4 Date Time Types</a></h2>
+  <h2><a name="21.4">21.4 Date Time Types</a></h2>
 
   <p>The <code>date-time</code> sub-profile provides persistence support for
      the Qt date-time types. To enable only this profile, pass
@@ -19036,7 +19914,7 @@ namespace odb
      system dependent and is discussed in more detail in the
      following sub-sections.</p>
 
-  <h3><a name="20.4.1">20.4.1 MySQL Database Type Mapping</a></h3>
+  <h3><a name="21.4.1">21.4.1 MySQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Qt date-time types and the MySQL database types.</p>
@@ -19095,7 +19973,7 @@ class Person
      the MySQL documentation for more information on the MySQL data type
      ranges.</p>
 
-  <h3><a name="20.4.2">20.4.2 SQLite Database Type Mapping</a></h3>
+  <h3><a name="21.4.2">21.4.2 SQLite Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Qt date-time types and the SQLite database types.</p>
@@ -19157,7 +20035,7 @@ class Person
      epoch) as an SQLite <code>INTEGER</code> will result in the
      <code>out_of_range</code> exception.</p>
 
-  <h3><a name="20.4.3">20.4.3 PostgreSQL Database Type Mapping</a></h3>
+  <h3><a name="21.4.3">21.4.3 PostgreSQL Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Qt date-time types and the PostgreSQL database types.</p>
@@ -19193,7 +20071,7 @@ class Person
      <code>QDateTime</code> types are stored as a NULL value if their
      <code>isNull()</code> member function returns true.</p>
 
-  <h3><a name="20.4.4">20.4.4 Oracle Database Type Mapping</a></h3>
+  <h3><a name="21.4.4">21.4.4 Oracle Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Qt date-time types and the Oracle database types.</p>
@@ -19247,7 +20125,7 @@ class person
 };
   </pre>
 
-  <h3><a name="20.4.5">20.4.5 SQL Server Database Type Mapping</a></h3>
+  <h3><a name="21.4.5">21.4.5 SQL Server Database Type Mapping</a></h3>
 
   <p>The following table summarizes the default mapping between the currently
      supported Qt date-time types and the SQL Server database types.</p>

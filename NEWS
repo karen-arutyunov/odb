@@ -1,8 +1,14 @@
 Version 2.2.0
 
- * Static multi-database support. It allows an application to simultaneously
-   work with multiple database systems using their static interfaces (i.e.,
-   odb::<database>::database instead of odb::database).
+ * Multi-database support. It allows an application to simultaneously work
+   with multiple database systems and comes in two flavors: static and
+   dynamic. With static support the application uses the static database
+   interfaces (that is, odb::<db>::database instead of odb::database). With
+   dynamic support the same application code can access multiple databases
+   via a common interface. Dynamic multi-database supports also allows the
+   application to dynamically load the database support code for individual
+   databases if and when necessary. For more information, refer to Chapter
+   13, "Multi-Database Support" in the ODB manual.
 
  * Support for prepared queries. Prepared queries are a thin wrapper around
    the underlying database system's prepared statements functionality. They
@@ -11,8 +17,8 @@ Version 2.2.0
    refer to Section 4.5, "Prepared Queries" in the ODB manual as well as the
    'prepared' example in the odb-examples package.
 
- * New options, --export-symbol and --extern-symbol, allow DLL exporting
-   of the generated database support code.
+ * New options, --export-symbol and --extern-symbol, allow DLL exporting of
+   the generated database support code.
 
  * Support for early connection release. Now the database connection is
    released when commit()/rollback() is called rather than when the
