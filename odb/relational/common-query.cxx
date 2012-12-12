@@ -34,17 +34,20 @@ namespace relational
 
       if (composite_wrapper (utype (*id_member (c))))
       {
-        n = column_prefix (m, key_prefix_, default_name_);
+        n = column_prefix (m, key_prefix_, default_name_).prefix;
 
         if (n.empty ())
           n = public_name_db (m);
-        else
+        else if (n[n.size () - 1] == '_')
           n.resize (n.size () - 1); // Remove trailing underscore.
       }
       else
-        n = column_name (m, key_prefix_, default_name_);
+      {
+        bool dummy;
+        n = column_name (m, key_prefix_, default_name_, dummy);
+      }
 
-      alias = compose_name (column_prefix_, n);
+      alias = compose_name (column_prefix_.prefix, n);
     }
 
     generate_def (public_name (m), c, alias);

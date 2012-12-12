@@ -1,3 +1,74 @@
+  <h1>SQL NAME TRANSFORMATIONS</h1>
+
+  <p>The ODB compiler provides a number of mechanisms for transforming
+     automatically-derived SQL names, such as tables, columns, etc.,
+     to match a specific naming convention. At the higher level, we can
+     add a prefix to global names (tables and, for some databases,
+     indexes and/or foreign keys) with the <code><b>--table-prefix</b></code>
+     option. Similarly, we can specify custom suffixes for
+     automatically-derived
+     index (<code><b>--index-suffix</b></code>; default is <code><b>_i</b></code>),
+     foreign key (<code><b>--fkey-suffix</b></code>; default is <code><b>_fk</b></code>), and
+     sequence (<code><b>--sequence-suffix</b></code>; default is <code><b>_seq</b></code>)
+     names. Finally, we can also convert all the names to upper or lower
+     case with the <code><b>--sql-name-case</b></code> option (valid values
+     are <code><b>upper</b></code> and <code><b>lower</b></code>).</p>
+
+  <p>At the lower level we can specify a set of regular expressions to
+     implement arbitrary transformations of the automatically-derived SQL
+     names. If we want a particular regular expression only to apply to
+     a specific name, for example, table or column, then we use one of the
+     <code><b>--</b><i>kind</i><b>-regex</b></code> options, where
+     <code><i>kind</i></code> can be <code><b>table</b></code>,
+     <code><b>column</b></code>, <code><b>index</b></code>,
+     <code><b>fkey</b></code>, or <code><b>sequence</b></code>. On the
+     other hand, if we want our regular expressions to apply to all SQL
+     names, then we use the <code><b>--sql-name-regex</b></code> option.</p>
+
+  <p>The interaction between the higher and lower level transformations
+     is as follows. Prefixes and suffixes are added first. Then the
+     regular expression transformations are applied. Finally, if requested,
+     the name is converted to upper or lower case. Note also that all of
+     these transformations except for <code><b>--table-prefix</b></code>
+     only apply to automatically-derived names. In other words, if a table,
+     column, etc., name was explicitly specified with a pragma, then it
+     is used as is, without applying any (except for the table prefix)
+     transformations.</p>
+
+  <p>The value for the <code><b>--*-regex</b></code> options is a Perl-like
+     regular expression in the form
+     <code><b>/</b><i>pattern</i><b>/</b><i>replacement</i><b>/</b></code>.
+     Any character can be used as a delimiter instead of <code><b>/</b></code>
+     and the delimiter can be escaped inside <code><i>pattern</i></code> and
+     <code><i>replacement</i></code> with a backslash (<code><b>\</b></code>).
+     You can also specify multiple regular expressions by repeating these
+     options.</p>
+
+  <p>All the regular expressions are tried in the order specified with the
+     name-specific expressions (for example, <code><b>--table-regex</b></code>)
+     tried first followed by the generic expressions
+     (<code><b>--sql-name-regex</b></code>). The first expression that
+     matches is used.</p>
+
+  <p>As an example, consider a regular expression that transforms a class
+     name in the form <code><b>CFoo</b></code> to a table name in the
+     form <code><b>FOO</b></code>:</p>
+
+  <p><code><b>--table-regex '/C(.+)/\U$1/'</b></code></p>
+
+  <p>As a more interesting example, consider the transformation of class
+     names that follow the upper camel case convention (for example,
+     <code><b>FooBar</b></code>) to table names that follow the
+     underscore-separated, all upper case convention (for example,
+     <code><b>FOO_BAR</b></code>). For this case we have to use
+     separate expressions to handle one-word, two-word, etc.,
+     names:</p>
+
+   <p><code><b>--table-regex '/([A-z][a-z]+)/\U$1/'</b></code></p>
+   <p><code><b>--table-regex '/([A-z][a-z]+)([A-z][a-z]+)/\U$1_$2/'</b></code></p>
+
+  <p>See also the REGEX AND SHELL QUOTING section below.</p>
+
   <h1>REGEX AND SHELL QUOTING</h1>
 
   <p>When entering a regular expression argument in the shell

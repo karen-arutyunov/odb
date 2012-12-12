@@ -151,6 +151,26 @@ operator<< (std::ostream&, schema_format);
 
 //
 //
+struct name_case
+{
+  enum value
+  {
+    upper,
+    lower
+  };
+
+  name_case (value v = value (0)) : v_ (v) {}
+  operator value () const {return v_;}
+
+private:
+  value v_;
+};
+
+std::istream&
+operator>> (std::istream&, name_case&);
+
+//
+//
 struct oracle_version
 {
   oracle_version (unsigned short major, unsigned short minor)

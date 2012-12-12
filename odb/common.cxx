@@ -114,11 +114,7 @@ traverse (semantics::class_& c)
 
     if (table_prefix_.level == 0)
     {
-      table_prefix_.ns_schema = schema (c.scope ());
-      table_prefix_.ns_prefix = table_name_prefix (c.scope ());
-      table_prefix_.prefix = table_name (c);
-      table_prefix_.prefix += "_";
-      table_prefix_.level = 1;
+      table_prefix_ = table_prefix (c);
       tb = true;
     }
 
@@ -128,12 +124,7 @@ traverse (semantics::class_& c)
       traverse_view (c);
 
     if (tb)
-    {
-      table_prefix_.level = 0;
-      table_prefix_.prefix.clear ();
-      table_prefix_.ns_prefix.clear ();
-      table_prefix_.ns_schema.clear ();
-    }
+      table_prefix_ = table_prefix ();
   }
   else
   {
@@ -162,7 +153,7 @@ traverse_member (semantics::data_member& m, semantics::type& t)
     member_scope_.push_back (class_inheritance_chain ());
     member_scope_.back ().push_back (comp);
 
-    qname old_table_prefix;
+    table_prefix old_table_prefix;
     string old_flat_prefix, old_member_prefix;
 
     if (build_flat_prefix_)
@@ -181,17 +172,14 @@ traverse_member (semantics::data_member& m, semantics::type& t)
 
     if (build_table_prefix_)
     {
-      old_table_prefix = table_prefix_.prefix;
-      append (m, table_prefix_);
+      old_table_prefix = table_prefix_;
+      table_prefix_.append (m);
     }
 
     traverse_composite_wrapper (&m, *comp, (wrapper (t) ? &t : 0));
 
     if (build_table_prefix_)
-    {
-      table_prefix_.level--;
-      table_prefix_.prefix = old_table_prefix;
-    }
+      table_prefix_ = old_table_prefix;
 
     if (build_flat_prefix_)
       flat_prefix_ = old_flat_prefix;
@@ -223,57 +211,6 @@ traverse (semantics::data_member& m)
     om_.traverse_member (m, t);
 
   om_.member_path_.pop_back ();
-}
-
-void object_members_base::
-append (semantics::data_member& m, table_prefix& tp)
-{
-  context& ctx (context::current ());
-
-  assert (tp.level > 0);
-
-  // If a custom table prefix was specified, then ignore the top-level
-  // table prefix (this corresponds to a container directly inside an
-  // object) but keep the schema unless the alternative schema is fully
-  // qualified.
-  //
-  if (m.count ("table"))
-  {
-    qname p, n (m.get<qname> ("table"));
-
-    if (n.fully_qualified ())
-      p = n.qualifier ();
-    else
-    {
-      if (n.qualified ())
-      {
-        p = tp.ns_schema;
-        p.append (n.qualifier ());
-      }
-      else
-        p = tp.prefix.qualifier ();
-    }
-
-    p.append (tp.level == 1 ? tp.ns_prefix : tp.prefix.uname ());
-    p += n.uname ();
-
-    tp.prefix.swap (p);
-  }
-  // Otherwise use the member name and add an underscore unless it is
-  // already there.
-  //
-  else
-  {
-    string name (ctx.public_name_db (m));
-    size_t n (name.size ());
-
-    tp.prefix += name;
-
-    if (n != 0 && name[n - 1] != '_')
-      tp.prefix += "_";
-  }
-
-  tp.level++;
 }
 
 //
@@ -419,52 +356,6 @@ traverse (semantics::class_& c)
     flush ();
 }
 
-string object_columns_base::
-column_prefix (semantics::data_member& m, string const& kp, string const& dn)
-{
-  bool custom;
-  string r;
-
-  if (kp.empty ())
-  {
-    custom = m.count ("column");
-    r = context::current ().column_name (m);
-  }
-  else
-  {
-    custom = m.count (kp + "-column");
-    r = context::current ().column_name (m, kp, dn);
-  }
-
-  // If the user provided the column prefix, then use it verbatime.
-  // Otherwise, append the underscore, unless it is already there.
-  //
-  if (!custom)
-  {
-    size_t n (r.size ());
-
-    if (n != 0 && r[n - 1] != '_')
-      r += '_';
-  }
-
-  return r;
-}
-
-string object_columns_base::
-column_prefix (data_member_path const& mp)
-{
-  if (mp.size () < 2)
-    return "";
-
-  string r;
-
-  for (data_member_path::const_iterator i (mp.begin ()), e (mp.end () - 1);
-       i != e; ++i)
-    r += column_prefix (**i);
-
-  return r;
-}
-
 void object_columns_base::
 traverse_member (semantics::data_member& m, semantics::type& t)
 {
@@ -473,8 +364,8 @@ traverse_member (semantics::data_member& m, semantics::type& t)
     member_scope_.push_back (class_inheritance_chain ());
     member_scope_.back ().push_back (comp);
 
-    string old_prefix (column_prefix_);
-    column_prefix_ += column_prefix (m, key_prefix_, default_name_);
+    column_prefix old_prefix (column_prefix_);
+    column_prefix_.append (m, key_prefix_, default_name_);
 
     // Save and clear the key prefix and default name.
     //
@@ -492,9 +383,7 @@ traverse_member (semantics::data_member& m, semantics::type& t)
   }
   else
   {
-    string name (
-      compose_name (
-        column_prefix_, column_name (m, key_prefix_, default_name_)));
+    string name (column_name (m, key_prefix_, default_name_, column_prefix_));
 
     if (traverse_column (m, name, first_))
     {

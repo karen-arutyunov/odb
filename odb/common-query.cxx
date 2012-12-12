@@ -577,14 +577,12 @@ traverse_pointer (semantics::data_member& m, semantics::class_& c)
     // Simple id.
     //
     string type (t.fq_name (hint));
-    string column (
-      compose_name (
-        column_prefix_, column_name (m, key_prefix_, default_name_)));
+    string col (column_name (m, key_prefix_, default_name_, column_prefix_));
 
     // For pointer_query_columns generate normal column mapping.
     //
     if (ptr_)
-      column_common (m, type, column);
+      column_common (m, type, col);
     else
     {
       // If this is a non-inverse relationship, then make the column have
@@ -593,7 +591,7 @@ traverse_pointer (semantics::data_member& m, semantics::class_& c)
       // test in a natural way. For inverse relationships there is no
       // column and so the column interface is not available.
       //
-      column_common (m, type, column, "_column_type_");
+      column_common (m, type, col, "_column_type_");
 
       if (decl_)
       {

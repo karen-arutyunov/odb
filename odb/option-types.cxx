@@ -195,6 +195,29 @@ operator<< (ostream& os, schema_format sf)
 }
 
 //
+// name_case
+//
+
+istream&
+operator>> (istream& is, name_case& v)
+{
+  string s;
+  is >> s;
+
+  if (!is.fail ())
+  {
+    if (s == "upper")
+      v = name_case::upper;
+    else if (s == "lower")
+      v = name_case::lower;
+    else
+      is.setstate (istream::failbit);
+  }
+
+  return is;
+}
+
+//
 // oracle_version
 //
 

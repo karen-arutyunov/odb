@@ -699,9 +699,14 @@ traverse_object (type& c)
       }
 
       if (opt != 0 && !poly_derived)
+      {
+        // Top-level version column.
+        //
         os << endl
-           << strlit (" AND " + column_qname (*opt) + "=" +
+           << strlit (" AND " + column_qname (*opt, column_prefix ()) + "=" +
                       convert_to (qp->next (), *opt));
+      }
+
       os << ";"
          << endl;
     }
@@ -744,8 +749,10 @@ traverse_object (type& c)
                       convert_to (qp->next (), i->type, *i->member));
       }
 
+      // Top-level version column.
+      //
       os << endl
-         << strlit (" AND " + column_qname (*opt) + "=" +
+         << strlit (" AND " + column_qname (*opt, column_prefix ()) + "=" +
                     convert_to (qp->next (), *opt)) << ";"
          << endl;
     }
@@ -3339,11 +3346,7 @@ traverse_view (type& c)
             // function would have to return a member path instead
             // of just a single member.
             //
-            table_prefix tp (
-              context::schema (vo->obj->scope ()),
-              context::table_name_prefix (vo->obj->scope ()),
-              table_name (*vo->obj) + "_");
-            ct = table_qname (*im, tp);
+            ct = table_qname (*im, table_prefix (*vo->obj));
           }
           else
             ct = table_qname (*e.vo->obj, e.member_path);
@@ -3516,10 +3519,10 @@ traverse_view (type& c)
         }
         else
         {
-          string col_prefix;
+          column_prefix col_prefix;
 
           if (im == 0)
-            col_prefix = object_columns_base::column_prefix (e.member_path);
+            col_prefix = column_prefix (e.member_path);
 
           instance<object_columns_list> l_cols (col_prefix);
           instance<object_columns_list> r_cols;

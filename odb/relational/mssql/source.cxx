@@ -909,8 +909,14 @@ namespace relational
           }
 
           if (p == persist_after_columns)
-            os << strlit (" OUTPUT " + convert_from (
-                            "INSERTED." + column_qname (*id), *id)) << endl;
+          {
+            // Top-level auto id.
+            //
+            os << strlit (
+              " OUTPUT " + convert_from (
+                "INSERTED." + column_qname (
+                  *id, column_prefix ()), *id)) << endl;
+          }
         }
 
         virtual void

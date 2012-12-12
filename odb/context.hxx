@@ -620,23 +620,26 @@ public:
 
   //
   //
-  qname
-  table_name (semantics::class_&) const;
-
-  qname
-  table_name (semantics::class_&, data_member_path const&) const;
-
   struct table_prefix
   {
-    table_prefix (): level (0) {}
-    table_prefix (qname const& ns_s, string const& ns_p, qname const& p)
-        : ns_schema (ns_s), ns_prefix (ns_p), prefix (p), level (1) {}
+    table_prefix (): level (0), derived (false) {}
+    table_prefix (semantics::class_&);
+
+    void
+    append (semantics::data_member&);
 
     qname ns_schema;  // Object's namespace schema.
     string ns_prefix; // Object's namespace table prefix.
     qname prefix;
     size_t level;
+    bool derived;     // One of the components in the prefix was derived.
   };
+
+  qname
+  table_name (semantics::class_&, bool* derived = 0) const;
+
+  qname
+  table_name (semantics::class_&, data_member_path const&) const;
 
   // Table name for the container member. The table prefix passed as the
   // second argument must include the table prefix specified with the
@@ -645,22 +648,57 @@ public:
   qname
   table_name (semantics::data_member&, table_prefix const&) const;
 
-  string
-  column_name (semantics::data_member&) const;
+  //
+  //
+  struct column_prefix
+  {
+    column_prefix (): derived (false) {}
+
+    column_prefix (semantics::data_member& m,
+                   string const& key_prefix = string (),
+                   string const& default_name = string ())
+        : derived (false)
+    {
+      append (m, key_prefix, default_name);
+    }
+
+    // If the last argument is true, the prefix will include the last member
+    // in the path.
+    //
+    column_prefix (data_member_path const&, bool last = false);
+
+    void
+    append (semantics::data_member&,
+            string const& key_prefix = string (),
+            string const& default_name = string ());
+
+    string prefix;
+    bool derived;     // One of the components in the prefix was derived.
+  };
 
   string
-  column_name (data_member_path const&) const;
+  column_name (semantics::data_member&, bool& derived) const;
+
+  string
+  column_name (semantics::data_member&, column_prefix const&) const;
 
   string
   column_name (semantics::data_member&,
                string const& key_prefix,
-               string const& default_name) const;
+               string const& default_name,
+               bool& derived) const;
 
-  // Compose the name by inserting/removing an underscore, as necessary.
+  string
+  column_name (semantics::data_member&,
+               string const& key_prefix,
+               string const& default_name,
+               column_prefix const&) const;
+
+  string
+  column_name (data_member_path const&) const;
+
   //
-  static string
-  compose_name (string const& prefix, string const& name);
-
+  //
   string
   column_type (const data_member_path&,
                string const& key_prefix = string (),
@@ -679,6 +717,27 @@ public:
   //
   string
   public_name_db (semantics::data_member&) const;
+
+  // Compose the name by inserting/removing an underscore, as necessary.
+  //
+  static string
+  compose_name (string const& prefix, string const& name);
+
+  // SQL name transformations.
+  //
+  enum sql_name_type
+  {
+    sql_name_all,
+    sql_name_table,
+    sql_name_column,
+    sql_name_index,
+    sql_name_fkey,
+    sql_name_sequence,
+    sql_name_count
+  };
+
+  string
+  transform_name (string const& name, sql_name_type) const;
 
   // C++ names.
   //
@@ -959,8 +1018,11 @@ protected:
   {
     virtual
     ~data () {}
+
     data (std::ostream& os)
-        : os_ (os.rdbuf ()), top_object_ (0), cur_object_ (0)
+        : os_ (os.rdbuf ()), top_object_ (0), cur_object_ (0),
+          sql_name_upper_ ("(.+)", "\\U$1"),
+          sql_name_lower_ ("(.+)", "\\L$1")
     {
     }
 
@@ -976,6 +1038,10 @@ protected:
 
     keyword_set_type keyword_set_;
     type_map_type type_map_;
+
+    regex_mapping sql_name_regex_[sql_name_count];
+    regexsub sql_name_upper_;
+    regexsub sql_name_lower_;
 
     regex_mapping include_regex_;
     regex_mapping accessor_regex_;

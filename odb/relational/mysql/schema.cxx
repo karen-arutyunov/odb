@@ -86,18 +86,6 @@ namespace relational
             base::traverse (fk);
         }
 
-        virtual string
-        name (sema_rel::foreign_key& fk)
-        {
-          // In MySQL, foreign key names are database-global. Make them
-          // unique by prefixing the key name with table name. Note,
-          // however, that they cannot be prefixed with the database name.
-          //
-          return quote_id (
-            static_cast<sema_rel::table&> (fk.scope ()).name ().uname ()
-            + "_" + fk.name ());
-        }
-
         virtual void
         deferred ()
         {

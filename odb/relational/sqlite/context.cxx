@@ -85,6 +85,8 @@ namespace relational
       insert_send_auto_id = true;
       delay_freeing_statement_result = false;
       need_image_clone = false;
+      global_index = true;
+      global_fkey = false;
       data_->bind_vector_ = "sqlite::bind*";
       data_->truncated_vector_ = "bool*";
 

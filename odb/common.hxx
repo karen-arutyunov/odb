@@ -100,12 +100,6 @@ public:
   virtual void
   traverse (semantics::class_&);
 
-public:
-  // Append composite member prefix.
-  //
-  static void
-  append (semantics::data_member&, table_prefix&);
-
 protected:
   string flat_prefix_;
   table_prefix table_prefix_;
@@ -219,10 +213,19 @@ struct object_columns_base: traversal::class_, virtual context
 
 public:
   object_columns_base (bool first = true,
-                       string const& column_prefix = string (),
-                       bool traverse_poly_base = false)
-      : column_prefix_ (column_prefix),
+                       column_prefix const& cp = column_prefix ())
+      : column_prefix_ (cp),
         root_ (0),
+        traverse_poly_base_ (false),
+        first_ (first),
+        top_level_ (true),
+        member_ (*this)
+  {
+    init ();
+  }
+
+  object_columns_base (bool first, bool traverse_poly_base)
+      : root_ (0),
         traverse_poly_base_ (traverse_poly_base),
         first_ (first),
         top_level_ (true),
@@ -262,25 +265,11 @@ public:
             string const& default_name,
             semantics::class_* top_object = 0); // If not 0, switch top object.
 
-public:
-  // Return column prefix for composite data member.
-  //
-  static string
-  column_prefix (semantics::data_member&,
-                 string const& key_prefix = string (),
-                 string const& default_name = string ());
-
-  // Return column prefix up to (but not including) the last member
-  // in the path.
-  //
-  static string
-  column_prefix (data_member_path const&);
-
 protected:
   string key_prefix_;
   string default_name_;
 
-  string column_prefix_;
+  column_prefix column_prefix_;
 
   data_member_path member_path_;
   data_member_scope member_scope_;
@@ -365,9 +354,8 @@ struct object_columns_list: object_columns_base
   {
   }
 
-  object_columns_list (string const& column_prefix, bool ignore_inverse = true)
-      : object_columns_base (true, column_prefix),
-        ignore_inverse_ (ignore_inverse)
+  object_columns_list (column_prefix const& cp, bool ignore_inverse = true)
+      : object_columns_base (true, cp), ignore_inverse_ (ignore_inverse)
   {
   }
 

@@ -229,16 +229,6 @@ class options
      \cb{--schema-name} option."
   };
 
-  database_map<std::string> --table-prefix
-  {
-    "<prefix>",
-    "Add <prefix> to table and index names. The prefix is added to both
-     names that were specified with the \cb{db table} pragma and those
-     that were automatically derived from class names. If you require a
-     separator, such as an underscore, between the prefix and the name,
-     then you should include it into the prefix value."
-  };
-
   // Export control.
   //
   database_map<std::string> --export-symbol
@@ -527,6 +517,108 @@ class options
     "Compile <file> contents after the input header file. Epilogue files
      are compiled after all the epilogue text fragments (\cb{--odb-epilogue}
      option)."
+  };
+
+  // SQL names.
+  //
+  database_map<std::string> --table-prefix
+  {
+    "<prefix>",
+    "Add <prefix> to table names and, for databases that have global index
+     and/or foreign key names, to those names as well. The prefix is added to
+     both names that were specified with the \cb{db table} and \cb{db index}
+     pragmas and those that were automatically derived from class and data
+     member names. If you require a separator, such as an underscore,
+     between the prefix and the name, then you should include it into the
+     prefix value."
+  };
+
+  database_map<std::string> --index-suffix
+  {
+    "<suffix>",
+    "Use <suffix> instead of the default \cb{_i} to construct index names.
+     The suffix is only added to names that were automatically derived from
+     data member names. If you require a separator, such as an underscore,
+     between the name and the suffix, then you should include it into the
+     suffix value."
+  };
+
+  database_map<std::string> --fkey-suffix
+  {
+    "<suffix>",
+    "Use <suffix> instead of the default \cb{_fk} to construct foreign key
+     names. If you require a separator, such as an underscore, between the
+     name and the suffix, then you should include it into the suffix value."
+  };
+
+  database_map<std::string> --sequence-suffix
+  {
+    "<suffix>",
+    "Use <suffix> instead of the default \cb{_seq} to construct sequence
+     names. If you require a separator, such as an underscore, between the
+     name and the suffix, then you should include it into the suffix value."
+  };
+
+  database_map<name_case> --sql-name-case
+  {
+    "<case>",
+    "Convert all automatically-derived SQL names to upper or lower case.
+     Valid values for this option are  \cb{upper} and \cb{lower}."
+  };
+
+  database_map<std::vector<std::string> > --table-regex
+  {
+    "<regex>",
+    "Add <regex> to the list of regular expressions that is used to
+     transform automatically-derived table names. See the SQL NAME
+     TRANSFORMATIONS section below for details."
+  };
+
+  database_map<std::vector<std::string> > --column-regex
+  {
+    "<regex>",
+    "Add <regex> to the list of regular expressions that is used to
+     transform automatically-derived column names. See the SQL NAME
+     TRANSFORMATIONS section below for details."
+  };
+
+  database_map<std::vector<std::string> > --index-regex
+  {
+    "<regex>",
+    "Add <regex> to the list of regular expressions that is used to
+     transform automatically-derived index names. See the SQL NAME
+     TRANSFORMATIONS section below for details."
+  };
+
+  database_map<std::vector<std::string> > --fkey-regex
+  {
+    "<regex>",
+    "Add <regex> to the list of regular expressions that is used to
+     transform automatically-derived foreign key names. See the SQL NAME
+     TRANSFORMATIONS section below for details."
+  };
+
+  database_map<std::vector<std::string> > --sequence-regex
+  {
+    "<regex>",
+    "Add <regex> to the list of regular expressions that is used to
+     transform automatically-derived sequence names. See the SQL NAME
+     TRANSFORMATIONS section below for details."
+  };
+
+  database_map<std::vector<std::string> > --sql-name-regex
+  {
+    "<regex>",
+    "Add <regex> to the list of regular expressions that is used to
+     transform all automatically-derived SQL names. See the SQL NAME
+     TRANSFORMATIONS section below for details."
+  };
+
+  bool --sql-name-regex-trace
+  {
+    "Trace the process of applying regular expressions specified with the
+     SQL name \cb{--*-regex} options. Use this option to find out why your
+     regular expressions don't do what you expected them to do."
   };
 
   // Accessor/modifier options.

@@ -105,9 +105,9 @@ namespace relational
     // Quoted column and table names.
     //
     string
-    column_qname (semantics::data_member& m) const
+    column_qname (semantics::data_member& m, column_prefix const& cp) const
     {
-      return quote_id (column_name (m));
+      return quote_id (column_name (m, cp));
     }
 
     string
@@ -119,9 +119,10 @@ namespace relational
     string
     column_qname (semantics::data_member& m,
                   string const& key_prefix,
-                  string const& default_name) const
+                  string const& default_name,
+                  column_prefix const& cp) const
     {
-      return quote_id (column_name (m, key_prefix, default_name));
+      return quote_id (column_name (m, key_prefix, default_name, cp));
     }
 
     string
@@ -141,6 +142,13 @@ namespace relational
     {
       return quote_id (table_name (m, p));
     }
+
+  public:
+    string
+    index_name (qname const& table, string const& base);
+
+    string
+    fkey_name (qname const& table, string const& base);
 
     // Custom database type conversion.
     //
@@ -260,6 +268,9 @@ namespace relational
     bool insert_send_auto_id;
     bool delay_freeing_statement_result;
     bool need_image_clone;
+
+    bool global_index;
+    bool global_fkey;
 
     string const& bind_vector;
     string const& truncated_vector;

@@ -1106,6 +1106,11 @@ namespace relational
             }
           }
 
+          // Add the table prefix if this database has global index names.
+          //
+          if (!in.name.empty () && global_index)
+            in.name = table_name_prefix (c.scope ()) + in.name;
+
           // Handle container indexes.
           //
           if (j != in.members.end ())
@@ -1164,12 +1169,14 @@ namespace relational
             // be empty, in which case we will just fall back on the
             // member's public name.
             //
-            in.name = column_name (in.members.front ().path);
+            string n (column_prefix (in.members.front ().path, true).prefix);
 
-            if (in.name.empty ())
-              in.name = public_name_db (*in.members.front ().path.back ());
+            if (n.empty ())
+              n = public_name_db (*in.members.front ().path.back ());
+            else if (n[n.size () - 1] == '_')
+              n.resize (n.size () - 1); // Remove trailing underscore.
 
-            in.name = compose_name (in.name, "i");
+            in.name = index_name (table_name (c), n);
           }
 
           ++i;

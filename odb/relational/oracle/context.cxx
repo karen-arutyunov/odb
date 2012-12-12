@@ -85,6 +85,8 @@ namespace relational
       insert_send_auto_id = false;
       delay_freeing_statement_result = false;
       need_image_clone = true;
+      global_index = true;
+      global_fkey = true;
       data_->bind_vector_ = "oracle::bind*";
 
       // Populate the C++ type to DB type map.
@@ -166,6 +168,23 @@ namespace relational
         s == "unsigned int" ||
         s == "long unsigned int" ||
         s == "long long unsigned int";
+    }
+
+    qname context::
+    sequence_name (qname const& table)
+    {
+      string n;
+
+      if (options.sequence_suffix ().count (db) != 0)
+        n = table.uname () + options.sequence_suffix ()[db];
+      else
+        n = compose_name (table.uname (), "seq");
+
+      n = transform_name (n, sql_name_sequence);
+
+      qname r (table.qualifier ());
+      r.append (n);
+      return r;
     }
 
     //

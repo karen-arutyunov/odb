@@ -106,6 +106,12 @@ namespace relational
       static bool
       unsigned_integer (semantics::type&);
 
+    public:
+      // Construct sequence name from a given table name.
+      //
+      qname
+      sequence_name (qname const& table);
+
     protected:
       virtual string const&
       convert_expr (string const&, semantics::data_member&, bool);

@@ -17,6 +17,15 @@ Version 2.2.0
    refer to Section 4.5, "Prepared Queries" in the ODB manual as well as the
    'prepared' example in the odb-examples package.
 
+ * Support for automatically-derived SQL name (table, column, index, etc.)
+   transformations. At the higher level, it is possible to assign prefixes
+   and suffixes (--table-prefix, --{index,fkey,sequence}--suffix options)
+   as well as to convert to upper or lower case (--sql-name-case option).
+   At the lower level, it is possible to specify transformations as regular
+   expressions (--{table,column,index,fkey,sequence,sql-name}-regex options).
+   For more information, refer to the SQL NAME TRANSFORMATIONS section in
+   the ODB compiler command line interface documentation (man pages).
+
  * New options, --export-symbol and --extern-symbol, allow DLL exporting of
    the generated database support code.
 

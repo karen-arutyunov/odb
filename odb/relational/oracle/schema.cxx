@@ -127,7 +127,7 @@ namespace relational
           {
             os << "  BEGIN" << endl
                << "    EXECUTE IMMEDIATE 'DROP SEQUENCE " <<
-              quote_id (table + "_seq") << "';" << endl
+              quote_id (sequence_name (table)) << "';" << endl
                << "  EXCEPTION" << endl
                << "    WHEN OTHERS THEN" << endl
                << "      IF SQLCODE != -2289 THEN RAISE; END IF;" << endl
@@ -184,18 +184,6 @@ namespace relational
             fk.set ("oracle-fk-defined", true); // Mark it as defined.
           }
         }
-
-        virtual string
-        name (sema_rel::foreign_key& fk)
-        {
-          // In Oracle, foreign key names are schema-global. Make them
-          // unique by prefixing the key name with table name. Note,
-          // however, that they cannot have a schema.
-          //
-          return quote_id (
-            static_cast<sema_rel::table&> (fk.scope ()).name ().uname ()
-            + "_" + fk.name ());
-        }
       };
       entry<create_foreign_key> create_foreign_key_;
 
@@ -244,7 +232,8 @@ namespace relational
           if (pk != 0 && pk->auto_ ())
           {
             pre_statement ();
-            os_ << "CREATE SEQUENCE " << quote_id (t.name () + "_seq") << endl
+            os_ << "CREATE SEQUENCE " <<
+              quote_id (sequence_name (t.name ())) << endl
                 << "  START WITH 1 INCREMENT BY 1" << endl;
             post_statement ();
           }
@@ -266,14 +255,11 @@ namespace relational
         virtual string
         name (sema_rel::index& in)
         {
-          // In Oracle, index names are database-global. Make them unique
-          // by prefixing the index name with table name (preserving the
-          // schema).
+          // In Oracle, index names can be qualified with the schema.
           //
-          sema_rel::qname n (
-            static_cast<sema_rel::table&> (in.scope ()).name ());
-
-          n.uname () += "_" + in.name ();
+          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
+          sema_rel::qname n (t.name ().qualifier ());
+          n.append (in.name ());
           return quote_id (n);
         }
       };

@@ -80,7 +80,7 @@ namespace relational
       object_columns (statement_kind sk,
                       statement_columns& sc,
                       query_parameters* param = 0)
-          : object_columns_base (true, "", true),
+          : object_columns_base (true, true),
             sk_ (sk), sc_ (sc), param_ (param), depth_ (1)
       {
       }
@@ -89,7 +89,7 @@ namespace relational
                       statement_kind sk,
                       statement_columns& sc,
                       size_t depth = 1)
-          : object_columns_base (true, "", true),
+          : object_columns_base (true, true),
             sk_ (sk),
             sc_ (sc),
             param_ (0),
@@ -158,12 +158,7 @@ namespace relational
             string table;
 
             if (!table_name_.empty ())
-            {
-              table_prefix tp (schema (c.scope ()),
-                               table_name_prefix (c.scope ()),
-                               table_name (c) + "_");
-              table = table_qname (*im, tp);
-            }
+              table = table_qname (*im, table_prefix (c));
 
             instance<object_columns> oc (table, sk_, sc_);
             oc->traverse (*im, idt, "id", "object_id", &c);
@@ -190,17 +185,20 @@ namespace relational
 
               if (composite_wrapper (idt))
               {
-                n = column_prefix (m, key_prefix_, default_name_);
+                n = column_prefix (m, key_prefix_, default_name_).prefix;
 
                 if (n.empty ())
                   n = public_name_db (m);
-                else
+                else if (n[n.size () - 1] == '_')
                   n.resize (n.size () - 1); // Remove trailing underscore.
               }
               else
-                n = column_name (m, key_prefix_, default_name_);
+              {
+                bool dummy;
+                n = column_name (m, key_prefix_, default_name_, dummy);
+              }
 
-              table = quote_id (compose_name (column_prefix_, n));
+              table = quote_id (compose_name (column_prefix_.prefix, n));
             }
 
             instance<object_columns> oc (table, sk_, sc_);
@@ -461,7 +459,7 @@ namespace relational
                                 string const& alias = "",
                                 string const prefix = "",
                                 string const& suffix = "\n")
-          : object_columns_base (true, "", true),
+          : object_columns_base (true, true),
             obj_ (obj),
             depth_ (depth),
             alias_ (alias),
@@ -537,7 +535,7 @@ namespace relational
       //@@ context::{cur,top}_object; might have to be created every time.
       //
       object_joins (semantics::class_& scope, bool query, size_t depth = 1)
-          : object_columns_base (true, "", true),
+          : object_columns_base (true, true),
             query_ (query),
             depth_ (depth),
             table_ (table_qname (scope)),
@@ -595,17 +593,20 @@ namespace relational
 
           if (composite_wrapper (utype (*id_member (c))))
           {
-            n = column_prefix (m, key_prefix_, default_name_);
+            n = column_prefix (m, key_prefix_, default_name_).prefix;
 
             if (n.empty ())
               n = public_name_db (m);
-            else
+            else if (n[n.size () - 1] == '_')
               n.resize (n.size () - 1); // Remove trailing underscore.
           }
           else
-            n = column_name (m, key_prefix_, default_name_);
+          {
+            bool dummy;
+            n = column_name (m, key_prefix_, default_name_, dummy);
+          }
 
-          alias = compose_name (column_prefix_, n);
+          alias = compose_name (column_prefix_.prefix, n);
         }
 
         semantics::class_* poly_root (polymorphic (c));
@@ -621,11 +622,7 @@ namespace relational
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
             //
-            qname const& ct (table_name (c));
-            table_prefix tp (schema (c.scope ()),
-                             table_name_prefix (c.scope ()),
-                             ct + "_");
-            t = table_qname (*im, tp);
+            t = table_qname (*im, table_prefix (c));
 
             // Container's value is our id.
             //
@@ -1952,10 +1949,7 @@ namespace relational
               // This other container is a direct member of the class so the
               // table prefix is just the class table name.
               //
-              table_prefix tp (schema (c->scope ()),
-                               table_name_prefix (c->scope ()),
-                               table_name (*c) + "_");
-              inv_table = table_name (*im, tp);
+              inv_table = table_name (*im, table_prefix (*c));
               inv_qtable = quote_id (inv_table);
 
               inv_id_cols->traverse (*im, utype (inv_id), "id", "object_id", c);
@@ -2077,7 +2071,10 @@ namespace relational
 
             if (ordered)
             {
-              string const& col (column_qname (m, "index", "index"));
+              // Top-level column.
+              //
+              string const& col (
+                column_qname (m, "index", "index", column_prefix ()));
 
               os << endl
                  << strlit (" ORDER BY " + qtable + "." + col);

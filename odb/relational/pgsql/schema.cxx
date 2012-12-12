@@ -170,18 +170,6 @@ namespace relational
       {
         create_index (base const& x): base (x) {}
 
-        virtual string
-        name (sema_rel::index& in)
-        {
-          // In PostgreSQL, index names are database-global. Make them unique
-          // by prefixing the index name with table name. Note, however, that
-          // they cannot be qualified with the schema name.
-          //
-          return quote_id (
-            static_cast<sema_rel::table&> (in.scope ()).name ().uname ()
-            + "_" + in.name ());
-        }
-
         virtual void
         create (sema_rel::index& in)
         {

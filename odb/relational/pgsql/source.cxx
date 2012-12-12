@@ -618,9 +618,12 @@ namespace relational
 
           if (id != 0 && !poly_derived && id->count ("auto"))
           {
+            // Top-level auto id.
+            //
             os << endl
                << strlit (" RETURNING " +
-                          convert_from (column_qname (*id), *id));
+                          convert_from (column_qname (*id, column_prefix ()),
+                                        *id));
           }
         }
 

@@ -298,16 +298,18 @@ namespace relational
           name = fk.contains_begin ()->column ().name ();
         else
         {
-          string p (column_prefix (m, key_prefix_, default_name_));
+          string p (column_prefix (m, key_prefix_, default_name_).prefix);
 
           if (p.empty ())
             p = public_name_db (m);
+          else if (p[p.size () - 1] == '_')
+            p.resize (p.size () - 1); // Remove trailing underscore.
 
-          name = compose_name (column_prefix_, p);
+          name = compose_name (column_prefix_.prefix, p);
         }
 
         model_.new_edge<sema_rel::unames> (
-          table_, fk, compose_name (name, "fk"));
+          table_, fk, fkey_name (table_.name (), name));
       }
 
     protected:
@@ -371,10 +373,11 @@ namespace relational
 
             if (type* comp = composite_wrapper (utype (*im.path.back ())))
             {
-              // Composite value. Get the list of the columns. Here
-              // column_name() returns the column prefix.
+              // Composite value. Get the list of the columns. Note that
+              // the column prefix needs to contain all the components.
               //
-              instance<object_columns_list> ocl (column_name (im.path));
+              instance<object_columns_list> ocl (
+                column_prefix (im.path, true));
               ocl->traverse (*comp);
 
               for (object_columns_list::iterator i (ocl->begin ());
@@ -504,7 +507,11 @@ namespace relational
           // composite), in which case it can be empty. In this case
           // we just fallback on the default name.
           //
-          string id_name (column_name (m, "id", "object_id"));
+          // Finally, this is a top-level column, so there is no column
+          // prefix.
+          //
+          string id_name (
+            column_name (m, "id", "object_id", column_prefix ()));
 
           if (id_name.empty ())
             id_name = "object_id";
@@ -519,7 +526,7 @@ namespace relational
               sema_rel::foreign_key::cascade));
           fk.set ("cxx-location", m.location ());
           model_.new_edge<sema_rel::unames> (
-            t, fk, compose_name (id_name, "fk"));
+            t, fk, fkey_name (t.name (), id_name));
 
           // Get referenced columns.
           //
@@ -555,18 +562,19 @@ namespace relational
             in = &model_.new_node<sema_rel::index> (
               id + ".id", sin->type, sin->method, sin->options);
             in->set ("cxx-location", sin->loc);
-            model_.new_edge<sema_rel::unames> (
-              t,
-              *in,
-              (sin->name.empty () ? compose_name (id_name, "i") : sin->name));
           }
           else
           {
             in = &model_.new_node<sema_rel::index> (id + ".id");
             in->set ("cxx-location", m.location ());
-            model_.new_edge<sema_rel::unames> (
-              t, *in, compose_name (id_name, "i"));
           }
+
+          model_.new_edge<sema_rel::unames> (
+            t,
+            *in,
+            sin != 0 && !sin->name.empty ()
+            ? sin->name
+            : index_name (name, id_name));
 
           // All the columns we have in this table so far are for the
           // object id. Add them to the index.
@@ -591,9 +599,10 @@ namespace relational
           instance<object_columns> oc (model_, t);
           oc->traverse (m, container_it (ct), "index", "index");
 
-          // This is a simple value so the name cannot be empty.
+          // This is a simple value so the name cannot be empty. It is
+          // also a top-level column, so there is no column prefix.
           //
-          string col (column_name (m, "index", "index"));
+          string col (column_name (m, "index", "index", column_prefix ()));
 
           // Index. See if we have a custom index.
           //
@@ -607,18 +616,19 @@ namespace relational
             in = &model_.new_node<sema_rel::index> (
               id + ".index", sin->type, sin->method, sin->options);
             in->set ("cxx-location", sin->loc);
-            model_.new_edge<sema_rel::unames> (
-              t,
-              *in,
-              (sin->name.empty () ? compose_name (col, "i") : sin->name));
           }
           else
           {
             in = &model_.new_node<sema_rel::index> (id + ".index");
             in->set ("cxx-location", m.location ());
-            model_.new_edge<sema_rel::unames> (
-              t, *in, compose_name (col, "i"));
           }
+
+          model_.new_edge<sema_rel::unames> (
+            t,
+            *in,
+            sin != 0 && !sin->name.empty ()
+            ? sin->name
+            : index_name (name, col));
 
           model_.new_edge<sema_rel::contains> (
             *in,

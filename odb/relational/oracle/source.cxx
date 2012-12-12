@@ -17,7 +17,7 @@ namespace relational
     {
       namespace relational = relational::source;
 
-      struct query_parameters: relational::query_parameters
+      struct query_parameters: relational::query_parameters, context
       {
         query_parameters (base const& x): base (x), i_ (0) {}
 
@@ -33,9 +33,7 @@ namespace relational
         virtual string
         auto_id ()
         {
-          // The same sequence name as used in schema.cxx.
-          //
-          return quote_id (table_ + "_seq") + ".nextval";
+          return quote_id (sequence_name (table_)) + ".nextval";
         }
 
       private:
@@ -600,9 +598,12 @@ namespace relational
 
           if (id != 0 && !poly_derived && id->count ("auto"))
           {
+            // Top-level auto id.
+            //
             os << endl
                << strlit (" RETURNING " +
-                          convert_from (column_qname (*id), *id) +
+                          convert_from (column_qname (*id, column_prefix ()),
+                                        *id) +
                           " INTO " +
                           qp.next ());
           }

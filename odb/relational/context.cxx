@@ -28,6 +28,8 @@ namespace relational
         insert_send_auto_id (current ().insert_send_auto_id),
         delay_freeing_statement_result (current ().delay_freeing_statement_result),
         need_image_clone (current ().need_image_clone),
+        global_index (current ().global_index),
+        global_fkey (current ().global_fkey),
         bind_vector (data_->bind_vector_),
         truncated_vector (data_->truncated_vector_)
   {
@@ -42,6 +44,46 @@ namespace relational
   {
     assert (current_ == 0);
     current_ = this;
+  }
+
+  string context::
+  index_name (qname const& table, string const& base)
+  {
+    string n;
+
+    if (options.index_suffix ().count (db) != 0)
+      n = base + options.index_suffix ()[db];
+    else
+      n = compose_name (base, "i");
+
+    // If this database has global index names, then add the table
+    // name as a prefix (the schema, if needed, will be added by
+    // database-specific create_index overrides).
+    //
+    if (global_index)
+      n = compose_name (table.uname (), n);
+
+    return transform_name (n, sql_name_index);
+  }
+
+  string context::
+  fkey_name (qname const& table, string const& base)
+  {
+    string n;
+
+    if (options.fkey_suffix ().count (db) != 0)
+      n = base + options.fkey_suffix ()[db];
+    else
+      n = compose_name (base, "fk");
+
+    // If this database has global index names, then add the table
+    // name as a prefix (the schema, if needed, will be added by
+    // database-specific create_foreign_key overrides).
+    //
+    if (global_fkey)
+      n = compose_name (table.uname (), n);
+
+    return transform_name (n, sql_name_fkey);
   }
 
   string context::

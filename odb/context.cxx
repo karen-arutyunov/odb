@@ -472,6 +472,46 @@ context (ostream& os_,
   for (size_t i (0); i < sizeof (keywords) / sizeof (char*); ++i)
     data_->keyword_set_.insert (keywords[i]);
 
+  // SQL name regex.
+  //
+  if (ops.table_regex ().count (db) != 0)
+  {
+    strings const& s (ops.table_regex ()[db]);
+    data_->sql_name_regex_[sql_name_table].assign (s.begin (), s.end ());
+  }
+
+  if (ops.column_regex ().count (db) != 0)
+  {
+    strings const& s (ops.column_regex ()[db]);
+    data_->sql_name_regex_[sql_name_column].assign (s.begin (), s.end ());
+  }
+
+  if (ops.index_regex ().count (db) != 0)
+  {
+    strings const& s (ops.index_regex ()[db]);
+    data_->sql_name_regex_[sql_name_index].assign (s.begin (), s.end ());
+  }
+
+  if (ops.fkey_regex ().count (db) != 0)
+  {
+    strings const& s (ops.fkey_regex ()[db]);
+    data_->sql_name_regex_[sql_name_fkey].assign (s.begin (), s.end ());
+  }
+
+  if (ops.sequence_regex ().count (db) != 0)
+  {
+    strings const& s (ops.sequence_regex ()[db]);
+    data_->sql_name_regex_[sql_name_sequence].assign (s.begin (), s.end ());
+  }
+
+  if (ops.sql_name_regex ().count (db) != 0)
+  {
+    strings const& s (ops.sql_name_regex ()[db]);
+    data_->sql_name_regex_[sql_name_all].assign (s.begin (), s.end ());
+  }
+
+  // Include regex.
+  //
   for (strings::const_iterator i (ops.include_regex ().begin ());
        i != ops.include_regex ().end (); ++i)
     data_->include_regex_.push_back (regexsub (*i));
@@ -1088,6 +1128,79 @@ composite_ (semantics::class_& c)
   return r;
 }
 
+// context::table_prefix
+//
+context::table_prefix::
+table_prefix (semantics::class_& c)
+    : level (1)
+{
+  context& ctx (context::current ());
+
+  ns_schema = ctx.schema (c.scope ());
+  ns_prefix = ctx.table_name_prefix (c.scope ());
+  prefix = ctx.table_name (c, &derived);
+  prefix += "_";
+}
+
+void context::table_prefix::
+append (semantics::data_member& m)
+{
+  assert (level > 0);
+
+  context& ctx (context::current ());
+
+  // If a custom table prefix was specified, then ignore the top-level
+  // table prefix (this corresponds to a container directly inside an
+  // object) but keep the schema unless the alternative schema is fully
+  // qualified.
+  //
+  if (m.count ("table"))
+  {
+    qname p, n (m.get<qname> ("table"));
+
+    if (n.fully_qualified ())
+      p = n.qualifier ();
+    else
+    {
+      if (n.qualified ())
+      {
+        p = ns_schema;
+        p.append (n.qualifier ());
+      }
+      else
+        p = prefix.qualifier ();
+    }
+
+    if (level == 1)
+    {
+      p.append (ns_prefix);
+      derived = false;
+    }
+    else
+      p.append (prefix.uname ());
+
+    p += n.uname ();
+    prefix.swap (p);
+  }
+  // Otherwise use the member name and add an underscore unless it is
+  // already there.
+  //
+  else
+  {
+    string name (ctx.public_name_db (m));
+    size_t n (name.size ());
+
+    prefix += name;
+
+    if (n != 0 && name[n - 1] != '_')
+      prefix += "_";
+
+    derived = true;
+  }
+
+  level++;
+}
+
 qname context::
 schema (semantics::scope& s) const
 {
@@ -1198,14 +1311,14 @@ table_name_prefix (semantics::scope& s) const
 }
 
 qname context::
-table_name (semantics::class_& c) const
+table_name (semantics::class_& c, bool* pd) const
 {
   if (c.count ("qualified-table"))
     return c.get<qname> ("qualified-table");
 
   qname r;
-
   bool sf (c.count ("schema"));
+  bool derived;
 
   if (c.count ("table"))
   {
@@ -1221,9 +1334,14 @@ table_name (semantics::class_& c) const
         c.get<location_t> ("table-location") <
         c.get<location_t> ("schema-location");
     }
+
+    derived = false;
   }
   else
+  {
     r = class_name (c);
+    derived = true;
+  }
 
   if (sf)
   {
@@ -1247,16 +1365,21 @@ table_name (semantics::class_& c) const
   //
   r.uname () = table_name_prefix (c.scope ()) + r.uname ();
 
+  if (derived)
+    r.uname () = transform_name (r.uname (), sql_name_table);
+
   c.set ("qualified-table", r);
+
+  if (pd != 0)
+    *pd = derived;
+
   return r;
 }
 
 qname context::
 table_name (semantics::class_& obj, data_member_path const& mp) const
 {
-  table_prefix tp (schema (obj.scope ()),
-                   table_name_prefix (obj.scope ()),
-                   table_name (obj) + "_");
+  table_prefix tp (obj);
 
   if (mp.size () == 1)
   {
@@ -1271,7 +1394,7 @@ table_name (semantics::class_& obj, data_member_path const& mp) const
     // The last member is the container.
     //
     for (data_member_path::const_iterator e (mp.end () - 1); i != e; ++i)
-      object_members_base::append (**i, tp);
+      tp.append (**i);
 
     return table_name (**i, tp);
   }
@@ -1285,12 +1408,14 @@ table_name (semantics::data_member& m, table_prefix const& p) const
 {
   assert (p.level > 0);
   qname r;
+  string rn;
+  bool derived; // Any of the components in the table name is derived.
 
   // If a custom table name was specified, then ignore the top-level
   // table prefix (this corresponds to a container directly inside an
   // object). If the container table is unqualifed, then we use the
   // object schema. If it is fully qualified, then we use that name.
-  // Finally, if it is qualified by not fully qualifed, then we
+  // Finally, if it is qualified but not fully qualifed, then we
   // append the object's namespace schema.
   //
   if (m.count ("table"))
@@ -1310,59 +1435,111 @@ table_name (semantics::data_member& m, table_prefix const& p) const
         r = p.prefix.qualifier ();
     }
 
-    r.append (p.level == 1 ? p.ns_prefix : p.prefix.uname ());
-    r += n.uname ();
-  }
-  else
-  {
-    r = p.prefix;
-    r += public_name_db (m);
-  }
-
-  return r;
-}
-
-string context::
-column_name (semantics::data_member& m) const
-{
-  if (m.count ("column"))
-    return m.get<table_column> ("column").column;
-  else
-    return public_name_db (m);
-}
-
-string context::
-column_name (data_member_path const& mp) const
-{
-  // The path can lead to a composite value member and column names for
-  // such members are derived dynamically using the same derivation
-  // process as when generating object columns (see object_columns_base).
-  //
-  string r;
-
-  for (data_member_path::const_iterator i (mp.begin ()); i != mp.end (); ++i)
-  {
-    semantics::data_member& m (**i);
-
-    if (composite_wrapper (utype (m)))
-      r += object_columns_base::column_prefix (m);
+    if (p.level == 1)
+    {
+      rn = p.ns_prefix;
+      derived = false;
+    }
     else
-      r = compose_name (r, column_name (m));
+    {
+      rn = p.prefix.uname ();
+      derived = p.derived;
+    }
+
+    rn += n.uname ();
   }
+  else
+  {
+    r = p.prefix.qualifier ();
+    rn = p.prefix.uname () + public_name_db (m);
+    derived = true;
+  }
+
+  if (derived)
+    r.append (transform_name (rn, sql_name_table));
+  else
+    r.append (rn);
 
   return r;
 }
 
+// context::column_prefix
+//
+context::column_prefix::
+column_prefix (data_member_path const& mp, bool l)
+    : derived (false)
+{
+  if (mp.size () < (l ? 1 : 2))
+    return;
+
+  for (data_member_path::const_iterator i (mp.begin ()),
+         e (mp.end () - (l ? 0 : 1)); i != e; ++i)
+    append (**i);
+}
+
+void context::column_prefix::
+append (semantics::data_member& m, string const& kp, string const& dn)
+{
+  bool d;
+  context& ctx (context::current ());
+
+  if (kp.empty ())
+    prefix += ctx.column_name (m, d);
+  else
+    prefix += ctx.column_name (m, kp, dn, d);
+
+  // If the user provided the column prefix, then use it verbatime.
+  // Otherwise, append the underscore, unless it is already there.
+  //
+  if (d)
+  {
+    size_t n (prefix.size ());
+
+    if (n != 0 && prefix[n - 1] != '_')
+      prefix += '_';
+  }
+
+  derived = derived || d;
+}
+
 string context::
-column_name (semantics::data_member& m, string const& p, string const& d) const
+column_name (semantics::data_member& m, bool& derived) const
+{
+  derived = !m.count ("column");
+  return derived
+    ? public_name_db (m)
+    : m.get<table_column> ("column").column;
+}
+
+string context::
+column_name (semantics::data_member& m, column_prefix const& cp) const
+{
+  bool d;
+  string n (column_name (m, d));
+  n = compose_name (cp.prefix, n);
+
+  // If any component is derived, the run it through the SQL name regex.
+  //
+  if (d || cp.derived)
+    n = transform_name (n, sql_name_column);
+
+  return n;
+}
+
+string context::
+column_name (semantics::data_member& m,
+             string const& p,
+             string const& d,
+             bool& derived) const
 {
   if (p.empty () && d.empty ())
-    return column_name (m);
+    return column_name (m, derived);
 
   // A container column name can be specified for the member or for the
   // container type.
   //
   string key (p + "-column");
+  derived = false;
 
   if (m.count (key))
     return m.get<string> (key);
@@ -1374,35 +1551,32 @@ column_name (semantics::data_member& m, string const& p, string const& d) const
       return t.get<string> (key);
   }
 
+  derived = true;
   return d;
 }
 
 string context::
-compose_name (string const& prefix, string const& name)
+column_name (semantics::data_member& m,
+             string const& kp,
+             string const& dn,
+             column_prefix const& cp) const
 {
-  string r (prefix);
-  size_t n (r.size ());
+  bool d;
+  string n (column_name (m, kp, dn, d));
+  n = compose_name (cp.prefix, n);
 
-  // Add an underscore unless one is already in the prefix or
-  // the name is empty. Similarly, remove it if it is there but
-  // the name is empty.
+  // If any component is derived, the run it through the SQL name regex.
   //
-  if (n != 0)
-  {
-    if (r[n - 1] != '_')
-    {
-      if (!name.empty ())
-        r += '_';
-    }
-    else
-    {
-      if (name.empty ())
-        r.resize (n - 1);
-    }
-  }
+  if (d || cp.derived)
+    n = transform_name (n, sql_name_column);
 
-  r += name;
-  return r;
+  return n;
+}
+
+string context::
+column_name (data_member_path const& mp) const
+{
+  return column_name (*mp.back (), column_prefix (mp));
 }
 
 string context::
@@ -1611,6 +1785,105 @@ string context::
 public_name_db (semantics::data_member& m) const
 {
   return public_name_impl (m);
+}
+
+string context::
+compose_name (string const& prefix, string const& name)
+{
+  string r (prefix);
+  size_t n (r.size ());
+
+  // Add an underscore unless one is already in the prefix or
+  // the name is empty. Similarly, remove it if it is there but
+  // the name is empty.
+  //
+  if (n != 0)
+  {
+    if (r[n - 1] != '_')
+    {
+      if (!name.empty ())
+        r += '_';
+    }
+    else
+    {
+      if (name.empty ())
+        r.resize (n - 1);
+    }
+  }
+
+  r += name;
+  return r;
+}
+
+string context::
+transform_name (string const& name, sql_name_type type) const
+{
+  string r;
+
+  if (!data_->sql_name_regex_[type].empty () ||
+      !data_->sql_name_regex_[sql_name_all].empty ())
+  {
+    bool t (options.sql_name_regex_trace ());
+
+    if (t)
+      cerr << "name: '" << name << "'" << endl;
+
+    bool found (false);
+
+    // First try the type-specific transformations, if that didn't work,
+    // try common transformations.
+    //
+    for (unsigned short j (0); !found && j < 2; ++j)
+    {
+      regex_mapping const& rm = data_->sql_name_regex_[
+        j == 0 ? type : sql_name_all];
+
+      for (regex_mapping::const_iterator i (rm.begin ()); i != rm.end (); ++i)
+      {
+        if (t)
+          cerr << "try: '" << i->regex () << "' : ";
+
+        if (i->match (name))
+        {
+          r = i->replace (name);
+          found = true;
+
+          if (t)
+            cerr << "'" << r << "' : ";
+        }
+
+        if (t)
+          cerr << (found ? '+' : '-') << endl;
+
+        if (found)
+          break;
+      }
+    }
+
+    if (!found)
+      r = name;
+  }
+  else
+    r = name;
+
+  if (options.sql_name_case ().count (db) != 0)
+  {
+    switch (options.sql_name_case ()[db])
+    {
+    case name_case::upper:
+      {
+        r = data_->sql_name_upper_.replace (r);
+        break;
+      }
+    case name_case::lower:
+      {
+        r = data_->sql_name_lower_.replace (r);
+        break;
+      }
+    }
+  }
+
+  return r;
 }
 
 string context::

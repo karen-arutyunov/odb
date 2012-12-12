@@ -80,18 +80,11 @@ namespace relational
           if (dt_.tables_.find (rt) != dt_.tables_.end () ||
               m.find (rt) == m.names_end ())
           {
-
-            // In SQL Server, foreign key names are schema-global. Make them
-            // unique by prefixing the key name with table name. Note, however,
-            // that they cannot have a schema.
-            //
-            string n (t.name ().uname () + "_" + fk.name ());
-
             pre_statement ();
-            os << "IF OBJECT_ID(" << quote_string (n) << ", " <<
+            os << "IF OBJECT_ID(" << quote_string (fk.name ()) << ", " <<
               quote_string ("F") << ") IS NOT NULL" << endl
                << "  ALTER TABLE " << quote_id (t.name ()) << " DROP" << endl
-               << "    CONSTRAINT " << quote_id (n) << endl;
+               << "    CONSTRAINT " << quote_id (fk.name ()) << endl;
             post_statement ();
           }
         }
@@ -206,18 +199,6 @@ namespace relational
 
             fk.set ("mssql-fk-defined", true); // Mark it as defined.
           }
-        }
-
-        virtual string
-        name (sema_rel::foreign_key& fk)
-        {
-          // In SQL Server, foreign key names are schema-global. Make them
-          // unique by prefixing the key name with table name. Note, however,
-          // that they cannot have a schema.
-          //
-          return quote_id (
-            static_cast<sema_rel::table&> (fk.scope ()).name ().uname ()
-            + "_" + fk.name ());
         }
 
         virtual void
