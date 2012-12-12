@@ -1017,7 +1017,7 @@ namespace relational
           // First resolve member names.
           //
           string tl;
-          cpp_ttype tt;
+          cpp_ttype tt (CPP_EOF);
 
           index::members_type::iterator j (in.members.begin ());
           for (; j != in.members.end (); ++j)
