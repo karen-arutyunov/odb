@@ -24,12 +24,12 @@
 
 // ODB interface version: minor, major, and alpha/beta versions.
 //
-#define ODB_VERSION     20101
-#define ODB_VERSION_STR "2.2.a1"
+#define ODB_VERSION     20102
+#define ODB_VERSION_STR "2.2.a2"
 
 // ODB compiler version: interface version plus the bugfix version.
 //
-#define ODB_COMPILER_VERSION     2019901
-#define ODB_COMPILER_VERSION_STR "2.2.0.a1"
+#define ODB_COMPILER_VERSION     2019902
+#define ODB_COMPILER_VERSION_STR "2.2.0.a2"
 
 #endif // ODB_VERSION_HXX
