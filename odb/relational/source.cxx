@@ -2006,7 +2006,8 @@ traverse_object (type& c)
     else
       os << "callback (db, obj, callback_event::post_load);";
 
-    os << "}"
+    os << "pointer_cache_traits::initialize (ig.position ());"
+       << "}"
        << "else" << endl
        << rsts << ".delay_load (id, obj, ig.position ()" <<
       (poly ? ", pi.delayed_loader" : "") << ");"
@@ -2089,8 +2090,9 @@ traverse_object (type& c)
       if (delay_freeing_statement_result)
         os << "auto_result ar (st);";
 
-      os << "reference_cache_traits::insert_guard ig (" << endl
+      os << "reference_cache_traits::position_type pos (" << endl
          << "reference_cache_traits::insert (db, id, obj));"
+         << "reference_cache_traits::insert_guard ig (pos);"
          << endl
          << "callback (db, obj, callback_event::pre_load);"
          << "init (obj, sts.image (), &db);";
@@ -2104,6 +2106,7 @@ traverse_object (type& c)
          << rsts << ".load_delayed ();"
          << "l.unlock ();"
          << "callback (db, obj, callback_event::post_load);"
+         << "reference_cache_traits::initialize (pos);"
          << "ig.release ();"
          << "return true;";
     }
