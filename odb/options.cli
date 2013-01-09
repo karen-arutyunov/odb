@@ -181,6 +181,17 @@ class options
      directive to the generated code."
   };
 
+  std::string --session-type = "odb::session"
+  {
+    "<type>",
+    "Use <type> as the alternative session type instead of the default
+     \cb{odb::session}. This option can be used to specify a custom
+     session implementation to be use by the persistent classes. Note
+     that you will also need to include the definition of the custom
+     session type into the generated header file. This is normally
+     achieved with the \cb{--hxx-prologue*} options."
+  };
+
   // The following option is "fake" in that it is actually handled by
   // argv_file_scanner. We have it here to get the documentation.
   //

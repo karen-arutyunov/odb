@@ -241,28 +241,35 @@ traverse_object (type& c)
     }
     else
     {
-      char const* p (session (c) ? "odb::" : "no_op_");
-
-      if (poly_derived)
+      char const* obj (poly_derived ? "root_type" : "object_type");
+      char const* ptr (poly_derived
+                       ? "object_traits<root_type>::pointer_type"
+                       : "pointer_type");
+      if (session (c))
       {
+        string const& s (options.session_type ());
+
         os << "typedef" << endl
-           << p << "pointer_cache_traits<" <<
-          "object_traits<root_type>::pointer_type>" << endl
+           << "odb::pointer_cache_traits<" << endl
+           << "  " << ptr << "," << endl
+           << "  " << s << " >" << endl
            << "pointer_cache_traits;"
            << endl
            << "typedef" << endl
-           << p << "reference_cache_traits<root_type>" << endl
+           << "odb::reference_cache_traits<" << endl
+           << "  " << obj << "," << endl
+           << "  " << s << " >" << endl
            << "reference_cache_traits;"
            << endl;
       }
       else
       {
         os << "typedef" << endl
-           << p << "pointer_cache_traits<pointer_type>" << endl
+           << "no_op_pointer_cache_traits<" << ptr << ">" << endl
            << "pointer_cache_traits;"
            << endl
            << "typedef" << endl
-           << p << "reference_cache_traits<object_type>" << endl
+           << "no_op_reference_cache_traits<" << obj << ">" << endl
            << "reference_cache_traits;"
            << endl;
       }
@@ -721,7 +728,12 @@ namespace header
     os << "#include <odb/container-traits.hxx>" << endl;
 
     if (ctx.features.session_object)
+    {
+      if (ctx.options.session_type () == "odb::session")
+        os << "#include <odb/session.hxx>" << endl;
+
       os << "#include <odb/cache-traits.hxx>" << endl;
+    }
     else
       os << "#include <odb/no-op-cache-traits.hxx>" << endl;
 
