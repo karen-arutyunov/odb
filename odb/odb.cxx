@@ -226,6 +226,16 @@ main (int argc, char* argv[])
     args.push_back ("g++");
 #endif // GXX_NAME
 
+    // Default options.
+    //
+    args.push_back ("-x");
+    args.push_back ("c++");
+    args.push_back (""); // Reserve space for -std=c++XX.
+    args.push_back ("-S");
+    args.push_back ("-Wunknown-pragmas");
+    args.push_back ("-Wno-deprecated");
+    args.push_back ("-fplugin=" + plugin.string ());
+
     // Parse the default options file if we have one.
     //
     strings def_inc_dirs;
@@ -246,14 +256,42 @@ main (int argc, char* argv[])
       const char* av[4] = {argv[0], "--file", file.string ().c_str (), 0};
       cli::argv_file_scanner s (ac, const_cast<char**> (av), "--file");
 
+      bool first_x (true);
+
       while (s.more ())
       {
         string a (s.next ());
         size_t n (a.size ());
 
+        // -x
+        //
+        if (a == "-x")
+        {
+          if (!s.more () || (a = s.next ()).empty ())
+          {
+            e << file << ": error: expected argument for the " << a
+              << " option" << endl;
+            return 1;
+          }
+
+          if (first_x)
+          {
+            first_x = false;
+
+            // If it doesn't start with '-', then it must be the g++
+            // executable name. Update the first argument with it.
+            //
+            if (a[0] != '-')
+              args[0] = a;
+            else
+              args.push_back (a);
+          }
+          else
+            args.push_back (a);
+        }
         // -I
         //
-        if (n > 1 && a[0] == '-' && a[1] == 'I')
+        else if (n > 1 && a[0] == '-' && a[1] == 'I')
         {
           def_inc_dirs.push_back (a);
 
@@ -328,16 +366,6 @@ main (int argc, char* argv[])
       }
     }
 #endif
-
-    // Default options.
-    //
-    args.push_back ("-x");
-    args.push_back ("c++");
-    args.push_back (""); // Reserve space for -std=c++XX.
-    args.push_back ("-S");
-    args.push_back ("-Wunknown-pragmas");
-    args.push_back ("-Wno-deprecated");
-    args.push_back ("-fplugin=" + plugin.string ());
 
     // Add the default preprocessor defines (-D/-U) before the user-supplied
     // ones.
