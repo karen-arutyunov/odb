@@ -525,6 +525,13 @@ traverse_object (type& c)
        << endl;
   }
 
+  // Index of the first empty SELECT statement in poly-derived
+  // statement list. All subsequent statements are also empty.
+  // The first statement can never be empty (contains id and
+  // type_id).
+  //
+  size_t empty_depth (0);
+
   if (id != 0)
   {
     instance<object_columns_list> id_cols;
@@ -551,38 +558,43 @@ traverse_object (type& c)
         find_column_counts[poly_depth - d] = sc.size ();
       }
 
-      os << strlit ("SELECT ") << endl;
-
-      for (statement_columns::const_iterator i (sc.begin ()),
-             e (sc.end ()); i != e;)
+      if (sc.size () != 0)
       {
-        string const& c (i->column);
-        os << strlit (c + (++i != e ? "," : "")) << endl;
-      }
+        os << strlit ("SELECT ") << endl;
 
-      os << strlit (" FROM " + qtable) << endl;
+        for (statement_columns::const_iterator i (sc.begin ()),
+               e (sc.end ()); i != e;)
+        {
+          string const& c (i->column);
+          os << strlit (c + (++i != e ? "," : "")) << endl;
+        }
 
-      if (poly_derived)
-      {
-        instance<polymorphic_object_joins> j (c, d);
+        os << strlit (" FROM " + qtable) << endl;
+
+        if (poly_derived)
+        {
+          instance<polymorphic_object_joins> j (c, d);
+          j->traverse (c);
+        }
+
+        bool f (false); // @@ (im)perfect forwarding
+        instance<object_joins> j (c, f, d); // @@ (im)perfect forwarding
         j->traverse (c);
+
+        instance<query_parameters> qp (table);
+        for (object_columns_list::iterator b (id_cols->begin ()), i (b);
+             i != id_cols->end (); ++i)
+        {
+          if (i != b)
+            os << endl;
+
+          os << strlit ((i == b ? " WHERE " : " AND ") +
+                        qtable + "." + quote_id (i->name) + "=" +
+                        convert_to (qp->next (), i->type, *i->member));
+        }
       }
-
-      bool f (false); // @@ (im)perfect forwarding
-      instance<object_joins> j (c, f, d); // @@ (im)perfect forwarding
-      j->traverse (c);
-
-      instance<query_parameters> qp (table);
-      for (object_columns_list::iterator b (id_cols->begin ()), i (b);
-           i != id_cols->end (); ++i)
-      {
-        if (i != b)
-          os << endl;
-
-        os << strlit ((i == b ? " WHERE " : " AND ") +
-                      qtable + "." + quote_id (i->name) + "=" +
-                      convert_to (qp->next (), i->type, *i->member));
-      }
+      else
+        os << strlit (""); // Empty SELECT statement.
 
       if (abst)
         break;
@@ -605,10 +617,13 @@ traverse_object (type& c)
       os << "const std::size_t " << traits << "::find_column_counts[] ="
          << "{";
 
-      for (std::vector<size_t>::iterator i (find_column_counts.begin ()),
-             e (find_column_counts.end ()); i != e;)
+      for (std::vector<size_t>::iterator b (find_column_counts.begin ()),
+             i (b), e (find_column_counts.end ()); i != e;)
       {
         os << *i << "UL";
+
+        if (*i == 0 && empty_depth == 0)
+          empty_depth = i - b;
 
         if (++i != e)
           os << ',' << endl;
@@ -2397,6 +2412,12 @@ traverse_object (type& c)
        << "d = depth - d;" // Convert to distance from derived.
        << endl;
 
+    // Avoid trying to execute an empty SELECT statement.
+    //
+    if (empty_depth != 0)
+      os << "if (d > " << (poly_depth - empty_depth) << "UL)"
+         << "{";
+
     os << "if (!find_ (sts, 0, d))" << endl
        << "throw object_not_persistent ();" // Database inconsistency.
        << endl;
@@ -2414,6 +2435,9 @@ traverse_object (type& c)
 
     if (delay_freeing_statement_result)
       os << "ar.free ();";
+
+    if (empty_depth != 0)
+      os << "}";
 
     os << "load_ (sts, obj, d);"
        << "}";
