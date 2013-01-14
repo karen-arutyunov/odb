@@ -37,22 +37,47 @@ namespace relational
       {
         object_columns (base const& x): base (x) {}
 
-        virtual void
+        virtual bool
         column (semantics::data_member& m,
                 string const& table,
                 string const& column)
         {
           // Don't add a column for auto id in the INSERT statement.
           //
-          if (!(sk_ == statement_insert &&
-                key_prefix_.empty () &&
-                context::id (m) && auto_(m))) // Only simple id can be auto.
+          if (sk_ == statement_insert &&
+              key_prefix_.empty () &&
+              context::id (m) && auto_(m)) // Only simple id can be auto.
+            return false;
+
+          // Don't update the ROWVERSION column explicitly.
+          //
+          if (sk_ == statement_update)
           {
-            base::column (m, table, column);
+            sql_type t (parse_sql_type (column_type (), m));
+            if (t.type == sql_type::ROWVERSION)
+              return false;
           }
+
+          return base::column (m, table, column);
         }
       };
       entry<object_columns> object_columns_;
+
+      //
+      //
+      struct persist_statement_params: relational::persist_statement_params,
+                                       context
+      {
+        persist_statement_params (base const& x): base (x) {}
+
+        virtual string
+        version_value (semantics::data_member& m)
+        {
+          sql_type t (parse_sql_type (column_type (), m));
+          return t.type == sql_type::ROWVERSION ? "DEFAULT" : "1";
+        }
+      };
+      entry<persist_statement_params> persist_statement_params_;
 
       //
       // bind
@@ -863,20 +888,32 @@ namespace relational
                                  relational::query_parameters&,
                                  persist_position p)
         {
-          semantics::data_member* id (id_member (c));
-
           type* poly_root (polymorphic (c));
           bool poly_derived (poly_root != 0 && poly_root != &c);
 
-          if (id == 0 || poly_derived || !auto_ (*id))
+          // If we are a derived type in a polymorphic hierarchy, then
+          // auto id/version are handled by the root.
+          //
+          if (poly_derived)
             return;
 
-          // If we are a derived type in a polymorphic hierarchy, then
-          // auto id is handled by the root.
+          // See if we have auto id or ROWVERSION version.
           //
-          if (type* root = polymorphic (c))
-            if (root != &c)
-              return;
+          semantics::data_member* id (id_member (c));
+          semantics::data_member* ver (optimistic (c));
+
+          if (id != 0 && !auto_ (*id))
+            id = 0;
+
+          if (ver != 0)
+          {
+            sql_type t (parse_sql_type (column_type (*ver), *ver));
+            if (t.type != sql_type::ROWVERSION)
+              ver = 0;
+          }
+
+          if (id == 0 && ver == 0)
+            return;
 
           // SQL Server 2005 has a bug that causes it to fail on an
           // INSERT statement with the OUTPUT clause if data for one
@@ -900,9 +937,22 @@ namespace relational
             if (ld)
             {
               if (p == persist_after_values)
+              {
+                // SQL Server 2005 has no eqivalent of SCOPE_IDENTITY for
+                // ROWVERSION.
+                //
+                if (ver != 0)
+                {
+                  error (c.location ()) << "in SQL Server 2005 ROWVERSION " <<
+                    "value cannot be retrieved for a persistent class " <<
+                    "containing long data" << endl;
+                  throw operation_failed ();
+                }
+
                 os << endl
                    << strlit ("; SELECT " +
                               convert_from ("SCOPE_IDENTITY()", *id));
+              }
 
               return;
             }
@@ -910,13 +960,54 @@ namespace relational
 
           if (p == persist_after_columns)
           {
-            // Top-level auto id.
+            string s (" OUTPUT ");
+
+            // Top-level auto id column.
             //
-            os << strlit (
-              " OUTPUT " + convert_from (
-                "INSERTED." + column_qname (
-                  *id, column_prefix ()), *id)) << endl;
+            if (id != 0)
+              s += "INSERTED." + convert_from (
+                column_qname (*id, column_prefix ()), *id);
+
+            // Top-level version column.
+            //
+            if (ver != 0)
+            {
+              if (id != 0)
+                s += ',';
+
+              s += "INSERTED." + convert_from (
+                column_qname (*ver, column_prefix ()), *ver);
+            }
+
+            os << strlit (s) << endl;
           }
+        }
+
+        virtual void
+        update_statement_extra (type& c)
+        {
+          type* poly_root (polymorphic (c));
+          bool poly_derived (poly_root != 0 && poly_root != &c);
+
+          // If we are a derived type in a polymorphic hierarchy, then
+          // version is handled by the root.
+          //
+          if (poly_derived)
+            return;
+
+          semantics::data_member* ver (optimistic (c));
+
+          if (ver == 0 ||
+              parse_sql_type (column_type (*ver), *ver).type !=
+              sql_type::ROWVERSION)
+            return;
+
+          // Long data & SQL Server 2005 incompatibility is detected
+          // in persist_statement_extra.
+          //
+          os << strlit (
+            " OUTPUT INSERTED." + convert_from (
+              column_qname (*ver, column_prefix ()), *ver)) << endl;
         }
 
         virtual void
@@ -924,6 +1015,22 @@ namespace relational
                                    statement_kind sk)
         {
           statement_columns_common::process (cols, sk);
+        }
+
+        virtual string
+        optimimistic_version_init (semantics::data_member& m)
+        {
+          sql_type t (parse_sql_type (column_type (m), m));
+          return t.type != sql_type::ROWVERSION ? "1" : "st.version ()";
+        }
+
+        virtual string
+        optimimistic_version_increment (semantics::data_member& m)
+        {
+          sql_type t (parse_sql_type (column_type (m), m));
+          return t.type != sql_type::ROWVERSION
+            ? "1"
+            : "sts.update_statement ().version ()";
         }
       };
       entry<class_> class_entry_;

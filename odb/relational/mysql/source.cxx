@@ -66,7 +66,7 @@ namespace relational
       {
         object_columns (base const& x): base (x) {}
 
-        virtual void
+        virtual bool
         column (semantics::data_member& m,
                 string const& table,
                 string const& column)
@@ -114,8 +114,7 @@ namespace relational
           if (sk_ != statement_select ||
               parse_sql_type (type, m).type != sql_type::ENUM)
           {
-            base::column (m, table, column);
-            return;
+            return base::column (m, table, column);
           }
 
           // Qualified column and conversion expression.
@@ -133,6 +132,7 @@ namespace relational
 
           sc_.push_back (
             relational::statement_column (table, r, type, m, key_prefix_));
+          return true;
         }
       };
       entry<object_columns> object_columns_;
@@ -141,7 +141,7 @@ namespace relational
       {
         view_columns (base const& x): base (x) {}
 
-        virtual void
+        virtual bool
         column (semantics::data_member& m,
                 string const& table,
                 string const& column)
@@ -152,8 +152,7 @@ namespace relational
 
           if (parse_sql_type (type, m).type != sql_type::ENUM)
           {
-            base::column (m, table, column);
-            return;
+            return base::column (m, table, column);
           }
 
           // Column and conversion expression.
@@ -162,6 +161,7 @@ namespace relational
 
           string r ("CONCAT(" + c + "+0,' '," + c + ")");
           sc_.push_back (relational::statement_column (table, r, type, m));
+          return true;
         }
       };
       entry<view_columns> view_columns_;

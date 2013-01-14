@@ -220,12 +220,10 @@ namespace relational
             sk_ == statement_update)
           return false;
 
-        column (m, table_name_, quote_id (name));
-
-        return true;
+        return column (m, table_name_, quote_id (name));
       }
 
-      virtual void
+      virtual bool
       column (semantics::data_member& m,
               string const& table,
               string const& column)
@@ -259,6 +257,7 @@ namespace relational
           r = convert_from (r, sqlt, m);
 
         sc_.push_back (statement_column (table, r, sqlt, m, key_prefix_));
+        return true;
       }
 
     protected:
@@ -426,14 +425,13 @@ namespace relational
           throw operation_failed ();
         }
 
-        column (m, tbl, col);
-        return true;
+        return column (m, tbl, col);
       }
 
       // The column argument is a qualified and quoted column or
       // expression.
       //
-      virtual void
+      virtual bool
       column (semantics::data_member& m,
               string const& table,
               string const& column)
@@ -442,6 +440,7 @@ namespace relational
         sc_.push_back (
           statement_column (
             table, convert_from (column, sqlt, m), sqlt, m));
+        return true;
       }
 
     protected:
@@ -3262,7 +3261,7 @@ namespace relational
         string p;
 
         if (version (m))
-          p = "1";
+          p = version_value (m);
         else if (context::id (m) && auto_ (m)) // Only simple id can be auto.
           p = qp_.auto_id ();
         else
@@ -3277,6 +3276,12 @@ namespace relational
         }
 
         return !p.empty ();
+      }
+
+      virtual string
+      version_value (semantics::data_member&)
+      {
+        return "1";
       }
 
     private:
@@ -3406,6 +3411,11 @@ namespace relational
       {
       }
 
+      virtual void
+      update_statement_extra (type&)
+      {
+      }
+
       //
       // common
       //
@@ -3446,6 +3456,20 @@ namespace relational
         os << "conn," << endl
            << "erase_query_statement + q.clause ()," << endl
            << "q.parameters_binding ()";
+      }
+
+      virtual string
+      optimimistic_version_init (semantics::data_member&)
+      {
+        return "1";
+      }
+
+      // Returning "1" means incremenet by one.
+      //
+      virtual string
+      optimimistic_version_increment (semantics::data_member&)
+      {
+        return "1";
       }
 
       virtual void

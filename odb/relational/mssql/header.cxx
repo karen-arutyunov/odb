@@ -15,6 +15,38 @@ namespace relational
     {
       namespace relational = relational::header;
 
+      struct class1: relational::class1, context
+      {
+        class1 (base const& x): base (x) {}
+
+        virtual void
+        object_public_extra_pre (type& c)
+        {
+          bool abst (abstract (c));
+
+          type* poly_root (polymorphic (c));
+          bool poly (poly_root != 0);
+          bool poly_derived (poly && poly_root != &c);
+
+          if (poly_derived || (abst && !poly))
+            return;
+
+          // rowvesion
+          //
+          bool rv (false);
+          if (semantics::data_member* m = optimistic (c))
+          {
+            sql_type t (parse_sql_type (column_type (*m), *m));
+            rv = (t.type == sql_type::ROWVERSION);
+          }
+
+          os << "static const bool rowversion = " <<
+            (rv ? "true" : "false") << ";"
+             << endl;
+        }
+      };
+      entry<class1> class1_entry_;
+
       struct image_type: relational::image_type, context
       {
         image_type (base const& x): base (x) {};

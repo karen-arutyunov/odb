@@ -687,6 +687,8 @@ traverse_object (type& c)
         os << strlit (c + (++i != e ? "," : "")) << endl;
       }
 
+      update_statement_extra (c);
+
       for (object_columns_list::iterator b (id_cols->begin ()), i (b);
            i != id_cols->end (); ++i)
       {
@@ -980,12 +982,13 @@ traverse_object (type& c)
     // If we don't have auto id, then obj is a const reference.
     //
     string obj (auto_id ? "obj" : "const_cast< object_type& > (obj)");
+    string init (optimimistic_version_init (*opt));
 
     if (!opt_ma_set->synthesized)
       os << "// From " << location_string (opt_ma_set->loc, true) << endl;
 
     if (opt_ma_set->placeholder ())
-      os << opt_ma_set->translate (obj, "1") << ";"
+      os << opt_ma_set->translate (obj, init) << ";"
          << endl;
     else
     {
@@ -1002,7 +1005,7 @@ traverse_object (type& c)
       if (cast)
         os << ")";
 
-      os << " = 1;"
+      os << " = " << init << ";"
          << endl;
     }
   }
@@ -1397,6 +1400,7 @@ traverse_object (type& c)
         // constness.
         //
         string obj ("const_cast< object_type& > (obj)");
+        string inc (optimimistic_version_increment (*opt));
 
         if (!opt_ma_set->synthesized)
           os << "// From " << location_string (opt_ma_set->loc, true) << endl;
@@ -1407,9 +1411,13 @@ traverse_object (type& c)
             os << "// From " << location_string (opt_ma_get->loc, true) <<
               endl;
 
-          os << opt_ma_set->translate (
-            obj, opt_ma_get->translate ("obj") + " + 1") << ";"
-             << endl;
+          if (inc == "1")
+            os << opt_ma_set->translate (
+              obj, opt_ma_get->translate ("obj") + " + 1") << ";";
+          else
+            os << opt_ma_set->translate (obj, inc) << ";";
+
+          os << endl;
         }
         else
         {
@@ -1426,8 +1434,12 @@ traverse_object (type& c)
           if (cast)
             os << ")";
 
-          os << "++;"
-             << endl;
+          if (inc == "1")
+            os << "++;";
+          else
+            os << " = " << inc << ";";
+
+          os << endl;
         }
       }
 
