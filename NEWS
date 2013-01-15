@@ -33,6 +33,10 @@ Version 2.2.0
    released when commit()/rollback() is called rather than when the
    transaction instance goes out of scope.
 
+ * Support for SQL Server ROWVERSION-based optimistic concurrency. For more
+   information, refer to Section 18.1.1, "ROWVERSION Support" in the ODB
+   manual.
+
 Version 2.1.0
 
  * The ODB compiler is now capable of automatically discovering accessor and

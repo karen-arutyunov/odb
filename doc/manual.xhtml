@@ -690,7 +690,13 @@ for consistency.
     <tr>
       <th>18</th><td><a href="#18">Microsoft SQL Server Database</a>
         <table class="toc">
-          <tr><th>18.1</th><td><a href="#18.1">SQL Server Type Mapping</a></td></tr>
+          <tr>
+            <th>18.1</th><td><a href="#18.1">SQL Server Type Mapping</a>
+              <table class="toc">
+                <tr><th>18.1.1</th><td><a href="#18.1.1"><code>ROWVERSION</code> Support</a></td></tr>
+              </table>
+            </td>
+          </tr>
           <tr><th>18.2</th><td><a href="#18.2">SQL Server Database Class</a></td></tr>
           <tr><th>18.3</th><td><a href="#18.3">SQL Server Connection and Connection Factory</a></td></tr>
 	  <tr><th>18.4</th><td><a href="#18.4">SQL Server Exceptions</a></td></tr>
@@ -702,7 +708,7 @@ for consistency.
 		<tr><th>18.5.3</th><td><a href="#18.5.3">Unique Constraint Violations</a></td></tr>
 		<tr><th>18.5.4</th><td><a href="#18.5.4">Multi-threaded Windows Applications</a></td></tr>
 		<tr><th>18.5.5</th><td><a href="#18.5.5">Affected Row Count and DDL Statements</a></td></tr>
-		<tr><th>18.5.6</th><td><a href="#18.5.6">Long Data and Automatically Assigned Object Ids</a></td></tr>
+		<tr><th>18.5.6</th><td><a href="#18.5.6">Long Data and Auto Object Ids, <code>ROWVERSION</code></a></td></tr>
 		<tr><th>18.5.7</th><td><a href="#18.5.7">Long Data and By-Value Accessors/Modifiers</a></td></tr>
               </table>
             </td>
@@ -17874,6 +17880,35 @@ t.commit ();
      For more information, refer to <a href="#12.7">Section 12.7, "Database
      Type Mapping Pragmas"</a>.</p>
 
+  <h3><a name="18.1.1">18.1.1 <code>ROWVERSION</code> Support</a></h3>
+
+  <p><code>ROWVERSION</code> is a special SQL Server data type that is
+     automatically incremented by the database server whenever a row
+     is inserted or updated. As such, it is normally used to implement
+     optimistic concurrency and ODB provides support for using
+     <code>ROWVERSION</code> instead of the more portable approach
+     for optimistic concurrency (<a href="#11">Chapter 11, "Optimistic
+     Concurrency"</a>).</p>
+
+  <p><code>ROWVERSION</code> is a 64-bit value which is mapped by ODB
+     to <code>unsigned long long</code>. As a result, to use
+     <code>ROWVERSION</code> for optimistic concurrency we need to
+     make sure that the version column is of the <code>unsigned long
+     long</code> type. We also need to explicitly specify that it
+     should be mapped to the <code>ROWVERSION</code> data type. For
+     example:</p>
+
+  <pre class="cxx">
+#pragma db object optimistic
+class person
+{
+  ...
+
+  #pragma db version type("ROWVERSION")
+  unsigned long long version_;
+};
+  </pre>
+
   <h2><a name="18.2">18.2 SQL Server Database Class</a></h2>
 
   <p>The SQL Server <code>database</code> class encapsulates the ODBC
@@ -18515,23 +18550,32 @@ namespace odb
      "Executing Native SQL Statements"</a>) function will always
      return zero for such statements.</p>
 
-  <h3><a name="18.5.6">18.5.6 Long Data and Automatically Assigned Object Ids</a></h3>
+  <h3><a name="18.5.6">18.5.6 Long Data and Auto Object Ids, <code>ROWVERSION</code></a></h3>
 
   <p>SQL Server 2005 has a bug that causes it to fail on an <code>INSERT</code>
-     statement with the <code>OUTPUT</code> clause (used to return
-     automatically assigned object ids) if one of the inserted columns
+     or <code>UPDATE</code> statement with the <code>OUTPUT</code> clause
+     (used to return automatically assigned object ids as well as
+      <code>ROWVERSION</code> values) if one of the inserted columns
      is long data. The symptom of this bug in ODB is an exception thrown
-     by the <code>database::persist()</code> function when used on an
-     object that contains long data and has an automatically assigned
-     object id. The error message reads "This operation conflicts with
-     another pending operation on this transaction. The operation failed."</p>
+     by the <code>database::persist()</code> or <code>database::update()</code>
+     function when used on an object that contains long data and has an
+     automatically assigned object id or uses <code>ROWVERSION</code>-based
+     optimistic concurrency (<a href="#18.1.1">Section 18.1.1,
+     "<code>ROWVERSION</code> Support"</a>). The error message reads "This
+     operation conflicts with another pending operation on this transaction.
+     The operation failed."</p>
 
-  <p>ODB includes a workaround for this bug which uses a less efficient
-     method to obtain automatically assigned object ids for objects that
-     contain long data. To enable this workaround you need to specify
-     that the generated code will be used with SQL Server 2005 or later
-     by passing the <code>--mssql-server-version&nbsp;9.0</code> ODB
-     compiler option.</p>
+  <p>For automatically assigned object ids ODB includes a workaround for
+     this bug which uses a less efficient method to obtain id values for
+     objects that contain long data. To enable this workaround you need
+     to specify that the generated code will be used with SQL Server 2005
+     or later by passing the <code>--mssql-server-version&nbsp;9.0</code>
+     ODB compiler option.</p>
+
+  <p>For <code>ROWVERSION</code>-based optimistic concurrency no workaround
+     is currently provided. The ODB compiler will issue an error for
+     objects that use <code>ROWVERSION</code> for optimistic concurrency
+     and containing long data.</p>
 
   <h3><a name="18.5.7">18.5.7 Long Data and By-Value Accessors/Modifiers</a></h3>
 
