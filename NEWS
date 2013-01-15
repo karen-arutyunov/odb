@@ -37,6 +37,10 @@ Version 2.2.0
    information, refer to Section 18.1.1, "ROWVERSION Support" in the ODB
    manual.
 
+ * Support for specifying SQL Server transaction isolation level. For more
+   information, refer to Section 18.2, "SQL Server Database Class" in the
+   ODB manual.
+
 Version 2.1.0
 
  * The ODB compiler is now capable of automatically discovering accessor and

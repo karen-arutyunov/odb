@@ -17929,15 +17929,28 @@ namespace odb
       protocol_np   // Named pipes.
     };
 
+    enum transaction_isolation
+    {
+      isolation_read_uncommitted,
+      isolation_read_committed,   // SQL Server default.
+      isolation_repeatable_read,
+      isolation_snapshot,
+      isolation_serializable
+    };
+
     class database: public odb::database
     {
     public:
+      typedef protocol protocol_type;
+      typedef transaction_isolation transaction_isolation_type;
+
       database (const std::string&amp; user,
                 const std::string&amp; password,
                 const std::string&amp; db,
                 const std::string&amp; server,
                 const std::string&amp; driver = "",
                 const std::string&amp; extra_connect_string = "",
+                transaction_isolation_type = isolation_read_committed,
                 SQLHENV environment = 0,
                 std::[auto|unique]_ptr&lt;connection_factory> = 0);
 
@@ -17949,6 +17962,7 @@ namespace odb
                 const std::string&amp; instance = "",
                 const std::string&amp; driver = "",
                 const std::string&amp; extra_connect_string = "",
+                transaction_isolation_type = isolation_read_committed,
                 SQLHENV environment = 0,
                 std::[auto|unique]_ptr&lt;connection_factory> = 0);
 
@@ -17959,10 +17973,12 @@ namespace odb
                 unsigned int port,
                 const std::string&amp; driver = "",
                 const std::string&amp; extra_connect_string = "",
+                transaction_isolation_type = isolation_read_committed,
                 SQLHENV environment = 0,
                 std::[auto|unique]_ptr&lt;connection_factory> = 0);
 
       database (const std::string&amp; connect_string,
+                transaction_isolation_type = isolation_read_committed,
                 SQLHENV environment = 0,
                 std::[auto|unique]_ptr&lt;connection_factory> = 0);
 
@@ -17970,6 +17986,7 @@ namespace odb
                 char* argv[],
                 bool erase = false,
                 const std::string&amp; extra_connect_string = "",
+                transaction_isolation_type = isolation_read_committed,
                 SQLHENV environment = 0,
                 std::[auto|unique]_ptr&lt;connection_factory> = 0);
 
@@ -18006,6 +18023,9 @@ namespace odb
 
       const std::string&amp;
       extra_connect_string () const;
+
+      transaction_isolation_type
+      transaction_isolation () const;
 
       const std::string&amp;
       connect_string () const;
@@ -18192,13 +18212,16 @@ odb::mssql::database dbA ("test",
   <p>The static <code>print_usage()</code> function prints the list of options
      with short descriptions that are recognized by this constructor.</p>
 
-  <p>Additionally, all the constructors have the <code>environment</code>
-     argument which allows us to provide a custom ODBC environment handle.
-     If this argument is not <code>NULL</code>, then the passed handle is
-     used in all the ODBC function calls made by this <code>database</code>
-     class instance. Note also that the <code>database</code> instance
-     does not assume ownership of the passed environment handle and this
-     handle should be valid for the lifetime of the <code>database</code>
+  <p>Additionally, all the constructors have the <code>transaction_isolation</code>
+     and <code>environment</code> arguments. The <code>transaction_isolation</code>
+     argument allows us to specify an alternative transaction isolation level
+     that should be used by all the connections created by this database instance.
+     The <code>environment</code> argument allows us to provide a custom ODBC
+     environment handle. If this argument is not <code>NULL</code>, then the
+     passed handle is used in all the ODBC function calls made by this
+     <code>database</code> instance. Note also that the <code>database</code>
+     instance does not assume ownership of the passed environment handle and
+     this handle should be valid for the lifetime of the <code>database</code>
      instance.</p>
 
   <p>The last argument to all of the constructors is a pointer to the
