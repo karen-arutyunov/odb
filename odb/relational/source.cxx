@@ -1463,9 +1463,14 @@ traverse_object (type& c)
       if (!abst) // If we are poly-abstract, then top will always be false.
       {
         if (poly)
-          os << "if (top)" << endl;
+          os << "if (top)"
+             << "{";
 
-        os << "callback (db, obj, callback_event::post_update);";
+        os << "callback (db, obj, callback_event::post_update);"
+           << "pointer_cache_traits::update (db, obj);";
+
+        if (poly)
+          os << "}";
       }
     } // readonly
 
@@ -2006,7 +2011,7 @@ traverse_object (type& c)
     else
       os << "callback (db, obj, callback_event::post_load);";
 
-    os << "pointer_cache_traits::initialize (ig.position ());"
+    os << "pointer_cache_traits::load (ig.position ());"
        << "}"
        << "else" << endl
        << rsts << ".delay_load (id, obj, ig.position ()" <<
@@ -2106,7 +2111,7 @@ traverse_object (type& c)
          << rsts << ".load_delayed ();"
          << "l.unlock ();"
          << "callback (db, obj, callback_event::post_load);"
-         << "reference_cache_traits::initialize (pos);"
+         << "reference_cache_traits::load (pos);"
          << "ig.release ();"
          << "return true;";
     }
