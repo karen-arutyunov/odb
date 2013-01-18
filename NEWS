@@ -8,7 +8,7 @@ Version 2.2.0
    via a common interface. Dynamic multi-database supports also allows the
    application to dynamically load the database support code for individual
    databases if and when necessary. For more information, refer to Chapter
-   13, "Multi-Database Support" in the ODB manual.
+   14, "Multi-Database Support" in the ODB manual.
 
  * Support for prepared queries. Prepared queries are a thin wrapper around
    the underlying database system's prepared statements functionality. They
@@ -29,16 +29,20 @@ Version 2.2.0
  * New options, --export-symbol and --extern-symbol, allow DLL exporting of
    the generated database support code.
 
+ * Support for transaction post-commit/rollback callbacks. For more
+   information, refer to Section 13.1, "Transaction Callbacks" in the ODB
+   manual.
+
  * Support for early connection release. Now the database connection is
    released when commit()/rollback() is called rather than when the
    transaction instance goes out of scope.
 
  * Support for SQL Server ROWVERSION-based optimistic concurrency. For more
-   information, refer to Section 18.1.1, "ROWVERSION Support" in the ODB
+   information, refer to Section 19.1.1, "ROWVERSION Support" in the ODB
    manual.
 
  * Support for specifying SQL Server transaction isolation level. For more
-   information, refer to Section 18.2, "SQL Server Database Class" in the
+   information, refer to Section 19.2, "SQL Server Database Class" in the
    ODB manual.
 
 Version 2.1.0
