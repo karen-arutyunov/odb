@@ -33,6 +33,9 @@ Version 2.2.0
    information, refer to Section 13.1, "Transaction Callbacks" in the ODB
    manual.
 
+ * Support for custom session implementations. For more information, refer
+   to Section 10.2, "Custom Session" in the ODB manual.
+
  * Support for early connection release. Now the database connection is
    released when commit()/rollback() is called rather than when the
    transaction instance goes out of scope.

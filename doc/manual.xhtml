@@ -438,6 +438,7 @@ for consistency.
       <th>10</th><td><a href="#10">Session</a>
         <table class="toc">
           <tr><th>10.1</th><td><a href="#10.1">Object Cache</a></td></tr>
+	  <tr><th>10.2</th><td><a href="#10.2">Custom Session</a></td></tr>
         </table>
       </td>
     </tr>
@@ -9270,8 +9271,12 @@ struct employee_name
 
   <p>A session is an application's unit of work that may encompass several
      database transactions. In this version of ODB a session is just an
-     object cache. In future versions it will provide additional
-     functionality, such as automatic object state change tracking.</p>
+     object cache. In future versions it may provide additional
+     functionality, such as delayed database operations and automatic
+     object state change tracking. As discussed later in
+     <a href="#10.2">Section 10.2, "Custom Session"</a>, it is also
+     possible to provide a custom session implementation that provides
+     these or other features.</p>
 
   <p>Session support is optional and can be enabled or disabled on the
      per object basis using the <code>db&nbsp;session</code> pragma, for
@@ -9386,24 +9391,35 @@ namespace odb
     static void
     reset_current ();
 
+    static session*
+    current_pointer ();
+
+    static void
+    current_pointer (session*);
+
     // Object cache interface.
     //
   public:
-    typedef odb::database database_type;
+    template &lt;typename T>
+    struct cache_position {...};
 
     template &lt;typename T>
-    void
-    insert (database_type&amp;,
-            const object_traits&lt;T>::id_type&amp;,
-            const object_traits&lt;T>::pointer_type&amp;);
+    cache_position&lt;T>
+    cache_insert (database&amp;,
+                  const object_traits&lt;T>::id_type&amp;,
+                  const object_traits&lt;T>::pointer_type&amp;);
 
     template &lt;typename T>
     object_traits&lt;T>::pointer_type
-    find (database_type&amp;, const object_traits&lt;T>::id_type&amp;) const;
+    cache_find (database&amp;, const object_traits&lt;T>::id_type&amp;) const;
 
     template &lt;typename T>
     void
-    erase (database_type&amp;, const object_traits&lt;T>::id_type&amp;);
+    cache_erase (const cache_position&lt;T>&amp;);
+
+    template &lt;typename T>
+    void
+    cache_erase (database&amp;, const object_traits&lt;T>::id_type&amp;);
   };
 }
   </pre>
@@ -9428,9 +9444,22 @@ namespace odb
      allow for more advanced use cases, such as multiplexing
      two or more sessions on the same thread.</p>
 
+  <p>The static <code>current_pointer()</code> overloaded functions
+     provided the same functionality but using pointers. Specifically,
+     the <code>current_pointer()</code> accessor can be used to
+     test whether there is a current session and get a pointer to it
+     all with a single call.</p>
+
   <p>We normally don't use the object cache interface directly. However,
      it could be useful in some cases, for example, to find out whether
-     an object has already been loaded.</p>
+     an object has already been loaded. Note that when calling
+     <code>cache_insert()</code>, <code>cache_find()</code>, or
+     the second version of <code>cache_erase()</code>, you need to
+     specify the template argument (object type) explicitly. It is
+     also possible to access the underlying cache data structures
+     directly. This can be useful if, for example, you want to
+     iterate over the objects store in the cache. Refer to the ODB
+     runtime header files for more details on this direct access.</p>
 
   <h2><a name="10.1">10.1 Object Cache</a></h2>
 
@@ -9513,6 +9542,122 @@ unsigned long id2 (save (db, p2)); // p2 is cached in s as non-const.
   t.commit ();
 }
   </pre>
+
+  <h2><a name="10.2">10.2 Custom Session</a></h2>
+
+  <p>ODB can use a custom session implementation instead of the
+     default <code>odb::session</code>. There could be multiple
+     reasons for an application to provide its own session. For
+     example, the application may already include a notion of an
+     object cache or registry which ODB can re-use. A custom
+     session can also provide additional functionality, such as
+     automatic change tracking, delayed database operations, or
+     object eviction. Finally, the session-per-thread approach used
+     by <code>odb::session</code> may not be suitable for all
+     applications. For instance, some may need a thread-safe
+     session that can be shared among multiple threads. For
+     an example of a custom session that implements automatic
+     change tracking by keeping original copies of the objects,
+     refer to the <code>common/session/custom</code> test
+     in the <code>odb-tests</code> package.</p>
+
+  <p>To use a custom session we need to specify its type with
+     the <code>--session-type</code> ODB compiler command line
+     option. We also need to include its definition into the
+     generated header file. This can be achieved with the
+     <code>--hxx-prologue</code> option. For example, if our
+     custom session is called <code>app::session</code> and
+     is defined in the <code>app/session.hxx</code> header
+     file, then the corresponding ODB compiler options would
+     look like this:</p>
+
+  <pre class="terminal">
+odb --hxx-prologue "#include \"app/session.hxx\"" \
+--session-type ::app::session ...
+  </pre>
+
+  <p>A custom session should provide the following interface:</p>
+
+  <pre class="cxx">
+class custom_session
+{
+public:
+  template &lt;typename T>
+  struct cache_position
+  {
+    ...
+  };
+
+  // Cache management functions.
+  //
+  template &lt;typename T>
+  static cache_position&lt;T>
+  _cache_insert (odb::database&amp;,
+                 const typename odb::object_traits&lt;T>::id_type&amp;,
+                 const typename odb::object_traits&lt;T>::pointer_type&amp;);
+
+  template &lt;typename T>
+  static typename odb::object_traits&lt;T>::pointer_type
+  _cache_find (odb::database&amp;,
+               const typename odb::object_traits&lt;T>::id_type&amp;);
+
+  template &lt;typename T>
+  static void
+  _cache_erase (const cache_position&lt;T>&amp;);
+
+  // Notification functions.
+  //
+  template &lt;typename T>
+  static void
+  _cache_persist (const cache_position&lt;T>&amp;);
+
+  template &lt;typename T>
+  static void
+  _cache_load (const cache_position&lt;T>&amp;);
+
+  template &lt;typename T>
+  static void
+  _cache_update (odb::database&amp;, const T&amp; obj);
+
+  template &lt;typename T>
+  static void
+  _cache_erase (odb::database&amp;,
+                const typename odb::object_traits&lt;T>::id_type&amp;);
+};
+  </pre>
+
+  <p>The <code>cache_position</code> class template represent a position
+     in the cache of the inserted object. It should be default and
+     copy-constructible as well as copy-assignable. The default
+     constructor shall create a special empty/<code>NULL</code>
+     position. A call of any of the cache management or notification
+     functions with such an empty/<code>NULL</code> position shall be
+     ignored.</p>
+
+  <p>The <code>_cache_insert()</code> function shall add the object into
+     the object cache and return its position. The <code>_cache_find()</code>
+     function looks an object up in the object cache given its id.
+     It returns a <code>NULL</code> pointer if the object is not
+     found. The <code>_cache_erase()</code> cache management function
+     shall remove the object from the cache. It is called
+     if the database operation that caused the object to be inserted
+     (for example, load) failed. Note also that after insertion the object
+     state is undefined. You can only access the object state
+     (for example, make a copy or clear a flag) from one of the
+     notification functions discussed below.</p>
+
+  <p>The notification functions are called after an object has
+     been persisted, loaded, updated, or erased, respectively. If
+     your session implementation does not need some of the
+     notifications, you still have to provide their functions,
+     however, you can leave their implementations empty.</p>
+
+  <p>Notice also that all the cache management and notification
+     functions are static. This is done in order to allow for a
+     custom notion of a current session. Normally, the first
+     step a non-empty implementation will perform is lookup the
+     current session.</p>
+
 
   <!-- CHAPTER -->
 
