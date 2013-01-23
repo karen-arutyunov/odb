@@ -1087,7 +1087,8 @@ public:
   // Per-database customizable functionality.
   //
 protected:
-  // Return empty string if there is no mapping.
+  // Return empty string if there is no mapping. The type passed is
+  // already cvr-unqualified.
   //
   string
   database_type (semantics::type& t, semantics::names* hint, bool id)
