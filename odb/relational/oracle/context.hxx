@@ -121,7 +121,7 @@ namespace relational
 
     protected:
       virtual string
-      database_type_impl (semantics::type&, semantics::names*, bool);
+      database_type_impl (semantics::type&, semantics::names*, bool, bool*);
 
     public:
       virtual

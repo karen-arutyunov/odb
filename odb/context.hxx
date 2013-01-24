@@ -1088,19 +1088,23 @@ public:
   //
 protected:
   // Return empty string if there is no mapping. The type passed is
-  // already cvr-unqualified.
+  // already cvr-unqualified. The null out argument indicates whether
+  // the column should allow NULL values by default.
   //
   string
-  database_type (semantics::type& t, semantics::names* hint, bool id)
+  database_type (semantics::type& t,
+                 semantics::names* hint,
+                 bool id,
+                 bool* null = 0)
   {
-    return current ().database_type_impl (t, hint, id);
+    return current ().database_type_impl (t, hint, id, null);
   }
 
   // The default implementation uses the type map (populated by the database-
   // specific context implementation) to come up with a mapping.
   //
   virtual string
-  database_type_impl (semantics::type&, semantics::names*, bool);
+  database_type_impl (semantics::type&, semantics::names*, bool, bool*);
 
 public:
   typedef context root_context;

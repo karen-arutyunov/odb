@@ -720,13 +720,6 @@ null (semantics::data_member& m) const
         }
         else
           pt = &t;
-
-        // See if this is one of the types with built-in mapping.
-        //
-        type_map_type::const_iterator i (data_->type_map_.find (*pt, hint));
-
-        if (i != data_->type_map_.end ())
-          return i->second.null;
       }
     }
 
@@ -811,13 +804,6 @@ null (semantics::data_member& m, string const& kp) const
           }
           else
             pt = &t;
-
-          // See if this is one of the types with built-in mapping.
-          //
-          type_map_type::const_iterator i (data_->type_map_.find (*pt, hint));
-
-          if (i != data_->type_map_.end ())
-            return i->second.null;
         }
       }
     }
@@ -1749,12 +1735,19 @@ find (semantics::type& t, semantics::names* hint)
 }
 
 string context::
-database_type_impl (semantics::type& t, semantics::names* hint, bool id)
+database_type_impl (semantics::type& t,
+                    semantics::names* hint,
+                    bool id,
+                    bool* null)
 {
   type_map_type::const_iterator i (data_->type_map_.find (t, hint));
 
   if (i != data_->type_map_.end ())
+  {
+    if (null != 0)
+      *null = i->second.null;
     return id ? i->second.id_type : i->second.type;
+  }
   else
     return string ();
 }

@@ -30,7 +30,8 @@ namespace relational
       {
         {"bool", "BIT", 0, false},
 
-        {"char", "TINYINT", 0, false},
+        {"char", "CHAR(1)", 0, false},
+        {"wchar_t", "NCHAR(1)", 0, false},
         {"signed char", "TINYINT", 0, false},
         {"unsigned char", "TINYINT", 0, false},
 
@@ -145,17 +146,57 @@ namespace relational
     }
 
     string context::
-    database_type_impl (semantics::type& t, semantics::names* hint, bool id)
+    database_type_impl (semantics::type& t,
+                        semantics::names* hint,
+                        bool id,
+                        bool* null)
     {
-      string r (base_context::database_type_impl (t, hint, id));
+      string r (base_context::database_type_impl (t, hint, id, null));
 
       if (!r.empty ())
         return r;
 
       using semantics::enum_;
+      using semantics::array;
 
+      // Enum mapping.
+      //
       if (t.is_a<semantics::enum_> ())
+      {
         r = "INT";
+      }
+      // char[N] mapping.
+      //
+      else if (array* a = dynamic_cast<array*> (&t))
+      {
+        semantics::type& bt (a->base_type ());
+        bool c (bt.is_a<semantics::fund_char> ());
+
+        if (c || bt.is_a<semantics::fund_wchar> ())
+        {
+          unsigned long long n (a->size ());
+
+          if (n == 0)
+            return r;
+          if (n == 1)
+            r = c ? "CHAR(" : "NCHAR(";
+          else
+          {
+            r = c ? "VARCHAR(" : "NVARCHAR(";
+            n--;
+          }
+
+          if (n > (c ? 8000 : 4000))
+            r += "max)";
+          else
+          {
+            ostringstream ostr;
+            ostr << n;
+            r += ostr.str ();
+            r += ')';
+          }
+        }
+      }
 
       return r;
     }

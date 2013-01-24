@@ -30,7 +30,7 @@ namespace relational
       {
         {"bool", "NUMBER(1)", 0, false},
 
-        {"char", "NUMBER(3)", 0, false},
+        {"char", "CHAR(1)", 0, false},
         {"signed char", "NUMBER(3)", 0, false},
         {"unsigned char", "NUMBER(3)", 0, false},
 
@@ -142,17 +142,62 @@ namespace relational
     }
 
     string context::
-    database_type_impl (semantics::type& t, semantics::names* hint, bool id)
+    database_type_impl (semantics::type& t,
+                        semantics::names* hint,
+                        bool id,
+                        bool* null)
     {
-      string r (base_context::database_type_impl (t, hint, id));
+      string r (base_context::database_type_impl (t, hint, id, null));
 
       if (!r.empty ())
         return r;
 
       using semantics::enum_;
+      using semantics::array;
 
+      // Enum mapping.
+      //
       if (t.is_a<semantics::enum_> ())
+      {
         r = "NUMBER(10)";
+      }
+      // char[N] mapping.
+      //
+      else if (array* a = dynamic_cast<array*> (&t))
+      {
+        semantics::type& bt (a->base_type ());
+        if (bt.is_a<semantics::fund_char> ())
+        {
+          unsigned long long n (a->size ());
+
+          if (n == 0)
+            return r;
+          else if (n == 1)
+            r = "CHAR";
+          else
+          {
+            r = "VARCHAR2";
+            n--;
+          }
+
+          // Oracle VARCHAR2 limit is 4000 bytes. Since there are no good
+          // alternatives (CLOB?), let the user specify the mapping.
+          //
+          if (n > 4000)
+            return "";
+
+          // Allow empty VARCHAR2 values.
+          //
+          if (null != 0 && r == "VARCHAR2")
+            *null = true;
+
+          ostringstream ostr;
+          ostr << n;
+          r += '(';
+          r += ostr.str ();
+          r += ')';
+        }
+      }
 
       return r;
     }

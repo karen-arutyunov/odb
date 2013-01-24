@@ -31,7 +31,7 @@ namespace relational
       {
         {"bool", "TINYINT(1)", 0, false},
 
-        {"char", "TINYINT", 0, false},
+        {"char", "CHAR(1)", 0, false},
         {"signed char", "TINYINT", 0, false},
         {"unsigned char", "TINYINT UNSIGNED", 0, false},
 
@@ -269,16 +269,22 @@ namespace relational
     }
 
     string context::
-    database_type_impl (semantics::type& t, semantics::names* hint, bool id)
+    database_type_impl (semantics::type& t,
+                        semantics::names* hint,
+                        bool id,
+                        bool* null)
     {
-      string r (base_context::database_type_impl (t, hint, id));
+      string r (base_context::database_type_impl (t, hint, id, null));
 
       if (!r.empty ())
         return r;
 
       using semantics::enum_;
       using semantics::enumerator;
+      using semantics::array;
 
+      // Enum mapping.
+      //
       if (enum_* e = dynamic_cast<enum_*> (&t))
       {
         // We can only map to ENUM if the C++ enumeration is contiguous
@@ -319,6 +325,31 @@ namespace relational
 
           if (e->unsigned_ ())
             r += " UNSIGNED";
+        }
+      }
+      // char[N] mapping.
+      //
+      else if (array* a = dynamic_cast<array*> (&t))
+      {
+        semantics::type& bt (a->base_type ());
+        if (bt.is_a<semantics::fund_char> ())
+        {
+          unsigned long long n (a->size ());
+
+          if (n == 0)
+            return r;
+          else if (n == 1)
+            r = "CHAR(";
+          else
+          {
+            r = "VARCHAR(";
+            n--;
+          }
+
+          ostringstream ostr;
+          ostr << n;
+          r += ostr.str ();
+          r += ')';
         }
       }
 

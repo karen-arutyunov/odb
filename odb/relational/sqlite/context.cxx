@@ -32,7 +32,7 @@ namespace relational
       {
         {"bool", "INTEGER", 0, false},
 
-        {"char", "INTEGER", 0, false},
+        {"char", "TEXT", 0, false},
         {"signed char", "INTEGER", 0, false},
         {"unsigned char", "INTEGER", 0, false},
 
@@ -219,17 +219,36 @@ namespace relational
     }
 
     string context::
-    database_type_impl (semantics::type& t, semantics::names* hint, bool id)
+    database_type_impl (semantics::type& t,
+                        semantics::names* hint,
+                        bool id,
+                        bool* null)
     {
-      string r (base_context::database_type_impl (t, hint, id));
+      string r (base_context::database_type_impl (t, hint, id, null));
 
       if (!r.empty ())
         return r;
 
       using semantics::enum_;
+      using semantics::array;
 
+      // Enum mapping.
+      //
       if (t.is_a<semantics::enum_> ())
+      {
         r = "INTEGER";
+      }
+      // char[N] mapping.
+      //
+      else if (array* a = dynamic_cast<array*> (&t))
+      {
+        semantics::type& bt (a->base_type ());
+        if (bt.is_a<semantics::fund_char> ())
+        {
+          if (a->size () != 0)
+            r = "TEXT";
+        }
+      }
 
       return r;
     }

@@ -144,19 +144,24 @@ namespace relational
             if (id_type.empty ())
               id_type = database_type (t, hint, true);
 
-            if (type.empty ())
-              type = database_type (t, hint, false);
-
             if (id_type.empty () && wt != 0)
               id_type = database_type (*wt, whint, true);
 
+            bool null (false);
+            if (type.empty ())
+              type = database_type (t, hint, false, &null);
+
             if (type.empty () && wt != 0)
-              type = database_type (*wt, whint, false);
+              type = database_type (*wt, whint, false, &null);
 
             // Use id mapping for discriminators.
             //
             if (id (m) || discriminator (m))
               type = id_type;
+            // Allow NULL if requested by the default mapping.
+            //
+            else if (null && !m.count ("not-null"))
+              m.set ("null", true);
           }
 
           if (kind == unknown && !type.empty ())
@@ -333,11 +338,17 @@ namespace relational
           if (type.empty () && wt != 0 && wt->count ("type"))
             type = wt->get<string> ("type");
 
+          bool null (false);
           if (type.empty ())
-            type = database_type (t, hint, false);
+            type = database_type (t, hint, false, &null);
 
           if (type.empty () && wt != 0)
-            type = database_type (*wt, wh, false);
+            type = database_type (*wt, wh, false, &null);
+
+          // Allow NULL if requested by the default mapping.
+          //
+          if (null && !m.count (prefix + "-not-null"))
+            m.set (prefix + "-null", true);
         }
 
         if (!type.empty ())
