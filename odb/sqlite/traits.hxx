@@ -929,6 +929,14 @@ namespace odb
       static const database_type_id db_type_id = id_text;
     };
 
+#ifdef ODB_CXX11
+    template <std::size_t N>
+    struct default_type_traits<std::array<char, N> >
+    {
+      static const database_type_id db_type_id = id_text;
+    };
+#endif
+
     template <>
     struct default_type_traits<char>
     {
@@ -956,12 +964,6 @@ namespace odb
     };
 
 #ifdef ODB_CXX11
-    template <std::size_t N>
-    struct default_type_traits<std::array<char, N> >
-    {
-      static const database_type_id db_type_id = id_blob;
-    };
-
     template <std::size_t N>
     struct default_type_traits<std::array<unsigned char, N> >
     {
