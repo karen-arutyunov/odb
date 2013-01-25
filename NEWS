@@ -17,6 +17,14 @@ Version 2.2.0
    refer to Section 4.5, "Prepared Queries" in the ODB manual as well as the
    'prepared' example in the odb-examples package.
 
+ * Mapping for char[N] and std::array<char, N> to database VARCHAR(N-1) (or
+   similar) as well as for char to database CHAR(1) (or similar). For SQL
+   Server and SQLite on Windows equivalent mappings for wchar_t are also
+   provided. The query support for arrays has been improved to support
+   passing a value of the decayed type (pointer) as a query parameter.
+   For more information, refer to the ODB manual "Type Mapping" sections
+   for each database system.
+
  * Support for automatically-derived SQL name (table, column, index, etc.)
    transformations. At the higher level, it is possible to assign prefixes
    and suffixes (--table-prefix, --{index,fkey,sequence}--suffix options)

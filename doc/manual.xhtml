@@ -607,7 +607,14 @@ for consistency.
     <tr>
       <th>15</th><td><a href="#15">MySQL Database</a>
         <table class="toc">
-          <tr><th>15.1</th><td><a href="#15.1">MySQL Type Mapping</a></td></tr>
+          <tr>
+            <th>15.1</th><td><a href="#15.1">MySQL Type Mapping</a>
+              <table class="toc">
+                <tr><th>15.1.1</th><td><a href="#15.1.1">String Type Mapping</a></td></tr>
+                <tr><th>15.1.2</th><td><a href="#15.1.2">Binary Type Mapping</a></td></tr>
+              </table>
+            </td>
+          </tr>
           <tr><th>15.2</th><td><a href="#15.2">MySQL Database Class</a></td></tr>
           <tr><th>15.3</th><td><a href="#15.3">MySQL Connection and Connection Factory</a></td></tr>
 	  <tr><th>15.4</th><td><a href="#15.4">MySQL Exceptions</a></td></tr>
@@ -626,7 +633,14 @@ for consistency.
     <tr>
       <th>16</th><td><a href="#16">SQLite Database</a>
         <table class="toc">
-          <tr><th>16.1</th><td><a href="#16.1">SQLite Type Mapping</a></td></tr>
+          <tr>
+            <th>16.1</th><td><a href="#16.1">SQLite Type Mapping</a>
+              <table class="toc">
+                <tr><th>16.1.1</th><td><a href="#16.1.1">String Type Mapping</a></td></tr>
+                <tr><th>16.1.2</th><td><a href="#16.1.2">Binary Type Mapping</a></td></tr>
+              </table>
+            </td>
+          </tr>
           <tr><th>16.2</th><td><a href="#16.2">SQLite Database Class</a></td></tr>
           <tr><th>16.3</th><td><a href="#16.3">SQLite Connection and Connection Factory</a></td></tr>
 	  <tr><th>16.4</th><td><a href="#16.4">SQLite Exceptions</a></td></tr>
@@ -649,7 +663,14 @@ for consistency.
     <tr>
       <th>17</th><td><a href="#17">PostgreSQL Database</a>
         <table class="toc">
-          <tr><th>17.1</th><td><a href="#17.1">PostgreSQL Type Mapping</a></td></tr>
+          <tr>
+            <th>17.1</th><td><a href="#17.1">PostgreSQL Type Mapping</a>
+              <table class="toc">
+                <tr><th>17.1.1</th><td><a href="#17.1.1">String Type Mapping</a></td></tr>
+                <tr><th>17.1.2</th><td><a href="#17.1.2">Binary Type and <code>UUID</code> Mapping</a></td></tr>
+              </table>
+            </td>
+          </tr>
           <tr><th>17.2</th><td><a href="#17.2">PostgreSQL Database Class</a></td></tr>
           <tr><th>17.3</th><td><a href="#17.3">PostgreSQL Connection and Connection Factory</a></td></tr>
 	  <tr><th>17.4</th><td><a href="#17.4">PostgreSQL Exceptions</a></td></tr>
@@ -673,7 +694,14 @@ for consistency.
     <tr>
       <th>18</th><td><a href="#18">Oracle Database</a>
         <table class="toc">
-          <tr><th>18.1</th><td><a href="#18.1">Oracle Type Mapping</a></td></tr>
+          <tr>
+            <th>18.1</th><td><a href="#18.1">Oracle Type Mapping</a>
+              <table class="toc">
+                <tr><th>18.1.1</th><td><a href="#18.1.1">String Type Mapping</a></td></tr>
+                <tr><th>18.1.2</th><td><a href="#18.1.2">Binary Type Mapping</a></td></tr>
+              </table>
+            </td>
+          </tr>
           <tr><th>18.2</th><td><a href="#18.2">Oracle Database Class</a></td></tr>
           <tr><th>18.3</th><td><a href="#18.3">Oracle Connection and Connection Factory</a></td></tr>
 	  <tr><th>18.4</th><td><a href="#18.4">Oracle Exceptions</a></td></tr>
@@ -702,7 +730,10 @@ for consistency.
           <tr>
             <th>19.1</th><td><a href="#19.1">SQL Server Type Mapping</a>
               <table class="toc">
-                <tr><th>19.1.1</th><td><a href="#19.1.1"><code>ROWVERSION</code> Support</a></td></tr>
+                <tr><th>19.1.1</th><td><a href="#19.1.1">String Type Mapping</a></td></tr>
+                <tr><th>19.1.2</th><td><a href="#19.1.2">Binary Type and <code>UNIQUEIDENTIFIER</code> Mapping</a></td></tr>
+		<tr><th>19.1.3</th><td><a href="#19.1.3"><code>ROWVERSION</code> Mapping</a></td></tr>
+		<tr><th>19.1.4</th><td><a href="#19.1.4">Long String and Binary Types</a></td></tr>
               </table>
             </td>
           </tr>
@@ -11927,11 +11958,14 @@ class person
 
   <p>The <code>null</code> and <code>not_null</code> (<a href="#12.4.6">Section
      12.4.6, "<code>null</code>/<code>not_null</code>"</a>) specifiers
-     can be used to control the NULL semantics of a data member.</p>
+     can be used to control the NULL semantics of a data member. It is
+     also possible to specify the database type on the per-type instead
+     of the per-member basis using the value <code>type</code>
+     specifier (<a href="#12.3.1">Section 12.3.1, "<code>type</code>"</a>).</p>
 
   <h3><a name="12.4.4">12.4.4 <code>id_type</code></a></h3>
 
-  <p>The <code>type</code> specifier specifies the native database type
+  <p>The <code>id_type</code> specifier specifies the native database type
      that should be used for the data member when it is part of an
      object identifier. This specifier only makes sense when applied to
      a member of a composite value type that is used for both id and
@@ -14975,7 +15009,7 @@ person.hxx
 
     <tr>
       <td><code>char</code></td>
-      <td><code>TINYINT</code></td>
+      <td><code>CHAR(1)</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
 
@@ -15056,7 +15090,18 @@ person.hxx
       <td><code>TEXT/VARCHAR(255)</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
+
+    <tr>
+      <td><code>char[N]</code></td>
+      <td><code>VARCHAR(N-1)</code></td>
+      <td><code>NOT NULL</code></td>
+    </tr>
   </table>
+
+  <p>It is possible to map the <code>char</code> C++ type to an integer
+     database type (for example, <code>TINYINT</code>) using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>).</p>
 
   <p>Note that the <code>std::string</code> type is mapped
      differently depending on whether a member of this type
@@ -15064,53 +15109,6 @@ person.hxx
      then for this member <code>std::string</code> is mapped
      to the <code>VARCHAR(255)</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT</code>.</p>
-
-  <p>The MySQL ODB runtime library also provides support for mapping the
-     <code>std::string</code> type to the MySQL <code>CHAR</code>,
-     <code>NCHAR</code>, and <code>NVARCHAR</code> types, as well as for
-     mapping the <code>std::vector&lt;char></code>,
-     <code>std::vector&lt;unsigned&nbsp;char></code>,
-     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
-     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
-     types to the MySQL BLOB types. However, these mappings are not enabled
-     by default (in particular, by default, <code>std::vector</code> and
-     <code>std::array</code> will be treated as containers). To enable the
-     alternative mappings for these types we need to specify the database
-     type explicitly using the <code>db&nbsp;type</code> pragma
-     (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
-     example:</p>
-
-  <pre class="cxx">
-#pragma db object
-class object
-{
-  ...
-
-  #pragma db type("CHAR(2)")
-  std::string state_;
-
-  #pragma db type("BLOB")
-  std::vector&lt;char> buf_;
-
-  #pragma db type("BINARY(16)")
-  unsigned char uuid_[16];
-};
-  </pre>
-
-  <p>Alternatively, this can be done on the per-type basis, for example:</p>
-
-  <pre class="cxx">
-typedef std::vector&lt;char> buffer;
-#pragma db value(buffer) type("BLOB")
-
-#pragma db object
-class object
-{
-  ...
-
-  buffer buf_; // Mapped to BLOB.
-};
-  </pre>
 
   <p>Additionally, by default, C++ enumerations are automatically
      mapped to a suitable MySQL type. Contiguous enumerations with
@@ -15143,6 +15141,113 @@ class object
      such as geospatial types. For more information, refer to
      <a href="#12.7">Section 12.7, "Database Type Mapping
      Pragmas"</a>.</p>
+
+  <h3><a name="15.1.1">15.1.1 String Type Mapping</a></h3>
+
+  <p>The MySQL ODB runtime library provides support for mapping the
+     <code>std::string</code>, <code>char[N]</code>, and
+     <code>std::array&lt;char, N></code> types to the MySQL <code>CHAR</code>,
+     <code>VARCHAR</code>, <code>TEXT</code>, <code>NCHAR</code>, and
+     <code>NVARCHAR</code> types. However, these mappings are not enabled
+     by default (in particular, by default, <code>std::array</code> will
+     be treated as a container). To enable the alternative mappings for
+     these types we need to specify the database type explicitly using
+     the <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section
+     12.4.3, "<code>type</code>"</a>), for example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class object
+{
+  ...
+
+  #pragma db type("CHAR(2)")
+  char state_[2];
+
+  #pragma db type("VARCHAR(128)")
+  std::string name_;
+};
+  </pre>
+
+  <p>Alternatively, this can be done on the per-type basis, for example:</p>
+
+  <pre class="cxx">
+#pragma db value(std::string) type("VARCHAR(128)")
+
+#pragma db object
+class object
+{
+  ...
+
+  std::string name_; // Mapped to VARCHAR(128).
+};
+  </pre>
+
+  <p>The <code>char[N]</code> and <code>std::array&lt;char, N></code> values
+     may or may not be zero-terminated. When extracting such values from the
+     database, ODB will append the zero terminator if there is enough
+     space.</p>
+
+  <h3><a name="15.1.2">15.1.2 Binary Type Mapping</a></h3>
+
+  <p>The MySQL ODB runtime library provides support for mapping the
+     <code>std::vector&lt;char></code>,
+     <code>std::vector&lt;unsigned&nbsp;char></code>,
+     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
+     <code>std::array&lt;char, N></code>, and
+     <code>std::array&lt;unsigned char, N></code>
+     types to the MySQL <code>BINARY</code>, <code>VARBINARY</code>,
+     and <code>BLOB</code> types. However, these mappings are not enabled
+     by default (in particular, by default, <code>std::vector</code> and
+     <code>std::array</code> will be treated as containers). To enable the
+     alternative mappings for these types we need to specify the database
+     type explicitly using the <code>db&nbsp;type</code> pragma
+     (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
+     example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class object
+{
+  ...
+
+  #pragma db type("BLOB")
+  std::vector&lt;char> buf_;
+
+  #pragma db type("BINARY(16)")
+  unsigned char uuid_[16];
+};
+  </pre>
+
+  <p>Alternatively, this can be done on the per-type basis, for example:</p>
+
+  <pre class="cxx">
+typedef std::vector&lt;char> buffer;
+#pragma db value(buffer) type("BLOB")
+
+#pragma db object
+class object
+{
+  ...
+
+  buffer buf_; // Mapped to BLOB.
+};
+  </pre>
+
+  <p>Note also that in native queries (<a href="#4">Chapter 4, "Querying
+     the Database"</a>) <code>char[N]</code> and
+     <code>std::array&lt;char, N></code> parameters are by default passed
+     as a string rather than a binary. To pass such parameters as a binary,
+     we need to specify the database type explicitly in the
+     <code>_val()</code>/<code>_ref()</code> calls. Note also that we
+     don't need to do this for the integrated queries, for example:</p>
+
+  <pre class="cxx">
+char u[16] = {...};
+
+db.query&lt;object> ("uuid = " + query::_val&lt;odb::mysql::id_blob> (u));
+db.query&lt;object> (query::uuid == query::_ref (u));
+  </pre>
 
   <h2><a name="15.2">15.2 MySQL Database Class</a></h2>
 
@@ -15648,7 +15753,7 @@ class object
 
     <tr>
       <td><code>char</code></td>
-      <td><code>INTEGER</code></td>
+      <td><code>TEXT</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
 
@@ -15731,11 +15836,28 @@ class object
     </tr>
 
     <tr>
+      <td><code>char[N]</code></td>
+      <td><code>TEXT</code></td>
+      <td><code>NOT NULL</code></td>
+    </tr>
+
+    <tr>
       <td><code>std::wstring (Windows only)</code></td>
       <td><code>TEXT</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
+
+    <tr>
+      <td><code>wchar_t[N] (Windows only)</code></td>
+      <td><code>TEXT</code></td>
+      <td><code>NOT NULL</code></td>
+    </tr>
   </table>
+
+  <p>It is possible to map the <code>char</code> C++ type to the
+     <code>INTEGER</code> SQLite type (<code>TINYINT</code>) using
+     the <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section
+     12.4.3, "<code>type</code>"</a>).</p>
 
   <p>SQLite represents the <code>NaN</code> <code>FLOAT</code> value
      as a <code>NULL</code> value. As a result, columns of the
@@ -15745,18 +15867,80 @@ class object
      <code>db&nbsp;not_null</code> pragma (<a href="#12.4.6">Section
      12.4.6, "<code>null/not_null</code>"</a>).</p>
 
-  <p>The SQLite ODB runtime library also provides support for mapping the
+  <p>Additionally, by default, C++ enumerations are automatically mapped to
+     the SQLite <code>INTEGER</code> type with the default <code>NULL</code>
+     semantics being <code>NOT NULL</code>.</p>
+
+  <p>Note also that SQLite only operates with signed integers and the largest
+     value that an SQLite database can store is a signed 64-bit integer. As
+     a result, greater <code>unsigned&nbsp;long</code> and
+     <code>unsigned&nbsp;long&nbsp;long</code> values will be represented in
+     the database as negative values.</p>
+
+  <p>It is also possible to add support for additional SQLite types,
+     such as <code>NUMERIC</code>. For more information, refer to
+     <a href="#12.7">Section 12.7, "Database Type Mapping
+     Pragmas"</a>.</p>
+
+  <h3><a name="16.1.1">16.1.1 String Type Mapping</a></h3>
+
+  <p>The SQLite ODB runtime library provides support for mapping the
+     <code>std::array&lt;char, N></code> and, on Windows,
+     <code>std::array&lt;wchar_t, N></code> types to the SQLite
+     <code>TEXT</code> type. However, this mapping is not enabled by
+     default (in particular, by default, <code>std::array</code> will
+     be treated as a container). To enable the alternative mapping for
+     this type we need to specify the database type explicitly using
+     the <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section
+     12.4.3, "<code>type</code>"</a>), for example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class object
+{
+  ...
+
+  #pragma db type("TEXT")
+  std::array&lt;char, 128> name_;
+};
+  </pre>
+
+  <p>Alternatively, this can be done on the per-type basis, for example:</p>
+
+  <pre class="cxx">
+typedef std::array&lt;char, 128> name_type;
+#pragma db value(name_type) type("TEXT")
+
+#pragma db object
+class object
+{
+  ...
+
+  name_type name_; // Mapped to TEXT.
+};
+  </pre>
+
+  <p>The <code>char[N]</code>, <code>std::array&lt;char, N></code>,
+     <code>wchar_t[N]</code>, and <code>std::array&lt;wchar_t, N></code>
+     values may or may not be zero-terminated. When extracting such values
+     from the database, ODB will append the zero terminator if there is
+     enough space.</p>
+
+  <h3><a name="16.1.2">16.1.2 Binary Type Mapping</a></h3>
+
+  <p>The SQLite ODB runtime library provides support for mapping the
      <code>std::vector&lt;char></code>,
      <code>std::vector&lt;unsigned&nbsp;char></code>,
      <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
-     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
-     types to the SQLite BLOB type. However, this mapping is not enabled
-     by default (in particular, by default, <code>std::vector</code> and
-     <code>std::array</code> will be treated as containers). To enable the
-     BLOB mapping for these types we need to specify the database type
-     explicitly using the <code>db&nbsp;type</code> pragma
-     (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
-     example:</p>
+     <code>std::array&lt;char, N></code>, and
+     <code>std::array&lt;unsigned char, N></code>
+     types to the SQLite <code>BLOB</code> type. However, these mappings
+     are not enabled by default (in particular, by default,
+     <code>std::vector</code> and <code>std::array</code> will be treated
+     as containers). To enable the alternative mappings for these types
+     we need to specify the database type explicitly using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>), for example:</p>
 
   <pre class="cxx">
 #pragma db object
@@ -15787,20 +15971,20 @@ class object
 };
   </pre>
 
-  <p>Additionally, by default, C++ enumerations are automatically mapped to
-     the SQLite <code>INTEGER</code> type with the default <code>NULL</code>
-     semantics being <code>NOT NULL</code>.</p>
+  <p>Note also that in native queries (<a href="#4">Chapter 4, "Querying
+     the Database"</a>) <code>char[N]</code> and
+     <code>std::array&lt;char, N></code> parameters are by default passed
+     as a string rather than a binary. To pass such parameters as a binary,
+     we need to specify the database type explicitly in the
+     <code>_val()</code>/<code>_ref()</code> calls. Note also that we
+     don't need to do this for the integrated queries, for example:</p>
 
-  <p>Note also that SQLite only operates with signed integers and the largest
-     value that an SQLite database can store is a signed 64-bit integer. As
-     a result, greater <code>unsigned&nbsp;long</code> and
-     <code>unsigned&nbsp;long&nbsp;long</code> values will be represented in
-     the database as negative values.</p>
+  <pre class="cxx">
+char u[16] = {...};
 
-  <p>It is also possible to add support for additional SQLite types,
-     such as <code>NUMERIC</code>. For more information, refer to
-     <a href="#12.7">Section 12.7, "Database Type Mapping
-     Pragmas"</a>.</p>
+db.query&lt;object> ("uuid = " + query::_val&lt;odb::sqlite::id_blob> (u));
+db.query&lt;object> (query::uuid == query::_ref (u));
+  </pre>
 
   <h2><a name="16.2">16.2 SQLite Database Class</a></h2>
 
@@ -16456,7 +16640,7 @@ class object
 
     <tr>
       <td><code>char</code></td>
-      <td><code>SMALLINT</code></td>
+      <td><code>CHAR(1)</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
 
@@ -16537,21 +16721,49 @@ class object
       <td><code>TEXT</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
+
+    <tr>
+      <td><code>char[N]</code></td>
+      <td><code>VARCHAR(N-1)</code></td>
+      <td><code>NOT NULL</code></td>
+    </tr>
   </table>
 
-  <p>The PostgreSQL ODB runtime library also provides support for mapping
-     the <code>std::string</code> type to the PostgreSQL <code>CHAR</code>
-     and <code>VARCHAR</code> types as well as the <code>char[16]</code>
-     array to the PostgreSQL <code>UUID</code> type. There is also support
-     for mapping the <code>std::vector&lt;char></code>,
-     <code>std::vector&lt;unsigned&nbsp;char></code>,
-     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
-     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
-     types to the PostgreSQL <code>BYTEA</code> type. However, these mappings
-     are not enabled by default (in particular, by default,
-     <code>std::vector</code> and <code>std::array</code> will be treated
-     as containers). To enable the alternative mappings for these types we
-     need to specify the database type explicitly using the
+  <p>It is possible to map the <code>char</code> C++ type to an integer
+     database type (for example, <code>SMALLINT</code>) using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>).</p>
+
+  <p>Additionally, by default, C++ enumerations are automatically
+     mapped to <code>INTEGER</code> with the default <code>NULL</code>
+     semantics being <code>NOT NULL</code>.</p>
+
+  <p>Note also that because PostgreSQL does not support unsigned integers,
+     the <code>unsigned&nbsp;short</code>, <code>unsigned&nbsp;int</code>, and
+     <code>unsigned&nbsp;long</code>/<code>unsigned&nbsp;long&nbsp;long</code> C++ types
+     are by default mapped to the <code>SMALLINT</code>, <code>INTEGER</code>,
+     and <code>BIGINT</code> PostgreSQL types, respectively. The sign bit
+     of the value stored by the database for these types will contain
+     the most significant bit of the actual unsigned value being
+     persisted.</p>
+
+  <p>It is also possible to add support for additional PostgreSQL types,
+     such as <code>NUMERIC</code>, geometry types, <code>XML</code>,
+     <code>JSON</code>, enumeration types, composite types, arrays,
+     geospatial types, and the key-value store (<code>HSTORE</code>).
+     For more information, refer to <a href="#12.7">Section 12.7,
+     "Database Type Mapping Pragmas"</a>.</p>
+
+  <h3><a name="17.1.1">17.1.1 String Type Mapping</a></h3>
+
+  <p>The PostgreSQL ODB runtime library provides support for mapping the
+     <code>std::string</code>, <code>char[N]</code>, and
+     <code>std::array&lt;char, N></code> types to the PostgreSQL
+     <code>CHAR</code>, <code>VARCHAR</code>, and <code>TEXT</code>
+     types. However, these mappings are not enabled by default (in
+     particular, by default, <code>std::array</code> will be treated
+     as a container). To enable the alternative mappings for these
+     types we need to specify the database type explicitly using the
      <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
      "<code>type</code>"</a>), for example:</p>
 
@@ -16562,7 +16774,54 @@ class object
   ...
 
   #pragma db type("CHAR(2)")
-  std::string state_;
+  char state_[2];
+
+  #pragma db type("VARCHAR(128)")
+  std::string name_;
+};
+  </pre>
+
+  <p>Alternatively, this can be done on the per-type basis, for example:</p>
+
+  <pre class="cxx">
+#pragma db value(std::string) type("VARCHAR(128)")
+
+#pragma db object
+class object
+{
+  ...
+
+  std::string name_; // Mapped to VARCHAR(128).
+};
+  </pre>
+
+  <p>The <code>char[N]</code> and <code>std::array&lt;char, N></code> values
+     may or may not be zero-terminated. When extracting such values from the
+     database, ODB will append the zero terminator if there is enough
+     space.</p>
+
+  <h3><a name="17.1.2">17.1.2 Binary Type and <code>UUID</code> Mapping</a></h3>
+
+  <p>The PostgreSQL ODB runtime library provides support for mapping the
+     <code>std::vector&lt;char></code>,
+     <code>std::vector&lt;unsigned&nbsp;char></code>,
+     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
+     <code>std::array&lt;char, N></code>, and
+     <code>std::array&lt;unsigned char, N></code> types to the PostgreSQL
+     <code>BYTEA</code> type. There is also support for mapping the
+     <code>char[16]</code> array to the PostgreSQL <code>UUID</code> type.
+     However, these mappings are not enabled by default (in particular, by
+     default, <code>std::vector</code> and <code>std::array</code> will be
+     treated as containers). To enable the alternative mappings for these
+     types we need to specify the database type explicitly using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>), for example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class object
+{
+  ...
 
   #pragma db type("UUID")
   char uuid_[16];
@@ -16590,25 +16849,21 @@ class object
 };
   </pre>
 
-  <p>Additionally, by default, C++ enumerations are automatically
-     mapped to <code>INTEGER</code> with the default <code>NULL</code>
-     semantics being <code>NOT NULL</code>.</p>
+  <p>Note also that in native queries (<a href="#4">Chapter 4, "Querying
+     the Database"</a>) <code>char[N]</code> and
+     <code>std::array&lt;char, N></code> parameters are by default passed
+     as a string rather than a binary. To pass such parameters as a binary,
+     we need to specify the database type explicitly in the
+     <code>_val()</code>/<code>_ref()</code> calls. Note also that we
+     don't need to do this for the integrated queries, for example:</p>
 
-  <p>Note also that because PostgreSQL does not support unsigned integers,
-     the <code>unsigned&nbsp;short</code>, <code>unsigned&nbsp;int</code>, and
-     <code>unsigned&nbsp;long</code>/<code>unsigned&nbsp;long&nbsp;long</code> C++ types
-     are by default mapped to the <code>SMALLINT</code>, <code>INTEGER</code>,
-     and <code>BIGINT</code> PostgreSQL types, respectively. The sign bit
-     of the value stored by the database for these types will contain
-     the most significant bit of the actual unsigned value being
-     persisted.</p>
+  <pre class="cxx">
+char u[16] = {...};
 
-  <p>It is also possible to add support for additional PostgreSQL types,
-     such as <code>NUMERIC</code>, geometry types, <code>XML</code>,
-     <code>JSON</code>, enumeration types, composite types, arrays,
-     geospatial types, and the key-value store (<code>HSTORE</code>).
-     For more information, refer to <a href="#12.7">Section 12.7,
-     "Database Type Mapping Pragmas"</a>.</p>
+db.query&lt;object> ("uuid = " + query::_val&lt;odb::pgsql::id_uuid> (u));
+db.query&lt;object> ("buf = " + query::_val&lt;odb::pgsql::id_bytea> (u));
+db.query&lt;object> (query::uuid == query::_ref (u));
+  </pre>
 
   <h2><a name="17.2">17.2 PostgreSQL Database Class</a></h2>
 
@@ -17135,7 +17390,7 @@ class object
 
     <tr>
       <td><code>char</code></td>
-      <td><code>NUMBER(3)</code></td>
+      <td><code>CHAR(1)</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
 
@@ -17216,26 +17471,101 @@ class object
       <td><code>VARCHAR2(512)</code></td>
       <td><code>NULL</code></td>
     </tr>
+
+    <tr>
+      <td><code>char[N]</code></td>
+      <td><code>VARCHAR2(N-1)</code></td>
+      <td><code>NULL</code></td>
+    </tr>
   </table>
+
+  <p>It is possible to map the <code>char</code> C++ type to an integer
+     database type (for example, <code>NUMBER(3)</code>) using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>).</p>
 
   <p>In Oracle empty <code>VARCHAR2</code> and <code>NVARCHAR2</code>
      strings are represented as a <code>NULL</code> value. As a result,
-     columns of the <code>std::string</code> type are by default declared
-     as <code>NULL</code> except for primary key columns. However, you
-     can override this by explicitly declaring them as <code>NOT NULL</code>
-     with the <code>db&nbsp;not_null</code> pragma (<a href="#12.4.6">Section
+     columns of the <code>std::string</code> and <code>char[N]</code>
+     types are by default declared as <code>NULL</code> except for
+     primary key columns. However, you can override this by explicitly
+     declaring such columns as <code>NOT NULL</code> with the
+     <code>db&nbsp;not_null</code> pragma (<a href="#12.4.6">Section
      12.4.6, "<code>null/not_null</code>"</a>). This also means that for
      object ids that are mapped to these Oracle types, an empty string is
      an invalid value.</p>
 
-  <p>The Oracle ODB runtime library also provides support for mapping the
-     <code>std::string</code> type to the Oracle <code>CHAR</code>,
-     <code>NCHAR</code>, <code>NVARCHAR2</code>, <code>CLOB</code> and
-     <code>NCLOB</code> types, as well as for mapping the
+  <p>Additionally, by default, C++ enumerations are automatically
+     mapped to <code>NUMBER(10)</code> with the default <code>NULL</code>
+     semantics being <code>NOT NULL</code>.</p>
+
+  <p>It is also possible to add support for additional Oracle types,
+     such as <code>XML</code>, geospatial types, user-defined types,
+     and collections (arrays, table types). For more information, refer to
+     <a href="#12.7">Section 12.7, "Database Type Mapping
+     Pragmas"</a>.</p>
+
+  <h3><a name="18.1.1">18.1.1 String Type Mapping</a></h3>
+
+  <p>The Oracle ODB runtime library provides support for mapping the
+     <code>std::string</code>, <code>char[N]</code>, and
+     <code>std::array&lt;char, N></code> types to the Oracle <code>CHAR</code>,
+     <code>VARCHAR2</code>, <code>CLOB</code>, <code>NCHAR</code>,
+     <code>NVARCHAR2</code>, and <code>NCLOB</code> types. However,
+     these mappings are not enabled by default (in particular, by
+     default, <code>std::array</code> will be treated as a container).
+     To enable the alternative mappings for these types we need to
+     specify the database type explicitly using the <code>db&nbsp;type</code>
+     pragma (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>),
+     for example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class object
+{
+  ...
+
+  #pragma db type ("CHAR(2)")
+  char state_[2];
+
+  #pragma db type ("VARCHAR(128)") null
+  std::string name_;
+
+  #pragma db type ("CLOB")
+  std::string text_;
+};
+  </pre>
+
+  <p>Alternatively, this can be done on the per-type basis, for example:</p>
+
+  <pre class="cxx">
+#pragma db value(std::string) type("VARCHAR(128)") null
+
+#pragma db object
+class object
+{
+  ...
+
+  std::string name_; // Mapped to VARCHAR(128).
+
+  #pragma db type ("CLOB")
+  std::string text_; // Mapped to CLOB.
+};
+  </pre>
+
+  <p>The <code>char[N]</code> and <code>std::array&lt;char, N></code> values
+     may or may not be zero-terminated. When extracting such values from the
+     database, ODB will append the zero terminator if there is enough
+     space.</p>
+
+  <h3><a name="18.1.2">18.1.2 Binary Type Mapping</a></h3>
+
+  <p>The Oracle ODB runtime library provides support for mapping the
      <code>std::vector&lt;char></code>,
      <code>std::vector&lt;unsigned&nbsp;char></code>,
      <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
-     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
+     <code>std::array&lt;char, N></code>, and
+     <code>std::array&lt;unsigned char, N></code>
      types to the Oracle <code>BLOB</code> and <code>RAW</code> types.
      However, these mappings are not enabled by default (in particular, by
      default, <code>std::vector</code> and <code>std::array</code> will be
@@ -17249,9 +17579,6 @@ class object
 class object
 {
   ...
-
-  #pragma db type ("CLOB")
-  std::string str_;
 
   #pragma db type("BLOB")
   std::vector&lt;char> buf_;
@@ -17276,15 +17603,20 @@ class object
 };
   </pre>
 
-  <p>Additionally, by default, C++ enumerations are automatically
-     mapped to <code>NUMBER(10)</code> with the default <code>NULL</code>
-     semantics being <code>NOT NULL</code>.</p>
+  <p>Note also that in native queries (<a href="#4">Chapter 4, "Querying
+     the Database"</a>) <code>char[N]</code> and
+     <code>std::array&lt;char, N></code> parameters are by default passed
+     as a string rather than a binary. To pass such parameters as a binary,
+     we need to specify the database type explicitly in the
+     <code>_val()</code>/<code>_ref()</code> calls. Note also that we
+     don't need to do this for the integrated queries, for example:</p>
 
-  <p>It is also possible to add support for additional Oracle types,
-     such as <code>XML</code>, geospatial types, user-defined types,
-     and collections (arrays, table types). For more information, refer to
-     <a href="#12.7">Section 12.7, "Database Type Mapping
-     Pragmas"</a>.</p>
+  <pre class="cxx">
+char u[16] = {...};
+
+db.query&lt;object> ("uuid = " + query::_val&lt;odb::oracle::id_raw> (u));
+db.query&lt;object> (query::uuid == query::_ref (u));
+  </pre>
 
   <h2><a name="18.2">18.2 Oracle Database Class</a></h2>
 
@@ -17957,7 +18289,7 @@ class object
 
     <tr>
       <td><code>char</code></td>
-      <td><code>TINYINT</code></td>
+      <td><code>CHAR(1)</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
 
@@ -18040,8 +18372,20 @@ class object
     </tr>
 
     <tr>
+      <td><code>char[N]</code></td>
+      <td><code>VARCHAR(N-1)</code></td>
+      <td><code>NOT NULL</code></td>
+    </tr>
+
+    <tr>
       <td><code>std::wstring</code></td>
       <td><code>NVARCHAR(512)/NVARCHAR(256)</code></td>
+      <td><code>NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>wchar_t[N]</code></td>
+      <td><code>NVARCHAR(N-1)</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
 
@@ -18052,6 +18396,11 @@ class object
     </tr>
 
   </table>
+
+  <p>It is possible to map the <code>char</code> C++ type to an integer
+     database type (for example, <code>TINYINT</code>) using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>).</p>
 
   <p>Note that the <code>std::string</code> and <code>std::wstring</code>
      types are mapped differently depending on whether a member of one of
@@ -18064,20 +18413,40 @@ class object
      always change this mapping using the <code>db&nbsp;type</code> pragma
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>).</p>
 
-  <p>The SQL Server ODB runtime library also provides support for mapping the
-     <code>std::string</code> type to the SQL Server <code>CHAR</code> and
-     <code>TEXT</code> types as well as <code>std::wstring</code>
-     to <code>NCHAR</code> and <code>NTEXT</code>. There is also support
-     for mapping the <code>char[16]</code> array to the SQL Server
-     <code>UNIQUEIDENTIFIER</code> type as well as the
-     <code>std::vector&lt;char></code>,
-     <code>std::vector&lt;unsigned&nbsp;char></code>,
-     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
-     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
-     types to the SQL Server <code>BINARY</code>, <code>VARBINARY</code>, and
-     <code>IMAGE</code> types. However, these mappings are not enabled
-     by default (in particular, by default, <code>std::vector</code> and
-     <code>std::array</code> will be treated as containers). To enable the
+  <p>Additionally, by default, C++ enumerations are automatically
+     mapped to <code>INT</code> with the default <code>NULL</code>
+     semantics being <code>NOT NULL</code>.</p>
+
+  <p>Note also that because SQL Server does not support unsigned integers,
+     the <code>unsigned&nbsp;short</code>, <code>unsigned&nbsp;int</code>, and
+     <code>unsigned&nbsp;long</code>/<code>unsigned&nbsp;long&nbsp;long</code> C++ types
+     are by default mapped to the <code>SMALLINT</code>, <code>INT</code>,
+     and <code>BIGINT</code> SQL Server types, respectively. The sign bit
+     of the value stored by the database for these types will contain
+     the most significant bit of the actual unsigned value being
+     persisted. Similarly, because there is no signed version of the
+     <code>TINYINT</code> SQL Server type, by default, the
+     <code>signed char</code> C++ type is mapped to <code>TINYINT</code>.
+     As a result, the most significant bit of the value stored by the
+     database for this type will contain the sign bit of the actual
+     signed value being persisted.</p>
+
+  <p>It is also possible to add support for additional SQL Server types,
+     such as geospatial types, <code>XML</code>, and user-defined types.
+     For more information, refer to <a href="#12.7">Section 12.7, "Database
+     Type Mapping Pragmas"</a>.</p>
+
+  <h3><a name="19.1.1">19.1.1 String Type Mapping</a></h3>
+
+  <p>The SQL Server ODB runtime library provides support for mapping the
+     <code>std::string</code>, <code>char[N]</code>, and
+     <code>std::array&lt;char, N></code> types to the SQL Server
+     <code>CHAR</code>, <code>VARCHAR</code>, and <code>TEXT</code>
+     types as well as the <code>std::wstring</code>, <code>wchar_t[N]</code>,
+     and <code>std::array&lt;wchar_t, N></code> types to <code>NCHAR</code>,
+     <code>NVARCHAR</code>, and <code>NTEXT</code>. However, these mappings
+     are not enabled by default (in particular, by default,
+     <code>std::array</code> will be treated as a container). To enable the
      alternative mappings for these types we need to specify the database
      type explicitly using the <code>db&nbsp;type</code> pragma
      (<a href="#12.4.3">Section 12.4.3, "<code>type</code>"</a>), for
@@ -18089,8 +18458,59 @@ class object
 {
   ...
 
-  #pragma db type ("CHAR(5)")
-  std::string str_;
+  #pragma db type ("CHAR(2)")
+  char state_[2];
+
+  #pragma db type ("NVARCHAR(max)")
+  std::wstring text_;
+};
+  </pre>
+
+  <p>Alternatively, this can be done on the per-type basis, for example:</p>
+
+  <pre class="cxx">
+#pragma db value(std::wstring) type("NVARCHAR(max)")
+
+#pragma db object
+class object
+{
+  ...
+
+  std::wstring text_; // Mapped to NVARCHAR(max).
+};
+  </pre>
+
+  <p>The <code>char[N]</code>, <code>std::array&lt;char, N></code>,
+     <code>wchar_t[N]</code>, and <code>std::array&lt;wchar_t, N></code>
+     values may or may not be zero-terminated. When extracting such values
+     from the database, ODB will append the zero terminator if there is
+     enough space.</p>
+
+  <p>See also <a href="#19.1.4">Section 19.1.4, "Long String and Binary
+     Types"</a> for certain limitations of long string types.</p>
+
+  <h3><a name="19.1.2">19.1.2 Binary Type and <code>UNIQUEIDENTIFIER</code> Mapping</a></h3>
+
+  <p>The SQL Server ODB runtime library also provides support for mapping the
+     <code>std::vector&lt;char></code>,
+     <code>std::vector&lt;unsigned&nbsp;char></code>,
+     <code>char[N]</code>, <code>unsigned&nbsp;char[N]</code>,
+     <code>std::array&lt;char, N></code>, and <code>std::array&lt;unsigned char, N></code>
+     types to the SQL Server <code>BINARY</code>, <code>VARBINARY</code>, and
+     <code>IMAGE</code> types. There is also support for mapping the
+     <code>char[16]</code> array to the SQL Server <code>UNIQUEIDENTIFIER</code>
+     type. However, these mappings are not enabled by default (in particular,
+     by default, <code>std::vector</code> and <code>std::array</code> will
+     be treated as containers). To enable the alternative mappings for these
+     types we need to specify the database type explicitly using the
+     <code>db&nbsp;type</code> pragma (<a href="#12.4.3">Section 12.4.3,
+     "<code>type</code>"</a>), for example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class object
+{
+  ...
 
   #pragma db type("UNIQUEIDENTIFIER")
   char uuid_[16];
@@ -18118,9 +18538,56 @@ class object
 };
   </pre>
 
-  <p>Additionally, by default, C++ enumerations are automatically
-     mapped to <code>INT</code> with the default <code>NULL</code>
-     semantics being <code>NOT NULL</code>.</p>
+  <p>Note also that in native queries (<a href="#4">Chapter 4, "Querying
+     the Database"</a>) <code>char[N]</code> and
+     <code>std::array&lt;char, N></code> parameters are by default passed
+     as a string rather than a binary. To pass such parameters as a binary,
+     we need to specify the database type explicitly in the
+     <code>_val()</code>/<code>_ref()</code> calls. Note also that we
+     don't need to do this for the integrated queries, for example:</p>
+
+  <pre class="cxx">
+char u[16] = {...};
+
+db.query&lt;object> ("uuid = " + query::_val&lt;odb::mssql::id_binary> (u));
+db.query&lt;object> (
+  "uuid = " + query::_val&lt;odb::mssql::id_uniqueidentifier> (u));
+db.query&lt;object> (query::uuid == query::_ref (u));
+  </pre>
+
+  <p>See also <a href="#19.1.4">Section 19.1.4, "Long String and Binary
+     Types"</a> for certain limitations of long binary types.</p>
+
+  <h3><a name="19.1.3">19.1.3 <code>ROWVERSION</code> Mapping</a></h3>
+
+  <p><code>ROWVERSION</code> is a special SQL Server data type that is
+     automatically incremented by the database server whenever a row
+     is inserted or updated. As such, it is normally used to implement
+     optimistic concurrency and ODB provides support for using
+     <code>ROWVERSION</code> instead of the more portable approach
+     for optimistic concurrency (<a href="#11">Chapter 11, "Optimistic
+     Concurrency"</a>).</p>
+
+  <p><code>ROWVERSION</code> is a 64-bit value which is mapped by ODB
+     to <code>unsigned long long</code>. As a result, to use
+     <code>ROWVERSION</code> for optimistic concurrency we need to
+     make sure that the version column is of the <code>unsigned long
+     long</code> type. We also need to explicitly specify that it
+     should be mapped to the <code>ROWVERSION</code> data type. For
+     example:</p>
+
+  <pre class="cxx">
+#pragma db object optimistic
+class person
+{
+  ...
+
+  #pragma db version type("ROWVERSION")
+  unsigned long long version_;
+};
+  </pre>
+
+  <h3><a name="19.1.4">19.1.4 Long String and Binary Types</a></h3>
 
   <p>For SQL Server, ODB handles character, national character, and
      binary data in two different ways depending on its maximum length.
@@ -18181,54 +18648,6 @@ t.commit ();
      Views"</a>) contains one or more long data members, then such
      members should come last both in the select-list of the native
      SQL query and the list of data members in the C++ class.</p>
-
-  <p>Note also that because SQL Server does not support unsigned integers,
-     the <code>unsigned&nbsp;short</code>, <code>unsigned&nbsp;int</code>, and
-     <code>unsigned&nbsp;long</code>/<code>unsigned&nbsp;long&nbsp;long</code> C++ types
-     are by default mapped to the <code>SMALLINT</code>, <code>INT</code>,
-     and <code>BIGINT</code> SQL Server types, respectively. The sign bit
-     of the value stored by the database for these types will contain
-     the most significant bit of the actual unsigned value being
-     persisted. Similarly, because there is no signed version of the
-     <code>TINYINT</code> SQL Server type, by default, <code>char</code>
-     and <code>signed char</code> C++ types are mapped to
-     <code>TINYINT</code>. As a result, the most significant bit of
-     the value stored by the database for these types will contain the
-     sign bit of the actual signed value being persisted.</p>
-
-  <p>It is also possible to add support for additional SQL Server types,
-     such as geospatial types, <code>XML</code>, and user-defined types.
-     For more information, refer to <a href="#12.7">Section 12.7, "Database
-     Type Mapping Pragmas"</a>.</p>
-
-  <h3><a name="19.1.1">19.1.1 <code>ROWVERSION</code> Support</a></h3>
-
-  <p><code>ROWVERSION</code> is a special SQL Server data type that is
-     automatically incremented by the database server whenever a row
-     is inserted or updated. As such, it is normally used to implement
-     optimistic concurrency and ODB provides support for using
-     <code>ROWVERSION</code> instead of the more portable approach
-     for optimistic concurrency (<a href="#11">Chapter 11, "Optimistic
-     Concurrency"</a>).</p>
-
-  <p><code>ROWVERSION</code> is a 64-bit value which is mapped by ODB
-     to <code>unsigned long long</code>. As a result, to use
-     <code>ROWVERSION</code> for optimistic concurrency we need to
-     make sure that the version column is of the <code>unsigned long
-     long</code> type. We also need to explicitly specify that it
-     should be mapped to the <code>ROWVERSION</code> data type. For
-     example:</p>
-
-  <pre class="cxx">
-#pragma db object optimistic
-class person
-{
-  ...
-
-  #pragma db version type("ROWVERSION")
-  unsigned long long version_;
-};
-  </pre>
 
   <h2><a name="19.2">19.2 SQL Server Database Class</a></h2>
 
