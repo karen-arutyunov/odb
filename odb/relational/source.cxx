@@ -73,6 +73,7 @@ traverse_object (type& c)
   bool containers (has_a (c, test_container));
   bool straight_containers (false);
   bool straight_readwrite_containers (false);
+  bool smart_containers (false);
 
   if (containers)
   {
@@ -85,6 +86,10 @@ traverse_object (type& c)
       // Inverse containers cannot be marked readonly.
       //
       straight_readwrite_containers = scn > has_a (c, test_readonly_container);
+
+      // Inverse containers cannot be smart.
+      //
+      smart_containers = has_a (c, test_smart_container);
     }
   }
 
@@ -418,8 +423,13 @@ traverse_object (type& c)
     cm->traverse (c);
 
     os << (containers ? "\n" : "")
-       << "container_statement_cache_type (" << db << "::connection&" <<
-      (containers ? " c" : "") << ")";
+       << "container_statement_cache_type (" << endl
+       << db << "::connection&" << (containers ? " c" : "") << "," << endl
+       << db << "::binding&" << (containers ? " id" : "");
+
+    container_cache_extra_args (containers);
+
+    os << ")";
 
     instance<container_cache_init_members> im;
     im->traverse (c);
@@ -1187,8 +1197,7 @@ traverse_object (type& c)
              << "}";
         }
 
-        if (cc.total != cc.id + cc.inverse + cc.readonly ||
-            straight_readwrite_containers)
+        if (cc.total != cc.id + cc.inverse + cc.readonly)
         {
           os << "const binding& idb (sts.id_image_binding ());"
              << endl;
@@ -1395,10 +1404,6 @@ traverse_object (type& c)
           if (delay_freeing_statement_result)
             os << "sts.find_statement ().free_result ();";
         }
-
-        if (straight_readwrite_containers)
-          os << "binding& idb (sts.id_image_binding ());"
-             << endl;
       }
 
       if (straight_readwrite_containers)
@@ -1565,11 +1570,7 @@ traverse_object (type& c)
     //
     if (straight_containers)
     {
-      if (poly)
-        os << "binding& idb (sts.id_image_binding ());"
-           << endl;
-
-      instance<container_calls> t (container_calls::erase_call);
+      instance<container_calls> t (container_calls::erase_id_call);
       t->traverse (c);
     }
 
@@ -1601,7 +1602,7 @@ traverse_object (type& c)
 
   // erase (object)
   //
-  if (id != 0 && (poly || opt != 0))
+  if (id != 0 && (poly || opt != 0 || smart_containers))
   {
     os << "void " << traits << "::" << endl
        << "erase (database& db, const object_type& obj";
@@ -1632,22 +1633,14 @@ traverse_object (type& c)
          << "}";
 
     // If we are database-poly-abstract but not C++-abstract, then make
-    // sure we are not trying to persist an instance of an abstract class.
+    // sure we are not trying to erase an instance of an abstract class.
     //
     if (abst && !c.abstract ())
       os << "if (top)" << endl
          << "throw abstract_class ();"
          << endl;
 
-    // Determine the dynamic type of this object.
-    //
-    if (opt == 0)
-    {
-      os << "callback (db, obj, callback_event::pre_erase);"
-         << "erase (db, id (obj), true, false);"
-         << "callback (db, obj, callback_event::post_erase);";
-    }
-    else
+    if (opt != 0 || smart_containers)
     {
       string rsts (poly_derived ? "rsts" : "sts");
 
@@ -1684,135 +1677,179 @@ traverse_object (type& c)
            << endl;
       }
 
-      // Initialize id + managed column image.
+      // Smart containers case.
       //
-      os << "binding& idb (" << rsts << ".id_image_binding ());"
-         << endl;
-
-      if (!abst) // If we are poly-abstract, then top will always be false.
+      if (opt == 0)
       {
-        if (poly)
-          os << "if (top)"
-             << "{";
-
-        if (!opt_ma_get->synthesized)
-          os << "// From " << location_string (opt_ma_get->loc, true) << endl;
-
-        os << "const version_type& v (" << endl
-           << opt_ma_get->translate ("obj") << ");"
-           << "id_image_type& i (" << rsts << ".id_image ());"
-           << "init (i, id, &v);"
-           << endl;
-
-        // To update the id part of the optimistic id binding we have
-        // to do it indirectly via the id binding, since both id and
-        // optimistic id bindings just point to the suffix of the
-        // update bind array (see object_statements).
-        //
-        os << "binding& oidb (" << rsts << ".optimistic_id_image_binding ());"
-           << "if (i.version != " << rsts <<
-          ".optimistic_id_image_version () ||" << endl
-           << "oidb.version == 0)"
-           << "{"
-          // If the id binding is up-to-date, then that means optimistic
-          // id binding is too and we just need to update the versions.
-          //
-           << "if (i.version != " << rsts << ".id_image_version () ||" << endl
-           << "idb.version == 0)"
-           << "{"
-           << "bind (idb.bind, i);"
-          // Update the id binding versions since we may use them later
-          // to delete containers.
-          //
-           << rsts << ".id_image_version (i.version);"
-           << "idb.version++;"
-           << "}"
-           << rsts << ".optimistic_id_image_version (i.version);"
-           << "oidb.version++;"
-           << "}";
-
-        if (poly)
-          os << "}"; // if (top)
-      }
-
-      // If this is a derived type in a polymorphic hierarchy, then we
-      // need to check the version (stored in root) before we go ahead
-      // and start deleting things. Also use the same code for root with
-      // containers since it is more efficient than the find_() method
-      // below.
-      //
-      if (poly_derived || (poly && straight_containers))
-      {
-        // Only do the check in the top-level call.
+        // Initialize id image.
         //
         if (!abst) // If we are poly-abstract, then top will always be false.
         {
-          os << "if (top)"
-             << "{"
-             << "version_type v;"
-             << "root_traits::discriminator_ (" << rsts << ", id, 0, &v);"
+          if (poly)
+            os << "if (top)"
+               << "{";
+
+          os << "id_image_type& i (" << rsts << ".id_image ());"
+             << "init (i, id);"
              << endl;
+
+          os << "binding& idb (" << rsts << ".id_image_binding ());"
+             << "if (i.version != " << rsts << ".id_image_version () || " <<
+            "idb.version == 0)"
+             << "{"
+             << "bind (idb.bind, i);"
+             << rsts << ".id_image_version (i.version);"
+             << "idb.version++;"
+             << "}";
+
+          if (poly)
+            os << "}";
+        }
+
+        // Erase containers first so that there are no reference
+        // violations (we don't want to rely on ON DELETE CASCADE
+        // here since in case of a custom schema, it might not be
+        // there).
+        //
+        instance<container_calls> t (container_calls::erase_obj_call);
+        t->traverse (c);
+
+        os << "if (sts.erase_statement ().execute () != 1)" << endl
+           << "throw object_not_persistent ();"
+           << endl;
+      }
+      // Optimistic case.
+      //
+      else
+      {
+        // Initialize id + managed column image.
+        //
+        if (!abst) // If we are poly-abstract, then top will always be false.
+        {
+          if (poly)
+            os << "if (top)"
+               << "{";
 
           if (!opt_ma_get->synthesized)
             os << "// From " << location_string (opt_ma_get->loc, true) << endl;
 
-          os << "if (v != " << opt_ma_get->translate ("obj") << ")" << endl
-             << "throw object_changed ();"
-             << "}";
-        }
-      }
-      else if (straight_containers)
-      {
-        // Things get complicated here: we don't want to trash the
-        // containers and then find out that the versions don't match
-        // and we therefore cannot delete the object. After all, there
-        // is no guarantee that the user will abort the transaction.
-        // In fact, a perfectly reasonable scenario is to reload the
-        // object, re-check the condition, decide not to delete the
-        // object, and then commit the transaction.
-        //
-        // There doesn't seem to be anything better than first making
-        // sure we can delete the object, then deleting the container
-        // data, and then deleting the object. To check that we can
-        // delete the object we are going to use find_() and then
-        // compare the versions. A special-purpose SELECT query would
-        // have been more efficient but it would complicated and bloat
-        // things significantly.
-        //
-        os << "if (!find_ (sts, &id))" << endl
-           << "throw object_changed ();"
-           << endl;
-
-        if (delay_freeing_statement_result)
-          os << "sts.find_statement ().free_result ();"
+          os << "const version_type& v (" << endl
+             << opt_ma_get->translate ("obj") << ");"
+             << "id_image_type& i (" << rsts << ".id_image ());"
+             << "init (i, id, &v);"
              << endl;
 
-        if (!opt_ma_get->synthesized)
-          os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+          // To update the id part of the optimistic id binding we have
+          // to do it indirectly via the id binding, since both id and
+          // optimistic id bindings just point to the suffix of the
+          // update bind array (see object_statements).
+          //
+          os << "binding& oidb (" << rsts << ".optimistic_id_image_binding ());"
+             << "if (i.version != " << rsts <<
+            ".optimistic_id_image_version () ||" << endl
+             << "oidb.version == 0)"
+             << "{"
+            // If the id binding is up-to-date, then that means optimistic
+            // id binding is too and we just need to update the versions.
+            //
+             << "binding& idb (" << rsts << ".id_image_binding ());"
+             << "if (i.version != " << rsts << ".id_image_version () ||" << endl
+             << "idb.version == 0)"
+             << "{"
+             << "bind (idb.bind, i);"
+            // Update the id binding versions since we may use them later
+            // to delete containers.
+            //
+             << rsts << ".id_image_version (i.version);"
+             << "idb.version++;"
+             << "}"
+             << rsts << ".optimistic_id_image_version (i.version);"
+             << "oidb.version++;"
+             << "}";
 
-        os << "if (version (sts.image ()) != " <<
-          opt_ma_get->translate ("obj") << ")" << endl
+          if (poly)
+            os << "}"; // if (top)
+        }
+
+        // If this is a derived type in a polymorphic hierarchy, then we
+        // need to check the version (stored in root) before we go ahead
+        // and start deleting things. Also use the same code for root with
+        // containers since it is more efficient than the find_() method
+        // below.
+        //
+        if (poly_derived || (poly && straight_containers))
+        {
+          // Only do the check in the top-level call.
+          //
+          if (!abst) // If we are poly-abstract, then top will always be false.
+          {
+            os << "if (top)"
+               << "{"
+               << "version_type v;"
+               << "root_traits::discriminator_ (" << rsts << ", id, 0, &v);"
+               << endl;
+
+            if (!opt_ma_get->synthesized)
+              os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+
+            os << "if (v != " << opt_ma_get->translate ("obj") << ")" << endl
+               << "throw object_changed ();"
+               << "}";
+          }
+        }
+        else if (straight_containers)
+        {
+          // Things get complicated here: we don't want to trash the
+          // containers and then find out that the versions don't match
+          // and we therefore cannot delete the object. After all, there
+          // is no guarantee that the user will abort the transaction.
+          // In fact, a perfectly reasonable scenario is to reload the
+          // object, re-check the condition, decide not to delete the
+          // object, and then commit the transaction.
+          //
+          // There doesn't seem to be anything better than first making
+          // sure we can delete the object, then deleting the container
+          // data, and then deleting the object. To check that we can
+          // delete the object we are going to use find_() and then
+          // compare the versions. A special-purpose SELECT query would
+          // have been more efficient but it would complicated and bloat
+          // things significantly.
+          //
+          os << "if (!find_ (sts, &id))" << endl
+             << "throw object_changed ();"
+             << endl;
+
+          if (delay_freeing_statement_result)
+            os << "sts.find_statement ().free_result ();"
+               << endl;
+
+          if (!opt_ma_get->synthesized)
+            os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+
+          os << "if (version (sts.image ()) != " <<
+            opt_ma_get->translate ("obj") << ")" << endl
+             << "throw object_changed ();"
+             << endl;
+        }
+
+        // Erase containers first so that there are no reference
+        // violations (we don't want to rely on ON DELETE CASCADE
+        // here since in case of a custom schema, it might not be
+        // there).
+        //
+        if (straight_containers)
+        {
+          instance<container_calls> t (container_calls::erase_obj_call);
+          t->traverse (c);
+        }
+
+        const char* st (
+          poly_derived ? "erase_statement" : "optimistic_erase_statement");
+
+        os << "if (sts." << st << " ().execute () != 1)" << endl
            << "throw object_changed ();"
            << endl;
       }
-
-      // Erase containers first so that there are no reference
-      // violations (we don't want to rely on ON DELETE CASCADE
-      // here since in case of a custom schema, it might not be
-      // there).
-      //
-      if (straight_containers)
-      {
-        instance<container_calls> t (container_calls::erase_call);
-        t->traverse (c);
-      }
-
-      const char* st (
-        poly_derived ? "erase_statement" : "optimistic_erase_statement");
-
-      os << "if (sts." << st << " ().execute () != 1)" << endl
-         << "throw object_changed ();"
-         << endl;
 
       if (poly_derived)
       {
@@ -1840,6 +1877,16 @@ traverse_object (type& c)
         if (poly)
           os << "}";
       }
+    }
+    else if (smart_containers)
+    {
+
+    }
+    else
+    {
+      os << "callback (db, obj, callback_event::pre_erase);"
+         << "erase (db, id (obj), true, false);"
+         << "callback (db, obj, callback_event::post_erase);";
     }
 
     os << "}";
@@ -2390,8 +2437,6 @@ traverse_object (type& c)
 
     if (containers)
     {
-      os << db << "::binding& idb (sts.id_image_binding ());"
-         << endl;
       instance<container_calls> t (container_calls::load_call);
       t->traverse (c);
     }

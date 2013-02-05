@@ -540,7 +540,7 @@ namespace relational
         virtual void
         init_value_extra ()
         {
-          os << "sts.select_all_statement ().stream_result ();"
+          os << "sts.select_statement ().stream_result ();"
              << endl;
         }
       };

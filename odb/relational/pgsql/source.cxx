@@ -791,6 +791,14 @@ namespace relational
         }
 
         virtual void
+        container_cache_extra_args (bool used)
+        {
+          os << "," << endl
+             << db << "::native_binding&" << (used ? " idn" : "") << "," << endl
+             << "const unsigned int*" << (used ? " idt" : "");
+        }
+
+        virtual void
         view_extra (type& c)
         {
           string const& n (class_fq_name (c));
@@ -866,9 +874,15 @@ namespace relational
           if (!object (c_) || (abstract (c_) && !polymorphic (c_)))
             return;
 
+          container_kind_type ck (container_kind (t));
 
           string const& pn (public_name (m));
           string scope (scope_ + "::" + flat_prefix_ + pn + "_traits");
+
+          semantics::data_member* inv_m (inverse (m, "value"));
+          bool inv (inv_m != 0);
+
+          bool smart (!inv && !unordered (m) && container_smart (t));
 
           // Statment names.
           //
@@ -881,29 +895,32 @@ namespace relational
               class_fq_name (*top_object) + "_" + flat_prefix_ + pn));
 
           os << "const char " << scope << "::" << endl
-             << "select_all_name[] = " << strlit (fn + "_select_all") << ";"
+             << "select_name[] = " << strlit (fn + "_select") << ";"
              << endl
              << "const char " << scope << "::" << endl
-             << "insert_one_name[] = " << strlit (fn + "_insert_one") << ";"
-             << endl
-             << "const char " << scope << "::" << endl
-             << "delete_all_name[] = " << strlit (fn + "_delete_all") << ";"
+             << "insert_name[] = " << strlit (fn + "_insert") << ";"
+             << endl;
+
+          if (smart)
+            os << "const char " << scope << "::" << endl
+               << "update_name[] = " << strlit (fn + "_update") << ";"
+               << endl;
+
+          os << "const char " << scope << "::" << endl
+             << "delete_name[] = " << strlit (fn + "_delete") << ";"
              << endl;
 
           // Statement types.
           //
 
-          semantics::data_member* inv_m (inverse (m, "value"));
-          bool inv (inv_m != 0);
-
           semantics::type& vt (container_vt (t));
           semantics::type& idt (container_idt (m));
 
-          // select_all statement types.
+          // select statement types.
           //
           {
             os << "const unsigned int " << scope << "::" << endl
-               << "select_all_types[] ="
+               << "select_types[] ="
                << "{";
 
             statement_oids so (statement_where);
@@ -926,11 +943,11 @@ namespace relational
             os << "};";
           }
 
-          // insert_one statement types.
+          // insert statement types.
           //
           {
             os << "const unsigned int " << scope << "::" << endl
-               << "insert_one_types[] ="
+               << "insert_types[] ="
                << "{";
 
             if (!inv)
@@ -939,7 +956,7 @@ namespace relational
 
               so.traverse (m, idt, "id", "object_id");
 
-              switch (container_kind (t))
+              switch (ck)
               {
               case ck_ordered:
                 {
@@ -971,26 +988,96 @@ namespace relational
             os << "};";
           }
 
-          // delete_all statement types.
+          // update statement types.
           //
+          if (smart)
           {
             os << "const unsigned int " << scope << "::" << endl
-               << "delete_all_types[] ="
+               << "update_types[] ="
                << "{";
 
-            if (!inv)
+            statement_oids so (statement_where);
+
+            so.traverse (m, vt, "value", "value");
+            so.traverse (m, idt, "id", "object_id");
+
+            switch (ck)
             {
-              statement_oids so (statement_where);
-              so.traverse (m, idt, "id", "object_id");
+            case ck_ordered:
+              {
+                if (!unordered (m))
+                  so.traverse (m, container_it (t), "index", "index");
+                break;
+              }
+            case ck_map:
+            case ck_multimap:
+              {
+                //so.traverse (m, container_kt (t), "key", "key");
+                break;
+              }
+            case ck_set:
+            case ck_multiset:
+              {
+                //so.traverse (m, vt, "value", "value");
+                break;
+              }
             }
-            else
-              os << "0";
+
+            os << "};";
+          }
+
+          // delete statement types.
+          //
+          if (smart)
+          {
+            os << "const unsigned int " << scope << "::" << endl
+               << "delete_types[] ="
+               << "{";
+
+            statement_oids so (statement_where);
+            so.traverse (m, idt, "id", "object_id");
+
+            switch (ck)
+            {
+            case ck_ordered:
+              {
+                if (!unordered (m))
+                  so.traverse (m, container_it (t), "index", "index");
+                break;
+              }
+            case ck_map:
+            case ck_multimap:
+              {
+                //so.traverse (m, container_kt (t), "key", "key");
+                break;
+              }
+            case ck_set:
+            case ck_multiset:
+              {
+                //so.traverse (m, vt, "value", "value");
+                break;
+              }
+            }
 
             os << "};";
           }
         }
       };
       entry<container_traits> container_traits_;
+
+      struct container_cache_init_members:
+        relational::container_cache_init_members
+      {
+        container_cache_init_members (base const& x): base (x) {}
+
+        virtual void
+        extra_members ()
+        {
+          os << ", idn, idt";
+        }
+      };
+      entry<container_cache_init_members> container_cache_init_members_;
+
     }
   }
 }

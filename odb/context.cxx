@@ -2274,7 +2274,8 @@ namespace
       unsigned short f (flags_ & (context::test_container |
                                   context::test_straight_container |
                                   context::test_inverse_container |
-                                  context::test_readonly_container));
+                                  context::test_readonly_container |
+                                  context::test_smart_container));
 
       if (context::is_a (member_path_,
                          member_scope_,
@@ -2319,22 +2320,28 @@ is_a (data_member_path const& mp,
   if (f & test_lazy_pointer)
     r = r || (object_pointer (t) && lazy_pointer (t));
 
+  semantics::type* c;
   if ((f & (test_container |
             test_straight_container |
             test_inverse_container |
-            test_readonly_container)) != 0)
+            test_readonly_container |
+            test_smart_container)) != 0 &&
+      (c = container (m)) != 0)
   {
     if (f & test_container)
-      r = r || container (m);
+      r = r || true;
 
     if (f & test_straight_container)
-      r = r || (container(m) && !inverse (m, kp));
+      r = r || !inverse (m, kp);
 
     if (f & test_inverse_container)
-      r = r || (container (m) && inverse (m, kp));
+      r = r || inverse (m, kp);
 
     if (f & test_readonly_container)
-      r = r || (container (m) && readonly (mp, ms));
+      r = r || readonly (mp, ms);
+
+    if (f & test_smart_container)
+      r = r || (!inverse (m, kp) && !unordered (m) && container_smart (*c));
   }
 
   return r;

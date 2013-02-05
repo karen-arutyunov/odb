@@ -866,6 +866,12 @@ public:
     return c.get<container_kind_type> ("container-kind");
   }
 
+  static bool
+  container_smart (semantics::type& c)
+  {
+    return c.get<bool> ("container-smart");
+  }
+
   static semantics::type&
   container_idt (semantics::data_member& m)
   {
@@ -913,6 +919,7 @@ public:
   static unsigned short const test_straight_container = 0x10;
   static unsigned short const test_inverse_container = 0x20;
   static unsigned short const test_readonly_container = 0x40;
+  static unsigned short const test_smart_container = 0x80;
 
   // By default the test goes into bases for non-polymorphic
   // hierarchies and doesn't go for polymorphic. The following

@@ -103,24 +103,36 @@ namespace relational
         container_traits (base const& x): base (x) {}
 
         virtual void
-        container_public_extra_pre (semantics::data_member&)
+        container_public_extra_pre (semantics::data_member& m,
+                                    semantics::type& t)
         {
           if (!object (c_) || (abstract (c_) && !polymorphic (c_)))
             return;
 
+          bool smart (!inverse (m, "value") && !unordered (m) &&
+                      container_smart (t));
+
           // Container statement names.
           //
-          os << "static const char select_all_name[];"
-             << "static const char insert_one_name[];"
-             << "static const char delete_all_name[];"
+          os << "static const char select_name[];"
+             << "static const char insert_name[];";
+
+          if (smart)
+            os << "static const char update_name[];";
+
+          os << "static const char delete_name[];"
              << endl;
 
           // Container statement types.
           //
-          os << "static const unsigned int select_all_types[];"
-             << "static const unsigned int insert_one_types[];"
-             << "static const unsigned int delete_all_types[];"
-             << endl;
+          os << "static const unsigned int select_types[];"
+             << "static const unsigned int insert_types[];";
+
+          if (smart)
+            os << "static const unsigned int update_types[];"
+               << "static const unsigned int delete_types[];";
+
+          os << endl;
         }
       };
       entry<container_traits> container_traits_;

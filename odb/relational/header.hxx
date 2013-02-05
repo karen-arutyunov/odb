@@ -168,12 +168,12 @@ namespace relational
       }
 
       virtual void
-      container_public_extra_pre (semantics::data_member&)
+      container_public_extra_pre (semantics::data_member&, semantics::type&)
       {
       }
 
       virtual void
-      container_public_extra_post (semantics::data_member&)
+      container_public_extra_post (semantics::data_member&, semantics::type&)
       {
       }
 
@@ -233,11 +233,15 @@ namespace relational
           }
         }
 
+        bool smart (!inverse &&
+                    (ck != ck_ordered || ordered) &&
+                    container_smart (c));
+
         string name (flat_prefix_ + public_name (m) + "_traits");
 
         // Figure out column counts.
         //
-        size_t id_columns, data_columns, cond_columns;
+        size_t id_columns, value_columns, data_columns, cond_columns;
 
         if (!reuse_abst)
         {
@@ -260,9 +264,8 @@ namespace relational
               {
                 data_columns++;
 
-                // Index is not currently used (see also bind()).
-                //
-                // cond_columns++;
+                if (smart)
+                  cond_columns++;
               }
               break;
             }
@@ -313,14 +316,17 @@ namespace relational
             semantics::type& t (ptr == 0 ? vt : utype (*id_member (*ptr)));
 
             if (class_* comp = composite_wrapper (t))
-              data_columns += column_count (*comp).total;
+              value_columns = column_count (*comp).total;
             else
-              data_columns++;
+              value_columns = 1;
+
+            data_columns += value_columns;
           }
 
           // Store column counts for the source generator.
           //
           m.set ("id-column-count", id_columns);
+          m.set ("value-column-count", value_columns);
           m.set ("cond-column-count", cond_columns);
           m.set ("data-column-count", data_columns);
         }
@@ -344,31 +350,40 @@ namespace relational
 
         os << "{";
 
-        container_public_extra_pre (m);
+        container_public_extra_pre (m, c);
 
         if (!reuse_abst)
         {
           // column_count
           //
           os << "static const std::size_t id_column_count = " <<
-            id_columns << "UL;"
-             << "static const std::size_t cond_column_count = " <<
-            cond_columns << "UL;"
-             << "static const std::size_t data_column_count = " <<
+            id_columns << "UL;";
+
+          if (smart)
+            os << "static const std::size_t value_column_count = " <<
+              value_columns << "UL;"
+               << "static const std::size_t cond_column_count = " <<
+              cond_columns << "UL;";
+
+          os << "static const std::size_t data_column_count = " <<
             data_columns << "UL;"
              << endl;
 
           // Statements.
           //
-          os << "static const char insert_one_statement[];"
-             << "static const char select_all_statement[];"
-             << "static const char delete_all_statement[];"
+          os << "static const char insert_statement[];"
+             << "static const char select_statement[];";
+
+          if (smart)
+            os << "static const char update_statement[];";
+
+          os << "static const char delete_statement[];"
              << endl;
         }
 
         if (base)
         {
-          container_public_extra_post (m);
+          container_public_extra_post (m, c);
           os << "};";
 
           return;
@@ -437,8 +452,8 @@ namespace relational
         {
         case ck_ordered:
           {
-            os << "typedef ordered_functions<index_type, value_type> " <<
-              "functions_type;";
+            os << "typedef " << (smart ? "smart_" : "") <<
+              "ordered_functions<index_type, value_type> functions_type;";
             break;
           }
         case ck_map:
@@ -456,50 +471,56 @@ namespace relational
           }
         }
 
-        os << "typedef " << db << "::container_statements< " << name <<
-          " > statements_type;"
+        os << "typedef " << db << "::" << (smart ? "smart_" : "")
+           << "container_statements< " << name << " > statements_type;"
            << endl;
 
-        // cond_image_type (object id is taken from the object image)
+        // cond_image_type (object id is taken from the object image).
         //
-        os << "struct cond_image_type"
-           << "{";
-
-        switch (ck)
+        // For dumb containers we use the id binding directly.
+        //
+        if (smart)
         {
-        case ck_ordered:
-          {
-            if (ordered)
-            {
-              os << "// index" << endl
-                 << "//" << endl;
-              instance<image_member> im ("index_", *it, "index_type", "index");
-              im->traverse (m);
-            }
-            break;
-          }
-        case ck_map:
-        case ck_multimap:
-          {
-            os << "// key" << endl
-               << "//" << endl;
-            instance<image_member> im ("key_", *kt, "key_type", "key");
-            im->traverse (m);
-            break;
-          }
-        case ck_set:
-        case ck_multiset:
-          {
-            os << "// value" << endl
-               << "//" << endl;
-            instance<image_member> im ("value_", vt, "value_type", "value");
-            im->traverse (m);
-            break;
-          }
-        }
+          os << "struct cond_image_type"
+             << "{";
 
-        os << "std::size_t version;"
-           << "};";
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              if (ordered)
+              {
+                os << "// index" << endl
+                   << "//" << endl;
+                instance<image_member> im (
+                  "index_", *it, "index_type", "index");
+                im->traverse (m);
+              }
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              os << "// key" << endl
+                 << "//" << endl;
+              instance<image_member> im ("key_", *kt, "key_type", "key");
+              im->traverse (m);
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              os << "// value" << endl
+                 << "//" << endl;
+              instance<image_member> im ("value_", vt, "value_type", "value");
+              im->traverse (m);
+              break;
+            }
+          }
+
+          os << "std::size_t version;"
+             << "};";
+        }
 
         // data_image_type (object id is taken from the object image)
         //
@@ -545,12 +566,13 @@ namespace relational
 
         // bind (cond_image)
         //
-        os << "static void" << endl
-           << "bind (" << bind_vector << "," << endl
-           << "const " << bind_vector << " id," << endl
-           << "std::size_t id_size," << endl
-           << "cond_image_type&);"
-           << endl;
+        if (smart)
+          os << "static void" << endl
+             << "bind (" << bind_vector << "," << endl
+             << "const " << bind_vector << " id," << endl
+             << "std::size_t id_size," << endl
+             << "cond_image_type&);"
+             << endl;
 
         // bind (data_image)
         //
@@ -560,6 +582,17 @@ namespace relational
            << "std::size_t id_size," << endl
            << "data_image_type&);"
            << endl;
+
+        // bind (cond_image, data_image) (update)
+        //
+        if (smart)
+          os << "static void" << endl
+             << "bind (" << bind_vector << "," << endl
+             << "const " << bind_vector << " id," << endl
+             << "std::size_t id_size," << endl
+             << "cond_image_type&," << endl
+             << "data_image_type&);"
+             << endl;
 
         // grow ()
         //
@@ -581,7 +614,7 @@ namespace relational
           case ck_ordered:
             {
               if (ordered)
-                os << "init (data_image_type&, index_type, const value_type&);";
+                os << "init (data_image_type&, index_type*, const value_type&);";
               else
                 os << "init (data_image_type&, const value_type&);";
               break;
@@ -589,13 +622,43 @@ namespace relational
           case ck_map:
           case ck_multimap:
             {
-              os << "init (data_image_type&, const key_type&, const value_type&);";
+              os << "init (data_image_type&, const key_type*, const value_type&);";
               break;
             }
           case ck_set:
           case ck_multiset:
             {
               os << "init (data_image_type&, const value_type&);";
+              break;
+            }
+          }
+
+          os << endl;
+        }
+
+        // init (cond_image)
+        //
+        if (smart)
+        {
+          os << "static void" << endl;
+
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              os << "init (cond_image_type&, index_type);";
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              // os << "init (data_image_type&, const key_type&);";
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              // os << "init (data_image_type&, const value_type&);";
               break;
             }
           }
@@ -634,7 +697,7 @@ namespace relational
         os << "const data_image_type&, database*);"
            << endl;
 
-        // insert_one
+        // insert
         //
         os << "static void" << endl;
 
@@ -642,26 +705,26 @@ namespace relational
         {
         case ck_ordered:
           {
-            os << "insert_one (index_type, const value_type&, void*);";
+            os << "insert (index_type, const value_type&, void*);";
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "insert_one (const key_type&, const value_type&, void*);";
+            os << "insert (const key_type&, const value_type&, void*);";
             break;
           }
         case ck_set:
         case ck_multiset:
           {
-            os << "insert_one (const value_type&, void*);";
+            os << "insert (const value_type&, void*);";
             break;
           }
         }
 
         os << endl;
 
-        // load_all
+        // select
         //
         os << "static bool" << endl;
 
@@ -669,65 +732,120 @@ namespace relational
         {
         case ck_ordered:
           {
-            os << "load_all (index_type&, value_type&, void*);";
+            os << "select (index_type&, value_type&, void*);";
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "load_all (key_type&, value_type&, void*);";
+            os << "select (key_type&, value_type&, void*);";
             break;
           }
         case ck_set:
         case ck_multiset:
           {
-            os << "load_all (value_type&, void*);";
+            os << "select (value_type&, void*);";
             break;
           }
         }
 
         os << endl;
 
-        // delete_all
+        // update
+        //
+        if (smart)
+        {
+          os << "static void" << endl;
+
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              os << "update (index_type, const value_type&, void*);";
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              //os << "update (const key_type&, const value_type&, void*);";
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              //os << "update (const value_type&, const value_type&, void*);";
+              break;
+            }
+          }
+
+          os << endl;
+        }
+
+        // delete_
         //
         os << "static void" << endl
-           << "delete_all (void*);"
+           << "delete_ (";
+
+        if (smart)
+        {
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              os << "index_type, ";
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              break;
+            }
+          }
+        }
+
+        os << "void*);"
            << endl;
 
         // persist
         //
         if (!inverse)
           os << "static void" << endl
-             << "persist (const container_type&," << endl
-             << "const " << db << "::binding& id," << endl
-             << "statements_type&);"
+             << "persist (const container_type&, statements_type&);"
              << endl;
 
         // load
         //
         os << "static void" << endl
-           << "load (container_type&," << endl
-           << "const " << db << "::binding& id," << endl
-           << "statements_type&);"
+           << "load (container_type&, statements_type&);"
            << endl;
 
         // update
         //
         if (!(inverse || readonly (member_path_, member_scope_)))
           os << "static void" << endl
-             << "update (const container_type&," << endl
-             << "const " << db << "::binding& id," << endl
-             << "statements_type&);"
+             << "update (const container_type&, statements_type&);"
              << endl;
 
         // erase
         //
         if (!inverse)
+        {
           os << "static void" << endl
-             << "erase (const " << db << "::binding& id, statements_type&);"
-             << endl;
+             << "erase (";
 
-        container_public_extra_post (m);
+          if (smart)
+            os << "const container_type*, ";
+
+          os << "statements_type&);"
+             << endl;
+        }
+
+        container_public_extra_post (m, c);
 
         os << "};";
       }

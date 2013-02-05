@@ -305,7 +305,8 @@ namespace relational
 
         // erase (object_type)
         //
-        if (id != 0 && !poly && optimistic == 0)
+        if (id != 0 && !poly && optimistic == 0 &&
+            !has_a (c, test_smart_container))
         {
           os << "inline" << endl
              << "void " << traits << "::" << endl

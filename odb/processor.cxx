@@ -1106,6 +1106,7 @@ namespace
       //
 
       container_kind_type ck;
+      bool smart;
       semantics::type* vt (0);
       semantics::type* it (0);
       semantics::type* kt (0);
@@ -1117,6 +1118,7 @@ namespace
       if (t.count ("container-kind"))
       {
         ck = t.get<container_kind_type> ("container-kind");
+        smart = t.get<bool> ("container-smart");
         vt = t.get<semantics::type*> ("value-tree-type");
         vh = t.get<semantics::names*> ("value-tree-hint");
 
@@ -1151,22 +1153,21 @@ namespace
         //
         try
         {
-          tree kind (
+          tree decl (
             lookup_qualified_name (
               inst, get_identifier ("kind"), false, false));
 
-          if (kind == error_mark_node || TREE_CODE (kind) != VAR_DECL)
+          if (decl == error_mark_node || TREE_CODE (decl) != VAR_DECL)
             throw operation_failed ();
-
 
           // Instantiate this decalaration so that we can get its value.
           //
-          if (DECL_TEMPLATE_INSTANTIATION (kind) &&
-              !DECL_TEMPLATE_INSTANTIATED (kind) &&
-              !DECL_EXPLICIT_INSTANTIATION (kind))
-            instantiate_decl (kind, false, false);
+          if (DECL_TEMPLATE_INSTANTIATION (decl) &&
+              !DECL_TEMPLATE_INSTANTIATED (decl) &&
+              !DECL_EXPLICIT_INSTANTIATION (decl))
+            instantiate_decl (decl, false, false);
 
-          tree init (DECL_INITIAL (kind));
+          tree init (DECL_INITIAL (decl));
 
           if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
             throw operation_failed ();
@@ -1196,6 +1197,63 @@ namespace
         }
 
         t.set ("container-kind", ck);
+
+        // See if it is a smart container.
+        //
+        try
+        {
+          tree decl (
+            lookup_qualified_name (
+              inst, get_identifier ("smart"), false, false));
+
+          if (decl == error_mark_node || TREE_CODE (decl) != VAR_DECL)
+            throw operation_failed ();
+
+          // Instantiate this decalaration so that we can get its value.
+          //
+          if (DECL_TEMPLATE_INSTANTIATION (decl) &&
+              !DECL_TEMPLATE_INSTANTIATED (decl) &&
+              !DECL_EXPLICIT_INSTANTIATION (decl))
+            instantiate_decl (decl, false, false);
+
+          tree init (DECL_INITIAL (decl));
+
+          if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
+            throw operation_failed ();
+
+          unsigned long long e;
+
+          {
+            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
+            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
+
+            unsigned long long l (hwl);
+            unsigned long long h (hwh);
+            unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+            e = (h << width) + l;
+          }
+
+          smart = static_cast<bool> (e);
+        }
+        catch (operation_failed const&)
+        {
+          os << f << ":" << l << ":" << c << ": error: "
+             << "container_traits specialization does not define the "
+             << "'smart' constant" << endl;
+          throw;
+        }
+
+        // For now we only support ordered smart containers.
+        //
+        if (smart && ck != ck_ordered)
+        {
+          os << f << ":" << l << ":" << c << ": error: only ordered smart " <<
+            "containers are currently supported" << endl;
+          throw operation_failed ();
+        }
+
+        t.set ("container-smart", smart);
 
         // Mark id column as not null.
         //
@@ -1370,6 +1428,16 @@ namespace
       if (ck == ck_ordered && m.count ("value-inverse"))
         m.set ("unordered", true);
 
+      // Issue an error if we have a non-inverse smart unordered container.
+      //
+      if (smart && ck == ck_ordered && unordered (m) &&
+          !m.count ("value-inverse"))
+      {
+        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+           << " error: smart ordered container cannot be unordered" << endl;
+        throw operation_failed ();
+      }
+
       // Issue an error if we have a null column in a set container.
       // This can only happen if the value is declared as null in
       // the member.
@@ -1378,7 +1446,6 @@ namespace
       {
         os << m.file () << ":" << m.line () << ":" << m.column () << ":"
            << " error: set container cannot contain null values" << endl;
-
         throw operation_failed ();
       }
 

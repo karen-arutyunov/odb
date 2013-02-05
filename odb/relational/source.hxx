@@ -1889,6 +1889,10 @@ namespace relational
           }
         }
 
+        bool smart (!inverse &&
+                    (ck != ck_ordered || ordered) &&
+                    container_smart (t));
+
         if (generate_grow)
           grow = grow || context::grow (m, vt, "value");
 
@@ -1922,11 +1926,34 @@ namespace relational
           qname table (table_name (m, table_prefix_));
           string qtable (quote_id (table));
           instance<object_columns_list> id_cols;
+          instance<object_columns_list> ik_cols; // index/key columns
 
-          // select_all_statement
+          if (smart)
+          {
+            switch (ck)
+            {
+            case ck_ordered:
+              {
+                ik_cols->traverse (m, *it, "index", "index");
+                break;
+              }
+            case ck_map:
+            case ck_multimap:
+              {
+                break;
+              }
+            case ck_set:
+            case ck_multiset:
+              {
+                break;
+              }
+            }
+          }
+
+          // select_statement
           //
           os << "const char " << scope << "::" << endl
-             << "select_all_statement[] =" << endl;
+             << "select_statement[] =" << endl;
 
           if (inverse)
           {
@@ -2083,10 +2110,10 @@ namespace relational
           os << ";"
              << endl;
 
-          // insert_one_statement
+          // insert_statement
           //
           os << "const char " << scope << "::" << endl
-             << "insert_one_statement[] =" << endl;
+             << "insert_statement[] =" << endl;
 
           if (inverse)
             os << strlit ("") << ";"
@@ -2148,10 +2175,57 @@ namespace relational
                << endl;
           }
 
-          // delete_all_statement
+          // update_statement
+          //
+          if (smart)
+          {
+            os << "const char " << scope << "::" << endl
+               << "update_statement[] =" << endl
+               << strlit ("UPDATE " + qtable + " SET ");
+
+            instance<query_parameters> qp (table);
+            statement_columns sc;
+            {
+              query_parameters* p (qp.get ()); // Imperfect forwarding.
+              statement_kind sk (statement_update); // Imperfect forwarding.
+              instance<object_columns> t (sk, sc, p);
+              t->traverse (m, vt, "value", "value");
+              process_statement_columns (sc, statement_update);
+            }
+
+            for (statement_columns::const_iterator i (sc.begin ()),
+                   e (sc.end ()); i != e;)
+            {
+              string const& c (i->column);
+              os << endl
+                 << strlit (c + (++i != e ? "," : ""));
+            }
+
+            for (object_columns_list::iterator b (id_cols->begin ()), i (b);
+                 i != id_cols->end (); ++i)
+            {
+              os << endl
+                 << strlit ((i == b ? " WHERE " : " AND ") +
+                            quote_id (i->name) + "=" +
+                            convert_to (qp->next (), i->type, *i->member));
+            }
+
+            for (object_columns_list::iterator b (ik_cols->begin ()), i (b);
+                 i != ik_cols->end (); ++i)
+            {
+              os << endl
+                 << strlit (" AND " + quote_id (i->name) + "=" +
+                            convert_to (qp->next (), i->type, *i->member));
+            }
+
+            os << ";"
+               << endl;
+          }
+
+          // delete_statement
           //
           os << "const char " << scope << "::" << endl
-             << "delete_all_statement[] =" << endl;
+             << "delete_statement[] =" << endl;
 
           if (inverse)
             os << strlit ("") << ";"
@@ -2171,6 +2245,18 @@ namespace relational
                             convert_to (qp->next (), i->type, *i->member));
             }
 
+            if (smart)
+            {
+              for (object_columns_list::iterator b (ik_cols->begin ()), i (b);
+                   i != ik_cols->end (); ++i)
+              {
+                os << endl
+                   << strlit (" AND " + quote_id (i->name) +
+                              (ck == ck_ordered ? ">=" : "=") +
+                              convert_to (qp->next (), i->type, *i->member));
+              }
+            }
+
             os << ";"
                << endl;
           }
@@ -2183,18 +2269,20 @@ namespace relational
         // Functions.
         //
 
-        // bind()
+        // bind (cond_image_type)
         //
+        if (smart)
         {
-          // bind (cond_image_type)
-          //
           os << "void " << scope << "::" << endl
              << "bind (" << bind_vector << " b," << endl
              << "const " << bind_vector << " id," << endl
              << "std::size_t id_size," << endl
              << "cond_image_type& c)"
              << "{"
-             << "ODB_POTENTIALLY_UNUSED (c);"
+             << "using namespace " << db << ";"
+             << endl
+             << "statement_kind sk (statement_select);"
+             << "ODB_POTENTIALLY_UNUSED (sk);"
              << endl
              << "std::size_t n (0);"
              << endl;
@@ -2208,11 +2296,6 @@ namespace relational
 
           // We don't need to update the bind index since this is the
           // last element.
-          //
-          // Index/key is currently not used (see also cond_column_count).
-          //
-#if 0
-          // Would need statement_kind if this is enabled.
           //
           switch (ck)
           {
@@ -2248,12 +2331,12 @@ namespace relational
               break;
             }
           }
-#endif
-
           os << "}";
+        }
 
-          // bind (data_image_type)
-          //
+        // bind (data_image_type)
+        //
+        {
           os << "void " << scope << "::" << endl
              << "bind (" << bind_vector << " b," << endl
              << "const " << bind_vector << " id," << endl
@@ -2329,6 +2412,84 @@ namespace relational
           os << "}";
         }
 
+        // bind (cond_image, data_image) (update)
+        //
+        if (smart)
+        {
+          os << "void " << scope << "::" << endl
+             << "bind (" << bind_vector << " b," << endl
+             << "const " << bind_vector << " id," << endl
+             << "std::size_t id_size," << endl
+             << "cond_image_type& c," << endl
+             << "data_image_type& d)"
+             << "{"
+             << "using namespace " << db << ";"
+             << endl
+             << "statement_kind sk (statement_update);"
+             << "ODB_POTENTIALLY_UNUSED (sk);"
+             << endl
+             << "std::size_t n (0);"
+             << endl;
+
+          os << "// key" << endl
+             << "//" << endl;
+          instance<bind_member> bm ("value_", "d", vt, "value_type", "value");
+          bm->traverse (m);
+
+          if (semantics::class_* c = composite_wrapper (vt))
+            os << "n += " << column_count (*c).total << "UL;"
+               << endl;
+          else
+            os << "n++;"
+               << endl;
+
+          os << "// object_id" << endl
+             << "//" << endl
+             << "if (id != 0)" << endl
+             << "std::memcpy (&b[n], id, id_size * sizeof (id[0]));"
+             << "n += id_size;"
+             << endl;
+
+          // We don't need to update the bind index since this is the
+          // last element.
+          //
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              if (ordered)
+              {
+                os << "// index" << endl
+                   << "//" << endl;
+                instance<bind_member> bm (
+                  "index_", "c", *it, "index_type", "index");
+                bm->traverse (m);
+              }
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              os << "// key" << endl
+                 << "//" << endl;
+              instance<bind_member> bm ("key_", "c", *kt, "key_type", "key");
+              bm->traverse (m);
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              os << "// value" << endl
+                 << "//" << endl;
+              instance<bind_member> bm (
+                "value_", "c", vt, "value_type", "value");
+              bm->traverse (m);
+              break;
+            }
+          }
+          os << "}";
+        }
+
         // grow ()
         //
         if (generate_grow)
@@ -2393,7 +2554,7 @@ namespace relational
           case ck_ordered:
             {
               if (ordered)
-                os << "init (data_image_type& i, index_type j, " <<
+                os << "init (data_image_type& i, index_type* j, " <<
                   "const value_type& v)";
               else
                 os << "init (data_image_type& i, const value_type& v)";
@@ -2402,7 +2563,7 @@ namespace relational
           case ck_map:
           case ck_multimap:
             {
-              os << "init (data_image_type& i, const key_type& k, " <<
+              os << "init (data_image_type& i, const key_type* k, " <<
                 "const value_type& v)";
               break;
             }
@@ -2432,10 +2593,11 @@ namespace relational
               if (ordered)
               {
                 os << "// index" << endl
-                   << "//" << endl;
+                   << "//" << endl
+                   << "if (j != 0)";
 
                 instance<init_image_member> im (
-                  "index_", "j", *it, "index_type", "index");
+                  "index_", "*j", *it, "index_type", "index");
                 im->traverse (m);
               }
               break;
@@ -2444,10 +2606,11 @@ namespace relational
           case ck_multimap:
             {
               os << "// key" << endl
-                 << "//" << endl;
+                 << "//" << endl
+                 << "if (k != 0)";
 
               instance<init_image_member> im (
-                "key_", "k", *kt, "key_type", "key");
+                "key_", "*k", *kt, "key_type", "key");
               im->traverse (m);
 
               break;
@@ -2472,6 +2635,52 @@ namespace relational
                << "i.version++;";
 
           os << "}";
+        }
+
+        // init (cond_image)
+        //
+        if (smart)
+        {
+          os << "void " << scope << "::" << endl;
+
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              os << "init (cond_image_type& i, index_type j)"
+                 << "{"
+                 << "using namespace " << db << ";"
+                 << endl
+                 << "statement_kind sk (statement_select);"
+                 << "ODB_POTENTIALLY_UNUSED (sk);"
+                 << endl;
+
+              instance<init_image_member> im (
+                "index_", "j", *it, "index_type", "index");
+              im->traverse (m);
+
+              os << "}";
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              // Need to handle growth.
+              //
+              // os << "init (data_image_type&, const key_type&);";
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              // Need to handle growth.
+              //
+              // os << "init (data_image_type&, const value_type&);";
+              break;
+            }
+          }
+
+          os << endl;
         }
 
         // init (data)
@@ -2546,7 +2755,7 @@ namespace relational
         }
         os << "}";
 
-        // insert_one
+        // insert
         //
         {
           string ia, ka, va, da;
@@ -2565,7 +2774,7 @@ namespace relational
           {
           case ck_ordered:
             {
-              os << "insert_one (index_type" << ia << ", " <<
+              os << "insert (index_type" << ia << ", " <<
                 "const value_type&" << va << ", " <<
                 "void*" << da << ")";
               break;
@@ -2573,7 +2782,7 @@ namespace relational
           case ck_map:
           case ck_multimap:
             {
-              os << "insert_one (const key_type&" << ka << ", " <<
+              os << "insert (const key_type&" << ka << ", " <<
                 "const value_type&" << va << ", " <<
                 "void*" << da << ")";
               break;
@@ -2581,7 +2790,7 @@ namespace relational
           case ck_set:
           case ck_multiset:
             {
-              os << "insert_one (const value_type&" << va << ", " <<
+              os << "insert (const value_type&" << va << ", " <<
                 "void*" << da << ")";
               break;
             }
@@ -2594,7 +2803,6 @@ namespace relational
             os << "using namespace " << db << ";"
                << endl
                << "statements_type& sts (*static_cast< statements_type* > (d));"
-               << "binding& b (sts.data_image_binding ());"
                << "data_image_type& di (sts.data_image ());"
                << endl;
 
@@ -2602,13 +2810,13 @@ namespace relational
             {
             case ck_ordered:
               {
-                os << "init (di, " << (ordered ? "i, " : "") << "v);";
+                os << "init (di, " << (ordered ? "&i, " : "") << "v);";
                 break;
               }
             case ck_map:
             case ck_multimap:
               {
-                os << "init (di, k, v);";
+                os << "init (di, &k, v);";
                 break;
               }
             case ck_set:
@@ -2620,22 +2828,89 @@ namespace relational
             }
 
             os << endl
-               << "if (di.version != sts.data_image_version ())"
+               << "if (sts.data_binding_test_version ())"
                << "{"
-               << "bind (b.bind, 0, sts.id_binding ().count, di);"
-               << "sts.data_image_version (di.version);"
-               << "b.version++;"
-               << "sts.select_image_binding ().version++;"
+               << "const binding& id (sts.id_binding ());"
+               << "bind (sts.data_bind (), id.bind, id.count, di);"
+               << "sts.data_binding_update_version ();"
                << "}"
-               << "if (!sts.insert_one_statement ().execute ())" << endl
+               << "if (!sts.insert_statement ().execute ())" << endl
                << "throw object_already_persistent ();";
           }
 
           os << "}";
         }
 
+        // update
+        //
+        if (smart)
+        {
+          os << "void " << scope << "::" << endl;
 
-        // load_all
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              os << "update (index_type i, const value_type& v, void* d)";
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              break;
+            }
+          }
+
+          os << "{";
+
+          os << "using namespace " << db << ";"
+             << endl
+             << "statements_type& sts (*static_cast< statements_type* > (d));"
+             << "cond_image_type& ci (sts.cond_image ());"
+             << "data_image_type& di (sts.data_image ());"
+             << endl;
+
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              os << "init (ci, i);";
+              os << "init (di, 0, v);";
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              //os << "init (di, 0, v);";
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              //os << "init (di, v);";
+              break;
+            }
+          }
+
+          os << endl
+             << "if (sts.update_binding_test_version ())"
+             << "{"
+             << "const binding& id (sts.id_binding ());"
+             << "bind (sts.update_bind (), id.bind, id.count, ci, di);"
+             << "sts.update_binding_update_version ();"
+             << "}";
+
+          os << "if (sts.update_statement ().execute () == 0)" << endl
+             << "throw object_not_persistent ();"
+             << "}";
+        }
+
+        // select
         //
         os << "bool " << scope << "::" << endl;
 
@@ -2643,26 +2918,27 @@ namespace relational
         {
         case ck_ordered:
           {
-            os << "load_all (index_type&" << (ordered ? " i" : "") <<
+            os << "select (index_type&" << (ordered ? " i" : "") <<
               ", value_type& v, void* d)";
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "load_all (key_type& k, value_type& v, void* d)";
+            os << "select (key_type& k, value_type& v, void* d)";
             break;
           }
         case ck_set:
         case ck_multiset:
           {
-            os << "load_all (value_type& v, void* d)";
+            os << "select (value_type& v, void* d)";
             break;
           }
         }
 
         os << "{"
            << "using namespace " << db << ";"
+           << "using " << db << "::select_statement;" // Conflicts.
            << endl
            << "statements_type& sts (*static_cast< statements_type* > (d));"
            << "data_image_type& di (sts.data_image ());";
@@ -2698,27 +2974,21 @@ namespace relational
 
         // If we are loading an eager pointer, then the call to init
         // above executes other statements which potentially could
-        // change the image.
+        // change the image, including the id.
         //
         if (eager_ptr)
         {
-          os << "const binding& idb (sts.id_binding ());"
-             << endl
-             << "if (di.version != sts.data_image_version () ||" << endl
-             << "idb.version != sts.data_id_binding_version ())"
+          os << "if (sts.data_binding_test_version ())"
              << "{"
-             << "binding& b (sts.data_image_binding ());"
-             << "bind (b.bind, idb.bind, idb.count, di);"
-             << "sts.data_image_version (di.version);"
-             << "sts.data_id_binding_version (idb.version);"
-             << "b.version++;"
-             << "sts.select_image_binding ().version++;"
+             << "const binding& id (sts.id_binding ());"
+             << "bind (sts.data_bind (), id.bind, id.count, di);"
+             << "sts.data_binding_update_version ();"
              << "}";
         }
 
         // Fetch next.
         //
-        os << "select_statement& st (sts.select_all_statement ());"
+        os << "select_statement& st (sts.select_statement ());"
            << "select_statement::result r (st.fetch ());";
 
         if (grow)
@@ -2727,13 +2997,12 @@ namespace relational
              << "{"
              << "grow (di, sts.select_image_truncated ());"
              << endl
-             << "if (di.version != sts.data_image_version ())"
+             << "if (sts.data_binding_test_version ())"
              << "{"
-             << "binding& b (sts.data_image_binding ());"
-             << "bind (b.bind, 0, sts.id_binding ().count, di);"
-             << "sts.data_image_version (di.version);"
-             << "b.version++;"
-             << "sts.select_image_binding ().version++;"
+            // Id cannot change.
+            //
+             << "bind (sts.data_bind (), 0, sts.id_binding ().count, di);"
+             << "sts.data_binding_update_version ();"
              << "st.refetch ();"
              << "}"
              << "}";
@@ -2741,17 +3010,77 @@ namespace relational
         os << "return r != select_statement::no_data;"
            << "}";
 
-        // delete_all
+        // delete_
         //
         os << "void " << scope << "::" << endl
-           << "delete_all (void*" << (inverse ? "" : " d") << ")"
+           << "delete_ (";
+
+        if (smart)
+        {
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              os << "index_type i, ";
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              break;
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              break;
+            }
+          }
+        }
+
+        os << "void*" << (inverse ? "" : " d") << ")"
            << "{";
 
         if (!inverse)
+        {
           os << "using namespace " << db << ";"
              << endl
-             << "statements_type& sts (*static_cast< statements_type* > (d));"
-             << "sts.delete_all_statement ().execute ();";
+             << "statements_type& sts (*static_cast< statements_type* > (d));";
+
+          if (smart)
+          {
+            os << "cond_image_type& ci (sts.cond_image ());"
+               << endl;
+
+            switch (ck)
+            {
+            case ck_ordered:
+              {
+                os << "init (ci, i);";
+                break;
+              }
+            case ck_map:
+            case ck_multimap:
+              {
+                break;
+              }
+            case ck_set:
+            case ck_multiset:
+              {
+                break;
+              }
+            }
+
+            os << endl
+               << "if (sts.cond_binding_test_version ())"
+               << "{"
+               << "const binding& id (sts.id_binding ());"
+               << "bind (sts.cond_bind (), id.bind, id.count, ci);"
+               << "sts.cond_binding_update_version ();"
+               << "}";
+          }
+
+          os << "sts.delete_statement ().execute ();";
+        }
 
         os << "}";
 
@@ -2760,26 +3089,14 @@ namespace relational
         if (!inverse)
         {
           os << "void " << scope << "::" << endl
-             << "persist (const container_type& c," << endl
-             << "const " << db << "::binding& id," << endl
-             << "statements_type& sts)"
+             << "persist (const container_type& c, statements_type& sts)"
              << "{"
              << "using namespace " << db << ";"
              << endl
-             << "binding& b (sts.data_image_binding ());"
-             << "if (id.version != sts.data_id_binding_version () || " <<
-            "b.version == 0)"
-             << "{"
-             << "bind (b.bind, id.bind, id.count, sts.data_image ());"
-             << "sts.data_id_binding_version (id.version);"
-             << "b.version++;"
-             << "sts.select_image_binding ().version++;"
-             << "}"
-             << "sts.id_binding (id);"
              << "functions_type& fs (sts.functions ());";
 
-          if (ck == ck_ordered)
-            os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+          if (!smart && ck == ck_ordered)
+            os << "fs.ordered_ = " << (ordered ? "true" : "false") << ";";
 
           os << "container_traits_type::persist (c, fs);"
              << "}";
@@ -2788,30 +3105,21 @@ namespace relational
         // load
         //
         os << "void " << scope << "::" << endl
-           << "load (container_type& c," << endl
-           << "const " << db << "::binding& id," << endl
-           << "statements_type& sts)"
+           << "load (container_type& c, statements_type& sts)"
            << "{"
            << "using namespace " << db << ";"
+           << "using " << db << "::select_statement;" // Conflicts.
            << endl
-           << "binding& db (sts.data_image_binding ());"
-           << "if (id.version != sts.data_id_binding_version () || " <<
-          "db.version == 0)"
+           << "const binding& id (sts.id_binding ());"
+           << endl
+           << "if (sts.data_binding_test_version ())"
            << "{"
-           << "bind (db.bind, id.bind, id.count, sts.data_image ());"
-           << "sts.data_id_binding_version (id.version);"
-           << "db.version++;"
-           << "sts.select_image_binding ().version++;"
+           << "bind (sts.data_bind (), id.bind, id.count, sts.data_image ());"
+           << "sts.data_binding_update_version ();"
            << "}"
-           << "binding& cb (sts.cond_image_binding ());"
-           << "if (id.version != sts.cond_id_binding_version () || " <<
-          "cb.version == 0)"
-           << "{"
-           << "bind (cb.bind, id.bind, id.count, sts.cond_image ());"
-           << "sts.cond_id_binding_version (id.version);"
-           << "cb.version++;"
-           << "}"
-           << "select_statement& st (sts.select_all_statement ());"
+          // We use the id binding directly so no need to check cond binding.
+          //
+           << "select_statement& st (sts.select_statement ());"
            << "st.execute ();"
            << "auto_result ar (st);";
 
@@ -2830,23 +3138,22 @@ namespace relational
              << "data_image_type& di (sts.data_image ());"
              << "grow (di, sts.select_image_truncated ());"
              << endl
-             << "if (di.version != sts.data_image_version ())"
+             << "if (sts.data_binding_test_version ())"
              << "{"
-             << "bind (db.bind, 0, id.count, sts.data_image ());"
-             << "sts.data_image_version (di.version);"
-             << "db.version++;"
-             << "sts.select_image_binding ().version++;"
+            // Id cannot change.
+            //
+             << "bind (sts.data_bind (), 0, id.count, di);"
+             << "sts.data_binding_update_version ();"
              << "st.refetch ();"
              << "}"
              << "}";
 
         os << "bool more (r != select_statement::no_data);"
            << endl
-           << "sts.id_binding (id);"
            << "functions_type& fs (sts.functions ());";
 
-        if (ck == ck_ordered)
-          os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+        if (!smart && ck == ck_ordered)
+          os << "fs.ordered_ = " << (ordered ? "true" : "false") << ";";
 
         os << "container_traits_type::load (c, more, fs);"
            << "}";
@@ -2856,37 +3163,21 @@ namespace relational
         if (!(inverse || readonly (member_path_, member_scope_)))
         {
           os << "void " << scope << "::" << endl
-             << "update (const container_type& c," << endl
-             << "const " << db << "::binding& id," << endl
-             << "statements_type& sts)"
+             << "update (const container_type& c, statements_type& sts)"
              << "{"
              << "using namespace " << db << ";"
              << endl
-             << "binding& db (sts.data_image_binding ());"
-             << "if (id.version != sts.data_id_binding_version () || " <<
-            "db.version == 0)"
+             << "const binding& id (sts.id_binding ());"
+             << endl
+             << "if (sts.data_binding_test_version ())"
              << "{"
-             << "bind (db.bind, id.bind, id.count, sts.data_image ());"
-             << "sts.data_id_binding_version (id.version);"
-             << "db.version++;"
-             << "sts.select_image_binding ().version++;"
+             << "bind (sts.data_bind (), id.bind, id.count, sts.data_image ());"
+             << "sts.data_binding_update_version ();"
              << "}"
-            //
-            // We may need cond if the specialization calls delete_all.
-            //
-             << "binding& cb (sts.cond_image_binding ());"
-             << "if (id.version != sts.cond_id_binding_version () || " <<
-            "cb.version == 0)"
-             << "{"
-             << "bind (cb.bind, id.bind, id.count, sts.cond_image ());"
-             << "sts.cond_id_binding_version (id.version);"
-             << "cb.version++;"
-             << "}"
-             << "sts.id_binding (id);"
              << "functions_type& fs (sts.functions ());";
 
-          if (ck == ck_ordered)
-            os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+          if (!smart && ck == ck_ordered)
+            os << "fs.ordered_ = " << (ordered ? "true" : "false") << ";";
 
           os << "container_traits_type::update (c, fs);"
              << "}";
@@ -2897,25 +3188,21 @@ namespace relational
         if (!inverse)
         {
           os << "void " << scope << "::" << endl
-             << "erase (const " << db << "::binding& id, statements_type& sts)"
+             << "erase (";
+
+          if (smart)
+            os << "const container_type* c, ";
+
+          os << "statements_type& sts)"
              << "{"
              << "using namespace " << db << ";"
              << endl
-             << "binding& b (sts.cond_image_binding ());"
-             << "if (id.version != sts.cond_id_binding_version () || " <<
-            "b.version == 0)"
-             << "{"
-             << "bind (b.bind, id.bind, id.count, sts.cond_image ());"
-             << "sts.cond_id_binding_version (id.version);"
-             << "b.version++;"
-             << "}"
-             << "sts.id_binding (id);"
              << "functions_type& fs (sts.functions ());";
 
-          if (ck == ck_ordered)
-            os << "fs.ordered (" << (ordered ? "true" : "false") << ");";
+          if (!smart && ck == ck_ordered)
+            os << "fs.ordered_ = " << (ordered ? "true" : "false") << ";";
 
-          os << "container_traits_type::erase (fs);"
+          os << "container_traits_type::erase (" << (smart ? "c, " : "") << "fs);"
              << "}";
         }
       }
@@ -2937,10 +3224,16 @@ namespace relational
       }
 
       virtual void
-      traverse_container (semantics::data_member& m, semantics::type&)
+      traverse_container (semantics::data_member& m, semantics::type& c)
       {
+        bool smart (!context::inverse (m, "value") &&
+                    !unordered (m) &&
+                    container_smart (c));
+
         string traits (flat_prefix_ + public_name (m) + "_traits");
-        os << db << "::container_statements_impl< " << traits << " > " <<
+
+        os << db << "::" << (smart ? "smart_" : "") <<
+          "container_statements_impl< " << traits << " > " <<
           flat_prefix_ << m.name () << ";";
       }
     };
@@ -2967,8 +3260,13 @@ namespace relational
           os << "," << endl
              << "  ";
 
-        os << flat_prefix_ << m.name () << " (c)";
+        os << flat_prefix_ << m.name () << " (c, id";
+        extra_members ();
+        os << ")";
       }
+
+      virtual void
+      extra_members () {}
 
     protected:
       bool first_;
@@ -2985,7 +3283,8 @@ namespace relational
         persist_call,
         load_call,
         update_call,
-        erase_call
+        erase_obj_call,
+        erase_id_call
       };
 
       container_calls (call_type call)
@@ -3001,7 +3300,7 @@ namespace relational
                                   semantics::class_& c,
                                   semantics::type* w)
       {
-        if (m == 0 || call_ == erase_call || modifier_ != 0)
+        if (m == 0 || call_ == erase_id_call || modifier_ != 0)
         {
           object_members_base::traverse_composite (m, c);
           return;
@@ -3075,11 +3374,12 @@ namespace relational
       }
 
       virtual void
-      traverse_container (semantics::data_member& m, semantics::type&)
+      traverse_container (semantics::data_member& m, semantics::type& c)
       {
         using semantics::type;
 
         bool inverse (context::inverse (m, "value"));
+        bool smart (!inverse && !unordered (m) && container_smart (c));
 
         // In certain cases we don't need to do anything.
         //
@@ -3112,7 +3412,7 @@ namespace relational
           throw operation_failed ();
         }
 
-        if (call_ != erase_call)
+        if (call_ != erase_id_call && (call_ != erase_obj_call || smart))
         {
           os << "{";
 
@@ -3178,7 +3478,6 @@ namespace relational
           {
             os << traits << "::persist (" << endl
                << var << "," << endl
-               << "idb," << endl
                << "sts.container_statment_cache ()." << sts_name << ");";
             break;
           }
@@ -3186,7 +3485,6 @@ namespace relational
           {
             os << traits << "::load (" << endl
                << var << "," << endl
-               << "idb," << endl
                << "sts.container_statment_cache ()." << sts_name << ");";
             break;
           }
@@ -3194,21 +3492,34 @@ namespace relational
           {
             os << traits << "::update (" << endl
                << var << "," << endl
-               << "idb," << endl
                << "sts.container_statment_cache ()." << sts_name << ");";
             break;
           }
-        case erase_call:
+        case erase_obj_call:
           {
-            os << traits << "::erase (" << endl
-               << "idb," << endl
-               << "sts.container_statment_cache ()." << sts_name << ");"
+            os << traits << "::erase (" << endl;
+
+            if (smart)
+              os << "&" << var << "," << endl;
+
+            os << "sts.container_statment_cache ()." << sts_name << ");"
+               << endl;
+            break;
+          }
+        case erase_id_call:
+          {
+            os << traits << "::erase (" << endl;
+
+            if (smart)
+              os << "0," << endl;
+
+            os << "sts.container_statment_cache ()." << sts_name << ");"
                << endl;
             break;
           }
         }
 
-        if (call_ != erase_call)
+        if (call_ != erase_id_call && (call_ != erase_obj_call || smart))
         {
           // Call the modifier if we are using a proper one.
           //
@@ -3435,9 +3746,10 @@ namespace relational
       //
 
       virtual void
-      object_extra (type&)
-      {
-      }
+      object_extra (type&) {}
+
+      virtual void
+      container_cache_extra_args (bool /*used*/) {}
 
       virtual void
       object_query_statement_ctor_args (type&,
