@@ -353,7 +353,7 @@ namespace odb
       container_statement_cache_type&
       container_statment_cache ()
       {
-        return container_statement_cache_.get (conn_);
+        return container_statement_cache_.get (conn_, id_image_binding ());
       }
 
     public:

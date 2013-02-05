@@ -33,8 +33,6 @@ namespace odb
       typedef T traits;
 
       typedef typename traits::data_image_type data_image_type;
-      typedef typename traits::cond_image_type cond_image_type;
-
       typedef typename traits::functions_type functions_type;
 
       typedef sqlite::insert_statement insert_statement_type;
@@ -43,7 +41,7 @@ namespace odb
 
       typedef sqlite::connection connection_type;
 
-      container_statements (connection_type&);
+      container_statements (connection_type&, binding& id_binding);
 
       connection_type&
       connection ()
@@ -64,54 +62,12 @@ namespace odb
       const binding&
       id_binding ()
       {
-        return *id_binding_;
+        return id_binding_;
       }
 
-      void
-      id_binding (const binding& b)
-      {
-        id_binding_ = &b;
-      }
-
-      // Condition image.
-      //
-      cond_image_type&
-      cond_image ()
-      {
-        return cond_image_;
-      }
-
-      std::size_t
-      cond_image_version () const
-      {
-        return cond_image_version_;
-      }
-
-      void
-      cond_image_version (std::size_t v)
-      {
-        cond_image_version_ = v;
-      }
-
-      std::size_t
-      cond_id_binding_version () const
-      {
-        return cond_id_binding_version_;
-      }
-
-      void
-      cond_id_binding_version (std::size_t v)
-      {
-        cond_id_binding_version_ = v;
-      }
-
-      binding&
-      cond_image_binding ()
-      {
-        return cond_image_binding_;
-      }
-
-      // Data image.
+      // Data image. The image is split into the id (that comes as a
+      // binding) and index/key plus value which are in data_image_type.
+      // The select binding is a subset of the full binding (no id).
       //
       data_image_type&
       data_image ()
@@ -119,40 +75,27 @@ namespace odb
         return data_image_;
       }
 
-            std::size_t
-      data_image_version () const
+      bind*
+      data_bind ()
       {
-        return data_image_version_;
+        return insert_image_binding_.bind;
+      }
+
+      bool
+      data_binding_test_version () const
+      {
+        return data_id_binding_version_ != id_binding_.version ||
+          data_image_version_ != data_image_.version ||
+          insert_image_binding_.version == 0;
       }
 
       void
-      data_image_version (std::size_t v)
+      data_binding_update_version ()
       {
-        data_image_version_ = v;
-      }
-
-      std::size_t
-      data_id_binding_version () const
-      {
-        return data_id_binding_version_;
-      }
-
-      void
-      data_id_binding_version (std::size_t v)
-      {
-        data_id_binding_version_ = v;
-      }
-
-      binding&
-      data_image_binding ()
-      {
-        return data_image_binding_;
-      }
-
-      binding&
-      select_image_binding ()
-      {
-        return select_image_binding_;
+        data_id_binding_version_ = id_binding_.version;
+        data_image_version_ = data_image_.version;
+        insert_image_binding_.version++;
+        select_image_binding_.version++;
       }
 
       bool*
@@ -166,45 +109,39 @@ namespace odb
       //
 
       insert_statement_type&
-      insert_one_statement ()
+      insert_statement ()
       {
-        if (insert_one_ == 0)
-        {
-          insert_one_.reset (
+        if (insert_ == 0)
+          insert_.reset (
             new (details::shared) insert_statement_type (
-              conn_, insert_one_text_, data_image_binding_));
-        }
+              conn_, insert_text_, insert_image_binding_));
 
-        return *insert_one_;
+        return *insert_;
       }
 
       select_statement_type&
-      select_all_statement ()
+      select_statement ()
       {
-        if (select_all_ == 0)
-        {
-          select_all_.reset (
+        if (select_ == 0)
+          select_.reset (
             new (details::shared) select_statement_type (
               conn_,
-              select_all_text_,
-              cond_image_binding_,
+              select_text_,
+              id_binding_,
               select_image_binding_));
-        }
 
-        return *select_all_;
+        return *select_;
       }
 
       delete_statement_type&
-      delete_all_statement ()
+      delete_statement ()
       {
-        if (delete_all_ == 0)
-        {
-          delete_all_.reset (
+        if (delete_ == 0)
+          delete_.reset (
             new (details::shared) delete_statement_type (
-              conn_, delete_all_text_, cond_image_binding_));
-        }
+              conn_, delete_text_, id_binding_));
 
-        return *delete_all_;
+        return *delete_;
       }
 
     private:
@@ -213,33 +150,145 @@ namespace odb
 
     protected:
       connection_type& conn_;
+      binding& id_binding_;
+
       functions_type functions_;
-
-      const binding* id_binding_;
-
-      cond_image_type cond_image_;
-      std::size_t cond_image_version_;
-      std::size_t cond_id_binding_version_;
-      binding cond_image_binding_;
 
       data_image_type data_image_;
       std::size_t data_image_version_;
       std::size_t data_id_binding_version_;
 
-      binding data_image_binding_;
+      binding insert_image_binding_;
 
-      // Skips the id from data_image_binding.
-      //
       binding select_image_binding_;
       bool* select_image_truncated_;
 
-      const char* insert_one_text_;
-      const char* select_all_text_;
-      const char* delete_all_text_;
+      const char* insert_text_;
+      const char* select_text_;
+      const char* delete_text_;
 
-      details::shared_ptr<insert_statement_type> insert_one_;
-      details::shared_ptr<select_statement_type> select_all_;
-      details::shared_ptr<delete_statement_type> delete_all_;
+      details::shared_ptr<insert_statement_type> insert_;
+      details::shared_ptr<select_statement_type> select_;
+      details::shared_ptr<delete_statement_type> delete_;
+    };
+
+    template <typename T>
+    class smart_container_statements: public container_statements<T>
+    {
+    public:
+      typedef T traits;
+      typedef typename traits::cond_image_type cond_image_type;
+
+      typedef sqlite::update_statement update_statement_type;
+      typedef sqlite::delete_statement delete_statement_type;
+
+      typedef sqlite::connection connection_type;
+
+      smart_container_statements (connection_type&, binding& id_binding);
+
+      // Condition image. The image is split into the id (that comes as
+      // a binding) and index/key/value which is in cond_image_type.
+      //
+      cond_image_type&
+      cond_image ()
+      {
+        return cond_image_;
+      }
+
+      bind*
+      cond_bind ()
+      {
+        return cond_image_binding_.bind;
+      }
+
+      bool
+      cond_binding_test_version () const
+      {
+        return cond_id_binding_version_ != this->id_binding_.version ||
+          cond_image_version_ != cond_image_.version ||
+          cond_image_binding_.version == 0;
+      }
+
+      void
+      cond_binding_update_version ()
+      {
+        cond_id_binding_version_ = this->id_binding_.version;
+        cond_image_version_ = cond_image_.version;
+        cond_image_binding_.version++;
+      }
+
+      // Update image. The image is split as follows: value comes
+      // from the data image, id comes as binding, and index/key
+      // comes from the condition image.
+      //
+      bind*
+      update_bind ()
+      {
+        return update_image_binding_.bind;
+      }
+
+      bool
+      update_binding_test_version () const
+      {
+        return update_id_binding_version_ != this->id_binding_.version ||
+          update_cond_image_version_ != cond_image_.version ||
+          update_data_image_version_ != this->data_image_.version ||
+          update_image_binding_.version == 0;
+      }
+
+      void
+      update_binding_update_version ()
+      {
+        update_id_binding_version_ = this->id_binding_.version;
+        update_cond_image_version_ = cond_image_.version;
+        update_data_image_version_ = this->data_image_.version;
+        update_image_binding_.version++;
+      }
+
+      //
+      // Statements.
+      //
+
+      delete_statement_type&
+      delete_statement ()
+      {
+        if (this->delete_ == 0)
+          this->delete_.reset (
+            new (details::shared) delete_statement_type (
+              this->conn_,
+              this->delete_text_,
+              this->cond_image_binding_));
+
+        return *this->delete_;
+      }
+
+      update_statement_type&
+      update_statement ()
+      {
+        if (update_ == 0)
+          update_.reset (
+            new (details::shared) update_statement_type (
+              this->conn_,
+              update_text_,
+              update_image_binding_));
+
+        return *update_;
+      }
+
+    protected:
+      cond_image_type cond_image_;
+      std::size_t cond_image_version_;
+      std::size_t cond_id_binding_version_;
+      binding cond_image_binding_;
+
+      std::size_t update_id_binding_version_;
+      std::size_t update_cond_image_version_;
+      std::size_t update_data_image_version_;
+      binding update_image_binding_;
+
+      const char* update_text_;
+
+      details::shared_ptr<update_statement_type> update_;
     };
 
     // Template argument is the generated concrete container traits type.
@@ -252,17 +301,31 @@ namespace odb
       typedef typename T::statements_type base;
       typedef sqlite::connection connection_type;
 
-      container_statements_impl (connection_type&);
+      container_statements_impl (connection_type&, binding&);
 
     private:
       container_statements_impl (const container_statements_impl&);
       container_statements_impl& operator= (const container_statements_impl&);
 
     private:
-      bind cond_image_bind_[traits::cond_column_count];
       bind data_image_bind_[traits::data_column_count];
-      bool select_image_truncated_array_[traits::data_column_count-
+      bool select_image_truncated_array_[traits::data_column_count -
                                          traits::id_column_count];
+    };
+
+    template <typename T>
+    class smart_container_statements_impl: public container_statements_impl<T>
+    {
+    public:
+      typedef T traits;
+      typedef sqlite::connection connection_type;
+
+      smart_container_statements_impl (connection_type&, binding&);
+
+    private:
+      bind cond_image_bind_[traits::cond_column_count];
+      bind update_image_bind_[traits::value_column_count +
+                              traits::cond_column_count];
     };
   }
 }
