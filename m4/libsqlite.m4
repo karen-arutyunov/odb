@@ -16,8 +16,8 @@ AC_MSG_CHECKING([for libsqlite3])
 save_LIBS="$LIBS"
 LIBS="-lsqlite3 $LIBS"
 
-CXX_LIBTOOL_LINK_IFELSE(
-AC_LANG_SOURCE([[
+CXX_LIBTOOL_LINK_IFELSE([
+AC_LANG_SOURCE([
 #include <sqlite3.h>
 
 int
@@ -30,7 +30,7 @@ main ()
   sqlite3_finalize (stmt);
   sqlite3_close (handle);
 }
-]]),
+])],
 [
 libsqlite_found=yes
 ])
@@ -42,8 +42,8 @@ fi
 # Check for unlock_notify.
 #
 if test x"$libsqlite_found" = xyes; then
-CXX_LIBTOOL_LINK_IFELSE(
-AC_LANG_SOURCE([[
+CXX_LIBTOOL_LINK_IFELSE([
+AC_LANG_SOURCE([
 #include <sqlite3.h>
 
 int
@@ -52,7 +52,7 @@ main ()
   sqlite3* handle (0);
   sqlite3_unlock_notify (handle, 0, 0);
 }
-]]),
+])],
 [
 libsqlite_unlock_notify=yes
 ])
