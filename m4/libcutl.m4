@@ -31,8 +31,8 @@ fi
 save_LIBS="$LIBS"
 LIBS="-lcutl $LIBS"
 
-CXX_LIBTOOL_LINK_IFELSE(
-AC_LANG_SOURCE([[
+CXX_LIBTOOL_LINK_IFELSE([
+AC_LANG_SOURCE([
 #include <cutl/exception.hxx>
 
 void
@@ -60,7 +60,7 @@ main ()
   const char* m (g ());
   return m != 0;
 }
-]]),
+])],
 [libcutl_found=yes])
 
 if test x"$libcutl_found" = xno; then
