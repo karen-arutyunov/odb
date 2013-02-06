@@ -56,8 +56,10 @@ $(out_base)/odb-manual.pdf: $(out_base)/odb-manual.ps
 # Dist.
 #
 $(dist): data_dist := default.css manual.xhtml odb-arch.png odb-flow.png
-$(dist): export docs = $(data_dist) odb.xhtml odb-manual.ps odb-manual.pdf
-$(dist): export mans := odb.1
+$(dist): export ps_docs   := odb-manual.ps
+$(dist): export pdf_docs  := odb-manual.pdf
+$(dist): export html_docs := $(data_dist) odb.xhtml
+$(dist): export man_docs  := odb.1
 $(dist):                   \
 $(out_base)/odb.1          \
 $(out_base)/odb.xhtml      \
