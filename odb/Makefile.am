@@ -2,7 +2,7 @@
 # copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 # license   : GNU GPL v3; see accompanying LICENSE file
 
-plugindir = $(bindir)
+plugindir = $(pkglibexecdir)
 
 bin_PROGRAMS = odb
 plugin_LTLIBRARIES = odb.la
@@ -19,7 +19,7 @@ odb_la_LDFLAGS = -module -shrext .so -avoid-version
 # Remove the .la file from the final install.
 #
 install-data-hook:
-	rm -f '$(DESTDIR)/$(bindir)/odb.la'
+	rm -f '$(DESTDIR)$(pkglibexecdir)/odb.la'
 
 # Driver.
 #

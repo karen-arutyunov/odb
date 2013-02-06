@@ -141,7 +141,7 @@ main (int argc, char* argv[])
     // Find the plugin. It should be in the same directory as the
     // driver.
     //
-#ifndef STATIC_PLUGIN
+#ifndef ODB_STATIC_PLUGIN
     path plugin (plugin_path (path (argv[0])));
 #else
     // Use a dummy name if the plugin is linked into the compiler.
@@ -163,8 +163,8 @@ main (int argc, char* argv[])
     // The first argument points to the program name, which is
     // g++ by default.
     //
-#ifdef GXX_NAME
-    path gxx (GXX_NAME);
+#ifdef ODB_GXX_NAME
+    path gxx (ODB_GXX_NAME);
 
     if (gxx.empty ())
     {
@@ -224,7 +224,7 @@ main (int argc, char* argv[])
 
 #else
     args.push_back ("g++");
-#endif // GXX_NAME
+#endif // ODB_GXX_NAME
 
     // Default options.
     //
@@ -240,9 +240,9 @@ main (int argc, char* argv[])
     //
     strings def_inc_dirs;
     strings def_defines;
-#ifdef DEFAULT_OPTIONS_FILE
+#ifdef ODB_DEFAULT_OPTIONS_FILE
     {
-      path file (DEFAULT_OPTIONS_FILE);
+      path file (ODB_DEFAULT_OPTIONS_FILE);
 
       // If the path is relative, then use the driver's path as a base.
       //
@@ -1389,40 +1389,64 @@ driver_path (path const& drv)
   return drv.directory ().empty () ? path_search (drv) : drv;
 }
 
-#ifndef STATIC_PLUGIN
+#ifndef ODB_STATIC_PLUGIN
 static path
 plugin_path (path const& drv)
 {
+  // Figure out the plugin base name which is just the driver name.
+  // If the driver name starts with 'lt-', then we are running through
+  // the libtool script. Strip this prefix -- the shared object should
+  // be in the same directory.
+  //
+  string b (drv.leaf ().string ());
+  bool lt (b.size () > 3 && b[0] == 'l' && b[1] == 't' && b[2] == '-');
+  if (lt)
+    b = string (b, 3, string::npos);
+
   path dp (driver_path (drv));
 
-  if (!dp.empty ())
+  if (dp.empty ())
+    return path (); // Fail.
+
+  dp = dp.directory ();
+  struct stat info;
+
+  // Regardless of whether we were given a plugin path, first try
+  // the current directory for the .la file. This will make sure
+  // running ODB from the build directory works as expected.
+  //
+  path pp (dp / path (b + ".la"));
+  if (stat (pp.string ().c_str (), &info) == 0)
   {
-    // If the driver name starts with 'lt-', then we are running through
-    // the libtool script. Strip this prefix -- the shared object should
-    // be in the same directory.
-    //
-    {
-      string n (dp.leaf ().string ());
-
-      if (n.size () > 3 && n[0] == 'l' && n[1] == 't' && n[2] == '-')
-        dp = dp.directory () / path (string (n, 3, string::npos));
-    }
-
-    struct stat info;
-
-    path so (dp + ".so");
-    if (stat (so.string ().c_str (), &info) == 0)
-      return so;
-
-    path la (dp + ".la");
-    if (stat (la.string ().c_str (), &info) == 0)
-    {
-      so = la.directory () / path (".libs") / dp.leaf () + ".so";
-
-      if (stat (so.string ().c_str (), &info) == 0)
-        return so;
-    }
+    pp = dp / path (".libs") / path (b + ".so");
+    if (stat (pp.string ().c_str (), &info) == 0)
+      return pp;
   }
+
+#ifdef ODB_PLUGIN_PATH
+  // If we were given a plugin path, use that unless we are running
+  // via libtool.
+  //
+  if (!lt)
+  {
+    string rp (ODB_PLUGIN_PATH);
+    pp = dp;
+    if (!rp.empty ())
+      pp /= path (rp);
+    pp /= path (b + ".so");
+
+    if (stat (pp.string ().c_str (), &info) == 0)
+      return pp;
+
+    return path (); // Fail.
+  }
+#endif
+
+  // Try .so in the current directory.
+  //
+  pp = dp / path (b + ".so");
+  if (stat (pp.string ().c_str (), &info) == 0)
+    return pp;
 
   return path ();
 }

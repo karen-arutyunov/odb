@@ -282,7 +282,7 @@ ifdef cxx_gnu
 $(cxx_pobj) $(cxx_cobj): cxx_pic_options := -fPIC
 
 $(cxx_cobj) $(cxx_cod): cpp_options := -I$(src_root)
-$(cxx_dobj) $(cxx_dod): cpp_options := -I$(src_root) '-DGXX_NAME="$(cxx_gnu)"'
+$(cxx_dobj) $(cxx_dod): cpp_options := -I$(src_root) '-DODB_GXX_NAME="$(cxx_gnu)"'
 $(cxx_pobj) $(cxx_pod): cpp_options := -I$(src_root) \
 -I$(shell $(cxx_gnu) -print-file-name=plugin)/include
 
