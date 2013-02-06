@@ -19,7 +19,11 @@ AC_CANONICAL_HOST
 AC_PROG_CXX
 AC_LANG(C++)
 
-# See if we are building static plugin.
+# See if we are building static plugin. Static build should only be
+# used if you are building a custom version of GCC with the ODB
+# plugin linked-in statically. This is primarily useful on Windows
+# where GCC plugins are not (yet) supported due to dynamic loading
+# limitations.
 #
 static_plugin="$enable_static"
 
@@ -27,6 +31,8 @@ AS_IF([test x$static_plugin = xyes],
   AC_DEFINE([STATIC_PLUGIN], [1], [Building static plugin.]))
 
 # Check for plugin support in GCC unless we are building a static plugin.
+# In the latter case the headers normally come from the GCC build directly
+# via CPPFLAGS.
 #
 AS_IF([test x$static_plugin = xno], GCC_PLUGIN)
 
