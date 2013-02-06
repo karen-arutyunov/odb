@@ -19,7 +19,7 @@ odb_la_LDFLAGS = -module -shrext .so -avoid-version
 # Remove the .la file from the final install.
 #
 install-data-hook:
-	rm -f '$(bindir)/odb.la'
+	rm -f '$(DESTDIR)/$(bindir)/odb.la'
 
 # Driver.
 #
