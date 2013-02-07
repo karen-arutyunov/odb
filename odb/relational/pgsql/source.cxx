@@ -47,7 +47,7 @@ namespace relational
       {
         const char* integer_buffer_types[] =
         {
-          "pgsql::bind::boolean",
+          "pgsql::bind::boolean_",
           "pgsql::bind::smallint",
           "pgsql::bind::integer",
           "pgsql::bind::bigint"
