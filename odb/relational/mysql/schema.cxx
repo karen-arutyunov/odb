@@ -2,10 +2,14 @@
 // copyright : Copyright (c) 2009-2012 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <set>
+
 #include <odb/relational/schema.hxx>
 
 #include <odb/relational/mysql/common.hxx>
 #include <odb/relational/mysql/context.hxx>
+
+using namespace std;
 
 namespace relational
 {
@@ -14,6 +18,94 @@ namespace relational
     namespace schema
     {
       namespace relational = relational::schema;
+
+      //
+      // Drop.
+      //
+      /*
+      struct drop_table: relational::drop_table, context
+      {
+        drop_table (base const& x): base (x) {}
+
+        virtual void
+        traverse (sema_rel::table&);
+
+      private:
+        friend class drop_foreign_key;
+        set<qname> tables_; // Set of tables we would have already dropped.
+      };
+      entry<drop_table> drop_table_;
+
+      struct drop_foreign_key: trav_rel::foreign_key, relational::common
+      {
+        drop_foreign_key (drop_table& dt)
+            : common (dt.emitter (), dt.stream ()), dt_ (dt)
+        {
+        }
+
+        virtual void
+        traverse (sema_rel::foreign_key& fk)
+        {
+          // Deferred constraints are not supported by MySQL.
+          //
+          if (fk.deferred ())
+            return;
+
+          // If the table which we reference is droped before us, then
+          // we need to drop the constraint first. Similarly, if the
+          // referenced table is not part if this model, then assume
+          // it is dropped before us.
+          //
+          sema_rel::qname const& rt (fk.referenced_table ());
+          sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
+          sema_rel::model& m (dynamic_cast<sema_rel::model&> (t.scope ()));
+
+          if (dt_.tables_.find (rt) != dt_.tables_.end () ||
+              m.find (rt) == m.names_end ())
+          {
+            pre_statement ();
+
+            // @@ This does not work: in MySQL control statements can only
+            //    be used in stored procedures. It seems the only way to
+            //    implement this is to define, execute, and drop a stored
+            //    procedure, which is just too ugly.
+            //
+            os << "IF EXISTS (SELECT NULL FROM information_schema.TABLE_CONSTRAINTS" << endl
+               << "    WHERE CONSTRAINT_TYPE = " << quote_string ("FOREIGN KEY") << "AND" << endl
+               << "          CONSTRAINT_SCHEMA = DATABASE() AND" << endl
+               << "          CONSTRAINT_NAME = " << quote_string (fk.name ()) << ") THEN" << endl
+               << "  ALTER TABLE " << quote_id (t.name ()) << " DROP FOREIGN KEY " << quote_id (fk.name ()) << ";" << endl
+               << "END IF;" << endl;
+            post_statement ();
+          }
+        }
+
+      private:
+        drop_table& dt_;
+      };
+
+      void drop_table::
+      traverse (sema_rel::table& t)
+      {
+        qname const& table (t.name ());
+
+        if (pass_ == 1)
+        {
+          // Drop constraints.
+          //
+          tables_.insert (table); // Add it before to cover self-refs.
+          drop_foreign_key fk (*this);
+          trav_rel::unames n (fk);
+          names (t, n);
+        }
+        else if (pass_ == 2)
+        {
+          pre_statement ();
+          os << "DROP TABLE IF EXISTS " << quote_id (table) << endl;
+          post_statement ();
+        }
+      }
+      */
 
       //
       // Create.
@@ -54,49 +146,14 @@ namespace relational
       };
       entry<create_column> create_column_;
 
-      struct create_foreign_key: relational::create_foreign_key, context
-      {
-        create_foreign_key (base const& x): base (x) {}
-
-        virtual void
-        traverse (sema_rel::foreign_key& fk)
-        {
-          // MySQL does not support deferred constraint checking. Output
-          // such foreign keys as comments, for documentation, unless we
-          // are generating embedded schema.
-          //
-          if (fk.deferred ())
-          {
-            // Don't bloat C++ code with comment strings if we are
-            // generating embedded schema.
-            //
-            if (format_ != schema_format::embedded)
-            {
-              os << endl
-                 << endl
-                 << "  /*" << endl;
-
-              base::create (fk);
-
-              os << endl
-                 << "  */";
-            }
-          }
-          else
-            base::traverse (fk);
-        }
-
-        virtual void
-        deferred ()
-        {
-          // MySQL doesn't support deferred.
-        }
-      };
-      entry<create_foreign_key> create_foreign_key_;
+      struct create_foreign_key;
 
       struct create_table: relational::create_table, context
       {
         create_table (base const& x): base (x) {}
+
+        void
+        traverse (sema_rel::table&);
 
         virtual void
         create_post ()
@@ -111,8 +168,130 @@ namespace relational
 
           os << endl;
         }
+
+      private:
+        friend class create_foreign_key;
+        set<qname> tables_; // Set of tables we have already defined.
       };
       entry<create_table> create_table_;
+
+      struct create_foreign_key: relational::create_foreign_key, context
+      {
+        create_foreign_key (schema_format f, relational::create_table& ct)
+            : base (f, ct)
+        {
+        }
+
+        create_foreign_key (base const& x): base (x) {}
+
+        virtual void
+        traverse (sema_rel::foreign_key& fk)
+        {
+          // If the referenced table has already been defined, do the
+          // foreign key definition in the table definition. Otherwise
+          // postpone it until pass 2 where we do it via ALTER TABLE
+          // (see add_foreign_key below).
+          //
+          create_table& ct (static_cast<create_table&> (create_table_));
+
+          if (ct.tables_.find (fk.referenced_table ()) != ct.tables_.end ())
+          {
+            // MySQL does not support deferred constraint checking. Output
+            // such foreign keys as comments, for documentation, unless we
+            // are generating embedded schema.
+            //
+            if (fk.deferred ())
+            {
+              // Don't bloat C++ code with comment strings if we are
+              // generating embedded schema.
+              //
+              if (format_ != schema_format::embedded)
+              {
+                os << endl
+                   << endl
+                   << "  /*" << endl;
+
+                base::create (fk);
+
+                os << endl
+                   << "  */";
+              }
+            }
+            else
+              base::traverse (fk);
+
+            fk.set ("mysql-fk-defined", true); // Mark it as defined.
+          }
+        }
+
+        virtual void
+        deferred ()
+        {
+          // MySQL doesn't support deferred.
+        }
+      };
+      entry<create_foreign_key> create_foreign_key_;
+
+      struct add_foreign_key: create_foreign_key, relational::common
+      {
+        add_foreign_key (schema_format f, relational::create_table& ct)
+            : create_foreign_key (f, ct), common (ct.emitter (), ct.stream ())
+        {
+        }
+
+        virtual void
+        traverse (sema_rel::foreign_key& fk)
+        {
+          if (!fk.count ("mysql-fk-defined"))
+          {
+            sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
+
+            // MySQL has no deferred constraints.
+            //
+            if (fk.deferred ())
+            {
+              if (format_ != schema_format::embedded)
+              {
+                os << "/*" << endl;
+
+                os << "ALTER TABLE " << quote_id (t.name ()) << " ADD" << endl;
+                base::create (fk);
+
+                os << endl
+                   << "*/" << endl
+                   << endl;
+              }
+            }
+            else
+            {
+              pre_statement ();
+
+              os << "ALTER TABLE " << quote_id (t.name ()) << " ADD" << endl;
+              base::create (fk);
+              os << endl;
+
+              post_statement ();
+            }
+          }
+        }
+      };
+
+      void create_table::
+      traverse (sema_rel::table& t)
+      {
+        if (pass_ == 1)
+        {
+          tables_.insert (t.name ()); // Add it before to cover self-refs.
+          base::traverse (t);
+          return;
+        }
+
+        // Add foreign keys.
+        //
+        add_foreign_key fk (format_, *this);
+        trav_rel::unames n (fk);
+        names (t, n);
+      }
 
       struct create_index: relational::create_index, context
       {
