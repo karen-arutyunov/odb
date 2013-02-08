@@ -14429,20 +14429,26 @@ namespace odb
       unsigned short event, void* key, unsigned long long data);
 
     void
-    register_ (callback_type callback,
-               void* key,
-               unsigned short event = event_all,
-               unsigned long long data = 0,
-               transaction** state = 0);
+    callback_register (callback_type callback,
+                       void* key,
+                       unsigned short event = event_all,
+                       unsigned long long data = 0,
+                       transaction** state = 0);
 
 
     void
-    unregister (void* key);
+    callback_unregister (void* key);
+
+    void
+    callback_update (void* key,
+                     unsigned short event,
+                     unsigned long long data = 0,
+                     transaction** state = 0);
   }
 }
   </pre>
 
-  <p>The <code>register_()</code> function registers a
+  <p>The <code>callback_register()</code> function registers a
      post-commit/rollback callback. The <code>callback</code>
      argument is the function that should be called. The
      <code>key</code> argument is used by the transaction
@@ -14465,7 +14471,7 @@ namespace odb
      primarily useful if we are interested in only one of
      the events (commit or rollback).</p>
 
-  <p>The <code>unregister()</code> function unregisters a previously
+  <p>The <code>callback_unregister()</code> function unregisters a previously
      registered callback. If the number of registered callbacks is
      large, then this can be a slow operation. Generally, the callback
      mechanism is optimized for cases where the callbacks stay
@@ -14473,13 +14479,19 @@ namespace odb
 
   <p>Note also that you don't need to unregister a callback that has
      been called or auto-reset using the <code>state</code> argument
-     passed to <code>register_()</code>. This function does nothing
+     passed to <code>callback_register()</code>. This function does nothing
      if the key is not found.</p>
+
+  <p>The <code>callback_update()</code> function can be used to update
+     the <code>event</code>, <code>data</code>, and <code>state</code>
+     values of a previously registered callback. Similar to
+     <code>callback_unregister()</code>, this is a potentially slow
+     operation.</p>
 
   <p>When the callback is called, it is passed the event that
      triggered it, as well as the <code>key</code> and
      <code>data</code> values that were passed to the
-     <code>register_()</code> function. Note also that the order
+     <code>callback_register()</code> function. Note also that the order
      in which the callbacks are called is unspecified. The rollback
      event can be triggered by an exception. In this case, if the
      callback throws, the program will be terminated.</p>
@@ -14520,11 +14532,11 @@ class object
     // back.
     //
     tran_ = &amp;transaction::current ();
-    tran_->register_ (&amp;rollback,
-                      const_cast&lt;object*> (this),
-                      transaction::event_rollback,
-                      0,
-                      &amp;tran_);
+    tran_->callback_register (&amp;rollback,
+                              const_cast&lt;object*> (this),
+                              transaction::event_rollback,
+                              0,
+                              &amp;tran_);
     dirty_ = false;
   }
 
@@ -14544,7 +14556,7 @@ class object
     // the transaction.
     //
     if (tran_ != 0)
-      tran_->unregister (this);
+      tran_->callback_unregister (this);
   }
 };
   </pre>
