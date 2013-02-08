@@ -2852,6 +2852,12 @@ namespace odb
   public:
     static void
     create_schema (database&amp;, const std::string&amp; name = "");
+
+    static bool
+    exists (database_id, const std::string&amp; name);
+
+    static bool
+    exists (const database&amp;, const std::string&amp; name)
   };
 }
   </pre>
@@ -2866,9 +2872,11 @@ namespace odb
      custom schema names and then use these names as a second argument
      to <code>create_schema()</code>. If the schema is not found,
      <code>create_schema()</code> throws the
-     <code>odb::unknown_schema</code> exception. The
-     <code>create_schema()</code> function should be called within
-     a transaction.</p>
+     <code>odb::unknown_schema</code> exception. You can use the
+     <code>exists()</code> function to check whether a schema for the
+     specified database and with the specified name exists in the
+     catalog. Note also that the <code>create_schema()</code> function
+     should be called within a transaction.</p>
 
   <p>Finally, we can also use a custom database schema with ODB. This approach
      can work similarly to the standalone SQL file described above except that
