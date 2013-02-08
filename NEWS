@@ -25,6 +25,13 @@ Version 2.2.0
    For more information, refer to the ODB manual "Type Mapping" sections
    for each database system.
 
+ * Support for change-tracking std::vector and QList container equivalents.
+   Change-tracking containers minimize the number of database operations
+   necessary to synchronize the container state with the database. For
+   more information, refer to Sections 5.4, "Change-Tracking Containers",
+   5.4.1 "Change-Tracking vector", and 22.3.1, "Change-Tracking QList"
+   in the ODB manual.
+
  * Support for automatically-derived SQL name (table, column, index, etc.)
    transformations. At the higher level, it is possible to assign prefixes
    and suffixes (--table-prefix, --{index,fkey,sequence}--suffix options)
@@ -42,7 +49,7 @@ Version 2.2.0
    manual.
 
  * Support for custom session implementations. For more information, refer
-   to Section 10.2, "Custom Session" in the ODB manual.
+   to Section 10.2, "Custom Sessions" in the ODB manual.
 
  * Support for early connection release. Now the database connection is
    released when commit()/rollback() is called rather than when the
@@ -55,6 +62,16 @@ Version 2.2.0
  * Support for specifying SQL Server transaction isolation level. For more
    information, refer to Section 19.2, "SQL Server Database Class" in the
    ODB manual.
+
+ * Support for "smart" containers. A smart container gets additional
+   functions which allow it to insert, update, and delete individual
+   elements in the database. Change-tracking containers are an example of
+   a smart container that utilizes this new functionality. Currently only
+   ordered smart containers are supported. Note also that with this
+   addition the names of the database functions provided by the ODB
+   compiler (see libodb/odb/container-traits.hxx) have changed. This will
+   only affect you if you have added ODB persistence support for custom
+   containers.
 
 Version 2.1.0
 

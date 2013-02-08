@@ -356,7 +356,14 @@ for consistency.
           <tr><th>5.1</th><td><a href="#5.1">Ordered Containers</a></td></tr>
           <tr><th>5.2</th><td><a href="#5.2">Set and Multiset Containers</a></td></tr>
           <tr><th>5.3</th><td><a href="#5.3">Map and Multimap Containers</a></td></tr>
-          <tr><th>5.4</th><td><a href="#5.4">Using Custom Containers</a></td></tr>
+	  <tr>
+            <th>5.4</th><td><a href="#5.4">Change-Tracking Containers</a>
+              <table class="toc">
+                <tr><th>5.4.1</th><td><a href="#5.4.1">Change-Tracking <code>vector</code></a></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr><th>5.5</th><td><a href="#5.5">Using Custom Containers</a></td></tr>
         </table>
       </td>
     </tr>
@@ -438,7 +445,7 @@ for consistency.
       <th>10</th><td><a href="#10">Session</a>
         <table class="toc">
           <tr><th>10.1</th><td><a href="#10.1">Object Cache</a></td></tr>
-	  <tr><th>10.2</th><td><a href="#10.2">Custom Session</a></td></tr>
+	  <tr><th>10.2</th><td><a href="#10.2">Custom Sessions</a></td></tr>
         </table>
       </td>
     </tr>
@@ -814,7 +821,13 @@ for consistency.
 	    </td>
 	  </tr>
           <tr><th>22.2</th><td><a href="#22.2">Smart Pointers Library</a></td></tr>
-          <tr><th>22.3</th><td><a href="#22.3">Containers Library</a></td></tr>
+          <tr>
+	    <th>22.3</th><td><a href="#22.3">Containers Library</a>
+	      <table class="toc">
+	        <tr><th>22.3.1</th><td><a href="#22.3.1">Change-Tracking <code>QList</code></a></td></tr>
+              </table>
+	    </td>
+	  </tr>
           <tr>
 	    <th>22.4</th><td><a href="#22.4">Date Time Library</a>
 	      <table class="toc">
@@ -1159,13 +1172,14 @@ for consistency.
 
   <h2><a name="1.3">1.3 Supported C++ Standards</a></h2>
 
-  <p>ODB provides support for ISO/IEC C++ 1998 (C++98), ISO/IEC TR 19768
-     C++ Library Extensions (C++ TR1), and ISO/IEC C++ 2011 (C++11).
-     While the majority of the examples in this manual use C++98,
-     support for the new functionality and library components introduced in
-     TR1 and C++11 are discussed throughout the document. The <code>c++11</code>
-     example in the <code>odb-examples</code> package also shows ODB
-     support for various C++11 features.</p>
+  <p>ODB provides support for ISO/IEC C++ 1998/2003 (C++98/03),
+     ISO/IEC TR 19768 C++ Library Extensions (C++ TR1), and
+     ISO/IEC C++ 2011 (C++11). While the majority of the examples in
+     this manual use C++98/03, support for the new functionality and
+     library components introduced in TR1 and C++11 are discussed
+     throughout the document. The <code>c++11</code> example in the
+     <code>odb-examples</code> package also shows ODB support for
+     various C++11 features.</p>
 
   <!-- CHAPTER -->
 
@@ -5107,7 +5121,7 @@ for (age = 90; age > 40; age -= 10)
   <p>The <code>cache_query()</code> function caches the passed prepared
      query on the connection. The second overloaded version of
      <code>cache_query()</code> also takes a pointer to the
-     by-reference query parameters. In C++98 it should be
+     by-reference query parameters. In C++98/03 it should be
      <code>std::auto_ptr</code> while in C++11 <code>std::auto_ptr</code>
      or <code>std::unique_ptr</code> can be used. The
      <code>cache_query()</code> function assumes ownership of the
@@ -5203,7 +5217,7 @@ for (unsigned short age (90); age > 40; age -= 10)
      query factory that will be called to prepare and cache a
      query during the call to <code>lookup_query()</code>. To
      register a factory we use the <code>database::query_factory()</code>
-     function. In C++98 it has the following signature:</p>
+     function. In C++98/03 it has the following signature:</p>
 
   <pre class="cxx">
   void
@@ -5287,7 +5301,7 @@ db.query_factory (
   <h1><a name="5">5 Containers</a></h1>
 
   <p>The ODB runtime library provides built-in persistence support for all the
-     commonly used standard C++98 containers, namely,
+     commonly used standard C++98/03 containers, namely,
      <code>std::vector</code>, <code>std::list</code>, <code>std::set</code>,
      <code>std::multiset</code>, <code>std::map</code>, and
      <code>std::multimap</code> as well as C++11 <code>std::array</code>,
@@ -5297,9 +5311,14 @@ db.query_factory (
      Plus, ODB profile libraries, that are
      available for commonly used frameworks and libraries (such as Boost and
      Qt), provide persistence support for containers found in these frameworks
-     and libraries (<a href="#III">Part III, "Profiles"</a>).  It is also easy
-     to persist custom container types as discussed later
-     in <a href="#5.4">Section 5.4, "Using Custom Containers"</a>.</p>
+     and libraries (<a href="#III">Part III, "Profiles"</a>). Both the
+     ODB runtime library and profile libraries also provide a number of
+     change-tracking container equivalents which can be used to minimize
+     the number of database operations necessary to synchronize the container
+     state with the database (<a href="#5.4">Section 5.4, "Change-Tracking
+     Containers"</a>). It is also easy to persist custom container types
+     as discussed later in <a href="#5.5">Section 5.5, "Using Custom
+     Containers"</a>.</p>
 
   <p>We don't need to do anything special to declare a member of a
      container type in a persistent class. For example:</p>
@@ -5609,11 +5628,307 @@ private:
 };
   </pre>
 
-  <h2><a name="5.4">5.4 Using Custom Containers</a></h2>
+  <h2><a name="5.4">5.4 Change-Tracking Containers</a></h2>
+
+  <p>When a persistent object containing one of the standard containers
+     is updated in the database, ODB has no knowledge of which elements
+     were inserted, erased, or modified. As a result, ODB has no choice
+     but to assume the whole container has changed and update the state
+     of every single element. This can result in a significant overhead
+     if a container contains a large number of elements and we only
+     changed a small subset of them.</p>
+
+  <p>To eliminate this overhead, ODB provides a notion of <em>change-tracking
+     containers</em>. A change-tracking container, besides containing
+     its elements, just like an ordinary container, also includes the
+     change state for each element. When it is time to update such a
+     container in the database, ODB can use this change information to
+     perform a minimum number of database operations necessary to
+     synchronize the container state with the database.</p>
+
+  <p>The current version of the ODB runtime library provides a change-tracking
+     equivalent of <code>std::vector</code> (<a href="#5.4.1">Section 5.4.1,
+     "Change-Tracking <code>vector</code>"</a>) with support for other
+     standard container equivalents planned for future releases. ODB
+     profile libraries also provide change-tracking equivalents for some
+     containers found in the corresponding frameworks and libraries
+     (<a href="#III">Part III, "Profiles"</a>).</p>
+
+  <p>A change-tracking container equivalent can normally be used as a drop-in
+     replacement for an ordinary container except for a few minor
+     interface differences (discussed in the corresponding sub-sections).
+     In particular, we don't need to do anything extra to effect
+     change tracking. ODB will automatically start, stop, and reset
+     change tracking when necessary. The following example illustrates
+     this point using <code>odb::vector</code> as a replacement for
+     <code>std::vector</code>.</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+
+  odb::vector&lt;std::string> names;
+};
+
+person p; // No change tracking (not persistent).
+p.names.push_back ("John Doe");
+
+{
+  transaction t (db.begin ());
+  db.persist (p); // Start change tracking (persistent).
+  t.commit ();
+}
+
+p.names.push_back ("Johnny Doo");
+
+{
+  transaction t (db.begin ());
+  db.update (p); // One INSERT; reset change state.
+  t.commit ();
+}
+
+p.names.modify (0) = "Doe, John"; // Instead of operator[].
+p.names.pop_back ();
+
+{
+  transaction t (db.begin ());
+  db.update (p); // One UPDATE, one DELETE; reset change state.
+  t.commit ();
+}
+
+{
+  transaction t (db.begin ());
+  auto_ptr&lt;person> p1 (db.load&lt;person> (...)); // Start change tracking.
+  p1->names.insert (p1->names.begin (), "Joe Do");
+  db.update (*p1); // One UPDATE, one INSERT; reset change state.
+  t.commit ();
+}
+
+{
+  transaction t (db.begin ());
+  db.erase (p); // One DELETE; stop change tracking (not persistent).
+  t.commit ();
+}
+  </pre>
+
+  <p>One interesting aspect of change tracking is what happens when a
+     transaction that contains an update is later rolled back. In this
+     case, while the change-tracking container has reset the change
+     state (after update), actual changes were not committed to the
+     database. Change-tracking containers handle this case by
+     automatically registering a rollback callback and then, if it is
+     called, marking the container as "completely changed". In this
+     state, the container no longer tracks individual element changes
+     and, when updated, falls back to the complete state update, just
+     like an ordinary container. The following example illustrates
+     this point:</p>
+
+  <pre class="cxx">
+person p;
+p.names.push_back ("John Doe");
+
+{
+  transaction t (db.begin ());
+  db.persist (p); // Start change tracking (persistent).
+  t.commit ();
+}
+
+p.names.push_back ("Johnny Doo");
+
+for (;;)
+{
+  try
+  {
+    transaction t (db.begin ());
+
+    // First try: one INSERT.
+    // Next try: one DELETE, two INSERTs.
+    //
+    db.update (p); // Reset change state.
+
+    t.commit (); // If throws (rollback), mark as completely changed.
+    break;
+  }
+  catch (const odb::recoverable&amp;)
+  {
+    continue;
+  }
+}
+  </pre>
+
+  <h3><a name="5.4.1">5.4.1 Change-Tracking <code>vector</code></a></h3>
+
+  <p>Class template <code>odb::vector</code>, defined in
+     <code>&lt;odb/vector.hxx></code>, is a change-tracking
+     equivalent for <code>std::vector</code>. It
+     is implemented in terms of <code>std::vector</code> and is
+     implicit-convertible to and implicit-constructible from
+     <code>const std::vector&amp;</code>. In particular, this
+     means that we can use <code>odb::vector</code> instance
+     anywhere <code>const std::vector&amp;</code> is
+     expected. In addition, <code>odb::vector</code> constant
+     iterator (<code>const_iterator</code>) is the same type as
+     that of <code>std::vector</code>.</p>
+
+  <p><code>odb::vector</code> incurs 2-bit per element overhead
+     in order to store the change state. It cannot
+     be stored unordered in the database (<a href="#12.4.18">Section
+     12.4.18 "<code>unordered</code>"</a>) but can be used as an inverse
+     side of a relationship (<a href="#6.2">6.2 "Bidirectional
+     Relationships"</a>). In this case, no change tracking is performed
+     since no state for such a container is stored in the database.</p>
+
+  <p>The number of database operations required to update the state
+     of <code>odb::vector</code> corresponds well to the complexity
+     of <code>std::vector</code> functions. In particular, adding or
+     removing an element from the back of the vector (for example,
+     with <code>push_back()</code> and <code>pop_back()</code>),
+     requires only a single database statement execution. In contrast,
+     inserting or erasing an element somewhere in the middle of the
+     vector will require a database statement for every element that
+     follows it.</p>
+
+  <p><code>odb::vector</code> replicates most of the <code>std::vector</code>
+     interface as defined in both C++98/03 and C++11 standards. However,
+     functions and operators that provide direct write access to
+     the elements had to be altered or disabled in order to support
+     change tracking. Additional functions used to interface with
+     <code>std::vector</code> and to control the change tracking state
+     were also added. The following listing summarizes the differences
+     between the <code>odb::vector</code> and <code>std::vector</code>
+     interfaces. Any <code>std::vector</code> function or operator
+     not mentioned in this listing has exactly the same signature
+     and semantics in <code>odb::vector</code>. Functions and
+     operators that were disabled are shown as commented out and
+     are followed by functions/operators that replace them.</p>
+
+  <pre class="cxx">
+namespace odb
+{
+  template &lt;class T, class A = std::allocator&lt;T> >
+  class vector
+  {
+    ...
+
+    // Element access.
+    //
+
+    //reference operator[] (size_type);
+      reference modify (size_type);
+
+    //reference at (size_type);
+      reference modify_at (size_type);
+
+    //reference front ();
+      reference modify_front ();
+
+    //reference back ();
+      reference modify_back ();
+
+    //T*        data () noexcept;
+      T*        modify_data () noexcept; // C++11 only.
+
+    // Iterators.
+    //
+    typedef typename std::vector&lt;T, A>::const_iterator const_iterator;
+
+    class iterator
+    {
+      ...
+
+      // Element Access.
+      //
+
+      //reference       operator* () const;
+        const_reference operator* () const;
+        reference       modify () const;
+
+      //pointer       operator-> () const;
+        const_pointer operator-> () const;
+
+      //reference       operator[] (difference_type);
+        const_reference operator[] (difference_type);
+        reference       modify (difference_type) const;
+
+      // Interfacing with std::vector::iterator.
+      //
+      typename std::vector&lt;T, A>::iterator base () const;
+    };
+
+    // Return std::vector iterators. The begin() functions mark
+    // all the elements as modified.
+    //
+    typename std::vector&lt;T, A>::iterator         mbegin ();
+    typename std::vector&lt;T, A>::iterator         mend ();
+    typename std::vector&lt;T, A>::reverse_iterator mrbegin ();
+    typename std::vector&lt;T, A>::reverse_iterator mrend ();
+
+    // Interfacing with std::vector.
+    //
+    vector (const std::vector&lt;T, A>&amp;);
+    vector (std::vector&lt;T, A>&amp;&amp;); // C++11 only.
+
+    vector&amp; operator= (const std::vector&lt;T, A>&amp;);
+    vector&amp; operator= (std::vector&lt;T, A>&amp;&amp;); // C++11 only.
+
+    operator const std::vector&lt;T, A>&amp; () const;
+    std::vector&lt;T, A>&amp; base ();
+    const std::vector&lt;T, A>&amp; base ();
+
+    // Change tracking.
+    //
+    bool _tracking () const;
+    void _start () const;
+    void _stop () const;
+    void _arm (transaction&amp;) const;
+  };
+}
+  </pre>
+
+  <p>The following example highlights some of the differences between
+     the two interfaces. <code>std::vector</code> versions are commented
+     out.</p>
+
+  <pre class="cxx">
+#include &lt;vector>
+#include &lt;odb/vector.hxx>
+
+void f (const std::vector&lt;int>&amp;);
+
+odb::vector&lt;int> v ({1, 2, 3});
+
+f (v); // Ok, implicit conversion.
+
+if (v[1] == 2) // Ok, const access.
+  //v[1]++;
+  v.modify (1)++;
+
+//v.back () = 4;
+v.modify_back () = 4;
+
+for (auto i (v.begin ()); i != v.end (); ++i)
+{
+  if (*i != 0) // Ok, const access.
+    //*i += 10;
+    i.modify () += 10;
+}
+
+std::sort (v.mbegin (), v.mend ());
+  </pre>
+
+  <p>Note also the subtle difference between copy/move construction
+     and copy/move assignment of <code>odb::vector</code> instances.
+     While copy/move constructor will copy/move both the elements as
+     well as their change state, in contrast, assignment is tracked
+     as any other change to the vector content.</p>
+
+  <h2><a name="5.5">5.5 Using Custom Containers</a></h2>
 
   <p>While the ODB runtime and profile libraries provide support for
      a wide range of containers, it is also easy to persist custom
-     container types.</p>
+     container types or make a change-tracking version out of one.</p>
 
   <p>To achieve this you will need to implement the
      <code>container_traits</code> class template specialization for
@@ -9305,7 +9620,7 @@ struct employee_name
      object cache. In future versions it may provide additional
      functionality, such as delayed database operations and automatic
      object state change tracking. As discussed later in
-     <a href="#10.2">Section 10.2, "Custom Session"</a>, it is also
+     <a href="#10.2">Section 10.2, "Custom Sessions"</a>, it is also
      possible to provide a custom session implementation that provides
      these or other features.</p>
 
@@ -9574,7 +9889,7 @@ unsigned long id2 (save (db, p2)); // p2 is cached in s as non-const.
 }
   </pre>
 
-  <h2><a name="10.2">10.2 Custom Session</a></h2>
+  <h2><a name="10.2">10.2 Custom Sessions</a></h2>
 
   <p>ODB can use a custom session implementation instead of the
      default <code>odb::session</code>. There could be multiple
@@ -15416,7 +15731,7 @@ namespace odb
      with short descriptions that are recognized by this constructor.</p>
 
   <p>The last argument to all of the constructors is a pointer to the
-     connection factory. In C++98, it is <code>std::auto_ptr</code> while
+     connection factory. In C++98/03, it is <code>std::auto_ptr</code> while
      in C++11 <code>std::unique_ptr</code> is used instead. If we pass a
      non-<code>NULL</code> value, the database instance assumes ownership
      of the factory instance. The connection factory interface as well as
@@ -16122,7 +16437,7 @@ auto_ptr&lt;odb::database> db (
      with short descriptions that are recognized by the third constructor.</p>
 
   <p>The last argument to all of the constructors is a pointer to the
-     connection factory. In C++98, it is <code>std::auto_ptr</code> while
+     connection factory. In C++98/03, it is <code>std::auto_ptr</code> while
      in C++11 <code>std::unique_ptr</code> is used instead. If we pass a
      non-<code>NULL</code> value, the database instance assumes ownership
      of the factory instance. The connection factory interface as well as
@@ -16992,7 +17307,7 @@ namespace odb
      with short descriptions that are recognized by this constructor.</p>
 
   <p>The last argument to all of the constructors is a pointer to the
-     connection factory. In C++98, it is <code>std::auto_ptr</code> while
+     connection factory. In C++98/03, it is <code>std::auto_ptr</code> while
      in C++11 <code>std::unique_ptr</code> is used instead. If we pass a
      non-<code>NULL</code> value, the database instance assumes ownership
      of the factory instance. The connection factory interface as well as
@@ -17781,7 +18096,7 @@ namespace odb
      <code>ncharset</code> arguments have no effect.</p>
 
   <p>The last argument to all of the constructors is a pointer to the
-     connection factory. In C++98, it is <code>std::auto_ptr</code> while
+     connection factory. In C++98/03, it is <code>std::auto_ptr</code> while
      in C++11 <code>std::unique_ptr</code> is used instead. If we pass a
      non-<code>NULL</code> value, the database instance assumes ownership
      of the factory instance. The connection factory interface as well as
@@ -18965,7 +19280,7 @@ odb::mssql::database dbA ("test",
      instance.</p>
 
   <p>The last argument to all of the constructors is a pointer to the
-     connection factory. In C++98, it is <code>std::auto_ptr</code> while
+     connection factory. In C++98/03, it is <code>std::auto_ptr</code> while
      in C++11 <code>std::unique_ptr</code> is used instead. If we pass a
      non-<code>NULL</code> value, the database instance assumes ownership
      of the factory instance. The connection factory interface as well as
@@ -20225,7 +20540,10 @@ class object
   <h1><a name="22">22 Qt Profile</a></h1>
 
   <p>The ODB profile implementation for Qt is provided by the
-     <code>libodb-qt</code> library and consists of multiple sub-profiles
+     <code>libodb-qt</code> library. Both Qt4 and Qt5 as well
+     as C++98/03 and C++11 are supported.</p>
+
+  <p>The Qt profile consists of multiple sub-profiles
      corresponding to the common type groups within Qt. Currently,
      only types from the <code>QtCore</code> module are supported. To
      enable all the available Qt sub-profiles, pass <code>qt</code> as the
@@ -20248,7 +20566,7 @@ class object
      that can be thrown by the Qt sub-profiles are described in the
      following sections.</p>
 
-  <h2><a name="22.1">22.1 Basic Types</a></h2>
+  <h2><a name="22.1">22.1 Basic Types Library</a></h2>
 
   <p>The <code>basic</code> sub-profile provides persistence support for basic
      types defined by Qt. To enable only this profile, pass
@@ -20574,7 +20892,7 @@ class Person
 };
   </pre>
 
-  <h2><a name="22.2">22.2 Smart Pointers</a></h2>
+  <h2><a name="22.2">22.2 Smart Pointers Library</a></h2>
 
   <p>The <code>smart-ptr</code> sub-profile provides persistence support the
      Qt smart pointers. To enable only this profile, pass
@@ -20645,7 +20963,7 @@ class Employee
 
   <h2><a name="22.3">22.3 Containers Library</a></h2>
 
-  <p>The <code>container</code> sub-profile provides persistence support for
+  <p>The <code>containers</code> sub-profile provides persistence support for
      Qt containers. To enable only this profile, pass
      <code>qt/containers</code> to the <code>--profile</code> ODB compiler
      option.</p>
@@ -20668,7 +20986,195 @@ class Person
 };
   </pre>
 
-  <h2><a name="22.4">22.4 Date Time Types</a></h2>
+  <p>The <code>containers</code> sub-profile also provide a change-tracking
+     equivalent for <code>QList</code> (<a href="#22.3.1">Section 22.3.1,
+     "Change-Tracking <code>QList</code>"</a>) with support for other Qt
+     container equivalents planned for future releases. For general information
+     on change-tracking containers refer to <a href="#5.4">Section 5.4,
+     "Change-Tracking Containers"</a>.</p>
+
+  <h3><a name="22.3.1">22.3.1 Change-Tracking <code>QList</code></a></h3>
+
+  <p>Class template <code>QOdbList</code>, defined in
+     <code>&lt;odb/qt/list.hxx></code>, is a change-tracking
+     equivalent for <code>QList</code>. It
+     is implemented in terms of <code>QList</code> and is
+     implicit-convertible to and implicit-constructible from
+     <code>const QList&amp;</code>. In particular, this
+     means that we can use <code>QOdbList</code> instance
+     anywhere <code>const QList&amp;</code> is
+     expected. In addition, <code>QOdbList</code> constant
+     iterator (<code>const_iterator</code>) is the same type as
+     that of <code>QList</code>.</p>
+
+  <p><code>QOdbList</code> incurs 2-bit per element overhead
+     in order to store the change state. It cannot
+     be stored unordered in the database (<a href="#12.4.18">Section
+     12.4.18 "<code>unordered</code>"</a>) but can be used as an inverse
+     side of a relationship (<a href="#6.2">6.2 "Bidirectional
+     Relationships"</a>). In this case, no change tracking is performed
+     since no state for such a container is stored in the database.</p>
+
+  <p>The number of database operations required to update the state
+     of <code>QOdbList</code> corresponds well to the complexity
+     of <code>QList</code> functions, except for
+     <code>prepend()</code>/<code>push_front()</code>. In particular, adding
+     or removing an element from the back of the list (for example,
+     with <code>append()</code>/<code>push_back()</code> and
+     <code>removeLast()</code>/<code>pop_back()</code>),
+     requires only a single database statement execution. In contrast,
+     inserting or erasing an element at the beginning or in the middle
+     of the list will require a database statement for every element that
+     follows it.</p>
+
+  <p><code>QOdbList</code> replicates most of the <code>QList</code>
+     interface as defined in both Qt4 and Qt5 and includes support for
+     C++11. However, functions and operators that provide direct write
+     access to the elements had to be altered or disabled in order to
+     support change tracking. Additional functions used to interface with
+     <code>QList</code> and to control the change tracking state
+     were also added. The following listing summarizes the differences
+     between the <code>QOdbList</code> and <code>QList</code>
+     interfaces. Any <code>QList</code> function or operator
+     not mentioned in this listing has exactly the same signature
+     and semantics in <code>QOdbList</code>. Functions and
+     operators that were disabled are shown as commented out and
+     are followed by functions/operators that replace them.</p>
+
+  <pre class="cxx">
+template &lt;typename T>
+class QOdbList
+{
+  ...
+
+  // Element access.
+  //
+
+  //T&amp; operator[] (int);
+    T&amp; modify (int);
+
+  //T&amp; first();
+    T&amp; modifyFirst();
+
+  //T&amp; last();
+    T&amp; modifyLast();
+
+  //T&amp; front();
+    T&amp; modify_front();
+
+  //T&amp; back();
+    T&amp; modify_back();
+
+  // Iterators.
+  //
+  typedef typename QList&lt;T>::const_iterator const_iterator;
+
+  class iterator
+  {
+    ...
+
+    // Element Access.
+    //
+
+    //reference       operator* () const;
+      const_reference operator* () const;
+      reference       modify () const;
+
+    //pointer       operator-> () const;
+      const_pointer operator-> () const;
+
+    //reference       operator[] (difference_type);
+      const_reference operator[] (difference_type);
+      reference       modify (difference_type) const;
+
+    // Interfacing with QList::iterator.
+    //
+    typename QList&lt;T>::iterator base () const;
+  };
+
+  // Return QList iterators. The begin() functions mark all
+  // the elements as modified.
+  //
+  typename QList&lt;T>::iterator mbegin ();
+  typename QList&lt;T>::iterator modifyBegin ();
+  typename QList&lt;T>::iterator mend ();
+  typename QList&lt;T>::iterator modifyEnd ();
+
+  // Interfacing with QList.
+  //
+  QOdbList (const QList&lt;T>&amp;);
+  QOdbList (QList&lt;T>&amp;&amp;); // C++11 only.
+
+  QOdbList&amp; operator= (const QList&lt;T>&amp;);
+  QOdbList&amp; operator= (QList&lt;T>&amp;&amp;);
+
+  operator const QList&lt;T>&amp; () const;
+  QList&lt;T>&amp; base ();
+  const QList&lt;T>&amp; base () const;
+
+  // Change tracking.
+  //
+  bool _tracking () const;
+  void _start () const;
+  void _stop () const;
+  void _arm (transaction&amp;) const;
+};
+  </pre>
+
+  <p>The following example highlights some of the differences between
+     the two interfaces. <code>QList</code> versions are commented
+     out.</p>
+
+  <pre class="cxx">
+#include &lt;QtCore/QList>
+#include &lt;odb/qt/list.hxx>
+
+void f (const QList&lt;int>&amp;);
+
+QOdbList&lt;int> l ({1, 2, 3});
+
+f (l); // Ok, implicit conversion.
+
+if (l[1] == 2) // Ok, const access.
+  //l[1]++;
+  l.modify (1)++;
+
+//l.last () = 4;
+l.modifyLast () = 4;
+
+for (auto i (l.begin ()); i != l.end (); ++i)
+{
+  if (*i != 0) // Ok, const access.
+    //*i += 10;
+    i.modify () += 10;
+}
+
+qSort (l.modifyBegin (), l.modifyEnd ());
+  </pre>
+
+  <p>Note also the subtle difference between copy/move construction
+     and copy/move assignment of <code>QOdbList</code> instances.
+     While copy/move constructor will copy/move both the elements as
+     well as their change state, in contrast, assignment is tracked
+     as any other change to the vector content.</p>
+
+  <p>The <code>QListIterator</code> and <code>QMutableListIterator</code>
+     equivalents are also provided. These are <code>QOdbListIterator</code>
+     and <code>QMutableOdbListIterator</code> and are defined in
+     <code>&lt;odb/qt/list-iterator.hxx></code> and
+     <code>&lt;odb/qt/mutable-list-iterator.hxx></code>, respectively.</p>
+
+  <p><code>QOdbListIterator</code> has exactly the same interface and
+     semantics as <code>QListIterator</code>. In fact, we can use
+     <code>QListIterator</code> to iterate over a <code>QOdbList</code>
+     instance.</p>
+
+  <p><code>QMutableOdbListIterator</code> also has exactly the same
+      interface as <code>QMutableListIterator</code>. Note, however,
+      that any element that such an iterator passes over with the
+      call to <code>next()</code> is marked as modified.</p>
+
+  <h2><a name="22.4">22.4 Date Time Library</a></h2>
 
   <p>The <code>date-time</code> sub-profile provides persistence support for
      the Qt date-time types. To enable only this profile, pass
