@@ -1,26 +1,27 @@
 Version 2.2.0
 
- * Multi-database support. It allows an application to simultaneously work
-   with multiple database systems and comes in two flavors: static and
-   dynamic. With static support the application uses the static database
-   interfaces (that is, odb::<db>::database instead of odb::database). With
-   dynamic support the same application code can access multiple databases
-   via a common interface. Dynamic multi-database supports also allows the
-   application to dynamically load the database support code for individual
-   databases if and when necessary. For more information, refer to Chapter
-   14, "Multi-Database Support" in the ODB manual.
+ * Multi-database support. This mechanism allows an application to
+   simultaneously work with multiple database systems and comes in two
+   flavors: static and dynamic. With static support the application uses
+   the static database interfaces (that is, odb::<db>::database instead
+   of odb::database). With dynamic support the same application code can
+   access multiple databases via a common interface. Dynamic multi-database
+   supports also allows the application to dynamically load the database
+   support code for individual database systems if and when necessary. For
+   more information, refer to Chapter 14, "Multi-Database Support" in the
+   ODB manual.
 
  * Support for prepared queries. Prepared queries are a thin wrapper around
    the underlying database system's prepared statements functionality. They
-   provide a way to perform potentially expensive query preparations tasks
-   only once and then executing the query multiple time. For more information,
+   provide a way to perform potentially expensive query preparation tasks
+   only once and then execute the query multiple time. For more information,
    refer to Section 4.5, "Prepared Queries" in the ODB manual as well as the
    'prepared' example in the odb-examples package.
 
  * Mapping for char[N] and std::array<char, N> to database VARCHAR(N-1) (or
    similar) as well as for char to database CHAR(1) (or similar). For SQL
    Server and SQLite on Windows equivalent mappings for wchar_t are also
-   provided. The query support for arrays has been improved to support
+   provided. Also the query support for arrays has been improved to allow
    passing a value of the decayed type (pointer) as a query parameter.
    For more information, refer to the ODB manual "Type Mapping" sections
    for each database system.
@@ -32,19 +33,19 @@ Version 2.2.0
    5.4.1 "Change-Tracking vector", and 22.3.1, "Change-Tracking QList"
    in the ODB manual.
 
- * Support for automatically-derived SQL name (table, column, index, etc.)
-   transformations. At the higher level, it is possible to assign prefixes
-   and suffixes (--table-prefix, --{index,fkey,sequence}--suffix options)
-   as well as to convert to upper or lower case (--sql-name-case option).
-   At the lower level, it is possible to specify transformations as regular
+ * Support for automatically-derived SQL name transformations (table, column,
+   index, etc). At the higher level, it is possible to assign prefixes and
+   suffixes (--table-prefix, --{index,fkey,sequence}--suffix options) as
+   well as to convert to upper or lower case (--sql-name-case option). At
+   the lower level, it is possible to specify transformations as regular
    expressions (--{table,column,index,fkey,sequence,sql-name}-regex options).
    For more information, refer to the SQL NAME TRANSFORMATIONS section in
    the ODB compiler command line interface documentation (man pages).
 
- * New options, --export-symbol and --extern-symbol, allow DLL exporting of
+ * New options, --export-symbol and --extern-symbol, allow DLL-exporting of
    the generated database support code.
 
- * Support for transaction post-commit/rollback callbacks. For more
+ * Support for transaction post- commit/rollback callbacks. For more
    information, refer to Section 13.1, "Transaction Callbacks" in the ODB
    manual.
 
@@ -55,26 +56,26 @@ Version 2.2.0
    released when commit()/rollback() is called rather than when the
    transaction instance goes out of scope.
 
- * New odb::schema_catalog function, exists(), allows checking whether a
-   schema with the specified name exists in the catalog.
+ * New odb::schema_catalog function, exists(), can be used to check whether
+   a schema with the specified name exists in the catalog.
 
  * Support for SQL Server ROWVERSION-based optimistic concurrency. For more
    information, refer to Section 19.1.1, "ROWVERSION Support" in the ODB
    manual.
 
- * Support for specifying SQL Server transaction isolation level. For more
-   information, refer to Section 19.2, "SQL Server Database Class" in the
-   ODB manual.
+ * Support for specifying the SQL Server transaction isolation level. For
+   more information, refer to Section 19.2, "SQL Server Database Class" in
+   the ODB manual.
 
- * Support for "smart" containers. A smart container gets additional
-   functions which allow it to insert, update, and delete individual
-   elements in the database. Change-tracking containers are an example of
-   a smart container that utilizes this new functionality. Currently only
-   ordered smart containers are supported. Note also that with this
-   addition the names of the database functions provided by the ODB
-   compiler (see libodb/odb/container-traits.hxx) have changed. This will
-   only affect you if you have added ODB persistence support for custom
-   containers.
+ * Support for "smart" containers. A smart container is provided with
+   additional functions which allow it to insert, update, and delete
+   individual elements in the database. Change-tracking containers are an
+   example of a smart container that utilizes this new functionality.
+   Currently only ordered smart containers are supported. Note also that
+   with this addition the names of the database functions provided by the
+   ODB compiler (see libodb/odb/container-traits.hxx) have changed. This
+   will only affect you if you have added ODB persistence support for a
+   custom container.
 
 Version 2.1.0
 
