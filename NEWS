@@ -14,7 +14,7 @@ Version 2.2.0
  * Support for prepared queries. Prepared queries are a thin wrapper around
    the underlying database system's prepared statements functionality. They
    provide a way to perform potentially expensive query preparation tasks
-   only once and then execute the query multiple time. For more information,
+   only once and then execute the query multiple times. For more information,
    refer to Section 4.5, "Prepared Queries" in the ODB manual as well as the
    'prepared' example in the odb-examples package.
 
@@ -69,8 +69,8 @@ Version 2.2.0
 
  * Support for "smart" containers. A smart container is provided with
    additional functions which allow it to insert, update, and delete
-   individual elements in the database. Change-tracking containers are an
-   example of a smart container that utilizes this new functionality.
+   individual elements in the database. Change-tracking containers are
+   examples of smart containers that utilizes this new functionality.
    Currently only ordered smart containers are supported. Note also that
    with this addition the names of the database functions provided by the
    ODB compiler (see libodb/odb/container-traits.hxx) have changed. This
