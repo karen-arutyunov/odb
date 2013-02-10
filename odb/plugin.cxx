@@ -119,6 +119,7 @@ gate_callback (void*, void*)
     parser p (*options_, loc_pragmas_, ns_loc_pragmas_, decl_pragmas_);
     auto_ptr<unit> u (p.parse (global_namespace, file_));
 
+
     features f;
 
     // Validate, pass 1.
@@ -293,9 +294,15 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
     if (options_->trace ())
       cerr << "starting plugin " << plugin_info->base_name << endl;
 
-    // Disable assembly output.
+    // Disable assembly output. GCC doesn't define HOST_BIT_BUCKET
+    // correctly for MinGW (it still used /dev/null which fails to
+    // open).
     //
+#ifdef _WIN32
+    asm_file_name = "nul";
+#else
     asm_file_name = HOST_BIT_BUCKET;
+#endif
 
     // Register callbacks.
     //
