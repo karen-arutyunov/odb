@@ -68,8 +68,10 @@ path_search (path const&);
 static path
 driver_path (path const& driver);
 
+#ifndef ODB_STATIC_PLUGIN
 static path
 plugin_path (path const& driver);
+#endif
 
 //
 // Process manipulation.

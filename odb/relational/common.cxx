@@ -14,5 +14,6 @@ namespace relational
   database_type_id (semantics::data_member&)
   {
     assert (false);
+    return string ();
   }
 }

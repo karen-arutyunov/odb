@@ -178,6 +178,7 @@ namespace relational
         // Has to be implemented by the database-specific override.
         //
         assert (false);
+        return string ();
       }
 
       virtual void
