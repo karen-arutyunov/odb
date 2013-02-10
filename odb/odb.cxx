@@ -819,6 +819,13 @@ main (int argc, char* argv[])
                << "#endif" << endl
                << endl;
 
+            // Include std::string. It is used as a default type for
+            // the implicit discriminator member in polymorphism
+            // support.
+            //
+            os << "#include <string>" << endl
+               << endl;
+
             // Add ODB compiler metaprogramming tests.
             //
             os << "namespace odb" << endl
