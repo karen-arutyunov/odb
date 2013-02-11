@@ -33,6 +33,7 @@ namespace relational
         {"bool", "INTEGER", 0, false},
 
         {"char", "TEXT", 0, false},
+        {"wchar_t", "TEXT", 0, false},
         {"signed char", "INTEGER", 0, false},
         {"unsigned char", "INTEGER", 0, false},
 
@@ -243,7 +244,8 @@ namespace relational
       else if (array* a = dynamic_cast<array*> (&t))
       {
         semantics::type& bt (a->base_type ());
-        if (bt.is_a<semantics::fund_char> ())
+        if (bt.is_a<semantics::fund_char> () ||
+            bt.is_a<semantics::fund_wchar> ())
         {
           if (a->size () != 0)
             r = "TEXT";
