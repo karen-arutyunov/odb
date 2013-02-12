@@ -1128,8 +1128,6 @@ emit_type_decl (tree decl)
     // class typedef case described above since we already used
     // this name to define the class.
     //
-    int tc (TREE_CODE (t));
-
     if ((tc == RECORD_TYPE || tc == UNION_TYPE || tc == ENUMERAL_TYPE) &&
         TYPE_NAME (TYPE_MAIN_VARIANT (t)) == decl)
       return 0;
@@ -1155,8 +1153,10 @@ emit_type_decl (tree decl)
     // typedef foo bar;
     // typedef bar foo;
     //
-    if (unit_->find_hint (t) == 0)
-      unit_->insert_hint (t, edge);
+    // GCC also appears to re-purpose a node for another name (not
+    // sure if its a bug or a feature), so use the latest seen name.
+    //
+    unit_->insert_hint (t, edge);
 
     if (trace)
     {

@@ -1721,9 +1721,7 @@ find (semantics::type& t, semantics::names* hint)
   // interested in, go into nested hints.
   //
   for (; hint != 0 && i == e; hint = hint->hint ())
-  {
     i = base::find (t.fq_name (hint));
-  }
 
   // If the hinted name didn't work, try the primary name (e.g.,
   // ::std::string) instead of a user typedef (e.g., my_string).
