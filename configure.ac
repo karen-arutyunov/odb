@@ -29,6 +29,7 @@ AC_LANG(C++)
 static_plugin="$enable_static"
 
 AS_IF([test x$static_plugin = xyes],
+  AC_WARN([Building static plugin for direct linking into GCC executable!])
   AC_DEFINE([ODB_STATIC_PLUGIN], [1], [Building static plugin.]))
 
 # Check for plugin support in GCC unless we are building a static plugin.
