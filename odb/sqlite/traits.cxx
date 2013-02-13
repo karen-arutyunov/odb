@@ -80,7 +80,7 @@ namespace odb
       // Figure out the length. We cannot use strlen since it may
       // not be 0-terminated (strnlen is not standard).
       //
-      for (n = 0; n != N && v[n] != '\0'; ++n);
+      for (n = 0; n != N && v[n] != '\0'; ++n) ;
 
       if (n > b.capacity ())
         b.capacity (n);
@@ -159,7 +159,7 @@ namespace odb
       // Figure out the length. We cannot use wcslen since it may
       // not be 0-terminated (wcsnlen is not standard).
       //
-      for (n = 0; n != N && v[n] != L'\0'; ++n);
+      for (n = 0; n != N && v[n] != L'\0'; ++n) ;
 
       n *= 2;
 
