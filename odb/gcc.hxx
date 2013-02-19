@@ -41,7 +41,6 @@ extern "C"
 #include <system.h>
 #include <coretypes.h>
 #include <tree.h>
-#include <intl.h>
 #include <real.h>
 
 #include <tm.h>
