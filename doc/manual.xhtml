@@ -4437,6 +4437,12 @@ namespace odb
     </tr>
 
     <tr>
+      <td><code>like()</code></td>
+      <td>matches a pattern</td>
+      <td><code>query::first.like ("J%")</code></td>
+    </tr>
+
+    <tr>
       <td><code>is_null()</code></td>
       <td>value is NULL</td>
       <td><code>query::age.is_null ()</code></td>
@@ -4468,7 +4474,22 @@ namespace odb
   query q2 (query::first.in_range (names.begin (), names.end ()));
   </pre>
 
+  <p>Note that the <code>like()</code> function does not perform any
+     translation of the database system-specific extensions of the
+     SQL <code>LIKE</code> operator. As a result, if you would like
+     your application to be portable among various database systems,
+     then limit the special characters used in the pattern to
+     <code>%</code> (matches zero or more characters) and <code>_</code>
+     (matches exactly one character). It is also possible to specify
+     the escape character as a second argument to the <code>like()</code>
+     function. This character can then be used to escape the special
+     characters (<code>%</code> and <code>_</code>) in the pattern.
+     For example, the following query will match any two characters
+     separated by an underscore:</p>
 
+  <pre class="cxx">
+  query q (query::name.like ("_!__", "!"));
+  </pre>
 
   <p>The operator precedence in the query expressions are the same
      as for equivalent C++ operators. We can use parentheses to

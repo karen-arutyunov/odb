@@ -1,3 +1,9 @@
+Version 2.3.0
+
+ * Support for pattern matching (SQL LIKE operator) in the C++-integrated
+   queries. For more information, refer to Section 4.1, "ODB Query Language"
+   in the ODB manual.
+
 Version 2.2.0
 
  * Multi-database support. This mechanism allows an application to
