@@ -4,6 +4,8 @@
 
 #include <sstream>
 
+#include <odb/diagnostics.hxx>
+
 #include <odb/relational/model.hxx>
 
 #include <odb/relational/pgsql/common.hxx>
@@ -22,6 +24,36 @@ namespace relational
       struct object_columns: relational::object_columns, context
       {
         object_columns (base const& x): base (x) {}
+
+        virtual void
+        traverse_object (semantics::class_& c)
+        {
+          base::traverse_object (c);
+
+          if (context::top_object == &c)
+          {
+            // Make sure that the auto id type is INTEGER or BIGINT.
+            //
+            if (pkey_ != 0 && pkey_->auto_ ())
+            {
+              // Should be a single column.
+              //
+              sema_rel::column& c (pkey_->contains_begin ()->column ());
+
+              // This should never fail since we have already parsed this.
+              //
+              sql_type const& t (parse_sql_type (c.type ()));
+
+              if (t.type != sql_type::INTEGER && t.type != sql_type::BIGINT)
+              {
+                location const& l (c.get<location> ("cxx-location"));
+                error (l) << "automatically assigned object id must map "
+                          << "to PostgreSQL INTEGER or BIGINT" << endl;
+                throw operation_failed ();
+              }
+            }
+          }
+        }
 
         virtual string
         default_bool (semantics::data_member&, bool v)

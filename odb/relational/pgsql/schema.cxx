@@ -4,7 +4,6 @@
 
 #include <set>
 
-#include <odb/diagnostics.hxx>
 #include <odb/relational/schema.hxx>
 
 #include <odb/relational/pgsql/common.hxx>
@@ -69,19 +68,12 @@ namespace relational
             //
             sql_type const& t (parse_sql_type (c.type ()));
 
+            // The model creation code makes sure it is one of these type.
+            //
             if (t.type == sql_type::INTEGER)
               os << "SERIAL";
             else if (t.type == sql_type::BIGINT)
               os << "BIGSERIAL";
-            else
-            {
-              location const& l (c.get<location> ("cxx-location"));
-
-              error (l) << "automatically assigned object id must map "
-                        << "to PostgreSQL INTEGER or BIGINT" << endl;
-
-              throw operation_failed ();
-            }
           }
           else
             base::type (c, auto_);
