@@ -15,6 +15,9 @@
 #include <cutl/container/pointer-iterator.hxx>
 #include <cutl/compiler/context.hxx>
 
+#include <cutl/xml/parser.hxx>
+#include <cutl/xml/serializer.hxx>
+
 #include <odb/semantics/relational/name.hxx>
 
 namespace semantics
@@ -25,15 +28,21 @@ namespace semantics
 
     using std::string;
 
-    using container::graph;
     using container::pointer_iterator;
-
     using compiler::context;
+
+    typedef unsigned int version;
+
+    //
+    //
+    extern string const xmlns;
 
     //
     //
     class node;
     class edge;
+
+    typedef container::graph<node, edge> graph;
 
     //
     //
@@ -64,6 +73,12 @@ namespace semantics
       //
       virtual string
       kind () const = 0;
+
+      // XML serialization.
+      //
+    public:
+      virtual void
+      serialize (xml::serializer&) const = 0;
 
     public:
       template <typename X>
@@ -190,6 +205,21 @@ namespace semantics
 
       using node::add_edge_right;
 
+    protected:
+      nameable (xml::parser&, graph& g);
+
+      void
+      serialize_attributes (xml::serializer&) const;
+
+    public:
+      typedef void (*parser_func) (xml::parser&, scope_type&, graph&);
+      typedef std::map<std::string, parser_func> parser_map;
+      static parser_map parser_map_;
+
+      template <typename T>
+      static void
+      parser_impl (xml::parser&, scope_type&, graph&);
+
     private:
       string id_;
       names_type* named_;
@@ -264,6 +294,10 @@ namespace semantics
 
       // Find.
       //
+      template <typename T>
+      T*
+      find (name_type const&);
+
       names_iterator
       find (name_type const&);
 
@@ -277,13 +311,16 @@ namespace semantics
       find (names_type const&) const;
 
     public:
-      scope ()
-          : first_key_ (names_.end ())
-      {
-      }
+      scope (): first_key_ (names_.end ()) {}
 
       void
       add_edge_left (names_type&);
+
+    protected:
+      scope (xml::parser&, graph&);
+
+      void
+      serialize_content (xml::serializer&) const;
 
     private:
       names_list names_;

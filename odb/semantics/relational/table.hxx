@@ -14,45 +14,18 @@ namespace semantics
     class table: public qnameable, public uscope
     {
     public:
+      table (string const& id): qnameable (id) {}
+      table (xml::parser&, qscope&, graph&);
+
+      virtual string
+      kind () const {return "table";}
+
+      virtual void
+      serialize (xml::serializer&) const;
+
       // Resolve ambiguity.
       //
       using qnameable::scope;
-
-    protected:
-      table (string const& id)
-          : qnameable (id)
-      {
-      }
-    };
-
-    class object_table: public table
-    {
-    public:
-      object_table (string const& id)
-          : table (id)
-      {
-      }
-
-      virtual string
-      kind () const
-      {
-        return "object table";
-      }
-    };
-
-    class container_table: public table
-    {
-    public:
-      container_table (string const& id)
-          : table (id)
-      {
-      }
-
-      virtual string
-      kind () const
-      {
-        return "container table";
-      }
     };
   }
 }

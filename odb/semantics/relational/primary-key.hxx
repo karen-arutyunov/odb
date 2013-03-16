@@ -28,11 +28,16 @@ namespace semantics
       {
       }
 
+      primary_key (xml::parser&, uscope&, graph&);
+
       virtual string
       kind () const
       {
         return "primary key";
       }
+
+      virtual void
+      serialize (xml::serializer&) const;
 
     private:
       bool auto__;

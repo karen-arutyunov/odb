@@ -435,7 +435,7 @@ namespace relational
       }
 
       virtual void
-      on_delete (sema_rel::foreign_key::action a)
+      on_delete (sema_rel::foreign_key::action_type a)
       {
         using sema_rel::foreign_key;
 

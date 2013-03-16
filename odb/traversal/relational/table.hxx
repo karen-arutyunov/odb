@@ -13,8 +13,6 @@ namespace traversal
   namespace relational
   {
     struct table: scope_template<semantics::relational::table> {};
-    struct object_table: scope_template<semantics::relational::table> {};
-    struct container_table: scope_template<semantics::relational::table> {};
   }
 }
 

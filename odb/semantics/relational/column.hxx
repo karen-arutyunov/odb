@@ -19,11 +19,6 @@ namespace semantics
       typedef std::vector<contains*> contained_list;
 
     public:
-      column (string const& id, string const& type, bool null)
-          : unameable (id), type_ (type), null_ (null)
-      {
-      }
-
       string const&
       type () const
       {
@@ -89,6 +84,13 @@ namespace semantics
       }
 
     public:
+      column (string const& id, string const& type, bool null)
+          : unameable (id), type_ (type), null_ (null)
+      {
+      }
+
+      column (xml::parser&, uscope&, graph&);
+
       void
       add_edge_right (contains& e)
       {
@@ -102,6 +104,9 @@ namespace semantics
       {
         return "column";
       }
+
+      virtual void
+      serialize (xml::serializer&) const;
 
     private:
       string type_;

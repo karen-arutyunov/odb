@@ -17,14 +17,6 @@ namespace semantics
     class index: public key
     {
     public:
-      index (string const& id,
-             string const& t = string (),
-             string const& m = string (),
-             string const& o = string ())
-          : key (id), type_ (t), method_ (m), options_ (o)
-      {
-      }
-
       string const&
       type () const
       {
@@ -48,6 +40,20 @@ namespace semantics
       {
         return "index";
       }
+
+    public:
+      index (string const& id,
+             string const& t = string (),
+             string const& m = string (),
+             string const& o = string ())
+          : key (id), type_ (t), method_ (m), options_ (o)
+      {
+      }
+
+      index (xml::parser&, uscope&, graph&);
+
+      virtual void
+      serialize (xml::serializer&) const;
 
     private:
       string type_;    // E.g., "UNIQUE", etc.

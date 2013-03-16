@@ -11,18 +11,23 @@ namespace semantics
 {
   namespace relational
   {
-    class model: public graph<node, edge>, public qscope
+    class model: public graph, public qscope
     {
     public:
-      model ()
-      {
-      }
+      typedef relational::version version_type;
+
+      version_type
+      version () const {return version_;}
+
+    public:
+      model (version_type v): version_ (v) {}
+      model (xml::parser&);
 
       virtual string
-      kind () const
-      {
-        return "model";
-      }
+      kind () const {return "model";}
+
+      virtual void
+      serialize (xml::serializer&) const;
 
     public:
       using qscope::add_edge_left;
@@ -31,6 +36,9 @@ namespace semantics
     private:
       model (model const&);
       model& operator= (model const&);
+
+    private:
+      version_type version_;
     };
   }
 }

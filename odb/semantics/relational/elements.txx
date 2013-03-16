@@ -6,8 +6,56 @@ namespace semantics
 {
   namespace relational
   {
+    // nameable
+    //
+    template <typename N>
+    typename nameable<N>::parser_map nameable<N>::parser_map_;
+
+    template <typename N>
+    template <typename T>
+    void nameable<N>::
+    parser_impl (xml::parser& p, scope_type& s, graph& g)
+    {
+      name_type n (p.attribute ("name", name_type ()));
+      T& x (g.new_node<T> (p, s, g));
+      g.new_edge<names_type> (s, x, n);
+    }
+
+    template <typename N>
+    nameable<N>::
+    nameable (xml::parser&, graph&)
+      // : id_ (p.attribute<string> ("id"))
+        : named_ (0)
+    {
+      // The name attribute is handled in parser_impl().
+    }
+
+    template <typename N>
+    void nameable<N>::
+    serialize_attributes (xml::serializer& s) const
+    {
+      // Omit empty names (e.g., a primary key).
+      //
+      name_type const& n (name ());
+      if (!n.empty ())
+        s.attribute ("name", n);
+
+      //s.attribute ("id", id_);
+    }
+
     // scope
     //
+
+    template <typename N>
+    template <typename T>
+    T* scope<N>::
+    find (name_type const& name)
+    {
+      typename names_map::iterator i (names_map_.find (name));
+      return i != names_map_.end ()
+        ? dynamic_cast<T*> (&(*i->second)->nameable ())
+        : 0;
+    }
 
     template <typename N>
     typename scope<N>::names_iterator scope<N>::
@@ -47,6 +95,38 @@ namespace semantics
     {
       typename names_iterator_map::const_iterator i (iterator_map_.find (&e));
       return i != iterator_map_.end () ? i->second : names_.end ();
+    }
+
+    template <typename N>
+    scope<N>::
+    scope (xml::parser& p, graph& g)
+        : first_key_ (names_.end ())
+    {
+      using namespace xml;
+      p.content (parser::complex);
+
+      for (parser::event_type e (p.peek ());
+           e == parser::start_element;
+           e = p.peek ())
+      {
+        typename nameable_type::parser_map::iterator i (
+          nameable_type::parser_map_.find (p.name ()));
+
+        if (p.namespace_ () != xmlns || i == nameable_type::parser_map_.end ())
+          break; // Not one of our elements.
+
+        p.next ();
+        i->second (p, *this, g);
+        p.next_expect (parser::end_element);
+      }
+    }
+
+    template <typename N>
+    void scope<N>::
+    serialize_content (xml::serializer& s) const
+    {
+      for (names_const_iterator i (names_begin ()); i != names_end (); ++i)
+        i->nameable ().serialize (s);
     }
 
     class column;

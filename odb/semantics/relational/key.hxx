@@ -95,6 +95,12 @@ namespace semantics
         contains_.push_back (&e);
       }
 
+    protected:
+      key (xml::parser&, uscope&, graph&);
+
+      void
+      serialize_content (xml::serializer&) const;
+
     private:
       contains_list contains_;
     };

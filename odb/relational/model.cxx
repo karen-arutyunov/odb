@@ -68,7 +68,7 @@ namespace relational
     generate ()
     {
       context ctx;
-      cutl::shared_ptr<sema_rel::model> m (new (shared) sema_rel::model);
+      cutl::shared_ptr<sema_rel::model> m (new (shared) sema_rel::model (0)); //@@ evo
 
       traversal::unit unit;
       traversal::defines unit_defines;

@@ -3,13 +3,14 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
-
-#include <odb/semantics/relational/elements.hxx>
+#include <odb/semantics/relational.hxx>
 
 namespace semantics
 {
   namespace relational
   {
+    string const xmlns = "http://www.codesynthesis.com/xmlns/odb/changelog";
+
     // duplicate_name
     //
     template <>

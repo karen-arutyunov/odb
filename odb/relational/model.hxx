@@ -26,9 +26,12 @@ namespace relational
     {
       typedef object_columns base;
 
-      object_columns (sema_rel::model& model, sema_rel::table& table)
+      object_columns (sema_rel::model& model,
+                      sema_rel::table& table,
+                      bool object)
           : model_ (model),
             table_ (table),
+            object_ (object),
             pkey_ (0),
             id_override_ (false)
       {
@@ -187,7 +190,7 @@ namespace relational
                    string const& /* id */,
                    sema_rel::column& c)
       {
-        if (table_.is_a<sema_rel::object_table> ())
+        if (object_)
         {
           if (semantics::data_member* idm = id ())
           {
@@ -228,8 +231,9 @@ namespace relational
                    (key_prefix_.empty () ? m.name () : key_prefix_));
 
         bool deferred (m.get<bool> ("deferred", true));
-        foreign_key::action on_delete (
-          m.get<foreign_key::action> ("on-delete", foreign_key::no_action));
+        foreign_key::action_type on_delete (
+          m.get<foreign_key::action_type> (
+            "on-delete", foreign_key::no_action));
 
         foreign_key& fk (
           model_.new_node<foreign_key> (
@@ -320,6 +324,7 @@ namespace relational
     protected:
       sema_rel::model& model_;
       sema_rel::table& table_;
+      bool object_;
       sema_rel::primary_key* pkey_;
       string id_prefix_;
       bool id_override_;
@@ -384,11 +389,9 @@ namespace relational
               for (object_columns_list::iterator i (ocl->begin ());
                    i != ocl->end (); ++i)
               {
-                column& c (
-                  dynamic_cast<column&> (
-                    table_.find (i->name)->nameable ()));
-
-                model_.new_edge<sema_rel::contains> (in, c, im.options);
+                column* c (table_.find<column> (i->name));
+                assert (c != 0);
+                model_.new_edge<sema_rel::contains> (in, *c, im.options);
               }
             }
             else
@@ -396,11 +399,9 @@ namespace relational
               // Simple value. Get the column name and look it up in the
               // table.
               //
-              column& c (
-                dynamic_cast<column&> (
-                  table_.find (column_name (im.path))->nameable ()));
-
-              model_.new_edge<sema_rel::contains> (in, c, im.options);
+              column* c (table_.find<column> (column_name (im.path)));
+              assert (c != 0);
+              model_.new_edge<sema_rel::contains> (in, *c, im.options);
             }
           }
         }
@@ -486,15 +487,15 @@ namespace relational
         //
         string id (id_prefix_ + m.name () + "[]");
 
-        sema_rel::container_table& t (
-          model_.new_node<sema_rel::container_table> (id));
+        sema_rel::table& t (model_.new_node<sema_rel::table> (id));
         t.set ("cxx-location", m.location ());
         model_.new_edge<sema_rel::qnames> (model_, t, name);
 
         // object_id
         //
         {
-          instance<object_columns> oc (model_, t);
+          bool f (false); //@@ (im)persfect forwarding.
+          instance<object_columns> oc (model_, t, f);
           oc->traverse (m, container_idt (m), "id", "object_id");
         }
 
@@ -597,8 +598,11 @@ namespace relational
         {
           // Column.
           //
-          instance<object_columns> oc (model_, t);
-          oc->traverse (m, container_it (ct), "index", "index");
+          {
+            bool f (false); //@@ (im)persfect forwarding.
+            instance<object_columns> oc (model_, t, f);
+            oc->traverse (m, container_it (ct), "index", "index");
+          }
 
           // This is a simple value so the name cannot be empty. It is
           // also a top-level column, so there is no column prefix.
@@ -631,9 +635,12 @@ namespace relational
             ? sin->name
             : index_name (name, col));
 
+          column* c (t.find<column> (col));
+          assert (c != 0);
+
           model_.new_edge<sema_rel::contains> (
             *in,
-            dynamic_cast<column&> (t.find (col)->nameable ()),
+            *c,
             (sin != 0 ? sin->members.back ().options : ""));
         }
 
@@ -641,14 +648,16 @@ namespace relational
         //
         if (ck == ck_map || ck == ck_multimap)
         {
-          instance<object_columns> oc (model_, t);
+          bool f (false); //@@ (im)persfect forwarding.
+          instance<object_columns> oc (model_, t, f);
           oc->traverse (m, container_kt (ct), "key", "key");
         }
 
         // value
         //
         {
-          instance<object_columns> oc (model_, t);
+          bool f (false); //@@ (im)persfect forwarding.
+          instance<object_columns> oc (model_, t, f);
           oc->traverse (m, container_vt (ct), "value", "value");
         }
       }
@@ -693,8 +702,7 @@ namespace relational
 
         string id (class_fq_name (c), 2); // Remove leading '::'.
 
-        sema_rel::object_table& t(
-          model_.new_node<sema_rel::object_table> (id));
+        sema_rel::table& t(model_.new_node<sema_rel::table> (id));
         t.set ("cxx-location", c.location ());
         model_.new_edge<sema_rel::qnames> (model_, t, name);
 
@@ -703,7 +711,8 @@ namespace relational
         // Add columns.
         //
         {
-          instance<object_columns> oc (model_, t);
+          bool tr (true); //@@ (im)persfect forwarding.
+          instance<object_columns> oc (model_, t, tr);
           oc->traverse (c);
         }
 
