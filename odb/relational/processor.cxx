@@ -1159,7 +1159,10 @@ namespace relational
             continue;
           }
 
-          // Now assign the name if the index is unnamed.
+          // Now assign the name if the index is unnamed. We have to
+          // add table name as a prefix here since there is not way
+          // to distinguish between user-assigned and auto-derived
+          // names in the model.
           //
           if (in.name.empty ())
           {
