@@ -19,6 +19,18 @@ namespace odb
 {
   namespace sqlite
   {
+    // This exception is thrown if SQLite is forcing the current transaction
+    // to rollback. This can happen in SQLite 3.7.11 or later if one of the
+    // connections participating in the shared cache rolls back a transaction.
+    // See the SQLITE_ABORT_ROLLBACK extended error code for detail on this
+    // behavior.
+    //
+    struct LIBODB_EXPORT forced_rollback: recoverable
+    {
+      virtual const char*
+      what () const throw ();
+    };
+
     struct LIBODB_SQLITE_EXPORT database_exception: odb::database_exception
     {
       database_exception (int error,

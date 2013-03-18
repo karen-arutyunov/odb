@@ -47,6 +47,15 @@ namespace odb
           m = "SQLite API misuse";
           break;
         }
+#ifdef SQLITE_ABORT_ROLLBACK
+      case SQLITE_ABORT:
+        {
+          if (ee == SQLITE_ABORT_ROLLBACK)
+            throw forced_rollback ();
+
+          break;
+        }
+#endif
       case SQLITE_LOCKED:
         {
 #ifdef LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
@@ -65,15 +74,14 @@ namespace odb
           if (e != SQLITE_IOERR || ee == SQLITE_IOERR_BLOCKED)
             throw timeout ();
 #endif
-
-          // Fall throught.
-        }
-      default:
-        {
-          m = sqlite3_errmsg (h);
           break;
         }
+      default:
+        break;
       }
+
+      if (m.empty ())
+        m = sqlite3_errmsg (h);
 
       throw database_exception (e, ee, m);
     }

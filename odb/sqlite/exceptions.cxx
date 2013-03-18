@@ -13,6 +13,16 @@ namespace odb
   namespace sqlite
   {
     //
+    // forced_rollback
+    //
+
+    const char* forced_rollback::
+    what () const throw ()
+    {
+      return "transaction is forced to rollback";
+    }
+
+    //
     // database_exception
     //
 
