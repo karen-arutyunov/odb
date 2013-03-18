@@ -9,8 +9,6 @@
 #include <cassert>
 #include <sstream>
 
-#include <odb/emitter.hxx>
-
 #include <odb/semantics/relational.hxx>
 
 #include <odb/relational/common.hxx>
