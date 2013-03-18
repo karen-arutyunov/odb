@@ -312,6 +312,15 @@ class options
      option for details."
   };
 
+  database_map<std::string> --changelog-file-suffix
+  {
+    "<sfx>",
+    "Use <sfx> to construct the name of the changelog file. In the
+     single-database mode by default no suffix is used. In the
+     multi-database mode the default value for this option is
+     \c{\b{-}\i{db}} (where \ci{db} is the database name)."
+  };
+
   std::string --hxx-suffix = ".hxx"
   {
     "<suffix>",
@@ -338,6 +347,13 @@ class options
     "<suffix>",
     "Use <suffix> instead of the default \cb{.sql} to construct the name of
      the generated database schema file."
+  };
+
+  std::string --changelog-suffix = ".xml"
+  {
+    "<suffix>",
+    "Use <suffix> instead of the default \cb{.xml} to construct the name of
+     the changelog file."
   };
 
   // Prologues.

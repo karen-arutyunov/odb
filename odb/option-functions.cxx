@@ -69,6 +69,7 @@ process_options (options& o)
     o.odb_file_suffix ().insert (make_pair (cm, string ("-odb")));
     o.sql_file_suffix ().insert (make_pair (cm, string ("")));
     o.schema_file_suffix ().insert (make_pair (cm, string ("-schema")));
+    o.changelog_file_suffix ().insert (make_pair (cm, string ("")));
   }
 
   if (o.multi_database () == multi_database::disabled)
@@ -76,12 +77,14 @@ process_options (options& o)
     o.odb_file_suffix ().insert (make_pair (db, string ("-odb")));
     o.sql_file_suffix ().insert (make_pair (db, string ("")));
     o.schema_file_suffix ().insert (make_pair (db, string ("-schema")));
+    o.changelog_file_suffix ().insert (make_pair (db, string ("")));
   }
   else
   {
     o.odb_file_suffix ().insert (make_pair (db, "-odb-" + db.string ()));
     o.sql_file_suffix ().insert (make_pair (db, "-" + db.string ()));
     o.schema_file_suffix ().insert (make_pair (db, "-schema-" + db.string ()));
+    o.changelog_file_suffix ().insert (make_pair (db, "-" + db.string ()));
   }
 
   // Set default --default-database value.
