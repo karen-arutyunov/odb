@@ -257,6 +257,15 @@ struct member_access
                    // necessarily mean that it is by reference.
 };
 
+//
+//
+struct model_version
+{
+  unsigned long long base;
+  unsigned long long current;
+  bool open;
+};
+
 class context
 {
 public:
@@ -579,6 +588,20 @@ public:
     // Set by type processor.
     //
     return c.get<semantics::data_member*> ("discriminator", 0);
+  }
+
+  // Model version.
+  //
+  bool
+  versioned () const
+  {
+    return unit.count ("model-version") != 0;
+  }
+
+  model_version const&
+  version () const
+  {
+    return unit.get<model_version> ("model-version");
   }
 
   //

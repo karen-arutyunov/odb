@@ -31,6 +31,20 @@ ns_loc_pragmas ns_loc_pragmas_;
 database pragma_db_;
 multi_database pragma_multi_;
 
+static unsigned long long
+integer (tree n)
+{
+  HOST_WIDE_INT hwl (TREE_INT_CST_LOW (n));
+  HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (n));
+
+  unsigned long long l (hwl);
+  unsigned long long h (hwh);
+  unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+  unsigned long long v ((h << width) + l);
+  return v;
+}
+
 template <typename X>
 void
 accumulate (compiler::context& ctx, string const& k, any const& v, location_t)
@@ -205,15 +219,7 @@ parse_expression (cxx_lexer& l,
         case INTEGER_CST:
           {
             tree type (TREE_TYPE (tn));
-
-            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (tn));
-            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (tn));
-
-            unsigned long long l (hwl);
-            unsigned long long h (hwh);
-            unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-            unsigned long long v ((h << width) + l);
+            unsigned long long v (integer (tn));
 
             ostringstream os;
             os << v;
@@ -663,7 +669,106 @@ handle_pragma (cxx_lexer& l,
   pragma::add_func adder (0);                // Custom context adder.
   location_t loc (l.location ());            // Pragma location.
 
-  if (qualifier == "map")
+  if (qualifier == "model")
+  {
+    // version(unsigned long long base,
+    //         unsigned long long current,
+    //         bool open = true)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    assert (decl == global_namespace);
+
+    if (p == "version")
+    {
+      if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+      {
+        error (l) << "'(' expected after db pragma " << p << endl;
+        return;
+      }
+
+      model_version v;
+
+      // base
+      //
+      if (l.next (tl, &tn) != CPP_NUMBER || TREE_CODE (tn) != INTEGER_CST)
+      {
+        error (l) << "unsigned integer expected as base version" << endl;
+        return;
+      }
+
+      v.base = integer (tn);
+
+      if (v.base == 0)
+      {
+        error (l) << "base version cannot be zero" << endl;
+        return;
+      }
+
+      // current
+      //
+      if (l.next (tl, &tn) != CPP_COMMA)
+      {
+        error (l) << "current version expected after base version" << endl;
+        return;
+      }
+
+      if (l.next (tl, &tn) != CPP_NUMBER || TREE_CODE (tn) != INTEGER_CST)
+      {
+        error (l) << "unsigned integer expected as current version" << endl;
+        return;
+      }
+
+      v.current = integer (tn);
+
+      if (v.current == 0)
+      {
+        error (l) << "current version cannot be zero" << endl;
+        return;
+      }
+
+      if (v.base > v.current)
+      {
+        error (l) << "current version should be greater than or equal to " <<
+          "base version" << endl;
+        return;
+      }
+
+      // open
+      //
+      tt = l.next (tl, &tn);
+      if (tt == CPP_COMMA)
+      {
+        if (l.next (tl, &tn) != CPP_KEYWORD || (tl != "true" && tl != "false"))
+        {
+          error (l) << "true or false expected after current version" << endl;
+          return;
+        }
+
+        v.open = (tl == "true");
+        tt = l.next (tl, &tn);
+      }
+      else
+        v.open = true;
+
+      if (tt != CPP_CLOSE_PAREN)
+      {
+        error (l) << "')' expected at the end of db pragma " << p << endl;
+        return;
+      }
+
+      name = "model-version";
+      val = v;
+      tt = l.next (tl, &tn);
+    }
+    else
+    {
+      error (l) << "unknown db pragma " << p << endl;
+      return;
+    }
+  }
+  else if (qualifier == "map")
   {
     // type("<regex>")
     // as("<subst>")
@@ -1907,14 +2012,7 @@ handle_pragma (cxx_lexer& l,
         {
         case INTEGER_CST:
           {
-            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (tn));
-            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (tn));
-
-            unsigned long long l (hwl);
-            unsigned long long h (hwh);
-            unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-            dv.int_value = (h << width) + l;
+            dv.int_value = integer (tn);
             dv.kind = default_value::integer;
             break;
           }
@@ -2184,7 +2282,8 @@ check_qual_decl_type (declaration const& d,
   int tc (d.tree_code ());
   bool type (TREE_CODE_CLASS (tc) == tcc_type);
 
-  if (p == "map")
+  if (p == "model" ||
+      p == "map")
   {
     assert (d == global_namespace);
   }
@@ -2320,7 +2419,8 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
     // Make sure a qualifier prefix is not used before a specifier.
     //
     if (!db.empty () &&
-        (p == "map"       ||
+        (p == "model"     ||
+         p == "map"       ||
          p == "namespace" ||
          p == "object"    ||
          p == "view"      ||
@@ -2345,7 +2445,13 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
 
   // Pragma qualifiers.
   //
-  if (p == "map")
+  if (p == "model")
+  {
+    orig_decl = global_namespace;
+    decl = declaration (orig_decl);
+    tt = l.next (tl, &tn);
+  }
+  else if (p == "map")
   {
     // map type("<regex>") as("<subst>") [to("<subst>")] [from("<subst>")]
     //
@@ -3114,6 +3220,12 @@ handle_pragma_db_mssql (cpp_reader* r)
 }
 
 extern "C" void
+handle_pragma_db_model (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "model");
+}
+
+extern "C" void
 handle_pragma_db_map (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "map");
@@ -3361,6 +3473,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "pgsql", handle_pragma_db_pgsql);
   c_register_pragma_with_expansion ("db", "oracle", handle_pragma_db_oracle);
   c_register_pragma_with_expansion ("db", "mssql", handle_pragma_db_mssql);
+  c_register_pragma_with_expansion ("db", "model", handle_pragma_db_model);
   c_register_pragma_with_expansion ("db", "map", handle_pragma_db_map);
   c_register_pragma_with_expansion ("db", "namespace", handle_pragma_db_namespace);
   c_register_pragma_with_expansion ("db", "object", handle_pragma_db_object);
