@@ -3,17 +3,30 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
-#include <odb/semantics/relational.hxx>
+
+#include <odb/semantics/relational/primary-key.hxx>
 
 namespace semantics
 {
   namespace relational
   {
     primary_key::
+    primary_key (primary_key const& k, uscope& s, graph& g)
+        : key (k, s, g), auto__ (k.auto__)
+    {
+    }
+
+    primary_key::
     primary_key (xml::parser& p, uscope& s, graph& g)
         : key (p, s, g),
           auto__ (p.attribute ("auto", false))
     {
+    }
+
+    primary_key& primary_key::
+    clone (uscope& s, graph& g) const
+    {
+      return g.new_node<primary_key> (*this, s, g);
     }
 
     void primary_key::

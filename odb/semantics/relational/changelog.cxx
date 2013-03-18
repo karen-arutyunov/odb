@@ -5,7 +5,10 @@
 #include <vector>
 
 #include <cutl/compiler/type-info.hxx>
-#include <odb/semantics/relational.hxx>
+
+#include <odb/semantics/relational/changelog.hxx>
+#include <odb/semantics/relational/model.hxx>
+#include <odb/semantics/relational/changeset.hxx>
 
 namespace semantics
 {

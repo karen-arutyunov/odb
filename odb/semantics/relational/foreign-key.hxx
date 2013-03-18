@@ -68,7 +68,11 @@ namespace semantics
       {
       }
 
+      foreign_key (foreign_key const&, uscope&, graph&);
       foreign_key (xml::parser&, uscope&, graph&);
+
+      virtual foreign_key&
+      clone (uscope&, graph&) const;
 
       virtual string
       kind () const

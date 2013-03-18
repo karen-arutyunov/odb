@@ -3,12 +3,23 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
-#include <odb/semantics/relational.hxx>
+
+#include <odb/semantics/relational/column.hxx>
 
 namespace semantics
 {
   namespace relational
   {
+    column::
+    column (column const& c, uscope&, graph& g)
+        : unameable (c, g),
+          type_ (c.type_),
+          null_ (c.null_),
+          default__ (c.default__),
+          options_ (c.options_)
+    {
+    }
+
     column::
     column (xml::parser& p, uscope&, graph& g)
         : unameable (p, g),
@@ -18,6 +29,12 @@ namespace semantics
           options_ (p.attribute ("options", string ()))
     {
       p.content (xml::parser::empty);
+    }
+
+    column& column::
+    clone (uscope& s, graph& g) const
+    {
+      return g.new_node<column> (*this, s, g);
     }
 
     void column::

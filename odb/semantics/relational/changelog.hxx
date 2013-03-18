@@ -82,6 +82,12 @@ namespace semantics
       pointer_iterator<contains_changeset_list::const_iterator>
       contains_changeset_iterator;
 
+      contains_changeset const&
+      contains_changeset_back () const
+      {
+        return *contains_changeset_.back ();
+      }
+
       contains_changeset_iterator
       contains_changeset_begin () const
       {
@@ -98,6 +104,12 @@ namespace semantics
       contains_changeset_size () const
       {
         return contains_changeset_.size ();
+      }
+
+      bool
+      contains_changeset_empty () const
+      {
+        return contains_changeset_.empty ();
       }
 
     public:

@@ -3,12 +3,20 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
-#include <odb/semantics/relational.hxx>
+
+#include <odb/semantics/relational/changeset.hxx>
 
 namespace semantics
 {
   namespace relational
   {
+    changeset::
+    changeset (changeset const& c, graph& g)
+      : qscope (c, g),
+        version_ (c.version_)
+    {
+    }
+
     changeset::
     changeset (xml::parser& p, graph& g)
         : qscope (p, g),

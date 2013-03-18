@@ -15,7 +15,11 @@ namespace semantics
     {
     public:
       table (string const& id): qnameable (id) {}
+      table (table const&, qscope&, graph&);
       table (xml::parser&, qscope&, graph&);
+
+      virtual table&
+      clone (qscope&, graph&) const;
 
       virtual string
       kind () const {return "table";}
@@ -32,7 +36,11 @@ namespace semantics
     {
     public:
       add_table (string const& id): table (id) {}
+      add_table (table const& t, qscope& s, graph& g): table (t, s, g) {}
       add_table (xml::parser& p, qscope& s, graph& g): table (p, s, g) {}
+
+      virtual add_table&
+      clone (qscope&, graph&) const;
 
       virtual string
       kind () const {return "add table";}

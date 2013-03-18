@@ -6,7 +6,8 @@
 #include <istream>
 
 #include <cutl/compiler/type-info.hxx>
-#include <odb/semantics/relational.hxx>
+
+#include <odb/semantics/relational/foreign-key.hxx>
 
 using namespace std;
 
@@ -45,6 +46,16 @@ namespace semantics
     }
 
     foreign_key::
+    foreign_key (foreign_key const& k, uscope& s, graph& g)
+        : key (k, s, g),
+          referenced_table_ (k.referenced_table_),
+          referenced_columns_ (k.referenced_columns_),
+          deferred_ (k.deferred_),
+          on_delete_ (k.on_delete_)
+    {
+    }
+
+    foreign_key::
     foreign_key (xml::parser& p, uscope& s, graph& g)
         : key (p, s, g),
           deferred_ (p.attribute ("deferred", false)),
@@ -71,6 +82,13 @@ namespace semantics
 
       p.next_expect (parser::end_element);
     }
+
+    foreign_key& foreign_key::
+    clone (uscope& s, graph& g) const
+    {
+      return g.new_node<foreign_key> (*this, s, g);
+    }
+
 
     void foreign_key::
     serialize (xml::serializer& s) const

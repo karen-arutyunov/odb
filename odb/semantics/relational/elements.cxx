@@ -3,7 +3,10 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
-#include <odb/semantics/relational.hxx>
+
+#include <odb/semantics/relational/elements.hxx>
+#include <odb/semantics/relational/column.hxx>
+#include <odb/semantics/relational/primary-key.hxx>
 
 namespace semantics
 {
@@ -25,6 +28,46 @@ namespace semantics
     duplicate_name (qscope& s, qnameable& o, qnameable& d)
         : scope (s), orig (o), dup (d), name (o.name ().string ())
     {
+    }
+
+    // scope<uname>
+    //
+    template <>
+    void scope<uname>::
+    add_edge_left (names_type& e)
+    {
+      nameable_type& n (e.nameable ());
+      name_type const& name (e.name ());
+
+      typename names_map::iterator i (names_map_.find (name));
+
+      if (i == names_map_.end ())
+      {
+        typename names_list::iterator i;
+
+        // We want the order to be columns first, then the primary key,
+        // and then the foreign keys.
+        //
+        if (n.is_a<column> ())
+          i = names_.insert (first_key_, &e);
+        else
+        {
+          if (n.is_a<primary_key> ())
+            first_key_ = i = names_.insert (first_key_, &e);
+          else
+          {
+            i = names_.insert (names_.end (), &e);
+
+            if (first_key_ == names_.end ())
+              first_key_ = i;
+          }
+        }
+
+        names_map_[name] = i;
+        iterator_map_[&e] = i;
+      }
+      else
+        throw duplicate_name (*this, (*i->second)->nameable (), n);
     }
 
     // type info

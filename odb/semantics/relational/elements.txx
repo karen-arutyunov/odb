@@ -23,6 +23,13 @@ namespace semantics
 
     template <typename N>
     nameable<N>::
+    nameable (nameable const& n, graph&)
+        : id_ (n.id_), named_ (0)
+    {
+    }
+
+    template <typename N>
+    nameable<N>::
     nameable (xml::parser&, graph&)
       // : id_ (p.attribute<string> ("id"))
         : named_ (0)
@@ -99,6 +106,19 @@ namespace semantics
 
     template <typename N>
     scope<N>::
+    scope (scope const& s, graph& g)
+        : first_key_ (names_.end ())
+    {
+      for (names_const_iterator i (s.names_begin ());
+           i != s.names_end (); ++i)
+      {
+        nameable_type& n (i->nameable ().clone (*this, g));
+        g.new_edge<names_type> (*this, n, i->name ());
+      }
+    }
+
+    template <typename N>
+    scope<N>::
     scope (xml::parser& p, graph& g)
         : first_key_ (names_.end ())
     {
@@ -136,38 +156,18 @@ namespace semantics
     void scope<N>::
     add_edge_left (names_type& e)
     {
-      nameable_type& n (e.nameable ());
       name_type const& name (e.name ());
 
       typename names_map::iterator i (names_map_.find (name));
 
       if (i == names_map_.end ())
       {
-        typename names_list::iterator i;
-
-        // We want the order to be columns first, then the primary key,
-        // and then the foreign keys.
-        //
-        if (n.is_a<column> ())
-          i = names_.insert (first_key_, &e);
-        else
-        {
-          if (n.is_a<primary_key> ())
-            first_key_ = i = names_.insert (first_key_, &e);
-          else
-          {
-            i = names_.insert (names_.end (), &e);
-
-            if (first_key_ == names_.end ())
-              first_key_ = i;
-          }
-        }
-
+        typename names_list::iterator i (names_.insert (names_.end (), &e));
         names_map_[name] = i;
         iterator_map_[&e] = i;
       }
       else
-        throw duplicate_name (*this, (*i->second)->nameable (), n);
+        throw duplicate_name (*this, (*i->second)->nameable (), e.nameable ());
     }
   }
 }

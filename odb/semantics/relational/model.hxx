@@ -21,6 +21,7 @@ namespace semantics
 
     public:
       model (version_type v): version_ (v) {}
+      model (model const&, graph&);
       model (xml::parser&, graph&);
 
       virtual string

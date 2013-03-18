@@ -3,7 +3,8 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
-#include <odb/semantics/relational.hxx>
+
+#include <odb/semantics/relational/table.hxx>
 
 namespace semantics
 {
@@ -12,9 +13,21 @@ namespace semantics
     // table
     //
     table::
+    table (table const& t, qscope& s, graph& g)
+        : qnameable (t, g), uscope (t, g)
+    {
+    }
+
+    table::
     table (xml::parser& p, qscope&, graph& g)
         : qnameable (p, g), uscope (p, g)
     {
+    }
+
+    table& table::
+    clone (qscope& s, graph& g) const
+    {
+      return g.new_node<table> (*this, s, g);
     }
 
     void table::
@@ -28,6 +41,12 @@ namespace semantics
 
     // add_table
     //
+    add_table& add_table::
+    clone (qscope& s, graph& g) const
+    {
+      return g.new_node<add_table> (*this, s, g);
+    }
+
     void add_table::
     serialize (xml::serializer& s) const
     {

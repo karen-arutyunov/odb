@@ -16,10 +16,7 @@ namespace semantics
     {
     public:
       bool
-      auto_ () const
-      {
-        return auto__;
-      }
+      auto_ () const {return auto__;}
 
     public:
       primary_key (bool auto_)
@@ -28,7 +25,11 @@ namespace semantics
       {
       }
 
+      primary_key (primary_key const&, uscope&, graph&);
       primary_key (xml::parser&, uscope&, graph&);
+
+      virtual primary_key&
+      clone (uscope&, graph&) const;
 
       virtual string
       kind () const

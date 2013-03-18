@@ -21,6 +21,7 @@ namespace semantics
 
     public:
       changeset (version_type v): version_ (v) {}
+      changeset (changeset const&, graph&);
       changeset (xml::parser&, graph&);
 
       virtual string

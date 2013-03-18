@@ -3,12 +3,27 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
-#include <odb/semantics/relational.hxx>
+
+#include <odb/semantics/relational/key.hxx>
+#include <odb/semantics/relational/column.hxx>
 
 namespace semantics
 {
   namespace relational
   {
+    key::
+    key (key const& k, uscope& s, graph& g)
+        : unameable (k, g)
+    {
+      for (contains_iterator i (k.contains_begin ());
+           i != k.contains_end (); ++i)
+      {
+        column* c (s.find<column> (i->column ().name ()));
+        assert (c != 0);
+        g.new_edge<contains> (*this, *c, i->options ());
+      }
+    }
+
     key::
     key (xml::parser& p, uscope& s, graph& g)
         : unameable (p, g)

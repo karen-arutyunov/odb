@@ -20,40 +20,22 @@ namespace semantics
 
     public:
       string const&
-      type () const
-      {
-        return type_;
-      }
+      type () const {return type_;}
 
       bool
-      null () const
-      {
-        return null_;
-      }
+      null () const {return null_;}
 
       string const&
-      default_ () const
-      {
-        return default__;
-      }
+      default_ () const {return default__;}
 
       void
-      default_ (string const& d)
-      {
-        default__ = d;
-      }
+      default_ (string const& d) {default__ = d;}
 
       string const&
-      options () const
-      {
-        return options_;
-      }
+      options () const {return options_;}
 
       void
-      options (string const& o)
-      {
-        options_ = o;
-      }
+      options (string const& o) {options_ = o;}
 
     public:
       typedef relational::table table_type;
@@ -72,16 +54,10 @@ namespace semantics
       contained_iterator;
 
       contained_iterator
-      contained_begin () const
-      {
-        return contained_.begin ();
-      }
+      contained_begin () const {return contained_.begin ();}
 
       contained_iterator
-      contained_end () const
-      {
-        return contained_.end ();
-      }
+      contained_end () const {return contained_.end ();}
 
     public:
       column (string const& id, string const& type, bool null)
@@ -89,7 +65,11 @@ namespace semantics
       {
       }
 
+      column (column const&, uscope&, graph&);
       column (xml::parser&, uscope&, graph&);
+
+      virtual column&
+      clone (uscope&, graph&) const;
 
       void
       add_edge_right (contains& e)

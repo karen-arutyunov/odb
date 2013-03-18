@@ -196,7 +196,12 @@ namespace semantics
       //
       nameable (string const& id): id_ (id), named_ (0) {}
 
-      void
+      virtual nameable&
+      clone (scope_type&, graph&) const = 0;
+
+      // Virtual because we call it via nameable interface (e.g., in copy).
+      //
+      virtual void
       add_edge_right (names_type& e)
       {
         assert (named_ == 0);
@@ -206,6 +211,7 @@ namespace semantics
       using node::add_edge_right;
 
     protected:
+      nameable (nameable const&, graph& g);
       nameable (xml::parser&, graph& g);
 
       void
@@ -313,10 +319,13 @@ namespace semantics
     public:
       scope (): first_key_ (names_.end ()) {}
 
-      void
+      // Virtual because we call it via scope interface (e.g., in copy).
+      //
+      virtual void
       add_edge_left (names_type&);
 
     protected:
+      scope (scope const&, graph&);
       scope (xml::parser&, graph&);
 
       void
@@ -329,6 +338,10 @@ namespace semantics
 
       typename names_list::iterator first_key_;
     };
+
+    template <>
+    void scope<uname>::
+    add_edge_left (names_type&);
 
     typedef scope<uname> uscope;
     typedef scope<qname> qscope;

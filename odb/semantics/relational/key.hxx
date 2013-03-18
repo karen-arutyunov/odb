@@ -21,22 +21,13 @@ namespace semantics
       typedef relational::column column_type;
 
       key_type&
-      key () const
-      {
-        return *key_;
-      }
+      key () const {return *key_;}
 
       column_type&
-      column () const
-      {
-        return *column_;
-      }
+      column () const {return *column_;}
 
       string const&
-      options () const
-      {
-        return options_;
-      }
+      options () const {return options_;}
 
     public:
       contains (string const& o = string ()) : options_ (o) {}
@@ -69,22 +60,13 @@ namespace semantics
       contains_iterator;
 
       contains_iterator
-      contains_begin () const
-      {
-        return contains_.begin ();
-      }
+      contains_begin () const {return contains_.begin ();}
 
       contains_iterator
-      contains_end () const
-      {
-        return contains_.end ();
-      }
+      contains_end () const {return contains_.end ();}
 
       contains_list::size_type
-      contains_size () const
-      {
-        return contains_.size ();
-      }
+      contains_size () const {return contains_.size ();}
 
     public:
       key (std::string const& id): unameable (id) {}
@@ -96,6 +78,7 @@ namespace semantics
       }
 
     protected:
+      key (key const&, uscope&, graph&);
       key (xml::parser&, uscope&, graph&);
 
       void

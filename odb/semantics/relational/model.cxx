@@ -3,12 +3,20 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
-#include <odb/semantics/relational.hxx>
+
+#include <odb/semantics/relational/model.hxx>
 
 namespace semantics
 {
   namespace relational
   {
+    model::
+    model (model const& m, graph& g)
+        : qscope (m, g),
+          version_ (m.version_)
+    {
+    }
+
     model::
     model (xml::parser& p, graph& g)
         : qscope (p, g),

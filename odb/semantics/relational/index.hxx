@@ -18,28 +18,13 @@ namespace semantics
     {
     public:
       string const&
-      type () const
-      {
-        return type_;
-      }
+      type () const {return type_;}
 
       string const&
-      method () const
-      {
-        return method_;
-      }
+      method () const {return method_;}
 
       string const&
-      options () const
-      {
-        return options_;
-      }
-
-      virtual string
-      kind () const
-      {
-        return "index";
-      }
+      options () const {return options_;}
 
     public:
       index (string const& id,
@@ -50,7 +35,17 @@ namespace semantics
       {
       }
 
+      index (index const&, uscope&, graph&);
       index (xml::parser&, uscope&, graph&);
+
+      virtual index&
+      clone (uscope&, graph&) const;
+
+      virtual string
+      kind () const
+      {
+        return "index";
+      }
 
       virtual void
       serialize (xml::serializer&) const;

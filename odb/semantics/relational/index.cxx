@@ -3,19 +3,35 @@
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <cutl/compiler/type-info.hxx>
-#include <odb/semantics/relational.hxx>
+
+#include <odb/semantics/relational/index.hxx>
 
 namespace semantics
 {
   namespace relational
   {
     index::
+    index (index const& i, uscope& s, graph& g)
+        : key (i, s, g),
+          type_ (i.type_),
+          method_ (i.method_),
+          options_ (i.options_)
+    {
+    }
+
+    index::
     index (xml::parser& p, uscope& s, graph& g)
         : key (p, s, g),
-        type_ (p.attribute ("type", string ())),
-        method_ (p.attribute ("method", string ())),
-        options_ (p.attribute ("options", string ()))
+          type_ (p.attribute ("type", string ())),
+          method_ (p.attribute ("method", string ())),
+          options_ (p.attribute ("options", string ()))
     {
+    }
+
+    index& index::
+    clone (uscope& s, graph& g) const
+    {
+      return g.new_node<index> (*this, s, g);
     }
 
     void index::
