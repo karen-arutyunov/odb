@@ -5,6 +5,8 @@
 #ifndef ODB_SEMANTICS_RELATIONAL_HXX
 #define ODB_SEMANTICS_RELATIONAL_HXX
 
+#include <odb/semantics/relational/changelog.hxx>
+#include <odb/semantics/relational/changeset.hxx>
 #include <odb/semantics/relational/column.hxx>
 #include <odb/semantics/relational/elements.hxx>
 #include <odb/semantics/relational/foreign-key.hxx>

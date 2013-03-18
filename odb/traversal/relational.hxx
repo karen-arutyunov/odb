@@ -5,6 +5,8 @@
 #ifndef ODB_TRAVERSAL_RELATIONAL_HXX
 #define ODB_TRAVERSAL_RELATIONAL_HXX
 
+#include <odb/traversal/relational/changelog.hxx>
+#include <odb/traversal/relational/changeset.hxx>
 #include <odb/traversal/relational/column.hxx>
 #include <odb/traversal/relational/elements.hxx>
 #include <odb/traversal/relational/foreign-key.hxx>

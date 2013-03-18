@@ -118,7 +118,6 @@ namespace semantics
 
           {
             type_info ti (typeid (foreign_key));
-            ti.add_base (typeid (unameable));
             ti.add_base (typeid (key));
             insert (ti);
           }

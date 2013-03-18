@@ -1,9 +1,9 @@
-// file      : odb/semantics/relational/model.hxx
+// file      : odb/semantics/relational/changeset.hxx
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#ifndef ODB_SEMANTICS_RELATIONAL_MODEL_HXX
-#define ODB_SEMANTICS_RELATIONAL_MODEL_HXX
+#ifndef ODB_SEMANTICS_RELATIONAL_CHANGESET_HXX
+#define ODB_SEMANTICS_RELATIONAL_CHANGESET_HXX
 
 #include <odb/semantics/relational/elements.hxx>
 
@@ -11,7 +11,7 @@ namespace semantics
 {
   namespace relational
   {
-    class model: public graph, public qscope
+    class changeset: public qscope
     {
     public:
       typedef relational::version version_type;
@@ -20,11 +20,11 @@ namespace semantics
       version () const {return version_;}
 
     public:
-      model (version_type v): version_ (v) {}
-      model (xml::parser&, graph&);
+      changeset (version_type v): version_ (v) {}
+      changeset (xml::parser&, graph&);
 
       virtual string
-      kind () const {return "model";}
+      kind () const {return "changeset";}
 
       virtual void
       serialize (xml::serializer&) const;
@@ -34,13 +34,9 @@ namespace semantics
       using qscope::add_edge_right;
 
     private:
-      model (model const&);
-      model& operator= (model const&);
-
-    private:
       version_type version_;
     };
   }
 }
 
-#endif // ODB_SEMANTICS_RELATIONAL_MODEL_HXX
+#endif // ODB_SEMANTICS_RELATIONAL_CHANGESET_HXX

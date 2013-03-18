@@ -117,6 +117,8 @@ semantics/unit.cxx
 # Semantics/Relational.
 #
 cxx_ptun +=                          \
+semantics/relational/changelog.cxx   \
+semantics/relational/changeset.cxx   \
 semantics/relational/column.cxx      \
 semantics/relational/elements.cxx    \
 semantics/relational/foreign-key.cxx \
@@ -136,6 +138,12 @@ traversal/elements.cxx               \
 traversal/enum.cxx                   \
 traversal/template.cxx               \
 traversal/union-template.cxx
+
+# Traversal/Relational.
+#
+cxx_ptun +=                          \
+traversal/relational/changelog.cxx   \
+traversal/relational/key.cxx
 
 # Driver units.
 #

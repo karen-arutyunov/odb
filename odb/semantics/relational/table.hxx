@@ -27,6 +27,19 @@ namespace semantics
       //
       using qnameable::scope;
     };
+
+    class add_table: public table
+    {
+    public:
+      add_table (string const& id): table (id) {}
+      add_table (xml::parser& p, qscope& s, graph& g): table (p, s, g) {}
+
+      virtual string
+      kind () const {return "add table";}
+
+      virtual void
+      serialize (xml::serializer&) const;
+    };
   }
 }
 

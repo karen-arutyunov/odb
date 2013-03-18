@@ -12,6 +12,15 @@ namespace traversal
 {
   namespace relational
   {
+    struct contains: edge<semantics::relational::contains>
+    {
+      contains () {}
+      contains (node_dispatcher& n) {node_traverser (n);}
+
+      virtual void
+      traverse (type&);
+    };
+
     template <typename T>
     struct key_template: node<T>
     {

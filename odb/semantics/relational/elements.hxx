@@ -31,7 +31,7 @@ namespace semantics
     using container::pointer_iterator;
     using compiler::context;
 
-    typedef unsigned int version;
+    typedef unsigned long long version;
 
     //
     //
