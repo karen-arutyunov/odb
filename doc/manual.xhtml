@@ -659,6 +659,7 @@ for consistency.
 		<tr><th>16.5.3</th><td><a href="#16.5.3">Foreign Key Constraints</a></td></tr>
 		<tr><th>16.5.4</th><td><a href="#16.5.4">Constraint Violations</a></td></tr>
 		<tr><th>16.5.5</th><td><a href="#16.5.5">Sharing of Queries</a></td></tr>
+		<tr><th>16.5.6</th><td><a href="#16.5.6">Forced Rollback</a></td></tr>
               </table>
             </td>
           </tr>
@@ -16758,6 +16759,13 @@ namespace odb
 {
   namespace sqlite
   {
+    class forced_rollback: odb::recoverable
+    {
+    public:
+      virtual const char*
+      what () const throw ();
+    };
+
     class database_exception: odb::database_exception
     {
     public:
@@ -16786,6 +16794,11 @@ namespace odb
 
   <p>You will need to include the <code>&lt;odb/sqlite/exceptions.hxx></code>
      header file to make these exceptions available in your application.</p>
+
+  <p>The <code>odb::sqlite::forced_rollback</code> exception is thrown if
+     SQLite is forcing the current transaction to roll back. For more
+     information on this behavior refer to <a href="#16.5.6">Section 16.5.6,
+     "Forced Rollback"</a>.</p>
 
   <p>The <code>odb::sqlite::database_exception</code> is thrown if
      an SQLite database operation fails. The SQLite-specific error
@@ -16928,6 +16941,22 @@ CREATE TABLE Employee (
      synchronization. Currently, the SQLite ODB runtime does not support this
      functionality. Future versions of the library will remove this
      limitation.</p>
+
+  <h3><a name="16.5.6">16.5.6 Forced Rollback</a></h3>
+
+  <p>In SQLite 3.7.11 or later, if one of the connections participating in
+     the shared cache rolls back a transaction, then ongoing transactions
+     on other connections in the shared cache may also be forced to roll back.
+     An example of such behavior would be a read-only transaction that is
+     forced to roll back while iterating over the query result because another
+     transaction on another connection was rolled back.</p>
+
+  <p>If a transaction is being forced to roll back by SQLite, then ODB
+     throws <code>odb::sqlite::forced_rollback</code>
+     (<a href="#16.4">Section 16.4, "SQLite Exceptions"</a>) which is
+     a recoverable exception (<a href="#3.7">3.7 Error Handling and
+     Recovery</a>). As a result, the recommended way to handle this
+     exception is to re-execute the affected transaction.</p>
 
   <h2><a name="16.6">16.6 SQLite Index Definitions</a></h2>
 
