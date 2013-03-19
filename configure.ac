@@ -20,29 +20,37 @@ AC_CANONICAL_HOST
 AC_PROG_CXX
 AC_LANG(C++)
 
+# Create the libtool executable so that we can use it in further tests.
+#
+LT_OUTPUT
+
+# Test for plugin support in GCC.
+#
+GCC_PLUGIN
+
 # See if we are building static plugin. Static build should only be
 # used if you are building a custom version of GCC with the ODB
 # plugin linked-in statically. This is primarily useful on Windows
 # where GCC plugins are not (yet) supported due to dynamic loading
-# limitations.
+# limitations. In this case the headers normally come from the GCC
+# build directly via CPPFLAGS.
 #
-static_plugin="$enable_static"
-
-AS_IF([test x$static_plugin = xyes],
+if test x$static_plugin = xyes; then
   AC_WARN([Building static plugin for direct linking into GCC executable!])
-  AC_DEFINE([ODB_STATIC_PLUGIN], [1], [Building static plugin.]))
+  AC_DEFINE([ODB_STATIC_PLUGIN], [1], [Building static plugin.])
+  plugindir='$(pkglibexecdir)'
 
-# Check for plugin support in GCC unless we are building a static plugin.
-# In the latter case the headers normally come from the GCC build directly
-# via CPPFLAGS.
+# Otherwise, see if we should install the plugin into the GCC plugin dir.
 #
-AS_IF([test x$static_plugin = xno], GCC_PLUGIN)
+elif test x$gcc_plugin_dir != xno; then
+  AC_DEFINE([ODB_GCC_PLUGIN_DIR], [1], [Plugin is in GCC plugin directory.])
+  plugindir=$gcc_plugin_dir
 
-# Unless we are building a static plugin, try to figure out a relative
-# path from the driver (bindir) to the plugin (libexecdir).
+# Otherwise, try to figure out a relative path from the driver (bindir) to
+# the plugin (libexecdir).
 #
-if test x$static_plugin = xno; then
-  # Get the expanded values for bindif and libexecdir.
+elif test x$static_plugin = xno; then
+  # Get the expanded values for bindir and libexecdir.
   #
   if test x$exec_prefix = xNONE; then
     if test x$prefix = xNONE; then
@@ -60,32 +68,35 @@ if test x$static_plugin = xno; then
   # Try to find a common prefix.
   #
   common=$e_bindir
-  odb_plugindir=$e_pkglibexecdir
+  rel_plugindir=$e_pkglibexecdir
 
   while test x$common != x/; do
     suffix=`echo "$e_pkglibexecdir" | sed "s?^$common/*??"`
     if test x$suffix != x$e_pkglibexecdir; then
       # Replace all the remaining directories in bindir with ".."
       # and append the suffix.
-      odb_plugindir=`echo "$e_bindir" | sed "s?^$common/*??"`
-      odb_plugindir=`echo "$odb_plugindir" | sed ['s?[^/][^/]*?..?g']`
-      if test x$odb_plugindir != x -a x$suffix != x; then
-        odb_plugindir="$odb_plugindir/$suffix"
+      rel_plugindir=`echo "$e_bindir" | sed "s?^$common/*??"`
+      rel_plugindir=`echo "$rel_plugindir" | sed ['s?[^/][^/]*?..?g']`
+      if test x$rel_plugindir != x -a x$suffix != x; then
+        rel_plugindir="$rel_plugindir/$suffix"
       else
-        odb_plugindir="$odb_plugindir$suffix"
+        rel_plugindir="$rel_plugindir$suffix"
       fi
       break
     fi
     common=`AS_DIRNAME(["$common"])`
   done
-  AC_DEFINE_UNQUOTED([ODB_PLUGIN_PATH], ["$odb_plugindir"], [Plugin path.])
+  AC_DEFINE_UNQUOTED([ODB_PLUGIN_PATH], ["$rel_plugindir"], [Plugin path.])
+  plugindir='$(pkglibexecdir)'
 fi
+
+AC_SUBST([plugindir])
 
 # G++ name.
 #
 AC_ARG_WITH(
   [gxx-name],
-  [AC_HELP_STRING([--with-gxx-name=NAME], [g++ binary to embed in the driver])],
+  [AC_HELP_STRING([--with-gxx-name=NAME], [g++ executable name to embed in the ODB compiler driver])],
   [case $withval in
      no)
        gxx_name=
@@ -125,15 +136,9 @@ AS_IF(
   [test "x$options_file" != x],
   [AC_DEFINE_UNQUOTED([ODB_DEFAULT_OPTIONS_FILE], ["$options_file"], [default options file path.])])
 
-# Create the libtool executable so that we can use it in further tests.
-#
-LT_OUTPUT
-
-
 # Check for libcutl.
 #
 LIBCUTL([],[AC_MSG_ERROR([libcutl is not found; consider using --with-libcutl=DIR])])
-
 
 # Check if we should disable rpath.
 #

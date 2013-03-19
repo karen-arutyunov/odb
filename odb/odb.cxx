@@ -70,7 +70,7 @@ driver_path (path const& driver);
 
 #ifndef ODB_STATIC_PLUGIN
 static path
-plugin_path (path const& driver);
+plugin_path (path const& driver, string const& gxx);
 #endif
 
 //
@@ -140,25 +140,6 @@ main (int argc, char* argv[])
 
   try
   {
-    // Find the plugin. It should be in the same directory as the
-    // driver.
-    //
-#ifndef ODB_STATIC_PLUGIN
-    path plugin (plugin_path (path (argv[0])));
-#else
-    // Use a dummy name if the plugin is linked into the compiler.
-    //
-    path plugin ("odb");
-#endif
-
-    if (plugin.empty ())
-    {
-      e << argv[0] << ": error: unable to locate ODB GCC plugin" << endl;
-      e << argv[0] << ": info: make sure '" << argv[0] << ".so' is in "
-        << "the same directory as '" << argv[0] << "'" << endl;
-      return 1;
-    }
-
     strings args, plugin_args;
     bool v (false);
 
@@ -236,7 +217,7 @@ main (int argc, char* argv[])
     args.push_back ("-S");
     args.push_back ("-Wunknown-pragmas");
     args.push_back ("-Wno-deprecated");
-    args.push_back ("-fplugin=" + plugin.string ());
+    args.push_back (""); // Reserve space for -fplugin=path.
 
     // Parse the default options file if we have one.
     //
@@ -521,6 +502,23 @@ main (int argc, char* argv[])
     // ones.
     //
     args.insert (args.end (), def_inc_dirs.begin (), def_inc_dirs.end ());
+
+    // Find the plugin.
+    //
+    {
+#ifndef ODB_STATIC_PLUGIN
+      path plugin (plugin_path (path (argv[0]), args[0]));
+#else
+      // Use a dummy name if the plugin is linked into the compiler.
+      //
+      path plugin ("odb");
+#endif
+
+      if (plugin.empty ())
+        return 1; // Diagnostics has already been issued.
+
+      args[7] = "-fplugin=" + plugin.string ();
+    }
 
     // Parse plugin options. We have to do it twice to get the target
     // database which is needed while loading profiles.
@@ -1433,7 +1431,12 @@ driver_path (path const& drv)
 
 #ifndef ODB_STATIC_PLUGIN
 static path
-plugin_path (path const& drv)
+plugin_path (path const& drv,
+#ifdef ODB_GCC_PLUGIN_DIR
+             string const& gxx)
+#else
+             string const&)
+#endif
 {
   // Figure out the plugin base name which is just the driver name.
   // If the driver name starts with 'lt-', then we are running through
@@ -1448,7 +1451,10 @@ plugin_path (path const& drv)
   path dp (driver_path (drv));
 
   if (dp.empty ())
-    return path (); // Fail.
+  {
+    cerr << drv << ": error: unable to resolve ODB driver path" << endl;
+    return path ();
+  }
 
   dp = dp.directory ();
   struct stat info;
@@ -1465,32 +1471,91 @@ plugin_path (path const& drv)
       return pp;
   }
 
-#ifdef ODB_PLUGIN_PATH
+#ifdef ODB_GCC_PLUGIN_DIR
+  // Plugin should be installed into the GCC default plugin directory.
+  // Ideally, in this situation, we would simply pass the plugin name and
+  // let GCC append the correct directory. Unfortunately, this mechanism
+  // was only added in GCC 4.6 so in order to support 4.5 we will have to
+  // emulate it ourselves.
+  //
+  if (!lt)
+  {
+    // First get the default GCC plugin directory.
+    //
+    path d;
+    vector<char const*> exec_args;
+    exec_args.push_back (gxx.c_str ());
+    exec_args.push_back ("-print-file-name=plugin");
+    exec_args.push_back (0);
+
+    process_info pi (
+      start_process (
+        &exec_args[0], drv.string ().c_str (), false, true));
+    close (pi.out_fd);
+
+    // Read the path from stdout.
+    //
+    {
+      __gnu_cxx::stdio_filebuf<char> fb (pi.in_ofd, ios_base::in);
+      istream is (&fb);
+      string line;
+      getline (is, line);
+      d = path (line);
+    }
+
+    if (!wait_process (pi, drv.string ().c_str ()))
+      return path (); // Assume GCC issued some diagnostics.
+
+    if (d.string () == "plugin")
+    {
+      cerr << drv << ": error: unable to obtain GCC plugin directory" << endl;
+      return path ();
+    }
+
+    // See if the plugin is there.
+    //
+    pp = d / path (b + ".so");
+    if (stat (pp.string ().c_str (), &info) != 0)
+    {
+      cerr << drv << ": error: no ODB plugin in GCC plugin directory '" <<
+        d << "'" << endl;
+      return path ();
+    }
+
+    return pp;
+  }
+#elif defined (ODB_PLUGIN_PATH)
   // If we were given a plugin path, use that unless we are running
   // via libtool.
   //
   if (!lt)
   {
     string rp (ODB_PLUGIN_PATH);
-    pp = dp;
     if (!rp.empty ())
-      pp /= path (rp);
-    pp /= path (b + ".so");
+      dp /= path (rp);
 
-    if (stat (pp.string ().c_str (), &info) == 0)
-      return pp;
+    pp = dp / path (b + ".so");
 
-    return path (); // Fail.
+    if (stat (pp.string ().c_str (), &info) != 0)
+    {
+      cerr << drv << ": error: no ODB plugin in '" << dp << "'" << endl;
+      return path ();
+    }
+
+    return pp;
   }
 #endif
 
   // Try .so in the current directory.
   //
   pp = dp / path (b + ".so");
-  if (stat (pp.string ().c_str (), &info) == 0)
-    return pp;
+  if (stat (pp.string ().c_str (), &info) != 0)
+  {
+    cerr << drv << ": error: unable to locate ODB plugin" << endl;
+    return path ();
+  }
 
-  return path ();
+  return pp;
 }
 #endif
 
