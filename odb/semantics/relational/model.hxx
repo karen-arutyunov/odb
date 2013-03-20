@@ -19,6 +19,9 @@ namespace semantics
       version_type
       version () const {return version_;}
 
+      void
+      version (version_type v) {version_ = v;}
+
     public:
       model (version_type v): version_ (v) {}
       model (model const&, graph&);

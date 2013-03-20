@@ -149,6 +149,20 @@ namespace semantics
         nameable_ = &n;
       }
 
+      void
+      clear_left_node (scope_type& n)
+      {
+        assert (scope_ == &n);
+        scope_ = 0;
+      }
+
+      void
+      clear_right_node (nameable_type& n)
+      {
+        assert (nameable_ == &n);
+        nameable_ = 0;
+      }
+
     protected:
       name_type name_;
       scope_type* scope_;
@@ -169,22 +183,16 @@ namespace semantics
       typedef relational::scope<N> scope_type;
 
       name_type const&
-      name () const
-      {
-        return named_->name ();
-      }
+      name () const {return named_->name ();}
 
       scope_type&
-      scope () const
-      {
-        return named ().scope ();
-      }
+      scope () const {return named ().scope ();}
 
       names_type&
-      named () const
-      {
-        return *named_;
-      }
+      named () const {return *named_;}
+
+      string const&
+      id () const {return id_;}
 
     public:
       // Id identifies the C++ node (e.g., a class or a data member) that
@@ -206,6 +214,13 @@ namespace semantics
       {
         assert (named_ == 0);
         named_ = &e;
+      }
+
+      virtual void
+      remove_edge_right (names_type& e)
+      {
+        assert (named_ == &e);
+        named_ = 0;
       }
 
       using node::add_edge_right;
@@ -298,6 +313,12 @@ namespace semantics
         return names_.end ();
       }
 
+      bool
+      names_empty () const
+      {
+        return names_.empty ();
+      }
+
       // Find.
       //
       template <typename T>
@@ -324,6 +345,9 @@ namespace semantics
       virtual void
       add_edge_left (names_type&);
 
+      virtual void
+      remove_edge_left (names_type&);
+
     protected:
       scope (scope const&, graph&);
       scope (xml::parser&, graph&);
@@ -342,6 +366,10 @@ namespace semantics
     template <>
     void scope<uname>::
     add_edge_left (names_type&);
+
+    template <>
+    void scope<uname>::
+    remove_edge_left (names_type&);
 
     typedef scope<uname> uscope;
     typedef scope<qname> qscope;

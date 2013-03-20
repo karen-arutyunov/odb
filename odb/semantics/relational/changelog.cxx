@@ -73,6 +73,7 @@ namespace semantics
            i != contains_changeset_.rend (); ++i)
       {
         (*i)->changeset ().serialize (s);
+        s.characters ("\n");
       }
 
       model ().serialize (s);

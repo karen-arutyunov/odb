@@ -13,7 +13,7 @@ namespace semantics
     // table
     //
     table::
-    table (table const& t, qscope& s, graph& g)
+    table (table const& t, qscope&, graph& g)
         : qnameable (t, g), uscope (t, g)
     {
     }
@@ -56,6 +56,29 @@ namespace semantics
       s.end_element ();
     }
 
+    // drop_table
+    //
+    drop_table::
+    drop_table (xml::parser& p, qscope&, graph& g)
+        : qnameable (p, g)
+    {
+      p.content (xml::parser::empty);
+    }
+
+    drop_table& drop_table::
+    clone (qscope& s, graph& g) const
+    {
+      return g.new_node<drop_table> (*this, s, g);
+    }
+
+    void drop_table::
+    serialize (xml::serializer& s) const
+    {
+      s.start_element (xmlns, "drop-table");
+      qnameable::serialize_attributes (s);
+      s.end_element ();
+    }
+
     // type info
     //
     namespace
@@ -67,6 +90,8 @@ namespace semantics
           qnameable::parser_map_["table"] = &qnameable::parser_impl<table>;
           qnameable::parser_map_["add-table"] =
             &qnameable::parser_impl<add_table>;
+          qnameable::parser_map_["drop-table"] =
+            &qnameable::parser_impl<drop_table>;
 
           using compiler::type_info;
 
@@ -84,6 +109,14 @@ namespace semantics
           {
             type_info ti (typeid (add_table));
             ti.add_base (typeid (table));
+            insert (ti);
+          }
+
+          // drop_table
+          //
+          {
+            type_info ti (typeid (drop_table));
+            ti.add_base (typeid (qnameable));
             insert (ti);
           }
         }

@@ -48,6 +48,24 @@ namespace semantics
       virtual void
       serialize (xml::serializer&) const;
     };
+
+    class drop_table: public qnameable
+    {
+    public:
+      drop_table (string const& id): qnameable (id) {}
+      drop_table (drop_table const& t, qscope&, graph& g): qnameable (t, g) {}
+      drop_table (xml::parser&, qscope&, graph&);
+
+      virtual drop_table&
+      clone (qscope&, graph&) const;
+
+      virtual string
+      kind () const {return "drop table";}
+
+      virtual void
+      serialize (xml::serializer&) const;
+    };
+
   }
 }
 

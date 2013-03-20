@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>  // std::auto_ptr
 #include <fstream>
+#include <sstream>
 #include <iostream>
 
 #include <cutl/fs/auto-remove.hxx>
@@ -14,9 +15,15 @@
 #include <cutl/compiler/cxx-indenter.hxx>
 #include <cutl/compiler/sloc-counter.hxx>
 
+#include <cutl/xml/parser.hxx>
+#include <cutl/xml/serializer.hxx>
+
 #include <odb/version.hxx>
 #include <odb/context.hxx>
 #include <odb/generator.hxx>
+
+#include <odb/semantics/relational/model.hxx>
+#include <odb/semantics/relational/changelog.hxx>
 
 #include <odb/generate.hxx>
 #include <odb/relational/generate.hxx>
@@ -85,18 +92,15 @@ generate (options const& ops,
 
     // First create the database model.
     //
+    bool gen_schema (ops.generate_schema () && db != database::common);
     cutl::shared_ptr<semantics::relational::model> model;
 
-    if (ops.generate_schema ())
+    if (gen_schema)
     {
       auto_ptr<context> ctx (create_context (cerr, unit, ops, fts, 0));
 
       switch (db)
       {
-      case database::common:
-        {
-          break; // No schema for common.
-        }
       case database::mssql:
       case database::mysql:
       case database::oracle:
@@ -106,29 +110,34 @@ generate (options const& ops,
           model = relational::model::generate ();
           break;
         }
+      case database::common:
+        break;
       }
     }
 
     // Output files.
     //
+    fs::auto_removes auto_rm;
+
     path file (ops.output_name ().empty ()
                ? p.leaf ()
                : path (ops.output_name ()).leaf ());
     string base (file.base ().string ());
-
-    fs::auto_removes auto_rm;
 
     string hxx_name (base + ops.odb_file_suffix ()[db] + ops.hxx_suffix ());
     string ixx_name (base + ops.odb_file_suffix ()[db] + ops.ixx_suffix ());
     string cxx_name (base + ops.odb_file_suffix ()[db] + ops.cxx_suffix ());
     string sch_name (base + ops.schema_file_suffix ()[db] + ops.cxx_suffix ());
     string sql_name (base + ops.sql_file_suffix ()[db] + ops.sql_suffix ());
+    string log_name (base + ops.changelog_file_suffix ()[db] +
+                     ops.changelog_suffix ());
 
     path hxx_path (hxx_name);
     path ixx_path (ixx_name);
     path cxx_path (cxx_name);
     path sch_path (sch_name);
     path sql_path (sql_name);
+    path log_path (p.directory () / path (log_name)); // Input directory.
 
     if (!ops.output_dir ().empty ())
     {
@@ -140,12 +149,72 @@ generate (options const& ops,
       sql_path = dir / sql_path;
     }
 
+    // Load the old changelog and generate a new one.
+    //
+    bool gen_log (gen_schema && unit.count ("model-version") != 0);
+    cutl::shared_ptr<semantics::relational::changelog> changelog;
+    cutl::shared_ptr<semantics::relational::changelog> old_changelog;
+    string old_changelog_xml;
+
+    if (gen_log)
+    {
+      ifstream log (log_path.string ().c_str (),
+                    ios_base::in | ios_base::binary);
+
+      if (log.is_open ())
+      {
+        try
+        {
+          // Get the XML into a buffer. We use it to avoid modifying the
+          // file when the changelog hasn't changed.
+          //
+          for (bool first (true); !log.eof (); )
+          {
+            string line;
+            getline (log, line);
+
+            if (log.fail ())
+              ios_base::failure ("getline");
+
+            if (first)
+              first = false;
+            else
+              old_changelog_xml += '\n';
+
+            old_changelog_xml += line;
+          }
+
+          istringstream is (old_changelog_xml);
+          is.exceptions (ios_base::badbit | ios_base::failbit);
+
+          xml::parser p (is, log_path.string ());
+          old_changelog.reset (
+            new (shared) semantics::relational::changelog (p));
+        }
+        catch (const ios_base::failure& e)
+        {
+          cerr << log_path << ": read failure" << endl;
+          throw failed ();
+        }
+        catch (const xml::parsing& e)
+        {
+          cerr << e.what () << endl;
+          throw failed ();
+        }
+      }
+
+      changelog = relational::changelog::generate (
+        *model,
+        unit.get<model_version> ("model-version"),
+        old_changelog.get (),
+        log_path.string ());
+    }
+
+    //
+    //
     bool gen_cxx (!ops.generate_schema_only ());
 
-    //
-    //
     ofstream hxx;
-
     if (gen_cxx)
     {
       hxx.open (hxx_path.string ().c_str (), ios_base::out);
@@ -163,7 +232,6 @@ generate (options const& ops,
     //
     //
     ofstream ixx;
-
     if (gen_cxx)
     {
       ixx.open (ixx_path.string ().c_str (), ios_base::out);
@@ -181,7 +249,6 @@ generate (options const& ops,
     //
     //
     ofstream cxx;
-
     if (gen_cxx && (db != database::common || md == multi_database::dynamic))
     {
       cxx.open (cxx_path.string ().c_str (), ios_base::out);
@@ -198,11 +265,9 @@ generate (options const& ops,
 
     //
     //
-    bool gen_sql_schema (ops.generate_schema () &&
-                         ops.schema_format ()[db].count (schema_format::sql) &&
-                         db != database::common);
+    bool gen_sql_schema (gen_schema &&
+                         ops.schema_format ()[db].count (schema_format::sql));
     ofstream sql;
-
     if (gen_sql_schema)
     {
       sql.open (sql_path.string ().c_str (), ios_base::out);
@@ -221,12 +286,10 @@ generate (options const& ops,
     //
     bool gen_sep_schema (
       gen_cxx &&
-      ops.generate_schema () &&
-      ops.schema_format ()[db].count (schema_format::separate) &&
-      db != database::common);
+      gen_schema &&
+      ops.schema_format ()[db].count (schema_format::separate));
 
     ofstream sch;
-
     if (gen_sep_schema)
     {
       sch.open (sch_path.string ().c_str (), ios_base::out);
@@ -767,6 +830,49 @@ generate (options const& ops,
           relational::schema::generate_epilogue ();
           break;
         }
+      }
+    }
+
+    // Save the changelog if it changed.
+    //
+    if (gen_log)
+    {
+      try
+      {
+        ostringstream os;
+        os.exceptions (ifstream::badbit | ifstream::failbit);
+        xml::serializer s (os, log_path.string ());
+        changelog->serialize (s);
+        string const& changelog_xml (os.str ());
+
+        if (changelog_xml != old_changelog_xml)
+        {
+          ofstream log (log_path.string ().c_str (),
+                        ios_base::out | ios_base::binary);
+
+          if (!log.is_open ())
+          {
+            cerr << "error: unable to open '" << log_path << "' in write mode"
+                 << endl;
+            throw failed ();
+          }
+
+          if (old_changelog == 0)
+            auto_rm.add (log_path);
+
+          log.exceptions (ifstream::badbit | ifstream::failbit);
+          log << changelog_xml;
+        }
+      }
+      catch (const ios_base::failure& e)
+      {
+        cerr << log_path << ": write failure" << endl;
+        throw failed ();
+      }
+      catch (const xml::serialization& e)
+      {
+        cerr << e.what () << endl;
+        throw failed ();
       }
     }
 

@@ -169,5 +169,17 @@ namespace semantics
       else
         throw duplicate_name (*this, (*i->second)->nameable (), e.nameable ());
     }
+
+    template <typename N>
+    void scope<N>::
+    remove_edge_left (names_type& e)
+    {
+      typename names_iterator_map::iterator i (iterator_map_.find (&e));
+      assert (i != iterator_map_.end ());
+
+      names_.erase (i->second);
+      names_map_.erase (e.name ());
+      iterator_map_.erase (i);
+    }
   }
 }

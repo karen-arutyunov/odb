@@ -14,6 +14,7 @@ namespace traversal
   {
     struct table: scope_template<semantics::relational::table> {};
     struct add_table: scope_template<semantics::relational::add_table> {};
+    struct drop_table: node<semantics::relational::drop_table> {};
   }
 }
 

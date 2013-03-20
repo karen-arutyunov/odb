@@ -5,9 +5,12 @@
 #ifndef ODB_RELATIONAL_GENERATE_HXX
 #define ODB_RELATIONAL_GENERATE_HXX
 
+#include <string>
 #include <cutl/shared-ptr.hxx>
 
+#include <odb/context.hxx>
 #include <odb/semantics/relational/model.hxx>
+#include <odb/semantics/relational/changelog.hxx>
 
 namespace relational
 {
@@ -39,6 +42,17 @@ namespace relational
   {
     cutl::shared_ptr<semantics::relational::model>
     generate ();
+  }
+
+  namespace changelog
+  {
+    // Returns NULL if the changelog is unchanged.
+    //
+    cutl::shared_ptr<semantics::relational::changelog>
+    generate (semantics::relational::model&,
+              model_version const&,
+              semantics::relational::changelog* old, // Can be NULL.
+              std::string const& name);
   }
 
   namespace schema

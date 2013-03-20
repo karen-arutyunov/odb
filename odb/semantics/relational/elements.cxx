@@ -70,6 +70,24 @@ namespace semantics
         throw duplicate_name (*this, (*i->second)->nameable (), n);
     }
 
+    template <>
+    void scope<uname>::
+    remove_edge_left (names_type& e)
+    {
+      typename names_iterator_map::iterator i (iterator_map_.find (&e));
+      assert (i != iterator_map_.end ());
+
+      // If we are removing the first key, then move to the next key (or
+      // the end which means there are no keys).
+      //
+      if (first_key_ == i->second)
+        first_key_++;
+
+      names_.erase (i->second);
+      names_map_.erase (e.name ());
+      iterator_map_.erase (i);
+    }
+
     // type info
     //
     namespace

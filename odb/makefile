@@ -32,6 +32,7 @@ pragma.cxx
 # Relational.
 #
 cxx_ptun +=                          \
+relational/changelog.cxx             \
 relational/common.cxx                \
 relational/common-query.cxx          \
 relational/context.cxx               \
