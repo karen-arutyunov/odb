@@ -8,6 +8,9 @@ Version 2.3.0
    thrown if SQLite forces a transaction to roll back. For more information,
    refer to Section 16.5.6, "Forced Rollback".
 
+ * The --output-name option has been renamed to --input-name, which is more
+   semantically correct.
+
 Version 2.2.0
 
  * Multi-database support. This mechanism allows an application to

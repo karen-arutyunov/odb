@@ -119,9 +119,9 @@ generate (options const& ops,
     //
     fs::auto_removes auto_rm;
 
-    path file (ops.output_name ().empty ()
+    path file (ops.input_name ().empty ()
                ? p.leaf ()
-               : path (ops.output_name ()).leaf ());
+               : path (ops.input_name ()).leaf ());
     string base (file.base ().string ());
 
     string hxx_name (base + ops.odb_file_suffix ()[db] + ops.hxx_suffix ());

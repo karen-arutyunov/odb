@@ -223,7 +223,7 @@ class options
     "Generate code for all the input files as well as for all the files that
      they include at once. The result is a single set of source/schema files
      that contain all the generated code. If more than one input file is
-     specified together with this option, then the \cb{--output-name} option
+     specified together with this option, then the \cb{--input-name} option
      must also be specified in order to provide the base name for the output
      files. In this case, the directory part of such a base name is used as
      the location of the combined file. This can be important for the
@@ -276,11 +276,13 @@ class options
     "Write the generated files to <dir> instead of the current directory."
   };
 
-  std::string --output-name
+  std::string --input-name
   {
     "<name>",
-    "Use <name> instead of the input file to construct the names of the
-     generated files."
+    "Use <name> instead of the input file to derive the names of the
+     generated files. If the \cb{--at-once} option is specified, then
+     the directory part of <name> is used as the location of the
+     combined file. Refer to the \cb{--at-once} option for details."
   };
 
   std::string --changelog
@@ -289,7 +291,7 @@ class options
     "Read/write changelog from/to <file> instead of the default changelog
      file. The default changelog file name is derived from the input file
      name and it is placed into the same directory as the input file. Note
-     that the \cb{--output-name} option does not affect the changelog file
+     that the \cb{--output-dir} option does not affect the changelog file
      location. In other words, by default, the changelog file is treated
      as another input rather than output even though the ODB compiler may
      modify it. Use the \cb{--changelog-in} and \cb{--changelog-out}

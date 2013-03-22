@@ -6867,13 +6867,14 @@ odb ... --odb-epilogue "#include \"employee.hxx\"" position.hxx
      options. For example:</p>
 
   <pre class="terminal">
-odb ... --generate-schema-only --at-once --output-name schema \
+odb ... --generate-schema-only --at-once --input-name company \
 position.hxx employee.hxx
   </pre>
 
-  <p>The result of the above command is a single <code>schema.sql</code>
-     file that contains the database creation code for both
-     <code>position</code> and <code>employee</code> classes.</p>
+  <p>The result of the above command is a single <code>company.sql</code>
+     file (the name is derived from the <code>--input-name</code> value)
+     that contains the database creation code for both <code>position</code>
+     and <code>employee</code> classes.</p>
 
   <h2><a name="6.4">6.4 Lazy Pointers</a></h2>
 

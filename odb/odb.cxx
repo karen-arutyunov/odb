@@ -753,9 +753,9 @@ main (int argc, char* argv[])
       bool at_once (ops.at_once () && plugin_args.size () - end > 1);
       if (at_once)
       {
-        if (ops.output_name ().empty ())
+        if (ops.input_name ().empty ())
         {
-          e << "error: --output-name required when compiling multiple " <<
+          e << "error: --input-name required when compiling multiple " <<
             "input files at once (--at-once)" << endl;
           return 1;
         }
@@ -783,7 +783,7 @@ main (int argc, char* argv[])
       //
       for (; end < plugin_args.size (); ++end)
       {
-        string name (at_once ? ops.output_name () : plugin_args[end]);
+        string name (at_once ? ops.input_name () : plugin_args[end]);
 
         // Set the --svc-file option.
         //
