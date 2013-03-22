@@ -142,7 +142,8 @@ namespace relational
     generate (model& m,
               model_version const& mv,
               changelog* old,
-              string const& name)
+              std::string const& in_name,
+              std::string const& out_name)
     {
       cutl::shared_ptr<changelog> cl (new (shared) changelog);
       graph& g (*cl);
@@ -151,13 +152,13 @@ namespace relational
       {
         if (!mv.open)
         {
-          cerr << name << ": error: unable to initialize changelog because " <<
-            "current version is closed" << endl;
+          cerr << out_name << ": error: unable to initialize changelog " <<
+            "because current version is closed" << endl;
           throw operation_failed ();
         }
 
-        cerr << name << ": info: initializing changelog with base version " <<
-          m.version () << endl;
+        cerr << out_name << ": info: initializing changelog with base " <<
+          "version " << m.version () << endl;
 
         g.new_edge<contains_model> (*cl, g.new_node<model> (m, g));
         return cl;
@@ -174,7 +175,7 @@ namespace relational
 
       if (mv.current < cver)
       {
-        cerr << name << ": error: latest changelog version is greater " <<
+        cerr << in_name << ": error: latest changelog version is greater " <<
           "than current version" << endl;
         throw operation_failed ();
       }
@@ -199,8 +200,8 @@ namespace relational
           {
             qnames& n (*cs.names_begin ());
 
-            cerr << name << ": error: current version is closed" << endl;
-            cerr << name << ": info: first new change is " <<
+            cerr << out_name << ": error: current version is closed" << endl;
+            cerr << out_name << ": info: first new change is " <<
               n.nameable ().kind () << " '" << n.name () << "'" << endl;
 
             throw operation_failed ();
@@ -242,8 +243,8 @@ namespace relational
             {
               qnames& n (*cs.names_begin ());
 
-              cerr << name << ": error: current version is closed" << endl;
-              cerr << name << ": info: first new change is " <<
+              cerr << out_name << ": error: current version is closed" << endl;
+              cerr << out_name << ": info: first new change is " <<
                 n.nameable ().kind () << " '" << n.name () << "'" << endl;
 
               throw operation_failed ();

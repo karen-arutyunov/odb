@@ -994,6 +994,15 @@ validate (options const& ops,
     valid = false;
   }
 
+  // Changelog options.
+  //
+  if (ops.changelog_in_specified () != ops.changelog_out_specified ())
+  {
+    cerr << "error: both --changelog-in and --changelog-out must be " <<
+      "specified" << endl;
+    valid = false;
+  }
+
   if (!valid)
     throw failed ();
 

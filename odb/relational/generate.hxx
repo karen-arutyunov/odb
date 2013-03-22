@@ -52,7 +52,8 @@ namespace relational
     generate (semantics::relational::model&,
               model_version const&,
               semantics::relational::changelog* old, // Can be NULL.
-              std::string const& name);
+              std::string const& in_name,
+              std::string const& out_name);
   }
 
   namespace schema

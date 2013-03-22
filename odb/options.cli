@@ -283,6 +283,44 @@ class options
      generated files."
   };
 
+  std::string --changelog
+  {
+    "<file>",
+    "Read/write changelog from/to <file> instead of the default changelog
+     file. The default changelog file name is derived from the input file
+     name and it is placed into the same directory as the input file. Note
+     that the \cb{--output-name} option does not affect the changelog file
+     location. In other words, by default, the changelog file is treated
+     as another input rather than output even though the ODB compiler may
+     modify it. Use the \cb{--changelog-in} and \cb{--changelog-out}
+     options to specify different input and output chaneglog files."
+  };
+
+  std::string --changelog-in
+  {
+    "<file>",
+    "Read changelog from <file> instead of the default changelog file. If
+     this option is specified, then you must also specify the output
+     chanegelog file with \cb{--changelog-out}."
+  };
+
+  std::string --changelog-out
+  {
+    "<file>",
+    "Write changelog to <file> instead of the default changelog file. If
+     this option is specified, then you must also specify the input
+     chanegelog file with \cb{--changelog-in}."
+  };
+
+  std::string --changelog-dir
+  {
+    "<dir>",
+    "Use <dir> instead of the input file directory as the changelog file
+     directory. This directory is also added to changelog files specified
+     with the \cb{--changelog}, \cb{--changelog-in}, and \cb{--changelog-in}
+     options unless they are absolute paths."
+  };
+
   database_map<std::string> --odb-file-suffix
   {
     "<suffix>",

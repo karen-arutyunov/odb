@@ -129,15 +129,12 @@ generate (options const& ops,
     string cxx_name (base + ops.odb_file_suffix ()[db] + ops.cxx_suffix ());
     string sch_name (base + ops.schema_file_suffix ()[db] + ops.cxx_suffix ());
     string sql_name (base + ops.sql_file_suffix ()[db] + ops.sql_suffix ());
-    string log_name (base + ops.changelog_file_suffix ()[db] +
-                     ops.changelog_suffix ());
 
     path hxx_path (hxx_name);
     path ixx_path (ixx_name);
     path cxx_path (cxx_name);
     path sch_path (sch_name);
     path sql_path (sql_name);
-    path log_path (p.directory () / path (log_name)); // Input directory.
 
     if (!ops.output_dir ().empty ())
     {
@@ -149,6 +146,45 @@ generate (options const& ops,
       sql_path = dir / sql_path;
     }
 
+    path in_log_path, out_log_path;
+    path log_dir (ops.changelog_dir ().empty () ? "" : ops.changelog_dir ());
+    if (ops.changelog_in_specified ())
+    {
+      in_log_path = path (ops.changelog_in ());
+      out_log_path = path (ops.changelog_out ());
+
+      if (!log_dir.empty ())
+      {
+        if (!in_log_path.absolute ())
+          in_log_path = log_dir / in_log_path;
+
+        if (!out_log_path.absolute ())
+          out_log_path = log_dir / out_log_path;
+      }
+    }
+    else if (ops.changelog_specified ())
+    {
+      in_log_path = path (ops.changelog ());
+
+      if (!in_log_path.absolute () && !log_dir.empty ())
+        in_log_path = log_dir / in_log_path;
+
+      out_log_path = in_log_path;
+    }
+    else
+    {
+      string log_name (base + ops.changelog_file_suffix ()[db] +
+                       ops.changelog_suffix ());
+      in_log_path = path (log_name);
+
+      if (!log_dir.empty ())
+        in_log_path = log_dir / in_log_path;
+      else
+        in_log_path = p.directory () / in_log_path; // Use input directory.
+
+      out_log_path = in_log_path;
+    }
+
     // Load the old changelog and generate a new one.
     //
     bool gen_log (gen_schema && unit.count ("model-version") != 0);
@@ -158,7 +194,7 @@ generate (options const& ops,
 
     if (gen_log)
     {
-      ifstream log (log_path.string ().c_str (),
+      ifstream log (in_log_path.string ().c_str (),
                     ios_base::in | ios_base::binary);
 
       if (log.is_open ())
@@ -187,13 +223,13 @@ generate (options const& ops,
           istringstream is (old_changelog_xml);
           is.exceptions (ios_base::badbit | ios_base::failbit);
 
-          xml::parser p (is, log_path.string ());
+          xml::parser p (is, in_log_path.string ());
           old_changelog.reset (
             new (shared) semantics::relational::changelog (p));
         }
         catch (const ios_base::failure& e)
         {
-          cerr << log_path << ": read failure" << endl;
+          cerr << in_log_path << ": read failure" << endl;
           throw failed ();
         }
         catch (const xml::parsing& e)
@@ -207,7 +243,8 @@ generate (options const& ops,
         *model,
         unit.get<model_version> ("model-version"),
         old_changelog.get (),
-        log_path.string ());
+        in_log_path.string (),
+        out_log_path.string ());
     }
 
     //
@@ -841,24 +878,24 @@ generate (options const& ops,
       {
         ostringstream os;
         os.exceptions (ifstream::badbit | ifstream::failbit);
-        xml::serializer s (os, log_path.string ());
+        xml::serializer s (os, out_log_path.string ());
         changelog->serialize (s);
         string const& changelog_xml (os.str ());
 
         if (changelog_xml != old_changelog_xml)
         {
-          ofstream log (log_path.string ().c_str (),
+          ofstream log (out_log_path.string ().c_str (),
                         ios_base::out | ios_base::binary);
 
           if (!log.is_open ())
           {
-            cerr << "error: unable to open '" << log_path << "' in write mode"
-                 << endl;
+            cerr << "error: unable to open '" << out_log_path << "' in " <<
+              "write mode" << endl;
             throw failed ();
           }
 
           if (old_changelog == 0)
-            auto_rm.add (log_path);
+            auto_rm.add (out_log_path);
 
           log.exceptions (ifstream::badbit | ifstream::failbit);
           log << changelog_xml;
@@ -866,7 +903,7 @@ generate (options const& ops,
       }
       catch (const ios_base::failure& e)
       {
-        cerr << log_path << ": write failure" << endl;
+        cerr << out_log_path << ": write failure" << endl;
         throw failed ();
       }
       catch (const xml::serialization& e)
