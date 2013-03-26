@@ -78,15 +78,21 @@ else
            e_exec_prefix=$exec_prefix
          fi
 
+         # On some systems GCC is installed into $prefix/lib even though
+         # libdir is $prefix/lib64 and libexecdir is $prefix/libexec. To
+         # cover this special case, we will also test $prefix/lib.
+         #
          e_libdir=`echo "$libdir" | sed "s?^\\\${exec_prefix}?$e_exec_prefix?"`
          e_libexecdir=`echo "$libexecdir" | sed "s?^\\\${exec_prefix}?$e_exec_prefix?"`
+         e_libdir32=$e_exec_prefix/lib
 
          # See if either one of them is a prefix of the plugin dir.
          #
          ld_suffix=`echo "$dir" | sed "s?^$e_libdir/*??"`
          led_suffix=`echo "$dir" | sed "s?^$e_libexecdir/*??"`
+         l32d_suffix=`echo "$dir" | sed "s?^$e_libdir32/*??"`
 
-         if test x$ld_suffix != x$dir -o x$led_suffix != x$dir; then
+         if test x$ld_suffix != x$dir -o x$led_suffix != x$dir -o x$l32d_suffix != x$dir; then
            gcc_plugin_dir=$dir
          else
            gcc_plugin_dir=no
