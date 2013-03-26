@@ -10,6 +10,8 @@ namespace semantics
 {
   namespace relational
   {
+    // column
+    //
     column::
     column (column const& c, uscope&, graph& g)
         : unameable (c, g),
@@ -41,6 +43,13 @@ namespace semantics
     serialize (xml::serializer& s) const
     {
       s.start_element (xmlns, "column");
+      serialize_attributes (s);
+      s.end_element ();
+    }
+
+    void column::
+    serialize_attributes (xml::serializer& s) const
+    {
       unameable::serialize_attributes (s);
 
       s.attribute ("type", type ());
@@ -51,6 +60,80 @@ namespace semantics
 
       if (!options ().empty ())
         s.attribute ("options", options ());
+    }
+
+    // add_column
+    //
+    add_column& add_column::
+    clone (uscope& s, graph& g) const
+    {
+      return g.new_node<add_column> (*this, s, g);
+    }
+
+    void add_column::
+    serialize (xml::serializer& s) const
+    {
+      s.start_element (xmlns, "add-column");
+      column::serialize_attributes (s);
+      s.end_element ();
+    }
+
+    // drop_column
+    //
+    drop_column::
+    drop_column (xml::parser& p, uscope&, graph& g)
+        : unameable (p, g)
+    {
+      p.content (xml::parser::empty);
+    }
+
+    drop_column& drop_column::
+    clone (uscope& s, graph& g) const
+    {
+      return g.new_node<drop_column> (*this, s, g);
+    }
+
+    void drop_column::
+    serialize (xml::serializer& s) const
+    {
+      s.start_element (xmlns, "drop-column");
+      unameable::serialize_attributes (s);
+      s.end_element ();
+    }
+
+    // alter_column
+    //
+    alter_column::
+    alter_column (alter_column const& ac, uscope&, graph& g)
+        : unameable (ac, g),
+          null_altered_ (ac.null_altered_),
+          null_ (ac.null_)
+    {
+    }
+
+    alter_column::
+    alter_column (xml::parser& p, uscope&, graph& g)
+        : unameable (p, g),
+          null_altered_ (p.attribute_present ("null")),
+          null_ (null_altered_ ? p.attribute<bool> ("null") : false)
+    {
+      p.content (xml::parser::empty);
+    }
+
+    alter_column& alter_column::
+    clone (uscope& s, graph& g) const
+    {
+      return g.new_node<alter_column> (*this, s, g);
+    }
+
+    void alter_column::
+    serialize (xml::serializer& s) const
+    {
+      s.start_element (xmlns, "alter-column");
+      unameable::serialize_attributes (s);
+
+      if (null_altered_)
+        s.attribute ("null", null_);
 
       s.end_element ();
     }
@@ -63,12 +146,43 @@ namespace semantics
       {
         init ()
         {
-          unameable::parser_map_["column"] = &unameable::parser_impl<column>;
+          unameable::parser_map& m (unameable::parser_map_);
+
+          m["column"] = &unameable::parser_impl<column>;
+          m["add-column"] = &unameable::parser_impl<add_column>;
+          m["drop-column"] = &unameable::parser_impl<drop_column>;
+          m["alter-column"] = &unameable::parser_impl<alter_column>;
 
           using compiler::type_info;
 
+          // column
+          //
           {
             type_info ti (typeid (column));
+            ti.add_base (typeid (unameable));
+            insert (ti);
+          }
+
+          // add_column
+          //
+          {
+            type_info ti (typeid (add_column));
+            ti.add_base (typeid (column));
+            insert (ti);
+          }
+
+          // drop_column
+          //
+          {
+            type_info ti (typeid (drop_column));
+            ti.add_base (typeid (unameable));
+            insert (ti);
+          }
+
+          // alter_column
+          //
+          {
+            type_info ti (typeid (alter_column));
             ti.add_base (typeid (unameable));
             insert (ti);
           }

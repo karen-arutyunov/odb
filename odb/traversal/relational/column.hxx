@@ -13,6 +13,9 @@ namespace traversal
   namespace relational
   {
     struct column: node<semantics::relational::column> {};
+    struct add_column: node<semantics::relational::add_column> {};
+    struct drop_column: node<semantics::relational::drop_column> {};
+    struct alter_column: node<semantics::relational::alter_column> {};
   }
 }
 

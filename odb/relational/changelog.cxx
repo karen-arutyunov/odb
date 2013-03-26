@@ -22,6 +22,86 @@ namespace relational
 
     namespace
     {
+      //
+      // diff
+      //
+
+      struct diff_table: trav_rel::column
+      {
+        enum mode_type {mode_add, mode_drop};
+
+        diff_table (table& o, mode_type m, alter_table& a, graph& gr)
+            : other (o), mode (m), at (a), g (gr) {}
+
+        virtual void
+        traverse (sema_rel::column& c)
+        {
+          using sema_rel::column;
+
+          if (mode == mode_add)
+          {
+            if (column* oc = other.find<column> (c.name ()))
+            {
+              if (c.type () != oc->type ())
+                diagnose_unsupported (c, "type");
+
+              if (c.null () != oc->null ())
+              {
+                alter_column& ac (g.new_node<alter_column> (c.id ()));
+                ac.null (c.null ());
+                g.new_edge<unames> (at, ac, c.name ());
+              }
+
+              if (c.default_ () != oc->default_ ())
+                diagnose_unsupported (c, "default value");
+
+              if (c.options () != oc->options ())
+                diagnose_unsupported (c, "options");
+            }
+            else
+            {
+              add_column& ac (g.new_node<add_column> (c, at, g));
+              g.new_edge<unames> (at, ac, c.name ());
+            }
+          }
+          else
+          {
+            if (other.find<sema_rel::column> (c.name ()) == 0)
+            {
+              drop_column& dc (g.new_node<drop_column> (c.id ()));
+              g.new_edge<unames> (at, dc, c.name ());
+            }
+          }
+        }
+
+        void
+        diagnose_unsupported (sema_rel::column& c, char const* name)
+        {
+          table& t (c.table ());
+          location const& tl (t.get<location> ("cxx-location"));
+          location const& cl (c.get<location> ("cxx-location"));
+
+          error (cl) << "change to data member results in the change of " <<
+            "the corresponding column " << name << endl;
+          error (cl) << "this change is not yet handled automatically" << endl;
+          info (cl) << "corresponding column '" << c.name () << "' " <<
+            "originates here" << endl;
+          info (tl) << "corresponding table '" << t.name () << "' " <<
+            "originates here" << endl;
+          info (cl) << "consider re-implementing this change by creating " <<
+            "a new data member with the desired " << name << ", migrating " <<
+            "the data, and deleting the old data member" << endl;
+
+          throw operation_failed ();
+        }
+
+      protected:
+        table& other;
+        mode_type mode;
+        alter_table& at;
+        graph& g;
+      };
+
       struct diff_model: trav_rel::table
       {
         enum mode_type {mode_add, mode_drop};
@@ -32,17 +112,48 @@ namespace relational
         virtual void
         traverse (sema_rel::table& t)
         {
+          using sema_rel::table;
+
           if (mode == mode_add)
           {
-            if (other.find<sema_rel::table> (t.name ()) == 0)
+            if (table* ot = other.find<table> (t.name ()))
             {
+              // See if there are any changes to the table.
+              //
+              alter_table& at (g.new_node<alter_table> (t.id ()));
+
+              {
+                trav_rel::table table;
+                trav_rel::unames names;
+                diff_table dtable (*ot, diff_table::mode_add, at, g);
+                table >> names >> dtable;
+                table.traverse (t);
+              }
+
+              {
+                trav_rel::table table;
+                trav_rel::unames names;
+                diff_table dtable (t, diff_table::mode_drop, at, g);
+                table >> names >> dtable;
+                table.traverse (*ot);
+              }
+
+              if (!at.names_empty ())
+                g.new_edge<qnames> (cs, at, t.name ());
+              else
+                g.delete_node (at);
+            }
+            else
+            {
+              // New table.
+              //
               add_table& at (g.new_node<add_table> (t, cs, g));
               g.new_edge<qnames> (cs, at, t.name ());
             }
           }
           else
           {
-            if (other.find<sema_rel::table> (t.name ()) == 0)
+            if (other.find<table> (t.name ()) == 0)
             {
               drop_table& dt (g.new_node<drop_table> (t.id ()));
               g.new_edge<qnames> (cs, dt, t.name ());
@@ -57,6 +168,8 @@ namespace relational
         graph& g;
       };
 
+      // Assumes the new model has cxx-location set.
+      //
       changeset&
       diff (model& o, model& n, graph& g)
       {
@@ -81,8 +194,71 @@ namespace relational
         return r;
       }
 
+      //
+      // patch
+      //
+
+      struct patch_table: trav_rel::add_column,
+                          trav_rel::drop_column,
+                          trav_rel::alter_column
+      {
+        patch_table (table& tl, graph& gr): t (tl), g (gr) {}
+
+        virtual void
+        traverse (sema_rel::add_column& ac)
+        {
+          try
+          {
+            column& c (g.new_node<column> (ac, t, g));
+            g.new_edge<unames> (t, c, ac.name ());
+          }
+          catch (duplicate_name const&)
+          {
+            cerr << "error: invalid changelog: column '" << ac.name () <<
+              "' already exists in table '" << t.name () << "'" << endl;
+            throw operation_failed ();
+          }
+        }
+
+        virtual void
+        traverse (sema_rel::drop_column& dc)
+        {
+          table::names_iterator i (t.find (dc.name ()));
+
+          if (i == t.names_end () || !i->nameable ().is_a<column> ())
+          {
+            cerr << "error: invalid changelog: column '" << dc.name () <<
+              "' does not exist in table '" << t.name () << "'" << endl;
+            throw operation_failed ();
+          }
+
+          g.delete_edge (t, i->nameable (), *i);
+        }
+
+        virtual void
+        traverse (sema_rel::alter_column& ac)
+        {
+          if (column* c = t.find<column> (ac.name ()))
+          {
+            if (ac.null_altered ())
+              c->null (ac.null ());
+          }
+          else
+          {
+            cerr << "error: invalid changelog: column '" << ac.name () <<
+              "' does not exist in table '" << t.name () << "'" << endl;
+            throw operation_failed ();
+          }
+        }
+
+      protected:
+        table& t;
+        graph& g;
+      };
+
       struct patch_model: trav_rel::add_table,
-                          trav_rel::drop_table
+                          trav_rel::drop_table,
+                          trav_rel::alter_table
       {
         patch_model (model& ml, graph& gr): m (ml), g (gr) {}
 
@@ -115,6 +291,25 @@ namespace relational
           }
 
           g.delete_edge (m, i->nameable (), *i);
+        }
+
+        virtual void
+        traverse (sema_rel::alter_table& at)
+        {
+          if (table* t = m.find<table> (at.name ()))
+          {
+            trav_rel::alter_table atable;
+            trav_rel::unames names;
+            patch_table ptable (*t, g);
+            atable >> names >> ptable;
+            atable.traverse (at);
+          }
+          else
+          {
+            cerr << "error: invalid changelog: table '" << at.name () <<
+              "' does not exist in model version " << m.version () << endl;
+            throw operation_failed ();
+          }
         }
 
       protected:

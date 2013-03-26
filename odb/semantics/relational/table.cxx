@@ -79,6 +79,35 @@ namespace semantics
       s.end_element ();
     }
 
+    // alter_table
+    //
+    alter_table::
+    alter_table (alter_table const& t, qscope&, graph& g)
+        : qnameable (t, g), uscope (t, g)
+    {
+    }
+
+    alter_table::
+    alter_table (xml::parser& p, qscope&, graph& g)
+        : qnameable (p, g), uscope (p, g)
+    {
+    }
+
+    alter_table& alter_table::
+    clone (qscope& s, graph& g) const
+    {
+      return g.new_node<alter_table> (*this, s, g);
+    }
+
+    void alter_table::
+    serialize (xml::serializer& s) const
+    {
+      s.start_element (xmlns, "alter-table");
+      qnameable::serialize_attributes (s);
+      uscope::serialize_content (s);
+      s.end_element ();
+    }
+
     // type info
     //
     namespace
@@ -87,11 +116,12 @@ namespace semantics
       {
         init ()
         {
-          qnameable::parser_map_["table"] = &qnameable::parser_impl<table>;
-          qnameable::parser_map_["add-table"] =
-            &qnameable::parser_impl<add_table>;
-          qnameable::parser_map_["drop-table"] =
-            &qnameable::parser_impl<drop_table>;
+          qnameable::parser_map& m (qnameable::parser_map_);
+
+          m["table"] = &qnameable::parser_impl<table>;
+          m["add-table"] = &qnameable::parser_impl<add_table>;
+          m["drop-table"] = &qnameable::parser_impl<drop_table>;
+          m["alter-table"] = &qnameable::parser_impl<alter_table>;
 
           using compiler::type_info;
 
@@ -117,6 +147,15 @@ namespace semantics
           {
             type_info ti (typeid (drop_table));
             ti.add_base (typeid (qnameable));
+            insert (ti);
+          }
+
+          // alter_table
+          //
+          {
+            type_info ti (typeid (alter_table));
+            ti.add_base (typeid (qnameable));
+            ti.add_base (typeid (uscope));
             insert (ti);
           }
         }

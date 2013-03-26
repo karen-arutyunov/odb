@@ -25,6 +25,9 @@ namespace semantics
       bool
       null () const {return null_;}
 
+      void
+      null (bool n) {null_ = n;}
+
       string const&
       default_ () const {return default__;}
 
@@ -88,6 +91,10 @@ namespace semantics
       virtual void
       serialize (xml::serializer&) const;
 
+    protected:
+      void
+      serialize_attributes (xml::serializer&) const;
+
     private:
       string type_;
       bool null_;
@@ -95,6 +102,80 @@ namespace semantics
       string options_;
 
       contained_list contained_;
+    };
+
+    class add_column: public column
+    {
+    public:
+      add_column (string const& id, string const& type, bool null)
+          : column (id, type, null) {}
+      add_column (column const& c, uscope& s, graph& g): column (c, s, g) {}
+      add_column (xml::parser& p, uscope& s, graph& g): column (p, s, g) {}
+
+      virtual add_column&
+      clone (uscope&, graph&) const;
+
+      virtual string
+      kind () const {return "add column";}
+
+      virtual void
+      serialize (xml::serializer&) const;
+    };
+
+    class drop_column: public unameable
+    {
+    public:
+      drop_column (string const& id): unameable (id) {}
+      drop_column (drop_column const& c, uscope&, graph& g)
+          : unameable (c, g) {}
+      drop_column (xml::parser&, uscope&, graph&);
+
+      virtual drop_column&
+      clone (uscope&, graph&) const;
+
+      virtual string
+      kind () const {return "drop column";}
+
+      virtual void
+      serialize (xml::serializer&) const;
+    };
+
+    class alter_column: public unameable
+    {
+    public:
+      bool
+      null_altered () const {return null_altered_;}
+
+      bool
+      null () const {return null_;}
+
+      void
+      null (bool n) {null_ = n; null_altered_ = true;}
+
+    public:
+      alter_column (string const& id)
+          : unameable (id), null_altered_ (false)
+      {
+      }
+
+      alter_column (alter_column const&, uscope&, graph&);
+      alter_column (xml::parser&, uscope&, graph&);
+
+      virtual alter_column&
+      clone (uscope&, graph&) const;
+
+      virtual string
+      kind () const
+      {
+        return "alter column";
+      }
+
+      virtual void
+      serialize (xml::serializer&) const;
+
+    private:
+      bool null_altered_;
+      bool null_;
     };
   }
 }

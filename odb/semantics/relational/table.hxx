@@ -66,6 +66,26 @@ namespace semantics
       serialize (xml::serializer&) const;
     };
 
+    class alter_table: public qnameable, public uscope
+    {
+    public:
+      alter_table (string const& id): qnameable (id) {}
+      alter_table (alter_table const&, qscope&, graph&);
+      alter_table (xml::parser&, qscope&, graph&);
+
+      virtual alter_table&
+      clone (qscope&, graph&) const;
+
+      virtual string
+      kind () const {return "alter table";}
+
+      virtual void
+      serialize (xml::serializer&) const;
+
+      // Resolve ambiguity.
+      //
+      using qnameable::scope;
+    };
   }
 }
 
