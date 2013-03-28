@@ -19,35 +19,32 @@ namespace semantics
       typedef std::vector<contains*> contained_list;
 
     public:
-      string const&
+      virtual string const&
       type () const {return type_;}
 
-      bool
+      virtual bool
       null () const {return null_;}
 
-      void
+      virtual void
       null (bool n) {null_ = n;}
 
-      string const&
+      virtual string const&
       default_ () const {return default__;}
 
-      void
+      virtual void
       default_ (string const& d) {default__ = d;}
 
-      string const&
+      virtual string const&
       options () const {return options_;}
 
-      void
+      virtual void
       options (string const& o) {options_ = o;}
 
     public:
       typedef relational::table table_type;
 
       table_type&
-      table () const
-      {
-        return dynamic_cast<table_type&> (scope ());
-      }
+      table () const {return dynamic_cast<table_type&> (scope ());}
 
       // Key containment.
       //
@@ -95,12 +92,13 @@ namespace semantics
       void
       serialize_attributes (xml::serializer&) const;
 
-    private:
+    protected:
       string type_;
       bool null_;
       string default__;
       string options_;
 
+    private:
       contained_list contained_;
     };
 
@@ -140,24 +138,34 @@ namespace semantics
       serialize (xml::serializer&) const;
     };
 
-    class alter_column: public unameable
+    class alter_column: public column
     {
     public:
+      virtual string const&
+      type () const {return base ().type ();}
+
       bool
       null_altered () const {return null_altered_;}
 
-      bool
-      null () const {return null_;}
+      virtual bool
+      null () const {return null_altered_ ? null_ : base ().null ();}
 
-      void
+      virtual void
       null (bool n) {null_ = n; null_altered_ = true;}
+
+      virtual string const&
+      default_ () const {return base ().default_ ();}
+
+      virtual string const&
+      options () const {return base ().options ();}
+
+    public:
+      column&
+      base () const {return dynamic_cast<column&> (alters_->base ());}
 
     public:
       alter_column (string const& id)
-          : unameable (id), null_altered_ (false)
-      {
-      }
-
+          : column (id, "", false), alters_ (0), null_altered_ (false) {}
       alter_column (alter_column const&, uscope&, graph&);
       alter_column (xml::parser&, uscope&, graph&);
 
@@ -173,9 +181,17 @@ namespace semantics
       virtual void
       serialize (xml::serializer&) const;
 
+      virtual void
+      add_edge_left (alters& a)
+      {
+        assert (alters_ == 0);
+        alters_ = &a;
+      }
+
     private:
+      alters* alters_;
+
       bool null_altered_;
-      bool null_;
     };
   }
 }

@@ -54,6 +54,23 @@ namespace semantics
     //
 
     template <typename N>
+    template <typename T, typename S>
+    T* scope<N>::
+    lookup (name_type const& name)
+    {
+      if (T* r = find<T> (name))
+        return r;
+
+      if (scope* b = base ())
+      {
+        if (find<S> (name) == 0)
+          return b->lookup<T, S> (name);
+      }
+
+      return 0;
+    }
+
+    template <typename N>
     template <typename T>
     T* scope<N>::
     find (name_type const& name)
@@ -106,9 +123,16 @@ namespace semantics
 
     template <typename N>
     scope<N>::
-    scope (scope const& s, graph& g)
-        : first_key_ (names_.end ())
+    scope (scope const& s, scope* base, graph& g)
+        : first_key_ (names_.end ()),
+          first_drop_column_ (names_.end ()),
+          alters_ (0)
     {
+      // Set the alters edge for lookup.
+      //
+      if (base != 0)
+        g.new_edge<alters> (*this, *base);
+
       for (names_const_iterator i (s.names_begin ());
            i != s.names_end (); ++i)
       {
@@ -119,9 +143,16 @@ namespace semantics
 
     template <typename N>
     scope<N>::
-    scope (xml::parser& p, graph& g)
-        : first_key_ (names_.end ())
+    scope (xml::parser& p, scope* base, graph& g)
+        : first_key_ (names_.end ()),
+          first_drop_column_ (names_.end ()),
+          alters_ (0)
     {
+      // Set the alters edge for lookup.
+      //
+      if (base != 0)
+        g.new_edge<alters> (*this, *base);
+
       using namespace xml;
       p.content (parser::complex);
 

@@ -93,9 +93,57 @@ namespace semantics
       //
     public:
       void
-      add_edge_right (edge&)
+      add_edge_right (edge&) {}
+
+      void
+      remove_edge_right (edge&) {}
+    };
+
+    //
+    //
+    class alters: public edge
+    {
+    public:
+      node&
+      base () const {return *base_;}
+
+      node&
+      modifier () const {return *modifier_;}
+
+    public:
+      alters () : base_ (0), modifier_ (0) {}
+
+      void
+      set_left_node (node& m)
       {
+        assert (modifier_ == 0);
+        modifier_ = &m;
       }
+
+      void
+      set_right_node (node& b)
+      {
+        assert (base_ == 0);
+        base_ = &b;
+      }
+
+      void
+      clear_left_node (node& m)
+      {
+        assert (modifier_ == &m);
+        modifier_ = 0;
+      }
+
+      void
+      clear_right_node (node& b)
+      {
+        assert (base_ == &b);
+        base_ = 0;
+      }
+
+    protected:
+      node* base_;
+      node* modifier_;
     };
 
     //
@@ -224,6 +272,7 @@ namespace semantics
       }
 
       using node::add_edge_right;
+      using node::remove_edge_right;
 
     protected:
       nameable (nameable const&, graph& g);
@@ -319,7 +368,7 @@ namespace semantics
         return names_.empty ();
       }
 
-      // Find.
+      // Find (this scope only).
       //
       template <typename T>
       T*
@@ -337,11 +386,42 @@ namespace semantics
       names_const_iterator
       find (names_type const&) const;
 
+      // Lookup in this and all altered scopes until we find what we are
+      // looking for or hit a stop node of type S (e.g., drop_*).
+      //
+      template <typename T, typename S>
+      T*
+      lookup (name_type const&);
+
     public:
-      scope (): first_key_ (names_.end ()) {}
+      scope*
+      base () const
+      {
+        return alters_ != 0 ? &dynamic_cast<scope&> (alters_->base ()) : 0;
+      }
+
+    public:
+      scope ()
+          : first_key_ (names_.end ()),
+            first_drop_column_ (names_.end ()),
+            alters_ (0) {}
 
       // Virtual because we call it via scope interface (e.g., in copy).
       //
+      virtual void
+      add_edge_left (alters& a)
+      {
+        assert (alters_ == 0);
+        alters_ = &a;
+      }
+
+      virtual void
+      remove_edge_left (alters& a)
+      {
+        assert (alters_ == &a);
+        alters_ = 0;
+      }
+
       virtual void
       add_edge_left (names_type&);
 
@@ -349,18 +429,21 @@ namespace semantics
       remove_edge_left (names_type&);
 
     protected:
-      scope (scope const&, graph&);
-      scope (xml::parser&, graph&);
+      scope (scope const&, scope* base, graph&);
+      scope (xml::parser&, scope* base, graph&);
 
       void
       serialize_content (xml::serializer&) const;
 
-    private:
+    protected:
       names_list names_;
       names_map names_map_;
       names_iterator_map iterator_map_;
 
       typename names_list::iterator first_key_;
+      typename names_list::iterator first_drop_column_;
+
+      alters* alters_;
     };
 
     template <>

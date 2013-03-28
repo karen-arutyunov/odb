@@ -83,6 +83,13 @@ namespace semantics
       virtual void
       serialize (xml::serializer&) const;
 
+    protected:
+      void
+      serialize_attributes (xml::serializer&) const;
+
+      void
+      serialize_content (xml::serializer&) const;
+
     private:
       qname referenced_table_;
       columns referenced_columns_;
@@ -95,6 +102,47 @@ namespace semantics
 
     std::istream&
     operator>> (std::istream&, foreign_key::action_type&);
+
+    class add_foreign_key: public foreign_key
+    {
+    public:
+      add_foreign_key (string const& id,
+                       qname const& rt,
+                       bool d,
+                       action_type od = no_action)
+          : foreign_key (id, rt, d, od) {}
+      add_foreign_key (foreign_key const& fk, uscope& s, graph& g)
+          : foreign_key (fk, s, g) {}
+      add_foreign_key (xml::parser& p, uscope& s, graph& g)
+          : foreign_key (p, s, g) {}
+
+      virtual add_foreign_key&
+      clone (uscope&, graph&) const;
+
+      virtual string
+      kind () const {return "add foreign key";}
+
+      virtual void
+      serialize (xml::serializer&) const;
+    };
+
+    class drop_foreign_key: public unameable
+    {
+    public:
+      drop_foreign_key (string const& id): unameable (id) {}
+      drop_foreign_key (drop_foreign_key const& dfk, uscope&, graph& g)
+          : unameable (dfk, g) {}
+      drop_foreign_key (xml::parser&, uscope&, graph&);
+
+      virtual drop_foreign_key&
+      clone (uscope&, graph&) const;
+
+      virtual string
+      kind () const {return "drop foreign key";}
+
+      virtual void
+      serialize (xml::serializer&) const;
+    };
   }
 }
 

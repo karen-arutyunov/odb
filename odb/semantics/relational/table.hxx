@@ -15,8 +15,8 @@ namespace semantics
     {
     public:
       table (string const& id): qnameable (id) {}
-      table (table const&, qscope&, graph&);
-      table (xml::parser&, qscope&, graph&);
+      table (table const&, qscope&, graph&, bool base = false);
+      table (xml::parser&, qscope&, graph&, bool base = false);
 
       virtual table&
       clone (qscope&, graph&) const;
@@ -66,12 +66,14 @@ namespace semantics
       serialize (xml::serializer&) const;
     };
 
-    class alter_table: public qnameable, public uscope
+    class alter_table: public table
     {
     public:
-      alter_table (string const& id): qnameable (id) {}
-      alter_table (alter_table const&, qscope&, graph&);
-      alter_table (xml::parser&, qscope&, graph&);
+      alter_table (string const& id): table (id) {}
+      alter_table (alter_table const& at, qscope& s, graph& g)
+          : table (at, s, g, true) {}
+      alter_table (xml::parser& p, qscope& s, graph& g)
+          : table (p, s, g, true) {}
 
       virtual alter_table&
       clone (qscope&, graph&) const;
@@ -81,10 +83,6 @@ namespace semantics
 
       virtual void
       serialize (xml::serializer&) const;
-
-      // Resolve ambiguity.
-      //
-      using qnameable::scope;
     };
   }
 }

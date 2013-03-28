@@ -12,14 +12,14 @@ namespace semantics
   {
     model::
     model (model const& m, graph& g)
-        : qscope (m, g),
+        : qscope (m, 0, g),
           version_ (m.version_)
     {
     }
 
     model::
     model (xml::parser& p, graph& g)
-        : qscope (p, g),
+        : qscope (p, 0, g),
           version_ (p.attribute<version_type> ("version"))
     {
     }

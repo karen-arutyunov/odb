@@ -11,15 +11,15 @@ namespace semantics
   namespace relational
   {
     changeset::
-    changeset (changeset const& c, graph& g)
-      : qscope (c, g),
-        version_ (c.version_)
+    changeset (changeset const& c, qscope& b, graph& g)
+        : qscope (c, &b, g),
+          version_ (c.version_)
     {
     }
 
     changeset::
-    changeset (xml::parser& p, graph& g)
-        : qscope (p, g),
+    changeset (xml::parser& p, qscope& b, graph& g)
+        : qscope (p, &b, g),
           version_ (p.attribute<version_type> ("version"))
     {
     }

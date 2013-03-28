@@ -18,7 +18,7 @@ namespace semantics
       for (contains_iterator i (k.contains_begin ());
            i != k.contains_end (); ++i)
       {
-        column* c (s.find<column> (i->column ().name ()));
+        column* c (s.lookup<column, drop_column> (i->column ().name ()));
         assert (c != 0);
         g.new_edge<contains> (*this, *c, i->options ());
       }
@@ -42,7 +42,7 @@ namespace semantics
         p.content (parser::empty);
 
         uname n (p.attribute<uname> ("name"));
-        column* c (s.find<column> (n));
+        column* c (s.lookup<column, drop_column> (n));
         if (c == 0)
           throw parsing (p, "invalid column name in the 'name' attribute");
 

@@ -6,6 +6,7 @@
 #define ODB_SEMANTICS_RELATIONAL_KEY_HXX
 
 #include <odb/semantics/relational/elements.hxx>
+#include <odb/semantics/relational/table.hxx>
 
 namespace semantics
 {
@@ -55,6 +56,8 @@ namespace semantics
       typedef std::vector<contains*> contains_list;
 
     public:
+      typedef contains_list::size_type contains_size_type;
+
       typedef
       pointer_iterator<contains_list::const_iterator>
       contains_iterator;
@@ -65,8 +68,17 @@ namespace semantics
       contains_iterator
       contains_end () const {return contains_.end ();}
 
-      contains_list::size_type
+      contains_size_type
       contains_size () const {return contains_.size ();}
+
+      contains&
+      contains_at (contains_size_type i) const {return *contains_[i];}
+
+    public:
+      typedef relational::table table_type;
+
+      table_type&
+      table () const {return dynamic_cast<table_type&> (scope ());}
 
     public:
       key (std::string const& id): unameable (id) {}

@@ -13,14 +13,20 @@ namespace semantics
     // table
     //
     table::
-    table (table const& t, qscope&, graph& g)
-        : qnameable (t, g), uscope (t, g)
+    table (table const& t, qscope& s, graph& g, bool b)
+        : qnameable (t, g),
+          uscope (t, (b ? s.lookup<table, drop_table> (t.name ()) : 0), g)
     {
     }
 
     table::
-    table (xml::parser& p, qscope&, graph& g)
-        : qnameable (p, g), uscope (p, g)
+    table (xml::parser& p, qscope& s, graph& g, bool b)
+        : qnameable (p, g),
+          uscope (
+            p,
+            (b ? s.lookup<table, drop_table> (
+              p.attribute<qnameable::name_type> ("name")) : 0),
+            g)
     {
     }
 
@@ -81,18 +87,6 @@ namespace semantics
 
     // alter_table
     //
-    alter_table::
-    alter_table (alter_table const& t, qscope&, graph& g)
-        : qnameable (t, g), uscope (t, g)
-    {
-    }
-
-    alter_table::
-    alter_table (xml::parser& p, qscope&, graph& g)
-        : qnameable (p, g), uscope (p, g)
-    {
-    }
-
     alter_table& alter_table::
     clone (qscope& s, graph& g) const
     {
@@ -103,8 +97,8 @@ namespace semantics
     serialize (xml::serializer& s) const
     {
       s.start_element (xmlns, "alter-table");
-      qnameable::serialize_attributes (s);
-      uscope::serialize_content (s);
+      table::serialize_attributes (s);
+      table::serialize_content (s);
       s.end_element ();
     }
 
@@ -154,8 +148,7 @@ namespace semantics
           //
           {
             type_info ti (typeid (alter_table));
-            ti.add_base (typeid (qnameable));
-            ti.add_base (typeid (uscope));
+            ti.add_base (typeid (table));
             insert (ti);
           }
         }

@@ -45,22 +45,35 @@ namespace semantics
       {
         typename names_list::iterator i;
 
-        // We want the order to be columns first, then the primary key,
-        // and then the foreign keys.
+        // We want the order to be add/alter columns first, then the
+        // primary key, then other keys, and finnally drop columns.
         //
-        if (n.is_a<column> ())
+        if (n.is_a<column> () ||
+            n.is_a<add_column> () ||
+            n.is_a<alter_column> ())
+        {
           i = names_.insert (first_key_, &e);
-        else
+        }
+        else if (!n.is_a<drop_column> ())
         {
           if (n.is_a<primary_key> ())
-            first_key_ = i = names_.insert (first_key_, &e);
+            first_key_ = i = names_.insert (
+              first_key_ != names_.end () ? first_key_ : first_drop_column_,
+              &e);
           else
           {
-            i = names_.insert (names_.end (), &e);
+            i = names_.insert (first_drop_column_, &e);
 
             if (first_key_ == names_.end ())
               first_key_ = i;
           }
+        }
+        else
+        {
+          i = names_.insert (names_.end (), &e);
+
+          if (first_drop_column_ == names_.end ())
+            first_drop_column_ = i;
         }
 
         names_map_[name] = i;
@@ -82,6 +95,11 @@ namespace semantics
       //
       if (first_key_ == i->second)
         first_key_++;
+
+      // The same for the first drop column.
+      //
+      if (first_drop_column_ == i->second)
+        first_drop_column_++;
 
       names_.erase (i->second);
       names_map_.erase (e.name ());
@@ -105,6 +123,14 @@ namespace semantics
           // edge
           //
           insert (type_info (typeid (edge)));
+
+          // alters
+          //
+          {
+            type_info ti (typeid (alters));
+            ti.add_base (typeid (edge));
+            insert (ti);
+          }
 
           // names
           //

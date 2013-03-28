@@ -13,6 +13,9 @@ namespace traversal
   namespace relational
   {
     struct foreign_key: key_template<semantics::relational::foreign_key> {};
+    struct add_foreign_key:
+      key_template<semantics::relational::add_foreign_key> {};
+    struct drop_foreign_key: node<semantics::relational::drop_foreign_key> {};
   }
 }
 

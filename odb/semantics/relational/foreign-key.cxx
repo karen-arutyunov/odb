@@ -89,11 +89,9 @@ namespace semantics
       return g.new_node<foreign_key> (*this, s, g);
     }
 
-
     void foreign_key::
-    serialize (xml::serializer& s) const
+    serialize_attributes (xml::serializer& s) const
     {
-      s.start_element (xmlns, "foreign-key");
       key::serialize_attributes (s);
 
       if (deferred ())
@@ -101,7 +99,11 @@ namespace semantics
 
       if (on_delete () != no_action)
         s.attribute ("on-delete", on_delete ());
+    }
 
+    void foreign_key::
+    serialize_content (xml::serializer& s) const
+    {
       key::serialize_content (s);
 
       // Referenced columns.
@@ -118,7 +120,55 @@ namespace semantics
       }
 
       s.end_element (); // references
+    }
+
+    void foreign_key::
+    serialize (xml::serializer& s) const
+    {
+      s.start_element (xmlns, "foreign-key");
+      serialize_attributes (s);
+      serialize_content (s);
       s.end_element (); // foreign-key
+    }
+
+    // add_foreign_key
+    //
+    add_foreign_key& add_foreign_key::
+    clone (uscope& s, graph& g) const
+    {
+      return g.new_node<add_foreign_key> (*this, s, g);
+    }
+
+    void add_foreign_key::
+    serialize (xml::serializer& s) const
+    {
+      s.start_element (xmlns, "add-foreign-key");
+      foreign_key::serialize_attributes (s);
+      foreign_key::serialize_content (s);
+      s.end_element ();
+    }
+
+    // drop_foreign_key
+    //
+    drop_foreign_key::
+    drop_foreign_key (xml::parser& p, uscope&, graph& g)
+        : unameable (p, g)
+    {
+      p.content (xml::parser::empty);
+    }
+
+    drop_foreign_key& drop_foreign_key::
+    clone (uscope& s, graph& g) const
+    {
+      return g.new_node<drop_foreign_key> (*this, s, g);
+    }
+
+    void drop_foreign_key::
+    serialize (xml::serializer& s) const
+    {
+      s.start_element (xmlns, "drop-foreign-key");
+      unameable::serialize_attributes (s);
+      s.end_element ();
     }
 
     // type info
@@ -129,14 +179,35 @@ namespace semantics
       {
         init ()
         {
-          unameable::parser_map_["foreign-key"] =
-            &unameable::parser_impl<foreign_key>;
+          unameable::parser_map& m (unameable::parser_map_);
+
+          m["foreign-key"] = &unameable::parser_impl<foreign_key>;
+          m["add-foreign-key"] = &unameable::parser_impl<add_foreign_key>;
+          m["drop-foreign-key"] = &unameable::parser_impl<drop_foreign_key>;
 
           using compiler::type_info;
 
+          // foreign_key
+          //
           {
             type_info ti (typeid (foreign_key));
             ti.add_base (typeid (key));
+            insert (ti);
+          }
+
+          // add_foreign_key
+          //
+          {
+            type_info ti (typeid (add_foreign_key));
+            ti.add_base (typeid (foreign_key));
+            insert (ti);
+          }
+
+          // drop_foreign_key
+          //
+          {
+            type_info ti (typeid (drop_foreign_key));
+            ti.add_base (typeid (unameable));
             insert (ti);
           }
         }

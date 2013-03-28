@@ -104,20 +104,26 @@ namespace semantics
     // alter_column
     //
     alter_column::
-    alter_column (alter_column const& ac, uscope&, graph& g)
-        : unameable (ac, g),
-          null_altered_ (ac.null_altered_),
-          null_ (ac.null_)
+    alter_column (alter_column const& ac, uscope& s, graph& g)
+        : column (ac, s, g),
+          alters_ (0),
+          null_altered_ (ac.null_altered_)
     {
+      column* b (s.lookup<column, drop_column> (ac.name ()));
+      assert (b != 0);
+      g.new_edge<alters> (*this, *b);
     }
 
     alter_column::
-    alter_column (xml::parser& p, uscope&, graph& g)
-        : unameable (p, g),
-          null_altered_ (p.attribute_present ("null")),
-          null_ (null_altered_ ? p.attribute<bool> ("null") : false)
+    alter_column (xml::parser& p, uscope& s, graph& g)
+        : column (p, s, g),
+          alters_ (0),
+          null_altered_ (p.attribute_present ("null"))
     {
-      p.content (xml::parser::empty);
+      name_type n (p.attribute<name_type> ("name"));
+      column* b (s.lookup<column, drop_column> (n));
+      assert (b != 0);
+      g.new_edge<alters> (*this, *b);
     }
 
     alter_column& alter_column::
@@ -130,6 +136,9 @@ namespace semantics
     serialize (xml::serializer& s) const
     {
       s.start_element (xmlns, "alter-column");
+
+      // Here we override the standard column logic.
+      //
       unameable::serialize_attributes (s);
 
       if (null_altered_)
@@ -183,7 +192,7 @@ namespace semantics
           //
           {
             type_info ti (typeid (alter_column));
-            ti.add_base (typeid (unameable));
+            ti.add_base (typeid (column));
             insert (ti);
           }
         }

@@ -13,6 +13,8 @@ namespace traversal
   namespace relational
   {
     struct index: key_template<semantics::relational::index> {};
+    struct add_index: key_template<semantics::relational::add_index> {};
+    struct drop_index: node<semantics::relational::drop_index> {};
   }
 }
 

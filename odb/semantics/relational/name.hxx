@@ -125,6 +125,18 @@ namespace semantics
 
     public:
       friend bool
+      operator== (qname const& x, qname const& y)
+      {
+        return x.components_ == y.components_;
+      }
+
+      friend bool
+      operator!= (qname const& x, qname const& y)
+      {
+        return x.components_ != y.components_;
+      }
+
+      friend bool
       operator< (qname const& x, qname const& y)
       {
         return x.components_ < y.components_;
