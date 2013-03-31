@@ -661,6 +661,10 @@ namespace relational
 
       if (old == 0)
       {
+        // Don't allow changelog initialization if the version is closed.
+        // This will prevent adding new files to an existing object model
+        // with a closed version.
+        //
         if (!mv.open)
         {
           cerr << out_name << ": error: unable to initialize changelog " <<
@@ -669,9 +673,23 @@ namespace relational
         }
 
         cerr << out_name << ": info: initializing changelog with base " <<
-          "version " << m.version () << endl;
+          "version " << mv.base << endl;
 
-        g.new_edge<contains_model> (*cl, g.new_node<model> (m, g));
+        if (mv.base == mv.current)
+          g.new_edge<contains_model> (*cl, g.new_node<model> (m, g));
+        else
+        {
+          // In this case we have to create an empty model at the base
+          // version and a changeset.
+          //
+          model& nm (g.new_node<model> (mv.base));
+          g.new_edge<contains_model> (*cl, nm);
+          changeset& c (diff (nm, m, *cl));
+
+          if (!c.names_empty ())
+            g.new_edge<contains_changeset> (*cl, c);
+        }
+
         return cl;
       }
 
@@ -684,10 +702,17 @@ namespace relational
         ? bver
         : old->contains_changeset_back ().changeset ().version ());
 
+      if (mv.base < bver)
+      {
+        cerr << in_name << ": error: latest changelog base version is " <<
+          "greater than model base version" << endl;
+        throw operation_failed ();
+      }
+
       if (mv.current < cver)
       {
-        cerr << in_name << ": error: latest changelog version is greater " <<
-          "than current version" << endl;
+        cerr << in_name << ": error: latest changelog current version is " <<
+          "greater than model current version" << endl;
         throw operation_failed ();
       }
 
@@ -695,40 +720,15 @@ namespace relational
       //
       model& oldm (old->model ());
 
-      // Handle the cases where we just override the log with the current
-      // model.
-      //
-      if (mv.base == mv.current || bver == mv.current || oldm.names_empty ())
-      {
-        // If the current version is closed, make sure the model hasn't
-        // changed.
-        //
-        if (!mv.open)
-        {
-          changeset& cs (diff (oldm, m, *cl));
-
-          if (!cs.names_empty ())
-          {
-            qnames& n (*cs.names_begin ());
-
-            cerr << out_name << ": error: current version is closed" << endl;
-            cerr << out_name << ": info: first new change is " <<
-              n.nameable ().kind () << " '" << n.name () << "'" << endl;
-
-            throw operation_failed ();
-          }
-        }
-
-        g.new_edge<contains_model> (*cl, g.new_node<model> (m, g));
-        return cl;
-      }
-
       // Now we have a case with a "real" old model (i.e., non-empty
       // and with version older than current) as well as zero or more
       // changeset.
       //
       //
-      model* base (bver >= mv.base ? &g.new_node<model> (oldm, g) : 0);
+      model* base (bver == mv.base ? &g.new_node<model> (oldm, g) : 0);
+      if (base != 0)
+        g.new_edge<contains_model> (*cl, *base);
+
       model* last (&oldm);
 
       for (changelog::contains_changeset_iterator i (
@@ -741,33 +741,32 @@ namespace relational
         // will re-create it from scratch.
         //
         if (cs.version () == mv.current)
-        {
-          // If the current version is closed, make sure the model hasn't
-          // changed.
-          //
-          if (!mv.open)
-          {
-            model& old (patch (*last, cs, g));
-            changeset& cs (diff (old, m, *cl));
-
-            if (!cs.names_empty ())
-            {
-              qnames& n (*cs.names_begin ());
-
-              cerr << out_name << ": error: current version is closed" << endl;
-              cerr << out_name << ": info: first new change is " <<
-                n.nameable ().kind () << " '" << n.name () << "'" << endl;
-
-              throw operation_failed ();
-            }
-          }
           break;
-        }
 
         last = &patch (*last, cs, g);
 
-        if (base == 0 && last->version () >= mv.base)
-          base = last;
+        if (base == 0)
+        {
+          if (last->version () == mv.base)
+          {
+            base = last;
+            g.new_edge<contains_model> (*cl, *base);
+          }
+          else if (last->version () > mv.base)
+          {
+            // We have a gap. Plug it with an empty base model. We will
+            // also need to create a new changeset for this step.
+            //
+            base = &g.new_node<model> (mv.base);
+            g.new_edge<contains_model> (*cl, *base);
+
+            changeset& c (diff (*base, *last, *cl));
+            if (!c.names_empty ())
+              g.new_edge<contains_changeset> (*cl, c);
+
+            continue;
+          }
+        }
 
         // Copy the changeset unless it is below or at our base version.
         //
@@ -784,22 +783,63 @@ namespace relational
         g.new_edge<contains_changeset> (*cl, c);
       }
 
-      // If we still haven't found the new base model, then take the
-      // latest and update its version.
+      // If we still haven't found the new base model, then it means it
+      // has version greater than any changeset we have seen.
       //
       if (base == 0)
       {
-        base = last != &oldm ? last : &g.new_node<model> (oldm, g);
-        base->version (mv.base);
+        if (mv.base == mv.current)
+          base = &g.new_node<model> (m, g);
+        else
+        {
+          // Fast-forward the latest model to the new base.
+          //
+          base = last != &oldm ? last : &g.new_node<model> (oldm, g);
+          base->version (mv.base);
+        }
+
+        g.new_edge<contains_model> (*cl, *base);
       }
-      g.new_edge<contains_model> (*cl, *base);
 
-      // Add a changeset for the current version.
+      // If the current version is closed, make sure the model hasn't
+      // changed.
       //
-      changeset& cs (diff (*last, m, *cl));
+      if (!mv.open)
+      {
+        // If the last changeset has the current version, then apply it.
+        //
+        model* om (last);
+        if (!old->contains_changeset_empty ())
+        {
+          changeset& c (old->contains_changeset_back ().changeset ());
+          if (c.version () == mv.current)
+            om = &patch (*last, c, g);
+        }
 
-      if (!cs.names_empty ())
-        g.new_edge<contains_changeset> (*cl, cs);
+        changeset& c (diff (*om, m, *cl));
+
+        if (!c.names_empty ())
+        {
+          qnames& n (*c.names_begin ());
+
+          cerr << out_name << ": error: current version is closed" << endl;
+          cerr << out_name << ": info: first new change is " <<
+            n.nameable ().kind () << " '" << n.name () << "'" << endl;
+
+          throw operation_failed ();
+        }
+      }
+
+      // Add a changeset for the current version unless it is the same
+      // as the base version.
+      //
+      if (mv.base != mv.current)
+      {
+        changeset& cs (diff (*last, m, *cl));
+
+        if (!cs.names_empty ())
+          g.new_edge<contains_changeset> (*cl, cs);
+      }
 
       return cl;
     }
