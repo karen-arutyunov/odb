@@ -5,6 +5,7 @@
 #include <cctype>  // std::toupper, std::is{alpha,upper,lower}
 #include <string>
 #include <memory>  // std::auto_ptr
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -23,6 +24,7 @@
 #include <odb/generator.hxx>
 
 #include <odb/semantics/relational/model.hxx>
+#include <odb/semantics/relational/changeset.hxx>
 #include <odb/semantics/relational/changelog.hxx>
 
 #include <odb/generate.hxx>
@@ -34,6 +36,7 @@ using namespace cutl;
 using semantics::path;
 typedef vector<string> strings;
 typedef vector<path> paths;
+typedef vector<cutl::shared_ptr<ofstream> > ofstreams;
 
 namespace
 {
@@ -48,13 +51,25 @@ namespace
     " */\n\n";
 
   void
-  open (ifstream& ifs, string const& path)
+  open (ifstream& ifs, path const& p)
   {
-    ifs.open (path.c_str (), ios_base::in | ios_base::binary);
+    ifs.open (p.string ().c_str (), ios_base::in | ios_base::binary);
 
     if (!ifs.is_open ())
     {
-      cerr << path << ": error: unable to open in read mode" << endl;
+      cerr << "error: unable to open '" << p << "' in read mode" << endl;
+      throw generator::failed ();
+    }
+  }
+
+  void
+  open (ofstream& ofs, path const& p, ios_base::openmode m = ios_base::out)
+  {
+    ofs.open (p.string ().c_str (), ios_base::out | m);
+
+    if (!ofs.is_open ())
+    {
+      cerr << "error: unable to open '" << p << "' in write mode" << endl;
       throw generator::failed ();
     }
   }
@@ -70,11 +85,36 @@ namespace
   }
 
   void
-  append (ostream& os, string const& file)
+  append (ostream& os, path const& file)
   {
     ifstream ifs;
     open (ifs, file);
     os << ifs.rdbuf ();
+  }
+
+  // Append prologue/interlude/epilogue.
+  //
+  void
+  append_logue (ostream& os,
+                database db,
+                database_map<vector<string> > const& text,
+                database_map<string> const& file,
+                char const* begin_comment,
+                char const* end_comment)
+  {
+    bool t (text.count (db) != 0);
+    bool f (file.count (db) != 0);
+
+    if (t || f)
+    {
+      os << begin_comment << endl;
+      if (t)
+        append (os, text[db]);
+      if (f)
+        append (os, path (file[db]));
+      os << end_comment << endl
+         << endl;
+    }
   }
 }
 
@@ -85,6 +125,9 @@ generate (options const& ops,
           path const& p,
           paths const& inputs)
 {
+  namespace sema_rel = semantics::relational;
+  using cutl::shared_ptr;
+
   try
   {
     database db (ops.database ()[0]);
@@ -93,7 +136,8 @@ generate (options const& ops,
     // First create the database model.
     //
     bool gen_schema (ops.generate_schema () && db != database::common);
-    cutl::shared_ptr<semantics::relational::model> model;
+
+    shared_ptr<sema_rel::model> model;
 
     if (gen_schema)
     {
@@ -115,52 +159,21 @@ generate (options const& ops,
       }
     }
 
-    // Output files.
+    // Input files.
     //
-    fs::auto_removes auto_rm;
-
     path file (ops.input_name ().empty ()
                ? p.leaf ()
                : path (ops.input_name ()).leaf ());
     string base (file.base ().string ());
 
-    string hxx_name (base + ops.odb_file_suffix ()[db] + ops.hxx_suffix ());
-    string ixx_name (base + ops.odb_file_suffix ()[db] + ops.ixx_suffix ());
-    string cxx_name (base + ops.odb_file_suffix ()[db] + ops.cxx_suffix ());
-    string sch_name (base + ops.schema_file_suffix ()[db] + ops.cxx_suffix ());
-    string sql_name (base + ops.sql_file_suffix ()[db] + ops.sql_suffix ());
-
-    path hxx_path (hxx_name);
-    path ixx_path (ixx_name);
-    path cxx_path (cxx_name);
-    path sch_path (sch_name);
-    path sql_path (sql_name);
-
-    if (!ops.output_dir ().empty ())
-    {
-      path dir (ops.output_dir ());
-      hxx_path = dir / hxx_path;
-      ixx_path = dir / ixx_path;
-      cxx_path = dir / cxx_path;
-      sch_path = dir / sch_path;
-      sql_path = dir / sql_path;
-    }
-
-    path in_log_path, out_log_path;
+    path in_log_path;
     path log_dir (ops.changelog_dir ().empty () ? "" : ops.changelog_dir ());
     if (ops.changelog_in_specified ())
     {
       in_log_path = path (ops.changelog_in ());
-      out_log_path = path (ops.changelog_out ());
 
-      if (!log_dir.empty ())
-      {
-        if (!in_log_path.absolute ())
-          in_log_path = log_dir / in_log_path;
-
-        if (!out_log_path.absolute ())
-          out_log_path = log_dir / out_log_path;
-      }
+      if (!log_dir.empty () && !in_log_path.absolute ())
+        in_log_path = log_dir / in_log_path;
     }
     else if (ops.changelog_specified ())
     {
@@ -168,8 +181,6 @@ generate (options const& ops,
 
       if (!in_log_path.absolute () && !log_dir.empty ())
         in_log_path = log_dir / in_log_path;
-
-      out_log_path = in_log_path;
     }
     else
     {
@@ -181,23 +192,38 @@ generate (options const& ops,
         in_log_path = log_dir / in_log_path;
       else
         in_log_path = p.directory () / in_log_path; // Use input directory.
-
-      out_log_path = in_log_path;
     }
 
     // Load the old changelog and generate a new one.
     //
-    bool gen_log (gen_schema && unit.count ("model-version") != 0);
-    cutl::shared_ptr<semantics::relational::changelog> changelog;
-    cutl::shared_ptr<semantics::relational::changelog> old_changelog;
+    bool gen_changelog (gen_schema && unit.count ("model-version") != 0);
+    cutl::shared_ptr<sema_rel::changelog> changelog;
+    cutl::shared_ptr<sema_rel::changelog> old_changelog;
     string old_changelog_xml;
 
-    if (gen_log)
+    path out_log_path;
+    if (ops.changelog_out_specified ())
     {
-      ifstream log (in_log_path.string ().c_str (),
-                    ios_base::in | ios_base::binary);
+      out_log_path = path (ops.changelog_out ());
 
-      if (log.is_open ())
+      if (!log_dir.empty () && !out_log_path.absolute ())
+        out_log_path = log_dir / out_log_path;
+    }
+    else
+      out_log_path = in_log_path;
+
+    if (gen_changelog)
+    {
+      ifstream log;
+
+      // Unless we are forced to re-initialize the changelog, load the
+      // old one.
+      //
+      if (!ops.init_changelog ())
+        log.open (in_log_path.string ().c_str (),
+                  ios_base::in | ios_base::binary);
+
+      if (log.is_open ()) // The changelog might not exist.
       {
         try
         {
@@ -224,8 +250,7 @@ generate (options const& ops,
           is.exceptions (ios_base::badbit | ios_base::failbit);
 
           xml::parser p (is, in_log_path.string ());
-          old_changelog.reset (
-            new (shared) semantics::relational::changelog (p));
+          old_changelog.reset (new (shared) sema_rel::changelog (p));
         }
         catch (const ios_base::failure& e)
         {
@@ -244,7 +269,73 @@ generate (options const& ops,
         unit.get<model_version> ("model-version"),
         old_changelog.get (),
         in_log_path.string (),
-        out_log_path.string ());
+        out_log_path.string (),
+        ops.init_changelog ());
+    }
+
+    // Output files.
+    //
+    fs::auto_removes auto_rm;
+
+    string hxx_name (base + ops.odb_file_suffix ()[db] + ops.hxx_suffix ());
+    string ixx_name (base + ops.odb_file_suffix ()[db] + ops.ixx_suffix ());
+    string cxx_name (base + ops.odb_file_suffix ()[db] + ops.cxx_suffix ());
+    string sch_name (base + ops.schema_file_suffix ()[db] + ops.cxx_suffix ());
+    string sql_name (base + ops.sql_file_suffix ()[db] + ops.sql_suffix ());
+
+    path hxx_path (hxx_name);
+    path ixx_path (ixx_name);
+    path cxx_path (cxx_name);
+    path sch_path (sch_name);
+    path sql_path (sql_name);
+    paths mig_pre_paths;
+    paths mig_post_paths;
+
+    bool gen_migration (gen_changelog && !ops.suppress_migration ());
+    bool gen_sql_migration (
+      gen_migration && ops.schema_format ()[db].count (schema_format::sql));
+
+    if (gen_sql_migration)
+    {
+      for (sema_rel::changelog::contains_changeset_iterator i (
+             changelog->contains_changeset_begin ());
+           i != changelog->contains_changeset_end (); ++i)
+      {
+        sema_rel::changeset& cs (i->changeset ());
+
+        // Default format: %N[-D%]-%3V-{pre|post}.sql
+        //
+        string n (base);
+
+        if (md != multi_database::disabled)
+          n += '-' + db.string ();
+
+        ostringstream os;
+        os << setfill ('0') << setw (3) << cs.version ();
+        n += '-' + os.str ();
+
+        mig_pre_paths.push_back (path (n + "-pre" + ops.sql_suffix ()));
+        mig_post_paths.push_back (path (n + "-post" + ops.sql_suffix ()));
+      }
+    }
+
+    if (!ops.output_dir ().empty ())
+    {
+      path dir (ops.output_dir ());
+      hxx_path = dir / hxx_path;
+      ixx_path = dir / ixx_path;
+      cxx_path = dir / cxx_path;
+      sch_path = dir / sch_path;
+      sql_path = dir / sql_path;
+
+      if (gen_sql_migration)
+      {
+        for (paths::size_type i (0); i < mig_pre_paths.size (); ++i)
+        {
+          mig_pre_paths[i] = dir / mig_pre_paths[i];
+          mig_post_paths[i] = dir / mig_post_paths[i];
+        }
+      }
     }
 
     //
@@ -254,15 +345,7 @@ generate (options const& ops,
     ofstream hxx;
     if (gen_cxx)
     {
-      hxx.open (hxx_path.string ().c_str (), ios_base::out);
-
-      if (!hxx.is_open ())
-      {
-        cerr << "error: unable to open '" << hxx_path << "' in write mode"
-             << endl;
-        throw failed ();
-      }
-
+      open (hxx, hxx_path);
       auto_rm.add (hxx_path);
     }
 
@@ -271,15 +354,7 @@ generate (options const& ops,
     ofstream ixx;
     if (gen_cxx)
     {
-      ixx.open (ixx_path.string ().c_str (), ios_base::out);
-
-      if (!ixx.is_open ())
-      {
-        cerr << "error: unable to open '" << ixx_path << "' in write mode"
-             << endl;
-        throw failed ();
-      }
-
+      open (ixx, ixx_path);
       auto_rm.add (ixx_path);
     }
 
@@ -288,35 +363,8 @@ generate (options const& ops,
     ofstream cxx;
     if (gen_cxx && (db != database::common || md == multi_database::dynamic))
     {
-      cxx.open (cxx_path.string ().c_str (), ios_base::out);
-
-      if (!cxx.is_open ())
-      {
-        cerr << "error: unable to open '" << cxx_path << "' in write mode"
-             << endl;
-        throw failed ();
-      }
-
+      open (cxx, cxx_path);
       auto_rm.add (cxx_path);
-    }
-
-    //
-    //
-    bool gen_sql_schema (gen_schema &&
-                         ops.schema_format ()[db].count (schema_format::sql));
-    ofstream sql;
-    if (gen_sql_schema)
-    {
-      sql.open (sql_path.string ().c_str (), ios_base::out);
-
-      if (!sql.is_open ())
-      {
-        cerr << "error: unable to open '" << sql_path << "' in write mode"
-             << endl;
-        throw failed ();
-      }
-
-      auto_rm.add (sql_path);
     }
 
     //
@@ -329,19 +377,42 @@ generate (options const& ops,
     ofstream sch;
     if (gen_sep_schema)
     {
-      sch.open (sch_path.string ().c_str (), ios_base::out);
-
-      if (!sch.is_open ())
-      {
-        cerr << "error: unable to open '" << sch_path << "' in write mode"
-             << endl;
-        throw failed ();
-      }
-
+      open (sch, sch_path);
       auto_rm.add (sch_path);
     }
 
-    // Print C++ headers.
+    //
+    //
+    bool gen_sql_schema (gen_schema &&
+                         ops.schema_format ()[db].count (schema_format::sql));
+    ofstream sql;
+    if (gen_sql_schema)
+    {
+      open (sql, sql_path);
+      auto_rm.add (sql_path);
+    }
+
+    //
+    //
+    ofstreams mig_pre, mig_post;
+    if (gen_sql_migration)
+    {
+      for (paths::size_type i (0); i < mig_pre_paths.size (); ++i)
+      {
+        shared_ptr<ofstream> pre (new (shared) ofstream);
+        shared_ptr<ofstream> post (new (shared) ofstream);
+
+        open (*pre, mig_pre_paths[i]);
+        auto_rm.add (mig_pre_paths[i]);
+        mig_pre.push_back (pre);
+
+        open (*post, mig_post_paths[i]);
+        auto_rm.add (mig_post_paths[i]);
+        mig_post.push_back (post);
+      }
+    }
+
+    // Print output file headers.
     //
     if (gen_cxx)
     {
@@ -357,6 +428,15 @@ generate (options const& ops,
 
     if (gen_sql_schema)
       sql << sql_file_header;
+
+    if (gen_sql_migration)
+    {
+      for (ofstreams::size_type i (0); i < mig_pre.size (); ++i)
+      {
+        *mig_pre[i] << sql_file_header;
+        *mig_post[i] << sql_file_header;
+      }
+    }
 
     typedef compiler::ostream_filter<compiler::cxx_indenter, char> ind_filter;
     typedef compiler::ostream_filter<compiler::sloc_counter, char> sloc_filter;
@@ -398,23 +478,12 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      {
-        bool p (ops.hxx_prologue ().count (db) != 0);
-        bool pf (ops.hxx_prologue_file ().count (db) != 0);
-
-        if (p || pf)
-        {
-          hxx << "// Begin prologue." << endl
-              << "//" << endl;
-          if (p)
-            append (hxx, ops.hxx_prologue ()[db]);
-          if (pf)
-            append (hxx, ops.hxx_prologue_file ()[db]);
-          hxx << "//" << endl
-              << "// End prologue." << endl
-              << endl;
-        }
-      }
+      append_logue (hxx,
+                    db,
+                    ops.hxx_prologue (),
+                    ops.hxx_prologue_file (),
+                    "// Begin prologue.\n//",
+                    "//\n// End prologue.");
 
       // Include main file(s).
       //
@@ -470,23 +539,12 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      {
-        bool e (ops.hxx_epilogue ().count (db) != 0);
-        bool ef (ops.hxx_epilogue_file ().count (db) != 0);
-
-        if (e || ef)
-        {
-          hxx << "// Begin epilogue." << endl
-              << "//" << endl;
-          if (e)
-            append (hxx, ops.hxx_epilogue ()[db]);
-          if (ef)
-            append (hxx, ops.hxx_epilogue_file ()[db]);
-          hxx << "//" << endl
-              << "// End epilogue." << endl
-              << endl;
-        }
-      }
+      append_logue (hxx,
+                    db,
+                    ops.hxx_epilogue (),
+                    ops.hxx_epilogue_file (),
+                    "// Begin epilogue.\n//",
+                    "//\n// End epilogue.");
 
       hxx << "#include <odb/post.hxx>" << endl
           << endl;
@@ -510,23 +568,12 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      {
-        bool p (ops.ixx_prologue ().count (db) != 0);
-        bool pf (ops.ixx_prologue_file ().count (db) != 0);
-
-        if (p || pf)
-        {
-          ixx << "// Begin prologue." << endl
-              << "//" << endl;
-          if (p)
-            append (ixx, ops.ixx_prologue ()[db]);
-          if (pf)
-            append (ixx, ops.ixx_prologue_file ()[db]);
-          ixx << "//" << endl
-              << "// End prologue." << endl
-              << endl;
-        }
-      }
+      append_logue (ixx,
+                    db,
+                    ops.ixx_prologue (),
+                    ops.ixx_prologue_file (),
+                    "// Begin prologue.\n//",
+                    "//\n// End prologue.");
 
       {
         // We don't want to indent prologues/epilogues.
@@ -557,23 +604,12 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      {
-        bool e (ops.ixx_epilogue ().count (db) != 0);
-        bool ef (ops.ixx_epilogue_file ().count (db) != 0);
-
-        if (e || ef)
-        {
-          ixx << "// Begin epilogue." << endl
-              << "//" << endl;
-          if (e)
-            append (ixx, ops.ixx_epilogue ()[db]);
-          if (ef)
-            append (ixx, ops.ixx_epilogue_file ()[db]);
-          ixx << "//" << endl
-              << "// End epilogue." << endl
-              << endl;
-        }
-      }
+      append_logue (ixx,
+                    db,
+                    ops.ixx_epilogue (),
+                    ops.ixx_epilogue_file (),
+                    "// Begin epilogue.\n//",
+                    "//\n// End epilogue.");
 
       if (ops.show_sloc ())
         cerr << ixx_name << ": " << sloc.stream ().count () << endl;
@@ -595,23 +631,12 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      {
-        bool p (ops.cxx_prologue ().count (db) != 0);
-        bool pf (ops.cxx_prologue_file ().count (db) != 0);
-
-        if (p || pf)
-        {
-          cxx << "// Begin prologue." << endl
-              << "//" << endl;
-          if (p)
-            append (cxx, ops.cxx_prologue ()[db]);
-          if (pf)
-            append (cxx, ops.cxx_prologue_file ()[db]);
-          cxx << "//" << endl
-              << "// End prologue." << endl
-              << endl;
-        }
-      }
+      append_logue (cxx,
+                    db,
+                    ops.cxx_prologue (),
+                    ops.cxx_prologue_file (),
+                    "// Begin prologue.\n//",
+                    "//\n// End prologue.");
 
       // Include query columns implementations for explicit instantiations.
       //
@@ -665,23 +690,12 @@ generate (options const& ops,
 
       // Copy epilogue.
       //
-      {
-        bool e (ops.cxx_epilogue ().count (db) != 0);
-        bool ef (ops.cxx_epilogue_file ().count (db) != 0);
-
-        if (e || ef)
-        {
-          cxx << "// Begin epilogue." << endl
-              << "//" << endl;
-          if (e)
-            append (cxx, ops.cxx_epilogue ()[db]);
-          if (ef)
-            append (cxx, ops.cxx_epilogue_file ()[db]);
-          cxx << "//" << endl
-              << "// End epilogue." << endl
-              << endl;
-        }
-      }
+      append_logue (cxx,
+                    db,
+                    ops.cxx_epilogue (),
+                    ops.cxx_epilogue_file (),
+                    "// Begin epilogue.\n//",
+                    "//\n// End epilogue.");
 
       cxx << "#include <odb/post.hxx>" << endl;
 
@@ -705,23 +719,12 @@ generate (options const& ops,
 
       // Copy prologue.
       //
-      {
-        bool p (ops.schema_prologue ().count (db) != 0);
-        bool pf (ops.schema_prologue_file ().count (db) != 0);
-
-        if (p || pf)
-        {
-          sch << "// Begin prologue." << endl
-              << "//" << endl;
-          if (p)
-            append (sch, ops.schema_prologue ()[db]);
-          if (pf)
-            append (sch, ops.schema_prologue_file ()[db]);
-          sch << "//" << endl
-              << "// End prologue." << endl
-              << endl;
-        }
-      }
+      append_logue (sch,
+                    db,
+                    ops.schema_prologue (),
+                    ops.schema_prologue_file (),
+                    "// Begin prologue.\n//",
+                    "//\n// End prologue.");
 
       sch << "#include " << ctx->process_include_path (hxx_name) << endl
           << endl;
@@ -733,10 +736,6 @@ generate (options const& ops,
 
         switch (db)
         {
-        case database::common:
-          {
-            assert (false);
-          }
         case database::mssql:
         case database::mysql:
         case database::oracle:
@@ -746,28 +745,19 @@ generate (options const& ops,
             relational::schema_source::generate ();
             break;
           }
+        case database::common:
+          assert (false);
         }
       }
 
       // Copy epilogue.
       //
-      {
-        bool e (ops.schema_epilogue ().count (db) != 0);
-        bool ef (ops.schema_epilogue_file ().count (db) != 0);
-
-        if (e || ef)
-        {
-          sch << "// Begin epilogue." << endl
-              << "//" << endl;
-          if (e)
-            append (sch, ops.schema_epilogue ()[db]);
-          if (ef)
-            append (sch, ops.schema_epilogue_file ()[db]);
-          sch << "//" << endl
-              << "// End epilogue." << endl
-              << endl;
-        }
-      }
+      append_logue (sch,
+                    db,
+                    ops.schema_epilogue (),
+                    ops.schema_epilogue_file (),
+                    "// Begin epilogue.\n//",
+                    "//\n// End epilogue.");
 
       sch << "#include <odb/post.hxx>" << endl;
 
@@ -786,93 +776,154 @@ generate (options const& ops,
 
       switch (db)
       {
-      case database::common:
-        {
-          assert (false);
-        }
       case database::mssql:
       case database::mysql:
       case database::oracle:
       case database::pgsql:
       case database::sqlite:
         {
-          relational::schema::generate_prologue ();
-
-          // Copy prologue.
+          // Prologue.
           //
-          {
-            bool p (ops.sql_prologue ().count (db) != 0);
-            bool pf (ops.sql_prologue_file ().count (db) != 0);
-
-            if (p || pf)
-            {
-              sql << "/* Begin prologue." << endl
-                  << " */" << endl;
-              if (p)
-                append (sql, ops.sql_prologue ()[db]);
-              if (pf)
-                append (sql, ops.sql_prologue_file ()[db]);
-              sql << "/*" << endl
-                  << " * End prologue. */" << endl
-                  << endl;
-            }
-          }
+          relational::schema::generate_prologue ();
+          append_logue (sql,
+                        db,
+                        ops.sql_prologue (),
+                        ops.sql_prologue_file (),
+                        "/* Begin prologue.\n */",
+                        "/*\n * End prologue. */");
 
           if (!ops.omit_drop ())
             relational::schema::generate_drop ();
 
-          // Copy interlude.
+          // Interlude.
           //
-          {
-            bool i (ops.sql_interlude ().count (db) != 0);
-            bool ifl (ops.sql_interlude_file ().count (db) != 0);
-
-            if (i || ifl)
-            {
-              sql << "/* Begin interlude." << endl
-                  << " */" << endl;
-              if (i)
-                append (sql, ops.sql_interlude ()[db]);
-              if (ifl)
-                append (sql, ops.sql_interlude_file ()[db]);
-              sql << "/*" << endl
-                  << " * End interlude. */" << endl
-                  << endl;
-            }
-          }
+          append_logue (sql,
+                        db,
+                        ops.sql_interlude (),
+                        ops.sql_interlude_file (),
+                        "/* Begin interlude.\n */",
+                        "/*\n * End interlude. */");
 
           if (!ops.omit_create ())
             relational::schema::generate_create ();
 
-          // Copy epilogue.
+          // Epilogue.
           //
-          {
-            bool e (ops.sql_epilogue ().count (db) != 0);
-            bool ef (ops.sql_epilogue_file ().count (db) != 0);
-
-            if (e || ef)
-            {
-              sql << "/* Begin epilogue." << endl
-                  << " */" << endl;
-              if (e)
-                append (sql, ops.sql_epilogue ()[db]);
-              if (ef)
-                append (sql, ops.sql_epilogue_file ()[db]);
-              sql << "/*" << endl
-                  << " * End epilogue. */" << endl
-                  << endl;
-            }
-          }
-
+          append_logue (sql,
+                        db,
+                        ops.sql_epilogue (),
+                        ops.sql_epilogue_file (),
+                        "/* Begin epilogue.\n */",
+                        "/*\n * End epilogue. */");
           relational::schema::generate_epilogue ();
+
           break;
+        }
+      case database::common:
+        assert (false);
+      }
+    }
+
+    // MIG
+    //
+    if (gen_sql_migration)
+    {
+      for (ofstreams::size_type i (0); i < mig_pre.size (); ++i)
+      {
+        sema_rel::changeset& cs (
+          changelog->contains_changeset_at (i).changeset ());
+
+        // pre
+        //
+        {
+          ofstream& mig (*mig_pre[i]);
+          auto_ptr<context> ctx (create_context (mig, unit, ops, fts, 0));
+
+          switch (db)
+          {
+          case database::mssql:
+          case database::mysql:
+          case database::oracle:
+          case database::pgsql:
+          case database::sqlite:
+            {
+              // Prologue.
+              //
+              relational::schema::generate_prologue ();
+              append_logue (mig,
+                            db,
+                            ops.migration_prologue (),
+                            ops.migration_prologue_file (),
+                            "/* Begin prologue.\n */",
+                            "/*\n * End prologue. */");
+
+              relational::schema::generate_migrate_pre (cs);
+
+              // Epilogue.
+              //
+              append_logue (mig,
+                            db,
+                            ops.migration_epilogue (),
+                            ops.migration_epilogue_file (),
+                            "/* Begin epilogue.\n */",
+                            "/*\n * End epilogue. */");
+              relational::schema::generate_epilogue ();
+
+              break;
+            }
+          case database::common:
+            assert (false);
+          }
+        }
+
+        // post
+        //
+        {
+          ofstream& mig (*mig_post[i]);
+          auto_ptr<context> ctx (create_context (mig, unit, ops, fts, 0));
+
+          switch (db)
+          {
+          case database::mssql:
+          case database::mysql:
+          case database::oracle:
+          case database::pgsql:
+          case database::sqlite:
+            {
+              // Prologue.
+              //
+              relational::schema::generate_prologue ();
+              append_logue (mig,
+                            db,
+                            ops.migration_prologue (),
+                            ops.migration_prologue_file (),
+                            "/* Begin prologue.\n */",
+                            "/*\n * End prologue. */");
+
+              relational::schema::generate_migrate_post (cs);
+
+              // Epilogue.
+              //
+              append_logue (mig,
+                            db,
+                            ops.migration_epilogue (),
+                            ops.migration_epilogue_file (),
+                            "/* Begin epilogue.\n */",
+                            "/*\n * End epilogue. */");
+              relational::schema::generate_epilogue ();
+
+              break;
+            }
+          case database::common:
+            assert (false);
+          }
         }
       }
     }
 
-    // Save the changelog if it changed.
+    // Save the changelog if it has changed.
     //
-    if (gen_log)
+    if (gen_changelog)
     {
       try
       {
@@ -884,15 +935,8 @@ generate (options const& ops,
 
         if (changelog_xml != old_changelog_xml)
         {
-          ofstream log (out_log_path.string ().c_str (),
-                        ios_base::out | ios_base::binary);
-
-          if (!log.is_open ())
-          {
-            cerr << "error: unable to open '" << out_log_path << "' in " <<
-              "write mode" << endl;
-            throw failed ();
-          }
+          ofstream log;
+          open (log, out_log_path, ios_base::binary);
 
           if (old_changelog == 0)
             auto_rm.add (out_log_path);

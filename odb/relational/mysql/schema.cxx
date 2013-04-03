@@ -22,13 +22,12 @@ namespace relational
       //
       // Drop.
       //
-      /*
       struct drop_table: relational::drop_table, context
       {
         drop_table (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::table&);
+        traverse (sema_rel::table&, bool migration);
 
       private:
         friend class drop_foreign_key;
@@ -38,8 +37,8 @@ namespace relational
 
       struct drop_foreign_key: trav_rel::foreign_key, relational::common
       {
-        drop_foreign_key (drop_table& dt)
-            : common (dt.emitter (), dt.stream ()), dt_ (dt)
+        drop_foreign_key (drop_table& dt, bool m)
+            : common (dt.emitter (), dt.stream ()), dt_ (dt), migration_ (m)
         {
         }
 
@@ -54,58 +53,86 @@ namespace relational
           // If the table which we reference is droped before us, then
           // we need to drop the constraint first. Similarly, if the
           // referenced table is not part if this model, then assume
-          // it is dropped before us.
+          // it is dropped before us. In migration we always do this
+          // first.
           //
-          sema_rel::qname const& rt (fk.referenced_table ());
           sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
-          sema_rel::model& m (dynamic_cast<sema_rel::model&> (t.scope ()));
 
-          if (dt_.tables_.find (rt) != dt_.tables_.end () ||
-              m.find (rt) == m.names_end ())
+          if (!migration_)
           {
-            pre_statement ();
+            sema_rel::qname const& rt (fk.referenced_table ());
+            sema_rel::model& m (dynamic_cast<sema_rel::model&> (t.scope ()));
 
-            // @@ This does not work: in MySQL control statements can only
-            //    be used in stored procedures. It seems the only way to
-            //    implement this is to define, execute, and drop a stored
-            //    procedure, which is just too ugly.
-            //
-            os << "IF EXISTS (SELECT NULL FROM information_schema.TABLE_CONSTRAINTS" << endl
-               << "    WHERE CONSTRAINT_TYPE = " << quote_string ("FOREIGN KEY") << "AND" << endl
-               << "          CONSTRAINT_SCHEMA = DATABASE() AND" << endl
-               << "          CONSTRAINT_NAME = " << quote_string (fk.name ()) << ") THEN" << endl
-               << "  ALTER TABLE " << quote_id (t.name ()) << " DROP FOREIGN KEY " << quote_id (fk.name ()) << ";" << endl
-               << "END IF;" << endl;
-            post_statement ();
+            if (dt_.tables_.find (rt) == dt_.tables_.end () &&
+                m.find (rt) != m.names_end ())
+              return;
           }
+
+          pre_statement ();
+
+          /*
+          // @@ This does not work: in MySQL control statements can only
+          //    be used in stored procedures. It seems the only way to
+          //    implement this is to define, execute, and drop a stored
+          //    procedure, which is just too ugly.
+          //
+          //    Another option would be to use CREATE TABLE IF NOT EXISTS
+          //    to create a dummy table with a dummy constraint that makes
+          //    the following DROP succeed. Note, however, that MySQL issues
+          //    a notice if the table already exist so would need to suppress
+          //    that as well. Still not sure that the utility of this support
+          //    justifies this kind of a hack.
+          //
+          os << "IF EXISTS (SELECT NULL FROM information_schema.TABLE_CONSTRAINTS" << endl
+             << "    WHERE CONSTRAINT_TYPE = " << quote_string ("FOREIGN KEY") << "AND" << endl
+             << "          CONSTRAINT_SCHEMA = DATABASE() AND" << endl
+             << "          CONSTRAINT_NAME = " << quote_string (fk.name ()) << ") THEN" << endl
+             << "  ALTER TABLE " << quote_id (t.name ()) << " DROP FOREIGN KEY " << quote_id (fk.name ()) << ";" << endl
+             << "END IF;" << endl;
+          */
+
+          os << "ALTER TABLE " << quote_id (t.name ()) << " DROP FOREIGN " <<
+            "KEY " << quote_id (fk.name ()) << endl;
+
+          post_statement ();
         }
 
       private:
         drop_table& dt_;
+        bool migration_;
       };
 
       void drop_table::
-      traverse (sema_rel::table& t)
+      traverse (sema_rel::table& t, bool migration)
       {
+        // Only enabled for migration support for now (see above).
+        //
+        if (!migration)
+        {
+          base::traverse (t, migration);
+          return;
+        }
+
         qname const& table (t.name ());
 
         if (pass_ == 1)
         {
-          // Drop constraints.
+          // Drop constraints. In migration this is always done on pass 1.
           //
-          tables_.insert (table); // Add it before to cover self-refs.
-          drop_foreign_key fk (*this);
+          if (!migration)
+            tables_.insert (table); // Add it before to cover self-refs.
+          drop_foreign_key fk (*this, migration);
           trav_rel::unames n (fk);
           names (t, n);
         }
         else if (pass_ == 2)
         {
           pre_statement ();
-          os << "DROP TABLE IF EXISTS " << quote_id (table) << endl;
+          os << "DROP TABLE " << (migration ? "" : "IF EXISTS ") <<
+            quote_id (table) << endl;
           post_statement ();
         }
       }
-      */
 
       //
       // Create.
@@ -281,7 +308,10 @@ namespace relational
       {
         if (pass_ == 1)
         {
-          tables_.insert (t.name ()); // Add it before to cover self-refs.
+          // In migration we always add foreign keys on pass 2.
+          //
+          if (!t.is_a<sema_rel::add_table> ())
+            tables_.insert (t.name ()); // Add it before to cover self-refs.
           base::traverse (t);
           return;
         }

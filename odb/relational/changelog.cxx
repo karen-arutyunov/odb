@@ -654,7 +654,8 @@ namespace relational
               model_version const& mv,
               changelog* old,
               std::string const& in_name,
-              std::string const& out_name)
+              std::string const& out_name,
+              bool force_init)
     {
       cutl::shared_ptr<changelog> cl (new (shared) changelog);
       graph& g (*cl);
@@ -672,8 +673,9 @@ namespace relational
           throw operation_failed ();
         }
 
-        cerr << out_name << ": info: initializing changelog with base " <<
-          "version " << mv.base << endl;
+        if (!force_init)
+          cerr << out_name << ": info: initializing changelog with base " <<
+            "version " << mv.base << endl;
 
         if (mv.base == mv.current)
           g.new_edge<contains_model> (*cl, g.new_node<model> (m, g));
@@ -687,7 +689,10 @@ namespace relational
           changeset& c (diff (nm, m, *cl));
 
           if (!c.names_empty ())
+          {
+            g.new_edge<alters_model> (c, nm);
             g.new_edge<contains_changeset> (*cl, c);
+          }
         }
 
         return cl;
@@ -725,11 +730,10 @@ namespace relational
       // changeset.
       //
       //
-      model* base (bver == mv.base ? &g.new_node<model> (oldm, g) : 0);
+      model* last (&g.new_node<model> (oldm, g));
+      model* base (bver == mv.base ? last : 0);
       if (base != 0)
         g.new_edge<contains_model> (*cl, *base);
-
-      model* last (&oldm);
 
       for (changelog::contains_changeset_iterator i (
              old->contains_changeset_begin ());
@@ -743,7 +747,8 @@ namespace relational
         if (cs.version () == mv.current)
           break;
 
-        last = &patch (*last, cs, g);
+        model& prev (*last);
+        last = &patch (prev, cs, g);
 
         if (base == 0)
         {
@@ -762,7 +767,10 @@ namespace relational
 
             changeset& c (diff (*base, *last, *cl));
             if (!c.names_empty ())
+            {
+              g.new_edge<alters_model> (c, *base);
               g.new_edge<contains_changeset> (*cl, c);
+            }
 
             continue;
           }
@@ -780,6 +788,8 @@ namespace relational
             ? static_cast<qscope&> (*base) // Cannot be NULL.
             : cl->contains_changeset_back ().changeset (),
             g));
+
+        g.new_edge<alters_model> (c, prev);
         g.new_edge<contains_changeset> (*cl, c);
       }
 
@@ -794,7 +804,7 @@ namespace relational
         {
           // Fast-forward the latest model to the new base.
           //
-          base = last != &oldm ? last : &g.new_node<model> (oldm, g);
+          base = last;
           base->version (mv.base);
         }
 
@@ -835,10 +845,13 @@ namespace relational
       //
       if (mv.base != mv.current)
       {
-        changeset& cs (diff (*last, m, *cl));
+        changeset& c (diff (*last, m, *cl));
 
-        if (!cs.names_empty ())
-          g.new_edge<contains_changeset> (*cl, cs);
+        if (!c.names_empty ())
+        {
+          g.new_edge<alters_model> (c, *last);
+          g.new_edge<contains_changeset> (*cl, c);
+        }
       }
 
       return cl;

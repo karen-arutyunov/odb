@@ -28,10 +28,10 @@ namespace relational
         drop_table (base const& x): base (x) {}
 
         virtual void
-        drop (sema_rel::qname const& table)
+        drop (sema_rel::qname const& table, bool migration)
         {
-          os << "DROP TABLE IF EXISTS " << quote_id (table) <<
-            " CASCADE" << endl;
+          os << "DROP TABLE " << (migration ? "" : "IF EXISTS ") <<
+            quote_id (table) << " CASCADE" << endl;
         }
       };
       entry<drop_table> drop_table_;
@@ -146,7 +146,10 @@ namespace relational
       {
         if (pass_ == 1)
         {
-          tables_.insert (t.name ()); // Add it before to cover self-refs.
+          // In migration we always add foreign keys on pass 2.
+          //
+          if (!t.is_a<sema_rel::add_table> ())
+            tables_.insert (t.name ()); // Add it before to cover self-refs.
           base::traverse (t);
           return;
         }

@@ -88,6 +88,12 @@ namespace semantics
         return *contains_changeset_.back ();
       }
 
+      contains_changeset const&
+      contains_changeset_at (contains_changeset_list::size_type i) const
+      {
+        return *contains_changeset_[i];
+      }
+
       contains_changeset_iterator
       contains_changeset_begin () const
       {

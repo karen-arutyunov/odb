@@ -13,14 +13,16 @@ namespace semantics
     changeset::
     changeset (changeset const& c, qscope& b, graph& g)
         : qscope (c, &b, g),
-          version_ (c.version_)
+          version_ (c.version_),
+          alters_model_ (0)
     {
     }
 
     changeset::
     changeset (xml::parser& p, qscope& b, graph& g)
         : qscope (p, &b, g),
-          version_ (p.attribute<version_type> ("version"))
+          version_ (p.attribute<version_type> ("version")),
+          alters_model_ (0)
     {
     }
 

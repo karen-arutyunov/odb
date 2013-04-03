@@ -112,7 +112,14 @@ class options
      the generated C++ code. By default the SQL file is generated for
      the MySQL, PostgreSQL, Oracle, and Microsoft SQL Server databases
      and the schema is embedded into the C++ code for the SQLite database.
-     Use the \cb{--schema-format} option to alter the default schema format."
+     Use the \cb{--schema-format} option to alter the default schema format.
+
+     If database schema evolution support is enabled (that is, the object
+     model version is specified), then this option also triggers the
+     generation of database schema migration statements, again either as
+     standalong SQL files or embedded into the generated C++ code. You can
+     suppress the generation of schema migration statements by specifying
+     the \cb{--suppress-migration} option."
   };
 
   bool --generate-schema-only
@@ -120,6 +127,11 @@ class options
     "Generate only the database schema. Note that this option is only valid
      when generating schema as a standalone SQL file (see \cb{--schema-format}
      for details)."
+  };
+
+  bool --suppress-migration
+  {
+    "Suppress the generation of database schema migration statements."
   };
 
   database_map<std::set< ::schema_format> > --schema-format
@@ -323,6 +335,13 @@ class options
      options unless they are absolute paths."
   };
 
+  bool --init-changelog
+  {
+    "Force re-initialization of the changelog even if one exists (all the
+     existing change history will be lost). This option is primarily useful
+     for automated testing."
+  };
+
   database_map<std::string> --odb-file-suffix
   {
     "<suffix>",
@@ -428,6 +447,12 @@ class options
     "Insert <text> at the beginning of the generated database schema file."
   };
 
+  database_map<std::vector<std::string> > --migration-prologue
+  {
+    "<text>",
+    "Insert <text> at the beginning of the generated database migration file."
+  };
+
   // Interludes.
   //
   database_map<std::vector<std::string> > --sql-interlude
@@ -469,6 +494,12 @@ class options
     "Insert <text> at the end of the generated database schema file."
   };
 
+  database_map<std::vector<std::string> > --migration-epilogue
+  {
+    "<text>",
+    "Insert <text> at the end of the generated database migration file."
+  };
+
   // Prologue files.
   //
   database_map<std::string> --hxx-prologue-file
@@ -504,6 +535,13 @@ class options
     "<file>",
     "Insert the content of <file> at the beginning of the generated
      database schema file."
+  };
+
+  database_map<std::string> --migration-prologue-file
+  {
+    "<f>",
+    "Insert the content of file <f> at the beginning of the generated database
+     migration file."
   };
 
   // Interlude files.
@@ -550,6 +588,13 @@ class options
     "<file>",
     "Insert the content of <file> at the end of the generated database
      schema file."
+  };
+
+  database_map<std::string> --migration-epilogue-file
+  {
+    "<f>",
+    "Insert the content of file <f> at the end of the generated database
+     migration file."
   };
 
   // ODB compilation prologue/epilogue.

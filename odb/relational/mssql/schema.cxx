@@ -45,7 +45,7 @@ namespace relational
         drop_table (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::table&);
+        traverse (sema_rel::table&, bool);
 
       private:
         friend class drop_foreign_key;
@@ -55,8 +55,8 @@ namespace relational
 
       struct drop_foreign_key: trav_rel::foreign_key, relational::common
       {
-        drop_foreign_key (drop_table& dt)
-            : common (dt.emitter (), dt.stream ()), dt_ (dt)
+        drop_foreign_key (drop_table& dt, bool m)
+            : common (dt.emitter (), dt.stream ()), dt_ (dt), migration_ (m)
         {
         }
 
@@ -71,39 +71,52 @@ namespace relational
           // If the table which we reference is droped before us, then
           // we need to drop the constraint first. Similarly, if the
           // referenced table is not part if this model, then assume
-          // it is dropped before us.
+          // it is dropped before us. In migration we always do this
+          // first.
           //
-          sema_rel::qname const& rt (fk.referenced_table ());
           sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
-          sema_rel::model& m (dynamic_cast<sema_rel::model&> (t.scope ()));
 
-          if (dt_.tables_.find (rt) != dt_.tables_.end () ||
-              m.find (rt) == m.names_end ())
+          if (!migration_)
           {
-            pre_statement ();
+            sema_rel::qname const& rt (fk.referenced_table ());
+            sema_rel::model& m (dynamic_cast<sema_rel::model&> (t.scope ()));
+
+            if (dt_.tables_.find (rt) == dt_.tables_.end () &&
+                m.find (rt) != m.names_end ())
+              return;
+          }
+
+          pre_statement ();
+
+          if (!migration_)
             os << "IF OBJECT_ID(" << quote_string (fk.name ()) << ", " <<
               quote_string ("F") << ") IS NOT NULL" << endl
-               << "  ALTER TABLE " << quote_id (t.name ()) << " DROP" << endl
-               << "    CONSTRAINT " << quote_id (fk.name ()) << endl;
-            post_statement ();
-          }
+               << "  ";
+
+          os << "ALTER TABLE " << quote_id (t.name ()) << " DROP" << endl
+             << (!migration_ ? "  " : "") << "  CONSTRAINT " <<
+            quote_id (fk.name ()) << endl;
+
+          post_statement ();
         }
 
       private:
         drop_table& dt_;
+        bool migration_;
       };
 
       void drop_table::
-      traverse (sema_rel::table& t)
+      traverse (sema_rel::table& t, bool migration)
       {
         qname const& table (t.name ());
 
         if (pass_ == 1)
         {
-          // Drop constraints.
+          // Drop constraints. In migration this is always done on pass 1.
           //
-          tables_.insert (table); // Add it before to cover self-refs.
-          drop_foreign_key fk (*this);
+          if (!migration)
+            tables_.insert (table); // Add it before to cover self-refs.
+          drop_foreign_key fk (*this, migration);
           trav_rel::unames n (fk);
           names (t, n);
         }
@@ -114,9 +127,14 @@ namespace relational
           // drop a table if it exists.
           //
           pre_statement ();
-          os << "IF OBJECT_ID(" << quote_string (table.string ()) <<
-            ", " << quote_string ("U") << ") IS NOT NULL" << endl
-             << "  DROP TABLE " << quote_id (table) << endl;
+
+          if (!migration)
+            os << "IF OBJECT_ID(" << quote_string (table.string ()) <<
+              ", " << quote_string ("U") << ") IS NOT NULL" << endl
+               << "  ";
+
+          os << "DROP TABLE " << quote_id (table) << endl;
+
           post_statement ();
         }
       }
@@ -258,7 +276,10 @@ namespace relational
       {
         if (pass_ == 1)
         {
-          tables_.insert (t.name ()); // Add it before to cover self-refs.
+          // In migration we always add foreign keys on pass 2.
+          //
+          if (!t.is_a<sema_rel::add_table> ())
+            tables_.insert (t.name ()); // Add it before to cover self-refs.
           base::traverse (t);
           return;
         }

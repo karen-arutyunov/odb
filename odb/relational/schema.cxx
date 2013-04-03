@@ -86,5 +86,57 @@ namespace relational
         model->traverse (*ctx.model);
       }
     }
+
+    void
+    generate_migrate_pre (sema_rel::changeset& cs)
+    {
+      context ctx;
+      instance<sql_emitter> em;
+      emitter_ostream emos (*em);
+
+      schema_format f (schema_format::sql);
+
+      instance<migrate_pre_changeset> changeset (*em, emos, f);
+      instance<create_table> ctable (*em, emos, f);
+      trav_rel::qnames names;
+
+      changeset >> names >> ctable;
+
+      // Pass 1 and 2.
+      //
+      for (unsigned short pass (1); pass < 3; ++pass)
+      {
+        changeset->pass (pass);
+        ctable->pass (pass);
+
+        changeset->traverse (cs);
+      }
+    }
+
+    void
+    generate_migrate_post (sema_rel::changeset& cs)
+    {
+      context ctx;
+      instance<sql_emitter> em;
+      emitter_ostream emos (*em);
+
+      schema_format f (schema_format::sql);
+
+      instance<migrate_post_changeset> changeset (*em, emos, f);
+      instance<drop_table> dtable (*em, emos, f);
+      trav_rel::qnames names;
+
+      changeset >> names >> dtable;
+
+      // Pass 1 and 2.
+      //
+      for (unsigned short pass (1); pass < 3; ++pass)
+      {
+        changeset->pass (pass);
+        dtable->pass (pass);
+
+        changeset->traverse (cs);
+      }
+    }
   }
 }

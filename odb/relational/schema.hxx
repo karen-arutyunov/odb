@@ -58,49 +58,11 @@ namespace relational
     // Drop.
     //
 
-    struct drop_index: trav_rel::index, common
-    {
-      typedef drop_index base;
-
-      drop_index (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
-      {
-      }
-
-      virtual string
-      name (sema_rel::index& in)
-      {
-        return quote_id (in.name ());
-      }
-
-      virtual string
-      table_name (sema_rel::index& in)
-      {
-        return quote_id (static_cast<sema_rel::table&> (in.scope ()).name ());
-      }
-
-      virtual void
-      drop (string const& /*name*/, string const& /*table*/)
-      {
-        // Most database systems drop indexes together with the table.
-        //
-        // os << "DROP INDEX IF EXISTS " << quote_id (name) << " ON " <<
-        //   table << endl;
-      }
-
-      virtual void
-      traverse (sema_rel::index& in)
-      {
-        pre_statement ();
-        drop (name (in), table_name (in));
-        post_statement ();
-      }
-
-    protected:
-      schema_format format_;
-    };
-
-    struct drop_table: trav_rel::table, common
+    struct drop_table: trav_rel::table,
+                       trav_rel::drop_table,
+                       trav_rel::add_table,   // override
+                       trav_rel::alter_table, // override
+                       common
     {
       typedef drop_table base;
 
@@ -110,13 +72,14 @@ namespace relational
       }
 
       virtual void
-      drop (sema_rel::qname const& table)
+      drop (sema_rel::qname const& table, bool migration)
       {
-        os << "DROP TABLE IF EXISTS " << quote_id (table) << endl;
+        os << "DROP TABLE " << (migration ? "" : "IF EXISTS ") <<
+          quote_id (table) << endl;
       }
 
       virtual void
-      traverse (sema_rel::table& t)
+      traverse (sema_rel::table& t, bool migration)
       {
         // By default we do everything in a single pass. But some
         // databases may require the second pass.
@@ -124,18 +87,40 @@ namespace relational
         if (pass_ > 1)
           return;
 
-        // Drop indexes.
-        //
-        {
-          instance<drop_index> in (emitter (), stream (), format_);
-          trav_rel::unames n (*in);
-          names (t, n);
-        }
-
         pre_statement ();
-        drop (t.name ());
+        drop (t.name (), migration);
         post_statement ();
       }
+
+      virtual void
+      traverse (sema_rel::table& t)
+      {
+        traverse (t, false);
+      }
+
+      virtual void
+      traverse (sema_rel::drop_table& dt)
+      {
+        using sema_rel::model;
+        using sema_rel::changeset;
+        using sema_rel::table;
+
+        // Find the table we are dropping in the base model.
+        //
+        changeset& cs (dynamic_cast<changeset&> (dt.scope ()));
+        model& bm (cs.base_model ());
+        table* t (bm.find<table> (dt.name ()));
+        assert (t != 0);
+        traverse (*t, true);
+      }
+
+      virtual void
+      traverse (sema_rel::add_table&) {}
+
+      virtual void
+      traverse (sema_rel::alter_table&) {}
+
+      using table::names;
 
       void
       pass (unsigned short p)
@@ -630,6 +615,78 @@ namespace relational
       virtual void
       traverse (sema_rel::model::names_iterator begin,
                 sema_rel::model::names_iterator end)
+      {
+        for (; begin != end; ++begin)
+          dispatch (*begin);
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+      }
+
+    protected:
+      schema_format format_;
+      unsigned short pass_;
+    };
+
+    struct migrate_pre_changeset: trav_rel::changeset, common
+    {
+      typedef migrate_pre_changeset base;
+
+      migrate_pre_changeset (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      // This version is only called for file migration.
+      //
+      virtual void
+      traverse (sema_rel::changeset& m)
+      {
+        traverse (m.names_begin (), m.names_end ());
+      }
+
+      virtual void
+      traverse (sema_rel::changeset::names_iterator begin,
+                sema_rel::changeset::names_iterator end)
+      {
+        for (; begin != end; ++begin)
+          dispatch (*begin);
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+      }
+
+    protected:
+      schema_format format_;
+      unsigned short pass_;
+    };
+
+    struct migrate_post_changeset: trav_rel::changeset, common
+    {
+      typedef migrate_post_changeset base;
+
+      migrate_post_changeset (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      // This version is only called for file migration.
+      //
+      virtual void
+      traverse (sema_rel::changeset& m)
+      {
+        traverse (m.names_begin (), m.names_end ());
+      }
+
+      virtual void
+      traverse (sema_rel::changeset::names_iterator begin,
+                sema_rel::changeset::names_iterator end)
       {
         for (; begin != end; ++begin)
           dispatch (*begin);

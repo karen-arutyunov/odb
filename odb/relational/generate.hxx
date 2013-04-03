@@ -10,6 +10,7 @@
 
 #include <odb/context.hxx>
 #include <odb/semantics/relational/model.hxx>
+#include <odb/semantics/relational/changeset.hxx>
 #include <odb/semantics/relational/changelog.hxx>
 
 namespace relational
@@ -53,7 +54,8 @@ namespace relational
               model_version const&,
               semantics::relational::changelog* old, // Can be NULL.
               std::string const& in_name,
-              std::string const& out_name);
+              std::string const& out_name,
+              bool force_init);
   }
 
   namespace schema
@@ -62,13 +64,19 @@ namespace relational
     generate_prologue ();
 
     void
+    generate_epilogue ();
+
+    void
     generate_drop ();
 
     void
     generate_create ();
 
     void
-    generate_epilogue ();
+    generate_migrate_pre (semantics::relational::changeset&);
+
+    void
+    generate_migrate_post (semantics::relational::changeset&);
   }
 }
 

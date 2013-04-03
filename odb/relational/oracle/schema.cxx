@@ -93,49 +93,72 @@ namespace relational
         drop_table (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::table& t)
+        traverse (sema_rel::table& t, bool migration)
         {
           if (pass_ != 1)
             return;
 
-          qname const& table (t.name ());
-
-          // Oracle has no IF EXISTS conditional for dropping objects. The
-          // PL/SQL approach below seems to be the least error-prone and the
-          // most widely used of the alternatives.
-          //
-          pre_statement ();
-          os << "BEGIN" << endl
-             << "  BEGIN" << endl
-             << "    EXECUTE IMMEDIATE 'DROP TABLE " << quote_id (table) <<
-            " CASCADE CONSTRAINTS';" << endl
-             << "  EXCEPTION" << endl
-             << "    WHEN OTHERS THEN" << endl
-             << "      IF SQLCODE != -942 THEN RAISE; END IF;" << endl
-             << "  END;" << endl;
-
-          // Drop the sequence if we have auto primary key.
-          //
           using sema_rel::primary_key;
+
+          qname const& table (t.name ());
 
           sema_rel::table::names_iterator i (t.find ("")); // Special name.
           primary_key* pk (i != t.names_end ()
                            ? &dynamic_cast<primary_key&> (i->nameable ())
                            : 0);
 
-          if (pk != 0 && pk->auto_ ())
+          string qt (quote_id (table));
+          string qs (pk != 0 && pk->auto_ ()
+                     ? quote_id (sequence_name (table))
+                     : "");
+
+          if (migration)
           {
-            os << "  BEGIN" << endl
-               << "    EXECUTE IMMEDIATE 'DROP SEQUENCE " <<
-              quote_id (sequence_name (table)) << "';" << endl
+            pre_statement ();
+            os << "DROP TABLE " << qt << " CASCADE CONSTRAINTS" << endl;
+            post_statement ();
+
+            // Drop the sequence if we have auto primary key.
+            //
+            if (!qs.empty ())
+            {
+              pre_statement ();
+              os << "DROP SEQUENCE " << qs << endl;
+              post_statement ();
+            }
+          }
+          else
+          {
+            // Oracle has no IF EXISTS conditional for dropping objects. The
+            // PL/SQL approach below seems to be the least error-prone and the
+            // most widely used of the alternatives.
+            //
+            pre_statement ();
+            os << "BEGIN" << endl
+               << "  BEGIN" << endl
+               << "    EXECUTE IMMEDIATE 'DROP TABLE " << qt << " CASCADE " <<
+              "CONSTRAINTS';" << endl
                << "  EXCEPTION" << endl
                << "    WHEN OTHERS THEN" << endl
-               << "      IF SQLCODE != -2289 THEN RAISE; END IF;" << endl
+               << "      IF SQLCODE != -942 THEN RAISE; END IF;" << endl
                << "  END;" << endl;
-          }
 
-          os << "END;" << endl;
-          post_statement ();
+            // Drop the sequence if we have auto primary key.
+            //
+            if (!qs.empty ())
+            {
+              os << "  BEGIN" << endl
+                 << "    EXECUTE IMMEDIATE 'DROP SEQUENCE " << qs <<
+                "';" << endl
+                 << "  EXCEPTION" << endl
+                 << "    WHEN OTHERS THEN" << endl
+                 << "      IF SQLCODE != -2289 THEN RAISE; END IF;" << endl
+                 << "  END;" << endl;
+            }
+
+            os << "END;" << endl;
+            post_statement ();
+          }
         }
       };
       entry<drop_table> drop_table_;
@@ -217,7 +240,10 @@ namespace relational
       {
         if (pass_ == 1)
         {
-          tables_.insert (t.name ()); // Add it before to cover self-refs.
+          // In migration we always add foreign keys on pass 2.
+          //
+          if (!t.is_a<sema_rel::add_table> ())
+            tables_.insert (t.name ()); // Add it before to cover self-refs.
           base::traverse (t);
 
           // Create the sequence if we have auto primary key.
