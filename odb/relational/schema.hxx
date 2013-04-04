@@ -58,10 +58,80 @@ namespace relational
     // Drop.
     //
 
+    // Currently only used in migration.
+    //
+    struct drop_index: trav_rel::drop_index, common
+    {
+      typedef drop_index base;
+
+      enum index_type {unique, non_unique, all};
+
+      drop_index (emitter_type& e,
+                  ostream& os,
+                  schema_format f,
+                  index_type t = all)
+          : common (e, os), format_ (f), type_ (t)
+      {
+      }
+
+      virtual void
+      traverse (sema_rel::drop_index& di)
+      {
+        using sema_rel::model;
+        using sema_rel::changeset;
+        using sema_rel::table;
+        using sema_rel::alter_table;
+        using sema_rel::index;
+
+        // Find the index we are dropping in the base model.
+        //
+        alter_table& at (dynamic_cast<alter_table&> (di.scope ()));
+        changeset& cs (dynamic_cast<changeset&> (at.scope ()));
+        model& bm (cs.base_model ());
+        table* bt (bm.find<table> (at.name ()));
+        assert (bt != 0);
+        index* bi (bt->find<index> (di.name ()));
+        assert (bi != 0);
+        traverse (*bi);
+      }
+
+      virtual void
+      traverse (sema_rel::index& in)
+      {
+        if (type_ == unique &&
+            in.type ().find ("UNIQUE") == string::npos &&
+            in.type ().find ("unique") == string::npos)
+          return;
+
+        if (type_ == non_unique && (
+              in.type ().find ("UNIQUE") != string::npos ||
+              in.type ().find ("unique") != string::npos))
+          return;
+
+        pre_statement ();
+        drop (in);
+        post_statement ();
+      }
+
+      virtual string
+      name (sema_rel::index& in)
+      {
+        return quote_id (in.name ());
+      }
+
+      virtual void
+      drop (sema_rel::index& in)
+      {
+        os << "DROP INDEX " << name (in) << endl;
+      }
+
+    protected:
+      schema_format format_;
+      index_type type_;
+    };
+
     struct drop_table: trav_rel::table,
                        trav_rel::drop_table,
-                       trav_rel::add_table,   // override
-                       trav_rel::alter_table, // override
                        common
     {
       typedef drop_table base;
@@ -81,10 +151,10 @@ namespace relational
       virtual void
       traverse (sema_rel::table& t, bool migration)
       {
-        // By default we do everything in a single pass. But some
-        // databases may require the second pass.
+        // By default we do everything in a single, last pass. But some
+        // databases may require two passes.
         //
-        if (pass_ > 1)
+        if (pass_ != 2)
           return;
 
         pre_statement ();
@@ -113,12 +183,6 @@ namespace relational
         assert (t != 0);
         traverse (*t, true);
       }
-
-      virtual void
-      traverse (sema_rel::add_table&) {}
-
-      virtual void
-      traverse (sema_rel::alter_table&) {}
 
       using table::names;
 
@@ -453,14 +517,29 @@ namespace relational
     {
       typedef create_index base;
 
-      create_index (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
+      enum index_type {unique, non_unique, all};
+
+      create_index (emitter_type& e,
+                    ostream& os,
+                    schema_format f,
+                    index_type t = all)
+          : common (e, os), format_ (f), type_ (t)
       {
       }
 
       virtual void
       traverse (sema_rel::index& in)
       {
+        if (type_ == unique &&
+            in.type ().find ("UNIQUE") == string::npos &&
+            in.type ().find ("unique") == string::npos)
+          return;
+
+        if (type_ == non_unique && (
+              in.type ().find ("UNIQUE") != string::npos ||
+              in.type ().find ("unique") != string::npos))
+          return;
+
         pre_statement ();
         create (in);
         post_statement ();
@@ -526,6 +605,7 @@ namespace relational
 
     protected:
       schema_format format_;
+      index_type type_;
     };
 
     struct create_table: trav_rel::table, common
@@ -555,7 +635,7 @@ namespace relational
         // By default we do everything in a single pass. But some
         // databases may require the second pass.
         //
-        if (pass_ > 1)
+        if (pass_ != 1)
           return;
 
         pre_statement ();
@@ -631,11 +711,60 @@ namespace relational
       unsigned short pass_;
     };
 
-    struct migrate_pre_changeset: trav_rel::changeset, common
+    // Migration.
+    //
+    struct alter_table_pre: trav_rel::alter_table, common
     {
-      typedef migrate_pre_changeset base;
+      typedef alter_table_pre base;
 
-      migrate_pre_changeset (emitter_type& e, ostream& os, schema_format f)
+      alter_table_pre (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      virtual void
+      traverse (sema_rel::alter_table& at)
+      {
+        if (pass_ == 1)
+        {
+          // Drop unique indexes.
+          //
+          {
+            drop_index::index_type it (drop_index::unique);
+            instance<drop_index> in (emitter (), stream (), format_, it);
+            trav_rel::unames n (*in);
+            names (at, n);
+          }
+        }
+        else
+        {
+          // Add non-unique indexes.
+          //
+          {
+            create_index::index_type it (create_index::non_unique);
+            instance<create_index> in (emitter (), stream (), format_, it);
+            trav_rel::unames n (*in);
+            names (at, n);
+          }
+        }
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+      }
+
+    protected:
+      schema_format format_;
+      unsigned short pass_;
+    };
+
+    struct changeset_pre: trav_rel::changeset, common
+    {
+      typedef changeset_pre base;
+
+      changeset_pre (emitter_type& e, ostream& os, schema_format f)
           : common (e, os), format_ (f)
       {
       }
@@ -667,11 +796,58 @@ namespace relational
       unsigned short pass_;
     };
 
-    struct migrate_post_changeset: trav_rel::changeset, common
+    struct alter_table_post: trav_rel::alter_table, common
     {
-      typedef migrate_post_changeset base;
+      typedef alter_table_post base;
 
-      migrate_post_changeset (emitter_type& e, ostream& os, schema_format f)
+      alter_table_post (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      virtual void
+      traverse (sema_rel::alter_table& at)
+      {
+        if (pass_ == 1)
+        {
+          // Drop non-unique indexes.
+          //
+          {
+            drop_index::index_type it (drop_index::non_unique);
+            instance<drop_index> in (emitter (), stream (), format_, it);
+            trav_rel::unames n (*in);
+            names (at, n);
+          }
+        }
+        else
+        {
+          // Add unique indexes.
+          //
+          {
+            create_index::index_type it (create_index::unique);
+            instance<create_index> in (emitter (), stream (), format_, it);
+            trav_rel::unames n (*in);
+            names (at, n);
+          }
+        }
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+      }
+
+    protected:
+      schema_format format_;
+      unsigned short pass_;
+    };
+
+    struct changeset_post: trav_rel::changeset, common
+    {
+      typedef changeset_post base;
+
+      changeset_post (emitter_type& e, ostream& os, schema_format f)
           : common (e, os), format_ (f)
       {
       }

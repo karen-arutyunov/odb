@@ -73,9 +73,25 @@ namespace relational
           return quote_id (
             static_cast<sema_rel::table&> (in.scope ()).name ().uname ());
         }
-
       };
       entry<create_index> create_index_;
+
+      struct drop_index: relational::drop_index, context
+      {
+        drop_index (base const& x): base (x) {}
+
+        virtual string
+        name (sema_rel::index& in)
+        {
+          // In SQLite, index names can be qualified with the database.
+          //
+          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
+          sema_rel::qname n (t.name ().qualifier ());
+          n.append (in.name ());
+          return quote_id (n);
+        }
+      };
+      entry<drop_index> drop_index_;
     }
   }
 }

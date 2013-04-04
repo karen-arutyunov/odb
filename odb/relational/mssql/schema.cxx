@@ -290,6 +290,21 @@ namespace relational
         trav_rel::unames n (fk);
         names (t, n);
       }
+
+      struct drop_index: relational::drop_index, context
+      {
+        drop_index (base const& x): base (x) {}
+
+        virtual void
+        drop (sema_rel::index& in)
+        {
+          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
+
+          os << "DROP INDEX " << name (in) << " ON " <<
+            quote_id (t.name ()) << endl;
+        }
+      };
+      entry<drop_index> drop_index_;
     }
   }
 }

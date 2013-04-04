@@ -95,7 +95,7 @@ namespace relational
         virtual void
         traverse (sema_rel::table& t, bool migration)
         {
-          if (pass_ != 1)
+          if (pass_ != 2)
             return;
 
           using sema_rel::primary_key;
@@ -290,6 +290,23 @@ namespace relational
         }
       };
       entry<create_index> create_index_;
+
+      struct drop_index: relational::drop_index, context
+      {
+        drop_index (base const& x): base (x) {}
+
+        virtual string
+        name (sema_rel::index& in)
+        {
+          // In Oracle, index names can be qualified with the schema.
+          //
+          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
+          sema_rel::qname n (t.name ().qualifier ());
+          n.append (in.name ());
+          return quote_id (n);
+        }
+      };
+      entry<drop_index> drop_index_;
     }
   }
 }

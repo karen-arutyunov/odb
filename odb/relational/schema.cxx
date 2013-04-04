@@ -96,11 +96,14 @@ namespace relational
 
       schema_format f (schema_format::sql);
 
-      instance<migrate_pre_changeset> changeset (*em, emos, f);
+      instance<changeset_pre> changeset (*em, emos, f);
       instance<create_table> ctable (*em, emos, f);
+      instance<alter_table_pre> atable (*em, emos, f);
       trav_rel::qnames names;
 
-      changeset >> names >> ctable;
+      changeset >> names;
+      names >> ctable;
+      names >> atable;
 
       // Pass 1 and 2.
       //
@@ -108,6 +111,7 @@ namespace relational
       {
         changeset->pass (pass);
         ctable->pass (pass);
+        atable->pass (pass);
 
         changeset->traverse (cs);
       }
@@ -122,11 +126,16 @@ namespace relational
 
       schema_format f (schema_format::sql);
 
-      instance<migrate_post_changeset> changeset (*em, emos, f);
+      instance<changeset_post> changeset (*em, emos, f);
       instance<drop_table> dtable (*em, emos, f);
+      instance<alter_table_post> altable (*em, emos, f);
+      trav_rel::add_table adtable; // Override.
       trav_rel::qnames names;
 
-      changeset >> names >> dtable;
+      changeset >> names;
+      names >> dtable;
+      names >> altable;
+      names >> adtable;
 
       // Pass 1 and 2.
       //
@@ -134,6 +143,7 @@ namespace relational
       {
         changeset->pass (pass);
         dtable->pass (pass);
+        altable->pass (pass);
 
         changeset->traverse (cs);
       }
