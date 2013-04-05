@@ -64,8 +64,24 @@ namespace relational
     {
       typedef drop_column base;
 
-      drop_column (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f), first_ (true)
+      drop_column (emitter_type& e,
+                   ostream& os,
+                   schema_format f,
+                   bool* first = 0)
+          : common (e, os),
+            format_ (f),
+            first_ (first != 0 ? *first : first_data_),
+            first_data_ (true)
+      {
+      }
+
+      drop_column (drop_column const& c)
+          : root_context (), // @@ -Wextra
+            context (),
+            common (c),
+            format_ (c.format_),
+            first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
+            first_data_ (c.first_data_)
       {
       }
 
@@ -92,7 +108,8 @@ namespace relational
 
     protected:
       schema_format format_;
-      bool first_;
+      bool& first_;
+      bool first_data_;
     };
 
     // Currently only used in migration.
@@ -292,8 +309,24 @@ namespace relational
     {
       typedef create_column base;
 
-      create_column (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f), first_ (true)
+      create_column (emitter_type& e,
+                     ostream& os,
+                     schema_format f,
+                     bool* first = 0)
+          : common (e, os),
+            format_ (f),
+            first_ (first != 0 ? *first : first_data_),
+            first_data_ (true)
+      {
+      }
+
+      create_column (create_column const& c)
+          : root_context (), // @@ -Wextra
+            context (),
+            common (c),
+            format_ (c.format_),
+            first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
+            first_data_ (c.first_data_)
       {
       }
 
@@ -394,7 +427,8 @@ namespace relational
 
     protected:
       schema_format format_;
-      bool first_;
+      bool& first_;
+      bool first_data_;
     };
 
     struct create_primary_key: trav_rel::primary_key, virtual context
@@ -775,6 +809,78 @@ namespace relational
     // Migration.
     //
 
+    struct alter_column: trav_rel::alter_column, common
+    {
+      typedef alter_column base;
+
+      alter_column (emitter_type& e,
+                    ostream& os,
+                    schema_format f,
+                    bool pre,
+                    bool* first = 0)
+          : common (e, os),
+            format_ (f),
+            pre_ (pre),
+            first_ (first != 0 ? *first : first_data_),
+            first_data_ (true),
+            def_ (e, os, f)
+      {
+      }
+
+      alter_column (alter_column const& c)
+          : root_context (), // @@ -Wextra
+            context (),
+            common (c),
+            format_ (c.format_),
+            pre_ (c.pre_),
+            first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
+            first_data_ (c.first_data_),
+            def_ (common::e_, common::os_, c.format_)
+      {
+      }
+
+      virtual void
+      alter_header ()
+      {
+        os << "ALTER COLUMN ";
+      }
+
+      virtual void
+      alter (sema_rel::alter_column& ac)
+      {
+        // By default use the whole definition.
+        //
+        def_->create (ac);
+      }
+
+      virtual void
+      traverse (sema_rel::alter_column& ac)
+      {
+        assert (ac.null_altered ());
+
+        // Relax (NULL) in pre and tighten (NOT NULL) in post.
+        //
+        if (pre_ != ac.null ())
+          return;
+
+        if (first_)
+          first_ = false;
+        else
+          os << "," << endl;
+
+        os << "  ";
+        alter_header ();
+        alter (ac);
+      }
+
+    protected:
+      schema_format format_;
+      bool pre_;
+      bool& first_;
+      bool first_data_;
+      instance<create_column> def_;
+    };
+
     struct alter_table_common: trav_rel::alter_table, common
     {
       alter_table_common (emitter_type& e, ostream& os, schema_format f)
@@ -791,6 +897,24 @@ namespace relational
         {
           if (T* x = dynamic_cast<T*> (&i->nameable ()))
             return x;
+        }
+
+        return 0;
+      }
+
+      sema_rel::alter_column*
+      check_alter_null (sema_rel::alter_table& at, bool v)
+      {
+        using sema_rel::alter_column;
+
+        for (sema_rel::alter_table::names_iterator i (at.names_begin ());
+             i != at.names_end (); ++i)
+        {
+          if (alter_column* ac = dynamic_cast<alter_column*> (&i->nameable ()))
+          {
+            if (ac->null_altered () && ac->null () == v)
+              return ac;
+          }
         }
 
         return 0;
@@ -829,7 +953,8 @@ namespace relational
       virtual bool
       check (sema_rel::alter_table& at)
       {
-        return check<sema_rel::add_column> (at);
+        return check<sema_rel::add_column> (at) ||
+          check_alter_null (at, true);
       }
 
       virtual void
@@ -841,9 +966,14 @@ namespace relational
         pre_statement ();
         alter_header (at.name ());
 
-        instance<create_column> c (emitter (), stream (), format_);
+        bool f (true);  // Shared first flag.
+        bool* pf (&f);  // (Im)perfect forwarding.
+        bool tl (true); // (Im)perfect forwarding.
+        instance<create_column> cc (emitter (), stream (), format_, pf);
+        instance<alter_column> ac (emitter (), stream (), format_, tl, pf);
         trav_rel::unames n;
-        n >> c;
+        n >> cc;
+        n >> ac;
         names (at, n);
         os << endl;
 
@@ -933,7 +1063,8 @@ namespace relational
       virtual bool
       check (sema_rel::alter_table& at)
       {
-        return check<sema_rel::drop_column> (at);
+        return check<sema_rel::drop_column> (at) ||
+          check_alter_null (at, false);
       }
 
       virtual void
@@ -945,9 +1076,14 @@ namespace relational
         pre_statement ();
         alter_header (at.name ());
 
-        instance<drop_column> c (emitter (), stream (), format_);
+        bool f (true); // Shared first flag.
+        bool* pf (&f); // (Im)perfect forwarding.
+        bool fl (false); // (Im)perfect forwarding.
+        instance<drop_column> dc (emitter (), stream (), format_, pf);
+        instance<alter_column> ac (emitter (), stream (), format_, fl, pf);
         trav_rel::unames n;
-        n >> c;
+        n >> dc;
+        n >> ac;
         names (at, n);
         os << endl;
 

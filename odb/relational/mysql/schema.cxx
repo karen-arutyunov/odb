@@ -367,6 +367,18 @@ namespace relational
         }
       };
       entry<drop_index> drop_index_;
+
+      struct alter_column: relational::alter_column, context
+      {
+        alter_column (base const& x): base (x) {}
+
+        virtual void
+        alter_header ()
+        {
+          os << "MODIFY COLUMN ";
+        }
+      };
+      entry<alter_column> alter_column_;
     }
   }
 }

@@ -122,6 +122,17 @@ namespace relational
           trav_rel::unames n;
           n >> c;
           names (at, n);
+
+          // SQLite does not support altering columns.
+          //
+          if (sema_rel::alter_column* ac = check<sema_rel::alter_column> (at))
+          {
+            cerr << "error: SQLite does not support altering of columns"
+                 << endl;
+            cerr << "info: first altered column is '" << ac->name () <<
+              "' in table '" << at.name () << "'" << endl;
+            throw operation_failed ();
+          }
         }
       };
       entry<alter_table_pre> alter_table_pre_;

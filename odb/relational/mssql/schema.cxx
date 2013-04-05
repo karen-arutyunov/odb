@@ -336,6 +336,35 @@ namespace relational
       };
       entry<drop_index> drop_index_;
 
+      struct alter_column: relational::alter_column, context
+      {
+        alter_column (base const& x): base (x) {}
+
+        virtual void
+        traverse (sema_rel::alter_column& ac)
+        {
+          assert (ac.null_altered ());
+
+          // Relax (NULL) in pre and tighten (NOT NULL) in post.
+          //
+          if (pre_ != ac.null ())
+            return;
+
+          using sema_rel::alter_table;
+          alter_table& at (static_cast<alter_table&> (ac.scope ()));
+
+          pre_statement ();
+
+          os << "ALTER TABLE " << quote_id (at.name ()) << endl
+             << "  ALTER COLUMN ";
+          alter (ac);
+          os << endl;
+
+          post_statement ();
+        }
+      };
+      entry<alter_column> alter_column_;
+
       struct alter_table_pre: relational::alter_table_pre, context
       {
         alter_table_pre (base const& x): base (x) {}
@@ -352,12 +381,20 @@ namespace relational
             os << "  ADD ";
 
             instance<create_column> c (emitter (), stream (), format_);
-            trav_rel::unames n;
-            n >> c;
+            trav_rel::unames n (*c);
             names (at, n);
             os << endl;
 
             post_statement ();
+          }
+
+          // For ALTER COLUMN, SQL Server can only have one per ALTER TABLE.
+          //
+          {
+            bool tl (true); // (Im)perfect forwarding.
+            instance<alter_column> ac (emitter (), stream (), format_, tl);
+            trav_rel::unames n (*ac);
+            names (at, n);
           }
         }
       };
@@ -379,12 +416,20 @@ namespace relational
             os << "  DROP COLUMN ";
 
             instance<drop_column> c (emitter (), stream (), format_);
-            trav_rel::unames n;
-            n >> c;
+            trav_rel::unames n (*c);
             names (at, n);
             os << endl;
 
             post_statement ();
+          }
+
+          // For ALTER COLUMN, SQL Server can only have one per ALTER TABLE.
+          //
+          {
+            bool fl (false); // (Im)perfect forwarding.
+            instance<alter_column> ac (emitter (), stream (), format_, fl);
+            trav_rel::unames n (*ac);
+            names (at, n);
           }
         }
       };

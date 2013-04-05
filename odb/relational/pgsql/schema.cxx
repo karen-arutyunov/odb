@@ -209,6 +209,19 @@ namespace relational
         }
       };
       entry<create_index> create_index_;
+
+      struct alter_column: relational::alter_column, context
+      {
+        alter_column (base const& x): base (x) {}
+
+        virtual void
+        alter (sema_rel::alter_column& ac)
+        {
+          os << quote_id (ac.name ()) << " " <<
+            (ac.null () ? "DROP" : "SET") << " NOT NULL";
+        }
+      };
+      entry<alter_column> alter_column_;
     }
   }
 }
