@@ -88,6 +88,24 @@ namespace relational
       // Drop.
       //
 
+      struct drop_column: relational::drop_column, context
+      {
+        drop_column (base const& x): base (x) {}
+
+        virtual void
+        traverse (sema_rel::drop_column& dc)
+        {
+          if (first_)
+            first_ = false;
+          else
+            os << "," << endl
+               << "        ";
+
+          os << quote_id (dc.name ());
+        }
+      };
+      entry<drop_column> drop_column_;
+
       struct drop_table: relational::drop_table, context
       {
         drop_table (base const& x): base (x) {}
@@ -166,6 +184,24 @@ namespace relational
       //
       // Create.
       //
+
+      struct create_column: relational::create_column, context
+      {
+        create_column (base const& x): base (x) {}
+
+        virtual void
+        traverse (sema_rel::add_column& ac)
+        {
+          if (first_)
+            first_ = false;
+          else
+            os << "," << endl
+               << "       ";
+
+          create (ac);
+        }
+      };
+      entry<create_column> create_column_;
 
       struct create_foreign_key;
 
@@ -307,6 +343,62 @@ namespace relational
         }
       };
       entry<drop_index> drop_index_;
+
+      struct alter_table_pre: relational::alter_table_pre, context
+      {
+        alter_table_pre (base const& x): base (x) {}
+
+        virtual void
+        alter (sema_rel::alter_table& at)
+        {
+          // Oracle can only alter certain kinds of things together but
+          // grouped one at a time.
+          //
+          if (check<sema_rel::add_column> (at))
+          {
+            pre_statement ();
+            alter_header (at.name ());
+            os << "  ADD (";
+
+            instance<create_column> c (emitter (), stream (), format_);
+            trav_rel::unames n;
+            n >> c;
+            names (at, n);
+            os << ")" << endl;
+
+            post_statement ();
+          }
+        }
+      };
+      entry<alter_table_pre> alter_table_pre_;
+
+      struct alter_table_post: relational::alter_table_post, context
+      {
+        alter_table_post (base const& x): base (x) {}
+
+        virtual void
+        alter (sema_rel::alter_table& at)
+        {
+          // Oracle can only alter certain kinds of things together but
+          // grouped one at a time.
+          //
+          if (check<sema_rel::drop_column> (at))
+          {
+            pre_statement ();
+            alter_header (at.name ());
+            os << "  DROP (";
+
+            instance<drop_column> c (emitter (), stream (), format_);
+            trav_rel::unames n;
+            n >> c;
+            names (at, n);
+            os << ")" << endl;
+
+            post_statement ();
+          }
+        }
+      };
+      entry<alter_table_post> alter_table_post_;
     }
   }
 }

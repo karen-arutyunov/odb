@@ -58,6 +58,43 @@ namespace relational
     // Drop.
     //
 
+    // Only used in migration.
+    //
+    struct drop_column: trav_rel::drop_column, common
+    {
+      typedef drop_column base;
+
+      drop_column (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f), first_ (true)
+      {
+      }
+
+      virtual void
+      drop_header ()
+      {
+        // By default ADD COLUMN though some databases use just ADD.
+        //
+        os << "DROP COLUMN ";
+      }
+
+      virtual void
+      traverse (sema_rel::drop_column& dc)
+      {
+        if (first_)
+          first_ = false;
+        else
+          os << "," << endl;
+
+        os << "  ";
+        drop_header ();
+        os << quote_id (dc.name ());
+      }
+
+    protected:
+      schema_format format_;
+      bool first_;
+    };
+
     // Currently only used in migration.
     //
     struct drop_index: trav_rel::drop_index, common
@@ -249,12 +286,14 @@ namespace relational
     //
     struct create_table;
 
-    struct create_column: trav_rel::column, virtual context
+    struct create_column: trav_rel::column,
+                          trav_rel::add_column,
+                          common
     {
       typedef create_column base;
 
-      create_column (schema_format f, create_table& ct)
-          : format_ (f), create_table_ (ct), first_ (true)
+      create_column (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f), first_ (true)
       {
       }
 
@@ -266,7 +305,29 @@ namespace relational
         else
           os << "," << endl;
 
+        os << "  ";
         create (c);
+      }
+
+      virtual void
+      add_header ()
+      {
+        // By default ADD COLUMN though some databases use just ADD.
+        //
+        os << "ADD COLUMN ";
+      }
+
+      virtual void
+      traverse (sema_rel::add_column& ac)
+      {
+        if (first_)
+          first_ = false;
+        else
+          os << "," << endl;
+
+        os << "  ";
+        add_header ();
+        create (ac);
       }
 
       virtual void
@@ -286,7 +347,7 @@ namespace relational
             break;
         }
 
-        os << "  " << quote_id (c.name ()) << " ";
+        os << quote_id (c.name ()) << " ";
 
         type (c, pk != 0 && pk->auto_ ());
 
@@ -333,7 +394,6 @@ namespace relational
 
     protected:
       schema_format format_;
-      create_table& create_table_;
       bool first_;
     };
 
@@ -641,7 +701,7 @@ namespace relational
         pre_statement ();
         create_pre (t.name ());
 
-        instance<create_column> c (format_, *this);
+        instance<create_column> c (emitter (), stream (), format_);
         instance<create_primary_key> pk (format_, *this);
         instance<create_foreign_key> fk (format_, *this);
         trav_rel::unames n;
@@ -711,15 +771,83 @@ namespace relational
       unsigned short pass_;
     };
 
+    //
     // Migration.
     //
-    struct alter_table_pre: trav_rel::alter_table, common
+
+    struct alter_table_common: trav_rel::alter_table, common
+    {
+      alter_table_common (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os), format_ (f)
+      {
+      }
+
+      template <typename T>
+      T*
+      check (sema_rel::alter_table& at)
+      {
+        for (sema_rel::alter_table::names_iterator i (at.names_begin ());
+             i != at.names_end (); ++i)
+        {
+          if (T* x = dynamic_cast<T*> (&i->nameable ()))
+            return x;
+        }
+
+        return 0;
+      }
+
+      virtual void
+      alter_header (sema_rel::qname const& table)
+      {
+        os << "ALTER TABLE " << quote_id (table) << endl;
+      }
+
+      void
+      pass (unsigned short p)
+      {
+        pass_ = p;
+      }
+
+    protected:
+      schema_format format_;
+      unsigned short pass_;
+    };
+
+    struct alter_table_pre: alter_table_common
     {
       typedef alter_table_pre base;
 
       alter_table_pre (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
+          : alter_table_common (e, os, f)
       {
+      }
+
+      // Check if there will be any clauses in ALTER TABLE.
+      //
+      using alter_table_common::check;
+
+      virtual bool
+      check (sema_rel::alter_table& at)
+      {
+        return check<sema_rel::add_column> (at);
+      }
+
+      virtual void
+      alter (sema_rel::alter_table& at)
+      {
+        // By default we generate all the alterations in a single ALTER TABLE
+        // statement. Quite a few databases don't support this.
+        //
+        pre_statement ();
+        alter_header (at.name ());
+
+        instance<create_column> c (emitter (), stream (), format_);
+        trav_rel::unames n;
+        n >> c;
+        names (at, n);
+        os << endl;
+
+        post_statement ();
       }
 
       virtual void
@@ -735,6 +863,9 @@ namespace relational
             trav_rel::unames n (*in);
             names (at, n);
           }
+
+          if (check (at))
+            alter (at);
         }
         else
         {
@@ -748,16 +879,6 @@ namespace relational
           }
         }
       }
-
-      void
-      pass (unsigned short p)
-      {
-        pass_ = p;
-      }
-
-    protected:
-      schema_format format_;
-      unsigned short pass_;
     };
 
     struct changeset_pre: trav_rel::changeset, common
@@ -796,13 +917,41 @@ namespace relational
       unsigned short pass_;
     };
 
-    struct alter_table_post: trav_rel::alter_table, common
+    struct alter_table_post: alter_table_common
     {
       typedef alter_table_post base;
 
       alter_table_post (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
+          : alter_table_common (e, os, f)
       {
+      }
+
+      // Check if there will be any clauses in ALTER TABLE.
+      //
+      using alter_table_common::check;
+
+      virtual bool
+      check (sema_rel::alter_table& at)
+      {
+        return check<sema_rel::drop_column> (at);
+      }
+
+      virtual void
+      alter (sema_rel::alter_table& at)
+      {
+        // By default we generate all the alterations in a single ALTER TABLE
+        // statement. Quite a few databases don't support this.
+        //
+        pre_statement ();
+        alter_header (at.name ());
+
+        instance<drop_column> c (emitter (), stream (), format_);
+        trav_rel::unames n;
+        n >> c;
+        names (at, n);
+        os << endl;
+
+        post_statement ();
       }
 
       virtual void
@@ -821,6 +970,9 @@ namespace relational
         }
         else
         {
+          if (check (at))
+            alter (at);
+
           // Add unique indexes.
           //
           {
@@ -831,16 +983,6 @@ namespace relational
           }
         }
       }
-
-      void
-      pass (unsigned short p)
-      {
-        pass_ = p;
-      }
-
-    protected:
-      schema_format format_;
-      unsigned short pass_;
     };
 
     struct changeset_post: trav_rel::changeset, common

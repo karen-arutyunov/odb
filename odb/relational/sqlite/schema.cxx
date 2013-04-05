@@ -24,6 +24,22 @@ namespace relational
         create_column (base const& x): base (x) {}
 
         virtual void
+        traverse (sema_rel::add_column& ac)
+        {
+          using sema_rel::alter_table;
+          alter_table& at (static_cast<alter_table&> (ac.scope ()));
+
+          pre_statement ();
+
+          os << "ALTER TABLE " << quote_id (at.name ()) << endl
+             << "  ADD COLUMN ";
+          create (ac);
+          os << endl;
+
+          post_statement ();
+        }
+
+        virtual void
         auto_ (sema_rel::column&)
         {
           if (options.sqlite_lax_auto_id ())
@@ -92,6 +108,44 @@ namespace relational
         }
       };
       entry<drop_index> drop_index_;
+
+      struct alter_table_pre: relational::alter_table_pre, context
+      {
+        alter_table_pre (base const& x): base (x) {}
+
+        virtual void
+        alter (sema_rel::alter_table& at)
+        {
+          // SQLite can only add a single column per ALTER TABLE statement.
+          //
+          instance<create_column> c (emitter (), stream (), format_);
+          trav_rel::unames n;
+          n >> c;
+          names (at, n);
+        }
+      };
+      entry<alter_table_pre> alter_table_pre_;
+
+      struct alter_table_post: relational::alter_table_post, context
+      {
+        alter_table_post (base const& x): base (x) {}
+
+        virtual void
+        alter (sema_rel::alter_table& at)
+        {
+          // SQLite does not support dropping columns.
+          //
+          if (sema_rel::drop_column* dc = check<sema_rel::drop_column> (at))
+          {
+            cerr << "error: SQLite does not support dropping of columns"
+                 << endl;
+            cerr << "info: first dropped column is '" << dc->name () <<
+              "' in table '" << at.name () << "'" << endl;
+            throw operation_failed ();
+          }
+        }
+      };
+      entry<alter_table_post> alter_table_post_;
     }
   }
 }
