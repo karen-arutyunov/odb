@@ -349,13 +349,11 @@ namespace relational
         alter_column (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::alter_column& ac)
+        traverse (sema_rel::column& c)
         {
-          assert (ac.null_altered ());
-
           // Relax (NULL) in pre and tighten (NOT NULL) in post.
           //
-          if (pre_ != ac.null ())
+          if (pre_ != c.null ())
             return;
 
           if (first_)
@@ -364,7 +362,7 @@ namespace relational
             os << "," << endl
                << "          ";
 
-          os << quote_id (ac.name ()) << (ac.null () ? " NULL" : " NOT NULL");
+          os << quote_id (c.name ()) << (c.null () ? " NULL" : " NOT NULL");
         }
       };
       entry<alter_column> alter_column_;
@@ -386,7 +384,10 @@ namespace relational
             os << "  ADD (";
 
             instance<create_column> cc (emitter (), stream (), format_);
-            trav_rel::unames n (*cc);
+            trav_rel::alter_column ac; // Override.
+            trav_rel::unames n;
+            n >> cc;
+            n >> ac;
             names (at, n);
             os << ")" << endl;
 

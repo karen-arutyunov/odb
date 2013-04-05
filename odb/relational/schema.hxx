@@ -312,11 +312,13 @@ namespace relational
       create_column (emitter_type& e,
                      ostream& os,
                      schema_format f,
+                     bool override_null = true,
                      bool* first = 0)
           : common (e, os),
             format_ (f),
             first_ (first != 0 ? *first : first_data_),
-            first_data_ (true)
+            first_data_ (true),
+            override_null_ (override_null)
       {
       }
 
@@ -326,7 +328,8 @@ namespace relational
             common (c),
             format_ (c.format_),
             first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
-            first_data_ (c.first_data_)
+            first_data_ (c.first_data_),
+            override_null_ (c.override_null_)
       {
       }
 
@@ -410,10 +413,20 @@ namespace relational
       virtual void
       null (sema_rel::column& c)
       {
+        bool n (c.null ());
+
+        // If we are adding a new column that doesn't allow NULL nor has
+        // a default value, add it as NULL. Later, after migration, we
+        // will convert it to NOT NULL.
+        //
+        if (override_null_ && c.is_a<sema_rel::add_column> () &&
+            !n && c.default_ ().empty ())
+          n = true;
+
         // Specify both cases explicitly for better readability,
         // especially in ALTER COLUMN clauses.
         //
-        os << (c.null () ? " NULL" : " NOT NULL");
+        os << (n ? " NULL" : " NOT NULL");
       }
 
       virtual void
@@ -431,6 +444,8 @@ namespace relational
       schema_format format_;
       bool& first_;
       bool first_data_;
+      bool add_;
+      bool override_null_; // Override NOT NULL in add_column.
     };
 
     struct create_primary_key: trav_rel::primary_key, virtual context
@@ -811,7 +826,9 @@ namespace relational
     // Migration.
     //
 
-    struct alter_column: trav_rel::alter_column, common
+    struct alter_column: trav_rel::alter_column,
+                         trav_rel::add_column,
+                         common
     {
       typedef alter_column base;
 
@@ -825,7 +842,8 @@ namespace relational
             pre_ (pre),
             first_ (first != 0 ? *first : first_data_),
             first_data_ (true),
-            def_ (e, os, f)
+            fl_ (false),
+            def_ (e, os, f, fl_)
       {
       }
 
@@ -837,7 +855,8 @@ namespace relational
             pre_ (c.pre_),
             first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
             first_data_ (c.first_data_),
-            def_ (common::e_, common::os_, c.format_)
+            fl_ (false),
+            def_ (common::e_, common::os_, c.format_, fl_)
       {
       }
 
@@ -848,21 +867,19 @@ namespace relational
       }
 
       virtual void
-      alter (sema_rel::alter_column& ac)
+      alter (sema_rel::column& c)
       {
         // By default use the whole definition.
         //
-        def_->create (ac);
+        def_->create (c);
       }
 
       virtual void
-      traverse (sema_rel::alter_column& ac)
+      traverse (sema_rel::column& c)
       {
-        assert (ac.null_altered ());
-
         // Relax (NULL) in pre and tighten (NOT NULL) in post.
         //
-        if (pre_ != ac.null ())
+        if (pre_ != c.null ())
           return;
 
         if (first_)
@@ -872,7 +889,24 @@ namespace relational
 
         os << "  ";
         alter_header ();
-        alter (ac);
+        alter (c);
+      }
+
+      virtual void
+      traverse (sema_rel::alter_column& ac)
+      {
+        assert (ac.null_altered ());
+        traverse (static_cast<sema_rel::column&> (ac));
+      }
+
+      virtual void
+      traverse (sema_rel::add_column& ac)
+      {
+        // We initially add NOT NULL columns without default values as
+        // NULL. Now, after the migration, we convert them to NOT NULL.
+        //
+        if (!ac.null () && ac.default_ ().empty ())
+          traverse (static_cast<sema_rel::column&> (ac));
       }
 
     protected:
@@ -880,6 +914,7 @@ namespace relational
       bool pre_;
       bool& first_;
       bool first_data_;
+      bool fl_; // (Im)perfect forwarding.
       instance<create_column> def_;
     };
 
@@ -971,7 +1006,7 @@ namespace relational
         bool f (true);  // Shared first flag.
         bool* pf (&f);  // (Im)perfect forwarding.
         bool tl (true); // (Im)perfect forwarding.
-        instance<create_column> cc (emitter (), stream (), format_, pf);
+        instance<create_column> cc (emitter (), stream (), format_, tl, pf);
         instance<alter_column> ac (emitter (), stream (), format_, tl, pf);
         trav_rel::unames n;
         n >> cc;

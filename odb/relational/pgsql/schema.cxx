@@ -215,10 +215,10 @@ namespace relational
         alter_column (base const& x): base (x) {}
 
         virtual void
-        alter (sema_rel::alter_column& ac)
+        alter (sema_rel::column& c)
         {
-          os << quote_id (ac.name ()) << " " <<
-            (ac.null () ? "DROP" : "SET") << " NOT NULL";
+          os << quote_id (c.name ()) << " " <<
+            (c.null () ? "DROP" : "SET") << " NOT NULL";
         }
       };
       entry<alter_column> alter_column_;

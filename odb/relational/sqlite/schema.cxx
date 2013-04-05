@@ -21,7 +21,13 @@ namespace relational
 
       struct create_column: relational::create_column, context
       {
-        create_column (base const& x): base (x) {}
+        create_column (base const& x): base (x)
+        {
+          // In SQLite it is impossible to alter a column later, so we add
+          // it as is.
+          //
+          override_null_ = false;
+        }
 
         virtual void
         traverse (sema_rel::add_column& ac)
@@ -118,9 +124,11 @@ namespace relational
         {
           // SQLite can only add a single column per ALTER TABLE statement.
           //
-          instance<create_column> c (emitter (), stream (), format_);
+          instance<create_column> cc (emitter (), stream (), format_);
+          trav_rel::alter_column ac; // Override.
           trav_rel::unames n;
-          n >> c;
+          n >> cc;
+          n >> ac;
           names (at, n);
 
           // SQLite does not support altering columns.

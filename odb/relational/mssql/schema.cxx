@@ -341,23 +341,21 @@ namespace relational
         alter_column (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::alter_column& ac)
+        traverse (sema_rel::column& c)
         {
-          assert (ac.null_altered ());
-
           // Relax (NULL) in pre and tighten (NOT NULL) in post.
           //
-          if (pre_ != ac.null ())
+          if (pre_ != c.null ())
             return;
 
-          using sema_rel::alter_table;
-          alter_table& at (static_cast<alter_table&> (ac.scope ()));
+          using sema_rel::table;
+          table& at (static_cast<table&> (c.scope ()));
 
           pre_statement ();
 
           os << "ALTER TABLE " << quote_id (at.name ()) << endl
              << "  ALTER COLUMN ";
-          alter (ac);
+          alter (c);
           os << endl;
 
           post_statement ();
@@ -380,8 +378,11 @@ namespace relational
             alter_header (at.name ());
             os << "  ADD ";
 
-            instance<create_column> c (emitter (), stream (), format_);
-            trav_rel::unames n (*c);
+            instance<create_column> cc (emitter (), stream (), format_);
+            trav_rel::alter_column ac; // Override.
+            trav_rel::unames n;
+            n >> cc;
+            n >> ac;
             names (at, n);
             os << endl;
 
@@ -415,8 +416,8 @@ namespace relational
             alter_header (at.name ());
             os << "  DROP COLUMN ";
 
-            instance<drop_column> c (emitter (), stream (), format_);
-            trav_rel::unames n (*c);
+            instance<drop_column> dc (emitter (), stream (), format_);
+            trav_rel::unames n (*dc);
             names (at, n);
             os << endl;
 
