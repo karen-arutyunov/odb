@@ -81,6 +81,8 @@ namespace traversal
     struct node: compiler::traverser_impl<X, semantics::relational::node>,
       virtual node_base
     {
+      virtual void
+      traverse (X&) {}
     };
 
     template <typename X>
