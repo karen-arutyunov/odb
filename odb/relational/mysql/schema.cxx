@@ -143,29 +143,6 @@ namespace relational
         create_column (base const& x): base (x) {}
 
         virtual void
-        null (sema_rel::column& c)
-        {
-          // MySQL TIMESTAMP is by default NOT NULL. If we want it
-          // to contain NULL values, we need to explicitly declare
-          // the column as NULL.
-          //
-          if (c.null ())
-          {
-            // This should never fail since we have already parsed this.
-            //
-            sql_type const& t (parse_sql_type (c.type ()));
-
-            if (t.type == sql_type::TIMESTAMP)
-            {
-              os << " NULL";
-              return;
-            }
-          }
-
-          base::null (c);
-        }
-
-        virtual void
         auto_ (sema_rel::column&)
         {
           os << " AUTO_INCREMENT";

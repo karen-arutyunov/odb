@@ -410,8 +410,10 @@ namespace relational
       virtual void
       null (sema_rel::column& c)
       {
-        if (!c.null ())
-          os << " NOT NULL";
+        // Specify both cases explicitly for better readability,
+        // especially in ALTER COLUMN clauses.
+        //
+        os << (c.null () ? " NULL" : " NOT NULL");
       }
 
       virtual void

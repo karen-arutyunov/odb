@@ -11,6 +11,9 @@ Version 2.3.0
  * The --output-name option has been renamed to --input-name, which is more
    semantically correct.
 
+ * The generated database schemas now explicitly specify NULL for nullable
+   columns.
+
 Version 2.2.0
 
  * Multi-database support. This mechanism allows an application to
