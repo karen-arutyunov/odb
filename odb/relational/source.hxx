@@ -1653,10 +1653,11 @@ namespace relational
 
           os << ")" << endl;
 
-          if (!null (mi.m, key_prefix_) )
-            os << "throw null_pointer ();";
-          else
-            os << member << " = ptr_traits::pointer_type ();";
+          // Don't throw null_pointer if we can't have NULLs and the pointer
+          // is NULL since this can be useful during migration. Instead, we
+          // rely on the database enforcing this.
+          //
+          os << member << " = ptr_traits::pointer_type ();";
 
           os << "else"
              << "{";
