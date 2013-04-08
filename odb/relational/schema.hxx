@@ -617,14 +617,9 @@ namespace relational
              i != pk.contains_end ();
              ++i)
         {
-          if (pk.contains_size () > 1)
-          {
-            if (i != pk.contains_begin ())
-              os << ",";
-
-            os << endl
-               << "    ";
-          }
+          if (i != pk.contains_begin ())
+            os << "," << endl
+               << "               ";
 
           os << quote_id (i->column ().name ());
         }
@@ -735,35 +730,27 @@ namespace relational
              i != fk.contains_end ();
              ++i)
         {
-          if (fk.contains_size () > 1)
-          {
-            if (i != fk.contains_begin ())
-              os << ",";
-
-            os << endl
-               << "      ";
-          }
+          if (i != fk.contains_begin ())
+            os << "," << endl
+               << "                 ";
 
           os << quote_id (i->column ().name ());
         }
 
+        string tn (table_name (fk));
+        string tn_pad (tn.size (), ' ');
+
         os << ")" << endl
-           << "    REFERENCES " << table_name (fk) << " (";
+           << "    REFERENCES " << tn << " (";
 
         foreign_key::columns const& refs (fk.referenced_columns ());
-
         for (foreign_key::columns::const_iterator i (refs.begin ());
              i != refs.end ();
              ++i)
         {
-          if (refs.size () > 1)
-          {
-            if (i != refs.begin ())
-              os << ",";
-
-            os << endl
-               << "      ";
-          }
+          if (i != refs.begin ())
+            os << "," << endl
+               << "                 " << tn_pad;
 
           os << quote_id (*i);
         }
