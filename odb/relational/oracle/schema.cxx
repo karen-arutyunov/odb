@@ -214,6 +214,26 @@ namespace relational
 
           create (ac);
         }
+
+        virtual void
+        constraints (sema_rel::column& c, sema_rel::primary_key* pk)
+        {
+          // Oracle wants DEFAULT before NULL even though we can end
+          // up with mouthfulls like DEFAULT NULL NULL.
+          //
+          if (!c.default_ ().empty ())
+            os << " DEFAULT " << c.default_ ();
+
+          null (c);
+
+          // If this is a single-column primary key, generate it inline.
+          //
+          if (pk != 0 && pk->contains_size () == 1)
+            primary_key ();
+
+          if (pk != 0 && pk->auto_ ())
+            auto_ (c);
+        }
       };
       entry<create_column> create_column_;
 

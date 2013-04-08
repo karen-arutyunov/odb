@@ -515,11 +515,19 @@ namespace relational
         os << quote_id (c.name ()) << " ";
 
         type (c, pk != 0 && pk->auto_ ());
+        constraints (c, pk);
+
+        if (!c.options ().empty ())
+          os << " " << c.options ();
+      }
+
+      virtual void
+      constraints (sema_rel::column& c, sema_rel::primary_key* pk)
+      {
+        null (c);
 
         if (!c.default_ ().empty ())
           os << " DEFAULT " << c.default_ ();
-
-        null (c);
 
         // If this is a single-column primary key, generate it inline.
         //
@@ -528,9 +536,6 @@ namespace relational
 
         if (pk != 0 && pk->auto_ ())
           auto_ (c);
-
-        if (!c.options ().empty ())
-          os << " " << c.options ();
       }
 
       virtual void
