@@ -21,6 +21,7 @@ namespace relational
       //
       // Drop.
       //
+
       struct drop_foreign_key: relational::drop_foreign_key, context
       {
         drop_foreign_key (base const& x): base (x) {}
@@ -109,6 +110,21 @@ namespace relational
       };
       entry<drop_foreign_key> drop_foreign_key_;
 
+      struct drop_index: relational::drop_index, context
+      {
+        drop_index (base const& x): base (x) {}
+
+        virtual void
+        drop (sema_rel::index& in)
+        {
+          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
+
+          os << "DROP INDEX " << name (in) << " ON " <<
+            quote_id (t.name ()) << endl;
+        }
+      };
+      entry<drop_index> drop_index_;
+
       //
       // Create.
       //
@@ -183,6 +199,36 @@ namespace relational
         }
       };
       entry<create_foreign_key> create_foreign_key_;
+
+      struct create_index: relational::create_index, context
+      {
+        create_index (base const& x): base (x) {}
+
+        virtual void
+        create (sema_rel::index& in)
+        {
+          os << "CREATE ";
+
+          if (!in.type ().empty ())
+            os << in.type () << ' ';
+
+          os << "INDEX " << name (in);
+
+          if (!in.method ().empty ())
+            os << " USING " << in.method ();
+
+          os << endl
+             << "  ON " << table_name (in) << " (";
+
+          columns (in);
+
+          os << ")" << endl;
+
+          if (!in.options ().empty ())
+            os << ' ' << in.options () << endl;
+        }
+      };
+      entry<create_index> create_index_;
 
       struct create_table: relational::create_table, context
       {
@@ -268,50 +314,9 @@ namespace relational
       };
       entry<create_table> create_table_;
 
-      struct create_index: relational::create_index, context
-      {
-        create_index (base const& x): base (x) {}
-
-        virtual void
-        create (sema_rel::index& in)
-        {
-          os << "CREATE ";
-
-          if (!in.type ().empty ())
-            os << in.type () << ' ';
-
-          os << "INDEX " << name (in);
-
-          if (!in.method ().empty ())
-            os << " USING " << in.method ();
-
-          os << endl
-             << "  ON " << table_name (in) << " (";
-
-          columns (in);
-
-          os << ")" << endl;
-
-          if (!in.options ().empty ())
-            os << ' ' << in.options () << endl;
-        }
-      };
-      entry<create_index> create_index_;
-
-      struct drop_index: relational::drop_index, context
-      {
-        drop_index (base const& x): base (x) {}
-
-        virtual void
-        drop (sema_rel::index& in)
-        {
-          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
-
-          os << "DROP INDEX " << name (in) << " ON " <<
-            quote_id (t.name ()) << endl;
-        }
-      };
-      entry<drop_index> drop_index_;
+      //
+      // Alter.
+      //
 
       struct alter_column: relational::alter_column, context
       {

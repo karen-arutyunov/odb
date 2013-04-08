@@ -1065,7 +1065,7 @@ namespace relational
     };
 
     //
-    // Migration.
+    // Alter.
     //
 
     struct alter_column: trav_rel::alter_column,

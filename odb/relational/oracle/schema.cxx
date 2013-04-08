@@ -118,6 +118,23 @@ namespace relational
       };
       entry<drop_foreign_key> drop_foreign_key_;
 
+      struct drop_index: relational::drop_index, context
+      {
+        drop_index (base const& x): base (x) {}
+
+        virtual string
+        name (sema_rel::index& in)
+        {
+          // In Oracle, index names can be qualified with the schema.
+          //
+          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
+          sema_rel::qname n (t.name ().qualifier ());
+          n.append (in.name ());
+          return quote_id (n);
+        }
+      };
+      entry<drop_index> drop_index_;
+
       struct drop_table: relational::drop_table, context
       {
         drop_table (base const& x): base (x) {}
@@ -251,6 +268,23 @@ namespace relational
       };
       entry<create_foreign_key> create_foreign_key_;
 
+      struct create_index: relational::create_index, context
+      {
+        create_index (base const& x): base (x) {}
+
+        virtual string
+        name (sema_rel::index& in)
+        {
+          // In Oracle, index names can be qualified with the schema.
+          //
+          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
+          sema_rel::qname n (t.name ().qualifier ());
+          n.append (in.name ());
+          return quote_id (n);
+        }
+      };
+      entry<create_index> create_index_;
+
       struct create_table: relational::create_table, context
       {
         create_table (base const& x): base (x) {}
@@ -284,39 +318,9 @@ namespace relational
       };
       entry<create_table> create_table_;
 
-      struct create_index: relational::create_index, context
-      {
-        create_index (base const& x): base (x) {}
-
-        virtual string
-        name (sema_rel::index& in)
-        {
-          // In Oracle, index names can be qualified with the schema.
-          //
-          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
-          sema_rel::qname n (t.name ().qualifier ());
-          n.append (in.name ());
-          return quote_id (n);
-        }
-      };
-      entry<create_index> create_index_;
-
-      struct drop_index: relational::drop_index, context
-      {
-        drop_index (base const& x): base (x) {}
-
-        virtual string
-        name (sema_rel::index& in)
-        {
-          // In Oracle, index names can be qualified with the schema.
-          //
-          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
-          sema_rel::qname n (t.name ().qualifier ());
-          n.append (in.name ());
-          return quote_id (n);
-        }
-      };
-      entry<drop_index> drop_index_;
+      //
+      // Alter.
+      //
 
       struct alter_column: relational::alter_column, context
       {

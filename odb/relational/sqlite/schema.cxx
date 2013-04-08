@@ -16,6 +16,45 @@ namespace relational
       namespace relational = relational::schema;
 
       //
+      // Drop.
+      //
+
+      struct drop_index: relational::drop_index, context
+      {
+        drop_index (base const& x): base (x) {}
+
+        virtual string
+        name (sema_rel::index& in)
+        {
+          // In SQLite, index names can be qualified with the database.
+          //
+          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
+          sema_rel::qname n (t.name ().qualifier ());
+          n.append (in.name ());
+          return quote_id (n);
+        }
+      };
+      entry<drop_index> drop_index_;
+
+      struct drop_table: relational::drop_table, context
+      {
+        drop_table (base const& x): base (x) {}
+
+        virtual void
+        traverse (sema_rel::table& t, bool migration)
+        {
+          // In SQLite there is no way to drop foreign keys except as part
+          // of the table.
+          //
+          if (pass_ != 2)
+            return;
+
+          drop (t.name (), migration);
+        }
+      };
+      entry<drop_table> drop_table_;
+
+      //
       // Create.
       //
 
@@ -114,22 +153,6 @@ namespace relational
       };
       entry<create_foreign_key> create_foreign_key_;
 
-      struct create_table: relational::create_table, context
-      {
-        create_table (base const& x): base (x) {}
-
-        void
-        traverse (sema_rel::table& t)
-        {
-          // For SQLite we do everything in a single pass since there
-          // is no way to add constraints later.
-          //
-          if (pass_ == 1)
-            create (t);
-        }
-      };
-      entry<create_table> create_table_;
-
       struct create_index: relational::create_index, context
       {
         create_index (base const& x): base (x) {}
@@ -157,40 +180,25 @@ namespace relational
       };
       entry<create_index> create_index_;
 
-      struct drop_index: relational::drop_index, context
+      struct create_table: relational::create_table, context
       {
-        drop_index (base const& x): base (x) {}
+        create_table (base const& x): base (x) {}
 
-        virtual string
-        name (sema_rel::index& in)
+        void
+        traverse (sema_rel::table& t)
         {
-          // In SQLite, index names can be qualified with the database.
+          // For SQLite we do everything in a single pass since there
+          // is no way to add constraints later.
           //
-          sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
-          sema_rel::qname n (t.name ().qualifier ());
-          n.append (in.name ());
-          return quote_id (n);
+          if (pass_ == 1)
+            create (t);
         }
       };
-      entry<drop_index> drop_index_;
+      entry<create_table> create_table_;
 
-      struct drop_table: relational::drop_table, context
-      {
-        drop_table (base const& x): base (x) {}
-
-        virtual void
-        traverse (sema_rel::table& t, bool migration)
-        {
-          // In SQLite there is no way to drop foreign keys except as part
-          // of the table.
-          //
-          if (pass_ != 2)
-            return;
-
-          drop (t.name (), migration);
-        }
-      };
-      entry<drop_table> drop_table_;
+      //
+      // Alter.
+      //
 
       struct alter_table_pre: relational::alter_table_pre, context
       {

@@ -134,6 +134,10 @@ namespace relational
       };
       entry<create_index> create_index_;
 
+      //
+      // Alter.
+      //
+
       struct alter_column: relational::alter_column, context
       {
         alter_column (base const& x): base (x) {}
