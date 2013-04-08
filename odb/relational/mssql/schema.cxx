@@ -2,8 +2,6 @@
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <set>
-
 #include <odb/relational/schema.hxx>
 
 #include <odb/relational/mssql/common.hxx>
@@ -18,6 +16,7 @@ namespace relational
     namespace schema
     {
       namespace relational = relational::schema;
+      using relational::table_set;
 
       struct sql_emitter: relational::sql_emitter
       {
@@ -58,89 +57,98 @@ namespace relational
       };
       entry<drop_column> drop_column_;
 
+      struct drop_foreign_key: relational::drop_foreign_key, context
+      {
+        drop_foreign_key (base const& x): base (x) {}
+
+        virtual void
+        drop (sema_rel::table& t, sema_rel::foreign_key& fk)
+        {
+          bool migration (dropped_ == 0);
+
+          if (migration)
+          {
+            if (fk.not_deferrable ())
+              pre_statement ();
+            else
+            {
+              if (format_ != schema_format::sql)
+                return;
+
+              os << "/*" << endl;
+            }
+          }
+          else
+          {
+            // Here we drop potentially deferrable keys and also need to
+            // test if the key exists.
+            //
+            pre_statement ();
+
+            os << "IF OBJECT_ID(" << quote_string (fk.name ()) << ", " <<
+              quote_string ("F") << ") IS NOT NULL" << endl
+               << "  ";
+          }
+
+          os << "ALTER TABLE " << quote_id (t.name ()) << endl
+             << (migration ? "  " : "    ") << "DROP CONSTRAINT " <<
+            quote_id (fk.name ()) << endl;
+
+
+          if (!migration || fk.not_deferrable ())
+            post_statement ();
+          else
+            os << "*/" << endl
+               << endl;
+        }
+
+        virtual void
+        traverse (sema_rel::drop_foreign_key& dfk)
+        {
+          // Find the foreign key we are dropping in the base model.
+          //
+          sema_rel::foreign_key& fk (find<sema_rel::foreign_key> (dfk));
+
+          bool c (!fk.not_deferrable () && !in_comment);
+
+          if (c && format_ != schema_format::sql)
+            return;
+
+          if (!first_)
+            os << (c ? "" : ",") << endl
+               << "                  ";
+
+          if (c)
+            os << "/* ";
+
+          os << quote_id (fk.name ());
+
+          if (c)
+            os << " */";
+
+          if (first_)
+          {
+            if (c)
+              // There has to be a real name otherwise the whole statement
+              // would have been commented out.
+              //
+              os << endl
+                 << "                  ";
+            else
+              first_ = false;
+          }
+        }
+      };
+      entry<drop_foreign_key> drop_foreign_key_;
+
       struct drop_table: relational::drop_table, context
       {
         drop_table (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::table&, bool);
-
-      private:
-        friend class drop_foreign_key;
-        set<qname> tables_; // Set of tables we would have already dropped.
-      };
-      entry<drop_table> drop_table_;
-
-      struct drop_foreign_key: trav_rel::foreign_key, relational::common
-      {
-        drop_foreign_key (drop_table& dt, bool m)
-            : common (dt.emitter (), dt.stream ()), dt_ (dt), migration_ (m)
+        drop (sema_rel::qname const& table, bool migration)
         {
-        }
-
-        virtual void
-        traverse (sema_rel::foreign_key& fk)
-        {
-          // Deferred constraints are not supported by SQL Server.
-          //
-          if (fk.deferred ())
-            return;
-
-          // If the table which we reference is droped before us, then
-          // we need to drop the constraint first. Similarly, if the
-          // referenced table is not part if this model, then assume
-          // it is dropped before us. In migration we always do this
-          // first.
-          //
-          sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
-
-          if (!migration_)
-          {
-            sema_rel::qname const& rt (fk.referenced_table ());
-            sema_rel::model& m (dynamic_cast<sema_rel::model&> (t.scope ()));
-
-            if (dt_.tables_.find (rt) == dt_.tables_.end () &&
-                m.find (rt) != m.names_end ())
-              return;
-          }
-
-          pre_statement ();
-
-          if (!migration_)
-            os << "IF OBJECT_ID(" << quote_string (fk.name ()) << ", " <<
-              quote_string ("F") << ") IS NOT NULL" << endl
-               << "  ";
-
-          os << "ALTER TABLE " << quote_id (t.name ()) << " DROP" << endl
-             << (!migration_ ? "  " : "") << "  CONSTRAINT " <<
-            quote_id (fk.name ()) << endl;
-
-          post_statement ();
-        }
-
-      private:
-        drop_table& dt_;
-        bool migration_;
-      };
-
-      void drop_table::
-      traverse (sema_rel::table& t, bool migration)
-      {
-        qname const& table (t.name ());
-
-        if (pass_ == 1)
-        {
-          // Drop constraints. In migration this is always done on pass 1.
-          //
-          if (!migration)
-            tables_.insert (table); // Add it before to cover self-refs.
-          drop_foreign_key fk (*this, migration);
-          trav_rel::unames n (fk);
-          names (t, n);
-        }
-        else if (pass_ == 2)
-        {
-          // SQL Server has no IF EXISTS conditional for dropping table.
+          // SQL Server has no IF EXISTS conditional for dropping tables.
           // The following approach appears to be the recommended way to
           // drop a table if it exists.
           //
@@ -155,7 +163,8 @@ namespace relational
 
           post_statement ();
         }
-      }
+      };
+      entry<drop_table> drop_table_;
 
       //
       // Create.
@@ -185,141 +194,107 @@ namespace relational
       };
       entry<create_column> create_column_;
 
-      struct create_foreign_key;
-
-      struct create_table: relational::create_table, context
-      {
-        create_table (base const& x): base (x) {}
-
-        void
-        traverse (sema_rel::table&);
-
-      private:
-        friend class create_foreign_key;
-        set<qname> tables_; // Set of tables we have already defined.
-      };
-      entry<create_table> create_table_;
-
       struct create_foreign_key: relational::create_foreign_key, context
       {
-        create_foreign_key (schema_format f, relational::create_table& ct)
-            : base (f, ct)
-        {
-        }
-
         create_foreign_key (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::foreign_key& fk)
+        generate (sema_rel::foreign_key& fk)
         {
-          // If the referenced table has already been defined, do the
-          // foreign key definition in the table definition. Otherwise
-          // postpone it until pass 2 where we do it via ALTER TABLE
-          // (see add_foreign_key below).
+          // SQL Server does not support deferrable constraint checking.
+          // Output such foreign keys as comments, for documentation,
+          // unless we are generating embedded schema.
           //
-          create_table& ct (static_cast<create_table&> (create_table_));
-
-          if (ct.tables_.find (fk.referenced_table ()) != ct.tables_.end ())
+          if (fk.not_deferrable ())
+            base::generate (fk);
+          else
           {
-            // SQL Server does not support deferred constraint checking.
-            // Output such foreign keys as comments, for documentation,
-            // unless we are generating embedded schema.
+            // Don't bloat C++ code with comment strings if we are
+            // generating embedded schema.
             //
-            if (fk.deferred ())
-            {
-              // Don't bloat C++ code with comment strings if we are
-              // generating embedded schema.
-              //
-              if (format_ != schema_format::embedded)
-              {
-                os << endl
-                   << endl
-                   << "  /*" << endl;
+            if (format_ != schema_format::sql)
+              return;
 
-                base::create (fk);
-
-                os << endl
-                   << "  */";
-              }
-            }
-            else
-              base::traverse (fk);
-
-            fk.set ("mssql-fk-defined", true); // Mark it as defined.
+            os << endl
+               << "  /*" << endl
+               << "  CONSTRAINT ";
+            create (fk);
+            os << endl
+               << "  */";
           }
         }
 
         virtual void
-        deferred ()
+        traverse (sema_rel::add_foreign_key& afk)
         {
-          // SQL Server doesn't support deferred.
+          bool c (!afk.not_deferrable () && !in_comment);
+
+          if (c && format_ != schema_format::sql)
+            return;
+
+          if (!first_)
+            os << (c ? "" : ",") << endl
+               << "      ";
+
+          if (c)
+            os << "/*" << endl
+               << "      ";
+
+          os << "CONSTRAINT ";
+          create (afk);
+
+          if (c)
+            os << endl
+               << "      */";
+
+          if (first_)
+          {
+            if (c)
+              // There has to be a real key otherwise the whole statement
+              // would have been commented out.
+              //
+              os << endl
+                 << "      ";
+            else
+              first_ = false;
+          }
+        }
+
+        virtual void
+        deferrable (sema_rel::deferrable)
+        {
+          // This will still be called to output the comment.
         }
       };
       entry<create_foreign_key> create_foreign_key_;
 
-      struct add_foreign_key: create_foreign_key, relational::common
+      struct add_foreign_key: relational::add_foreign_key, context
       {
-        add_foreign_key (schema_format f, relational::create_table& ct)
-            : create_foreign_key (f, ct), common (ct.emitter (), ct.stream ())
-        {
-        }
+        add_foreign_key (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::foreign_key& fk)
+        generate (sema_rel::table& t, sema_rel::foreign_key& fk)
         {
-          if (!fk.count ("mssql-fk-defined"))
+          // SQL Server has no deferrable constraints.
+          //
+          if (fk.not_deferrable ())
+            base::generate (t, fk);
+          else
           {
-            sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
+            if (format_ != schema_format::sql)
+              return;
 
-            // SQL Server has no deferred constraints.
-            //
-            if (fk.deferred ())
-            {
-              if (format_ != schema_format::embedded)
-              {
-                os << "/*" << endl;
-
-                os << "ALTER TABLE " << quote_id (t.name ()) << " ADD" << endl;
-                base::create (fk);
-
-                os << endl
-                   << "*/" << endl
-                   << endl;
-              }
-            }
-            else
-            {
-              pre_statement ();
-
-              os << "ALTER TABLE " << quote_id (t.name ()) << " ADD" << endl;
-              base::create (fk);
-              os << endl;
-
-              post_statement ();
-            }
+            os << "/*" << endl;
+            os << "ALTER TABLE " << quote_id (t.name ()) << endl
+               << "  ADD CONSTRAINT ";
+            def_->create (fk);
+            os << endl
+               << "*/" << endl
+               << endl;
           }
         }
       };
-
-      void create_table::
-      traverse (sema_rel::table& t)
-      {
-        if (pass_ == 1)
-        {
-          // In migration we always add foreign keys on pass 2.
-          //
-          if (!t.is_a<sema_rel::add_table> ())
-            tables_.insert (t.name ()); // Add it before to cover self-refs.
-          base::traverse (t);
-          return;
-        }
-
-        // Add foreign keys.
-        //
-        add_foreign_key fk (format_, *this);
-        trav_rel::unames n (fk);
-        names (t, n);
-      }
+      entry<add_foreign_key> add_foreign_key_;
 
       struct drop_index: relational::drop_index, context
       {
@@ -367,22 +342,76 @@ namespace relational
       {
         alter_table_pre (base const& x): base (x) {}
 
+        // Check if we are only dropping deferrable foreign keys.
+        //
+        bool
+        check_drop_deferrable_only (sema_rel::alter_table& at)
+        {
+          for (sema_rel::alter_table::names_iterator i (at.names_begin ());
+               i != at.names_end (); ++i)
+          {
+            using sema_rel::foreign_key;
+            using sema_rel::drop_foreign_key;
+
+            if (drop_foreign_key* dfk =
+                dynamic_cast<drop_foreign_key*> (&i->nameable ()))
+            {
+              foreign_key& fk (find<foreign_key> (*dfk));
+
+              if (fk.not_deferrable ())
+                return false;
+            }
+          }
+          return true;
+        }
+
         virtual void
         alter (sema_rel::alter_table& at)
         {
           // SQL Server can only alter one kind of thing at a time.
           //
+          if (check<sema_rel::drop_foreign_key> (at))
+          {
+            bool deferrable (check_drop_deferrable_only (at));
+
+            if (!deferrable || format_ == schema_format::sql)
+            {
+              if (deferrable)
+              {
+                os << "/*" << endl;
+                in_comment = true;
+              }
+              else
+                pre_statement ();
+
+              alter_header (at.name ());
+              os << endl
+                 << "  DROP CONSTRAINT ";
+              instance<drop_foreign_key> dfc (*this);
+              trav_rel::unames n (*dfc);
+              names (at, n);
+              os << endl;
+
+              if (deferrable)
+              {
+                in_comment = false;
+                os << "*/" << endl
+                   << endl;
+              }
+              else
+                post_statement ();
+            }
+          }
+
           if (check<sema_rel::add_column> (at))
           {
             pre_statement ();
             alter_header (at.name ());
-            os << "  ADD ";
+            os << endl
+               << "  ADD ";
 
-            instance<create_column> cc (emitter (), stream (), format_);
-            trav_rel::alter_column ac; // Override.
-            trav_rel::unames n;
-            n >> cc;
-            n >> ac;
+            instance<create_column> cc (*this);
+            trav_rel::unames n (*cc);
             names (at, n);
             os << endl;
 
@@ -393,7 +422,7 @@ namespace relational
           //
           {
             bool tl (true); // (Im)perfect forwarding.
-            instance<alter_column> ac (emitter (), stream (), format_, tl);
+            instance<alter_column> ac (*this, tl);
             trav_rel::unames n (*ac);
             names (at, n);
           }
@@ -405,6 +434,26 @@ namespace relational
       {
         alter_table_post (base const& x): base (x) {}
 
+        // Check if we are only adding deferrable foreign keys.
+        //
+        bool
+        check_add_deferrable_only (sema_rel::alter_table& at)
+        {
+          for (sema_rel::alter_table::names_iterator i (at.names_begin ());
+               i != at.names_end (); ++i)
+          {
+            using sema_rel::add_foreign_key;
+
+            if (add_foreign_key* afk =
+                dynamic_cast<add_foreign_key*> (&i->nameable ()))
+            {
+              if (afk->not_deferrable ())
+                return false;
+            }
+          }
+          return true;
+        }
+
         virtual void
         alter (sema_rel::alter_table& at)
         {
@@ -414,9 +463,10 @@ namespace relational
           {
             pre_statement ();
             alter_header (at.name ());
-            os << "  DROP COLUMN ";
+            os << endl
+               << "  DROP COLUMN ";
 
-            instance<drop_column> dc (emitter (), stream (), format_);
+            instance<drop_column> dc (*this);
             trav_rel::unames n (*dc);
             names (at, n);
             os << endl;
@@ -428,9 +478,42 @@ namespace relational
           //
           {
             bool fl (false); // (Im)perfect forwarding.
-            instance<alter_column> ac (emitter (), stream (), format_, fl);
+            instance<alter_column> ac (*this, fl);
             trav_rel::unames n (*ac);
             names (at, n);
+          }
+
+          if (check<sema_rel::add_foreign_key> (at))
+          {
+            bool deferrable (check_add_deferrable_only (at));
+
+            if (!deferrable || format_ == schema_format::sql)
+            {
+              if (deferrable)
+              {
+                os << "/*" << endl;
+                in_comment = true;
+              }
+              else
+                pre_statement ();
+
+              alter_header (at.name ());
+              os << endl
+                 << "  ADD ";
+              instance<create_foreign_key> cfc (*this);
+              trav_rel::unames n (*cfc);
+              names (at, n);
+              os << endl;
+
+              if (deferrable)
+              {
+                in_comment = false;
+                os << "*/" << endl
+                   << endl;
+              }
+              else
+                post_statement ();
+            }
           }
         }
       };

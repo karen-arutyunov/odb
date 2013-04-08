@@ -209,7 +209,8 @@ namespace relational
         if (m.count ("polymorphic-ref"))
         {
           m.set ("not-null", true);
-          m.set ("deferred", false);
+          m.set ("deferrable",
+                 sema_rel::deferrable (sema_rel::deferrable::not_deferrable));
           m.set ("on-delete", sema_rel::foreign_key::cascade);
         }
 

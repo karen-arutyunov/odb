@@ -33,6 +33,9 @@ namespace relational
         traverse (sema_rel::add_column& ac)
         {
           using sema_rel::alter_table;
+          using sema_rel::add_column;
+          using sema_rel::add_foreign_key;
+
           alter_table& at (static_cast<alter_table&> (ac.scope ()));
 
           pre_statement ();
@@ -40,8 +43,37 @@ namespace relational
           os << "ALTER TABLE " << quote_id (at.name ()) << endl
              << "  ADD COLUMN ";
           create (ac);
-          os << endl;
 
+          // SQLite doesn't support adding foreign keys other than inline
+          // via a column definition. See if we can handle any.
+          //
+          add_foreign_key* afk (0);
+
+          for (add_column::contained_iterator i (ac.contained_begin ());
+               i != ac.contained_end ();
+               ++i)
+          {
+            if ((afk = dynamic_cast<add_foreign_key*> (&i->key ())))
+            {
+              // Check that it is a single-column foreign key. Also make
+              // sure the column and foreign key are from the same changeset.
+              //
+              if (afk->contains_size () != 1 || &ac.scope () != &afk->scope ())
+                afk = 0;
+              else
+                break;
+            }
+          }
+
+          if (afk != 0)
+          {
+            os << " CONSTRAINT " << quote_id (afk->name ()) << " REFERENCES " <<
+              quote_id (afk->referenced_table ().uname ()) << " (" <<
+              quote_id (afk->referenced_columns ()[0]) << ")";
+            afk->set ("sqlite-fk-defined", true); // Mark it as defined.
+          }
+
+          os << endl;
           post_statement ();
         }
 
@@ -60,6 +92,17 @@ namespace relational
       {
         create_foreign_key (base const& x): base (x) {}
 
+        virtual void
+        traverse (sema_rel::foreign_key& fk)
+        {
+          // In SQLite, all constraints are defined as part of a table.
+          //
+          os << "," << endl
+             << "  CONSTRAINT ";
+
+          create (fk);
+        }
+
         virtual string
         table_name (sema_rel::foreign_key& fk)
         {
@@ -70,6 +113,22 @@ namespace relational
         }
       };
       entry<create_foreign_key> create_foreign_key_;
+
+      struct create_table: relational::create_table, context
+      {
+        create_table (base const& x): base (x) {}
+
+        void
+        traverse (sema_rel::table& t)
+        {
+          // For SQLite we do everything in a single pass since there
+          // is no way to add constraints later.
+          //
+          if (pass_ == 1)
+            create (t);
+        }
+      };
+      entry<create_table> create_table_;
 
       struct create_index: relational::create_index, context
       {
@@ -115,6 +174,24 @@ namespace relational
       };
       entry<drop_index> drop_index_;
 
+      struct drop_table: relational::drop_table, context
+      {
+        drop_table (base const& x): base (x) {}
+
+        virtual void
+        traverse (sema_rel::table& t, bool migration)
+        {
+          // In SQLite there is no way to drop foreign keys except as part
+          // of the table.
+          //
+          if (pass_ != 2)
+            return;
+
+          drop (t.name (), migration);
+        }
+      };
+      entry<drop_table> drop_table_;
+
       struct alter_table_pre: relational::alter_table_pre, context
       {
         alter_table_pre (base const& x): base (x) {}
@@ -124,11 +201,8 @@ namespace relational
         {
           // SQLite can only add a single column per ALTER TABLE statement.
           //
-          instance<create_column> cc (emitter (), stream (), format_);
-          trav_rel::alter_column ac; // Override.
-          trav_rel::unames n;
-          n >> cc;
-          n >> ac;
+          instance<create_column> cc (*this);
+          trav_rel::unames n (*cc);
           names (at, n);
 
           // SQLite does not support altering columns.
@@ -138,6 +212,18 @@ namespace relational
             cerr << "error: SQLite does not support altering of columns"
                  << endl;
             cerr << "info: first altered column is '" << ac->name () <<
+              "' in table '" << at.name () << "'" << endl;
+            throw operation_failed ();
+          }
+
+          // SQLite does not support dropping constraints.
+          //
+          if (sema_rel::drop_foreign_key* dfk =
+              check<sema_rel::drop_foreign_key> (at))
+          {
+            cerr << "error: SQLite does not support dropping of foreign keys"
+                 << endl;
+            cerr << "info: first dropped foreign key is '" << dfk->name () <<
               "' in table '" << at.name () << "'" << endl;
             throw operation_failed ();
           }
@@ -159,6 +245,26 @@ namespace relational
             cerr << "error: SQLite does not support dropping of columns"
                  << endl;
             cerr << "info: first dropped column is '" << dc->name () <<
+              "' in table '" << at.name () << "'" << endl;
+            throw operation_failed ();
+          }
+
+          // SQLite doesn't support adding foreign keys other than inline
+          // via a column definition. See if there are any that we couldn't
+          // handle that way.
+          //
+          for (sema_rel::alter_table::names_iterator i (at.names_begin ());
+               i != at.names_end (); ++i)
+          {
+            sema_rel::add_foreign_key* afk (
+              dynamic_cast<sema_rel::add_foreign_key*> (&i->nameable ()));
+
+            if (afk == 0 || afk->count ("sqlite-fk-defined"))
+              continue;
+
+            cerr << "error: SQLite does not support adding foreign keys"
+                 << endl;
+            cerr << "info: first added foreign key is '" << afk->name () <<
               "' in table '" << at.name () << "'" << endl;
             throw operation_failed ();
           }

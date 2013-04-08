@@ -228,14 +228,16 @@ namespace relational
         string id (id_prefix_ +
                    (key_prefix_.empty () ? m.name () : key_prefix_));
 
-        bool deferred (m.get<bool> ("deferred", true));
+        deferrable def (
+          m.get<deferrable> ("deferrable",
+                             options.fkeys_deferrable_mode ()[db]));
+
         foreign_key::action_type on_delete (
           m.get<foreign_key::action_type> (
             "on-delete", foreign_key::no_action));
 
         foreign_key& fk (
-          model_.new_node<foreign_key> (
-            id, table_name (c), deferred, on_delete));
+          model_.new_node<foreign_key> (id, table_name (c), def, on_delete));
 
         fk.set ("cxx-location", m.location ());
 
@@ -522,7 +524,7 @@ namespace relational
             model_.new_node<sema_rel::foreign_key> (
               id + ".id",
               table_name (*context::top_object),
-              false, // immediate
+              sema_rel::deferrable::not_deferrable,
               sema_rel::foreign_key::cascade));
           fk.set ("cxx-location", m.location ());
           model_.new_edge<sema_rel::unames> (

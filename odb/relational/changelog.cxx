@@ -145,8 +145,8 @@ namespace relational
           {
             if (foreign_key* ofk = other.find<foreign_key> (fk.name ()))
             {
-              if (fk.deferred () != ofk->deferred ())
-                diagnose_foreign_key (fk, "deferred kind");
+              if (fk.deferrable () != ofk->deferrable ())
+                diagnose_foreign_key (fk, "deferrable mode");
 
               if (fk.on_delete () != ofk->on_delete ())
                 diagnose_foreign_key (fk, "on delete action");

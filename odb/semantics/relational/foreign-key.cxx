@@ -50,7 +50,7 @@ namespace semantics
         : key (k, s, g),
           referenced_table_ (k.referenced_table_),
           referenced_columns_ (k.referenced_columns_),
-          deferred_ (k.deferred_),
+          deferrable_ (k.deferrable_),
           on_delete_ (k.on_delete_)
     {
     }
@@ -58,7 +58,7 @@ namespace semantics
     foreign_key::
     foreign_key (xml::parser& p, uscope& s, graph& g)
         : key (p, s, g),
-          deferred_ (p.attribute ("deferred", false)),
+          deferrable_ (p.attribute ("deferrable", deferrable_type ())),
           on_delete_ (p.attribute ("on-delete", no_action))
     {
       using namespace xml;
@@ -94,8 +94,8 @@ namespace semantics
     {
       key::serialize_attributes (s);
 
-      if (deferred ())
-        s.attribute ("deferred", true);
+      if (deferrable () != deferrable_type::not_deferrable)
+        s.attribute ("deferrable", deferrable ());
 
       if (on_delete () != no_action)
         s.attribute ("on-delete", on_delete ());

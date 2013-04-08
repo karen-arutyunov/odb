@@ -17,11 +17,14 @@ namespace relational
 {
   namespace schema
   {
+    typedef std::set<qname> table_set;
+
     struct common: virtual context
     {
       typedef ::emitter emitter_type;
 
-      common (emitter_type& e, ostream& os): e_ (e), os_ (os) {}
+      common (emitter_type& e, ostream& os, schema_format f)
+          : e_ (e), os_ (os), format_ (f) {}
 
       void
       pre_statement ()
@@ -49,9 +52,32 @@ namespace relational
         return os_;
       }
 
+    public:
+      // Find an entity corresponding to the drop node in alter_table.
+      //
+      template <typename T, typename D>
+      T&
+      find (D& d)
+      {
+        using sema_rel::model;
+        using sema_rel::changeset;
+        using sema_rel::table;
+        using sema_rel::alter_table;
+
+        alter_table& at (dynamic_cast<alter_table&> (d.scope ()));
+        changeset& cs (dynamic_cast<changeset&> (at.scope ()));
+        model& bm (cs.base_model ());
+        table* bt (bm.find<table> (at.name ()));
+        assert (bt != 0);
+        T* b (bt->find<T> (d.name ()));
+        assert (b != 0);
+        return *b;
+      }
+
     protected:
       emitter_type& e_;
       ostream& os_;
+      schema_format format_;
     };
 
     //
@@ -64,12 +90,8 @@ namespace relational
     {
       typedef drop_column base;
 
-      drop_column (emitter_type& e,
-                   ostream& os,
-                   schema_format f,
-                   bool* first = 0)
-          : common (e, os),
-            format_ (f),
+      drop_column (common const& c, bool* first = 0)
+          : common (c),
             first_ (first != 0 ? *first : first_data_),
             first_data_ (true)
       {
@@ -79,7 +101,6 @@ namespace relational
           : root_context (), // @@ -Wextra
             context (),
             common (c),
-            format_ (c.format_),
             first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
             first_data_ (c.first_data_)
       {
@@ -99,15 +120,128 @@ namespace relational
         if (first_)
           first_ = false;
         else
-          os << "," << endl;
+          os << ",";
 
-        os << "  ";
+        os << endl
+           << "  ";
         drop_header ();
         os << quote_id (dc.name ());
       }
 
     protected:
-      schema_format format_;
+      bool& first_;
+      bool first_data_;
+    };
+
+    // Normally only used in migration but some databases use it as a
+    // base to also drop foreign keys in schema.
+    //
+    struct drop_foreign_key: trav_rel::foreign_key,
+                             trav_rel::drop_foreign_key,
+                             trav_rel::add_foreign_key, // Override.
+                             common
+    {
+      typedef drop_foreign_key base;
+
+      // Schema constructor.
+      //
+      drop_foreign_key (common const& c, table_set& dropped, bool* first = 0)
+          : common (c),
+            dropped_ (&dropped),
+            first_ (first != 0 ? *first : first_data_),
+            first_data_ (true)
+      {
+      }
+
+      // Migration constructor.
+      //
+      drop_foreign_key (common const& c, bool* first = 0)
+          : common (c),
+            dropped_ (0),
+            first_ (first != 0 ? *first : first_data_),
+            first_data_ (true)
+      {
+      }
+
+      drop_foreign_key (drop_foreign_key const& c)
+          : root_context (), // @@ -Wextra
+            context (),
+            common (c),
+            dropped_ (c.dropped_),
+            first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
+            first_data_ (c.first_data_)
+      {
+      }
+
+      virtual void
+      drop_header ()
+      {
+        os << "DROP CONSTRAINT ";
+      }
+
+      virtual void
+      traverse (sema_rel::foreign_key& fk)
+      {
+        // If the table which we reference is droped before us, then
+        // we need to drop the constraint first. Similarly, if the
+        // referenced table is not part if this model, then assume
+        // it is dropped before us. In migration we always do this
+        // first.
+        //
+        sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
+
+        if (dropped_ != 0)
+        {
+          sema_rel::qname const& rt (fk.referenced_table ());
+          sema_rel::model& m (dynamic_cast<sema_rel::model&> (t.scope ()));
+
+          if (dropped_->find (rt) == dropped_->end () &&
+              m.find (rt) != m.names_end ())
+            return;
+        }
+
+        drop (t, fk);
+      }
+
+      virtual void
+      drop (sema_rel::table& t, sema_rel::foreign_key& fk)
+      {
+        // When generating schema we would need to check if the key exists.
+        // So this implementation will need to be customize on the per-
+        // database level.
+        //
+        pre_statement ();
+
+        os << "ALTER TABLE " << quote_id (t.name ()) << endl
+           << "  ";
+        drop_header ();
+        os << quote_id (fk.name ()) << endl;
+
+        post_statement ();
+      }
+
+      virtual void
+      traverse (sema_rel::drop_foreign_key& dfk)
+      {
+        if (first_)
+          first_ = false;
+        else
+          os << ",";
+
+        os << endl;
+        drop (dfk);
+      }
+
+      virtual void
+      drop (sema_rel::drop_foreign_key& dfk)
+      {
+        os << "  ";
+        drop_header ();
+        os << quote_id (dfk.name ());
+      }
+
+    protected:
+      table_set* dropped_;
       bool& first_;
       bool first_data_;
     };
@@ -120,33 +254,15 @@ namespace relational
 
       enum index_type {unique, non_unique, all};
 
-      drop_index (emitter_type& e,
-                  ostream& os,
-                  schema_format f,
-                  index_type t = all)
-          : common (e, os), format_ (f), type_ (t)
-      {
-      }
+      drop_index (common const& c, index_type t = all)
+          : common (c), type_ (t) {}
 
       virtual void
       traverse (sema_rel::drop_index& di)
       {
-        using sema_rel::model;
-        using sema_rel::changeset;
-        using sema_rel::table;
-        using sema_rel::alter_table;
-        using sema_rel::index;
-
         // Find the index we are dropping in the base model.
         //
-        alter_table& at (dynamic_cast<alter_table&> (di.scope ()));
-        changeset& cs (dynamic_cast<changeset&> (at.scope ()));
-        model& bm (cs.base_model ());
-        table* bt (bm.find<table> (at.name ()));
-        assert (bt != 0);
-        index* bi (bt->find<index> (di.name ()));
-        assert (bi != 0);
-        traverse (*bi);
+        traverse (find<sema_rel::index> (di));
       }
 
       virtual void
@@ -180,40 +296,56 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
       index_type type_;
     };
 
     struct drop_table: trav_rel::table,
                        trav_rel::drop_table,
+                       trav_rel::add_table,   // Override.
+                       trav_rel::alter_table, // Override.
                        common
     {
       typedef drop_table base;
 
       drop_table (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
-      {
-      }
+          : common (e, os, f) {}
 
       virtual void
       drop (sema_rel::qname const& table, bool migration)
       {
+        pre_statement ();
         os << "DROP TABLE " << (migration ? "" : "IF EXISTS ") <<
           quote_id (table) << endl;
+        post_statement ();
       }
 
       virtual void
       traverse (sema_rel::table& t, bool migration)
       {
-        // By default we do everything in a single, last pass. But some
-        // databases may require two passes.
+        // By default drop foreign keys referencing tables that would
+        // have already been dropped on the first pass.
         //
-        if (pass_ != 2)
-          return;
+        if (pass_ == 1)
+        {
+          // Drop constraints. In migration this is always done on pass 1.
+          //
+          if (migration)
+          {
+            instance<drop_foreign_key> dfk (*this);
+            trav_rel::unames n (*dfk);
+            names (t, n);
+          }
+          else
+          {
+            dropped_.insert (t.name ()); // Add it before to cover self-refs.
 
-        pre_statement ();
-        drop (t.name (), migration);
-        post_statement ();
+            instance<drop_foreign_key> dfk (*this, dropped_);
+            trav_rel::unames n (*dfk);
+            names (t, n);
+          }
+        }
+        else
+          drop (t.name (), migration);
       }
 
       virtual void
@@ -247,8 +379,8 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
       unsigned short pass_;
+      table_set dropped_;
     };
 
     struct drop_model: trav_rel::model, common
@@ -256,7 +388,7 @@ namespace relational
       typedef drop_model base;
 
       drop_model (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
+          : common (e, os, f)
       {
       }
 
@@ -294,31 +426,27 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
       unsigned short pass_;
     };
 
     //
     // Create.
     //
-    struct create_table;
 
     struct create_column: trav_rel::column,
                           trav_rel::add_column,
+                          trav_rel::alter_column, // Override.
                           common
     {
       typedef create_column base;
 
-      create_column (emitter_type& e,
-                     ostream& os,
-                     schema_format f,
+      create_column (common const& c,
                      bool override_null = true,
                      bool* first = 0)
-          : common (e, os),
-            format_ (f),
+          : common (c),
+            override_null_ (override_null),
             first_ (first != 0 ? *first : first_data_),
-            first_data_ (true),
-            override_null_ (override_null)
+            first_data_ (true)
       {
       }
 
@@ -326,10 +454,9 @@ namespace relational
           : root_context (), // @@ -Wextra
             context (),
             common (c),
-            format_ (c.format_),
+            override_null_ (c.override_null_),
             first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
-            first_data_ (c.first_data_),
-            override_null_ (c.override_null_)
+            first_data_ (c.first_data_)
       {
       }
 
@@ -339,9 +466,10 @@ namespace relational
         if (first_)
           first_ = false;
         else
-          os << "," << endl;
+          os << ",";
 
-        os << "  ";
+        os << endl
+           << "  ";
         create (c);
       }
 
@@ -359,9 +487,10 @@ namespace relational
         if (first_)
           first_ = false;
         else
-          os << "," << endl;
+          os << ",";
 
-        os << "  ";
+        os << endl
+           << "  ";
         add_header ();
         create (ac);
       }
@@ -441,21 +570,17 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
+      bool override_null_; // Override NOT NULL in add_column.
       bool& first_;
       bool first_data_;
       bool add_;
-      bool override_null_; // Override NOT NULL in add_column.
     };
 
-    struct create_primary_key: trav_rel::primary_key, virtual context
+    struct create_primary_key: trav_rel::primary_key, common
     {
       typedef create_primary_key base;
 
-      create_primary_key (schema_format f, create_table& ct)
-          : format_ (f), create_table_ (ct)
-      {
-      }
+      create_primary_key (common const& c): common (c) {}
 
       virtual void
       traverse (sema_rel::primary_key& pk)
@@ -468,8 +593,7 @@ namespace relational
 
         // We will always follow a column.
         //
-        os << "," << endl
-           << endl;
+        os << "," << endl;
 
         create (pk);
       }
@@ -502,30 +626,96 @@ namespace relational
 
         os << ")";
       }
-
-    protected:
-      schema_format format_;
-      create_table& create_table_;
     };
 
-    struct create_foreign_key: trav_rel::foreign_key, virtual context
+    struct create_foreign_key: trav_rel::foreign_key,
+                               trav_rel::add_foreign_key,
+                               common
     {
       typedef create_foreign_key base;
 
-      create_foreign_key (schema_format f, create_table& ct)
-          : format_ (f), create_table_ (ct)
+      // Schema constructor.
+      //
+      create_foreign_key (common const& c, table_set& created, bool* first = 0)
+          : common (c),
+            created_ (&created),
+            first_ (first != 0 ? *first : first_data_),
+            first_data_ (true)
+      {
+      }
+
+      // Migration constructor.
+      //
+      create_foreign_key (common const& c, bool* first = 0)
+          : common (c),
+            created_ (0),
+            first_ (first != 0 ? *first : first_data_),
+            first_data_ (true)
+      {
+      }
+
+      create_foreign_key (create_foreign_key const& c)
+          : root_context (), // @@ -Wextra
+            context (),
+            common (c),
+            created_ (c.created_),
+            first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
+            first_data_ (c.first_data_)
       {
       }
 
       virtual void
       traverse (sema_rel::foreign_key& fk)
       {
-        // We will always follow a column or another key.
+        // If the referenced table has already been defined, do the
+        // foreign key definition in the table definition. Otherwise
+        // postpone it until pass 2 where we do it via ALTER TABLE
+        // (see add_foreign_key below).
         //
-        os << "," << endl
-           << endl;
+        if (created_->find (fk.referenced_table ()) != created_->end ())
+        {
+          generate (fk);
+          fk.set (db.string () + "-fk-defined", true); // Mark it as defined.
+        }
+      }
 
+      virtual void
+      generate (sema_rel::foreign_key& fk)
+      {
+        if (first_)
+          first_ = false;
+        else
+          os << ",";
+
+        os << endl
+           << "  CONSTRAINT ";
         create (fk);
+      }
+
+      virtual void
+      add_header ()
+      {
+        os << "ADD CONSTRAINT ";
+      }
+
+      virtual void
+      traverse (sema_rel::add_foreign_key& afk)
+      {
+        if (first_)
+          first_ = false;
+        else
+          os << ",";
+
+        os << endl;
+        add (afk);
+      }
+
+      virtual void
+      add (sema_rel::add_foreign_key& afk)
+      {
+        os << "  ";
+        add_header ();
+        create (afk);
       }
 
       virtual void
@@ -533,7 +723,7 @@ namespace relational
       {
         using sema_rel::foreign_key;
 
-        os << "  CONSTRAINT " << name (fk) << endl
+        os << name (fk) << endl
            << "    FOREIGN KEY (";
 
         for (foreign_key::contains_iterator i (fk.contains_begin ());
@@ -578,8 +768,8 @@ namespace relational
         if (fk.on_delete () != foreign_key::no_action)
           on_delete (fk.on_delete ());
 
-        if (fk.deferred ())
-          deferred ();
+        if (!fk.not_deferrable ())
+          deferrable (fk.deferrable ());
       }
 
       virtual string
@@ -613,15 +803,69 @@ namespace relational
       }
 
       virtual void
-      deferred ()
+      deferrable (sema_rel::deferrable d)
       {
         os << endl
-           << "    DEFERRABLE INITIALLY DEFERRED";
+           << "    DEFERRABLE INITIALLY " << d;
       }
 
     protected:
-      schema_format format_;
-      create_table& create_table_;
+      table_set* created_;
+      bool& first_;
+      bool first_data_;
+    };
+
+    // Add foreign key via ALTER TABLE.
+    //
+    struct add_foreign_key: trav_rel::foreign_key, common
+    {
+      typedef add_foreign_key base;
+
+      add_foreign_key (common const& c, table_set& created, bool* first = 0)
+          : common (c),
+            created_ (created),
+            first_ (first != 0 ? *first : first_data_),
+            first_data_ (true),
+            def_ (c, created_)
+      {
+      }
+
+      add_foreign_key (add_foreign_key const& c)
+          : root_context (), // @@ -Wextra
+            context (),
+            common (c),
+            created_ (c.created_),
+            first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
+            first_data_ (c.first_data_),
+            def_ (c, created_)
+      {
+      }
+
+      virtual void
+      traverse (sema_rel::foreign_key& fk)
+      {
+        if (!fk.count (db.string () + "-fk-defined"))
+          generate (dynamic_cast<sema_rel::table&> (fk.scope ()), fk);
+      }
+
+      virtual void
+      generate (sema_rel::table& t, sema_rel::foreign_key& fk)
+      {
+        pre_statement ();
+
+        os << "ALTER TABLE " << quote_id (t.name ()) << endl
+           << "  ADD CONSTRAINT ";
+        def_->create (fk);
+        os << endl;
+
+        post_statement ();
+      }
+
+    protected:
+      table_set& created_;
+      bool& first_;
+      bool first_data_;
+      instance<create_foreign_key> def_;
     };
 
     struct create_index: trav_rel::index, common
@@ -630,13 +874,8 @@ namespace relational
 
       enum index_type {unique, non_unique, all};
 
-      create_index (emitter_type& e,
-                    ostream& os,
-                    schema_format f,
-                    index_type t = all)
-          : common (e, os), format_ (f), type_ (t)
-      {
-      }
+      create_index (common const& c, index_type t = all)
+          : common (c), type_ (t) {}
 
       virtual void
       traverse (sema_rel::index& in)
@@ -715,23 +954,24 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
       index_type type_;
     };
 
-    struct create_table: trav_rel::table, common
+    struct create_table: trav_rel::table,
+                         trav_rel::alter_table, // Override.
+                         common
     {
       typedef create_table base;
 
+      using trav_rel::table::names;
+
       create_table (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
-      {
-      }
+          : common (e, os, f) {}
 
       virtual void
       create_pre (sema_rel::qname const& table)
       {
-        os << "CREATE TABLE " << quote_id (table) << " (" << endl;
+        os << "CREATE TABLE " << quote_id (table) << " (";
       }
 
       virtual void
@@ -741,22 +981,21 @@ namespace relational
       }
 
       virtual void
-      traverse (sema_rel::table& t)
+      create (sema_rel::table& t)
       {
-        // By default we do everything in a single pass. But some
-        // databases may require the second pass.
-        //
-        if (pass_ != 1)
-          return;
-
         pre_statement ();
         create_pre (t.name ());
 
-        instance<create_column> c (emitter (), stream (), format_);
-        instance<create_primary_key> pk (format_, *this);
-        instance<create_foreign_key> fk (format_, *this);
-        trav_rel::unames n;
+        instance<create_column> c (*this);
+        instance<create_primary_key> pk (*this);
 
+        // We will always follow a column, so set first to false.
+        //
+        bool f (false); // (Im)perfect forwarding.
+        bool* pf (&f);  // (Im)perfect forwarding.
+        instance<create_foreign_key> fk (*this, created_, pf);
+
+        trav_rel::unames n;
         n >> c;
         n >> pk;
         n >> fk;
@@ -769,8 +1008,33 @@ namespace relational
         // Create indexes.
         //
         {
-          instance<create_index> in (emitter (), stream (), format_);
+          instance<create_index> in (*this);
           trav_rel::unames n (*in);
+          names (t, n);
+        }
+      }
+
+      virtual void
+      traverse (sema_rel::table& t)
+      {
+        // By default add foreign keys referencing tables that haven't
+        // yet been defined on the second pass.
+        //
+        if (pass_ == 1)
+        {
+          // In migration we always add foreign keys on pass 2.
+          //
+          if (!t.is_a<sema_rel::add_table> ())
+            created_.insert (t.name ()); // Add it before to cover self-refs.
+
+          create (t);
+        }
+        else
+        {
+          // Add foreign keys.
+          //
+          instance<add_foreign_key> fk (*this, created_);
+          trav_rel::unames n (*fk);
           names (t, n);
         }
       }
@@ -782,8 +1046,8 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
       unsigned short pass_;
+      table_set created_;
     };
 
     struct create_model: trav_rel::model, common
@@ -791,9 +1055,7 @@ namespace relational
       typedef create_model base;
 
       create_model (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
-      {
-      }
+          : common (e, os, f) {}
 
       // This version is only called for file schema.
       //
@@ -818,7 +1080,6 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
       unsigned short pass_;
     };
 
@@ -832,18 +1093,13 @@ namespace relational
     {
       typedef alter_column base;
 
-      alter_column (emitter_type& e,
-                    ostream& os,
-                    schema_format f,
-                    bool pre,
-                    bool* first = 0)
-          : common (e, os),
-            format_ (f),
+      alter_column (common const& c, bool pre, bool* first = 0)
+          : common (c),
             pre_ (pre),
             first_ (first != 0 ? *first : first_data_),
             first_data_ (true),
             fl_ (false),
-            def_ (e, os, f, fl_)
+            def_ (c, fl_)
       {
       }
 
@@ -851,12 +1107,11 @@ namespace relational
           : root_context (), // @@ -Wextra
             context (),
             common (c),
-            format_ (c.format_),
             pre_ (c.pre_),
             first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
             first_data_ (c.first_data_),
             fl_ (false),
-            def_ (common::e_, common::os_, c.format_, fl_)
+            def_ (c, fl_)
       {
       }
 
@@ -885,9 +1140,10 @@ namespace relational
         if (first_)
           first_ = false;
         else
-          os << "," << endl;
+          os << ",";
 
-        os << "  ";
+        os << endl
+           << "  ";
         alter_header ();
         alter (c);
       }
@@ -910,7 +1166,6 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
       bool pre_;
       bool& first_;
       bool first_data_;
@@ -921,9 +1176,7 @@ namespace relational
     struct alter_table_common: trav_rel::alter_table, common
     {
       alter_table_common (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
-      {
-      }
+          : common (e, os, f) {}
 
       template <typename T>
       T*
@@ -935,32 +1188,43 @@ namespace relational
           if (T* x = dynamic_cast<T*> (&i->nameable ()))
             return x;
         }
-
         return 0;
       }
 
-      sema_rel::alter_column*
-      check_alter_null (sema_rel::alter_table& at, bool v)
+      sema_rel::column*
+      check_alter_column_null (sema_rel::alter_table& at, bool v)
       {
-        using sema_rel::alter_column;
-
         for (sema_rel::alter_table::names_iterator i (at.names_begin ());
              i != at.names_end (); ++i)
         {
+          using sema_rel::add_column;
+          using sema_rel::alter_column;
+
           if (alter_column* ac = dynamic_cast<alter_column*> (&i->nameable ()))
           {
             if (ac->null_altered () && ac->null () == v)
               return ac;
           }
-        }
 
+          // If we are testing for NOT NULL, also look for new columns that
+          // we initially add as NULL and later convert to NOT NULL.
+          //
+          if (!v)
+          {
+            if (add_column* ac = dynamic_cast<add_column*> (&i->nameable ()))
+            {
+              if (!ac->null () && ac->default_ ().empty ())
+                return ac;
+            }
+          }
+        }
         return 0;
       }
 
       virtual void
       alter_header (sema_rel::qname const& table)
       {
-        os << "ALTER TABLE " << quote_id (table) << endl;
+        os << "ALTER TABLE " << quote_id (table);
       }
 
       void
@@ -970,7 +1234,6 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
       unsigned short pass_;
     };
 
@@ -979,9 +1242,7 @@ namespace relational
       typedef alter_table_pre base;
 
       alter_table_pre (emitter_type& e, ostream& os, schema_format f)
-          : alter_table_common (e, os, f)
-      {
-      }
+          : alter_table_common (e, os, f) {}
 
       // Check if there will be any clauses in ALTER TABLE.
       //
@@ -990,8 +1251,13 @@ namespace relational
       virtual bool
       check (sema_rel::alter_table& at)
       {
-        return check<sema_rel::add_column> (at) ||
-          check_alter_null (at, true);
+        // If changing the below test, make sure to also update tests
+        // in database-specific code.
+        //
+        return
+          check<sema_rel::drop_foreign_key> (at) ||
+          check<sema_rel::add_column> (at) ||
+          check_alter_column_null (at, true);
       }
 
       virtual void
@@ -1006,11 +1272,13 @@ namespace relational
         bool f (true);  // Shared first flag.
         bool* pf (&f);  // (Im)perfect forwarding.
         bool tl (true); // (Im)perfect forwarding.
-        instance<create_column> cc (emitter (), stream (), format_, tl, pf);
-        instance<alter_column> ac (emitter (), stream (), format_, tl, pf);
+        instance<create_column> cc (*this, tl, pf);
+        instance<alter_column> ac (*this, tl, pf);
+        instance<drop_foreign_key> dfk (*this, pf);
         trav_rel::unames n;
         n >> cc;
         n >> ac;
+        n >> dfk;
         names (at, n);
         os << endl;
 
@@ -1026,7 +1294,7 @@ namespace relational
           //
           {
             drop_index::index_type it (drop_index::unique);
-            instance<drop_index> in (emitter (), stream (), format_, it);
+            instance<drop_index> in (*this, it);
             trav_rel::unames n (*in);
             names (at, n);
           }
@@ -1040,7 +1308,7 @@ namespace relational
           //
           {
             create_index::index_type it (create_index::non_unique);
-            instance<create_index> in (emitter (), stream (), format_, it);
+            instance<create_index> in (*this, it);
             trav_rel::unames n (*in);
             names (at, n);
           }
@@ -1053,9 +1321,7 @@ namespace relational
       typedef changeset_pre base;
 
       changeset_pre (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
-      {
-      }
+          : common (e, os, f) {}
 
       // This version is only called for file migration.
       //
@@ -1080,7 +1346,6 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
       unsigned short pass_;
     };
 
@@ -1089,9 +1354,7 @@ namespace relational
       typedef alter_table_post base;
 
       alter_table_post (emitter_type& e, ostream& os, schema_format f)
-          : alter_table_common (e, os, f)
-      {
-      }
+          : alter_table_common (e, os, f) {}
 
       // Check if there will be any clauses in ALTER TABLE.
       //
@@ -1100,8 +1363,13 @@ namespace relational
       virtual bool
       check (sema_rel::alter_table& at)
       {
-        return check<sema_rel::drop_column> (at) ||
-          check_alter_null (at, false);
+        // If changing the below test, make sure to also update tests
+        // in database-specific code.
+        //
+        return
+          check<sema_rel::add_foreign_key> (at) ||
+          check<sema_rel::drop_column> (at) ||
+          check_alter_column_null (at, false);
       }
 
       virtual void
@@ -1116,11 +1384,14 @@ namespace relational
         bool f (true); // Shared first flag.
         bool* pf (&f); // (Im)perfect forwarding.
         bool fl (false); // (Im)perfect forwarding.
-        instance<drop_column> dc (emitter (), stream (), format_, pf);
-        instance<alter_column> ac (emitter (), stream (), format_, fl, pf);
+        instance<drop_column> dc (*this, pf);
+        instance<alter_column> ac (*this, fl, pf);
+        instance<create_foreign_key> fk (*this, pf);
+
         trav_rel::unames n;
         n >> dc;
         n >> ac;
+        n >> fk;
         names (at, n);
         os << endl;
 
@@ -1136,7 +1407,7 @@ namespace relational
           //
           {
             drop_index::index_type it (drop_index::non_unique);
-            instance<drop_index> in (emitter (), stream (), format_, it);
+            instance<drop_index> in (*this, it);
             trav_rel::unames n (*in);
             names (at, n);
           }
@@ -1150,7 +1421,7 @@ namespace relational
           //
           {
             create_index::index_type it (create_index::unique);
-            instance<create_index> in (emitter (), stream (), format_, it);
+            instance<create_index> in (*this, it);
             trav_rel::unames n (*in);
             names (at, n);
           }
@@ -1163,9 +1434,7 @@ namespace relational
       typedef changeset_post base;
 
       changeset_post (emitter_type& e, ostream& os, schema_format f)
-          : common (e, os), format_ (f)
-      {
-      }
+          : common (e, os, f) {}
 
       // This version is only called for file migration.
       //
@@ -1190,7 +1459,6 @@ namespace relational
       }
 
     protected:
-      schema_format format_;
       unsigned short pass_;
     };
 

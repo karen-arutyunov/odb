@@ -7,6 +7,7 @@
 
 #include <iosfwd>
 
+#include <odb/semantics/relational/deferrable.hxx>
 #include <odb/semantics/relational/elements.hxx>
 #include <odb/semantics/relational/key.hxx>
 
@@ -38,10 +39,15 @@ namespace semantics
       }
 
     public:
+      typedef relational::deferrable deferrable_type;
+
+      deferrable_type
+      deferrable () const {return deferrable_;}
+
       bool
-      deferred () const
+      not_deferrable () const
       {
-        return deferred_;
+        return deferrable_ == deferrable_type::not_deferrable;
       }
 
       enum action_type
@@ -51,19 +57,16 @@ namespace semantics
       };
 
       action_type
-      on_delete () const
-      {
-        return on_delete_;
-      }
+      on_delete () const {return on_delete_;}
 
     public:
       foreign_key (string const& id,
                    qname const& referenced_table,
-                   bool deferred,
+                   deferrable_type deferrable,
                    action_type on_delete = no_action)
           : key (id),
             referenced_table_ (referenced_table),
-            deferred_ (deferred),
+            deferrable_ (deferrable),
             on_delete_ (on_delete)
       {
       }
@@ -93,7 +96,7 @@ namespace semantics
     private:
       qname referenced_table_;
       columns referenced_columns_;
-      bool deferred_;
+      deferrable_type deferrable_;
       action_type on_delete_;
     };
 
@@ -108,7 +111,7 @@ namespace semantics
     public:
       add_foreign_key (string const& id,
                        qname const& rt,
-                       bool d,
+                       deferrable_type d,
                        action_type od = no_action)
           : foreign_key (id, rt, d, od) {}
       add_foreign_key (foreign_key const& fk, uscope& s, graph& g)

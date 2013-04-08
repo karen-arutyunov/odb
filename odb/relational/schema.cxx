@@ -128,14 +128,12 @@ namespace relational
 
       instance<changeset_post> changeset (*em, emos, f);
       instance<drop_table> dtable (*em, emos, f);
-      instance<alter_table_post> altable (*em, emos, f);
-      trav_rel::add_table adtable; // Override.
+      instance<alter_table_post> atable (*em, emos, f);
       trav_rel::qnames names;
 
       changeset >> names;
       names >> dtable;
-      names >> altable;
-      names >> adtable;
+      names >> atable;
 
       // Pass 1 and 2.
       //
@@ -143,7 +141,7 @@ namespace relational
       {
         changeset->pass (pass);
         dtable->pass (pass);
-        altable->pass (pass);
+        atable->pass (pass);
 
         changeset->traverse (cs);
       }

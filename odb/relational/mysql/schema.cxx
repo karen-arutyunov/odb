@@ -2,8 +2,6 @@
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <set>
-
 #include <odb/relational/schema.hxx>
 
 #include <odb/relational/mysql/common.hxx>
@@ -18,58 +16,18 @@ namespace relational
     namespace schema
     {
       namespace relational = relational::schema;
+      using relational::table_set;
 
       //
       // Drop.
       //
-      struct drop_table: relational::drop_table, context
+      struct drop_foreign_key: relational::drop_foreign_key, context
       {
-        drop_table (base const& x): base (x) {}
+        drop_foreign_key (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::table&, bool migration);
-
-      private:
-        friend class drop_foreign_key;
-        set<qname> tables_; // Set of tables we would have already dropped.
-      };
-      entry<drop_table> drop_table_;
-
-      struct drop_foreign_key: trav_rel::foreign_key, relational::common
-      {
-        drop_foreign_key (drop_table& dt, bool m)
-            : common (dt.emitter (), dt.stream ()), dt_ (dt), migration_ (m)
+        drop (sema_rel::table& t, sema_rel::foreign_key& fk)
         {
-        }
-
-        virtual void
-        traverse (sema_rel::foreign_key& fk)
-        {
-          // Deferred constraints are not supported by MySQL.
-          //
-          if (fk.deferred ())
-            return;
-
-          // If the table which we reference is droped before us, then
-          // we need to drop the constraint first. Similarly, if the
-          // referenced table is not part if this model, then assume
-          // it is dropped before us. In migration we always do this
-          // first.
-          //
-          sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
-
-          if (!migration_)
-          {
-            sema_rel::qname const& rt (fk.referenced_table ());
-            sema_rel::model& m (dynamic_cast<sema_rel::model&> (t.scope ()));
-
-            if (dt_.tables_.find (rt) == dt_.tables_.end () &&
-                m.find (rt) != m.names_end ())
-              return;
-          }
-
-          pre_statement ();
-
           /*
           // @@ This does not work: in MySQL control statements can only
           //    be used in stored procedures. It seems the only way to
@@ -91,48 +49,65 @@ namespace relational
              << "END IF;" << endl;
           */
 
-          os << "ALTER TABLE " << quote_id (t.name ()) << " DROP FOREIGN " <<
-            "KEY " << quote_id (fk.name ()) << endl;
-
-          post_statement ();
-        }
-
-      private:
-        drop_table& dt_;
-        bool migration_;
-      };
-
-      void drop_table::
-      traverse (sema_rel::table& t, bool migration)
-      {
-        // Only enabled for migration support for now (see above).
-        //
-        if (!migration)
-        {
-          base::traverse (t, migration);
-          return;
-        }
-
-        qname const& table (t.name ());
-
-        if (pass_ == 1)
-        {
-          // Drop constraints. In migration this is always done on pass 1.
+          // So for now we only do this in migration.
           //
-          if (!migration)
-            tables_.insert (table); // Add it before to cover self-refs.
-          drop_foreign_key fk (*this, migration);
-          trav_rel::unames n (fk);
-          names (t, n);
+          if (dropped_ == 0)
+          {
+            if (fk.not_deferrable ())
+              pre_statement ();
+            else
+            {
+              if (format_ != schema_format::sql)
+                return;
+
+              os << "/*" << endl;
+            }
+
+            os << "ALTER TABLE " << quote_id (t.name ()) << endl
+               << "  DROP FOREIGN KEY " << quote_id (fk.name ()) << endl;
+
+            if (fk.not_deferrable ())
+              post_statement ();
+            else
+              os << "*/" << endl
+                 << endl;
+          }
         }
-        else if (pass_ == 2)
+
+        using base::drop;
+
+        virtual void
+        traverse (sema_rel::drop_foreign_key& dfk)
         {
-          pre_statement ();
-          os << "DROP TABLE " << (migration ? "" : "IF EXISTS ") <<
-            quote_id (table) << endl;
-          post_statement ();
+          // Find the foreign key we are dropping in the base model.
+          //
+          sema_rel::foreign_key& fk (find<sema_rel::foreign_key> (dfk));
+
+          if (fk.not_deferrable () || in_comment)
+            base::traverse (dfk);
+          else
+          {
+            if (format_ != schema_format::sql)
+              return;
+
+            os << endl
+               << "  /*"
+               << endl;
+
+            drop (dfk);
+
+            os << endl
+               << "  */";
+          }
         }
-      }
+
+        virtual void
+        drop_header ()
+        {
+          os << "DROP FOREIGN KEY ";
+        }
+      };
+      entry<drop_foreign_key> drop_foreign_key_;
 
       //
       // Create.
@@ -150,14 +125,96 @@ namespace relational
       };
       entry<create_column> create_column_;
 
-      struct create_foreign_key;
+      struct create_foreign_key: relational::create_foreign_key, context
+      {
+        create_foreign_key (base const& x): base (x) {}
+
+        virtual void
+        generate (sema_rel::foreign_key& fk)
+        {
+          // MySQL does not support deferrable constraint checking. Output
+          // such foreign keys as comments, for documentation, unless we
+          // are generating embedded schema.
+          //
+          if (fk.not_deferrable ())
+            base::generate (fk);
+          else
+          {
+            // Don't bloat C++ code with comment strings if we are
+            // generating embedded schema.
+            //
+            if (format_ != schema_format::sql)
+              return;
+
+            os << endl
+               << "  /*" << endl
+               << "  CONSTRAINT ";
+            base::create (fk);
+            os << endl
+               << "  */";
+          }
+        }
+
+        virtual void
+        traverse (sema_rel::add_foreign_key& afk)
+        {
+          if (afk.not_deferrable () || in_comment)
+            base::traverse (afk);
+          else
+          {
+            if (format_ != schema_format::sql)
+              return;
+
+            os << endl
+               << "  /*"
+               << endl;
+
+            add (afk);
+
+            os << endl
+               << "  */";
+          }
+        }
+
+        virtual void
+        deferrable (sema_rel::deferrable)
+        {
+          // This will still be called to output the comment.
+        }
+      };
+      entry<create_foreign_key> create_foreign_key_;
+
+      struct add_foreign_key: relational::add_foreign_key, context
+      {
+        add_foreign_key (base const& x): base (x) {}
+
+        virtual void
+        generate (sema_rel::table& t, sema_rel::foreign_key& fk)
+        {
+          // MySQL has no deferrable constraints.
+          //
+          if (fk.not_deferrable ())
+            base::generate (t, fk);
+          else
+          {
+            if (format_ != schema_format::sql)
+              return;
+
+            os << "/*" << endl;
+            os << "ALTER TABLE " << quote_id (t.name ()) << endl
+               << "  ADD CONSTRAINT ";
+            def_->create (fk);
+            os << endl
+               << "*/" << endl
+               << endl;
+          }
+        }
+      };
+      entry<add_foreign_key> add_foreign_key_;
 
       struct create_table: relational::create_table, context
       {
         create_table (base const& x): base (x) {}
-
-        void
-        traverse (sema_rel::table&);
 
         virtual void
         create_post ()
@@ -172,133 +229,8 @@ namespace relational
 
           os << endl;
         }
-
-      private:
-        friend class create_foreign_key;
-        set<qname> tables_; // Set of tables we have already defined.
       };
       entry<create_table> create_table_;
-
-      struct create_foreign_key: relational::create_foreign_key, context
-      {
-        create_foreign_key (schema_format f, relational::create_table& ct)
-            : base (f, ct)
-        {
-        }
-
-        create_foreign_key (base const& x): base (x) {}
-
-        virtual void
-        traverse (sema_rel::foreign_key& fk)
-        {
-          // If the referenced table has already been defined, do the
-          // foreign key definition in the table definition. Otherwise
-          // postpone it until pass 2 where we do it via ALTER TABLE
-          // (see add_foreign_key below).
-          //
-          create_table& ct (static_cast<create_table&> (create_table_));
-
-          if (ct.tables_.find (fk.referenced_table ()) != ct.tables_.end ())
-          {
-            // MySQL does not support deferred constraint checking. Output
-            // such foreign keys as comments, for documentation, unless we
-            // are generating embedded schema.
-            //
-            if (fk.deferred ())
-            {
-              // Don't bloat C++ code with comment strings if we are
-              // generating embedded schema.
-              //
-              if (format_ != schema_format::embedded)
-              {
-                os << endl
-                   << endl
-                   << "  /*" << endl;
-
-                base::create (fk);
-
-                os << endl
-                   << "  */";
-              }
-            }
-            else
-              base::traverse (fk);
-
-            fk.set ("mysql-fk-defined", true); // Mark it as defined.
-          }
-        }
-
-        virtual void
-        deferred ()
-        {
-          // MySQL doesn't support deferred.
-        }
-      };
-      entry<create_foreign_key> create_foreign_key_;
-
-      struct add_foreign_key: create_foreign_key, relational::common
-      {
-        add_foreign_key (schema_format f, relational::create_table& ct)
-            : create_foreign_key (f, ct), common (ct.emitter (), ct.stream ())
-        {
-        }
-
-        virtual void
-        traverse (sema_rel::foreign_key& fk)
-        {
-          if (!fk.count ("mysql-fk-defined"))
-          {
-            sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
-
-            // MySQL has no deferred constraints.
-            //
-            if (fk.deferred ())
-            {
-              if (format_ != schema_format::embedded)
-              {
-                os << "/*" << endl;
-
-                os << "ALTER TABLE " << quote_id (t.name ()) << " ADD" << endl;
-                base::create (fk);
-
-                os << endl
-                   << "*/" << endl
-                   << endl;
-              }
-            }
-            else
-            {
-              pre_statement ();
-
-              os << "ALTER TABLE " << quote_id (t.name ()) << " ADD" << endl;
-              base::create (fk);
-              os << endl;
-
-              post_statement ();
-            }
-          }
-        }
-      };
-
-      void create_table::
-      traverse (sema_rel::table& t)
-      {
-        if (pass_ == 1)
-        {
-          // In migration we always add foreign keys on pass 2.
-          //
-          if (!t.is_a<sema_rel::add_table> ())
-            tables_.insert (t.name ()); // Add it before to cover self-refs.
-          base::traverse (t);
-          return;
-        }
-
-        // Add foreign keys.
-        //
-        add_foreign_key fk (format_, *this);
-        trav_rel::unames n (fk);
-        names (t, n);
-      }
 
       struct create_index: relational::create_index, context
       {
@@ -356,6 +288,119 @@ namespace relational
         }
       };
       entry<alter_column> alter_column_;
+
+      struct alter_table_pre: relational::alter_table_pre, context
+      {
+        alter_table_pre (base const& x): base (x) {}
+
+        // Check if we are only dropping deferrable foreign keys.
+        //
+        bool
+        check_drop_deferrable_only (sema_rel::alter_table& at)
+        {
+          if (check<sema_rel::add_column> (at) ||
+              check_alter_column_null (at, true))
+            return false;
+
+          for (sema_rel::alter_table::names_iterator i (at.names_begin ());
+               i != at.names_end (); ++i)
+          {
+            using sema_rel::foreign_key;
+            using sema_rel::drop_foreign_key;
+
+            if (drop_foreign_key* dfk =
+                dynamic_cast<drop_foreign_key*> (&i->nameable ()))
+            {
+              foreign_key& fk (find<foreign_key> (*dfk));
+
+              if (fk.not_deferrable ())
+                return false;
+            }
+          }
+          return true;
+        }
+
+        virtual void
+        alter (sema_rel::alter_table& at)
+        {
+          if (check_drop_deferrable_only (at))
+          {
+            if (format_ != schema_format::sql)
+              return;
+
+            os << "/*" << endl;
+            in_comment = true;
+
+            alter_header (at.name ());
+            instance<drop_foreign_key> dfk (*this);
+            trav_rel::unames n (*dfk);
+            names (at, n);
+            os << endl;
+
+            in_comment = false;
+            os << "*/" << endl
+               << endl;
+          }
+          else
+            base::alter (at);
+        }
+      };
+      entry<alter_table_pre> alter_table_pre_;
+
+      struct alter_table_post: relational::alter_table_post, context
+      {
+        alter_table_post (base const& x): base (x) {}
+
+        // Check if we are only adding deferrable foreign keys.
+        //
+        bool
+        check_add_deferrable_only (sema_rel::alter_table& at)
+        {
+          if (check<sema_rel::drop_column> (at) ||
+              check_alter_column_null (at, false))
+            return false;
+
+          for (sema_rel::alter_table::names_iterator i (at.names_begin ());
+               i != at.names_end (); ++i)
+          {
+            using sema_rel::add_foreign_key;
+
+            if (add_foreign_key* afk =
+                dynamic_cast<add_foreign_key*> (&i->nameable ()))
+            {
+              if (afk->not_deferrable ())
+                return false;
+            }
+          }
+          return true;
+        }
+
+        virtual void
+        alter (sema_rel::alter_table& at)
+        {
+          if (check_add_deferrable_only (at))
+          {
+            if (format_ != schema_format::sql)
+              return;
+
+            os << "/*" << endl;
+            in_comment = true;
+
+            alter_header (at.name ());
+            instance<create_foreign_key> cfk (*this);
+            trav_rel::unames n (*cfk);
+            names (at, n);
+            os << endl;
+
+            in_comment = false;
+            os << "*/" << endl
+               << endl;
+          }
+          else
+            base::alter (at);
+        }
+      };
+      entry<alter_table_post> alter_table_post_;
     }
   }
 }

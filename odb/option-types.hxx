@@ -12,8 +12,10 @@
 
 
 #include <odb/semantics/relational/name.hxx>
+#include <odb/semantics/relational/deferrable.hxx>
 
 using semantics::relational::qname;
+using semantics::relational::deferrable;
 
 struct cxx_version
 {

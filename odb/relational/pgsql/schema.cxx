@@ -2,8 +2,6 @@
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <set>
-
 #include <odb/relational/schema.hxx>
 
 #include <odb/relational/pgsql/common.hxx>
@@ -18,6 +16,7 @@ namespace relational
     namespace schema
     {
       namespace relational = relational::schema;
+      using relational::table_set;
 
       //
       // Drop.
@@ -28,10 +27,17 @@ namespace relational
         drop_table (base const& x): base (x) {}
 
         virtual void
-        drop (sema_rel::qname const& table, bool migration)
+        traverse (sema_rel::table& t, bool migration)
         {
+          // For PostgreSQL we use the CASCADE clause to drop foreign keys.
+          //
+          if (pass_ != 2)
+            return;
+
+          pre_statement ();
           os << "DROP TABLE " << (migration ? "" : "IF EXISTS ") <<
-            quote_id (table) << " CASCADE" << endl;
+            quote_id (t.name ()) << " CASCADE" << endl;
+          post_statement ();
         }
       };
       entry<drop_table> drop_table_;
@@ -39,21 +45,6 @@ namespace relational
       //
       // Create.
       //
-
-      struct create_foreign_key;
-
-      struct create_table: relational::create_table, context
-      {
-        create_table (base const& x): base (x) {}
-
-        void
-        traverse (sema_rel::table&);
-
-      private:
-        friend class create_foreign_key;
-        set<qname> tables_; // Set of tables we have already defined.
-      };
-      entry<create_table> create_table_;
 
       struct create_column: relational::create_column, context
       {
@@ -83,83 +74,16 @@ namespace relational
 
       struct create_foreign_key: relational::create_foreign_key, context
       {
-        create_foreign_key (schema_format f, relational::create_table& ct)
-            : base (f, ct)
-        {
-        }
-
         create_foreign_key (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::foreign_key& fk)
-        {
-          // If the referenced table has already been defined, do the
-          // foreign key definition in the table definition. Otherwise
-          // postpone it until pass 2 where we do it via ALTER TABLE
-          // (see add_foreign_key below).
-          //
-          create_table& ct (static_cast<create_table&> (create_table_));
-
-          if (ct.tables_.find (fk.referenced_table ()) != ct.tables_.end ())
-          {
-            base::traverse (fk);
-            fk.set ("pgsql-fk-defined", true); // Mark it as defined.
-          }
-        }
-
-        virtual void
-        deferred ()
+        deferrable (sema_rel::deferrable d)
         {
           os << endl
-             << "    INITIALLY DEFERRED";
+             << "    INITIALLY " << d;
         }
       };
       entry<create_foreign_key> create_foreign_key_;
-
-      struct add_foreign_key: create_foreign_key, relational::common
-      {
-        add_foreign_key (schema_format f, relational::create_table& ct)
-            : create_foreign_key (f, ct), common (ct.emitter (), ct.stream ())
-        {
-        }
-
-        virtual void
-        traverse (sema_rel::foreign_key& fk)
-        {
-          if (!fk.count ("pgsql-fk-defined"))
-          {
-            sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
-
-            pre_statement ();
-
-            os << "ALTER TABLE " << quote_id (t.name ()) << " ADD" << endl;
-            base::create (fk);
-            os << endl;
-
-            post_statement ();
-          }
-        }
-      };
-
-      void create_table::
-      traverse (sema_rel::table& t)
-      {
-        if (pass_ == 1)
-        {
-          // In migration we always add foreign keys on pass 2.
-          //
-          if (!t.is_a<sema_rel::add_table> ())
-            tables_.insert (t.name ()); // Add it before to cover self-refs.
-          base::traverse (t);
-          return;
-        }
-
-        // Add foreign keys.
-        //
-        add_foreign_key fk (format_, *this);
-        trav_rel::unames n (fk);
-        names (t, n);
-      }
 
       struct create_index: relational::create_index, context
       {

@@ -53,6 +53,11 @@ process_options (options& o)
   if (o.schema_name ().count (db) == 0)
     o.schema_name ()[db] = "";
 
+  // Set default --fkeys-deferrable-mode value.
+  //
+  if (o.fkeys_deferrable_mode ().count (db) == 0)
+    o.fkeys_deferrable_mode ()[db] = deferrable::deferred;
+
   // Set default --{export,extern}-symbol values.
   //
   if (o.export_symbol ().count (db) == 0)

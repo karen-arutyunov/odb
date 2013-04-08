@@ -1050,7 +1050,10 @@ protected:
     ~data () {}
 
     data (std::ostream& os)
-        : os_ (os.rdbuf ()), top_object_ (0), cur_object_ (0),
+        : os_ (os.rdbuf ()),
+          in_comment_ (false),
+          top_object_ (0),
+          cur_object_ (0),
           sql_name_upper_ ("(.+)", "\\U$1"),
           sql_name_lower_ ("(.+)", "\\L$1")
     {
@@ -1059,6 +1062,8 @@ protected:
   public:
     std::ostream os_;
     std::stack<std::streambuf*> os_stack_;
+
+    bool in_comment_;
 
     semantics::class_* top_object_;
     semantics::class_* cur_object_;
@@ -1089,6 +1094,8 @@ public:
   options_type const& options;
   features_type& features;
   database const db;
+
+  bool& in_comment;
 
   string& exp; // Export symbol (with trailing space if specified).
   string& ext; // Extern symbol.

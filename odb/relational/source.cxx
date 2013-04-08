@@ -2503,7 +2503,7 @@ traverse_object (type& c)
   if (poly && !poly_derived)
   {
     os << "void " << traits << "::" << endl
-       << "discriminator_ (statements_type & sts," << endl
+       << "discriminator_ (statements_type& sts," << endl
        << "const id_type& id," << endl
        << "discriminator_type* pd";
 

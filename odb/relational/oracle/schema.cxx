@@ -2,8 +2,6 @@
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <set>
-
 #include <odb/relational/schema.hxx>
 
 #include <odb/relational/oracle/common.hxx>
@@ -18,6 +16,7 @@ namespace relational
     namespace schema
     {
       namespace relational = relational::schema;
+      using relational::table_set;
 
       struct sql_emitter: relational::sql_emitter
       {
@@ -106,6 +105,19 @@ namespace relational
       };
       entry<drop_column> drop_column_;
 
+      struct drop_foreign_key: relational::drop_foreign_key, context
+      {
+        drop_foreign_key (base const& x): base (x) {}
+
+        virtual void
+        traverse (sema_rel::drop_foreign_key& dfk)
+        {
+          os << endl;
+          drop (dfk);
+        }
+      };
+      entry<drop_foreign_key> drop_foreign_key_;
+
       struct drop_table: relational::drop_table, context
       {
         drop_table (base const& x): base (x) {}
@@ -113,6 +125,8 @@ namespace relational
         virtual void
         traverse (sema_rel::table& t, bool migration)
         {
+          // For Oracle we use the CASCADE clause to drop foreign keys.
+          //
           if (pass_ != 2)
             return;
 
@@ -203,112 +217,52 @@ namespace relational
       };
       entry<create_column> create_column_;
 
-      struct create_foreign_key;
+      struct create_foreign_key: relational::create_foreign_key, context
+      {
+        create_foreign_key (base const& x): base (x) {}
+
+        virtual void
+        traverse (sema_rel::add_foreign_key& afk)
+        {
+          os << endl
+             << "  ADD CONSTRAINT ";
+          create (afk);
+        }
+      };
+      entry<create_foreign_key> create_foreign_key_;
 
       struct create_table: relational::create_table, context
       {
         create_table (base const& x): base (x) {}
 
         void
-        traverse (sema_rel::table&);
-
-      private:
-        friend class create_foreign_key;
-        set<qname> tables_; // Set of tables we have already defined.
-      };
-      entry<create_table> create_table_;
-
-      struct create_foreign_key: relational::create_foreign_key, context
-      {
-        create_foreign_key (schema_format f, relational::create_table& ct)
-            : base (f, ct)
+        traverse (sema_rel::table& t)
         {
-        }
-
-        create_foreign_key (base const& x): base (x) {}
-
-        virtual void
-        traverse (sema_rel::foreign_key& fk)
-        {
-          // If the referenced table has already been defined, do the
-          // foreign key definition in the table definition. Otherwise
-          // postpone it until pass 2 where we do it via ALTER TABLE
-          // (see add_foreign_key below).
-          //
-          create_table& ct (static_cast<create_table&> (create_table_));
-
-          if (ct.tables_.find (fk.referenced_table ()) != ct.tables_.end ())
-          {
-            base::traverse (fk);
-            fk.set ("oracle-fk-defined", true); // Mark it as defined.
-          }
-        }
-      };
-      entry<create_foreign_key> create_foreign_key_;
-
-      struct add_foreign_key: create_foreign_key, relational::common
-      {
-        add_foreign_key (schema_format f, relational::create_table& ct)
-            : create_foreign_key (f, ct), common (ct.emitter (), ct.stream ())
-        {
-        }
-
-        virtual void
-        traverse (sema_rel::foreign_key& fk)
-        {
-          if (!fk.count ("oracle-fk-defined"))
-          {
-            sema_rel::table& t (dynamic_cast<sema_rel::table&> (fk.scope ()));
-
-            pre_statement ();
-
-            os << "ALTER TABLE " << quote_id (t.name ()) << " ADD" << endl;
-            base::create (fk);
-            os << endl;
-
-            post_statement ();
-          }
-        }
-      };
-
-      void create_table::
-      traverse (sema_rel::table& t)
-      {
-        if (pass_ == 1)
-        {
-          // In migration we always add foreign keys on pass 2.
-          //
-          if (!t.is_a<sema_rel::add_table> ())
-            tables_.insert (t.name ()); // Add it before to cover self-refs.
           base::traverse (t);
 
-          // Create the sequence if we have auto primary key.
-          //
-          using sema_rel::primary_key;
-
-          sema_rel::table::names_iterator i (t.find ("")); // Special name.
-          primary_key* pk (i != t.names_end ()
-                           ? &dynamic_cast<primary_key&> (i->nameable ())
-                           : 0);
-
-          if (pk != 0 && pk->auto_ ())
+          if (pass_ == 1)
           {
-            pre_statement ();
-            os_ << "CREATE SEQUENCE " <<
-              quote_id (sequence_name (t.name ())) << endl
-                << "  START WITH 1 INCREMENT BY 1" << endl;
-            post_statement ();
+            // Create the sequence if we have auto primary key.
+            //
+            using sema_rel::primary_key;
+
+            sema_rel::table::names_iterator i (t.find ("")); // Special name.
+            primary_key* pk (i != t.names_end ()
+                             ? &dynamic_cast<primary_key&> (i->nameable ())
+                             : 0);
+
+            if (pk != 0 && pk->auto_ ())
+            {
+              pre_statement ();
+              os_ << "CREATE SEQUENCE " <<
+                quote_id (sequence_name (t.name ())) << endl
+                  << "  START WITH 1 INCREMENT BY 1" << endl;
+              post_statement ();
+            }
           }
-
-          return;
         }
-
-        // Add foreign keys.
-        //
-        add_foreign_key fk (format_, *this);
-        trav_rel::unames n (fk);
-        names (t, n);
-      }
+      };
+      entry<create_table> create_table_;
 
       struct create_index: relational::create_index, context
       {
@@ -377,31 +331,43 @@ namespace relational
           // Oracle can only alter certain kinds of things together but
           // grouped one at a time.
           //
+          if (check<sema_rel::drop_foreign_key> (at))
+          {
+            pre_statement ();
+            alter_header (at.name ());
+
+            instance<drop_foreign_key> dfc (*this);
+            trav_rel::unames n (*dfc);
+            names (at, n);
+            os << endl;
+
+            post_statement ();
+          }
+
           if (check<sema_rel::add_column> (at))
           {
             pre_statement ();
             alter_header (at.name ());
-            os << "  ADD (";
+            os << endl
+               << "  ADD (";
 
-            instance<create_column> cc (emitter (), stream (), format_);
-            trav_rel::alter_column ac; // Override.
-            trav_rel::unames n;
-            n >> cc;
-            n >> ac;
+            instance<create_column> cc (*this);
+            trav_rel::unames n (*cc);
             names (at, n);
             os << ")" << endl;
 
             post_statement ();
           }
 
-          if (check_alter_null (at, true))
+          if (check_alter_column_null (at, true))
           {
             pre_statement ();
             alter_header (at.name ());
-            os << "  MODIFY (";
+            os << endl
+               << "  MODIFY (";
 
             bool tl (true); // (Im)perfect forwarding.
-            instance<alter_column> ac (emitter (), stream (), format_, tl);
+            instance<alter_column> ac (*this, tl);
             trav_rel::unames n (*ac);
             names (at, n);
             os << ")" << endl;
@@ -426,9 +392,10 @@ namespace relational
           {
             pre_statement ();
             alter_header (at.name ());
-            os << "  DROP (";
+            os << endl
+               << "  DROP (";
 
-            instance<drop_column> dc (emitter (), stream (), format_);
+            instance<drop_column> dc (*this);
             trav_rel::unames n (*dc);
             names (at, n);
             os << ")" << endl;
@@ -436,17 +403,31 @@ namespace relational
             post_statement ();
           }
 
-          if (check_alter_null (at, false))
+          if (check_alter_column_null (at, false))
           {
             pre_statement ();
             alter_header (at.name ());
-            os << "  MODIFY (";
+            os << endl
+               << "  MODIFY (";
 
             bool fl (false); // (Im)perfect forwarding.
-            instance<alter_column> ac (emitter (), stream (), format_, fl);
+            instance<alter_column> ac (*this, fl);
             trav_rel::unames n (*ac);
             names (at, n);
             os << ")" << endl;
+
+            post_statement ();
+          }
+
+          if (check<sema_rel::add_foreign_key> (at))
+          {
+            pre_statement ();
+            alter_header (at.name ());
+
+            instance<create_foreign_key> cfc (*this);
+            trav_rel::unames n (*cfc);
+            names (at, n);
+            os << endl;
 
             post_statement ();
           }

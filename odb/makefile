@@ -156,7 +156,8 @@ cxx_ctun :=                          \
 option-types.cxx                     \
 option-functions.cxx                 \
 profile.cxx                          \
-semantics/relational/name.cxx
+semantics/relational/name.cxx        \
+semantics/relational/deferrable.cxx
 
 # Options file.
 #
