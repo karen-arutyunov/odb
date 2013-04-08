@@ -199,14 +199,14 @@ namespace relational
         create_foreign_key (base const& x): base (x) {}
 
         virtual void
-        generate (sema_rel::foreign_key& fk)
+        traverse_create (sema_rel::foreign_key& fk)
         {
           // SQL Server does not support deferrable constraint checking.
           // Output such foreign keys as comments, for documentation,
           // unless we are generating embedded schema.
           //
           if (fk.not_deferrable ())
-            base::generate (fk);
+            base::traverse_create (fk);
           else
           {
             // Don't bloat C++ code with comment strings if we are
@@ -225,9 +225,9 @@ namespace relational
         }
 
         virtual void
-        traverse (sema_rel::add_foreign_key& afk)
+        traverse_add (sema_rel::foreign_key& fk)
         {
-          bool c (!afk.not_deferrable () && !in_comment);
+          bool c (!fk.not_deferrable () && !in_comment);
 
           if (c && format_ != schema_format::sql)
             return;
@@ -241,7 +241,7 @@ namespace relational
                << "      ";
 
           os << "CONSTRAINT ";
-          create (afk);
+          create (fk);
 
           if (c)
             os << endl
@@ -268,33 +268,76 @@ namespace relational
       };
       entry<create_foreign_key> create_foreign_key_;
 
-      struct add_foreign_key: relational::add_foreign_key, context
+      struct create_table: relational::create_table, context
       {
-        add_foreign_key (base const& x): base (x) {}
+        create_table (base const& x): base (x) {}
+
+        // See if there are any undefined foreign keys that are not
+        // deferrable.
+        //
+        bool
+        check_undefined_fk_deferrable_only (sema_rel::table& t)
+        {
+          for (sema_rel::table::names_iterator i (t.names_begin ());
+               i != t.names_end (); ++i)
+          {
+            using sema_rel::foreign_key;
+
+            if (foreign_key* fk = dynamic_cast<foreign_key*> (&i->nameable ()))
+            {
+              if (!fk->count ("mssql-fk-defined") &&
+                  fk->not_deferrable ())
+                return false;
+            }
+          }
+          return true;
+        }
 
         virtual void
-        generate (sema_rel::table& t, sema_rel::foreign_key& fk)
+        traverse (sema_rel::table& t)
         {
-          // SQL Server has no deferrable constraints.
-          //
-          if (fk.not_deferrable ())
-            base::generate (t, fk);
+          if (pass_ == 1)
+            base::traverse (t);
           else
           {
-            if (format_ != schema_format::sql)
-              return;
+            // Add undefined foreign keys.
+            //
+            if (check_undefined_fk (t))
+            {
+              bool deferrable (check_undefined_fk_deferrable_only (t));
 
-            os << "/*" << endl;
-            os << "ALTER TABLE " << quote_id (t.name ()) << endl
-               << "  ADD CONSTRAINT ";
-            def_->create (fk);
-            os << endl
-               << "*/" << endl
-               << endl;
+              if (!deferrable || format_ == schema_format::sql)
+              {
+                if (deferrable)
+                {
+                  os << "/*" << endl;
+                  in_comment = true;
+                }
+                else
+                  pre_statement ();
+
+                os << "ALTER TABLE " << quote_id (t.name ()) << endl
+                   << "  ADD ";
+
+                instance<create_foreign_key> cfk (*this);
+                trav_rel::unames n (*cfk);
+                names (t, n);
+                os << endl;
+
+                if (deferrable)
+                {
+                  in_comment = false;
+                  os << "*/" << endl
+                     << endl;
+                }
+                else
+                  post_statement ();
+              }
+            }
           }
         }
       };
-      entry<add_foreign_key> add_foreign_key_;
+      entry<create_table> create_table_;
 
       struct drop_index: relational::drop_index, context
       {

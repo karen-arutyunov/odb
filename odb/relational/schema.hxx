@@ -634,7 +634,7 @@ namespace relational
     {
       typedef create_foreign_key base;
 
-      // Schema constructor.
+      // Schema constructor, pass 1.
       //
       create_foreign_key (common const& c, table_set& created, bool* first = 0)
           : common (c),
@@ -644,7 +644,7 @@ namespace relational
       {
       }
 
-      // Migration constructor.
+      // Schema constructor, pass 2 and migration constructor.
       //
       create_foreign_key (common const& c, bool* first = 0)
           : common (c),
@@ -667,20 +667,31 @@ namespace relational
       virtual void
       traverse (sema_rel::foreign_key& fk)
       {
-        // If the referenced table has already been defined, do the
-        // foreign key definition in the table definition. Otherwise
-        // postpone it until pass 2 where we do it via ALTER TABLE
-        // (see add_foreign_key below).
-        //
-        if (created_->find (fk.referenced_table ()) != created_->end ())
+        if (created_ != 0)
         {
-          generate (fk);
-          fk.set (db.string () + "-fk-defined", true); // Mark it as defined.
+          // Pass 1.
+          //
+          // If the referenced table has already been defined, do the
+          // foreign key definition in the table definition. Otherwise
+          // postpone it until pass 2 where we do it via ALTER TABLE.
+          //
+          if (created_->find (fk.referenced_table ()) != created_->end ())
+          {
+            traverse_create (fk);
+            fk.set (db.string () + "-fk-defined", true); // Mark it as defined.
+          }
+        }
+        else
+        {
+          // Pass 2.
+          //
+          if (!fk.count (db.string () + "-fk-defined"))
+            traverse_add (fk);
         }
       }
 
       virtual void
-      generate (sema_rel::foreign_key& fk)
+      traverse_create (sema_rel::foreign_key& fk)
       {
         if (first_)
           first_ = false;
@@ -693,13 +704,7 @@ namespace relational
       }
 
       virtual void
-      add_header ()
-      {
-        os << "ADD CONSTRAINT ";
-      }
-
-      virtual void
-      traverse (sema_rel::add_foreign_key& afk)
+      traverse_add (sema_rel::foreign_key& fk)
       {
         if (first_)
           first_ = false;
@@ -707,15 +712,27 @@ namespace relational
           os << ",";
 
         os << endl;
-        add (afk);
+        add (fk);
       }
 
       virtual void
-      add (sema_rel::add_foreign_key& afk)
+      traverse (sema_rel::add_foreign_key& afk)
+      {
+        traverse_add (afk);
+      }
+
+      virtual void
+      add_header ()
+      {
+        os << "ADD CONSTRAINT ";
+      }
+
+      virtual void
+      add (sema_rel::foreign_key& fk)
       {
         os << "  ";
         add_header ();
-        create (afk);
+        create (fk);
       }
 
       virtual void
@@ -805,59 +822,6 @@ namespace relational
       table_set* created_;
       bool& first_;
       bool first_data_;
-    };
-
-    // Add foreign key via ALTER TABLE.
-    //
-    struct add_foreign_key: trav_rel::foreign_key, common
-    {
-      typedef add_foreign_key base;
-
-      add_foreign_key (common const& c, table_set& created, bool* first = 0)
-          : common (c),
-            created_ (created),
-            first_ (first != 0 ? *first : first_data_),
-            first_data_ (true),
-            def_ (c, created_)
-      {
-      }
-
-      add_foreign_key (add_foreign_key const& c)
-          : root_context (), // @@ -Wextra
-            context (),
-            common (c),
-            created_ (c.created_),
-            first_ (&c.first_ != &c.first_data_ ? c.first_ : first_data_),
-            first_data_ (c.first_data_),
-            def_ (c, created_)
-      {
-      }
-
-      virtual void
-      traverse (sema_rel::foreign_key& fk)
-      {
-        if (!fk.count (db.string () + "-fk-defined"))
-          generate (dynamic_cast<sema_rel::table&> (fk.scope ()), fk);
-      }
-
-      virtual void
-      generate (sema_rel::table& t, sema_rel::foreign_key& fk)
-      {
-        pre_statement ();
-
-        os << "ALTER TABLE " << quote_id (t.name ()) << endl
-           << "  ADD CONSTRAINT ";
-        def_->create (fk);
-        os << endl;
-
-        post_statement ();
-      }
-
-    protected:
-      table_set& created_;
-      bool& first_;
-      bool first_data_;
-      instance<create_foreign_key> def_;
     };
 
     struct create_index: trav_rel::index, common
@@ -1006,6 +970,22 @@ namespace relational
         }
       }
 
+      // See if there are any undefined foreign keys that we need to
+      // add with ALTER TABLE.
+      //
+      bool
+      check_undefined_fk (sema_rel::table& t)
+      {
+        for (sema_rel::table::names_iterator i (t.names_begin ());
+             i != t.names_end (); ++i)
+        {
+          if (i->nameable ().is_a<sema_rel::foreign_key> () &&
+              !i->nameable ().count (db.string () + "-fk-defined"))
+            return true;
+        }
+        return false;
+      }
+
       virtual void
       traverse (sema_rel::table& t)
       {
@@ -1023,11 +1003,20 @@ namespace relational
         }
         else
         {
-          // Add foreign keys.
+          // Add undefined foreign keys.
           //
-          instance<add_foreign_key> fk (*this, created_);
-          trav_rel::unames n (*fk);
-          names (t, n);
+          if (check_undefined_fk (t))
+          {
+            pre_statement ();
+            os << "ALTER TABLE " << quote_id (t.name ());
+
+            instance<create_foreign_key> cfk (*this);
+            trav_rel::unames n (*cfk);
+            names (t, n);
+            os << endl;
+
+            post_statement ();
+          }
         }
       }
 

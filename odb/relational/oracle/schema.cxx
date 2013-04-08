@@ -242,11 +242,11 @@ namespace relational
         create_foreign_key (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::add_foreign_key& afk)
+        traverse_add (sema_rel::foreign_key& fk)
         {
           os << endl
              << "  ADD CONSTRAINT ";
-          create (afk);
+          create (fk);
         }
       };
       entry<create_foreign_key> create_foreign_key_;
