@@ -1202,12 +1202,6 @@ namespace relational
         return 0;
       }
 
-      virtual void
-      alter_header (sema_rel::qname const& table)
-      {
-        os << "ALTER TABLE " << quote_id (table);
-      }
-
       void
       pass (unsigned short p)
       {
@@ -1248,7 +1242,7 @@ namespace relational
         // statement. Quite a few databases don't support this.
         //
         pre_statement ();
-        alter_header (at.name ());
+        os << "ALTER TABLE " << quote_id (at.name ());
 
         bool f (true);  // Shared first flag.
         bool* pf (&f);  // (Im)perfect forwarding.
@@ -1360,7 +1354,7 @@ namespace relational
         // statement. Quite a few databases don't support this.
         //
         pre_statement ();
-        alter_header (at.name ());
+        os << "ALTER TABLE " << quote_id (at.name ());
 
         bool f (true); // Shared first flag.
         bool* pf (&f); // (Im)perfect forwarding.

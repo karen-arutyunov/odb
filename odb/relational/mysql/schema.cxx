@@ -367,7 +367,7 @@ namespace relational
             os << "/*" << endl;
             in_comment = true;
 
-            alter_header (at.name ());
+            os << "ALTER TABLE " << quote_id (at.name ());
             instance<drop_foreign_key> dfk (*this);
             trav_rel::unames n (*dfk);
             names (at, n);
@@ -422,7 +422,7 @@ namespace relational
             os << "/*" << endl;
             in_comment = true;
 
-            alter_header (at.name ());
+            os << "ALTER TABLE " << quote_id (at.name ());
             instance<create_foreign_key> cfk (*this);
             trav_rel::unames n (*cfk);
             names (at, n);

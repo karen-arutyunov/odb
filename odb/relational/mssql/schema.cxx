@@ -427,9 +427,9 @@ namespace relational
               else
                 pre_statement ();
 
-              alter_header (at.name ());
-              os << endl
+              os << "ALTER TABLE " << quote_id (at.name ()) << endl
                  << "  DROP CONSTRAINT ";
+
               instance<drop_foreign_key> dfc (*this);
               trav_rel::unames n (*dfc);
               names (at, n);
@@ -449,8 +449,8 @@ namespace relational
           if (check<sema_rel::add_column> (at))
           {
             pre_statement ();
-            alter_header (at.name ());
-            os << endl
+
+            os << "ALTER TABLE " << quote_id (at.name ()) << endl
                << "  ADD ";
 
             instance<create_column> cc (*this);
@@ -505,8 +505,8 @@ namespace relational
           if (check<sema_rel::drop_column> (at))
           {
             pre_statement ();
-            alter_header (at.name ());
-            os << endl
+
+            os << "ALTER TABLE " << quote_id (at.name ()) << endl
                << "  DROP COLUMN ";
 
             instance<drop_column> dc (*this);
@@ -540,9 +540,9 @@ namespace relational
               else
                 pre_statement ();
 
-              alter_header (at.name ());
-              os << endl
+              os << "ALTER TABLE " << quote_id (at.name ()) << endl
                  << "  ADD ";
+
               instance<create_foreign_key> cfc (*this);
               trav_rel::unames n (*cfc);
               names (at, n);

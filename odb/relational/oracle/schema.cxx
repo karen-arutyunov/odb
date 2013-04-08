@@ -354,7 +354,8 @@ namespace relational
           if (check<sema_rel::drop_foreign_key> (at))
           {
             pre_statement ();
-            alter_header (at.name ());
+
+            os << "ALTER TABLE " << quote_id (at.name ());
 
             instance<drop_foreign_key> dfc (*this);
             trav_rel::unames n (*dfc);
@@ -367,8 +368,8 @@ namespace relational
           if (check<sema_rel::add_column> (at))
           {
             pre_statement ();
-            alter_header (at.name ());
-            os << endl
+
+            os << "ALTER TABLE " << quote_id (at.name ()) << endl
                << "  ADD (";
 
             instance<create_column> cc (*this);
@@ -382,8 +383,8 @@ namespace relational
           if (check_alter_column_null (at, true))
           {
             pre_statement ();
-            alter_header (at.name ());
-            os << endl
+
+            os << "ALTER TABLE " << quote_id (at.name ()) << endl
                << "  MODIFY (";
 
             bool tl (true); // (Im)perfect forwarding.
@@ -411,8 +412,8 @@ namespace relational
           if (check<sema_rel::drop_column> (at))
           {
             pre_statement ();
-            alter_header (at.name ());
-            os << endl
+
+            os << "ALTER TABLE " << quote_id (at.name ()) << endl
                << "  DROP (";
 
             instance<drop_column> dc (*this);
@@ -426,8 +427,8 @@ namespace relational
           if (check_alter_column_null (at, false))
           {
             pre_statement ();
-            alter_header (at.name ());
-            os << endl
+
+            os << "ALTER TABLE " << quote_id (at.name ()) << endl
                << "  MODIFY (";
 
             bool fl (false); // (Im)perfect forwarding.
@@ -442,7 +443,8 @@ namespace relational
           if (check<sema_rel::add_foreign_key> (at))
           {
             pre_statement ();
-            alter_header (at.name ());
+
+            os << "ALTER TABLE " << quote_id (at.name ());
 
             instance<create_foreign_key> cfc (*this);
             trav_rel::unames n (*cfc);
