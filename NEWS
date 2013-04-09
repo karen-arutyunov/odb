@@ -22,6 +22,11 @@ Version 2.3.0
  * The generated database schemas now explicitly specify NULL for nullable
    columns.
 
+ * The generated separate C++ schema file (--schema-format separate) no
+   longer includes the generated header file (-odb.hxx). As a result, it is
+   now possible to use the --generate-schema-only and --at-once options to
+   generate a combined C++ schema file for several headers.
+
 Version 2.2.0
 
  * Multi-database support. This mechanism allows an application to

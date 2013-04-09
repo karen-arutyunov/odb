@@ -370,7 +370,6 @@ generate (options const& ops,
     //
     //
     bool gen_sep_schema (
-      gen_cxx &&
       gen_schema &&
       ops.schema_format ()[db].count (schema_format::separate));
 
