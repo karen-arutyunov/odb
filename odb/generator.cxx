@@ -683,6 +683,11 @@ generate (options const& ops,
         case database::sqlite:
           {
             relational::source::generate ();
+
+            if (gen_schema &&
+                ops.schema_format ()[db].count (schema_format::embedded))
+              relational::schema::generate_source ();
+
             break;
           }
         }
@@ -726,7 +731,10 @@ generate (options const& ops,
                     "// Begin prologue.\n//",
                     "//\n// End prologue.");
 
-      sch << "#include " << ctx->process_include_path (hxx_name) << endl
+      sch << "#include <odb/database.hxx>" << endl
+          << "#include <odb/schema-catalog-impl.hxx>" << endl
+          << endl
+          << "#include <odb/details/unused.hxx>" << endl
           << endl;
 
       {
@@ -742,7 +750,7 @@ generate (options const& ops,
         case database::pgsql:
         case database::sqlite:
           {
-            relational::schema_source::generate ();
+            relational::schema::generate_source ();
             break;
           }
         case database::common:

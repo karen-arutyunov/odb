@@ -544,15 +544,6 @@ traverse_object (type& c)
     }
   }
 
-  // create_schema ()
-  //
-  if (embedded_schema || separate_schema)
-  {
-    os << "static bool" << endl
-       << "create_schema (database&, unsigned short pass, bool drop);"
-       << endl;
-  }
-
   object_public_extra_post (c);
 
   // Implementation details.

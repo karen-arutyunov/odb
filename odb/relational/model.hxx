@@ -694,19 +694,13 @@ namespace relational
         // user knows what they are doing and skip it.
         //
         if (tables_.count (name))
-        {
-          c.set ("model-range-first", model_.names_end ());
-          c.set ("model-range-last", model_.names_end ());
           return;
-        }
 
         string id (class_fq_name (c), 2); // Remove leading '::'.
 
         sema_rel::table& t(model_.new_node<sema_rel::table> (id));
         t.set ("cxx-location", c.location ());
         model_.new_edge<sema_rel::qnames> (model_, t, name);
-
-        sema_rel::model::names_iterator begin (--model_.names_end ());
 
         // Add columns.
         //
@@ -731,11 +725,6 @@ namespace relational
           instance<member_create> mc (model_);
           mc->traverse (c);
         }
-
-        sema_rel::model::names_iterator end (--model_.names_end ());
-
-        c.set ("model-range-first", begin);
-        c.set ("model-range-last", end);
       }
 
     protected:

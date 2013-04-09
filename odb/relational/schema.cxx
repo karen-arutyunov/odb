@@ -6,8 +6,6 @@
 #include <limits>
 #include <sstream>
 
-#include <odb/emitter.hxx>
-
 #include <odb/relational/schema.hxx>
 #include <odb/relational/generate.hxx>
 
@@ -17,10 +15,6 @@ namespace relational
 {
   namespace schema
   {
-    // cxx_object
-    //
-    schema_format cxx_object::format_embedded (schema_format::embedded);
-
     void
     generate_prologue ()
     {

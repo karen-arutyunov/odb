@@ -7,62 +7,119 @@
 
 #include <odb/diagnostics.hxx>
 
+#include <odb/emitter.hxx>
 #include <odb/relational/context.hxx>
 #include <odb/relational/schema.hxx>
 
 namespace relational
 {
-  namespace schema_source
+  namespace schema
   {
-    struct class_: traversal::class_, virtual context
+    struct cxx_emitter: emitter, virtual context
     {
-      typedef class_ base;
+      typedef cxx_emitter base;
+
+      void
+      pass (unsigned short p)
+      {
+        empty_ = true;
+        pass_ = p;
+        new_pass_ = true;
+
+        if (pass_ == 1)
+          empty_passes_ = 0; // New set of passes.
+
+        // Assume this pass is empty.
+        //
+        empty_passes_++;
+      }
+
+      // Did this pass produce anything?
+      //
+      bool
+      empty () const
+      {
+        return empty_;
+      }
 
       virtual void
-      traverse (type& c)
+      pre ()
       {
-        if (!options.at_once () && class_file (c) != unit.file ())
-          return;
+        first_ = true;
+      }
 
-        if (!object (c))
-          return;
+      virtual void
+      line (const string& l)
+      {
+        if (l.empty ())
+          return; // Ignore empty lines.
 
-        if (abstract (c) && !polymorphic (c))
-          return;
+        if (first_)
+        {
+          first_ = false;
 
-        os << "// " << class_name (c) << endl
-           << "//" << endl
-           << endl;
+          // If this line starts a new pass, then output the switch/case
+          // blocks.
+          //
+          if (new_pass_)
+          {
+            new_pass_ = false;
+            empty_ = false;
+            empty_passes_--; // This pass is not empty.
 
-        schema_->traverse (c);
+            // Output case statements for empty preceeding passes, if any.
+            //
+            if (empty_passes_ != 0)
+            {
+              unsigned short s (pass_ - empty_passes_);
+
+              if (s == 1)
+                os << "switch (pass)"
+                   << "{";
+              else
+                os << "return true;" // One more pass.
+                   << "}";
+
+              for (; s != pass_; ++s)
+                os << "case " << s << ":" << endl;
+
+              os << "{";
+              empty_passes_ = 0;
+            }
+
+            if (pass_ == 1)
+              os << "switch (pass)"
+                 << "{";
+            else
+              os << "return true;" // One more pass.
+                 << "}";
+
+            os << "case " << pass_ << ":" << endl
+               << "{";
+          }
+
+          os << "db.execute (";
+        }
+        else
+          os << strlit (line_ + '\n') << endl;
+
+        line_ = l;
+      }
+
+      virtual void
+      post ()
+      {
+        if (!first_) // Ignore empty statements.
+          os << strlit (line_) << ");";
       }
 
     private:
-      instance<schema::cxx_object> schema_;
-    };
-
-    struct include: virtual context
-    {
-      typedef include base;
-
-      virtual void
-      generate ()
-      {
-        extra_pre ();
-        os << "#include <odb/schema-catalog-impl.hxx>" << endl;
-        extra_post ();
-        os << endl;
-      }
-
-      virtual void
-      extra_pre ()
-      {
-      }
-
-      virtual void
-      extra_post ()
-      {
-      }
+      std::string line_;
+      bool first_;
+      bool empty_;
+      bool new_pass_;
+      unsigned short pass_;
+      unsigned short empty_passes_; // Number of preceding empty passes.
     };
   }
 }

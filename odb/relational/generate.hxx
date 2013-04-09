@@ -33,12 +33,6 @@ namespace relational
     generate ();
   }
 
-  namespace schema_source
-  {
-    void
-    generate ();
-  }
-
   namespace model
   {
     cutl::shared_ptr<semantics::relational::model>
@@ -77,6 +71,11 @@ namespace relational
 
     void
     generate_migrate_post (semantics::relational::changeset&);
+
+    // Generate embedded schema.
+    //
+    void
+    generate_source ();
   }
 }
 

@@ -4028,8 +4028,6 @@ namespace relational
       instance<init_value_member> init_named_version_value_member_;
       instance<init_value_member> init_discriminator_value_member_;
       instance<init_value_member> init_named_discriminator_value_member_;
-
-      instance<schema::cxx_object> schema_;
     };
 
     struct include: virtual context

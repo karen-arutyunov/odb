@@ -2911,11 +2911,6 @@ traverse_object (type& c)
     }
   }
 
-  // Generate embedded schema.
-  //
-  if (embedded_schema)
-    schema_->traverse (c);
-
   // Generate function table registration for dynamic multi-database
   // support.
   //
