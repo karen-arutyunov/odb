@@ -75,7 +75,7 @@ namespace relational
     // Generate embedded schema.
     //
     void
-    generate_source ();
+    generate_source (semantics::relational::changelog*);
   }
 }
 

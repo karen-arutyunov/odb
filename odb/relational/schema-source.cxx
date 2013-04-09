@@ -12,7 +12,7 @@ namespace relational
   namespace schema
   {
     void
-    generate_source ()
+    generate_source (sema_rel::changelog* log)
     {
       context ctx;
       ostream& os (ctx.os);
@@ -21,15 +21,22 @@ namespace relational
       sema_rel::model& model (*ctx.model);
       string const& schema_name (ops.schema_name ()[db]);
 
+      if (log != 0 && log->contains_changeset_empty ())
+        log = 0;
+
       instance<cxx_emitter> emitter;
       emitter_ostream emitter_os (*emitter);
       schema_format format (schema_format::embedded);
 
+      if (!model.names_empty () || log != 0)
+        os << "namespace odb"
+           << "{";
+
+      // Schema.
+      //
       if (!model.names_empty ())
       {
-        os << "namespace odb"
-           << "{"
-           << "static bool" << endl
+        os << "static bool" << endl
            << "create_schema (database& db, unsigned short pass, bool drop)"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (db);"
@@ -110,15 +117,120 @@ namespace relational
         os << "return false;"
            << "}";
 
-        os << "static const schema_catalog_entry" << endl
+        os << "static const schema_catalog_create_entry" << endl
            << "create_schema_entry_ (" << endl
            << "id_" << db << "," << endl
            << context::strlit (schema_name) << "," << endl
            << "&create_schema);"
            << endl;
-
-        os << "}";
       }
+
+      // Migration.
+      //
+      if (log != 0)
+      {
+        for (sema_rel::changelog::contains_changeset_iterator i (
+               log->contains_changeset_begin ());
+             i != log->contains_changeset_end (); ++i)
+        {
+          sema_rel::changeset& cs (i->changeset ());
+
+          os << "static bool" << endl
+             << "migrate_schema_" << cs.version () << " (database& db, " <<
+            "unsigned short pass, bool pre)"
+             << "{"
+             << "ODB_POTENTIALLY_UNUSED (db);"
+             << "ODB_POTENTIALLY_UNUSED (pass);"
+             << "ODB_POTENTIALLY_UNUSED (pre);"
+             << endl;
+
+          // Pre.
+          //
+          {
+            bool close (false);
+
+            os << "if (pre)"
+               << "{";
+
+            instance<changeset_pre> changeset (*emitter, emitter_os, format);
+            instance<create_table> ctable (*emitter, emitter_os, format);
+            instance<alter_table_pre> atable (*emitter, emitter_os, format);
+            trav_rel::qnames names;
+            changeset >> names;
+            names >> ctable;
+            names >> atable;
+
+            for (unsigned short pass (1); pass < 3; ++pass)
+            {
+              emitter->pass (pass);
+              changeset->pass (pass);
+              ctable->pass (pass);
+              atable->pass (pass);
+
+              changeset->traverse (cs);
+
+              close = close || !emitter->empty ();
+            }
+
+            if (close) // Close the last case and the switch block.
+              os << "return false;"
+                 << "}"  // case
+                 << "}";  // switch
+
+            os << "}";
+          }
+
+          // Post.
+          //
+          {
+            bool close (false);
+
+            os << "else"
+               << "{";
+
+            instance<changeset_post> changeset (*emitter, emitter_os, format);
+            instance<drop_table> dtable (*emitter, emitter_os, format);
+            instance<alter_table_post> atable (*emitter, emitter_os, format);
+            trav_rel::qnames names;
+            changeset >> names;
+            names >> dtable;
+            names >> atable;
+
+            for (unsigned short pass (1); pass < 3; ++pass)
+            {
+              emitter->pass (pass);
+              changeset->pass (pass);
+              dtable->pass (pass);
+              atable->pass (pass);
+
+              changeset->traverse (cs);
+
+              close = close || !emitter->empty ();
+            }
+
+            if (close) // Close the last case and the switch block.
+              os << "return false;"
+                 << "}"  // case
+                 << "}"; // switch
+
+            os << "}";
+          }
+
+          os << "return false;"
+             << "}";
+
+          os << "static const schema_catalog_migrate_entry" << endl
+             << "migrate_schema_entry_" << cs.version () << "_ (" << endl
+             << "id_" << db << "," << endl
+             << context::strlit (schema_name) << "," << endl
+             << cs.version () << "ULL," << endl
+             << "&migrate_schema_" << cs.version () << ");"
+             << endl;
+        }
+      }
+
+      if (!model.names_empty () || log != 0)
+        os << "}"; // namespace odb
     }
   }
 }

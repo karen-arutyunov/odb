@@ -685,7 +685,7 @@ generate (options const& ops,
 
             if (gen_schema &&
                 ops.schema_format ()[db].count (schema_format::embedded))
-              relational::schema::generate_source ();
+              relational::schema::generate_source (changelog.get ());
 
             break;
           }
@@ -749,7 +749,7 @@ generate (options const& ops,
         case database::pgsql:
         case database::sqlite:
           {
-            relational::schema::generate_source ();
+            relational::schema::generate_source (changelog.get ());
             break;
           }
         case database::common:
