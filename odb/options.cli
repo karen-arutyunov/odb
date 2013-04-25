@@ -134,6 +134,24 @@ class options
     "Suppress the generation of database schema migration statements."
   };
 
+  bool --suppress-schema-version
+  {
+    "Suppress the generation of schema version table. If you specify this
+     option then you are also expected to manually specify the database
+     schema version and migration state at runtime using the
+     \cb{odb::database::schema_version()} function."
+  };
+
+  database_map<qname> --schema-version-table
+  {
+    "<name>",
+    "Specify the alternative schema version table name instead of the default
+     \cb{schema_version}. If you specify this option then you are also
+     expected to manually specify the schema version table name at runtime
+     using the \cb{odb::database::schema_version_table()} function. The table
+     name can be qualified."
+  };
+
   database_map<std::set< ::schema_format> > --schema-format
   {
     "<format>",
@@ -926,40 +944,6 @@ class options
   bool --trace {"Trace the compilation process."};
 
   //
-  // SQL Server-specific options.
-  //
-
-  ::mssql_version --mssql-server-version (10, 0)
-  {
-    "<ver>",
-    "Specify the minimum SQL Server server version with which the generated
-     C++ code will be used. This information is used to enable
-     version-specific optimizations and workarounds in the generated C++
-     code. The version must be in the \c{\i{major}\b{.}\i{minor}} form, for
-     example, \cb{9.0} (SQL Server 2005), \cb{10.5} (2008R2), or \cb{11.0}
-     (2012). If this option is not specified, then \cb{10.0} (SQL Server 2008)
-     or later is assumed."
-  };
-
-  unsigned int --mssql-short-limit = 1024
-  {
-    "<size>",
-    "Specify the short data size limit. If a character, national character, or
-     binary data type has a maximum length (in bytes) less than or equal to
-     this limit, then it is treated as \i{short data}, otherwise it is \i{long
-     data}. For short data ODB pre-allocates an intermediate buffer of
-     the maximum size and binds it directly to a parameter or result
-     column. This way the underlying API (ODBC) can read/write directly
-     from/to this buffer. In the case of long data, the data is read/written
-     in chunks using the \cb{SQLGetData()}/\cb{SQLPutData()} ODBC functions.
-     While the long data approach reduces the amount of memory used by the
-     application, it may require greater CPU resources. The default short
-     data limit is 1024 bytes. When setting a custom short data limit, make
-     sure that it is sufficiently large so that no object id in the
-     application is treated as long data."
-  };
-
-  //
   // MySQL-specific options.
   //
 
@@ -971,6 +955,34 @@ class options
      options see the MySQL documentation. If you would like to use the
      database-default engine, pass \cb{default} as the value for this
      option."
+  };
+
+  //
+  // SQLite-specific options.
+  //
+
+  bool --sqlite-lax-auto-id
+  {
+    "Do not force monotonically increasing automatically-assigned
+     object ids. In this mode the generated database schema omits the
+     \cb{AUTOINCREMENT} keyword which results in faster object persistence
+     but may lead to automatically-assigned ids not being in a strictly
+     ascending order. Refer to the SQLite documentation for details."
+  };
+
+  //
+  // PostgreSQL-specific options.
+  //
+
+  ::pgsql_version --pgsql-server-version (7, 4)
+  {
+    "<ver>",
+    "Specify the minimum PostgreSQL server version with which the generated
+     C++ code and schema will be used. This information is used to enable
+     version-specific optimizations and workarounds in the generated C++
+     code and schema. The version must be in the \c{\i{major}\b{.}\i{minor}}
+     form, for example, \cb{9.1}. If this option is not specified, then
+     \cb{7.4} or later is assumed."
   };
 
   //
@@ -989,15 +1001,36 @@ class options
   };
 
   //
-  // SQLite-specific options.
+  // SQL Server-specific options.
   //
 
-  bool --sqlite-lax-auto-id
+  ::mssql_version --mssql-server-version (10, 0)
   {
-    "Do not force monotonically increasing automatically-assigned
-     object ids. In this mode the generated database schema omits the
-     \cb{AUTOINCREMENT} keyword which results in faster object persistence
-     but may lead to automatically-assigned ids not being in a strictly
-     ascending order. Refer to the SQLite documentation for details."
+    "<ver>",
+    "Specify the minimum SQL Server server version with which the generated
+     C++ code and schema will be used. This information is used to enable
+     version-specific optimizations and workarounds in the generated C++
+     code and schema. The version must be in the \c{\i{major}\b{.}\i{minor}}
+     form, for example, \cb{9.0} (SQL Server 2005), \cb{10.5} (2008R2), or
+     \cb{11.0} (2012). If this option is not specified, then \cb{10.0} (SQL
+     Server 2008) or later is assumed."
+  };
+
+  unsigned int --mssql-short-limit = 1024
+  {
+    "<size>",
+    "Specify the short data size limit. If a character, national character, or
+     binary data type has a maximum length (in bytes) less than or equal to
+     this limit, then it is treated as \i{short data}, otherwise it is \i{long
+     data}. For short data ODB pre-allocates an intermediate buffer of
+     the maximum size and binds it directly to a parameter or result
+     column. This way the underlying API (ODBC) can read/write directly
+     from/to this buffer. In the case of long data, the data is read/written
+     in chunks using the \cb{SQLGetData()}/\cb{SQLPutData()} ODBC functions.
+     While the long data approach reduces the amount of memory used by the
+     application, it may require greater CPU resources. The default short
+     data limit is 1024 bytes. When setting a custom short data limit, make
+     sure that it is sufficiently large so that no object id in the
+     application is treated as long data."
   };
 };

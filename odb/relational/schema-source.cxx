@@ -21,20 +21,24 @@ namespace relational
       sema_rel::model& model (*ctx.model);
       string const& schema_name (ops.schema_name ()[db]);
 
-      if (log != 0 && log->contains_changeset_empty ())
+      if (log != 0 &&
+          (log->contains_changeset_empty () || ops.suppress_migration ()))
         log = 0;
+
+      bool schema_version (
+        model.version () != 0 && !ctx.options.suppress_schema_version ());
 
       instance<cxx_emitter> emitter;
       emitter_ostream emitter_os (*emitter);
       schema_format format (schema_format::embedded);
 
-      if (!model.names_empty () || log != 0)
+      if (!model.names_empty () || log != 0 || schema_version)
         os << "namespace odb"
            << "{";
 
       // Schema.
       //
-      if (!model.names_empty ())
+      if (!model.names_empty () || schema_version)
       {
         os << "static bool" << endl
            << "create_schema (database& db, unsigned short pass, bool drop)"
@@ -67,6 +71,14 @@ namespace relational
             dmodel->traverse (model);
 
             close = close || !emitter->empty ();
+          }
+
+          if (schema_version)
+          {
+            instance<version_table> vt (*emitter, emitter_os, format);
+            vt->create_table ();
+            vt->drop ();
+            close = true;
           }
 
           if (close) // Close the last case and the switch block.
@@ -104,6 +116,14 @@ namespace relational
             cmodel->traverse (model);
 
             close = close || !emitter->empty ();
+          }
+
+          if (schema_version)
+          {
+            instance<version_table> vt (*emitter, emitter_os, format);
+            vt->create_table ();
+            vt->create (model.version ());
+            close = true;
           }
 
           if (close) // Close the last case and the switch block.
@@ -172,6 +192,13 @@ namespace relational
               close = close || !emitter->empty ();
             }
 
+            if (!ctx.options.suppress_schema_version ())
+            {
+              instance<version_table> vt (*emitter, emitter_os, format);
+              vt->migrate_pre (cs.version ());
+              close = true;
+            }
+
             if (close) // Close the last case and the switch block.
               os << "return false;"
                  << "}"  // case
@@ -208,6 +235,13 @@ namespace relational
               close = close || !emitter->empty ();
             }
 
+            if (!ctx.options.suppress_schema_version ())
+            {
+              instance<version_table> vt (*emitter, emitter_os, format);
+              vt->migrate_post ();
+              close = true;
+            }
+
             if (close) // Close the last case and the switch block.
               os << "return false;"
                  << "}"  // case
@@ -229,7 +263,7 @@ namespace relational
         }
       }
 
-      if (!model.names_empty () || log != 0)
+      if (!model.names_empty () || log != 0 || schema_version)
         os << "}"; // namespace odb
     }
   }

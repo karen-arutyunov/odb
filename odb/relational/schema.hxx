@@ -1438,6 +1438,87 @@ namespace relational
     };
 
     //
+    // Schema version table.
+    //
+
+    struct version_table: common
+    {
+      typedef version_table base;
+
+      version_table (emitter_type& e, ostream& os, schema_format f)
+          : common (e, os, f),
+            table_ (options.schema_version_table ()[db]),
+            qt_ (quote_id (table_)),
+            qs_ (quote_string (options.schema_name ()[db])),
+            qn_ (quote_id ("name")),
+            qv_ (quote_id ("version")),
+            qm_ (quote_id ("migration"))
+      {
+      }
+
+      // Create the version table if it doesn't exist.
+      //
+      virtual void
+      create_table () {}
+
+      // Remove the version entry. Called after the DROP statements.
+      //
+      virtual void
+      drop ()
+      {
+        pre_statement ();
+
+        os << "DELETE FROM " << qt_ << endl
+           << "  WHERE " << qn_ << " = " << qs_ << endl;
+
+        post_statement ();
+      }
+
+      // Set the version. Called after the CREATE statements.
+      //
+      virtual void
+      create (sema_rel::version) {}
+
+      // Set the version and migration state to true. Called after
+      // the pre migration statements.
+      //
+      virtual void
+      migrate_pre (sema_rel::version v)
+      {
+        pre_statement ();
+
+        os << "UPDATE " << qt_ << endl
+           << "  SET " << qv_ << " = " << v << ", " << qm_ << " = 1" << endl
+           << "  WHERE " << qn_ << " = " << qs_ << endl;
+
+        post_statement ();
+      }
+
+      // Set migration state to false. Called after the post migration
+      // statements.
+      //
+      virtual void
+      migrate_post ()
+      {
+        pre_statement ();
+
+        os << "UPDATE " << qt_ << endl
+           << "  SET " << qm_ << " = 0" << endl
+           << "  WHERE " << qn_ << " = " << qs_ << endl;
+
+        post_statement ();
+      }
+
+    protected:
+      sema_rel::qname table_;
+      string qt_; // Quoted table.
+      string qs_; // Quoted schema name string.
+      string qn_; // Quoted name column.
+      string qv_; // Quoted version column.
+      string qm_; // Quoted migration column.
+    };
+
+    //
     // SQL output.
     //
 

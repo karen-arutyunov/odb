@@ -53,6 +53,14 @@ namespace relational
 
         model->traverse (*ctx.model);
       }
+
+      if (ctx.model->version () != 0 &&
+          !ctx.options.suppress_schema_version ())
+      {
+        instance<version_table> vt (*em, emos, f);
+        vt->create_table ();
+        vt->drop ();
+      }
     }
 
     void
@@ -78,6 +86,17 @@ namespace relational
         table->pass (pass);
 
         model->traverse (*ctx.model);
+      }
+
+      if (ctx.model->version () != 0 &&
+          !ctx.options.suppress_schema_version ())
+      {
+        instance<version_table> vt (*em, emos, f);
+
+        if (ctx.options.omit_drop ())
+          vt->create_table ();
+
+        vt->create (ctx.model->version ());
       }
     }
 
@@ -109,6 +128,12 @@ namespace relational
 
         changeset->traverse (cs);
       }
+
+      if (!ctx.options.suppress_schema_version ())
+      {
+        instance<version_table> vt (*em, emos, f);
+        vt->migrate_pre (cs.version ());
+      }
     }
 
     void
@@ -138,6 +163,12 @@ namespace relational
         atable->pass (pass);
 
         changeset->traverse (cs);
+      }
+
+      if (!ctx.options.suppress_schema_version ())
+      {
+        instance<version_table> vt (*em, emos, f);
+        vt->migrate_post ();
       }
     }
   }

@@ -36,6 +36,28 @@ namespace relational
       entry<sql_emitter> sql_emitter_;
 
       //
+      // File.
+      //
+
+      struct sql_file: relational::sql_file, context
+      {
+        sql_file (const base& x): base (x) {}
+
+        virtual void
+        prologue ()
+        {
+          // Suppress the (x rows affected) messages from sqlcmd for DML
+          // statements. We only use DML for schema version management.
+          //
+          if ((model == 0 || model->version () != 0) &&
+              !options.suppress_schema_version ())
+            os << "SET NOCOUNT ON;" << endl
+               << endl;
+        }
+      };
+      entry<sql_file> sql_file_;
+
+      //
       // Drop.
       //
 
@@ -565,6 +587,45 @@ namespace relational
         }
       };
       entry<alter_table_post> alter_table_post_;
+
+      //
+      // Schema version table.
+      //
+
+      struct version_table: relational::version_table, context
+      {
+        version_table (base const& x): base (x) {}
+
+        virtual void
+        create_table ()
+        {
+          pre_statement ();
+
+          os << "IF OBJECT_ID(" << quote_string (table_.string ()) <<
+            ", " << quote_string ("U") << ") IS NULL" << endl
+             << "  CREATE TABLE " << qt_ << " (" << endl
+             << "    " << qn_ << " VARCHAR(256) NOT NULL PRIMARY KEY," << endl
+             << "    " << qv_ << " BIGINT NOT NULL," << endl
+             << "    " << qm_ << " BIT NOT NULL)" << endl;
+
+          post_statement ();
+        }
+
+        virtual void
+        create (sema_rel::version v)
+        {
+          pre_statement ();
+
+          os << "IF NOT EXISTS (SELECT 1 FROM " << qt_ << " WHERE " << qn_ <<
+            " = " << qs_ << ")" << endl
+             << "  INSERT INTO " << qt_ << " (" << endl
+             << "    " << qn_ << ", " << qv_ << ", " << qm_ << ")" << endl
+             << "    VALUES (" << qs_ << ", " << v << ", 0)" << endl;
+
+          post_statement ();
+        }
+      };
+      entry<version_table> version_table_;
     }
   }
 }

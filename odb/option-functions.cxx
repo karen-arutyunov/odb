@@ -48,6 +48,11 @@ process_options (options& o)
     }
   }
 
+  // Set default --schema-version-table value.
+  //
+  if (o.schema_version_table ().count (db) == 0)
+    o.schema_version_table ()[db] = "schema_version";
+
   // Set default --schema-name value.
   //
   if (o.schema_name ().count (db) == 0)

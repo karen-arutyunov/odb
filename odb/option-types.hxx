@@ -173,6 +173,78 @@ operator>> (std::istream&, name_case&);
 
 //
 //
+struct pgsql_version
+{
+  pgsql_version (unsigned short major, unsigned short minor)
+      : major_ (major), minor_ (minor)
+  {
+  }
+
+  unsigned short
+  ver_major () const
+  {
+    return major_;
+  }
+
+  unsigned short
+  ver_minor () const
+  {
+    return minor_;
+  }
+
+private:
+  unsigned short major_;
+  unsigned short minor_;
+};
+
+inline bool
+operator== (const pgsql_version& x, const pgsql_version& y)
+{
+  return x.ver_major () == y.ver_major ();
+}
+
+inline bool
+operator!= (const pgsql_version& x, const pgsql_version& y)
+{
+  return !(x == y);
+}
+
+inline bool
+operator< (const pgsql_version& x, const pgsql_version& y)
+{
+  return x.ver_major () < y.ver_major () ||
+    (x.ver_major () == y.ver_major () &&
+     x.ver_minor () <  y.ver_minor ());
+}
+
+inline bool
+operator> (const pgsql_version& x, const pgsql_version& y)
+{
+  return x.ver_major () > y.ver_major () ||
+    (x.ver_major () == y.ver_major () &&
+     x.ver_minor () > y.ver_minor ());
+}
+
+inline bool
+operator<= (const pgsql_version& x, const pgsql_version& y)
+{
+  return !(x > y);
+}
+
+inline bool
+operator>= (const pgsql_version& x, const pgsql_version& y)
+{
+  return !(x < y);
+}
+
+std::istream&
+operator>> (std::istream&, pgsql_version&);
+
+std::ostream&
+operator<< (std::ostream&, pgsql_version);
+
+//
+//
 struct oracle_version
 {
   oracle_version (unsigned short major, unsigned short minor)

@@ -301,15 +301,11 @@ namespace relational
         virtual void
         create_post ()
         {
-          os << ")";
+          os << ")" << endl;
 
           string const& engine (options.mysql_engine ());
-
           if (engine != "default")
-            os << endl
-               << " ENGINE=" << engine;
-
-          os << endl;
+            os << " ENGINE=" << engine << endl;
         }
       };
       entry<create_table> create_table_;
@@ -442,6 +438,45 @@ namespace relational
         }
       };
       entry<alter_table_post> alter_table_post_;
+
+      //
+      // Schema version table.
+      //
+
+      struct version_table: relational::version_table, context
+      {
+        version_table (base const& x): base (x) {}
+
+        virtual void
+        create_table ()
+        {
+          pre_statement ();
+
+          os << "CREATE TABLE IF NOT EXISTS " << qt_ << " (" << endl
+             << "  " << qn_ << " VARCHAR(255) NOT NULL PRIMARY KEY," << endl
+             << "  " << qv_ << " BIGINT UNSIGNED NOT NULL," << endl
+             << "  " << qm_ << " TINYINT(1) NOT NULL)" << endl;
+
+          string const& engine (options.mysql_engine ());
+          if (engine != "default")
+            os << " ENGINE=" << engine << endl;
+
+          post_statement ();
+        }
+
+        virtual void
+        create (sema_rel::version v)
+        {
+          pre_statement ();
+
+          os << "INSERT IGNORE INTO " << qt_ << " (" << endl
+             << "  " << qn_ << ", " << qv_ << ", " << qm_ << ")" << endl
+             << "  VALUES (" << qs_ << ", " << v << ", 0)" << endl;
+
+          post_statement ();
+        }
+      };
+      entry<version_table> version_table_;
     }
   }
 }

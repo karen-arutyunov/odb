@@ -460,6 +460,56 @@ namespace relational
         }
       };
       entry<alter_table_post> alter_table_post_;
+
+      //
+      // Schema version table.
+      //
+
+      struct version_table: relational::version_table, context
+      {
+        version_table (base const& x)
+            : base (x)
+        {
+          // If the schema name is empty, replace it with a single space
+          // to workaround the VARCHAR2 empty/NULL issue.
+          //
+          if (qs_ == "''")
+            qs_ = "' '";
+        }
+
+        virtual void
+        create_table ()
+        {
+          pre_statement ();
+
+          os << "BEGIN" << endl
+             << "  EXECUTE IMMEDIATE 'CREATE TABLE " << qt_ << " (" << endl
+             << "    " << qn_ << " VARCHAR2(512) NOT NULL PRIMARY KEY," << endl
+             << "    " << qv_ << " NUMBER(20) NOT NULL," << endl
+             << "    " << qm_ << " NUMBER(1) NOT NULL)';" << endl
+             << "EXCEPTION" << endl
+             << "  WHEN OTHERS THEN" << endl
+             << "    IF SQLCODE != -955 THEN RAISE; END IF;" << endl
+             << "END;" << endl;
+
+          post_statement ();
+        }
+
+        virtual void
+        create (sema_rel::version v)
+        {
+          pre_statement ();
+
+          os << "MERGE INTO " << qt_ << " USING DUAL ON (" << qn_ << " = " <<
+            qs_ << ")" << endl
+             << "  WHEN NOT MATCHED THEN INSERT (" << endl
+             << "    " << qn_ << ", " << qv_ << ", " << qm_ << ")" << endl
+             << "    VALUES (" << qs_ << ", " << v << ", 0)" << endl;
+
+          post_statement ();
+        }
+      };
+      entry<version_table> version_table_;
     }
   }
 }

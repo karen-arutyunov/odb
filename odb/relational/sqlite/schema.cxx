@@ -279,6 +279,41 @@ namespace relational
         }
       };
       entry<alter_table_post> alter_table_post_;
+
+      //
+      // Schema version table.
+      //
+
+      struct version_table: relational::version_table, context
+      {
+        version_table (base const& x): base (x) {}
+
+        virtual void
+        create_table ()
+        {
+          pre_statement ();
+
+          os << "CREATE TABLE IF NOT EXISTS " << qt_ << " (" << endl
+             << "  " << qn_ << " TEXT NOT NULL PRIMARY KEY," << endl
+             << "  " << qv_ << " INTEGER NOT NULL," << endl
+             << "  " << qm_ << " INTEGER NOT NULL)" << endl;
+
+          post_statement ();
+        }
+
+        virtual void
+        create (sema_rel::version v)
+        {
+          pre_statement ();
+
+          os << "INSERT OR IGNORE INTO " << qt_ << " (" << endl
+             << "  " << qn_ << ", " << qv_ << ", " << qm_ << ")" << endl
+             << "  VALUES (" << qs_ << ", " << v << ", 0)" << endl;
+
+          post_statement ();
+        }
+      };
+      entry<version_table> version_table_;
     }
   }
 }

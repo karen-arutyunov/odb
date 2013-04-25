@@ -150,6 +150,109 @@ namespace relational
         }
       };
       entry<alter_column> alter_column_;
+
+      //
+      // Schema version table.
+      //
+
+      struct version_table: relational::version_table, context
+      {
+        version_table (base const& x): base (x) {}
+
+        // PostgreSQL prior to 9.1 doesn't support IF NOT EXISTS in
+        // CREATE TABLE. We also cannot use IF-ELSE construct in plain
+        // SQL. To make it at least work for a single schema, we are
+        // going to drop the schema version table after the DROP
+        // statements and then unconditionally create it after CREATE.
+        //
+        virtual void
+        create_table ()
+        {
+          if (options.pgsql_server_version () >= pgsql_version (9, 1))
+          {
+            pre_statement ();
+
+            os << "CREATE TABLE IF NOT EXISTS " << qt_ << " (" << endl
+               << "  " << qn_ << " TEXT NOT NULL PRIMARY KEY," << endl
+               << "  " << qv_ << " BIGINT NOT NULL," << endl
+               << "  " << qm_ << " BOOLEAN NOT NULL)" << endl;
+
+            post_statement ();
+          }
+        }
+
+        virtual void
+        drop ()
+        {
+          pre_statement ();
+
+          if (options.pgsql_server_version () >= pgsql_version (9, 1))
+            os << "DELETE FROM " << qt_ << endl
+               << "  WHERE " << qn_ << " = " << qs_ << endl;
+          else
+            os << "DROP TABLE IF EXISTS " << qt_ << endl;
+
+          post_statement ();
+        }
+
+        virtual void
+        create (sema_rel::version v)
+        {
+          pre_statement ();
+
+          if (options.pgsql_server_version () >= pgsql_version (9, 1))
+          {
+            os << "INSERT INTO " << qt_ << " (" << endl
+               << "  " << qn_ << ", " << qv_ << ", " << qm_ << ")" << endl
+               << "  SELECT " << qs_ << ", " << v << ", FALSE" << endl
+               << "  WHERE NOT EXISTS (" << endl
+               << "    SELECT 1 FROM " << qt_ << " WHERE " << qn_ << " = " <<
+              qs_ << ")" << endl;
+          }
+          else
+          {
+            os << "CREATE TABLE " << qt_ << " (" << endl
+               << "  " << qn_ << " TEXT NOT NULL PRIMARY KEY," << endl
+               << "  " << qv_ << " BIGINT NOT NULL," << endl
+               << "  " << qm_ << " BOOLEAN NOT NULL)" << endl;
+
+            post_statement ();
+            pre_statement ();
+
+            os << "INSERT INTO " << qt_ << " (" << endl
+               << "  " << qn_ << ", " << qv_ << ", " << qm_ << ")" << endl
+               << "  VALUES (" << qs_ << ", " << v << ", FALSE)" << endl;
+          }
+
+          post_statement ();
+        }
+
+        virtual void
+        migrate_pre (sema_rel::version v)
+        {
+          pre_statement ();
+
+          os << "UPDATE " << qt_ << endl
+             << "  SET " << qv_ << " = " << v << ", " << qm_ << " = TRUE" << endl
+             << "  WHERE " << qn_ << " = " << qs_ << endl;
+
+          post_statement ();
+        }
+
+        virtual void
+        migrate_post ()
+        {
+          pre_statement ();
+
+          os << "UPDATE " << qt_ << endl
+             << "  SET " << qm_ << " = FALSE" << endl
+             << "  WHERE " << qn_ << " = " << qs_ << endl;
+
+          post_statement ();
+        }
+
+      };
+      entry<version_table> version_table_;
     }
   }
 }

@@ -218,6 +218,48 @@ operator>> (istream& is, name_case& v)
 }
 
 //
+// pgsql_version
+//
+
+istream&
+operator>> (istream& is, pgsql_version& v)
+{
+  unsigned short major, minor;
+
+  // Extract the major version.
+  //
+  is >> major;
+
+  if (!is.fail ())
+  {
+    // Extract the decimal point.
+    //
+    char p;
+    is >> p;
+
+    if (!is.fail () && p == '.')
+    {
+      // Extract the minor version.
+      //
+      is >> minor;
+
+      if (!is.fail ())
+        v = pgsql_version (major, minor);
+    }
+    else
+      is.setstate (istream::failbit);
+  }
+
+  return is;
+}
+
+ostream&
+operator<< (ostream& os, pgsql_version v)
+{
+  return os << v.ver_major () << '.' << v.ver_minor ();
+}
+
+//
 // oracle_version
 //
 
