@@ -31,6 +31,13 @@ Version 2.3.0
    thrown if SQLite forces a transaction to roll back. For more information,
    refer to Section 16.5.6, "Forced Rollback" in the ODB manual.
 
+ * New options, --pgsql-server-version, can be used to specify the minimum
+   PostgreSQL server version with which the generated C++ code and schema
+   will be used. Right now this information is used to enable the use of
+   the IF NOT EXISTS clause in the CREATE TABLE statement for the schema
+   version table creation in PostgreSQL 9.1 and later. Refer to the ODB
+   compiler command line interface documentation (man pages) for details.
+
  * The --output-name option has been renamed to --input-name, which is more
    semantically correct.
 
