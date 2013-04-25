@@ -349,9 +349,15 @@ namespace odb
 
       using odb::database::tracer;
 
-    public:
+      // Database schema version.
+      //
+    protected:
+      virtual const schema_version_info&
+      load_schema_version (const std::string& schema_name) const;
+
       // Database id constant (useful for meta-programming).
       //
+    public:
       static const odb::database_id database_id = id_sqlite;
 
     public:

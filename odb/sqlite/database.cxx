@@ -6,11 +6,16 @@
 #  include <odb/details/win32/windows.hxx> // WideCharToMultiByte
 #endif
 
+#include <sqlite3.h>
+
+#include <cassert>
 #include <sstream>
 
 #include <odb/sqlite/database.hxx>
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/connection-factory.hxx>
+#include <odb/sqlite/statement.hxx>
+#include <odb/sqlite/transaction.hxx>
 #include <odb/sqlite/error.hxx>
 #include <odb/sqlite/exceptions.hxx>
 
@@ -176,6 +181,93 @@ namespace odb
     {
       connection_ptr c (factory_->connect ());
       return c.release ();
+    }
+
+    const database::schema_version_info& database::
+    load_schema_version (const string& name) const
+    {
+      schema_version_info& svi (schema_version_map_[name]);
+
+      // Construct the SELECT statement text.
+      //
+      string text ("SELECT \"version\", \"migration\" FROM ");
+
+      if (!svi.version_table.empty ())
+        text += svi.version_table; // Already quoted.
+      else if (!schema_version_table_.empty ())
+        text += schema_version_table_; // Already quoted.
+      else
+        text += "\"schema_version\"";
+
+      text += " WHERE \"name\" = ?";
+
+      // Bind parameters and results.
+      //
+      size_t psize[1] = {name.size ()};
+      bind pbind[1] = {{bind::text,
+                        const_cast<char*> (name.c_str ()),
+                        &psize[0],
+                        0, 0, 0}};
+      binding param (pbind, 1);
+      param.version++;
+
+      long long migration;
+      bool rnull[2];
+      bind rbind[2] = {{bind::integer, &svi.version, 0, 0, &rnull[0], 0},
+                       {bind::integer, &migration, 0, 0, &rnull[1], 0}};
+      binding result (rbind, 2);
+      result.version++;
+
+      // If we are not in transaction, SQLite will start an implicit one
+      // which suits us just fine.
+      //
+      connection_ptr cp;
+      if (!transaction::has_current ())
+        cp = factory_->connect ();
+
+      sqlite::connection& c (
+        cp != 0 ? *cp : transaction::current ().connection ());
+
+      try
+      {
+        select_statement st (c, text, param, result);
+        st.execute ();
+        auto_result ar (st);
+
+        switch (st.fetch ())
+        {
+        case select_statement::success:
+          {
+            svi.migration = migration != 0;
+            assert (st.fetch () == select_statement::no_data);
+            break;
+          }
+        case select_statement::no_data:
+          {
+            svi.version = 0; // No schema.
+            break;
+          }
+        case select_statement::truncated:
+          {
+            assert (false);
+            break;
+          }
+        }
+      }
+      catch (const database_exception& e)
+      {
+        // Try to detect the case where there is no version table. SQLite
+        // doesn't have an extended error code for this so we have to use
+        // the error text.
+        //
+        if (e.error () == SQLITE_ERROR &&
+            e.message ().compare (0, 14, "no such table:") == 0)
+          svi.version = 0; // No schema.
+        else
+          throw;
+      }
+
+      return svi;
     }
   }
 }
