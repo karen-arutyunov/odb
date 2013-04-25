@@ -2973,7 +2973,10 @@ namespace odb
     typedef odb::database database_type;
     typedef odb::connection connection_type;
 
+    explicit
     transaction (transaction_impl*, bool make_current = true);
+
+    transaction ();
 
     void
     reset (transaction_impl*, bool make_current = true);
@@ -2990,6 +2993,10 @@ namespace odb
     connection_type&amp;
     connection ();
 
+    bool
+    finilized () const;
+
+  public:
     static bool
     has_current ();
 
@@ -3004,6 +3011,7 @@ namespace odb
 
     // Callback API.
     //
+  public:
     ...
   };
 }
@@ -3070,9 +3078,12 @@ t2.commit ();
      <code>transaction</code> instance to complete several database
      transactions. Similar to the destructor, <code>reset()</code>
      will roll the current transaction back if it hasn't been finalized.
-     Here is how we can use this function to commit the current transaction
-     and start a new one every time a certain number of database operations
-     has been performed:</p>
+     The default <code>transaction</code> constructor creates a finalized
+     transaction which can later be initialized using <code>reset()</code>.
+     The <code>finilized()</code> accessor can be used to check whether the
+     transaction has been finalized. Here is how we can use this functionality
+     to commit the current transaction and start a new one every time a
+     certain number of database operations has been performed:</p>
 
   <pre class="cxx">
 transaction t (db.begin ());
