@@ -2852,13 +2852,18 @@ namespace odb
   {
   public:
     static void
-    create_schema (database&amp;, const std::string&amp; name = "");
+    create_schema (database&amp;,
+                   const std::string&amp; name = "",
+                   bool drop = true);
+
+    static void
+    drop_schema (database&amp;, const std::string&amp; name = "");
 
     static bool
-    exists (database_id, const std::string&amp; name);
+    exists (database_id, const std::string&amp; name = "");
 
     static bool
-    exists (const database&amp;, const std::string&amp; name)
+    exists (const database&amp;, const std::string&amp; name = "")
   };
 }
   </pre>
@@ -2871,13 +2876,21 @@ namespace odb
      have several separate schemas, you can use the
      <code>--schema-name</code> ODB compiler option to assign
      custom schema names and then use these names as a second argument
-     to <code>create_schema()</code>. If the schema is not found,
-     <code>create_schema()</code> throws the
+     to <code>create_schema()</code>. By default, <code>create_schema()</code>
+     will also delete all the database objects (tables, indexes, etc.) if
+     they exist prior to creating the new ones. You can change this
+     behavior by passing <code>false</code> as the third argument. The
+     <code>drop_schema()</code> function allows you to delete all the
+     database objects without creating the new ones.</p>
+
+  <p>If the schema is not found, the <code>create_schema()</code> and
+     <code>drop_schema()</code> functions throw the
      <code>odb::unknown_schema</code> exception. You can use the
      <code>exists()</code> function to check whether a schema for the
      specified database and with the specified name exists in the
-     catalog. Note also that the <code>create_schema()</code> function
-     should be called within a transaction.</p>
+     catalog. Note also that the <code>create_schema()</code> and
+     <code>drop_schema()</code> functions should be called within a
+     transaction.</p>
 
   <p>Finally, we can also use a custom database schema with ODB. This approach
      can work similarly to the standalone SQL file described above except that

@@ -4,6 +4,15 @@ Version 2.3.0
    queries. For more information, refer to Section 4.1, "ODB Query Language"
    in the ODB manual.
 
+ * The schema_catalog::create_schema() function now has a third argument
+   which indicates whether to drop the schema prior to creating the new one.
+   The default is true which is backwards-compatible. The schema_catalog
+   class now also provides the drop_schema() function which allows you to
+   drop the schema without creating the new one. Finally, the exists()
+   function now has the schema name argument default to the empty string
+   (the default schema name). For more information, refer to Section 3.4,
+   "Database" in the ODB manual.
+
  * New option, --fkeys-deferrable-mode, specifies the alternative deferrable
    mode for foreign keys. By default, the ODB compiler generates deferred
    foreign keys for databases that support them (SQLite, PostgreSQL, and
@@ -14,7 +23,7 @@ Version 2.3.0
 
  * New SQLite-specific exception, odb::sqlite::forced_rollback, which is
    thrown if SQLite forces a transaction to roll back. For more information,
-   refer to Section 16.5.6, "Forced Rollback".
+   refer to Section 16.5.6, "Forced Rollback" in the ODB manual.
 
  * The --output-name option has been renamed to --input-name, which is more
    semantically correct.
