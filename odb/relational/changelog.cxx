@@ -722,6 +722,8 @@ namespace relational
         throw operation_failed ();
       }
 
+
+
       // Build the new changelog.
       //
       model& oldm (old->model ());
@@ -732,7 +734,7 @@ namespace relational
       //
       //
       model* last (&g.new_node<model> (oldm, g));
-      model* base (bver == mv.base ? last : 0);
+      model* base (bver == mv.base && mv.base != mv.current ? last : 0);
       if (base != 0)
         g.new_edge<contains_model> (*cl, *base);
 
