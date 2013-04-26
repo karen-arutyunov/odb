@@ -683,8 +683,13 @@ namespace relational
         else
         {
           // In this case we have to create an empty model at the base
-          // version and a changeset.
+          // version and a changeset. We do it this way instead of putting
+          // everything into the base model in order to support adding new
+          // header files to the project.
           //
+          cerr << out_name << ": warning: base and current versions " <<
+            "differ; assuming base model is empty" << endl;
+
           model& nm (g.new_node<model> (mv.base));
           g.new_edge<contains_model> (*cl, nm);
           changeset& c (diff (nm, m, *cl));
