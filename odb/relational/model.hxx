@@ -102,20 +102,18 @@ namespace relational
       virtual bool
       traverse_column (semantics::data_member& m, string const& name, bool)
       {
-        bool id (object_columns_base::id ());             // Id or part of.
-        bool null (!id && object_columns_base::null ());
-
         string col_id (id_prefix_ +
                        (key_prefix_.empty () ? m.name () : key_prefix_));
 
         sema_rel::column& c (
-          model_.new_node<sema_rel::column> (col_id, column_type (), null));
+          model_.new_node<sema_rel::column> (
+            col_id, column_type (), null (m)));
         c.set ("cxx-location", m.location ());
         model_.new_edge<sema_rel::unames> (table_, c, name);
 
         // An id member cannot have a default value.
         //
-        if (!id)
+        if (!object_columns_base::id ())
         {
           string const& d (default_ (m));
 
@@ -132,6 +130,12 @@ namespace relational
 
         constraints (m, name, col_id, c);
         return true;
+      }
+
+      virtual bool
+      null (semantics::data_member&)
+      {
+        return !object_columns_base::id () && object_columns_base::null ();
       }
 
       virtual string

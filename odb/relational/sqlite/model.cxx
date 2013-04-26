@@ -23,6 +23,12 @@ namespace relational
       {
         object_columns (base const& x): base (x) {}
 
+        virtual bool
+        null (semantics::data_member& m)
+        {
+          return options.sqlite_override_null () || base::null (m);
+        }
+
         virtual string
         default_enum (semantics::data_member& m, tree en, string const&)
         {

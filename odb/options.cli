@@ -961,6 +961,15 @@ class options
   // SQLite-specific options.
   //
 
+  bool --sqlite-override-null
+  {
+    "Make all columns in the generated database schema allow \cb{NULL}
+     values. This is primarily useful in schema migration since SQLite
+     does not support dropping of columns. By making all columns \cb{NULL}
+     we can later \"delete\" them by setting their values to \cb{NULL}.
+     Note that this option overrides even the \cb{not_null} pragma."
+  };
+
   bool --sqlite-lax-auto-id
   {
     "Do not force monotonically increasing automatically-assigned
