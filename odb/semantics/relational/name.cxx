@@ -35,58 +35,54 @@ namespace semantics
       return r;
     }
 
+    qname qname::
+    from_string (std::string const& s)
+    {
+      using std::string;
+
+      qname n;
+
+      string::size_type p (string::npos);
+
+      for (size_t i (0); i < s.size (); ++i)
+      {
+        char c (s[i]);
+
+        if (c == '.')
+        {
+          if (p == string::npos)
+            n.append (string (s, 0, i));
+          else
+            n.append (string (s, p + 1, i - p - 1));
+
+          p  = i;
+        }
+      }
+
+      if (p == string::npos)
+        n.append (s);
+      else
+        n.append (string (s, p + 1, string::npos));
+
+      return n;
+    }
+
     ostream&
     operator<< (ostream& os, qname const& n)
     {
-      bool f (true);
-      for (qname::iterator i (n.begin ()); i < n.end (); ++i)
-      {
-        if (i->empty ())
-          continue;
-
-        if (f)
-          f = false;
-        else
-          os << '.';
-
-        os << *i;
-      }
-
-      return os;
+      return os << n.string ();
     }
 
     istream&
     operator>> (istream& is, qname& n)
     {
-      n.clear ();
-
       string s;
       is >> s;
 
       if (!is.fail ())
-      {
-        string::size_type p (string::npos);
-
-        for (size_t i (0); i < s.size (); ++i)
-        {
-          char c (s[i]);
-
-          if (c == '.')
-          {
-            if (p == string::npos)
-              n.append (string (s, 0, i));
-            else
-              n.append (string (s, p + 1, i - p - 1));
-
-            p  = i;
-          }
-        }
-
-        if (p == string::npos)
-          n.append (s);
-        else
-          n.append (string (s, p + 1, string::npos));
-      }
+        n = qname::from_string (s);
+      else
+        n.clear ();
 
       return is;
     }

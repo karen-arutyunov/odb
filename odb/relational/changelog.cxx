@@ -97,6 +97,24 @@ namespace relational
               if (pk.auto_ () != opk->auto_ ())
                 diagnose_primary_key (pk, "auto kind");
 
+              // Database-specific information.
+              //
+              for (primary_key::extra_map::const_iterator i (
+                     pk.extra ().begin ()); i != pk.extra ().end (); ++i)
+              {
+                if (opk->extra ().count (i->first) == 0 ||
+                    opk->extra ()[i->first] != i->second)
+                  diagnose_primary_key (pk, i->first.c_str ());
+              }
+
+              for (primary_key::extra_map::const_iterator i (
+                     opk->extra ().begin ()); i != opk->extra ().end (); ++i)
+              {
+                if (pk.extra ().count (i->first) == 0 ||
+                    pk.extra ()[i->first] != i->second)
+                  diagnose_primary_key (pk, i->first.c_str ());
+              }
+
               if (pk.contains_size () != opk->contains_size ())
                 diagnose_primary_key (pk, "member set");
 

@@ -224,7 +224,7 @@ namespace relational
         }
 
         virtual void
-        auto_ (sema_rel::column&)
+        auto_ (sema_rel::primary_key&)
         {
           os << " IDENTITY";
         }

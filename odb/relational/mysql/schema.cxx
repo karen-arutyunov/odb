@@ -134,7 +134,7 @@ namespace relational
         create_column (base const& x): base (x) {}
 
         virtual void
-        auto_ (sema_rel::column&)
+        auto_ (sema_rel::primary_key&)
         {
           os << " AUTO_INCREMENT";
         }

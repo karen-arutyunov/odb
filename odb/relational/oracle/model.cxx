@@ -51,6 +51,13 @@ namespace relational
 
           return ostr.str ();
         }
+
+        virtual void
+        primary_key (sema_rel::primary_key& pk)
+        {
+          if (pk.auto_ ())
+            pk.extra ()["sequence"] = sequence_name (table_.name ()).string ();
+        }
       };
       entry<object_columns> object_columns_;
     }

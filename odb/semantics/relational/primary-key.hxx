@@ -5,6 +5,8 @@
 #ifndef ODB_SEMANTICS_RELATIONAL_PRIMARY_KEY_HXX
 #define ODB_SEMANTICS_RELATIONAL_PRIMARY_KEY_HXX
 
+#include <map>
+
 #include <odb/semantics/relational/elements.hxx>
 #include <odb/semantics/relational/key.hxx>
 
@@ -17,6 +19,17 @@ namespace semantics
     public:
       bool
       auto_ () const {return auto__;}
+
+      // Extra database information.
+      //
+    public:
+      typedef std::map<string, string> extra_map;
+
+      extra_map&
+      extra () {return extra_map_;}
+
+      extra_map const&
+      extra () const {return extra_map_;}
 
     public:
       primary_key (bool auto_)
@@ -42,6 +55,7 @@ namespace semantics
 
     private:
       bool auto__;
+      extra_map extra_map_;
     };
   }
 }

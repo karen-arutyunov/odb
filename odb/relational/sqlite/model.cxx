@@ -57,6 +57,13 @@ namespace relational
 
           return ostr.str ();
         }
+
+        virtual void
+        primary_key (sema_rel::primary_key& pk)
+        {
+          if (pk.auto_ () && options.sqlite_lax_auto_id ())
+            pk.extra ()["lax"] = "true";
+        }
       };
       entry<object_columns> object_columns_;
     }

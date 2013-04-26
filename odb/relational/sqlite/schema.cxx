@@ -117,9 +117,9 @@ namespace relational
         }
 
         virtual void
-        auto_ (sema_rel::column&)
+        auto_ (sema_rel::primary_key& pk)
         {
-          if (options.sqlite_lax_auto_id ())
+          if (pk.extra ().count ("lax"))
             os << " /*AUTOINCREMENT*/";
           else
             os << " AUTOINCREMENT";

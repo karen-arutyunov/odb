@@ -12,7 +12,7 @@ namespace semantics
   {
     primary_key::
     primary_key (primary_key const& k, uscope& s, graph& g)
-        : key (k, s, g), auto__ (k.auto__)
+        : key (k, s, g), auto__ (k.auto__), extra_map_ (k.extra_map_)
     {
     }
 
@@ -21,6 +21,16 @@ namespace semantics
         : key (p, s, g),
           auto__ (p.attribute ("auto", false))
     {
+      // All unhandled attributes go into the extra map.
+      //
+      typedef xml::parser::attribute_map_type attr_map;
+      attr_map const& am (p.attribute_map ());
+
+      for (attr_map::const_iterator i (am.begin ()); i != am.end (); ++i)
+      {
+        if (!i->second.handled)
+          extra_map_[i->first.name ()] = i->second.value;
+      }
     }
 
     primary_key& primary_key::
@@ -34,8 +44,14 @@ namespace semantics
     {
       s.start_element (xmlns, "primary-key");
       key::serialize_attributes (s);
+
       if (auto_ ())
         s.attribute ("auto", true);
+
+      for (extra_map::const_iterator i (extra_map_.begin ());
+           i != extra_map_.end (); ++i)
+        s.attribute (i->first, i->second);
+
       key::serialize_content (s);
       s.end_element ();
     }

@@ -123,6 +123,9 @@ namespace semantics
       std::string
       string () const;
 
+      static qname
+      from_string (std::string const&);
+
     public:
       friend bool
       operator== (qname const& x, qname const& y)

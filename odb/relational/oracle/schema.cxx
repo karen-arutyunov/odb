@@ -149,16 +149,14 @@ namespace relational
 
           using sema_rel::primary_key;
 
-          qname const& table (t.name ());
-
           sema_rel::table::names_iterator i (t.find ("")); // Special name.
           primary_key* pk (i != t.names_end ()
                            ? &dynamic_cast<primary_key&> (i->nameable ())
                            : 0);
 
-          string qt (quote_id (table));
+          string qt (quote_id (t.name ()));
           string qs (pk != 0 && pk->auto_ ()
-                     ? quote_id (sequence_name (table))
+                     ? quote_id (qname::from_string (pk->extra ()["sequence"]))
                      : "");
 
           if (migration)
@@ -249,7 +247,7 @@ namespace relational
             primary_key ();
 
           if (pk != 0 && pk->auto_ ())
-            auto_ (c);
+            auto_ (*pk);
         }
       };
       entry<create_column> create_column_;
@@ -307,9 +305,11 @@ namespace relational
 
             if (pk != 0 && pk->auto_ ())
             {
+              string qs (
+                quote_id (qname::from_string (pk->extra ()["sequence"])));
+
               pre_statement ();
-              os_ << "CREATE SEQUENCE " <<
-                quote_id (sequence_name (t.name ())) << endl
+              os_ << "CREATE SEQUENCE " << qs << endl
                   << "  START WITH 1 INCREMENT BY 1" << endl;
               post_statement ();
             }

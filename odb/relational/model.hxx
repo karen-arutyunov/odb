@@ -187,6 +187,11 @@ namespace relational
       }
 
       virtual void
+      primary_key (sema_rel::primary_key&)
+      {
+      }
+
+      virtual void
       constraints (semantics::data_member& m,
                    string const& /* name */,
                    string const& /* id */,
@@ -211,6 +216,7 @@ namespace relational
               // name.
               //
               model_.new_edge<sema_rel::unames> (table_, *pkey_, "");
+              primary_key (*pkey_);
             }
 
             model_.new_edge<sema_rel::contains> (*pkey_, c);

@@ -535,7 +535,7 @@ namespace relational
           primary_key ();
 
         if (pk != 0 && pk->auto_ ())
-          auto_ (c);
+          auto_ (*pk);
       }
 
       virtual void
@@ -570,7 +570,7 @@ namespace relational
       }
 
       virtual void
-      auto_ (sema_rel::column&)
+      auto_ (sema_rel::primary_key&)
       {
       }
 

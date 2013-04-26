@@ -49,36 +49,27 @@ namespace semantics
     class edge: public context
     {
     public:
-      virtual
-      ~edge () {}
-
-    public:
       template <typename X>
       bool
       is_a () const
       {
         return dynamic_cast<X const*> (this) != 0;
       }
+
+    public:
+      virtual
+      ~edge () {}
     };
 
     //
     //
     class node: public context
     {
-    public:
-      virtual
-      ~node () {}
-
       // Return name of the node.
       //
+    public:
       virtual string
       kind () const = 0;
-
-      // XML serialization.
-      //
-    public:
-      virtual void
-      serialize (xml::serializer&) const = 0;
 
     public:
       template <typename X>
@@ -88,10 +79,18 @@ namespace semantics
         return dynamic_cast<X const*> (this) != 0;
       }
 
+    public:
+      virtual
+      ~node () {}
+
+      // XML serialization.
+      //
+      virtual void
+      serialize (xml::serializer&) const = 0;
+
       // Sink functions that allow extensions in the form of one-way
       // edges.
       //
-    public:
       void
       add_edge_right (edge&) {}
 
