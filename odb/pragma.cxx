@@ -673,7 +673,7 @@ handle_pragma (cxx_lexer& l,
   {
     // version(unsigned long long base,
     //         unsigned long long current,
-    //         bool open = true)
+    //         open|closed)
     //
 
     // Make sure we've got the correct declaration type.
@@ -735,18 +735,18 @@ handle_pragma (cxx_lexer& l,
         return;
       }
 
-      // open
+      // open|closed
       //
       tt = l.next (tl, &tn);
       if (tt == CPP_COMMA)
       {
-        if (l.next (tl, &tn) != CPP_KEYWORD || (tl != "true" && tl != "false"))
+        if (l.next (tl, &tn) != CPP_NAME || (tl != "open" && tl != "closed"))
         {
-          error (l) << "true or false expected after current version" << endl;
+          error (l) << "open or closed expected after current version" << endl;
           return;
         }
 
-        v.open = (tl == "true");
+        v.open = (tl == "open");
         tt = l.next (tl, &tn);
       }
       else
