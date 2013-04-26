@@ -14,6 +14,13 @@ namespace semantics
     class table: public qnameable, public uscope
     {
     public:
+      virtual string const&
+      options () const {return options_;}
+
+      virtual void
+      options (string const& o) {options_ = o;}
+
+    public:
       table (string const& id): qnameable (id) {}
       table (table const&, qscope&, graph&, bool base = false);
       table (xml::parser&, qscope&, graph&, bool base = false);
@@ -30,6 +37,13 @@ namespace semantics
       // Resolve ambiguity.
       //
       using qnameable::scope;
+
+    protected:
+      void
+      serialize_attributes (xml::serializer&) const;
+
+    protected:
+      string options_;
     };
 
     class add_table: public table

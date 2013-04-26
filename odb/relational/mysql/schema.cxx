@@ -297,16 +297,6 @@ namespace relational
             }
           }
         }
-
-        virtual void
-        create_post ()
-        {
-          os << ")" << endl;
-
-          string const& engine (options.mysql_engine ());
-          if (engine != "default")
-            os << " ENGINE=" << engine << endl;
-        }
       };
       entry<create_table> create_table_;
 

@@ -468,6 +468,12 @@ namespace relational
         id_prefix_ = t;
       }
 
+      virtual string
+      table_options (semantics::data_member&, semantics::type&)
+      {
+        return "";
+      }
+
       virtual void
       traverse_container (semantics::data_member& m, semantics::type& ct)
       {
@@ -494,6 +500,8 @@ namespace relational
         sema_rel::table& t (model_.new_node<sema_rel::table> (id));
         t.set ("cxx-location", m.location ());
         model_.new_edge<sema_rel::qnames> (model_, t, name);
+
+        t.options (table_options (m, ct));
 
         // object_id
         //
@@ -675,9 +683,12 @@ namespace relational
     {
       typedef class_ base;
 
-      class_ (sema_rel::model& model)
-          : model_ (model)
+      class_ (sema_rel::model& model): model_ (model) {}
+
+      virtual string
+      table_options (type&)
       {
+        return "";
       }
 
       virtual void
@@ -702,9 +713,11 @@ namespace relational
 
         string id (class_fq_name (c), 2); // Remove leading '::'.
 
-        sema_rel::table& t(model_.new_node<sema_rel::table> (id));
+        sema_rel::table& t (model_.new_node<sema_rel::table> (id));
         t.set ("cxx-location", c.location ());
         model_.new_edge<sema_rel::qnames> (model_, t, name);
+
+        t.options (table_options (c));
 
         // Add columns.
         //

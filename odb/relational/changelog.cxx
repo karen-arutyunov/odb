@@ -356,6 +356,9 @@ namespace relational
               assert (bt != 0);
               alters& ae (g.new_edge<alters> (at, *bt));
 
+              if (t.options () != ot->options ())
+                diagnose_table (t, "options", ot->options (), t.options ());
+
               {
                 trav_rel::table table;
                 trav_rel::unames names;
@@ -396,6 +399,31 @@ namespace relational
               g.new_edge<qnames> (cs, dt, t.name ());
             }
           }
+        }
+
+        void
+        diagnose_table (sema_rel::table& t,
+                        char const* name,
+                        string const& ov,
+                        string const& nv)
+        {
+          location const& tl (t.get<location> ("cxx-location"));
+
+          error (tl) << "change to object or container member results in "
+            "the change of the corresponding table " << name;
+
+          if (!ov.empty () || !nv.empty ())
+            cerr << " (old: '" << ov << "', new: '" << nv << "')";
+
+          cerr << endl;
+
+          error (tl) << "this change is not yet handled automatically" << endl;
+          info (tl) << "consider re-implementing this change by adding a " <<
+            "new object or container member with the desired " << name <<
+            ", migrating the data, and deleting the old object or member" <<
+            endl;
+
+          throw operation_failed ();
         }
 
       protected:

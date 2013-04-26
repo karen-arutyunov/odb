@@ -15,7 +15,8 @@ namespace semantics
     table::
     table (table const& t, qscope& s, graph& g, bool b)
         : qnameable (t, g),
-          uscope (t, (b ? s.lookup<table, drop_table> (t.name ()) : 0), g)
+          uscope (t, (b ? s.lookup<table, drop_table> (t.name ()) : 0), g),
+          options_ (t.options_)
     {
     }
 
@@ -26,7 +27,8 @@ namespace semantics
             p,
             (b ? s.lookup<table, drop_table> (
               p.attribute<qnameable::name_type> ("name")) : 0),
-            g)
+            g),
+          options_ (p.attribute ("options", string ()))
     {
     }
 
@@ -37,10 +39,19 @@ namespace semantics
     }
 
     void table::
+    serialize_attributes (xml::serializer& s) const
+    {
+      qnameable::serialize_attributes (s);
+
+      if (!options_.empty ())
+        s.attribute ("options", options_);
+    }
+
+    void table::
     serialize (xml::serializer& s) const
     {
       s.start_element (xmlns, "table");
-      qnameable::serialize_attributes (s);
+      serialize_attributes (s);
       uscope::serialize_content (s);
       s.end_element ();
     }

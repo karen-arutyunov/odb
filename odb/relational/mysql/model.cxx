@@ -105,6 +105,32 @@ namespace relational
         }
       };
       entry<object_columns> object_columns_;
+
+      struct member_create: relational::member_create, context
+      {
+        member_create (base const& x): base (x) {}
+
+        virtual string
+        table_options (semantics::data_member&, semantics::type&)
+        {
+          string const& engine (options.mysql_engine ());
+          return engine != "default" ? "ENGINE=" + engine : "";
+        }
+      };
+      entry<member_create> member_create_;
+
+      struct class_: relational::class_, context
+      {
+        class_ (base const& x): base (x) {}
+
+        virtual string
+        table_options (type&)
+        {
+          string const& engine (options.mysql_engine ());
+          return engine != "default" ? "ENGINE=" + engine : "";
+        }
+      };
+      entry<class_> class__;
     }
   }
 }

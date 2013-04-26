@@ -931,9 +931,12 @@ namespace relational
       }
 
       virtual void
-      create_post ()
+      create_post (sema_rel::table& t)
       {
         os << ")" << endl;
+
+        if (!t.options ().empty ())
+          os << " " << t.options () << endl;
       }
 
       virtual void
@@ -958,7 +961,7 @@ namespace relational
 
         names (t, n);
 
-        create_post ();
+        create_post (t);
         post_statement ();
 
         // Create indexes.
