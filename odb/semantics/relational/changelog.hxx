@@ -119,7 +119,11 @@ namespace semantics
       }
 
     public:
-      changelog (): contains_model_ (0) {}
+      string const&
+      database () const {return database_;}
+
+    public:
+      changelog (string const& db): database_ (db), contains_model_ (0) {}
       changelog (xml::parser&);
 
       void
@@ -146,6 +150,7 @@ namespace semantics
       changelog& operator= (changelog const&);
 
     protected:
+      string database_;
       contains_model_type* contains_model_;
       contains_changeset_list contains_changeset_;
     };

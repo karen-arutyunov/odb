@@ -655,9 +655,10 @@ namespace relational
               changelog* old,
               std::string const& in_name,
               std::string const& out_name,
-              bool force_init)
+              options const& ops)
     {
-      cutl::shared_ptr<changelog> cl (new (shared) changelog);
+      cutl::shared_ptr<changelog> cl (
+        new (shared) changelog (ops.database ()[0].string ()));
       graph& g (*cl);
 
       if (old == 0)
@@ -673,7 +674,7 @@ namespace relational
           throw operation_failed ();
         }
 
-        if (!force_init)
+        if (!ops.init_changelog ())
           cerr << out_name << ": info: initializing changelog with base " <<
             "version " << mv.base << endl;
 

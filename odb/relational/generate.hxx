@@ -49,7 +49,7 @@ namespace relational
               semantics::relational::changelog* old, // Can be NULL.
               std::string const& in_name,
               std::string const& out_name,
-              bool force_init);
+              options const&);
   }
 
   namespace schema

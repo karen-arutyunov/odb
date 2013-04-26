@@ -29,6 +29,8 @@ namespace semantics
       if (p.attribute<unsigned int> ("version") != 1)
         throw parsing (p, "unsupported changelog format version");
 
+      database_ = p.attribute ("database");
+
       // Because things are stored in the reverse order, first save the
       // changesets as XML chunks and then re-parse them in the reverse
       // order. We have to do it this way so that we can do lookups along
@@ -125,6 +127,7 @@ namespace semantics
     {
       s.start_element (xmlns, "changelog");
       s.namespace_decl (xmlns, "");
+      s.attribute ("database", database_);
       s.attribute ("version", 1); // Format version.
 
       // For better readability serialize things in reverse order so that

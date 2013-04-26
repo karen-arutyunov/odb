@@ -251,6 +251,14 @@ generate (options const& ops,
 
           xml::parser p (is, in_log_path.string ());
           old_changelog.reset (new (shared) sema_rel::changelog (p));
+
+          if (old_changelog->database () != db.string ())
+          {
+            cerr << in_log_path << ": error: wrong database '" <<
+              old_changelog->database () << "', expected '" << db <<
+              "'" << endl;
+            throw generator::failed ();
+          }
         }
         catch (const ios_base::failure& e)
         {
@@ -270,7 +278,7 @@ generate (options const& ops,
         old_changelog.get (),
         in_log_path.string (),
         out_log_path.string (),
-        ops.init_changelog ());
+        ops);
     }
 
     // Output files.
