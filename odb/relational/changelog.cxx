@@ -412,12 +412,27 @@ namespace relational
       {
         changeset& r (l.new_node<changeset> (n.version ()));
 
-        // Set the alters edge for lookup.
+        // Set the alters edge for lookup. If we are diff'ing two models of
+        // the same version, then use the old model as a base. Otherwise use
+        // the tip of changelog (it should correspond to the old model).
         //
-        l.new_edge<alters> (r,
-                            l.contains_changeset_empty ()
-                            ? static_cast<qscope&> (l.model ())
-                            : l.contains_changeset_back ().changeset ());
+        if (o.version () == n.version ())
+          l.new_edge<alters> (r, o);
+        else
+        {
+          if (l.contains_changeset_empty ())
+          {
+            model& m (l.model ());
+            assert (o.version () == m.version ());
+            l.new_edge<alters> (r, m);
+          }
+          else
+          {
+            changeset& c (l.contains_changeset_back ().changeset ());
+            assert (o.version () == c.version ());
+            l.new_edge<alters> (r, c);
+          }
+        }
 
         {
           trav_rel::model model;
