@@ -167,17 +167,19 @@ generate (options const& ops,
     string base (file.base ().string ());
 
     path in_log_path;
-    path log_dir (ops.changelog_dir ().empty () ? "" : ops.changelog_dir ());
-    if (ops.changelog_in_specified ())
+    path log_dir (ops.changelog_dir ().count (db) != 0
+                  ? ops.changelog_dir ()[db]
+                  : "");
+    if (ops.changelog_in ().count (db) != 0)
     {
-      in_log_path = path (ops.changelog_in ());
+      in_log_path = path (ops.changelog_in ()[db]);
 
       if (!log_dir.empty () && !in_log_path.absolute ())
         in_log_path = log_dir / in_log_path;
     }
-    else if (ops.changelog_specified ())
+    else if (ops.changelog ().count (db) != 0)
     {
-      in_log_path = path (ops.changelog ());
+      in_log_path = path (ops.changelog ()[db]);
 
       if (!in_log_path.absolute () && !log_dir.empty ())
         in_log_path = log_dir / in_log_path;
@@ -202,9 +204,9 @@ generate (options const& ops,
     string old_changelog_xml;
 
     path out_log_path;
-    if (ops.changelog_out_specified ())
+    if (ops.changelog_out ().count (db))
     {
-      out_log_path = path (ops.changelog_out ());
+      out_log_path = path (ops.changelog_out ()[db]);
 
       if (!log_dir.empty () && !out_log_path.absolute ())
         out_log_path = log_dir / out_log_path;

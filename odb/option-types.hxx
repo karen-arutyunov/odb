@@ -10,7 +10,6 @@
 #include <string>
 #include <cassert>
 
-
 #include <odb/semantics/relational/name.hxx>
 #include <odb/semantics/relational/deferrable.hxx>
 

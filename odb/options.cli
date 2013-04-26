@@ -331,7 +331,7 @@ class options
      combined file. Refer to the \cb{--at-once} option for details."
   };
 
-  std::string --changelog
+  database_map<std::string> --changelog
   {
     "<file>",
     "Read/write changelog from/to <file> instead of the default changelog
@@ -344,7 +344,7 @@ class options
      options to specify different input and output chaneglog files."
   };
 
-  std::string --changelog-in
+  database_map<std::string> --changelog-in
   {
     "<file>",
     "Read changelog from <file> instead of the default changelog file. If
@@ -352,7 +352,7 @@ class options
      chanegelog file with \cb{--changelog-out}."
   };
 
-  std::string --changelog-out
+  database_map<std::string> --changelog-out
   {
     "<file>",
     "Write changelog to <file> instead of the default changelog file. If
@@ -360,7 +360,7 @@ class options
      chanegelog file with \cb{--changelog-in}."
   };
 
-  std::string --changelog-dir
+  database_map<std::string> --changelog-dir
   {
     "<dir>",
     "Use <dir> instead of the input file directory as the changelog file

@@ -995,7 +995,7 @@ validate (options const& ops,
 
   // Changelog options.
   //
-  if (ops.changelog_in_specified () != ops.changelog_out_specified ())
+  if (ops.changelog_in ().count (db) != ops.changelog_out ().count (db))
   {
     cerr << "error: both --changelog-in and --changelog-out must be " <<
       "specified" << endl;
