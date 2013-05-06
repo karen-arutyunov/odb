@@ -107,6 +107,8 @@ traverse_object (type& c)
   bool abst (abstract (c));
   bool reuse_abst (abst && !poly);
 
+  user_sections& uss (c.get<user_sections> ("user-sections"));
+
   string const& type (class_fq_name (c));
   string traits ("access::object_traits< " + type + " >");
 
@@ -269,6 +271,30 @@ traverse_object (type& c)
        << "function_table[db.id ()]->erase2 (db, o" <<
       (poly ? ", true, true" : "") << ");"
        << "}";
+
+    // Sections.
+    //
+    if (uss.count (user_sections::count_total |
+                   user_sections::count_load  |
+                   (poly ? user_sections::count_load_empty : 0)) != 0)
+      os << "inline" << endl
+         << "bool " << traits << "::" << endl
+         << "load (connection& c, object_type& o, section& s)"
+         << "{"
+         << "return function_table[c.database ().id ()]->load_section (" <<
+        "c, o, s" << (poly ? ", 0" : "") << ");"
+         << "}";
+
+    if (uss.count (user_sections::count_total  |
+                   user_sections::count_update |
+                   (poly ? user_sections::count_update_empty : 0)) != 0)
+      os << "inline" << endl
+         << "bool " << traits << "::" << endl
+         << "update (connection& c, const object_type& o, const section& s)"
+         << "{"
+         << "return function_table[c.database ().id ()]->update_section (" <<
+        "c, o, s" << (poly ? ", 0" : "") << ");"
+         << "}";
   }
 
   if (options.generate_query ())

@@ -4,11 +4,13 @@
 
 #include <odb/gcc.hxx>
 
+#include <set>
 #include <iostream>
 
 #include <odb/traversal.hxx>
 #include <odb/common.hxx>
 #include <odb/context.hxx>
+#include <odb/diagnostics.hxx>
 #include <odb/validator.hxx>
 
 #include <odb/relational/validator.hxx>
@@ -106,6 +108,50 @@ namespace
              << " error: inverse object pointer should not be declared "
              << "readonly" << endl;
 
+          valid_ = false;
+        }
+      }
+
+      // Make sure a member of a section is an immediate member of an object.
+      // The same for the section member itself.
+      //
+      if (!object (c))
+      {
+        if (m.count ("section-member"))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": " <<
+            "error: data member belonging to a section can only be a " <<
+            "direct member of a persistent class" << endl;
+          valid_ = false;
+        }
+
+        if (t.fq_name () == "::odb::section")
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": " <<
+            "error: section data member can only be a direct member of a " <<
+            "persistent class" << endl;
+          valid_ = false;
+        }
+      }
+
+      // Make sure the load and update pragmas are only specified on
+      // section members.
+      //
+      if (t.fq_name () != "::odb::section")
+      {
+        if (m.count ("section-load"))
+        {
+          location_t loc (m.get<location_t> ("section-load-location"));
+          error (loc) << "'#pragma db load' can only be specified for "
+            "a section data member" << endl;
+          valid_ = false;
+        }
+
+        if (m.count ("section-update"))
+        {
+          location_t loc (m.get<location_t> ("section-update-location"));
+          error (loc) << "'#pragma db update' can only be specified for "
+            "a section data member" << endl;
           valid_ = false;
         }
       }
@@ -438,9 +484,16 @@ namespace
         if (id->count ("default"))
         {
           os << id->file () << ":" << id->line () << ":" << id->column ()
-             << ": error: object id member cannot have default value"
-             << endl;
+             << ": error: object id member cannot have default value" << endl;
+          valid_ = false;
+        }
 
+        // Complain if an id member is in a section.
+        //
+        if (id->count ("section-member"))
+        {
+          os << id->file () << ":" << id->line () << ":" << id->column ()
+             << ": error: object id member cannot be in a section" << endl;
           valid_ = false;
         }
 
@@ -464,7 +517,7 @@ namespace
 
         // Make sure we have the class declared optimistic.
         //
-        if (&optimistic->scope () == &c && !c.count ("optimistic"))
+        if (&m.scope () == &c && !c.count ("optimistic"))
         {
           os << m.file () << ":" << m.line () << ":" << m.column () << ":"
              << " error: version data member in a class not declared "
@@ -490,7 +543,7 @@ namespace
         // Make sure id and version members are in the same class. The
         // current architecture relies on that.
         //
-        if (id != 0 && &id->scope () != &optimistic->scope ())
+        if (id != 0 && &id->scope () != &m.scope ())
         {
           os << c.file () << ":" << c.line () << ":" << c.column () << ":"
              << " error: object id and version members are in different "
@@ -516,6 +569,15 @@ namespace
           os << c.file () << ":" << c.line () << ":" << c.column () << ":"
              << " error: optimistic class cannot be readonly" << endl;
 
+          valid_ = false;
+        }
+
+        // Complain if the version member is in a section.
+        //
+        if (m.count ("section-member"))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column ()
+             << ": error: version member cannot be in a section" << endl;
           valid_ = false;
         }
 
@@ -570,6 +632,28 @@ namespace
 
       if (poly_root != 0)
         c.set ("polymorphic-root", poly_root);
+
+      // Sectionable objects.
+      //
+      if (c.count ("sectionable"))
+      {
+        if (optimistic == 0)
+        {
+          location_t l (c.get<location_t> ("sectionable-location"));
+          error (l) << "only optimistic class can be sectionable" << endl;
+          valid_ = false;
+        }
+        else if (&optimistic->scope () != &c && poly_root != &c)
+        {
+          location l (c.get<location_t> ("sectionable-location"));
+          error (l) << "only optimistic class that declares the version " <<
+            "data member or that is a root of a polymorphic hierarchy can " <<
+            "be sectionable" << endl;
+          info (optimistic->location ()) << "version member is declared " <<
+            "here" << endl;
+          valid_ = false;
+        }
+      }
 
       // Update features set based on this object.
       //
@@ -878,6 +962,56 @@ namespace
     virtual void
     traverse_object (type& c)
     {
+      bool poly (polymorphic (c));
+
+      // Make sure we have no empty or pointless sections unless we
+      // are reuse-abstract or polymorphic.
+      //
+      if (!poly && !abstract (c))
+      {
+        user_sections& uss (c.get<user_sections> ("user-sections"));
+
+        for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+        {
+          user_section& s (*i);
+
+          // Skip the special version update section (we always treat it
+          // as abstract in reuse inheritance).
+          //
+          if (s.special == user_section::special_version)
+            continue;
+
+          semantics::data_member& m (*s.member);
+          location const& l (m.location ());
+
+          if (s.total == 0 && !s.containers)
+          {
+            error (l) << "empty section" << endl;
+
+            if (&m.scope () != &c)
+              info (c.location ()) << "as seen in this non-abstract " <<
+                "persistent class" << endl;
+
+            valid_ = false;
+            continue;
+          }
+
+          // Eager-loaded section with readonly members.
+          //
+          if (s.load == user_section::load_eager && s.update_empty ())
+          {
+            error (l) << "eager-loaded section with readonly members is " <<
+              "pointless" << endl;
+
+            if (&m.scope () != &c)
+              info (c.location ()) << "as seen in this non-abstract " <<
+                "persistent class" << endl;
+
+            valid_ = false;
+          }
+        }
+      }
+
       if (semantics::data_member* id = id_member (c))
       {
         semantics::type& t (utype (*id));
@@ -935,6 +1069,20 @@ namespace
 
             valid_ = false;
           }
+        }
+      }
+      else
+      {
+        // Make sure an object without id has no sections.
+        //
+        user_sections& uss (c.get<user_sections> ("user-sections"));
+
+        if (!uss.empty ())
+        {
+          semantics::data_member& m (*uss.front ().member);
+          os << m.file () << ":" << m.line () << ":" << m.column ()
+             << ": error: object without id cannot have sections" << endl;
+          valid_ = false;
         }
       }
     }

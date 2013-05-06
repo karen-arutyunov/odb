@@ -79,8 +79,9 @@ namespace relational
 
       object_columns (statement_kind sk,
                       statement_columns& sc,
-                      query_parameters* param = 0)
-          : object_columns_base (true, true),
+                      query_parameters* param = 0,
+                      object_section* section = 0)
+          : object_columns_base (true, true, section),
             sk_ (sk), sc_ (sc), param_ (param), depth_ (1)
       {
       }
@@ -88,14 +89,33 @@ namespace relational
       object_columns (std::string const& table_qname,
                       statement_kind sk,
                       statement_columns& sc,
-                      size_t depth = 1)
-          : object_columns_base (true, true),
+                      size_t depth = 1,
+                      object_section* section = 0)
+          : object_columns_base (true, true, section),
             sk_ (sk),
             sc_ (sc),
             param_ (0),
             table_name_ (table_qname),
             depth_ (depth)
       {
+      }
+
+      virtual bool
+      section_test (data_member_path const& mp)
+      {
+        object_section& s (section (mp));
+
+        // Include eager loaded members into the main section for
+        // SELECT statements. Also include optimistic version into
+        // section's SELECT and UPDATE statements.
+        //
+        return section_ == 0 ||
+          *section_ == s ||
+          (sk_ == statement_select &&
+           *section_ == main_section &&
+           !s.separate_load ()) ||
+          (version (mp) &&
+           (sk_ == statement_update || sk_ == statement_select));
       }
 
       virtual void
@@ -477,56 +497,101 @@ namespace relational
           : object_columns_base (true, true),
             obj_ (obj),
             depth_ (depth),
+            section_ (0),
             alias_ (alias),
             prefix_ (prefix),
             suffix_ (suffix)
       {
+        init ();
+      }
+
+      polymorphic_object_joins (semantics::class_& obj,
+                                size_t depth,
+                                user_section& section)
+          : object_columns_base (true, true),
+            obj_ (obj),
+            depth_ (depth),
+            section_ (&section),
+            suffix_ ("\n")
+      {
+        init ();
+      }
+
+      void
+      init ()
+      {
         // Get the table and id columns.
         //
         table_ = alias_.empty ()
-          ? table_qname (obj)
-          : quote_id (alias_ + "_" + table_name (obj).uname ());
+          ? table_qname (obj_)
+          : quote_id (alias_ + "_" + table_name (obj_).uname ());
 
-        cols_->traverse (*id_member (obj));
+        cols_->traverse (*id_member (obj_));
       }
 
       virtual void
       traverse_object (semantics::class_& c)
       {
-        std::ostringstream cond;
-
-        qname table (table_name (c));
-        string alias (alias_.empty ()
-                      ? quote_id (table)
-                      : quote_id (alias_ + "_" + table.uname ()));
-
-        for (object_columns_list::iterator b (cols_->begin ()), i (b);
-             i != cols_->end ();
-             ++i)
+        // If section is specified, skip bases that don't add anything
+        // to load.
+        //
+        bool skip (false), stop (false);
+        if (section_ != 0)
         {
-          if (i != b)
-            cond << " AND ";
+          skip = true;
 
-          string qn (quote_id (i->name));
-          cond << alias << '.' << qn << '=' << table_ << '.' << qn;
+          if (section_->object == &c)
+          {
+            user_section& s (*section_);
+
+            if (s.total != 0 || s.optimistic ())
+              skip = false;
+
+            section_ = s.base; // Move to the next base.
+
+            if (section_ == 0)
+              stop = true; // Stop at this base if there are no more overrides.
+          }
         }
 
-        string line (" LEFT JOIN " + quote_id (table));
+        if (!skip)
+        {
+          std::ostringstream cond;
 
-        if (!alias_.empty ())
-          line += (need_alias_as ? " AS " : " ") + alias;
+          qname table (table_name (c));
+          string alias (alias_.empty ()
+                        ? quote_id (table)
+                        : quote_id (alias_ + "_" + table.uname ()));
 
-        line += " ON " + cond.str ();
+          for (object_columns_list::iterator b (cols_->begin ()), i (b);
+               i != cols_->end ();
+               ++i)
+          {
+            if (i != b)
+              cond << " AND ";
 
-        os << prefix_ << strlit (line) << suffix_;
+            string qn (quote_id (i->name));
+            cond << alias << '.' << qn << '=' << table_ << '.' << qn;
+          }
 
-        if (--depth_ != 0)
+          string line (" LEFT JOIN " + quote_id (table));
+
+          if (!alias_.empty ())
+            line += (need_alias_as ? " AS " : " ") + alias;
+
+          line += " ON " + cond.str ();
+
+          os << prefix_ << strlit (line) << suffix_;
+        }
+
+        if (!stop && --depth_ != 0)
           inherits (c);
       }
 
     private:
       semantics::class_& obj_;
       size_t depth_;
+      user_section* section_;
       string alias_;
       string prefix_;
       string suffix_;
@@ -540,14 +605,29 @@ namespace relational
 
       //@@ context::{cur,top}_object; might have to be created every time.
       //
-      object_joins (semantics::class_& scope, bool query, size_t depth = 1)
-          : object_columns_base (true, true),
+      object_joins (semantics::class_& scope,
+                    bool query,
+                    size_t depth,
+                    object_section* section = 0)
+          : object_columns_base (true, true, section),
             query_ (query),
             depth_ (depth),
             table_ (table_qname (scope)),
             id_ (*id_member (scope))
       {
         id_cols_->traverse (id_);
+      }
+
+      virtual bool
+      section_test (data_member_path const& mp)
+      {
+        object_section& s (section (mp));
+
+        // Include eager loaded members into the main section.
+        //
+        return section_ == 0 ||
+          *section_ == s ||
+          (*section_ == main_section && !s.separate_load ());
       }
 
       virtual void
@@ -816,9 +896,12 @@ namespace relational
     {
       typedef bind_member base;
 
+      // NULL section means we are generating object bind().
+      //
       bind_member (string const& var = string (),
-                   string const& arg = string ())
-          : member_base (var, 0, string (), string ()),
+                   string const& arg = string (),
+                   object_section* section = 0)
+          : member_base (var, 0, string (), string (), section),
             arg_override_ (arg)
       {
       }
@@ -855,6 +938,11 @@ namespace relational
         if (container (mi))
           return false;
 
+        // Treat version as present in every section.
+        //
+        if (section_ != 0 && !version (mi.m) && *section_ != section (mi.m))
+          return false;
+
         // Ignore polymorphic id references; they are bound in a special
         // way.
         //
@@ -869,11 +957,19 @@ namespace relational
 
         if (var_override_.empty ())
         {
+          if (section_ == 0 && separate_load (mi.m) && inverse (mi.m))
+            return false;
+
           os << "// " << mi.m.name () << endl
              << "//" << endl;
 
+          // Order of these tests is important.
+          //
           if (!insert_send_auto_id && id (mi.m) && auto_ (mi.m))
             os << "if (sk != statement_insert && sk != statement_update)"
+               << "{";
+          else if (section_ == 0 && separate_load (mi.m))
+            os << "if (sk == statement_insert)"
                << "{";
           else if (inverse (mi.m, key_prefix_) || version (mi.m))
             os << "if (sk == statement_select)"
@@ -887,7 +983,8 @@ namespace relational
 
             if (id (mi.m) ||
                 readonly (mi.m) ||
-                ((c = composite (mi.t)) && readonly (*c)))
+                ((c = composite (mi.t)) && readonly (*c)) ||
+                (section_ == 0 && separate_update (mi.m)))
               os << "if (sk != statement_update)"
                  << "{";
           }
@@ -946,6 +1043,8 @@ namespace relational
           //
           if (!insert_send_auto_id && id (mi.m) && auto_ (mi.m))
             block = true;
+          else if (section_ == 0 && separate_load (mi.m))
+            block = true;
           else if (inverse (mi.m, key_prefix_) || version (mi.m))
             block = true;
           else if (!readonly (*context::top_object))
@@ -954,7 +1053,8 @@ namespace relational
 
             if (id (mi.m) ||
                 readonly (mi.m) ||
-                ((c = composite (mi.t)) && readonly (*c)))
+                ((c = composite (mi.t)) && readonly (*c)) ||
+                (section_ == 0 && separate_update (mi.m)))
               block = true;
           }
 
@@ -1014,42 +1114,33 @@ namespace relational
 
         column_count_type const& cc (column_count (c));
 
-        os << "n += " << cc.total << "UL";
+        os << "n += ";
 
-        // select = total
-        // insert = total - inverse - optimistic_managed
-        // update = total - inverse - optimistic_managed - id - readonly
+        // select = total - separate_load
+        // insert = total - inverse - optimistic_managed - id(auto & !sending)
+        // update = total - inverse - optimistic_managed - id - readonly -
+        //  separate_update
         //
-        if (cc.inverse != 0 ||
-            cc.optimistic_managed != 0 ||
-            (!ro && (cc.id != 0 || cc.readonly != 0)))
-        {
-          os << " - (" << endl
-             << "sk == statement_select ? 0 : ";
+        size_t select (cc.total - cc.separate_load);
+        size_t insert (cc.total - cc.inverse - cc.optimistic_managed);
+        size_t update (insert - cc.id - cc.readonly - cc.separate_update);
 
-          if (cc.inverse != 0 || cc.optimistic_managed != 0)
-            os << (cc.inverse + cc.optimistic_managed) << "UL";
+        semantics::data_member* id;
+        if (!insert_send_auto_id && (id = id_member (c)) != 0 && auto_ (*id))
+          insert -= cc.id;
 
-          if (!ro && (cc.id != 0 || cc.readonly != 0))
-          {
-            if (cc.inverse != 0 || cc.optimistic_managed != 0)
-              os << " + ";
-
-            os << "(" << endl
-               << "sk == statement_insert ? ";
-
-            if (insert_send_auto_id || !auto_ (*id_member (c)))
-              os << "0";
-            else
-              os << cc.id << "UL";
-
-            os << " : " << cc.id + cc.readonly << "UL)";
-          }
-
-          os << ")";
-        }
-
-        os << ";";
+        if (select == insert && insert == update)
+          os << select << "UL;";
+        else if (select != insert && insert == update)
+          os << "sk == statement_select ? " << select << "UL : " <<
+            insert << "UL;";
+        else if (select == insert && insert != update)
+          os << "sk == statement_update ? " << update << "UL : " <<
+            select << "UL;";
+        else
+          os << "sk == statement_select ? " << select << "UL : " <<
+            "sk == statement_insert ? " << insert << "UL : " <<
+            update << "UL;";
 
         if (check)
           os << "}";
@@ -1066,8 +1157,11 @@ namespace relational
     {
       typedef grow_member base;
 
-      grow_member (size_t& index, string const& var = string ())
-          : member_base (var, 0, string (), string ()), index_ (index)
+      grow_member (size_t& index,
+                   string const& var = string (),
+                   user_section* section = 0)
+          : member_base (var, 0, string (), string (), section),
+            index_ (index)
       {
       }
 
@@ -1131,8 +1225,9 @@ namespace relational
       typedef init_image_member base;
 
       init_image_member (string const& var = string (),
-                         string const& member = string ())
-          : member_base (var, 0, string (), string ()),
+                         string const& member = string (),
+                         user_section* section = 0)
+          : member_base (var, 0, string (), string (), section),
             member_override_ (member)
       {
       }
@@ -1182,6 +1277,9 @@ namespace relational
         if (container (mi) || inverse (mi.m, key_prefix_))
           return false;
 
+        if (section_ != 0 && *section_ != section (mi.m))
+          return false;
+
         // Ignore polymorphic id references; they are initialized in a
         // special way.
         //
@@ -1221,8 +1319,15 @@ namespace relational
 
             if (id (mi.m) ||
                 readonly (mi.m) ||
+                (section_ == 0 && separate_update (mi.m)) ||
                 ((c = composite (mi.t)) && readonly (*c))) // Can't be id.
-              os << "if (sk == statement_insert)";
+            {
+              // If we are generating section init(), then sk can only be
+              // statement_update.
+              //
+              if (section_ == 0)
+                os << "if (sk == statement_insert)";
+            }
           }
 
           os << "{";
@@ -1478,8 +1583,9 @@ namespace relational
 
       init_value_member (string const& member = string (),
                          string const& var = string (),
-                         bool ignore_implicit_discriminator = true)
-          : member_base (var, 0, string (), string ()),
+                         bool ignore_implicit_discriminator = true,
+                         user_section* section = 0)
+          : member_base (var, 0, string (), string (), section),
             member_override_ (member),
             ignore_implicit_discriminator_ (ignore_implicit_discriminator)
       {
@@ -1529,6 +1635,9 @@ namespace relational
         if (container (mi))
           return false;
 
+        if (section_ != 0 && *section_ != section (mi.m))
+          return false;
+
         // Ignore polymorphic id references; they are initialized in a
         // special way.
         //
@@ -1549,6 +1658,11 @@ namespace relational
         }
         else
         {
+          // Ignore separately loaded members.
+          //
+          if (section_ == 0 && separate_load (mi.m))
+            return false;
+
           os << "// " << mi.m.name () << endl
              << "//" << endl
              << "{";
@@ -2335,7 +2449,7 @@ namespace relational
              << "//" << endl
              << "if (id != 0)" << endl
              << "std::memcpy (&b[n], id, id_size * sizeof (id[0]));"
-             << "n += id_size;"
+             << "n += id_size;" // Not in if for "id unchanged" optimization.
              << endl;
 
           // We don't need to update the bind index since this is the
@@ -2403,7 +2517,7 @@ namespace relational
              << "//" << endl
              << "if (id != 0)" << endl
              << "std::memcpy (&b[n], id, id_size * sizeof (id[0]));"
-             << "n += id_size;"
+             << "n += id_size;" // Not in if for "id unchanged" optimization.
              << endl;
 
           switch (ck)
@@ -2491,7 +2605,7 @@ namespace relational
              << "//" << endl
              << "if (id != 0)" << endl
              << "std::memcpy (&b[n], id, id_size * sizeof (id[0]));"
-             << "n += id_size;"
+             << "n += id_size;" // Not in if for "id unchanged" optimization.
              << endl;
 
           // We don't need to update the bind index since this is the
@@ -3256,7 +3370,7 @@ namespace relational
       semantics::class_& c_;
     };
 
-    // Container statement cache members.
+    // Extra statement cache members for containers.
     //
     struct container_cache_members: object_members_base, virtual context
     {
@@ -3316,6 +3430,54 @@ namespace relational
       bool first_;
     };
 
+    // Extra statement cache members for sections.
+    //
+    struct section_cache_members: virtual context
+    {
+      typedef section_cache_members base;
+
+      virtual void
+      traverse (user_section& s)
+      {
+        string traits (public_name (*s.member) + "_traits");
+
+        os << db << "::" << "section_statements< " <<
+          class_fq_name (*s.object) << ", " << traits << " > " <<
+          s.member->name () << ";";
+      }
+    };
+
+    struct section_cache_init_members: virtual context
+    {
+      typedef section_cache_init_members base;
+
+      section_cache_init_members (bool first): first_ (first) {}
+
+      virtual void
+      traverse (user_section& s)
+      {
+        if (first_)
+        {
+          os << endl
+             << ": ";
+          first_ = false;
+        }
+        else
+          os << "," << endl
+             << "  ";
+
+        os << s.member->name () << " (c, im, id, idv";
+        extra_members ();
+        os << ")";
+      }
+
+      virtual void
+      extra_members () {}
+
+    protected:
+      bool first_;
+    };
+
     // Calls for container members.
     //
     struct container_calls: object_members_base, virtual context
@@ -3328,15 +3490,31 @@ namespace relational
         load_call,
         update_call,
         erase_obj_call,
-        erase_id_call
+        erase_id_call,
+        section_call
       };
 
-      container_calls (call_type call)
-          : object_members_base (true, false, true),
+      container_calls (call_type call, object_section* section = 0)
+          : object_members_base (true, false, true, false, section),
             call_ (call),
             obj_prefix_ ("obj"),
             modifier_ (0)
       {
+      }
+
+      virtual bool
+      section_test (data_member_path const& mp)
+      {
+        object_section& s (section (mp));
+
+        // Include eager loaded members into the main section for
+        // load calls.
+        //
+        return section_ == 0 ||
+          *section_ == s ||
+          (call_ == load_call &&
+           *section_ == main_section &&
+           !s.separate_load ());
       }
 
       virtual void
@@ -3428,6 +3606,7 @@ namespace relational
         // In certain cases we don't need to do anything.
         //
         if ((call_ != load_call && inverse) ||
+            (call_ == section_call && !smart) ||
             (call_ == update_call && readonly (member_path_, member_scope_)))
           return;
 
@@ -3522,21 +3701,21 @@ namespace relational
           {
             os << traits << "::persist (" << endl
                << var << "," << endl
-               << "sts.container_statment_cache ()." << sts_name << ");";
+               << "esc." << sts_name << ");";
             break;
           }
         case load_call:
           {
             os << traits << "::load (" << endl
                << var << "," << endl
-               << "sts.container_statment_cache ()." << sts_name << ");";
+               << "esc." << sts_name << ");";
             break;
           }
         case update_call:
           {
             os << traits << "::update (" << endl
                << var << "," << endl
-               << "sts.container_statment_cache ()." << sts_name << ");";
+               << "esc." << sts_name << ");";
             break;
           }
         case erase_obj_call:
@@ -3546,7 +3725,7 @@ namespace relational
             if (smart)
               os << "&" << var << "," << endl;
 
-            os << "sts.container_statment_cache ()." << sts_name << ");"
+            os << "esc." << sts_name << ");"
                << endl;
             break;
           }
@@ -3557,8 +3736,15 @@ namespace relational
             if (smart)
               os << "0," << endl;
 
-            os << "sts.container_statment_cache ()." << sts_name << ");"
+            os << "esc." << sts_name << ");"
                << endl;
+            break;
+          }
+        case section_call:
+          {
+            os << "if (" << traits << "::container_traits_type::changed (" <<
+              var << "))" << endl
+               << "s.reset (true, true);"; // loaded, changed
             break;
           }
         }
@@ -3590,6 +3776,944 @@ namespace relational
       string obj_prefix_;
       string from_;
       member_access* modifier_;
+    };
+
+    //
+    //
+    struct section_traits: traversal::class_, virtual context
+    {
+      typedef section_traits base;
+
+      section_traits (semantics::class_& c)
+          : c_ (c),
+            scope_ ("access::object_traits_impl< " + class_fq_name (c) +
+                    ", id_" + db.string () + " >")
+      {
+      }
+
+      // Additional code that need to be executed following the call to
+      // init_value().
+      //
+      virtual void
+      init_value_extra ()
+      {
+      }
+
+      virtual void
+      process_statement_columns (statement_columns&, statement_kind)
+      {
+      }
+
+      virtual void
+      section_extra (user_section&)
+      {
+      }
+
+      // Returning "1" means increment by one.
+      //
+      virtual string
+      optimistic_version_increment (semantics::data_member&)
+      {
+        return "1";
+      }
+
+      virtual void
+      update_statement_extra (user_section&)
+      {
+      }
+
+      virtual void
+      traverse (user_section& s)
+      {
+        using semantics::class_;
+        using semantics::data_member;
+
+        data_member& m (*s.member);
+
+        class_* poly_root (polymorphic (c_));
+        bool poly (poly_root != 0);
+        bool poly_derived (poly && poly_root != &c_);
+        class_* poly_base (poly_derived ? &polymorphic_base (c_) : 0);
+
+        data_member* opt (optimistic (c_));
+
+        // Treat the special version update sections as abstract in reuse
+        // inheritance.
+        //
+        bool reuse_abst (!poly &&
+                         (abstract (c_) ||
+                          s.special == user_section::special_version));
+
+        bool load (s.total != 0 && s.separate_load ());
+        bool load_con (s.containers && s.separate_load ());
+        bool load_opt (s.optimistic () && s.separate_load ());
+
+        bool update (s.total != s.inverse + s.readonly); // Always separate.
+        bool update_con (s.readwrite_containers);
+        bool update_opt (s.optimistic () && (s.readwrite_containers || poly));
+
+        // Don't generate anything for empty sections.
+        //
+        if (!(load || load_con || load_opt ||
+              update || update_con || update_opt))
+          return;
+
+        // If we are adding a new section to a derived class in an optimistic
+        // polymorphic hierarchy, then pretend it inherits from the special
+        // version update section.
+        //
+        user_section* rs (0);
+        if (opt != 0)
+        {
+          // Skip overrides and get to the new section if polymorphic.
+          //
+          for (rs = &s; poly && rs->base != 0; rs = rs->base) ;
+
+          if (rs != 0)
+          {
+            if (rs->object != &opt->scope ())
+              rs->base = &(poly ? poly_root : &opt->scope ())->
+                get<user_sections> ("user-sections").back ();
+            else
+              rs = 0;
+          }
+        }
+
+        string name (public_name (m) + "_traits");
+        string scope (scope_ + "::" + name);
+
+        os << "// " << m.name () << endl
+           << "//" << endl
+           << endl;
+
+        // bind (id, image_type)
+        //
+        if (load || load_opt || update || update_opt)
+        {
+          os << "std::size_t " << scope << "::" << endl
+             << "bind (" << bind_vector << " b," << endl
+             << "const " << bind_vector << (reuse_abst ? "," : " id,") << endl
+             << "std::size_t" << (reuse_abst ? "," : " id_size,") << endl
+             << "image_type& i," << endl
+             << db << "::statement_kind sk)"
+             << "{"
+             << "ODB_POTENTIALLY_UNUSED (sk);"
+             << endl
+             << "using namespace " << db << ";"
+             << endl
+             << "std::size_t n (0);"
+             << endl;
+
+          // Bind reuse base. It is always first and we never ask it
+          // to bind id(+ver).
+          //
+          if (s.base != 0 && !poly_derived)
+          {
+            user_section& b (*s.base);
+
+            bool load (b.total != 0 && b.separate_load ());
+            bool load_opt (b.optimistic () && b.separate_load ());
+
+            bool update (b.total != b.inverse + b.readonly);
+
+            if (load || load_opt || update)
+              os << "// " << class_name (*b.object) << endl
+                 << "//" << endl
+                 << "n += object_traits_impl< " << class_fq_name (*b.object) <<
+                ", id_" << db << " >::" << public_name (*b.member) <<
+                "_traits::bind (" << endl
+                 << "b, 0, 0, i, sk);"
+                 << endl;
+          }
+
+          // Bind members.
+          //
+          {
+            instance<bind_member> bm ("", "", &s);
+            traversal::names n (*bm);
+            names (c_, n);
+          }
+
+          // Bind polymorphic image chain for the select statement.
+          //
+          if (s.base != 0 && poly_derived && s.separate_load ())
+          {
+            // Find the next base that has something to load, if any.
+            //
+            user_section* b (s.base);
+            string acc (".base");
+            for (class_* bo (poly_base);; bo = &polymorphic_base (*bo))
+            {
+              if (b->object == bo)
+              {
+                if (b->total != 0 || b->optimistic ())
+                  break;
+
+                b = b->base;
+                if (b == 0 || !polymorphic (*b->object))
+                {
+                  b = 0;
+                  break;
+                }
+              }
+              acc += "->base";
+            }
+
+            if (b != 0)
+              os << "// " << class_name (*b->object) << endl
+                 << "//" << endl
+                 << "if (sk == statement_select)" << endl
+                 << "n += object_traits_impl< " << class_fq_name (*b->object) <<
+                ", id_" << db << " >::" << public_name (*b->member) <<
+                "_traits::bind (" << endl
+                 << "b + n, 0, 0, *i" << acc << ", sk);"
+                 << endl;
+          }
+
+          if (!reuse_abst)
+            os << "// object_id" << endl
+               << "//" << endl
+               << "if (id != 0)" << endl
+               << "std::memcpy (&b[n], id, id_size * sizeof (id[0]));"
+               << "n += id_size;" // Not in if for "id unchanged" optimization.
+               << endl;
+
+          os << "return n;"
+             << "}";
+        }
+
+        // grow ()
+        //
+        if (generate_grow && (load || load_opt))
+        {
+          os << "bool " << scope << "::" << endl
+             << "grow (image_type& i, " << truncated_vector << " t)"
+             << "{"
+             << "ODB_POTENTIALLY_UNUSED (i);"
+             << "ODB_POTENTIALLY_UNUSED (t);"
+             << endl
+             << "bool grew (false);"
+             << endl;
+
+          size_t index (0);
+
+          if (s.base != 0 && !poly_derived)
+          {
+            user_section& b (*s.base);
+
+            bool load (b.total != 0);
+            bool load_opt (b.optimistic ());
+
+            if (load || load_opt)
+            {
+              os << "// " << class_name (*b.object) << endl
+                 << "//" << endl
+                 << "grew = object_traits_impl< " << class_fq_name (*b.object) <<
+                ", id_" << db << " >::" << public_name (*b.member) <<
+                "_traits::grow (i, t);"
+                 << endl;
+
+              index += b.total + (load_opt ? 1 : 0);
+            }
+          }
+
+          {
+            user_section* ps (&s);
+            instance<grow_member> gm (index, "", ps);
+            traversal::names n (*gm);
+            names (c_, n);
+          }
+
+          // Grow polymorphic image chain.
+          //
+          if (s.base != 0 && poly_derived)
+          {
+            // Find the next base that has something to load, if any.
+            //
+            user_section* b (s.base);
+            string acc (".base");
+            size_t cols;
+            for (class_* bo (poly_base);; bo = &polymorphic_base (*bo))
+            {
+              if (b->object == bo)
+              {
+                cols = b->total + (b->optimistic () ? 1 : 0);
+                if (cols != 0)
+                  break;
+
+                b = b->base;
+                if (b == 0 || !polymorphic (*b->object))
+                {
+                  b = 0;
+                  break;
+                }
+              }
+              acc += "->base";
+            }
+
+            if (b != 0)
+              os << "// " << class_name (*b->object) << endl
+                 << "//" << endl
+                 << "if (object_traits_impl< " << class_fq_name (*b->object) <<
+                ", id_" << db << " >::" << public_name (*b->member) <<
+                "_traits::grow (" << endl
+                 << "*i" << acc << ", t + " << cols << "UL))" << endl
+                 << "i" << acc << "->version++;"
+                 << endl;
+          }
+
+          os << "return grew;" << endl
+             << "}";
+        }
+
+        // init (object, image)
+        //
+        if (load)
+        {
+          os << "void " << scope << "::" << endl
+             << "init (object_type& o, const image_type& i, database* db)"
+             << "{"
+             << "ODB_POTENTIALLY_UNUSED (db);"
+             << endl;
+
+          if (s.base != 0)
+          {
+            if (!poly_derived)
+            {
+              user_section& b (*s.base);
+
+              bool load (b.total != 0);
+
+              if (load)
+                os << "// " << class_name (*b.object) << endl
+                   << "//" << endl
+                   << "object_traits_impl< " << class_fq_name (*b.object) <<
+                  ", id_" << db << " >::" << public_name (*b.member) <<
+                  "_traits::init (o, i, db);"
+                   << endl;
+            }
+            else
+            {
+              // Find the next base that has something to load, if any.
+              //
+              user_section* b (s.base);
+              string acc (".base");
+              for (class_* bo (poly_base);; bo = &polymorphic_base (*bo))
+              {
+                if (b->object == bo)
+                {
+                  if (b->total != 0)
+                    break;
+
+                  b = b->base;
+                  if (b == 0 || !polymorphic (*b->object))
+                  {
+                    b = 0;
+                    break;
+                  }
+                }
+                acc += "->base";
+              }
+
+              if (b != 0)
+                os << "// " << class_name (*b->object) << endl
+                   << "//" << endl
+                   << "object_traits_impl< " << class_fq_name (*b->object) <<
+                  ", id_" << db << " >::" << public_name (*b->member) <<
+                  "_traits::init (" << endl
+                   << "o, *i" << acc << ", db);"
+                   << endl;
+            }
+          }
+
+          {
+            instance<init_value_member> iv ("", "", true, &s);
+            traversal::names n (*iv);
+            names (c_, n);
+          }
+
+          os << "}";
+        }
+
+        // init (image, object)
+        //
+        if (update)
+        {
+          os << (generate_grow ? "bool " : "void ") << scope << "::" << endl
+             << "init (image_type& i, const object_type& o)"
+             << "{"
+             << "using namespace " << db << ";"
+             << endl
+             << "statement_kind sk (statement_insert);"
+             << "ODB_POTENTIALLY_UNUSED (sk);"
+             << endl;
+
+          // There is no call to init_image_pre() here (which calls the
+          // copy callback for some databases) since we are not going to
+          // touch any of the members that were loaded by query.
+
+          if (generate_grow)
+            os << "bool grew (false);"
+               << endl;
+
+          if (s.base != 0 && !poly_derived)
+          {
+            user_section& b (*s.base);
+
+            bool update (b.total != b.inverse + b.readonly);
+
+            if (update)
+              os << "// " << class_name (*b.object) << endl
+                 << "//" << endl
+                 << (generate_grow ? "grew = " : "") <<
+                "object_traits_impl< " << class_fq_name (*b.object) <<
+                ", id_" << db << " >::" << public_name (*b.member) <<
+                "_traits::init (i, o);"
+                 << endl;
+          }
+
+          {
+            instance<init_image_member> ii ("", "", &s);
+            traversal::names n (*ii);
+            names (c_, n);
+          }
+
+          if (generate_grow)
+            os << "return grew;";
+
+          os << "}";
+        }
+
+        // The rest does not apply to reuse-abstract sections.
+        //
+        if (reuse_abst)
+        {
+          section_extra (s);
+          return;
+        }
+
+        // Statements.
+        //
+        qname table (table_name (c_));
+        string qtable (quote_id (table));
+
+        instance<object_columns_list> id_cols;
+        id_cols->traverse (*id_member (c_));
+
+        // select_statement
+        //
+        if (load || load_opt)
+        {
+          size_t depth (poly_derived ? polymorphic_depth (c_) : 1);
+
+          statement_columns sc;
+          {
+            statement_kind sk (statement_select); // Imperfect forwarding.
+            object_section* ps (&s);              // Imperfect forwarding.
+            instance<object_columns> t (qtable, sk, sc, depth, ps);
+            t->traverse (c_);
+            process_statement_columns (sc, statement_select);
+          }
+
+          os << "const char " << scope << "::" << endl
+             << "select_statement[] =" << endl
+             << strlit ("SELECT ") << endl;
+
+          for (statement_columns::const_iterator i (sc.begin ()),
+                 e (sc.end ()); i != e;)
+          {
+            string const& c (i->column);
+            os << strlit (c + (++i != e ? "," : "")) << endl;
+          }
+
+          os << strlit (" FROM " + qtable) << endl;
+
+          // Join polymorphic bases.
+          //
+          if (depth != 1 && s.base != 0)
+          {
+            size_t d (depth - 1);       //@@ (im)perfect forward.
+            user_section& bs (*s.base); //@@ (im)perfect forward.
+            instance<polymorphic_object_joins> j (c_, d, bs);
+            j->traverse (*poly_base);
+          }
+
+          // Join tables of inverse members belonging to this section.
+          //
+          {
+            bool f (false);          // @@ (im)perfect forwarding
+            object_section* ps (&s); // @@ (im)perfect forwarding
+            instance<object_joins> j (c_, f, depth, ps);
+            j->traverse (c_);
+          }
+
+          instance<query_parameters> qp (table);
+          for (object_columns_list::iterator b (id_cols->begin ()), i (b);
+               i != id_cols->end (); ++i)
+          {
+            if (i != b)
+              os << endl;
+
+            os << strlit ((i == b ? " WHERE " : " AND ") +
+                          qtable + "." + quote_id (i->name) + "=" +
+                          convert_to (qp->next (), i->type, *i->member));
+          }
+
+          os << ";"
+             << endl;
+        }
+
+        // update_statement
+        //
+        if (update || update_opt)
+        {
+          instance<query_parameters> qp (table);
+
+          statement_columns sc;
+          {
+            query_parameters* p (qp.get ());      // Imperfect forwarding.
+            statement_kind sk (statement_update); // Imperfect forwarding.
+            object_section* ps (&s);              // Imperfect forwarding.
+            instance<object_columns> t (sk, sc, p, ps);
+            t->traverse (c_);
+            process_statement_columns (sc, statement_update);
+          }
+
+          os << "const char " << scope << "::" << endl
+             << "update_statement[] =" << endl
+             << strlit ("UPDATE " + qtable + " SET ") << endl;
+
+          for (statement_columns::const_iterator i (sc.begin ()),
+                   e (sc.end ()); i != e;)
+          {
+            string const& c (i->column);
+            os << strlit (c + (++i != e ? "," : "")) << endl;
+          }
+
+          // This didn't work out: cannot change the identity column.
+          //
+          //if (sc.empty ())
+          //{
+          //  // We can end up with nothing to set if we need to "touch" a row
+          //  // in order to increment its optimistic concurrency version. In
+          //  // this case just do a dummy assignment based on the id column.
+          //  //
+          //  string const& c (quote_id (id_cols->begin ()->name));
+          //  os << strlit (c + "=" + c) << endl;
+          //}
+
+          update_statement_extra (s);
+
+          for (object_columns_list::iterator b (id_cols->begin ()), i (b);
+               i != id_cols->end (); ++i)
+          {
+            if (i != b)
+              os << endl;
+
+            os << strlit ((i == b ? " WHERE " : " AND ") +
+                          quote_id (i->name) + "=" +
+                          convert_to (qp->next (), i->type, *i->member));
+          }
+
+          if (s.optimistic ()) // Note: not update_opt.
+          {
+            os << endl
+               << strlit (" AND " + column_qname (*opt, column_prefix ()) +
+                          "=" + convert_to (qp->next (), *opt));
+          }
+
+          os << ";"
+             << endl;
+        }
+
+        // load ()
+        //
+        if (load || load_opt || load_con)
+        {
+          os << "void " << scope << "::" << endl
+             << "load (extra_statement_cache_type& esc, object_type& obj" <<
+            (poly ? ", bool top" : "") << ")"
+             << "{";
+
+          if (poly)
+            os << "ODB_POTENTIALLY_UNUSED (top);"
+               << endl;
+
+          // Load values, if any.
+          //
+          if (load || load_opt)
+          {
+            // The SELECT statement for the top override loads all the
+            // values.
+            //
+            if (poly)
+              os << "if (top)"
+                 << "{";
+
+            // Note that we don't use delayed load machinery here. While
+            // a section can definitely contain self-referencing pointers,
+            // loading such a pointer won't mess up the data members in the
+            // image that we care about. It also holds true for streaming
+            // result, since the bindings are different.
+
+            os << "using namespace " << db << ";"
+               << "using " << db << "::select_statement;" // Conflicts.
+               << endl
+               << "statements_type& sts (esc." << m.name () << ");"
+               << endl
+               << "image_type& im (sts.image ());"
+               << "binding& imb (sts.select_image_binding ());"
+               << endl;
+
+            // For the polymorphic case, instead of storing an array of
+            // versions as we do for objects, we will add all the versions
+            // up and use that as a cumulative image chain version. If you
+            // meditate a bit on that, you will realize that it will work
+            // (hint: versions can only increase).
+            //
+            string ver;
+            string ver_decl;
+
+            if (s.base != 0 && poly_derived)
+            {
+              ver = "imv";
+              ver_decl = "std::size_t imv (im.version";
+
+              user_section* b (s.base);
+              string acc ("im.base");
+              for (class_* bo (poly_base);; bo = &polymorphic_base (*bo))
+              {
+                if (b->object == bo)
+                {
+                  if (b->total != 0 || b->optimistic ())
+                    ver_decl += " +\n" + acc + "->version";
+
+                  b = b->base;
+                  if (b == 0 || !polymorphic (*b->object))
+                  {
+                    b = 0;
+                    break;
+                  }
+                }
+                acc += "->base";
+              }
+
+              ver_decl += ")";
+
+              os << ver_decl << ";"
+                 << endl;
+            }
+            else
+              ver = "im.version";
+
+            os << "if (" << ver << " != sts.select_image_version () ||" << endl
+               << "imb.version == 0)"
+               << "{"
+               << "bind (imb.bind, 0, 0, im, statement_select);"
+               << "sts.select_image_version (" << ver << ");"
+               << "imb.version++;"
+               << "}";
+
+            // Id binding is assumed initialized and bound.
+            //
+            os << "select_statement& st (sts.select_statement ());"
+               << "st.execute ();"
+               << "auto_result ar (st);"
+               << "select_statement::result r (st.fetch ());"
+               << endl;
+
+            os << "if (r == select_statement::no_data)" << endl
+               << "throw object_not_persistent ();"
+               << endl;
+
+            if (grow (c_, &s))
+            {
+              os << "if (r == select_statement::truncated)"
+                 << "{"
+                 << "if (grow (im, sts.select_image_truncated ()))" << endl
+                 << "im.version++;"
+                 << endl;
+
+              // The same logic as above.
+              //
+              if (s.base != 0 && poly_derived)
+                os << ver_decl << ";"
+                   << endl;
+
+              os << "if (" << ver << " != sts.select_image_version ())"
+                 << "{"
+                 << "bind (imb.bind, 0, 0, im, statement_select);"
+                 << "sts.select_image_version (" << ver << ");"
+                 << "imb.version++;"
+                 << "st.refetch ();"
+                 << "}"
+                 << "}";
+            }
+
+            if (opt != 0) // Not load_opt, we do it in poly-derived as well.
+            {
+              member_access& ma (opt->get<member_access> ("get"));
+
+              if (!ma.synthesized)
+                os << "// From " << location_string (ma.loc, true) << endl;
+
+              os << "if (";
+
+              if (poly_derived)
+              {
+                os << "root_traits::version (*im.base";
+                for (class_* b (poly_base);
+                     b != poly_root;
+                     b = &polymorphic_base (*b))
+                  os << "->base";
+                os << ")";
+              }
+              else
+                os << "version (im)";
+
+              os << " != " << ma.translate ("obj") << ")" << endl
+                 << "throw object_changed ();"
+                 << endl;
+            }
+
+            if (load)
+            {
+              os << "init (obj, im, &sts.connection ().database ());";
+              init_value_extra (); // Stream results, etc.
+              os << endl;
+            }
+
+            if (poly)
+              os << "}"; // if (top)
+          }
+
+          // Call base to load its containers, if this is an override.
+          //
+          if (poly_derived && s.base != 0)
+          {
+            user_section* b (s.base);
+            for (class_* bo (poly_base);; bo = &polymorphic_base (*bo))
+            {
+              if (b->object == bo)
+              {
+                // If we don't have any values of our own but out base
+                // does, then allow it to load them.
+                //
+                if (b->containers ||
+                    (!load && (b->total != 0 || b->optimistic ())))
+                  break;
+
+                b = b->base;
+                if (b == 0 || !polymorphic (*b->object))
+                {
+                  b = 0;
+                  break;
+                }
+              }
+            }
+
+            // This one is tricky: ideally we would do a direct call to
+            // the base's load() (which may not be our immediate base,
+            // BTW) but there is no easy way to resolve base's extra
+            // statements from ours. So, instead, we are going to go
+            // via the dispatch machinery which requires a connection
+            // rather than statements. Not the most efficient way but
+            // simple.
+
+            // Find the "previous" override by starting the search from
+            // our base.
+            //
+            if (b != 0)
+            {
+              // Note that here we are using the base section index to
+              // handle the special version update base.
+              //
+              os << "info.base->find_section_load (" << b->index << "UL) (" <<
+                "esc." << m.name () << ".connection (), obj, " <<
+                // If we don't have any values of our own, then allow the
+                // base load its.
+                //
+                (load ? "false" : "top") << ");"
+                 << endl;
+            }
+          }
+
+          // Load our containers, if any.
+          //
+          if (s.containers)
+          {
+            instance<container_calls> t (container_calls::load_call, &s);
+            t->traverse (c_);
+          }
+
+          os << "}";
+        }
+
+        // update ()
+        //
+        if (update || update_opt || update_con)
+        {
+          os << "void " << scope << "::" << endl
+             << "update (extra_statement_cache_type& esc, " <<
+            "const object_type& obj" <<
+            (poly_derived && s.base != 0 ? ", bool base" : "") << ")"
+             << "{";
+
+          // Call base if this is an override.
+          //
+          if (poly_derived && s.base != 0)
+          {
+            user_section* b (s.base);
+            for (class_* bo (poly_base);; bo = &polymorphic_base (*bo))
+            {
+              if (b->object == bo)
+              {
+                if (b->total != b->inverse + b->readonly ||
+                    b->readwrite_containers ||
+                    (poly && b->optimistic ()))
+                  break;
+
+                b = b->base;
+                if (b == 0 || !polymorphic (*b->object))
+                {
+                  b = 0;
+                  break;
+                }
+              }
+            }
+
+            // The same (tricky) logic as in load(). Note that here we are
+            // using the base section index to handle the special version
+            // update base.
+            //
+            if (b != 0)
+              os << "if (base)" << endl
+                 << "info.base->find_section_update (" << b->index <<
+                "UL) (esc." << m.name () << ".connection (), obj);"
+                 << endl;
+            else
+              os << "ODB_POTENTIALLY_UNUSED (base);"
+                 << endl;
+          }
+
+          // Update values, if any.
+          //
+          if (update || update_opt)
+          {
+            os << "using namespace " << db << ";"
+               << endl
+               << "statements_type& sts (esc." << m.name () << ");"
+               << endl
+               << "image_type& im (sts.image ());"
+               << "const binding& id (sts.idv_binding ());" // id+version
+               << "binding& imb (sts.update_image_binding ());"
+               << endl;
+
+            if (update)
+            {
+              if (generate_grow)
+                os << "if (";
+
+              os << "init (im, obj)";
+
+              if (generate_grow)
+                os << ")" << endl
+                   << "im.version++";
+
+              os << ";"
+                 << endl;
+            }
+
+            os << "if (im.version != sts.update_image_version () ||" << endl
+               << "id.version != sts.update_id_binding_version () ||" << endl
+               << "imb.version == 0)"
+               << "{"
+               << "bind (imb.bind, id.bind, id.count, im, statement_update);"
+               << "sts.update_image_version (im.version);"
+               << "sts.update_id_binding_version (id.version);"
+               << "imb.version++;"
+               << "}";
+
+            os << "if (sts.update_statement ().execute () == 0)" << endl;
+
+            if (opt == 0)
+              os << "throw object_not_persistent ();";
+            else
+              os << "throw object_changed ();";
+
+            os << endl;
+          }
+
+          // Update readwrite containers if any.
+          //
+          if (s.readwrite_containers)
+          {
+            instance<container_calls> t (container_calls::update_call, &s);
+            t->traverse (c_);
+          }
+
+          // Update the optimistic concurrency version in the object member.
+          // Very similar code to object.
+          //
+          if (s.optimistic ()) // Note: not update_opt.
+          {
+            member_access& ma_get (opt->get<member_access> ("get"));
+            member_access& ma_set (opt->get<member_access> ("set"));
+
+            // Object is passed as const reference so we need to cast away
+            // constness.
+            //
+            string obj ("const_cast< object_type& > (obj)");
+            string inc (optimistic_version_increment (*opt));
+
+            if (!ma_set.synthesized)
+              os << "// From " << location_string (ma_set.loc, true) << endl;
+
+            if (ma_set.placeholder ())
+            {
+              if (!ma_get.synthesized)
+                os << "// From " << location_string (ma_get.loc, true) << endl;
+
+              if (inc == "1")
+                os << ma_set.translate (
+                  obj, ma_get.translate ("obj") + " + 1") << ";";
+              else
+                os << ma_set.translate (obj, inc) << ";";
+            }
+            else
+            {
+              // If this member is const and we have a synthesized direct
+              // access, then cast away constness. Otherwise, we assume
+              // that the user-provided expression handles this.
+              //
+              bool cast (ma_set.direct () && const_type (opt->type ()));
+              if (cast)
+                os << "const_cast< version_type& > (" << endl;
+
+              os << ma_set.translate (obj);
+
+              if (cast)
+                os << ")";
+
+              if (inc == "1")
+                os << "++;";
+              else
+                os << " = " << inc << ";";
+            }
+          }
+
+          os << "}";
+        }
+
+        section_extra (s);
+
+        if (rs != 0)
+          rs->base = 0;
+      }
+
+    protected:
+      semantics::class_& c_;
+      string scope_;
     };
 
     // Output a list of parameters for the persist statement.
@@ -3793,7 +4917,8 @@ namespace relational
       object_extra (type&) {}
 
       virtual void
-      container_cache_extra_args (bool /*used*/) {}
+      extra_statement_cache_extra_args (bool /*containers*/,
+                                        bool /*sections*/) {}
 
       virtual void
       object_query_statement_ctor_args (type&,
@@ -3815,15 +4940,15 @@ namespace relational
       }
 
       virtual string
-      optimimistic_version_init (semantics::data_member&)
+      optimistic_version_init (semantics::data_member&)
       {
         return "1";
       }
 
-      // Returning "1" means incremenet by one.
+      // Returning "1" means increment by one.
       //
       virtual string
-      optimimistic_version_increment (semantics::data_member&)
+      optimistic_version_increment (semantics::data_member&)
       {
         return "1";
       }
@@ -4077,6 +5202,9 @@ namespace relational
 
         if (features.view)
           os << "#include <odb/" << db << "/view-statements.hxx>" << endl;
+
+        if (features.section)
+          os << "#include <odb/" << db << "/section-statements.hxx>" << endl;
 
         os << "#include <odb/" << db << "/container-statements.hxx>" << endl
            << "#include <odb/" << db << "/exceptions.hxx>" << endl;

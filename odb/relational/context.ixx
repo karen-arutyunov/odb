@@ -5,9 +5,9 @@
 namespace relational
 {
   inline bool context::
-  grow (semantics::class_& c)
+  grow (semantics::class_& c, user_section* s)
   {
-    return current ().grow_impl (c);
+    return current ().grow_impl (c, s);
   }
 
   inline bool context::

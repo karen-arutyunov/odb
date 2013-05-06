@@ -165,10 +165,11 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
-        semantics::data_member* id (id_member (c));
-        bool base_id (id && &id->scope () != &c); // Comes from base.
+        using semantics::data_member;
 
-        semantics::data_member* optimistic (context::optimistic (c));
+        data_member* id (id_member (c));
+        bool base_id (id && &id->scope () != &c); // Comes from base.
+        data_member* optimistic (context::optimistic (c));
 
         // Base class that contains the object id and version for optimistic
         // concurrency.
@@ -186,6 +187,8 @@ namespace relational
         string const& type (class_fq_name (c));
         string traits ("access::object_traits_impl< " + type + ", id_" +
                        db.string () + " >");
+
+        user_sections& uss (c.get<user_sections> ("user-sections"));
 
         os << "// " << class_name (c) << endl
            << "//" << endl
@@ -313,14 +316,60 @@ namespace relational
              << "erase (database& db, const object_type& obj)"
              << "{"
              << "callback (db, obj, callback_event::pre_erase);"
-             << "erase (db, id (obj));"
-             << "callback (db, obj, callback_event::post_erase);"
+             << "erase (db, id (obj));";
+
+          // Note that we don't reset sections since the object is now
+          // transient and the state of a section in a transient object
+          // is undefined.
+
+          os << "callback (db, obj, callback_event::post_erase);"
+             << "}";
+        }
+
+        // load (section) [thunk version; poly_derived is true]
+        //
+        if (uss.count (user_sections::count_total |
+                       user_sections::count_load  |
+                       (poly ? user_sections::count_load_empty : 0)) != 0 &&
+            uss.count (user_sections::count_new   |
+                       user_sections::count_load  |
+                       (poly ? user_sections::count_load_empty : 0)) == 0)
+        {
+          os << "inline" << endl
+             << "bool " << traits << "::" << endl
+             << "load (connection& conn, object_type& obj, section& s, " <<
+            "const info_type* pi)"
+             << "{"
+             << "return base_traits::load (conn, obj, s, pi);"
+             << "}";
+        }
+
+        // update (section) [thunk version; poly_derived is true]
+        //
+        if (uss.count (user_sections::count_total  |
+                       user_sections::count_update |
+                       (poly ? user_sections::count_update_empty : 0)) != 0 &&
+            uss.count (user_sections::count_new    |
+                       user_sections::count_update |
+                       (poly ? user_sections::count_update_empty : 0)) == 0)
+        {
+          os << "inline" << endl
+             << "bool " << traits << "::" << endl
+             << "update (connection& conn, const object_type& obj, " <<
+            "const section& s, const info_type* pi)"
+             << "{"
+             << "return base_traits::update (conn, obj, s, pi);"
              << "}";
         }
 
         // load_()
         //
-        if (id != 0 && !(poly_derived || has_a (c, test_container)))
+        if (id != 0 &&
+            !(poly_derived ||
+              has_a (c, test_container | include_eager_load, &main_section) ||
+              uss.count (user_sections::count_new  |
+                         user_sections::count_load |
+                         (poly ? user_sections::count_load_empty : 0)) != 0))
         {
           os << "inline" << endl
              << "void " << traits << "::" << endl
@@ -331,9 +380,33 @@ namespace relational
           else
             os << "statements_type&, ";
 
-          os << "object_type&)"
+          os << "object_type& obj, bool)"
              << "{"
-             << "}";
+             << "ODB_POTENTIALLY_UNUSED (obj);"
+             << endl;
+
+          // Mark eager sections as loaded.
+          //
+          for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+          {
+            // Skip special sections.
+            //
+            if (i->special == user_section::special_version)
+              continue;
+
+            data_member& m (*i->member);
+
+            // Section access is always by reference.
+            //
+            member_access& ma (m.get<member_access> ("get"));
+            if (!ma.synthesized)
+              os << "// From " << location_string (ma.loc, true) << endl;
+
+            os << ma.translate ("obj") << ".reset (true, false);"
+               << endl;
+          }
+
+          os << "}";
         }
 
         if (poly && need_image_clone && options.generate_query ())

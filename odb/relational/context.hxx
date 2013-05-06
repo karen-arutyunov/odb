@@ -75,10 +75,12 @@ namespace relational
   {
   public:
     // Return true if an object or value type has members for which
-    // the image can grow.
+    // the image can grow. If section is not specified, then ignore
+    // separately loaded members. Otherwise ignore members that do
+    // not belong to the section.
     //
     bool
-    grow (semantics::class_&);
+    grow (semantics::class_&, user_section* = 0);
 
     // The same for a member's value type.
     //
@@ -206,7 +208,7 @@ namespace relational
     // The default implementation returns false.
     //
     virtual bool
-    grow_impl (semantics::class_&);
+    grow_impl (semantics::class_&, user_section*);
 
     virtual bool
     grow_impl (semantics::data_member&);

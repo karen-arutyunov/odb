@@ -546,6 +546,18 @@ namespace relational
       };
       entry<container_traits> container_traits_;
 
+      struct section_traits: relational::section_traits, context
+      {
+        section_traits (base const& x): base (x) {}
+
+        virtual void
+        init_value_extra ()
+        {
+          os << "st.stream_result ();";
+        }
+      };
+      entry<section_traits> section_traits_;
+
       struct class_: relational::class_, context
       {
         class_ (base const& x): base (x) {}

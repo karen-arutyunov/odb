@@ -2,6 +2,8 @@
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <map>
+
 #include <odb/gcc.hxx>
 
 #include <odb/lookup.hxx>
@@ -52,6 +54,36 @@ traverse_object (type& c)
                  db.string () + " >");
   column_count_type const& cc (column_count (c));
 
+  user_sections& uss (c.get<user_sections> ("user-sections"));
+  user_sections* buss (poly_base != 0
+                       ? &poly_base->get<user_sections> ("user-sections")
+                       : 0);
+
+  // See what kind of containers we've got.
+  //
+  bool containers (has_a (c, test_container));
+  bool straight_containers (false);
+  bool smart_containers (false);
+
+  // Eager load and update containers.
+  //
+  bool load_containers (false);
+  bool update_containers (false);
+
+  if (containers)
+  {
+    load_containers = has_a (
+      c, test_container | include_eager_load, &main_section);
+
+    if ((straight_containers = has_a (c, test_straight_container)))
+    {
+      // Only straight containers can be readwrite or smart.
+      //
+      smart_containers = has_a (c, test_smart_container);
+      update_containers = has_a (c, test_readwrite_container, &main_section);
+    }
+  }
+
   os << "// " << class_name (c) << endl
      << "//" << endl
      << endl;
@@ -67,36 +99,91 @@ traverse_object (type& c)
   if (options.generate_query ())
     query_columns_type_->traverse (c);
 
+  // Statement cache (definition).
+  //
+  if (!reuse_abst && id != 0)
+  {
+    os << "struct " << traits << "::extra_statement_cache_type"
+       << "{";
+
+    instance<container_cache_members> cm;
+    cm->traverse (c);
+
+    if (containers)
+      os << endl;
+
+    bool sections (false);
+    instance<section_cache_members> sm;
+    for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+    {
+      // Skip the special version update section in reuse inheritance (we
+      // always treat it as abstract).
+      //
+      if (i->special == user_section::special_version && !poly)
+        continue;
+
+      // Generate an entry for a readonly section in optimistic
+      // polymorphic root since it can be overridden and we may
+      // need to update the version.
+      //
+      if (!i->empty () || (poly && i->optimistic ()))
+      {
+        sm->traverse (*i);
+        sections = true;
+      }
+    }
+
+    if (sections)
+      os << endl;
+
+    os << "extra_statement_cache_type (" << endl
+       << db << "::connection&" << (containers || sections ? " c" : "") <<
+      "," << endl
+       << "image_type&" << (sections ? " im" : "") << "," << endl
+       << db << "::binding&" << (containers || sections ? " id" : "") <<
+      "," << endl
+       << db << "::binding&" << (sections ? " idv" : "");
+
+    extra_statement_cache_extra_args (containers, sections);
+
+    os << ")";
+
+    instance<container_cache_init_members> cim;
+    cim->traverse (c);
+
+    instance<section_cache_init_members> sim (!containers);
+    for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+    {
+      if (i->special == user_section::special_version && !poly)
+        continue;
+
+      if (!i->empty () || (poly && i->optimistic ()))
+        sim->traverse (*i);
+    }
+
+    os << "{"
+       << "}"
+       << "};";
+  }
+
   //
   // Containers (abstract and concrete).
   //
-  bool containers (has_a (c, test_container));
-  bool straight_containers (false);
-  bool straight_readwrite_containers (false);
-  bool smart_containers (false);
-
-  if (containers)
-  {
-    size_t scn (has_a (c, test_straight_container));
-
-    if (scn != 0)
-    {
-      straight_containers = true;
-
-      // Inverse containers cannot be marked readonly.
-      //
-      straight_readwrite_containers = scn > has_a (c, test_readonly_container);
-
-      // Inverse containers cannot be smart.
-      //
-      smart_containers = has_a (c, test_smart_container);
-    }
-  }
 
   if (containers)
   {
     instance<container_traits> t (c);
     t->traverse (c);
+  }
+
+  //
+  // Sections (abstract and concrete).
+  //
+
+  for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+  {
+    instance<section_traits> t (c);
+    t->traverse (*i);
   }
 
   //
@@ -207,7 +294,7 @@ traverse_object (type& c)
      << "bind (" << bind_vector << " b," << endl;
 
   // If we are a derived type in a polymorphic hierarchy, then
-  // we get the the external id binding.
+  // we get the external id binding.
   //
   if (poly_derived)
     os << "const " << bind_vector << " id," << endl
@@ -238,7 +325,7 @@ traverse_object (type& c)
        << "{"
        << "if (id != 0)" << endl
        << "std::memcpy (&b[n], id, id_size * sizeof (id[0]));"
-       << "n += id_size;"
+       << "n += id_size;" // Not in if for "id unchanged" optimization.
        << "}";
   }
   else
@@ -257,7 +344,7 @@ traverse_object (type& c)
          << "{"
          << "if (id != 0)" << endl
          << "std::memcpy (&b[n], id, id_size * sizeof (id[0]));"
-         << "n += id_size;"
+         << "n += id_size;" // Not in if for "id unchanged" optimization.
          << "}";
 
     // Bind the image chain for the select statement. Seeing that
@@ -412,32 +499,9 @@ traverse_object (type& c)
   // Containers (concrete).
   //
 
-  // Statement cache (definition).
   //
-  if (id != 0)
-  {
-    os << "struct " << traits << "::container_statement_cache_type"
-       << "{";
-
-    instance<container_cache_members> cm;
-    cm->traverse (c);
-
-    os << (containers ? "\n" : "")
-       << "container_statement_cache_type (" << endl
-       << db << "::connection&" << (containers ? " c" : "") << "," << endl
-       << db << "::binding&" << (containers ? " id" : "");
-
-    container_cache_extra_args (containers);
-
-    os << ")";
-
-    instance<container_cache_init_members> im;
-    im->traverse (c);
-
-    os << "{"
-       << "}"
-       << "};";
-  }
+  // Sections (concrete).
+  //
 
   // Polymorphic map.
   //
@@ -448,6 +512,73 @@ traverse_object (type& c)
          << traits << "::map;"
          << endl;
 
+    // Sections. Do we have any new sections or overrides?
+    //
+    bool sections (
+      uss.count (user_sections::count_new             |
+                 user_sections::count_override        |
+                 user_sections::count_load            |
+                 user_sections::count_update          |
+                 user_sections::count_special_version |
+                 (poly ? user_sections::count_optimistic : 0)) != 0);
+    if (sections)
+    {
+      map<size_t, user_section*> m;
+      for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+        m[i->index] = &*i;
+
+      os << "static const "<< traits << "::" << (abst ? "abstract_" : "") <<
+        "info_type::section_functions" << endl
+         << "section_table_for_" << flat_name (type) << "[] ="
+         << "{";
+
+      for (size_t i (0), n (uss.count (user_sections::count_total |
+                                       user_sections::count_all));
+           i != n; ++i)
+      {
+        os << (i != 0 ? "," : "") << "{";
+
+        map<size_t, user_section*>::iterator j (m.find (i));
+
+        if (j != m.end ())
+        {
+          user_section& s (*j->second);
+          string n (public_name (*s.member));
+
+          // load
+          //
+          if (s.load_empty ())
+            os << "0";
+          else
+            os << "&odb::section_load_impl< " << type << ", id_" << db <<
+              ", " << traits << "::" << n << "_traits >";
+
+          os << "," << endl;
+
+          // update
+          //
+          // Generate an entry for a readonly section in optimistic
+          // polymorphic root since it can be overridden and we may
+          // need to update the version.
+          //
+          if (s.update_empty () && !(poly && s.optimistic ()))
+            os << "0";
+          else
+            os << "&odb::section_update_impl< " << type << ", id_" << db <<
+              ", " << traits << "::" << n << "_traits >";
+        }
+        else
+          os << "0," << endl
+             << "0";
+
+        os << "}";
+      }
+
+      os << "};";
+    }
+
+    //
+    //
     os << "const " << traits << "::" << (abst ? "abstract_" : "") <<
       "info_type" << endl
        << traits << "::info (" << endl
@@ -455,18 +586,21 @@ traverse_object (type& c)
 
     if (poly_derived)
       os << "&object_traits_impl< " << class_fq_name (*poly_base) <<
-        ", id_" << db << " >::info";
+        ", id_" << db << " >::info," << endl;
+    else
+      os << "0," << endl;
+
+    // Sections.
+    //
+    if (sections)
+      os << "section_table_for_" << flat_name (type);
     else
       os << "0";
 
-    string n;
-
     if (!abst)
     {
-      n = class_fq_name (c);
-
       os << "," << endl
-         << strlit (string (n, 2, string::npos)) << "," << endl
+         << strlit (string (type, 2, string::npos)) << "," << endl
          << "&odb::create_impl< " << type << " >," << endl
          << "&odb::dispatch_impl< " << type << ", id_" << db << " >," << endl;
 
@@ -481,13 +615,15 @@ traverse_object (type& c)
 
     if (!abst)
       os << "static const " << traits << "::entry_type" << endl
-         << "polymorphic_entry_for_" << flat_name (n) << ";"
+         << "polymorphic_entry_for_" << flat_name (type) << ";"
          << endl;
   }
 
   //
   // Statements.
   //
+  size_t update_columns (
+    cc.total - cc.id - cc.inverse - cc.readonly - cc.separate_update);
 
   qname table (table_name (c));
   string qtable (quote_id (table));
@@ -562,7 +698,8 @@ traverse_object (type& c)
       statement_columns sc;
       {
         statement_kind sk (statement_select); // Imperfect forwarding.
-        instance<object_columns> t (qtable, sk, sc, d);
+        object_section* s (&main_section); // Imperfect forwarding.
+        instance<object_columns> t (qtable, sk, sc, d, s);
         t->traverse (c);
         process_statement_columns (sc, statement_select);
         find_column_counts[poly_depth - d] = sc.size ();
@@ -588,9 +725,14 @@ traverse_object (type& c)
           j->traverse (polymorphic_base (c));
         }
 
-        bool f (false); // @@ (im)perfect forwarding
-        instance<object_joins> j (c, f, d); // @@ (im)perfect forwarding
-        j->traverse (c);
+        {
+          // For the find statement, don't join section members.
+          //
+          bool f (false); // @@ (im)perfect forwarding
+          object_section* s (&main_section); // @@ (im)perfect forwarding
+          instance<object_joins> j (c, f, d, s);
+          j->traverse (c);
+        }
 
         instance<query_parameters> qp (table);
         for (object_columns_list::iterator b (id_cols->begin ()), i (b);
@@ -690,7 +832,7 @@ traverse_object (type& c)
 
     // update_statement
     //
-    if (cc.total != cc.id + cc.inverse + cc.readonly)
+    if (update_columns != 0)
     {
       instance<query_parameters> qp (table);
 
@@ -698,7 +840,8 @@ traverse_object (type& c)
       {
         query_parameters* p (qp.get ()); // Imperfect forwarding.
         statement_kind sk (statement_update); // Imperfect forwarding.
-        instance<object_columns> t (sk, sc, p);
+        object_section* s (&main_section); // Imperfect forwarding.
+        instance<object_columns> t (sk, sc, p, s);
         t->traverse (c);
         process_statement_columns (sc, statement_update);
       }
@@ -712,6 +855,18 @@ traverse_object (type& c)
         string const& c (i->column);
         os << strlit (c + (++i != e ? "," : "")) << endl;
       }
+
+      // This didn't work out: cannot change the identity column.
+      //
+      //if (sc.empty ())
+      //{
+      //  // We can end up with nothing to set if we need to "touch" a row
+      //  // in order to increment its optimistic concurrency version. In
+      //  // this case just do a dummy assignment based on the id column.
+      //  //
+      //  string const& c (quote_id (id_cols->begin ()->name));
+      //  os << strlit (c + "=" + c) << endl;
+      //}
 
       update_statement_extra (c);
 
@@ -792,8 +947,9 @@ traverse_object (type& c)
     //
     statement_columns sc;
     {
-      statement_kind sk (statement_select); // Imperfect forwarding.
-      instance<object_columns> oc (qtable, sk, sc, poly_depth);
+      statement_kind sk (statement_select); //@@ Imperfect forwarding.
+      object_section* s (&main_section); //@@ Imperfect forwarding.
+      instance<object_columns> oc (qtable, sk, sc, poly_depth, s);
       oc->traverse (c);
       process_statement_columns (sc, statement_select);
     }
@@ -819,8 +975,11 @@ traverse_object (type& c)
 
     if (id != 0)
     {
+      // For the query statement we also join section members so that they
+      // can be used in the WHERE clause.
+      //
       bool t (true); //@@ (im)perfect forwarding
-      instance<object_joins> oj (c, t, poly_depth); //@@ (im)perfect forwarding
+      instance<object_joins> oj (c, t, poly_depth);
       oj->traverse (c);
     }
 
@@ -1009,7 +1168,7 @@ traverse_object (type& c)
     // If we don't have auto id, then obj is a const reference.
     //
     string obj (auto_id ? "obj" : "const_cast< object_type& > (obj)");
-    string init (optimimistic_version_init (*opt));
+    string init (optimistic_version_init (*opt));
 
     if (!opt_ma_set->synthesized)
       os << "// From " << location_string (opt_ma_set->loc, true) << endl;
@@ -1062,8 +1221,10 @@ traverse_object (type& c)
        << "{"
        << "bind (idb.bind, i);"
        << "sts.id_image_version (i.version);"
-       << "idb.version++;"
-       << "}";
+       << "idb.version++;";
+    if (opt != 0)
+      os << "sts.optimistic_id_image_binding ().version++;";
+    os << "}";
 
     if (poly && !straight_containers && !abst)
       os << "}";
@@ -1071,8 +1232,37 @@ traverse_object (type& c)
 
   if (straight_containers)
   {
+    os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());"
+       << endl;
+
     instance<container_calls> t (container_calls::persist_call);
     t->traverse (c);
+  }
+
+  // Reset sections: loaded, unchanged.
+  //
+  for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+  {
+    // Skip special sections.
+    //
+    if (i->special == user_section::special_version)
+      continue;
+
+    // Skip overridden sections; they have been reset by the base.
+    //
+    if (i->base != 0 && poly_derived)
+      continue;
+
+    data_member& m (*i->member);
+
+    // Section access is always by reference.
+    //
+    member_access& ma (m.get<member_access> ("get"));
+    if (!ma.synthesized)
+      os << "// From " << location_string (ma.loc, true) << endl;
+
+    os << ma.translate ("obj") << ".reset (true, false);"
+       << endl;
   }
 
   // Call callback (post_persist).
@@ -1093,6 +1283,17 @@ traverse_object (type& c)
   //
   if (id != 0 && (!readonly || poly))
   {
+    // See if we have any sections that we might have to update.
+    //
+    bool sections (false);
+    for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+    {
+      // This test will automatically skip the special version update section.
+      //
+      if (!i->update_empty () && i->update != user_section::update_manual)
+        sections = true;
+    }
+
     os << "void " << traits << "::" << endl
        << "update (database& db, const object_type& obj";
 
@@ -1146,16 +1347,71 @@ traverse_object (type& c)
            << endl;
       }
 
+      // If we have change-updated sections that contain change-tracking
+      // containers, then mark such sections as changed if any of the
+      // containers was changed. Do this before calling the base so that
+      // we account for the whole hierarchy before we actually start
+      // updating any sections (important for optimistic concurrency
+      // version).
+      //
+      for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+      {
+        user_section& s (*i);
+
+        if (s.update != user_section::update_change)
+          continue;
+
+        if (!has_a (c, test_smart_container, &s))
+          continue;
+
+        data_member& m (*s.member);
+
+        os << "// " << m.name () << endl
+           << "//" << endl
+           << "{";
+
+        // Section access is always by reference.
+        //
+        member_access& ma (m.get<member_access> ("get"));
+        if (!ma.synthesized)
+          os << "// From " << location_string (ma.loc, true) << endl;
+
+        // VC++ cannot grok the constructor syntax.
+        //
+        os << "const odb::section& s = " << ma.translate ("obj") << ";"
+           << endl;
+
+        os << "if (";
+
+        // Unless we are always loaded, test for being loaded.
+        //
+        if (s.load != user_section::load_eager)
+          os << "s.loaded () && ";
+
+        // And for not already being changed.
+        //
+        os << "!s.changed ())"
+           << "{";
+
+        instance<container_calls> t (container_calls::section_call, &s);
+        t->traverse (c);
+
+        os << "}" // if
+           << "}";
+      }
+
       if (poly_derived)
       {
         bool readonly_base (context::readonly (*poly_base));
 
         if (readonly_base ||
-            cc.total != cc.id + cc.inverse + cc.readonly ||
-            straight_readwrite_containers)
+            update_columns != 0 ||
+            update_containers ||
+            sections)
         {
-          os << db << "::connection& conn (" << endl
-             << db << "::transaction::current ().connection ());"
+          os << db << "::transaction& tr (" << db <<
+            "::transaction::current ());"
+             << db << "::connection& conn (tr.connection ());"
              << "statements_type& sts (" << endl
              << "conn.statement_cache ().find_object<object_type> ());"
              << endl;
@@ -1171,13 +1427,11 @@ traverse_object (type& c)
         else
         {
           // Otherwise, we have to initialize the id image ourselves. If
-          // we don't have any columns or containers to update, then we
-          // only have to do it if this is not a top-level call. If we
-          // are abstract, then top is always false.
+          // we don't have any columns, containers or sections to update,
+          // then we only have to do it if this is not a top-level call.
+          // If we are abstract, then top is always false.
           //
-          if (cc.total == cc.id + cc.inverse + cc.readonly &&
-              !straight_readwrite_containers &&
-              !abst)
+          if (update_columns == 0 && !update_containers && !sections && !abst)
             os << "if (!top)";
 
           os << "{"
@@ -1195,17 +1449,16 @@ traverse_object (type& c)
              << "bind (idb.bind, i);"
              << "sts.id_image_version (i.version);"
              << "idb.version++;"
+            // Optimistic poly base cannot be readonly.
              << "}"
              << "}";
         }
 
-        if (cc.total != cc.id + cc.inverse + cc.readonly)
-        {
+        if (update_columns != 0)
           os << "const binding& idb (sts.id_image_binding ());"
              << endl;
-        }
 
-        if (cc.total != cc.id + cc.inverse + cc.readonly)
+        if (update_columns != 0)
         {
           // Initialize the object image.
           //
@@ -1255,16 +1508,23 @@ traverse_object (type& c)
         // to update.
         //
       }
-      else if (cc.total != cc.id + cc.inverse + cc.readonly)
+      else if (update_columns != 0)
       {
-        os << db << "::connection& conn (" << endl
-           << db << "::transaction::current ().connection ());"
+        os << db << "::transaction& tr (" << db <<
+          "::transaction::current ());"
+           << db << "::connection& conn (tr.connection ());"
            << "statements_type& sts (" << endl
            << "conn.statement_cache ().find_object<object_type> ());"
            << endl;
 
-        // Initialize object and id images.
+        // Initialize id image.
         //
+        if (!id_ma->synthesized)
+          os << "// From " << location_string (id_ma->loc, true) << endl;
+
+        os << "const id_type& id (" << endl
+           << id_ma->translate ("obj") << ");";
+
         if (opt != 0)
         {
           if (!opt_ma_get->synthesized)
@@ -1274,31 +1534,30 @@ traverse_object (type& c)
              << opt_ma_get->translate ("obj") << ");";
         }
 
-        os << "id_image_type& i (sts.id_image ());";
-
-        if (!id_ma->synthesized)
-          os << "// From " << location_string (id_ma->loc, true) << endl;
-
-        os << "init (i, " << id_ma->translate ("obj");
+        os << "id_image_type& idi (sts.id_image ());"
+           << "init (idi, id";
 
         if (opt != 0)
           os << ", &v";
 
         os << ");"
-           << endl
-           << "image_type& im (sts.image ());";
+           << endl;
+
+        // Initialize object image.
+        //
+        os << "image_type& im (sts.image ());";
 
         if (generate_grow)
-            os << "if (";
+          os << "if (";
 
-          os << "init (im, obj, statement_update)";
+        os << "init (im, obj, statement_update)";
 
-          if (generate_grow)
-            os << ")" << endl
-               << "im.version++";
+        if (generate_grow)
+          os << ")" << endl
+             << "im.version++";
 
-          os << ";"
-             << endl;
+        os << ";"
+           << endl;
 
         // Update binding is bound to two images (object and id)
         // so we have to track both versions.
@@ -1319,23 +1578,25 @@ traverse_object (type& c)
         // suffix of the update bind array (see object_statements).
         //
         os << "binding& idb (sts.id_image_binding ());"
-           << "if (i.version != sts.update_id_image_version () ||" << endl
+           << "if (idi.version != sts.update_id_image_version () ||" << endl
            << "idb.version == 0)"
            << "{"
           // If the id binding is up-to-date, then that means update
           // binding is too and we just need to update the versions.
           //
-           << "if (i.version != sts.id_image_version () ||" << endl
+           << "if (idi.version != sts.id_image_version () ||" << endl
            << "idb.version == 0)"
            << "{"
-           << "bind (idb.bind, i);"
+           << "bind (idb.bind, idi);"
           // Update the id binding versions since we may use them later
           // to update containers.
           //
-           << "sts.id_image_version (i.version);"
-           << "idb.version++;"
-           << "}"
-           << "sts.update_id_image_version (i.version);"
+           << "sts.id_image_version (idi.version);"
+           << "idb.version++;";
+        if (opt != 0)
+          os << "sts.optimistic_id_image_binding ().version++;";
+        os << "}"
+           << "sts.update_id_image_version (idi.version);"
            << endl
            << "if (!u)" << endl
            << "imb.version++;"
@@ -1354,11 +1615,14 @@ traverse_object (type& c)
       {
         // We don't have any columns to update. Note that we still have
         // to make sure this object exists in the database. For that we
-        // will run the SELECT query using the find_() function.
+        // will run the SELECT query using the find_() function. Note
+        // that this case cannot be optimistic (we always update the
+        // version column) and we don't need to worry about initializing
+        // version in id image for sections below.
         //
-        //
-        os << db << "::connection& conn (" << endl
-           << db << "::transaction::current ().connection ());"
+        os << db << "::transaction& tr (" << db <<
+          "::transaction::current ());"
+           << db << "::connection& conn (tr.connection ());"
            << "statements_type& sts (" << endl
            << "conn.statement_cache ().find_object<object_type> ());"
            << endl;
@@ -1379,7 +1643,9 @@ traverse_object (type& c)
           os << "discriminator_ (sts, id, 0);"
              << endl;
 
-          if (!abst)
+          // The same rationale as a couple of screens up.
+          //
+          if (!update_containers && !sections && !abst)
             os << "if (!top)";
 
           os << "{"
@@ -1394,6 +1660,7 @@ traverse_object (type& c)
              << "bind (idb.bind, i);"
              << "sts.id_image_version (i.version);"
              << "idb.version++;"
+            // Cannot be optimistic.
              << "}"
              << "}";
         }
@@ -1408,13 +1675,20 @@ traverse_object (type& c)
         }
       }
 
-      if (straight_readwrite_containers)
+      if (update_containers || sections)
+        os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());"
+           << endl;
+
+      if (update_containers)
       {
-        instance<container_calls> t (container_calls::update_call);
+        instance<container_calls> t (container_calls::update_call,
+                                     &main_section);
         t->traverse (c);
       }
 
       // Update the optimistic concurrency version in the object member.
+      // Do it before updating sections since they will update it as well.
+      // The same code as in section_traits.
       //
       if (opt != 0 && !poly_derived)
       {
@@ -1422,7 +1696,7 @@ traverse_object (type& c)
         // constness.
         //
         string obj ("const_cast< object_type& > (obj)");
-        string inc (optimimistic_version_increment (*opt));
+        string inc (optimistic_version_increment (*opt));
 
         if (!opt_ma_set->synthesized)
           os << "// From " << location_string (opt_ma_set->loc, true) << endl;
@@ -1463,6 +1737,123 @@ traverse_object (type& c)
 
           os << endl;
         }
+      }
+
+      // Update sections that are loaded and need updating.
+      //
+      for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+      {
+        if (i->update_empty () || i->update == user_section::update_manual)
+          continue;
+
+        // Here is the deal: for polymorphic section overrides, we could
+        // have used the same approach as in load_() where the class that
+        // defines the section data member initiates the section update.
+        // However, if we used this approach, then we would get what can
+        // be called "interleaved" update statements. That is, a section
+        // update would update the section data in "derived" tables before
+        // updating the main section in these derived tables. While this
+        // does not feel right, it can also cause more real problems if,
+        // for example, there are constraints or some such. Generally,
+        // we always want to update the main section data first for each
+        // table in the hierarchy.
+        //
+        // So what we are going to do instead is call section traits
+        // update at each override point (and indicate to it not to
+        // call base). One tricky aspect is who is going to reset the
+        // changed state. We have to do it at the top since otherwise
+        // overrides won't know the section has changed. Finding out
+        // whether we are the final override (in section terms, not
+        // object terms) is tricky.
+        //
+        data_member& m (*i->member);
+
+        // Section access is always by reference.
+        //
+        member_access& ma (m.get<member_access> ("get"));
+        if (!ma.synthesized)
+          os << "// From " << location_string (ma.loc, true) << endl;
+
+        os << "if (";
+
+        // Unless we are always loaded, test for being loaded.
+        //
+        string sep;
+        if (i->load != user_section::load_eager)
+        {
+          os << ma.translate ("obj") << ".loaded ()";
+          sep = " && ";
+        }
+
+        // If change-updated section, check that it has changed.
+        //
+        if (i->update == user_section::update_change)
+          os << sep << ma.translate ("obj") << ".changed ()";
+
+        os << ")"
+           << "{";
+
+        // Re-initialize the id+ver image with new version which may
+        // have changed. Here we take a bit of a shortcut and not
+        // re-bind the image since we know only version may have
+        // changed and that is always an integer (cannot grow).
+        //
+        if (opt != 0)
+        {
+          if (!opt_ma_get->synthesized)
+            os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+
+          os << "const version_type& v (" << endl
+             << opt_ma_get->translate ("obj") << ");";
+
+          if (!id_ma->synthesized)
+          os << "// From " << location_string (id_ma->loc, true) << endl;
+
+          os << "init (sts.id_image (), " << id_ma->translate ("obj") <<
+            ", &v);"
+             << endl;
+        }
+
+        os << public_name (m) << "_traits::update (esc, obj";
+
+        if (poly_derived && i->base != 0)
+        {
+          // Normally we don't want to call base (base object's update()
+          // would have called it; see comment above). There is one
+          // exception, however, and that is a readonly base section
+          // in optimistic class. In this case, base object's update()
+          // won't call it (it is readonly) but it needs to be called
+          // in order to increment the version.
+          //
+          bool base (false);
+          for (user_section* b (i->base); !base && b != 0; b = b->base)
+          {
+            if (b->total != b->inverse + b->readonly ||
+                b->readwrite_containers)
+              break; // We have a readwrite base.
+            else if (b->optimistic ())
+              base = true; // We have a readonly optimistic root.
+          }
+
+          os << ", " << (base ? "true" : "false");
+        }
+
+        os << ");";
+
+        // Clear the change flag and arm the transaction rollback callback.
+        //
+        if (i->update == user_section::update_change)
+        {
+          // If polymorphic, do it only if we are the final override.
+          //
+          if (poly)
+            os << "if (root_traits::map->find (typeid (obj))." <<
+              "final_section_update (info, " << i->index << "UL))" << endl;
+
+          os << ma.translate ("obj") << ".reset (true, false, &tr);";
+        }
+
+        os << "}";
       }
 
       // Call callback (post_update).
@@ -1558,8 +1949,10 @@ traverse_object (type& c)
          << "{"
          << "bind (idb.bind, i);"
          << "sts.id_image_version (i.version);"
-         << "idb.version++;"
-         << "}";
+         << "idb.version++;";
+      if (opt != 0)
+        os << "sts.optimistic_id_image_binding ().version++;";
+      os << "}";
 
       if (poly)
         os << "}";
@@ -1572,6 +1965,9 @@ traverse_object (type& c)
     //
     if (straight_containers)
     {
+      os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());"
+         << endl;
+
       instance<container_calls> t (container_calls::erase_id_call);
       t->traverse (c);
     }
@@ -1654,7 +2050,9 @@ traverse_object (type& c)
          << "conn.statement_cache ().find_object<object_type> ());";
 
       if (poly_derived)
-        os << "root_statements_type& rsts (sts.root_statements ());";
+        os << endl
+           << "root_statements_type& rsts (sts.root_statements ());"
+           << "ODB_POTENTIALLY_UNUSED (rsts);";
 
       os << endl;
 
@@ -1702,6 +2100,7 @@ traverse_object (type& c)
              << "bind (idb.bind, i);"
              << rsts << ".id_image_version (i.version);"
              << "idb.version++;"
+            // Cannot be optimistic.
              << "}";
 
           if (poly)
@@ -1713,8 +2112,16 @@ traverse_object (type& c)
         // here since in case of a custom schema, it might not be
         // there).
         //
-        instance<container_calls> t (container_calls::erase_obj_call);
-        t->traverse (c);
+
+        if (straight_containers)
+        {
+          os << "extra_statement_cache_type& esc (" <<
+            "sts.extra_statement_cache ());"
+             << endl;
+
+          instance<container_calls> t (container_calls::erase_obj_call);
+          t->traverse (c);
+        }
 
         os << "if (sts.erase_statement ().execute () != 1)" << endl
            << "throw object_not_persistent ();"
@@ -1741,32 +2148,14 @@ traverse_object (type& c)
              << "init (i, id, &v);"
              << endl;
 
-          // To update the id part of the optimistic id binding we have
-          // to do it indirectly via the id binding, since both id and
-          // optimistic id bindings just point to the suffix of the
-          // update bind array (see object_statements).
-          //
-          os << "binding& oidb (" << rsts << ".optimistic_id_image_binding ());"
-             << "if (i.version != " << rsts <<
-            ".optimistic_id_image_version () ||" << endl
-             << "oidb.version == 0)"
-             << "{"
-            // If the id binding is up-to-date, then that means optimistic
-            // id binding is too and we just need to update the versions.
-            //
-             << "binding& idb (" << rsts << ".id_image_binding ());"
+          os << "binding& idb (" << rsts << ".id_image_binding ());"
              << "if (i.version != " << rsts << ".id_image_version () ||" << endl
              << "idb.version == 0)"
              << "{"
              << "bind (idb.bind, i);"
-            // Update the id binding versions since we may use them later
-            // to delete containers.
-            //
              << rsts << ".id_image_version (i.version);"
              << "idb.version++;"
-             << "}"
-             << rsts << ".optimistic_id_image_version (i.version);"
-             << "oidb.version++;"
+             << rsts << ".optimistic_id_image_binding ().version++;"
              << "}";
 
           if (poly)
@@ -1841,6 +2230,10 @@ traverse_object (type& c)
         //
         if (straight_containers)
         {
+          os << "extra_statement_cache_type& esc (" <<
+            "sts.extra_statement_cache ());"
+             << endl;
+
           instance<container_calls> t (container_calls::erase_obj_call);
           t->traverse (c);
         }
@@ -1868,6 +2261,10 @@ traverse_object (type& c)
           os << "if (top)"
              << "{";
 
+        // Note that we don't reset sections since the object is now
+        // transient and the state of a section in a transient object
+        // is undefined.
+
         // Remove from the object cache.
         //
         os << "pointer_cache_traits::erase (db, id);";
@@ -1879,10 +2276,6 @@ traverse_object (type& c)
         if (poly)
           os << "}";
       }
-    }
-    else if (smart_containers)
-    {
-
     }
     else
     {
@@ -2272,7 +2665,7 @@ traverse_object (type& c)
       if (delay_freeing_statement_result)
         os << "ar.free ();";
 
-      os << "load_ (sts, obj);"
+      os << "load_ (sts, obj, true);"
          << rsts << ".load_delayed ();"
          << "l.unlock ();"
          << "callback (db, obj, callback_event::post_load);"
@@ -2280,6 +2673,307 @@ traverse_object (type& c)
     }
 
     os << "}";
+  }
+
+  // load (section) [non-thunk version]
+  //
+  if (uss.count (user_sections::count_new   |
+                 user_sections::count_load  |
+                 (poly ? user_sections::count_load_empty : 0)) != 0)
+  {
+    os << "bool " << traits << "::" << endl
+       << "load (connection& conn, object_type& obj, section& s" <<
+      (poly ? ", const info_type* pi" : "") << ")"
+       << "{"
+       << "using namespace " << db << ";"
+       << endl;
+
+    if (poly)
+    {
+      // Resolve type information if we are doing indirect calls.
+      //
+      os << "if (pi == 0)" // Top-level call.
+         << "{"
+         << "const std::type_info& t (typeid (obj));";
+
+      if (!abst)
+        os << endl
+           << "if (t == info.type)" << endl
+           << "pi = &info;"
+           << "else" << endl;
+
+      os << "pi = &root_traits::map->find (t);"
+         << "}";
+    }
+
+    // If our poly-base has load sections, then call the base version
+    // first. Besides checking for sections, it will also initialize
+    // the id image.
+    //
+    if (poly_derived &&
+        buss->count (user_sections::count_total |
+                     user_sections::count_load  |
+                     user_sections::count_load_empty) != 0)
+    {
+      os << "if (base_traits::load (conn, obj, s, pi))" << endl
+         << "return true;"
+         << endl;
+    }
+    else
+    {
+      // Resolve extra statements if we are doing direct calls.
+      //
+      os << db << "::connection& c (static_cast<" << db <<
+        "::connection&> (conn));"
+         << "statements_type& sts (c.statement_cache ()." <<
+        "find_object<object_type> ());";
+
+      if (!poly)
+        os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());";
+
+      os << endl;
+
+      // Initialize id image. This is not necessarily the root of the
+      // polymorphic hierarchy.
+      //
+      os << "id_image_type& i (sts.id_image ());";
+
+      if (!id_ma->synthesized)
+        os << "// From " << location_string (id_ma->loc, true) << endl;
+
+      os << "init (i, " <<  id_ma->translate ("obj") << ");"
+         << endl;
+
+      os << "binding& idb (sts.id_image_binding ());"
+         << "if (i.version != sts.id_image_version () || idb.version == 0)"
+         << "{"
+         << "bind (idb.bind, i);"
+         << "sts.id_image_version (i.version);"
+         << "idb.version++;";
+      if (opt != 0)
+        os << "sts.optimistic_id_image_binding ().version++;";
+      os << "}";
+    }
+
+    // Dispatch.
+    //
+    bool e (false);
+    for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+    {
+      // Skip special sections.
+      //
+      if (i->special == user_section::special_version)
+        continue;
+
+      if (i->load == user_section::load_eager)
+        continue;
+
+      // Overridden sections are handled by the base.
+      //
+      if (poly_derived && i->base != 0)
+        continue;
+
+      data_member& m (*i->member);
+
+      // Section access is always by reference.
+      //
+      member_access& ma (m.get<member_access> ("get"));
+      if (!ma.synthesized)
+        os << "// From " << location_string (ma.loc, true) << endl;
+
+      if (e)
+        os << "else ";
+      else
+        e = true;
+
+      os << "if (&s == &" << ma.translate ("obj") << ")" << endl;
+
+      if (!poly)
+        os << public_name (m) << "_traits::load (esc, obj);";
+      else
+      {
+        // If this is an empty section, then there may not be any
+        // overrides.
+        //
+        os << "{"
+           << "info_type::section_load sl (" <<
+          "pi->find_section_load (" << i->index << "UL));";
+
+        if (i->load_empty ())
+          os << "if (sl != 0)" << endl;
+
+        os << "sl (conn, obj, true);"
+           << "}";
+      }
+    }
+
+    os << "else" << endl
+       << "return false;"
+       << endl
+       << "return true;"
+       << "}";
+  }
+
+  // update (section) [non-thunk version]
+  //
+  if (uss.count (user_sections::count_new   |
+                 user_sections::count_update  |
+                 (poly ? user_sections::count_update_empty : 0)) != 0)
+  {
+    os << "bool " << traits << "::" << endl
+       << "update (connection& conn, const object_type& obj, " <<
+      "const section& s" << (poly ? ", const info_type* pi" : "") << ")"
+       << "{"
+       << "using namespace " << db << ";"
+       << endl;
+
+    if (poly)
+    {
+      // Resolve type information if we are doing indirect calls.
+      //
+      os << "if (pi == 0)" // Top-level call.
+         << "{"
+         << "const std::type_info& t (typeid (obj));";
+
+      if (!abst)
+        os << endl
+           << "if (t == info.type)" << endl
+           << "pi = &info;"
+           << "else" << endl;
+
+      os << "pi = &root_traits::map->find (t);"
+         << "}";
+    }
+
+    // If our poly-base has update sections, then call the base version
+    // first. Besides checking for sections, it will also initialize the
+    // id image.
+    //
+    if (poly_derived &&
+        buss->count (user_sections::count_total  |
+                     user_sections::count_update |
+                     user_sections::count_update_empty) != 0)
+    {
+      os << "if (base_traits::update (conn, obj, s, pi))" << endl
+         << "return true;"
+         << endl;
+    }
+    else
+    {
+      // Resolve extra statements if we are doing direct calls.
+      //
+      os << db << "::connection& c (static_cast<" << db <<
+        "::connection&> (conn));"
+         << "statements_type& sts (c.statement_cache ()." <<
+        "find_object<object_type> ());";
+
+      if (!poly)
+        os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());";
+
+      os << endl;
+
+      // Initialize id image. This is not necessarily the root of the
+      // polymorphic hierarchy.
+      //
+      if (opt != 0)
+      {
+        if (!opt_ma_get->synthesized)
+          os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+
+        os << "const version_type& v (" << endl
+           << opt_ma_get->translate ("obj") << ");";
+      }
+
+      os << "id_image_type& i (sts.id_image ());";
+
+      if (!id_ma->synthesized)
+        os << "// From " << location_string (id_ma->loc, true) << endl;
+
+      os << "init (i, " <<  id_ma->translate ("obj") <<
+        (opt != 0 ? ", &v" : "") << ");"
+         << endl;
+
+      os << "binding& idb (sts.id_image_binding ());"
+         << "if (i.version != sts.id_image_version () || idb.version == 0)"
+         << "{"
+         << "bind (idb.bind, i);"
+         << "sts.id_image_version (i.version);"
+         << "idb.version++;";
+      if (opt != 0)
+        os << "sts.optimistic_id_image_binding ().version++;";
+      os << "}";
+    }
+
+    // Dispatch.
+    //
+    bool e (false);
+    for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+    {
+      // Skip special sections.
+      //
+      if (i->special == user_section::special_version)
+        continue;
+
+      // Overridden sections are handled by the base.
+      //
+      if (poly_derived && i->base != 0)
+        continue;
+
+      // Skip read-only sections. Polymorphic sections are always
+      // (potentially) read-write.
+      //
+      if (!poly && i->update_empty ())
+        continue;
+
+      data_member& m (*i->member);
+
+      // Section access is always by reference.
+      //
+      member_access& ma (m.get<member_access> ("get"));
+      if (!ma.synthesized)
+        os << "// From " << location_string (ma.loc, true) << endl;
+
+      if (e)
+        os << "else ";
+      else
+        e = true;
+
+      os << "if (&s == &" << ma.translate ("obj") << ")";
+
+      if (!poly)
+        os << public_name (m) << "_traits::update (esc, obj);";
+      else
+      {
+        // If this is a readonly section, then there may not be any
+        // overrides.
+        //
+        os << "{"
+           << "info_type::section_update su (" <<
+          "pi->find_section_update (" << i->index << "UL));";
+
+        if (i->update_empty ())
+        {
+          // For optimistic section, also check that we are not the
+          // final override, since otherwise we will increment the
+          // version without updating anything.
+          //
+          if (i->optimistic ())
+            os << "if (su != 0 && su != info.sections[" << i->index <<
+              "UL].update)" << endl;
+          else
+            os << "if (su != 0)" << endl;
+        }
+
+        os << "su (conn, obj);"
+           << "}";
+      }
+    }
+
+    os << "else" << endl
+       << "return false;"
+       << endl
+       << "return true;"
+       << "}";
   }
 
   // find_ ()
@@ -2319,8 +3013,10 @@ traverse_object (type& c)
        << "{"
        << "bind (idb.bind, i);"
        << "sts.id_image_version (i.version);"
-       << "idb.version++;"
-       << "}";
+       << "idb.version++;";
+    if (opt != 0)
+      os << "sts.optimistic_id_image_binding ().version++;";
+    os << "}";
 
     if (poly_derived && !abst)
       os << "}";
@@ -2411,36 +3107,111 @@ traverse_object (type& c)
     os << "}";
   }
 
-  // load_() containers
+  // load_()
   //
-  if (containers || poly_derived)
+  // Load containers, reset/reload sections.
+  //
+  if (poly_derived ||
+      load_containers ||
+      uss.count (user_sections::count_new  |
+                 user_sections::count_load |
+                 (poly ? user_sections::count_load_empty : 0)) != 0)
   {
     os << "void " << traits << "::" << endl
        << "load_ (";
 
     if (poly && !poly_derived)
-      os << "base_statements_type& sts, ";
+      os << "base_statements_type& sts," << endl;
     else
-      os << "statements_type& sts, ";
+      os << "statements_type& sts," << endl;
 
-    os << "object_type& obj";
+    os << "object_type& obj," << endl
+       << "bool reload";
 
     if (poly_derived)
-      os << ", std::size_t d";
+      os << "," << endl
+         << "std::size_t d";
 
     os << ")"
-       << "{";
+       << "{"
+       << "ODB_POTENTIALLY_UNUSED (reload);"
+       << endl;
 
     if (poly_derived)
       os << "if (--d != 0)" << endl
-         << "base_traits::load_ (sts.base_statements (), obj" <<
+         << "base_traits::load_ (sts.base_statements (), obj, reload" <<
         (poly_base != poly_root ? ", d" : "") << ");"
          << endl;
 
-    if (containers)
+    if (load_containers ||
+        (!poly && uss.count (user_sections::count_new |
+                             user_sections::count_load) != 0))
+      os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());"
+         << endl;
+
+    if (load_containers)
     {
-      instance<container_calls> t (container_calls::load_call);
+      instance<container_calls> t (container_calls::load_call, &main_section);
       t->traverse (c);
+    }
+
+    for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+    {
+      // Skip special sections.
+      //
+      if (i->special == user_section::special_version)
+        continue;
+
+      // Skip overridden sections; they are handled by the base.
+      //
+      if (i->base != 0 && poly_derived)
+        continue;
+
+      data_member& m (*i->member);
+
+      // Section access is always by reference.
+      //
+      member_access& ma (m.get<member_access> ("get"));
+      if (!ma.synthesized)
+        os << "// From " << location_string (ma.loc, true) << endl;
+
+      if (i->load == user_section::load_eager)
+      {
+        // Mark an eager section as loaded.
+        //
+        os << ma.translate ("obj") << ".reset (true, false);"
+           << endl;
+        continue;
+      }
+
+      os << "if (reload)"
+         << "{"
+        // Reload sections that have been loaded, clear change state.
+        //
+         << "if (" << ma.translate ("obj") << ".loaded ())"
+         << "{";
+
+      if (!poly)
+        os << public_name (m) << "_traits::load (esc, obj);";
+      else
+      {
+        os << "info_type::section_load sl (" << endl
+           << "root_traits::map->find (typeid (obj)).find_section_load (" <<
+          i->index << "UL));";
+
+        if (i->load_empty ())
+          os << "if (sl != 0)" << endl;
+
+        os << "sl (sts.connection (), obj, true);";
+      }
+
+      os << ma.translate ("obj") << ".reset (true, false);"
+         << "}"
+         << "}"
+         << "else" << endl
+        // Reset to unloaded, unchanged state.
+         << ma.translate ("obj") << ".reset ();"
+         << endl;
     }
 
     os << "}";
@@ -2494,7 +3265,7 @@ traverse_object (type& c)
     if (empty_depth != 0)
       os << "}";
 
-    os << "load_ (sts, obj, d);"
+    os << "load_ (sts, obj, false, d);"
        << "}";
   }
 
@@ -2959,6 +3730,20 @@ traverse_object (type& c)
 
       os << "," << endl
          << "&" << traits << "::erase";
+
+      // Sections.
+      //
+      if (uss.count (user_sections::count_total |
+                     user_sections::count_load  |
+                     (poly ? user_sections::count_load_empty : 0)) != 0)
+        os << "," << endl
+           << "&" << traits << "::load";
+
+      if (uss.count (user_sections::count_total  |
+                     user_sections::count_update |
+                     (poly ? user_sections::count_update_empty : 0)) != 0)
+        os << "," << endl
+           << "&" << traits << "::update";
     }
 
     if (options.generate_query ())

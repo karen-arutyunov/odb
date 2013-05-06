@@ -60,6 +60,8 @@ traverse_object (type& c)
   bool abst (abstract (c));
   bool reuse_abst (abst && !poly);
 
+  user_sections& uss (c.get<user_sections> ("user-sections"));
+
   string const& type (class_fq_name (c));
 
   os << "// " << class_name (c) << endl
@@ -384,27 +386,37 @@ traverse_object (type& c)
 
     os << "void (*erase2) (database&, const object_type&" <<
       (poly ? ", bool, bool" : "") << ");";
+
+    // Sections.
+    //
+    if (uss.count (user_sections::count_total |
+                   user_sections::count_load  |
+                   (poly ? user_sections::count_load_empty : 0)) != 0)
+      os << "bool (*load_section) (connection&, object_type&, section&" <<
+        (poly ? ", const info_type*" : "") << ");";
+
+    if (uss.count (user_sections::count_total  |
+                   user_sections::count_update |
+                   (poly ? user_sections::count_update_empty : 0)) != 0)
+      os << "bool (*update_section) (connection&, const object_type&, " <<
+        "const section&" << (poly ? ", const info_type*" : "") << ");";
   }
 
   if (options.generate_query ())
   {
     if (!options.omit_unprepared ())
-      os << "result<object_type> (*query) (database&, const query_base_type&);"
-         << endl;
+      os << "result<object_type> (*query) (database&, const query_base_type&);";
 
     os << "unsigned long long (*erase_query) (database&, " <<
-      "const query_base_type&);"
-       << endl;
+      "const query_base_type&);";
 
     if (options.generate_prepared ())
     {
       os << "odb::details::shared_ptr<prepared_query_impl> " <<
-        "(*prepare_query) (connection&, const char*, const query_base_type&);"
-         << endl;
+        "(*prepare_query) (connection&, const char*, const query_base_type&);";
 
       os << "odb::details::shared_ptr<result_impl> (*execute_query) ("
-        "prepared_query_impl&);"
-         << endl;
+        "prepared_query_impl&);";
     }
   }
 
@@ -461,6 +473,22 @@ traverse_object (type& c)
     os << "static void" << endl
        << "erase (database&, const object_type&);"
        << endl;
+
+    // Sections.
+    //
+    if (uss.count (user_sections::count_total |
+                   user_sections::count_load  |
+                   (poly ? user_sections::count_load_empty : 0)) != 0)
+      os << "static bool" << endl
+         << "load (connection&, object_type&, section&);"
+         << endl;
+
+    if (uss.count (user_sections::count_total  |
+                   user_sections::count_update |
+                   (poly ? user_sections::count_update_empty : 0)) != 0)
+      os << "static bool" << endl
+         << "update (connection&, const object_type&, const section&);"
+         << endl;
   }
 
   if (options.generate_query ())

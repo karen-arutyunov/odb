@@ -386,6 +386,9 @@ check_spec_decl_type (declaration const& d,
            p == "auto"      ||
            p == "column"    ||
            p == "inverse"   ||
+           p == "section"   ||
+           p == "load"      ||
+           p == "update"    ||
            p == "version"   ||
            p == "index"     ||
            p == "unique"    ||
@@ -430,7 +433,8 @@ check_spec_decl_type (declaration const& d,
            p == "object" ||
            p == "optimistic" ||
            p == "polymorphic" ||
-           p == "definition")
+           p == "definition" ||
+           p == "sectionable")
   {
     if (tc != RECORD_TYPE)
     {
@@ -1405,6 +1409,18 @@ handle_pragma (cxx_lexer& l,
     val = l.location ();
     tt = l.next (tl, &tn);
   }
+  else if (p == "sectionable")
+  {
+    // sectionable
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    tt = l.next (tl, &tn);
+  }
   else if (p == "callback")
   {
     // callback (name)
@@ -2103,6 +2119,121 @@ handle_pragma (cxx_lexer& l,
     }
 
     val = tl;
+
+    if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
+    {
+      error (l) << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+  }
+  else if (p == "section")
+  {
+    // section (name)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+    {
+      error (l) << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+
+    if (tt != CPP_NAME)
+    {
+      error (l) << "member name expected in db pragma " << p << endl;
+      return;
+    }
+
+    name = "section-member";
+    val = tl;
+
+    if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
+    {
+      error (l) << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+  }
+  else if (p == "load")
+  {
+    // load (eager|lazy)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+    {
+      error (l) << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+
+    if (tt != CPP_NAME || (tl != "eager" && tl != "lazy"))
+    {
+      error (l) << "eager or lazy expected in db pragma " << p << endl;
+      return;
+    }
+
+    name = "section-load";
+    val = (tl == "eager"
+           ? user_section::load_eager
+           : user_section::load_lazy);
+
+    if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
+    {
+      error (l) << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+  }
+  else if (p == "update")
+  {
+    // update (always|change|manual)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+    {
+      error (l) << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+
+    if (tt != CPP_NAME ||
+        (tl != "always" && tl != "change" && tl != "manual"))
+    {
+      error (l) << "always, change, or manual expected in db pragma " <<
+        p << endl;
+      return;
+    }
+
+    name = "section-update";
+
+    if (tl == "always")
+      val = user_section::update_always;
+    else if (tl == "change")
+      val = user_section::update_change;
+    else
+      val = user_section::update_manual;
 
     if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
     {
@@ -3055,6 +3186,9 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
            p == "value_null" ||
            p == "value_not_null" ||
            p == "default" ||
+           p == "section" ||
+           p == "load"    ||
+           p == "update"  ||
            p == "inverse" ||
            p == "unordered" ||
            p == "readonly" ||
@@ -3400,6 +3534,24 @@ handle_pragma_db_default (cpp_reader* r)
 }
 
 extern "C" void
+handle_pragma_db_section (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "section");
+}
+
+extern "C" void
+handle_pragma_db_load (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "load");
+}
+
+extern "C" void
+handle_pragma_db_update (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "update");
+}
+
+extern "C" void
 handle_pragma_db_inverse (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "inverse");
@@ -3503,6 +3655,9 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "value_null", handle_pragma_db_value_null);
   c_register_pragma_with_expansion ("db", "value_not_null", handle_pragma_db_value_not_null);
   c_register_pragma_with_expansion ("db", "default", handle_pragma_db_default);
+  c_register_pragma_with_expansion ("db", "section", handle_pragma_db_section);
+  c_register_pragma_with_expansion ("db", "load", handle_pragma_db_load);
+  c_register_pragma_with_expansion ("db", "update", handle_pragma_db_update);
   c_register_pragma_with_expansion ("db", "inverse", handle_pragma_db_inverse);
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "readonly", handle_pragma_db_readonly);

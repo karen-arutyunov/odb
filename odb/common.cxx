@@ -193,6 +193,14 @@ traverse_member (semantics::data_member& m, semantics::type& t)
     traverse_simple (m);
 }
 
+bool object_members_base::
+section_test (data_member_path const& mp)
+{
+  // By default ignore members from the wrong section.
+  //
+  return section_ == 0 || *section_ == section (mp);
+}
+
 void object_members_base::member::
 traverse (semantics::data_member& m)
 {
@@ -201,14 +209,19 @@ traverse (semantics::data_member& m)
 
   om_.member_path_.push_back (&m);
 
-  semantics::type& t (utype (m));
+  // Ignore members from the wrong section.
+  //
+  if (om_.section_test (om_.member_path_))
+  {
+    semantics::type& t (utype (m));
 
-  if (semantics::type* c = context::container (m))
-    om_.traverse_container (m, *c);
-  else if (semantics::class_* c = object_pointer (t))
-    om_.traverse_pointer (m, *c);
-  else
-    om_.traverse_member (m, t);
+    if (semantics::type* c = context::container (m))
+      om_.traverse_container (m, *c);
+    else if (semantics::class_* c = object_pointer (t))
+      om_.traverse_pointer (m, *c);
+    else
+      om_.traverse_member (m, t);
+  }
 
   om_.member_path_.pop_back ();
 }
@@ -393,6 +406,14 @@ traverse_member (semantics::data_member& m, semantics::type& t)
   }
 }
 
+bool object_columns_base::
+section_test (data_member_path const& mp)
+{
+  // By default ignore members from the wrong section.
+  //
+  return section_ == 0 || *section_ == section (mp);
+}
+
 void object_columns_base::member::
 traverse (semantics::data_member& m)
 {
@@ -406,12 +427,15 @@ traverse (semantics::data_member& m)
 
   oc_.member_path_.push_back (&m);
 
-  semantics::type& t (utype (m));
+  if (oc_.section_test (oc_.member_path_))
+  {
+    semantics::type& t (utype (m));
 
-  if (semantics::class_* c = object_pointer (t))
-    oc_.traverse_pointer (m, *c);
-  else
-    oc_.traverse_member (m, t);
+    if (semantics::class_* c = object_pointer (t))
+      oc_.traverse_pointer (m, *c);
+    else
+      oc_.traverse_member (m, t);
+  }
 
   oc_.member_path_.pop_back ();
 }

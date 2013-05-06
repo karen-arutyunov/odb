@@ -114,8 +114,8 @@ namespace relational
     {
       struct has_grow: traversal::class_
       {
-        has_grow (bool& r)
-            : r_ (r)
+        has_grow (bool& r, user_section* s)
+            : r_ (r), section_ (s)
         {
           *this >> inherits_ >> *this;
         }
@@ -128,7 +128,7 @@ namespace relational
           if (!(context::object (c) || context::composite (c)))
             return;
 
-          if (c.count ("pgsql-grow"))
+          if (section_ == 0 && c.count ("pgsql-grow"))
             r_ = c.get<bool> ("pgsql-grow");
           else
           {
@@ -139,29 +139,41 @@ namespace relational
             if (!r_)
               names (c);
 
-            c.set ("pgsql-grow", r_);
+            if (section_ == 0)
+              c.set ("pgsql-grow", r_);
           }
         }
 
       private:
         bool& r_;
+        user_section* section_;
         traversal::inherits inherits_;
       };
 
       struct has_grow_member: member_base
       {
         has_grow_member (bool& r,
+                         user_section* section = 0,
                          semantics::type* type = 0,
                          string const& key_prefix = string ())
-            : relational::member_base (type, string (), key_prefix),
+            : relational::member_base (type, string (), key_prefix, section),
               r_ (r)
         {
+        }
+
+        virtual bool
+        pre (member_info& mi)
+        {
+          return (section_ == 0 && !separate_load (mi.m)) ||
+            (section_ != 0 && *section_ == section (mi.m));
         }
 
         virtual void
         traverse_composite (member_info& mi)
         {
           // By calling grow() instead of recursing, we reset any overrides.
+          // We also don't pass section since they don't apply inside
+          // composites.
           //
           r_ = r_ || context::grow (dynamic_cast<semantics::class_&> (mi.t));
         }
@@ -189,22 +201,15 @@ namespace relational
       };
     }
 
-    string const& context::
-    convert_expr (string const& sqlt, semantics::data_member& m, bool to)
-    {
-      sql_type const& t (parse_sql_type (sqlt, m));
-      return to ? t.to : t.from;
-    }
-
     bool context::
-    grow_impl (semantics::class_& c)
+    grow_impl (semantics::class_& c, user_section* section)
     {
-      if (c.count ("pgsql-grow"))
+      if (section == 0 && c.count ("pgsql-grow"))
         return c.get<bool> ("pgsql-grow");
 
       bool r (false);
-      has_grow ct (r);
-      has_grow_member mt  (r);
+      has_grow ct (r, section);
+      has_grow_member mt  (r, section);
       traversal::names names;
       ct >> names >> mt;
       ct.traverse (c);
@@ -224,9 +229,16 @@ namespace relational
     grow_impl (semantics::data_member& m, semantics::type& t, string const& kp)
     {
       bool r (false);
-      has_grow_member mt  (r, &t, kp);
+      has_grow_member mt  (r, 0, &t, kp);
       mt.traverse (m);
       return r;
+    }
+
+    string const& context::
+    convert_expr (string const& sqlt, semantics::data_member& m, bool to)
+    {
+      sql_type const& t (parse_sql_type (sqlt, m));
+      return to ? t.to : t.from;
     }
 
     string context::

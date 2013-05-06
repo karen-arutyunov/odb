@@ -98,9 +98,26 @@ namespace relational
 
       struct statement_oids: object_columns_base, context
       {
-        statement_oids (statement_kind sk, bool first = true)
-            : object_columns_base (first), sk_ (sk)
+        statement_oids (statement_kind sk,
+                        bool first = true,
+                        object_section* section = 0)
+            : object_columns_base (first, column_prefix (), section), sk_ (sk)
         {
+        }
+
+        virtual bool
+        section_test (data_member_path const& mp)
+        {
+          object_section& s (section (mp));
+
+          // Include eager loaded members into the main section for
+          // SELECT statements.
+          //
+          return section_ == 0 ||
+            *section_ == s ||
+            (sk_ == statement_select &&
+             *section_ == main_section &&
+             !s.separate_load ());
         }
 
         virtual void
@@ -264,6 +281,17 @@ namespace relational
         {
           if (container (mi))
             return false;
+
+          if (section_ != 0 && *section_ != section (mi.m))
+            return false;
+
+          if (var_override_.empty ())
+          {
+            // Ignore separately loaded members.
+            //
+            if (section_ == 0 && separate_load (mi.m))
+              return false;
+          }
 
           // Ignore polymorphic id references; they are not returned by
           // the select statement.
@@ -641,7 +669,11 @@ namespace relational
 
           semantics::data_member* id (id_member (c));
           semantics::data_member* optimistic (context::optimistic (c));
+
           column_count_type const& cc (column_count (c));
+
+          size_t update_columns (
+            cc.total - cc.id - cc.inverse - cc.readonly - cc.separate_update);
 
           string const& n (class_fq_name (c));
           string const& fn (flat_name (n));
@@ -684,7 +716,7 @@ namespace relational
                 strlit (fn + "_find_discriminator") << ";"
                  << endl;
 
-            if (cc.total != cc.id + cc.inverse + cc.readonly)
+            if (update_columns != 0)
               os << "const char " << traits << "::" << endl
                  << "update_statement_name[] = " << strlit (fn + "_update") <<
                 ";"
@@ -745,7 +777,7 @@ namespace relational
                << "find_statement_types[] ="
                << "{";
 
-            statement_oids st (statement_select);
+            statement_oids st (statement_select, true);
             st.traverse (*id);
 
             os << "};";
@@ -753,19 +785,21 @@ namespace relational
 
           // update_statement_types.
           //
-          if (id != 0 && cc.total != cc.id + cc.inverse + cc.readonly)
+          if (id != 0 && update_columns != 0)
           {
             os << "const unsigned int " << traits << "::" << endl
                << "update_statement_types[] ="
                << "{";
 
             {
-              statement_oids st (statement_update);
+              statement_oids st (statement_update, true, &main_section);
               st.traverse (c);
             }
 
+            // Not the same as update_columns.
+            //
             bool first (cc.total == cc.id + cc.inverse + cc.readonly +
-                        cc.optimistic_managed);
+                        cc.separate_update + cc.optimistic_managed);
 
             statement_oids st (statement_where, first);
             st.traverse (*id);
@@ -791,11 +825,13 @@ namespace relational
         }
 
         virtual void
-        container_cache_extra_args (bool used)
+        extra_statement_cache_extra_args (bool c, bool s)
         {
+          bool u (c || s);
+
           os << "," << endl
-             << db << "::native_binding&" << (used ? " idn" : "") << "," << endl
-             << "const unsigned int*" << (used ? " idt" : "");
+             << db << "::native_binding&" << (u ? " idn" : "") << "," << endl
+             << "const unsigned int*" << (u ? " idt" : "");
         }
 
         virtual void
@@ -915,33 +951,6 @@ namespace relational
 
           semantics::type& vt (container_vt (t));
           semantics::type& idt (container_idt (m));
-
-          // select statement types.
-          //
-          {
-            os << "const unsigned int " << scope << "::" << endl
-               << "select_types[] ="
-               << "{";
-
-            statement_oids so (statement_where);
-
-            if (inv)
-            {
-              // many(i)-to-many
-              //
-              if (container (*inv_m))
-                so.traverse (*inv_m, idt, "value", "value");
-
-              // many(i)-to-one
-              //
-              else
-                so.traverse (*inv_m);
-            }
-            else
-              so.traverse (m, idt, "id", "object_id");
-
-            os << "};";
-          }
 
           // insert statement types.
           //
@@ -1065,6 +1074,74 @@ namespace relational
       };
       entry<container_traits> container_traits_;
 
+      struct section_traits : relational::section_traits, context
+      {
+        section_traits (base const& x): base (x) {}
+
+        virtual void
+        section_extra (user_section& s)
+        {
+          semantics::class_* poly_root (polymorphic (c_));
+          bool poly (poly_root != 0);
+
+          if (!poly && (abstract (c_) ||
+                        s.special == user_section::special_version))
+            return;
+
+          semantics::data_member* opt (optimistic (c_));
+
+          bool load (s.total != 0 && s.separate_load ());
+          bool load_opt (s.optimistic () && s.separate_load ());
+
+          bool update (s.total != s.inverse + s.readonly); // Always separate.
+          bool update_opt (s.optimistic () && (s.readwrite_containers || poly));
+
+          string name (public_name (*s.member));
+          string scope (scope_ + "::" + name + "_traits");
+
+          // Statment names.
+          //
+
+          // Prefix object name to avoid conflicts with inherited member
+          // statement names.
+          //
+          string fn (flat_name (class_fq_name (c_) + "_" + name));
+
+          if (load || load_opt)
+            os << "const char " << scope << "::" << endl
+               << "select_name[] = " << strlit (fn + "_select") << ";"
+               << endl;
+
+          if (update || update_opt)
+            os << "const char " << scope << "::" << endl
+               << "update_name[] = " << strlit (fn + "_update") << ";"
+               << endl;
+
+          // Statement types.
+          //
+          if (update || update_opt)
+          {
+            os << "const unsigned int " << scope << "::" << endl
+               << "update_types[] ="
+               << "{";
+
+            {
+              statement_oids st (statement_update, true, &s);
+              st.traverse (c_);
+            }
+
+            statement_oids st (statement_where, !update);
+            st.traverse (*id_member (c_));
+
+            if (s.optimistic ()) // Note: not update_opt.
+              st.traverse (*opt);
+
+            os << "};";
+          }
+        }
+      };
+      entry<section_traits> section_traits_;
+
       struct container_cache_init_members:
         relational::container_cache_init_members
       {
@@ -1078,6 +1155,18 @@ namespace relational
       };
       entry<container_cache_init_members> container_cache_init_members_;
 
+      struct section_cache_init_members:
+        relational::section_cache_init_members
+      {
+        section_cache_init_members (base const& x): base (x) {}
+
+        virtual void
+        extra_members ()
+        {
+          os << ", idn, idt";
+        }
+      };
+      entry<section_cache_init_members> section_cache_init_members_;
     }
   }
 }

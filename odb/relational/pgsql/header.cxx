@@ -36,6 +36,9 @@ namespace relational
 
           column_count_type const& cc (column_count (c));
 
+          size_t update_columns (
+            cc.total - cc.id - cc.inverse - cc.readonly - cc.separate_update);
+
           // Statement names.
           //
           os << "static const char persist_statement_name[];";
@@ -51,7 +54,7 @@ namespace relational
             if (poly && !poly_derived)
               os << "static const char find_discriminator_statement_name[];";
 
-            if (cc.total != cc.id + cc.inverse + cc.readonly)
+            if (update_columns != 0)
               os << "static const char update_statement_name[];";
 
             os << "static const char erase_statement_name[];";
@@ -76,7 +79,7 @@ namespace relational
           {
             os << "static const unsigned int find_statement_types[];";
 
-            if (cc.total != cc.id + cc.inverse + cc.readonly)
+            if (update_columns != 0)
               os << "static const unsigned int update_statement_types[];";
 
             if (optimistic != 0)
@@ -125,8 +128,7 @@ namespace relational
 
           // Container statement types.
           //
-          os << "static const unsigned int select_types[];"
-             << "static const unsigned int insert_types[];";
+          os << "static const unsigned int insert_types[];";
 
           if (smart)
             os << "static const unsigned int update_types[];"
@@ -136,6 +138,44 @@ namespace relational
         }
       };
       entry<container_traits> container_traits_;
+
+      struct section_traits: relational::section_traits, context
+      {
+        section_traits (base const& x): base (x) {}
+
+        virtual void
+        section_public_extra_post (user_section& s)
+        {
+          semantics::class_* poly_root (polymorphic (c_));
+          bool poly (poly_root != 0);
+
+          if (!poly && (abstract (c_) ||
+                        s.special == user_section::special_version))
+            return;
+
+          bool load (s.total != 0 && s.separate_load ());
+          bool load_opt (s.optimistic () && s.separate_load ());
+
+          bool update (s.total != s.inverse + s.readonly); // Always separate.
+          bool update_opt (s.optimistic () && (s.readwrite_containers || poly));
+
+          // Statement names.
+          //
+          if (load || load_opt)
+            os << "static const char select_name[];"
+               << endl;
+
+          if (update || update_opt)
+            os << "static const char update_name[];"
+               << endl;
+
+          // Statement types.
+          //
+          if (update || update_opt)
+            os << "static const unsigned int update_types[];";
+        }
+      };
+      entry<section_traits> section_traits_;
 
       struct image_member: relational::image_member, member_base
       {

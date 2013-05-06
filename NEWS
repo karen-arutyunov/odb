@@ -1,5 +1,11 @@
 Version 2.3.0
 
+ * Support for object sections. Sections are an optimization mechanism that
+   allows the partitioning of data members of a persistent class into groups
+   that can be separately loaded and/or updated. For more information, refer
+   to Chapter 9, "Sections" in the ODB manual as well as the 'section'
+   example in the odb-examples package.
+
  * Support for pattern matching (SQL LIKE operator) in the C++-integrated
    queries. For more information, refer to Section 4.1, "ODB Query Language"
    in the ODB manual.

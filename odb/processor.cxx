@@ -5,6 +5,7 @@
 #include <odb/gcc.hxx>
 
 #include <iostream>
+#include <algorithm> // std::find
 
 #include <odb/common.hxx>
 #include <odb/lookup.hxx>
@@ -37,17 +38,71 @@ namespace
       if (transient (m))
         return;
 
-      process_access (m, "get");
-      process_access (m, "set");
+      semantics::names* hint;
+      semantics::type& t (utype (m, hint));
+
+      // See if this member is a section.
+      //
+      if (t.fq_name () == "::odb::section")
+      {
+        using semantics::class_;
+
+        class_& c (dynamic_cast<class_&> (m.scope ()));
+        class_* poly_root (polymorphic (c));
+        semantics::data_member* opt (optimistic (c));
+
+        // If we have sections in a polymorphic optimistic hierarchy,
+        // then the version member should be in the root.
+        //
+        if (poly_root == &c && opt != 0 && &opt->scope () != &c)
+        {
+          error (m.location ()) << "version must be a direct data member " <<
+            "of a class that contains sections" << endl;
+          info (opt->location ()) << "version member is declared here" << endl;
+          throw operation_failed ();
+        }
+
+        process_user_section (m, c);
+
+        // We don't need a modifier but the accessor should be by-reference.
+        //
+        process_access (m, "get");
+
+        member_access& ma (m.get<member_access> ("get"));
+        if (ma.by_value)
+        {
+          error (ma.loc) << "accessor returning a value cannot be used "
+                         << "for a section" << endl;
+          info (ma.loc) << "accessor returning a const reference is required"
+                        << endl;
+          info (m.location ()) << "data member is defined here" << endl;
+          throw operation_failed ();
+        }
+
+        // Mark this member as transient since we don't store it in the
+        // database.
+        //
+        m.set ("transient", true);
+
+        features.section = true;
+        return;
+      }
+      else
+      {
+        process_access (m, "get");
+        process_access (m, "set");
+      }
+
+      // See if this member belongs to a section.
+      //
+      if (m.count ("section-member") != 0)
+        process_section_member (m);
 
       // We don't need to do any further processing for common if we
       // are generating static multi-database code.
       //
       if (multi_static && options.database ()[0] == database::common)
         return;
-
-      semantics::names* hint;
-      semantics::type& t (utype (m, hint));
 
       // Handle wrappers.
       //
@@ -587,6 +642,182 @@ namespace
     }
 
     //
+    // Process section.
+    //
+
+    user_section&
+    process_user_section (semantics::data_member& m, semantics::class_& c)
+    {
+      user_sections& uss (c.get<user_sections> ("user-sections"));
+
+      user_section::load_type l (
+        m.get ("section-load", user_section::load_eager));
+
+      user_section::update_type u (
+        m.get ("section-update", user_section::update_always));
+
+      if (l == user_section::load_eager && u == user_section::update_always)
+      {
+        location const& l (m.location ());
+
+        error (l) << "eager-loaded, always-updated section is pointless"
+                  << endl;
+
+        info (l) << "use '#pragma db load' and/or '#pragma db update' to "
+          "specify an alternative loading and/or updating strategy" << endl;
+
+        info (l) << "or remove the section altogether" << endl;
+
+        throw operation_failed ();
+      }
+
+      size_t n (uss.count (user_sections::count_total |
+                           user_sections::count_all));
+      user_section us (m, c, n, l, u);
+
+      // We may already have seen this section (e.g., forward reference
+      // from a member of this section).
+      //
+      user_sections::iterator i (find (uss.begin (), uss.end (), us));
+
+      if (i != uss.end ())
+        return *i;
+
+      // If we are adding a new section to an optimistic class with
+      // version in a base, make sure the base is sectionable.
+      //
+      semantics::data_member* opt (optimistic (c));
+      if (opt != 0 && &opt->scope () != &c)
+      {
+        semantics::class_* poly_root (polymorphic (c));
+        semantics::node* base (poly_root ? poly_root : &opt->scope ());
+
+        if (!base->count ("sectionable"))
+        {
+          error (m.location ()) << "adding new section to a derived class " <<
+            "in an optimistic hierarchy requires sectionable base class" <<
+            endl;
+
+          info (base->location ()) << "use '#pragma db object sectionable' " <<
+            "to make the base class of this hierarchy sectionable" << endl;
+
+          throw operation_failed ();
+        }
+      }
+
+      uss.push_back (us);
+      return uss.back ();
+    }
+
+    void
+    process_section_member (semantics::data_member& m)
+    {
+      using semantics::class_;
+      using semantics::data_member;
+
+      string name (m.get<string> ("section-member"));
+      location_t loc (m.get<location_t> ("section-member-location"));
+      class_& c (dynamic_cast<class_&> (m.scope ()));
+
+      class_* poly_root (polymorphic (c));
+      bool poly_derived (poly_root != 0 && poly_root != &c);
+
+      try
+      {
+        data_member& us (c.lookup<data_member> (name, class_::include_hidden));
+
+        // Make sure we are referencing a section.
+        //
+        if (utype (us).fq_name () != "::odb::section")
+        {
+          error (loc) << "data member '" << name << "' in '#pragma db " <<
+            "section' is not of the odb::section type" << endl;
+          throw operation_failed ();
+        }
+
+        // If the section is in the base, handle polymorphic inheritance.
+        //
+        class_& b (dynamic_cast<class_&> (us.scope ()));
+        object_section* s (0);
+
+        if (&c != &b && poly_derived)
+        {
+          user_sections& uss (c.get<user_sections> ("user-sections"));
+
+          // This is a section override. See if we have already handled
+          // this section.
+          //
+          for (user_sections::iterator i (uss.begin ());
+               s == 0 && i != uss.end ();
+               ++i)
+          {
+            if (i->member == &us)
+              s = &*i;
+          }
+
+          // Otherwise, find and copy the nearest override in the base.
+          // The result should be a chain of overrides leading all the
+          // way to the original section.
+          //
+          if (s == 0)
+          {
+            for (class_* b (&polymorphic_base (c));;
+                 b = &polymorphic_base (*b))
+            {
+              user_sections& buss (b->get<user_sections> ("user-sections"));
+
+              for (user_sections::iterator i (buss.begin ());
+                   s == 0 && i != buss.end ();
+                   ++i)
+              {
+                if (i->member == &us)
+                {
+                  uss.push_back (*i);
+                  uss.back ().object = &c;
+                  uss.back ().base = &*i;
+                  s = &uss.back ();
+                }
+              }
+
+              if (s != 0)
+                break;
+
+              assert (b != poly_root); // We should have found it by now.
+            }
+          }
+        }
+        else
+          s = &process_user_section (us, c);
+
+        m.set ("section", s); // Insert as object_section.
+      }
+      catch (semantics::unresolved const& e)
+      {
+        if (e.type_mismatch)
+          error (loc) << "name '" << name << "' in '#pragma db section' " <<
+            "does not refer to a data member" << endl;
+        else
+          error (loc) << "unable to resolve data member '" << name << "' " <<
+            "specified with '#pragma db section'" << endl;
+
+        throw operation_failed ();
+      }
+      catch (semantics::ambiguous const& e)
+      {
+        error (loc) << "data member name '" << name << "' specified " <<
+          "with '#pragma db section' is ambiguous" << endl;
+
+        info (e.first.named ().location ()) << "could resolve to this " <<
+          "data member" << endl;
+
+        info (e.second.named ().location ()) << "or could resolve to " <<
+          "this data member" << endl;
+
+        throw operation_failed ();
+      }
+    }
+
+    //
     // Process wrapper.
     //
 
@@ -1040,10 +1271,28 @@ namespace
           data_member& im (
             c->lookup<data_member> (name, class_::include_hidden));
 
+          if (im.count ("transient"))
+          {
+            error (loc) << "data member '" << name << "' specified with " <<
+              "'#pragma db inverse' is transient" << endl;
+            info (im.location ()) << "data member '" << name << "' is " <<
+              "defined here" << endl;
+            throw operation_failed ();
+          }
+
+          if (im.count ("inverse") || im.count ("value-inverse"))
+          {
+            error (loc) << "data member '" << name << "' specified with " <<
+              "'#pragma db inverse' is inverse" << endl;
+            info (im.location ()) << "data member '" << name << "' is " <<
+              "defined here" << endl;
+            throw operation_failed ();
+          }
+
           // @@ Would be good to check that the other end is actually
-          // an object pointer, is not marked as transient or inverse,
-          // and points to the correct object. But the other class may
-          // not have been processed yet.
+          // an object pointer and points to the correct object. But
+          // the other class may not have been processed yet. Need to
+          // do in validator, pass 2.
           //
           m.remove ("inverse");
           m.set (kp + (kp.empty () ? "": "-") + "inverse", &im);
@@ -1413,6 +1662,8 @@ namespace
       //
       m.set ("id-tree-type", &id_tree_type);
 
+      // Has to be first to handle inverse.
+      //
       process_container_value (*vt, m, "value", true);
 
       if (it != 0)
@@ -1643,11 +1894,14 @@ namespace
         assign_pointer (c);
 
       if (k == class_object)
-        traverse_object (c);
+        traverse_object_pre (c);
       else if (k == class_view)
         traverse_view (c);
 
       names (c);
+
+      if (k == class_object)
+        traverse_object_post (c);
     }
 
     //
@@ -1655,9 +1909,44 @@ namespace
     //
 
     virtual void
-    traverse_object (type& c)
+    traverse_object_pre (type& c)
     {
       semantics::class_* poly_root (polymorphic (c));
+
+      // Sections.
+      //
+      user_sections& uss (c.set ("user-sections", user_sections (c)));
+
+      // Copy sections from reuse bases. For polymorphic classes, sections
+      // are overridden.
+      //
+      if (poly_root == 0 || poly_root == &c)
+      {
+        for (type::inherits_iterator i (c.inherits_begin ());
+             i != c.inherits_end (); ++i)
+        {
+          type& b (i->base ());
+
+          if (object (b))
+          {
+            user_sections& buss (b.get<user_sections> ("user-sections"));
+
+            for (user_sections::iterator j (buss.begin ());
+                 j != buss.end ();
+                 ++j)
+            {
+              // Don't copy the special version update section.
+              //
+              if (j->special == user_section::special_version)
+                continue;
+
+              uss.push_back (*j);
+              uss.back ().object = &c;
+              uss.back ().base = &*j;
+            }
+          }
+        }
+      }
 
       // Determine whether it is a session object.
       //
@@ -1789,6 +2078,69 @@ namespace
 
           c.set ("discriminator", &m);
         }
+      }
+    }
+
+    virtual void
+    traverse_object_post (type& c)
+    {
+      semantics::class_* poly_root (polymorphic (c));
+      semantics::data_member* opt (optimistic (c));
+
+      // Sections.
+      //
+      user_sections& uss (c.get<user_sections> ("user-sections"));
+
+      // See if we need to add a special fake section for version update.
+      //
+      if (c.count ("sectionable"))
+      {
+        uss.push_back (
+          user_section (*opt,
+                        c,
+                        uss.count (user_sections::count_total |
+                                   user_sections::count_all),
+                        user_section::load_lazy,
+                        user_section::update_manual,
+                        user_section::special_version));
+
+        // If we are a root of a polymorphic hierarchy and the version is in
+        // a reuse-base, then we need to make sure that base is sectionable
+        // and derive from its special version update section.
+        //
+        semantics::node& opt_base (opt->scope ());
+        if (poly_root == &c && &opt_base != &c)
+        {
+          if (!opt_base.count ("sectionable"))
+          {
+            location_t l (c.get<location_t> ("sectionable-location"));
+
+            error (l) << "reuse base class of a sectionable polymorphic " <<
+              "root class must be sectionable" << endl;
+
+            info (opt_base.location ()) << "use '#pragma db object " <<
+              "sectionable' to make the base class of this hierarchy " <<
+              "sectionable" << endl;
+
+            throw operation_failed ();
+          }
+
+          uss.back ().base =
+            &opt_base.get<user_sections> ("user-sections").back ();
+        }
+      }
+
+      // Calculate column counts for sections.
+      //
+      for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+      {
+        column_count_type cc (column_count (c, &*i));
+        i->total = cc.total;
+        i->inverse = cc.inverse;
+        i->readonly = cc.readonly;
+
+        if ((i->containers = has_a (c, test_container, &*i)))
+          i->readwrite_containers = has_a (c, test_readwrite_container, &*i);
       }
     }
 

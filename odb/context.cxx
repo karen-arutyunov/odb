@@ -291,6 +291,179 @@ translate (string const& obj, string const& val) const
   return r;
 }
 
+// Sections.
+//
+main_section_type main_section;
+
+bool main_section_type::
+compare (object_section const& s) const
+{
+  main_section_type const* ms (dynamic_cast<main_section_type const*> (&s));
+  return ms != 0 && *this == *ms;
+}
+
+bool user_section::
+compare (object_section const& s) const
+{
+  user_section const* us (dynamic_cast<user_section const*> (&s));
+  return us != 0 && *this == *us;
+}
+
+user_section* user_section::
+total_base () const
+{
+  if (base != 0)
+  {
+    semantics::class_* poly_root (context::polymorphic (*object));
+    if (poly_root != 0 && poly_root != *object)
+      return base;
+  }
+
+  return 0;
+}
+
+size_t user_sections::
+count (unsigned short f) const
+{
+  size_t r (0);
+
+  semantics::class_* poly_root (context::polymorphic (*object));
+  bool poly_derived (poly_root != 0 && poly_root != object);
+
+  if (poly_derived && (f & count_total) != 0)
+    r = context::polymorphic_base (*object).get<user_sections> (
+      "user-sections").count (f);
+
+  for (const_iterator i (begin ()); i != end (); ++i)
+  {
+    // Skip special sections unless we were explicitly asked to count them.
+    //
+    if (i->special == user_section::special_version &&
+        (f & count_special_version) == 0)
+      continue;
+
+    bool ovd (i->base != 0 && poly_derived);
+
+    if (i->load != user_section::load_eager)
+    {
+      if (i->load_empty ())
+      {
+        if ((f & count_load_empty) != 0)
+        {
+          if (ovd)
+          {
+            if ((f & count_override) != 0)
+            {
+              r++;
+              continue; // Count each section only once.
+            }
+          }
+          else
+          {
+            if ((f & count_new) != 0 || (f & count_total) != 0)
+            {
+              r++;
+              continue;
+            }
+          }
+        }
+      }
+      else
+      {
+        if ((f & count_load) != 0)
+        {
+          if (ovd)
+          {
+            if ((f & count_override) != 0)
+            {
+              r++;
+              continue;
+            }
+          }
+          else
+          {
+            if ((f & count_new) != 0 || (f & count_total) != 0)
+            {
+              r++;
+              continue;
+            }
+          }
+        }
+      }
+    }
+
+    if (i->update_empty ())
+    {
+      if ((f & count_update_empty) != 0)
+      {
+        if (ovd)
+        {
+          if ((f & count_override) != 0)
+          {
+            r++;
+            continue;
+          }
+        }
+        else
+        {
+          if ((f & count_new) != 0 || (f & count_total) != 0)
+          {
+            r++;
+            continue;
+          }
+        }
+      }
+    }
+    else
+    {
+      if ((f & count_update) != 0)
+      {
+        if (ovd)
+        {
+          if ((f & count_override) != 0)
+          {
+            r++;
+            continue;
+          }
+        }
+        else
+        {
+          if ((f & count_new) != 0 || (f & count_total) != 0)
+          {
+            r++;
+            continue;
+          }
+        }
+      }
+    }
+
+    if (i->optimistic ())
+    {
+      if ((f & count_optimistic) != 0)
+      {
+        if (ovd)
+        {
+          if ((f & count_override) != 0)
+          {
+            r++;
+            continue;
+          }
+        }
+        else
+        {
+          if ((f & count_new) != 0 || (f & count_total) != 0)
+          {
+            r++;
+            continue;
+          }
+        }
+      }
+    }
+  }
+
+  return r;
+}
+
 //
 // context
 //
@@ -2181,6 +2354,11 @@ namespace
 {
   struct column_count_impl: object_members_base
   {
+    column_count_impl (object_section* section = 0)
+        : object_members_base (false, section)
+    {
+    }
+
     virtual void
     traverse_pointer (semantics::data_member& m, semantics::class_& c)
     {
@@ -2189,7 +2367,14 @@ namespace
       object_members_base::traverse_pointer (m, c);
 
       if (context::inverse (m))
-        c_.inverse += (c_.total - t);
+      {
+        size_t n (c_.total - t);
+
+        c_.inverse += n;
+
+        if (separate_update (member_path_))
+          c_.separate_update -= n;
+      }
     }
 
     virtual void
@@ -2197,9 +2382,11 @@ namespace
     {
       c_.total++;
 
+      bool ro (context::readonly (member_path_, member_scope_));
+
       if (id ())
         c_.id++;
-      else if (context::readonly (member_path_, member_scope_))
+      else if (ro)
         c_.readonly++;
       else if (context::version (m))
         c_.optimistic_managed++;
@@ -2208,6 +2395,12 @@ namespace
       //
       if (discriminator (m))
         c_.discriminator++;
+
+      if (separate_load (member_path_))
+        c_.separate_load++;
+
+      if (separate_update (member_path_) && !ro)
+        c_.separate_update++;
     }
 
     context::column_count_type c_;
@@ -2215,24 +2408,35 @@ namespace
 }
 
 context::column_count_type context::
-column_count (semantics::class_& c)
+column_count (semantics::class_& c, object_section* s)
 {
-  if (!c.count ("column-count"))
+  if (s == 0)
   {
-    column_count_impl t;
-    t.traverse (c);
-    c.set ("column-count", t.c_);
-  }
+    // Whole class.
+    //
+    if (!c.count ("column-count"))
+    {
+      column_count_impl t;
+      t.traverse (c);
+      c.set ("column-count", t.c_);
+    }
 
-  return c.get<column_count_type> ("column-count");
+    return c.get<column_count_type> ("column-count");
+  }
+  else
+  {
+    column_count_impl t (s);
+    t.traverse (c);
+    return t.c_;
+  }
 }
 
 namespace
 {
   struct has_a_impl: object_members_base
   {
-    has_a_impl (unsigned short flags)
-        : object_members_base ((flags & context::include_base) != 0),
+    has_a_impl (unsigned short flags, object_section* s)
+        : object_members_base ((flags & context::include_base) != 0, s),
           r_ (0),
           flags_ (flags)
     {
@@ -2242,6 +2446,20 @@ namespace
     result () const
     {
       return r_;
+    }
+
+    virtual bool
+    section_test (data_member_path const& mp)
+    {
+      object_section& s (section (mp));
+
+      // Include eager loaded members into the main section if requested.
+      //
+      return section_ == 0 ||
+        *section_ == s ||
+        ((flags_ & include_eager_load) != 0 &&
+         *section_ == main_section &&
+         !s.separate_load ());
     }
 
     virtual void
@@ -2275,6 +2493,7 @@ namespace
                                   context::test_straight_container |
                                   context::test_inverse_container |
                                   context::test_readonly_container |
+                                  context::test_readwrite_container |
                                   context::test_smart_container));
 
       if (context::is_a (member_path_,
@@ -2325,6 +2544,7 @@ is_a (data_member_path const& mp,
             test_straight_container |
             test_inverse_container |
             test_readonly_container |
+            test_readwrite_container |
             test_smart_container)) != 0 &&
       (c = container (m)) != 0)
   {
@@ -2340,6 +2560,9 @@ is_a (data_member_path const& mp,
     if (f & test_readonly_container)
       r = r || readonly (mp, ms);
 
+    if (f & test_readwrite_container)
+      r = r || (!inverse (m, kp) && !readonly (mp, ms));
+
     if (f & test_smart_container)
       r = r || (!inverse (m, kp) && !unordered (m) && container_smart (*c));
   }
@@ -2348,9 +2571,9 @@ is_a (data_member_path const& mp,
 }
 
 size_t context::
-has_a (semantics::class_& c, unsigned short flags)
+has_a (semantics::class_& c, unsigned short flags, object_section* s)
 {
-  has_a_impl impl (flags);
+  has_a_impl impl (flags, s);
   impl.dispatch (c);
   return impl.result ();
 }

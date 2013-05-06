@@ -9,6 +9,7 @@
 
 #include <map>
 #include <set>
+#include <list>
 #include <stack>
 #include <vector>
 #include <string>
@@ -267,6 +268,236 @@ struct model_version
   bool open;
 };
 
+// Sections.
+//
+struct object_section
+{
+  virtual bool
+  compare (object_section const&) const = 0;
+
+  virtual bool
+  separate_load () const = 0;
+
+  virtual bool
+  separate_update () const = 0;
+};
+
+inline bool
+operator== (object_section const& x, object_section const& y)
+{
+  return x.compare (y);
+}
+
+inline bool
+operator!= (object_section const& x, object_section const& y)
+{
+  return !x.compare (y);
+}
+
+// Main section.
+//
+struct main_section_type: object_section
+{
+  virtual bool
+  compare (object_section const& s) const;
+
+  virtual bool
+  separate_load () const {return false;}
+
+  virtual bool
+  separate_update () const {return false;}
+};
+
+inline bool
+operator== (main_section_type const&, main_section_type const&)
+{
+  return true; // There is only one main section.
+}
+
+extern main_section_type main_section;
+
+// User-defined section.
+//
+struct user_section: object_section
+{
+  enum load_type
+  {
+    load_eager,
+    load_lazy
+  };
+
+  enum update_type
+  {
+    update_always,
+    update_change,
+    update_manual
+  };
+
+  enum special_type
+  {
+    special_ordinary,
+    special_version  // Fake section for optimistic version update.
+  };
+
+  user_section (semantics::data_member& m,
+                semantics::class_& o,
+                std::size_t i,
+                load_type l,
+                update_type u,
+                special_type s = special_ordinary)
+      : member (&m), object (&o), base (0), index (i),
+        load (l), update (u), special (s),
+        total (0), inverse (0), readonly (0),
+        containers (false), readwrite_containers (false) {}
+
+  virtual bool
+  compare (object_section const& s) const;
+
+  virtual bool
+  separate_load () const {return load != load_eager;}
+
+  virtual bool
+  separate_update () const
+  {
+    // A separately-loaded section is always separately-updated since
+    // it might not be loaded when update is requested.
+    //
+    return separate_load () || update != update_always;
+  }
+
+  bool
+  load_empty () const;
+
+  bool
+  update_empty () const;
+
+  bool
+  empty () const
+  {
+    return load_empty () && update_empty ();
+  }
+
+  // A section is optimistic if the object that contains it is optimistic.
+  // For polymorphic hierarchies, only sections contained in the root are
+  // considered optimistic.
+  //
+  bool
+  optimistic () const;
+
+  semantics::data_member* member; // Data member of this section.
+  semantics::class_* object;      // Object containing this section.
+  user_section* base;             // Base of this section.
+  std::size_t index;              // Index of this sections.
+
+  load_type load;
+  update_type update;
+  special_type special;
+
+  // Column counts.
+  //
+  std::size_t total;
+  std::size_t inverse;
+  std::size_t readonly;
+
+  bool containers;
+  bool readwrite_containers;
+
+  // Total counts across overrides.
+  //
+  std::size_t
+  total_total () const
+  {
+    user_section* b (total_base ());
+    return total + (b == 0 ? 0 : b->total_total ());
+  }
+
+  std::size_t
+  total_inverse () const
+  {
+    user_section* b (total_base ());
+    return inverse + (b == 0 ? 0 : b->total_inverse ());
+  }
+
+  std::size_t
+  total_readonly () const
+  {
+    user_section* b (total_base ());
+    return readonly + (b == 0 ? 0 : b->total_readonly ());
+  }
+
+  bool
+  total_containers ()
+  {
+    user_section* b (total_base ());
+    return containers || (b != 0 && b->total_containers ());
+  }
+
+  bool
+  total_readwrite_containers ()
+  {
+    user_section* b (total_base ());
+    return readwrite_containers ||
+      (b != 0 && b->total_readwrite_containers ());
+  }
+
+private:
+  user_section*
+  total_base () const;
+};
+
+inline bool
+operator== (user_section const& x, user_section const& y)
+{
+  return x.member == y.member;
+}
+
+// Using list for pointer for element stability (see user_section::base).
+//
+struct user_sections: std::list<user_section>
+{
+  // Count sections that have something to load.
+  //
+  static unsigned short const count_load         = 0x01;
+
+  // Count sections that are non-eager but have nothing to load.
+  //
+  static unsigned short const count_load_empty   = 0x02;
+
+  // Count sections that have something to update.
+  //
+  static unsigned short const count_update       = 0x04;
+
+  // Count sections that have nothing to update.
+  //
+  static unsigned short const count_update_empty = 0x08;
+
+  // Count sections that are optimistic.
+  //
+  static unsigned short const count_optimistic = 0x10;
+
+  // Don't exclude fake optimistic version update section from the count.
+  //
+  static unsigned short const count_special_version = 0x20;
+
+  // Count all sections, including special.
+  //
+  static unsigned short const count_all = count_update       |
+                                          count_update_empty |
+                                          count_special_version;
+
+  static unsigned short const count_new      = 0x1000;
+  static unsigned short const count_override = 0x2000;
+  static unsigned short const count_total    = 0x4000;
+
+  std::size_t
+  count (unsigned short flags) const;
+
+  user_sections (semantics::class_& o): object (&o) {};
+  semantics::class_* object;
+};
+
+// Context.
+//
 class context
 {
 public:
@@ -555,6 +786,12 @@ public:
     return m.count ("version");
   }
 
+  static bool
+  version (const data_member_path& mp)
+  {
+    return mp.size () == 1 && mp.back ()->count ("version");
+  }
+
   // Polymorphic inheritance. Return root of the hierarchy or NULL if
   // not polymorphic.
   //
@@ -603,6 +840,51 @@ public:
   version () const
   {
     return unit.get<model_version> ("model-version");
+  }
+
+  // Object sections.
+  //
+  static object_section&
+  section (semantics::data_member& m)
+  {
+    object_section* s (m.get<object_section*> ("section", 0));
+    return s == 0 ? main_section : *s;
+  }
+
+  static object_section&
+  section (data_member_path const& mp)
+  {
+    // The direct member of the object specifies the section.
+    //
+    return section (*mp.front ());
+  }
+
+  // Member belongs to a section that is loaded separately.
+  //
+  static bool
+  separate_load (semantics::data_member& m)
+  {
+    return section (m).separate_load ();
+  }
+
+  static bool
+  separate_load (data_member_path const& mp)
+  {
+    return section (mp).separate_load ();
+  }
+
+  // Member belongs to a section that is updated separately.
+  //
+  static bool
+  separate_update (semantics::data_member& m)
+  {
+    return section (m).separate_update ();
+  }
+
+  static bool
+  separate_update (data_member_path const& mp)
+  {
+    return section (mp).separate_update ();
   }
 
   //
@@ -813,7 +1095,9 @@ public:
           inverse (0),
           readonly (0),
           optimistic_managed (0),
-          discriminator (0)
+          discriminator (0),
+          separate_load (0),
+          separate_update (0)
     {
     }
 
@@ -823,10 +1107,13 @@ public:
     size_t readonly;
     size_t optimistic_managed;
     size_t discriminator;
+
+    size_t separate_load;
+    size_t separate_update; // Only readwrite.
   };
 
   static column_count_type
-  column_count (semantics::class_&);
+  column_count (semantics::class_&, object_section* = 0);
 
   static semantics::data_member*
   id_member (semantics::class_& c)
@@ -932,7 +1219,7 @@ public:
     return false;
   }
 
-  // The 'is a' and 'has a' tests. The has_a test currently does not
+  // The 'is a' and 'has a' tests. The has_a() test currently does not
   // cross the container boundaries.
   //
 public:
@@ -943,7 +1230,13 @@ public:
   static unsigned short const test_straight_container = 0x10;
   static unsigned short const test_inverse_container = 0x20;
   static unsigned short const test_readonly_container = 0x40;
-  static unsigned short const test_smart_container = 0x80;
+  static unsigned short const test_readwrite_container = 0x80;
+  static unsigned short const test_smart_container = 0x100;
+
+  // Treat eager loaded members as belonging to the main section.
+  // If this flag is specified, then section must be main_section.
+  //
+  static unsigned short const include_eager_load = 0x2000;
 
   // By default the test goes into bases for non-polymorphic
   // hierarchies and doesn't go for polymorphic. The following
@@ -971,7 +1264,7 @@ public:
   // a bool value (0 means no match).
   //
   size_t
-  has_a (semantics::class_&, unsigned short flags);
+  has_a (semantics::class_&, unsigned short flags, object_section* = 0);
 
 public:
   // Process include path by adding the prefix, putting it through
@@ -1192,5 +1485,7 @@ has (Y& y)
 
   return false;
 }
+
+#include <odb/context.ixx>
 
 #endif // ODB_CONTEXT_HXX

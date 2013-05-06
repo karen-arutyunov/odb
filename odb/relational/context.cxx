@@ -103,7 +103,7 @@ namespace relational
   }
 
   bool context::
-  grow_impl (semantics::class_&)
+  grow_impl (semantics::class_&, user_section*)
   {
     return false;
   }

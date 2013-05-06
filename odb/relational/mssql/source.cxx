@@ -846,6 +846,53 @@ namespace relational
       };
       entry<container_traits> container_traits_;
 
+      struct section_traits: relational::section_traits,
+                             statement_columns_common
+      {
+        section_traits (base const& x): base (x) {}
+
+        virtual void
+        init_value_extra ()
+        {
+          os << "st.stream_result ();";
+        }
+
+        virtual void
+        process_statement_columns (relational::statement_columns& cols,
+                                   statement_kind sk)
+        {
+          statement_columns_common::process (cols, sk);
+        }
+
+        virtual string
+        optimistic_version_increment (semantics::data_member& m)
+        {
+          sql_type t (parse_sql_type (column_type (m), m));
+          return t.type != sql_type::ROWVERSION
+            ? "1"
+            : "sts.update_statement ().version ()";
+        }
+
+        virtual void
+        update_statement_extra (user_section&)
+        {
+          semantics::data_member* ver (optimistic (c_));
+
+          if (ver == 0 ||
+              parse_sql_type (column_type (*ver), *ver).type !=
+              sql_type::ROWVERSION)
+            return;
+
+          // Long data & SQL Server 2005 incompatibility is detected
+          // in persist_statement_extra.
+          //
+          os << strlit (
+            " OUTPUT INSERTED." + convert_from (
+              column_qname (*ver, column_prefix ()), *ver)) << endl;
+        }
+      };
+      entry<section_traits> section_traits_;
+
       struct class_: relational::class_, statement_columns_common
       {
         class_ (base const& x): base (x) {}
@@ -1018,14 +1065,14 @@ namespace relational
         }
 
         virtual string
-        optimimistic_version_init (semantics::data_member& m)
+        optimistic_version_init (semantics::data_member& m)
         {
           sql_type t (parse_sql_type (column_type (m), m));
           return t.type != sql_type::ROWVERSION ? "1" : "st.version ()";
         }
 
         virtual string
-        optimimistic_version_increment (semantics::data_member& m)
+        optimistic_version_increment (semantics::data_member& m)
         {
           sql_type t (parse_sql_type (column_type (m), m));
           return t.type != sql_type::ROWVERSION

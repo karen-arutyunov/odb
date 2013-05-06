@@ -29,6 +29,10 @@ traverse_object (type& c)
   string const& type (class_fq_name (c));
   column_count_type const& cc (column_count (c));
 
+  // Sections.
+  //
+  user_sections& uss (c.get<user_sections> ("user-sections"));
+
   os << "// " << class_name (c) << endl
      << "//" << endl;
 
@@ -109,13 +113,18 @@ traverse_object (type& c)
   {
     if (base_id)
     {
-      semantics::class_& b (
-        dynamic_cast<semantics::class_&> (id->scope ()));
-      string const& type ();
+      if (poly_derived)
+        os << "typedef root_traits::id_image_type id_image_type;"
+           << endl;
+      else
+      {
+        semantics::class_& b (
+          dynamic_cast<semantics::class_&> (id->scope ()));
 
-      os << "typedef object_traits_impl< " << class_fq_name (b) << ", " <<
-        "id_" << db << " >::id_image_type id_image_type;"
-         << endl;
+        os << "typedef object_traits_impl< " << class_fq_name (b) << ", " <<
+          "id_" << db << " >::id_image_type id_image_type;"
+           << endl;
+      }
     }
     else
     {
@@ -147,6 +156,12 @@ traverse_object (type& c)
   //
   image_type_->traverse (c);
 
+  // Extra (container, section) statement cache (forward declaration).
+  //
+  if (!reuse_abst && id != 0)
+    os << "struct extra_statement_cache_type;"
+       << endl;
+
   //
   // Containers (abstract and concrete).
   //
@@ -154,6 +169,16 @@ traverse_object (type& c)
   {
     instance<container_traits> t (c);
     t->traverse (c);
+  }
+
+  //
+  // Sections (abstract and concrete).
+  //
+
+  for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
+  {
+    instance<section_traits> t (c);
+    t->traverse (*i);
   }
 
   //
@@ -352,11 +377,9 @@ traverse_object (type& c)
   // Containers (concrete).
   //
 
-  // Statement cache (forward declaration).
   //
-  if (id != 0)
-    os << "struct container_statement_cache_type;"
-       << endl;
+  // Sections (concrete).
+  //
 
   // column_count
   //
@@ -373,7 +396,12 @@ traverse_object (type& c)
     os << "static const std::size_t discriminator_column_count = " <<
       cc.discriminator << "UL;";
 
-  os << endl;
+  os << endl
+     << "static const std::size_t separate_load_column_count = " <<
+    cc.separate_load << "UL;"
+     << "static const std::size_t separate_update_column_count = " <<
+    cc.separate_update << "UL;"
+     << endl;
 
   // Statements.
   //
@@ -396,7 +424,7 @@ traverse_object (type& c)
         os << "static const char find_discriminator_statement[];";
     }
 
-    if (cc.total != cc.id + cc.inverse + cc.readonly)
+    if (cc.total != cc.id + cc.inverse + cc.readonly + cc.separate_update)
       os << "static const char update_statement[];";
 
     os << "static const char erase_statement[];";
@@ -499,6 +527,28 @@ traverse_object (type& c)
 
     os << ");"
        << endl;
+
+    // Sections.
+    //
+    // We treat all polymorphic sections as (potentially) having something
+    // to load or to update since we cannot predict what will be added to
+    // them in overrides.
+    //
+    if (uss.count (user_sections::count_total |
+                   user_sections::count_load  |
+                   (poly ? user_sections::count_load_empty : 0)) != 0)
+      os << "static bool" << endl
+         << "load (connection&, object_type&, section&" <<
+        (poly ? ", const info_type* = 0" : "") << ");"
+         << endl;
+
+    if (uss.count (user_sections::count_total  |
+                   user_sections::count_update |
+                   (poly ? user_sections::count_update_empty : 0)) != 0)
+      os << "static bool" << endl
+         << "update (connection&, const object_type&, const section&" <<
+        (poly ? ", const info_type* = 0" : "") << ");"
+         << endl;
   }
 
   // query ()
@@ -578,14 +628,16 @@ traverse_object (type& c)
        << "load_ (";
 
     if (poly && !poly_derived)
-      os << "base_statements_type&, ";
+      os << "base_statements_type&," << endl;
     else
-      os << "statements_type&, ";
+      os << "statements_type&," << endl;
 
-    os << "object_type&";
+    os << "object_type&," << endl
+       << "bool reload = false";
 
     if (poly_derived)
-      os << ", std::size_t = depth";
+      os << "," << endl
+         << "std::size_t = depth";
 
     os << ");"
        << endl;

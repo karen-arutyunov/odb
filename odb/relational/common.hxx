@@ -19,21 +19,25 @@ namespace relational
 
     member_base (semantics::type* type,
                  string const& fq_type,
-                 string const& key_prefix)
+                 string const& key_prefix,
+                 object_section* section = 0)
         : type_override_ (type),
           fq_type_override_ (fq_type),
-          key_prefix_ (key_prefix)
+          key_prefix_ (key_prefix),
+          section_ (section)
     {
     }
 
     member_base (string const& var,
                  semantics::type* type,
                  string const& fq_type,
-                 string const& key_prefix)
+                 string const& key_prefix,
+                 object_section* section = 0)
         : var_override_ (var),
           type_override_ (type),
           fq_type_override_ (fq_type),
-          key_prefix_ (key_prefix)
+          key_prefix_ (key_prefix),
+          section_ (section)
     {
     }
 
@@ -47,6 +51,7 @@ namespace relational
     semantics::type* type_override_;
     string fq_type_override_;
     string key_prefix_;
+    object_section* section_;
   };
 
   // Template argument is the database SQL type (sql_type).

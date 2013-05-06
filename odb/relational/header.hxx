@@ -854,6 +854,204 @@ namespace relational
       semantics::class_& c_;
     };
 
+    //
+    //
+    struct section_traits: virtual context
+    {
+      typedef section_traits base;
+
+      section_traits (semantics::class_& c): c_ (c) {}
+
+      virtual void
+      section_public_extra_pre (user_section&)
+      {
+      }
+
+      virtual void
+      section_public_extra_post (user_section&)
+      {
+      }
+
+      virtual void
+      traverse (user_section& s)
+      {
+        semantics::class_* poly_root (polymorphic (c_));
+        bool poly (poly_root != 0);
+        bool poly_derived (poly && poly_root != &c_);
+
+        semantics::data_member* opt (optimistic (c_));
+
+        // Treat the special version update sections as abstract in reuse
+        // inheritance.
+        //
+        bool reuse_abst (!poly &&
+                         (abstract (c_) ||
+                          s.special == user_section::special_version));
+
+        bool load (s.total != 0 && s.separate_load ());
+        bool load_con (s.containers && s.separate_load ());
+        bool load_opt (s.optimistic () && s.separate_load ());
+
+        bool update (s.total != s.inverse + s.readonly); // Always separate.
+        bool update_con (s.readwrite_containers);
+        bool update_opt (s.optimistic () && (s.readwrite_containers || poly));
+
+        // Don't generate anything for empty sections.
+        //
+        if (!(load || load_con || load_opt ||
+              update || update_con || update_opt))
+          return;
+
+        // If we are adding a new section to a derived class in an optimistic
+        // hierarchy, then pretend it inherits from the special version update
+        // section.
+        //
+        user_section* rs (0);
+        if (opt != 0)
+        {
+          // Skip overrides and get to the new section if polymorphic.
+          //
+          for (rs = &s; poly && rs->base != 0; rs = rs->base) ;
+
+          if (rs != 0)
+          {
+            if (rs->object != &opt->scope ())
+              rs->base = &(poly ? poly_root : &opt->scope ())->
+                get<user_sections> ("user-sections").back ();
+            else
+              rs = 0;
+          }
+        }
+
+        string name (public_name (*s.member) + "_traits");
+
+        os << "// " << s.member->name () << endl
+           << "//" << endl
+           << "struct " << name
+           << "{";
+
+        os << "typedef object_traits_impl<object_type, id_" << db <<
+          ">::image_type image_type;"
+           << endl;
+
+        section_public_extra_pre (s);
+
+        // bind (id, image_type)
+        //
+        // If id is NULL, then id is ignored (select). Otherwise, it is
+        // copied at the end (update).
+        //
+        if (load || load_opt || update || update_opt)
+          os << "static std::size_t" << endl
+             << "bind (" << bind_vector << "," << endl
+             << "const " << bind_vector << " id," << endl
+             << "std::size_t id_size," << endl
+             << "image_type&," << endl
+             << db << "::statement_kind);"
+             << endl;
+
+        // grow ()
+        //
+        // We have to have out own version because the truncated vector
+        // will have different number of elements.
+        //
+        if (generate_grow && (load || load_opt))
+          os << "static bool" << endl
+             << "grow (image_type&, " << truncated_vector << ");"
+             << endl;
+
+        // init (object, image)
+        //
+        if (load)
+          os << "static void" << endl
+             << "init (object_type&, const image_type&, database*);"
+             << endl;
+
+        // init (image, object)
+        //
+        if (update)
+          os << "static " << (generate_grow ? "bool" : "void") << endl
+             << "init (image_type&, const object_type&);"
+             << endl;
+
+        // The rest does not apply to reuse-abstract sections.
+        //
+        if (reuse_abst)
+        {
+          section_public_extra_post (s);
+          os << "};";
+          return;
+        }
+
+        // column_count
+        //
+        column_count_type const& cc (column_count (poly ? *poly_root : c_));
+
+        // Generate load and update column counts even when they are zero so
+        // that we can instantiate section_statements.
+        //
+        os << "static const std::size_t id_column_count = " << cc.id << "UL;";
+
+        os << "static const std::size_t managed_optimistic_load_column_count" <<
+          " = " << cc.optimistic_managed << "UL;"
+           << "static const std::size_t load_column_count = " <<
+          (load ? s.total_total () : 0) << "UL;";
+
+        os << "static const std::size_t managed_optimistic_update_column_count" <<
+          " = " << (poly_derived ? 0 : cc.optimistic_managed) << "UL;"
+           << "static const std::size_t update_column_count = " <<
+          (update ? s.total - s.inverse - s.readonly : 0) << "UL;"
+           << endl;
+
+        // Statements.
+        //
+        if (load || load_opt)
+          os << "static const char select_statement[];"
+             << endl;
+
+        if (update || update_opt)
+          os << "static const char update_statement[];"
+             << endl;
+
+        // Section statements.
+        //
+        if (load || load_opt || update || update_opt)
+          os << "typedef " << db << "::section_statements< object_type, " <<
+            name << " > statements_type;"
+             << endl;
+
+        // We pass statement cache instead of just statements because
+        // we may also need statements for containers.
+        //
+
+        // load ()
+        //
+        if (load || load_opt || load_con)
+          os << "static void" << endl
+             << "load (extra_statement_cache_type&, object_type&" <<
+            (poly ? ", bool top = true" : "") << ");"
+             << endl;
+
+        // update ()
+        //
+        if (update || update_opt || update_con)
+          os << "static void" << endl
+             << "update (extra_statement_cache_type&, const object_type&" <<
+            (poly_derived && s.base != 0 ? ", bool base = true" : "") << ");"
+             << endl;
+
+        section_public_extra_post (s);
+
+        os << "};";
+
+        if (rs != 0)
+          rs->base = 0;
+      }
+
+    protected:
+      semantics::class_& c_;
+    };
+
     // First pass over objects, views, and composites. Some code must be
     // split into two parts to deal with yet undefined types.
     //

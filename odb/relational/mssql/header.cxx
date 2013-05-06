@@ -47,6 +47,32 @@ namespace relational
       };
       entry<class1> class1_entry_;
 
+      struct section_traits: relational::section_traits, context
+      {
+        section_traits (base const& x): base (x) {}
+
+        virtual void
+        section_public_extra_pre (user_section&)
+        {
+          if (abstract (c_) && !polymorphic (c_))
+            return;
+
+          // rowvesion
+          //
+          bool rv (false);
+          if (semantics::data_member* m = optimistic (c_))
+          {
+            sql_type t (parse_sql_type (column_type (*m), *m));
+            rv = (t.type == sql_type::ROWVERSION);
+          }
+
+          os << "static const bool rowversion = " <<
+            (rv ? "true" : "false") << ";"
+             << endl;
+        }
+      };
+      entry<section_traits> section_traits_;
+
       struct image_type: relational::image_type, context
       {
         image_type (base const& x): base (x) {};

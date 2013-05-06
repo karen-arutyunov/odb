@@ -103,7 +103,7 @@ namespace relational
       convert_expr (string const&, semantics::data_member&, bool);
 
       virtual bool
-      grow_impl (semantics::class_&);
+      grow_impl (semantics::class_&, user_section*);
 
       virtual bool
       grow_impl (semantics::data_member&);

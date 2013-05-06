@@ -67,9 +67,13 @@ struct object_members_base: traversal::class_, virtual context
   virtual void
   traverse_view (semantics::class_&);
 
+  virtual bool
+  section_test (data_member_path const&);
+
 public:
-  object_members_base (bool traverse_poly_base = false)
-      : top_level_ (true), member_ (*this)
+  object_members_base (bool traverse_poly_base = false,
+                       object_section* section = 0)
+      : section_ (section), top_level_ (true), member_ (*this)
   {
     init (false, false, false, traverse_poly_base);
   }
@@ -77,8 +81,9 @@ public:
   object_members_base (bool build_flat_prefix,
                        bool build_table_prefix,
                        bool build_member_prefix,
-                       bool traverse_poly_base = false)
-      : top_level_ (true), member_ (*this)
+                       bool traverse_poly_base = false,
+                       object_section* section = 0)
+      : section_ (section), top_level_ (true), member_ (*this)
   {
     init (build_flat_prefix,
           build_table_prefix,
@@ -88,6 +93,7 @@ public:
 
   object_members_base (object_members_base const& x)
       : context (), //@@ -Wextra
+        section_ (x.section_),
         top_level_ (true),
         member_ (*this)
   {
@@ -107,6 +113,8 @@ protected:
 
   data_member_path member_path_;
   data_member_scope member_scope_;
+
+  object_section* section_;
 
 protected:
   semantics::data_member*
@@ -138,10 +146,7 @@ private:
 
   struct member: traversal::data_member
   {
-    member (object_members_base& om)
-        : om_ (om)
-    {
-    }
+    member (object_members_base& om): om_ (om) {}
 
     virtual void
     traverse (semantics::data_member&);
@@ -211,10 +216,15 @@ struct object_columns_base: traversal::class_, virtual context
   virtual void
   flush ();
 
+  virtual bool
+  section_test (data_member_path const&);
+
 public:
   object_columns_base (bool first = true,
-                       column_prefix const& cp = column_prefix ())
+                       column_prefix const& cp = column_prefix (),
+                       object_section* section = 0)
       : column_prefix_ (cp),
+        section_ (section),
         root_ (0),
         traverse_poly_base_ (false),
         first_ (first),
@@ -224,8 +234,11 @@ public:
     init ();
   }
 
-  object_columns_base (bool first, bool traverse_poly_base)
-      : root_ (0),
+  object_columns_base (bool first,
+                       bool traverse_poly_base,
+                       object_section* section = 0)
+      : section_ (section),
+        root_ (0),
         traverse_poly_base_ (traverse_poly_base),
         first_ (first),
         top_level_ (true),
@@ -237,6 +250,7 @@ public:
   object_columns_base (object_columns_base const& x)
       : context (), //@@ -Wextra
         column_prefix_ (x.column_prefix_),
+        section_ (x.section_),
         root_ (0),
         traverse_poly_base_ (x.traverse_poly_base_),
         first_ (x.first_),
@@ -273,6 +287,8 @@ protected:
 
   data_member_path member_path_;
   data_member_scope member_scope_;
+
+  object_section* section_;
 
 protected:
   semantics::data_member*
