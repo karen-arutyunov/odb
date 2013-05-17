@@ -25,7 +25,7 @@ namespace odb
     // See the SQLITE_ABORT_ROLLBACK extended error code for detail on this
     // behavior.
     //
-    struct LIBODB_EXPORT forced_rollback: recoverable
+    struct LIBODB_SQLITE_EXPORT forced_rollback: recoverable
     {
       virtual const char*
       what () const throw ();
