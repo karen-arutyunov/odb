@@ -7080,6 +7080,11 @@ public:
   //
   void unload () const;
 
+  // Get the underlying eager pointer. If this is an unloaded pointer
+  // to a persistent object, then the returned pointer will be NULL.
+  //
+  eager_ptr&lt;T> get_eager () const;
+
   // Initialization with a persistent loaded object.
   //
   template &lt;class Y> lazy_ptr (database&amp;, Y*);
