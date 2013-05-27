@@ -233,6 +233,7 @@ main (int argc, char* argv[])
       //
       if (file.relative ())
       {
+        bool found (false);
         path dd (driver_path (path (argv[0])).directory ());
 
         for (path d (dd);; d = d.directory ())
@@ -244,6 +245,7 @@ main (int argc, char* argv[])
           if (stat (f.string ().c_str (), &s) == 0 && S_ISREG (s.st_mode))
           {
             file = f;
+            found = true;
             break;
           }
 
@@ -251,8 +253,8 @@ main (int argc, char* argv[])
             break;
         }
 
-        if (file.relative ())
-          file = dd / file;
+        if (!found)
+          file = dd / file; // For diagnostics.
       }
 
       int ac (3);
