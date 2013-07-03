@@ -20264,6 +20264,38 @@ class person
 };
   </pre>
 
+  <p>Starting with MySQL version 5.6.4 it is possible to store fractional
+     seconds up to microsecond precision in <code>TIME</code>,
+     <code>DATETIME</code>, and <code>TIMESTAMP</code> columns. However,
+     to enable sub-second precision, the corresponding type with the
+     desired precision has to be specified explicitly, as shown in the
+     following example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+  #pragma db type("DATETIME(6)")     // Microsecond precision.
+  boost::posix_time::ptime updated_;
+};
+  </pre>
+
+  <p>Alternatively, you can enable sub-second precision on the per-type
+     basis, for example:</p>
+
+  <pre class="cxx">
+#pragma db value(boost::posix_time::ptime) type("DATETIME(6)")
+
+#pragma db object
+class person
+{
+  ...
+  boost::posix_time::ptime created_; // Microsecond precision.
+  boost::posix_time::ptime updated_; // Microsecond precision.
+};
+  </pre>
+
   <p>Some valid Boost date-time values cannot be stored in a MySQL database.
      An attempt to persist any Boost date-time special value other than
      <code>date_time::not_a_date_time</code> will result in the
@@ -21411,6 +21443,38 @@ class Person
   ...
   #pragma db type("TIMESTAMP") not_null
   QDateTime updated_;
+};
+  </pre>
+
+  <p>Starting with MySQL version 5.6.4 it is possible to store fractional
+     seconds up to microsecond precision in <code>TIME</code>,
+     <code>DATETIME</code>, and <code>TIMESTAMP</code> columns. However,
+     to enable sub-second precision, the corresponding type with the
+     desired precision has to be specified explicitly, as shown in the
+     following example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class Person
+{
+  ...
+  #pragma db type("DATETIME(3)") // Millisecond precision.
+  QDateTime updated_;
+};
+  </pre>
+
+  <p>Alternatively, you can enable sub-second precision on the per-type
+     basis, for example:</p>
+
+  <pre class="cxx">
+#pragma db value(QDateTime) type("DATETIME(3)")
+
+#pragma db object
+class Person
+{
+  ...
+  QDateTime created_; // Millisecond precision.
+  QDateTime updated_; // Millisecond precision.
 };
   </pre>
 

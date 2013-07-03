@@ -27,6 +27,14 @@ Version 2.3.0
    to the ODB compiler command line interface documentation (man pages) for
    details.
 
+ * Starting with MySQL version 5.6.4 it is possible to store fractional
+   seconds up to microsecond precision in TIME, DATETIME, and TIMESTAMP
+   columns. Both Boost and Qt profiles have been updated to support this
+   new functionality. Note, however, that to enable sub-second precision,
+   the corresponding type with the desired precision has to be specified
+   explicitly. For details, refer to the "MySQL Database Type Mapping"
+   sections in the Boost and Qt profile chapters.
+
  * New SQLite-specific exception, odb::sqlite::forced_rollback, which is
    thrown if SQLite forces a transaction to roll back. For more information,
    refer to Section 16.5.6, "Forced Rollback" in the ODB manual.
