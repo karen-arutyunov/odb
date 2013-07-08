@@ -1,5 +1,5 @@
 This directory contains project/solution files for building SQLite libraries
-with Microsoft Visual Studio versions 9, 10, and 11.
+with Microsoft Visual Studio versions 8, 9, 10, and 11.
 
 To build SQLite, you will need to download two SQLite packages: sqlite-
 amalgamation and sqlite-dll. Copy the sqlite3.c and sqlite3.h files from the

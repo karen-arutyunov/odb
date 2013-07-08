@@ -80,7 +80,7 @@ macro from the project's "Preprocessor Definitions" settings). The SQLite
 source distribution for Windows lacks Visual Studio project/solution files.
 
 To rectify this situation, the libodb-sqlite distribution includes, in the
-etc\sqlite\ directory, Visual Studio 9, 10, and 11 project/solution files
+etc\sqlite\ directory, Visual Studio 8, 9, 10, and 11 project/solution files
 for building 32 and 64-bit SQLite libraries with unlock notify support.
 Refer to the accompanying README file for information on how to build the
 libraries and configure VC++ Directories to automatically locate them.

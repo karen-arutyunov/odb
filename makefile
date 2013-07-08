@@ -14,8 +14,8 @@ $(default): $(addprefix $(out_base)/,$(addsuffix /,$(dirs)))
 
 $(dist): export dirs := $(dirs)
 $(dist): export docs := GPLv2 LICENSE README NEWS version
-$(dist): data_dist := INSTALL libodb-sqlite-vc9.sln libodb-sqlite-vc10.sln \
-libodb-sqlite-vc11.sln \
+$(dist): data_dist := INSTALL libodb-sqlite-vc8.sln libodb-sqlite-vc9.sln \
+libodb-sqlite-vc10.sln libodb-sqlite-vc11.sln \
 $(subst $(src_base)/,,$(shell find $(src_base)/etc -type f))
 $(dist): exec_dist := bootstrap
 $(dist): export extra_dist := $(data_dist) $(exec_dist)
