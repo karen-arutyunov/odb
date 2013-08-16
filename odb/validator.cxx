@@ -326,6 +326,38 @@ namespace
     virtual void
     traverse_object (type& c)
     {
+      // Check the the deletion version makes sense.
+      //
+      if (unsigned long long v = deleted (c))
+      {
+        location_t l (c.get<location_t> ("deleted-location"));
+
+        if (!versioned ())
+        {
+          error (l) << "deleted member in non-versioned object model" << endl;
+          valid_ = false;
+        }
+        else
+        {
+          model_version const& mv (version ());
+
+          if (v > mv.current)
+          {
+            error (l) << "deletion version is greater than the current " <<
+              "model version" << endl;
+            valid_ = false;
+          }
+          else if (v <= mv.base)
+          {
+            error (l) << "deletion version is less than or equal to the " <<
+              "base model version" << endl;
+            info (c.location ()) << "delete this class since migration to " <<
+              "version " << v << " is no longer possible" << endl;
+            valid_ = false;
+          }
+        }
+      }
+
       // Check that the callback function exist.
       //
       if (c.count ("callback"))

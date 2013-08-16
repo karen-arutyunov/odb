@@ -726,6 +726,20 @@ public:
     return m.count ("transient");
   }
 
+  // Return the deletion version or 0 if not deleted.
+  //
+  static unsigned long long
+  deleted (semantics::class_& c)
+  {
+    return c.get<unsigned long long> ("deleted", 0);
+  }
+
+  static unsigned long long
+  deleted (semantics::data_member& m)
+  {
+    return m.get<unsigned long long> ("deleted", 0);
+  }
+
   static bool
   id (semantics::data_member& m)
   {

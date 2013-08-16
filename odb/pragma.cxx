@@ -415,6 +415,17 @@ check_spec_decl_type (declaration const& d,
       return false;
     }
   }
+  else if (p == "deleted")
+  {
+    // Deleted can be used for both data members and classes (object).
+    //
+    if (tc != FIELD_DECL && tc != RECORD_TYPE)
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a data member or class" << endl;
+      return false;
+    }
+  }
   else if (p == "readonly")
   {
     // Readonly can be used for both data members and classes (object or
@@ -2279,6 +2290,45 @@ handle_pragma (cxx_lexer& l,
 
     tt = l.next (tl, &tn);
   }
+  else if (p == "deleted")
+  {
+    // deleted (unsigned long long version)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+    {
+      error (l) << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    if (l.next (tl, &tn) != CPP_NUMBER || TREE_CODE (tn) != INTEGER_CST)
+    {
+      error (l) << "unsigned integer expected as deletion version" << endl;
+      return;
+    }
+
+    unsigned long long v (integer (tn));
+
+    if (v == 0)
+    {
+      error (l) << "deletion version cannot be zero" << endl;
+      return;
+    }
+
+    if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
+    {
+      error (l) << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    val = v;
+    tt = l.next (tl, &tn);
+  }
   else if (p == "version")
   {
     // version
@@ -3193,6 +3243,7 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
            p == "unordered" ||
            p == "readonly" ||
            p == "transient" ||
+           p == "deleted" ||
            p == "version" ||
            p == "virtual")
   {
@@ -3299,9 +3350,9 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
   //
   // Should this class be considered composite value type in other
   // databases (because that's what would happen by default)? Probably
-  // not. So to overcome this we are going detect and ignore cases where
-  // (a) some specifiers followed the value qualifier but (b) none of
-  // them are for the database that we are compiling.
+  // not. So to overcome this we are going to detect and ignore cases
+  // where (a) some specifiers followed the value qualifier but (b)
+  // none of them are for the database that we are compiling for.
   //
   if (p == "value")
   {
@@ -3576,6 +3627,12 @@ handle_pragma_db_transient (cpp_reader* r)
 }
 
 extern "C" void
+handle_pragma_db_deleted (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "deleted");
+}
+
+extern "C" void
 handle_pragma_db_version (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "version");
@@ -3662,6 +3719,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "readonly", handle_pragma_db_readonly);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
+  c_register_pragma_with_expansion ("db", "deleted", handle_pragma_db_deleted);
   c_register_pragma_with_expansion ("db", "version", handle_pragma_db_version);
   c_register_pragma_with_expansion ("db", "virtual", handle_pragma_db_virtual);
   */

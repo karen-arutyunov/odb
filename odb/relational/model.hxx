@@ -709,6 +709,9 @@ namespace relational
         if (abstract (c) && !polymorphic (c))
           return;
 
+        if (deleted (c))
+          return;
+
         qname const& name (table_name (c));
 
         // If the table with this name was already created, assume the
