@@ -57,6 +57,7 @@ namespace
     traverse (type& m)
     {
       semantics::class_& c (dynamic_cast<semantics::class_&> (m.scope ()));
+      bool obj (object (c));
 
       // If the class is marked transient, then mark each non-virtual
       // data member as transient.
@@ -74,7 +75,6 @@ namespace
           return;
       }
 
-      count_++;
       semantics::names* hint;
       semantics::type& t (utype (m, hint));
 
@@ -115,7 +115,9 @@ namespace
       // Make sure a member of a section is an immediate member of an object.
       // The same for the section member itself.
       //
-      if (!object (c))
+      bool section (t.fq_name () == "::odb::section");
+
+      if (!obj)
       {
         if (m.count ("section-member"))
         {
@@ -125,7 +127,7 @@ namespace
           valid_ = false;
         }
 
-        if (t.fq_name () == "::odb::section")
+        if (section)
         {
           os << m.file () << ":" << m.line () << ":" << m.column () << ": " <<
             "error: section data member can only be a direct member of a " <<
@@ -137,7 +139,7 @@ namespace
       // Make sure the load and update pragmas are only specified on
       // section members.
       //
-      if (t.fq_name () != "::odb::section")
+      if (!section)
       {
         if (m.count ("section-load"))
         {
@@ -155,6 +157,130 @@ namespace
           valid_ = false;
         }
       }
+
+      // Check that the addition version makes sense.
+      //
+      unsigned long long av (m.get<unsigned long long> ("added", 0));
+      if (av != 0)
+      {
+        location_t l (m.get<location_t> ("added-location"));
+
+        if (id (m))
+        {
+          error (l) << "object id cannod be soft-added" << endl;
+          valid_ = false;
+        }
+
+        if (version (m))
+        {
+          error (l) << "optimistic concurrency version cannod be "
+            "soft-added" << endl;
+          valid_ = false;
+        }
+
+        if (section)
+        {
+          error (l) << "section cannod be soft-added" << endl;
+          valid_ = false;
+        }
+
+        if (!versioned ())
+        {
+          error (l) << "added data member in a non-versioned object " <<
+            "model" << endl;
+          valid_ = false;
+        }
+        else
+        {
+          model_version const& mv (version ());
+
+          if (av > mv.current)
+          {
+            error (l) << "addition version is greater than the current " <<
+              "model version" << endl;
+            valid_ = false;
+          }
+          else if (av <= mv.base)
+          {
+            error (l) << "addition version is less than or equal to the " <<
+              "base model version" << endl;
+            info (l) << "delete this pragma since migration to version " <<
+              av << " is no longer possible" << endl;
+            valid_ = false;
+          }
+        }
+      }
+
+      // Check that the deletion version makes sense.
+      //
+      unsigned long long dv (m.get<unsigned long long> ("deleted", 0));
+      if (dv != 0)
+      {
+        location_t l (m.get<location_t> ("deleted-location"));
+
+        if (id (m))
+        {
+          error (l) << "object id cannod be soft-deleted" << endl;
+          valid_ = false;
+        }
+
+        if (version (m))
+        {
+          error (l) << "optimistic concurrency version cannod be "
+            "soft-deleted" << endl;
+          valid_ = false;
+        }
+
+        if (section)
+        {
+          error (l) << "section cannod be soft-deleted" << endl;
+          valid_ = false;
+        }
+
+        if (!versioned ())
+        {
+          error (l) << "deleted data member in a non-versioned object " <<
+            "model" << endl;
+          valid_ = false;
+        }
+        else
+        {
+          model_version const& mv (version ());
+
+          if (dv > mv.current)
+          {
+            error (l) << "deletion version is greater than the current " <<
+              "model version" << endl;
+            valid_ = false;
+          }
+          else if (dv <= mv.base)
+          {
+            error (l) << "deletion version is less than or equal to the " <<
+              "base model version" << endl;
+            info (c.location ()) << "delete this data member since " <<
+              "migration to version " << dv << " is no longer possible" <<
+              endl;
+            valid_ = false;
+          }
+        }
+      }
+
+      // Make sure that addition and deletion versions are properly ordered.
+      // We can have both the [av, dv] (added then deleted) and [dv, av]
+      // (deleted then re-added) intervals.
+      //
+      if (av != 0 && dv != 0 && av == dv)
+      {
+        location_t al (m.get<location_t> ("added-location"));
+        location_t dl (m.get<location_t> ("deleted-location"));
+
+        error (al) << "addition and deletion versions are the same" << endl;
+        info (dl) << "deletion version is specified here" << endl;
+        valid_ = false;
+      }
+
+      if (dv == 0)
+        count_++; // Don't include deleted members in the count.
 
       // Resolve null overrides.
       //
@@ -326,15 +452,15 @@ namespace
     virtual void
     traverse_object (type& c)
     {
-      // Check the the deletion version makes sense.
+      // Check that the deletion version makes sense.
       //
-      if (unsigned long long v = deleted (c))
+      if (unsigned long long v = c.get<unsigned long long> ("deleted", 0))
       {
         location_t l (c.get<location_t> ("deleted-location"));
 
         if (!versioned ())
         {
-          error (l) << "deleted member in non-versioned object model" << endl;
+          error (l) << "deleted class in a non-versioned object model" << endl;
           valid_ = false;
         }
         else
@@ -937,10 +1063,23 @@ namespace
   // Pass 2.
   //
 
+  struct data_member2: traversal::data_member, context
+  {
+    data_member2 (bool& valid): valid_ (valid) {}
+
+    virtual void
+    traverse (type&)
+    {
+      // Enable the names() calls below if adding any tests here.
+    }
+
+    bool& valid_;
+  };
+
   struct class2: traversal::class_, context
   {
     class2 (bool& valid)
-        : valid_ (valid), has_lt_operator_ (0)
+    : valid_ (valid), has_lt_operator_ (0), member_ (valid)
     {
       // Find the has_lt_operator function template.
       //
@@ -978,6 +1117,8 @@ namespace
 
       if (has_lt_operator_ == 0)
         valid_ = false;
+
+      *this >> names_ >> member_;
     }
 
     virtual void
@@ -1117,20 +1258,33 @@ namespace
           valid_ = false;
         }
       }
+
+      // Check members.
+      //
+      //names (c);
     }
 
     virtual void
     traverse_view (type&)
     {
+      // Check members.
+      //
+      //names (c);
     }
 
     virtual void
     traverse_composite (type&)
     {
+      // Check members.
+      //
+      //names (c);
     }
 
     bool& valid_;
     tree has_lt_operator_;
+
+    data_member1 member_;
+    traversal::names names_;
   };
 }
 

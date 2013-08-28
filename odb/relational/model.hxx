@@ -102,6 +102,9 @@ namespace relational
       virtual bool
       traverse_column (semantics::data_member& m, string const& name, bool)
       {
+        if (deleted (member_path_))
+          return false;
+
         string col_id (id_prefix_ +
                        (key_prefix_.empty () ? m.name () : key_prefix_));
 
@@ -229,6 +232,9 @@ namespace relational
       {
         using sema_rel::column;
         using sema_rel::foreign_key;
+
+        if (deleted (member_path_))
+          return;
 
         // Ignore inverse object pointers.
         //
@@ -487,6 +493,9 @@ namespace relational
         using semantics::data_member;
 
         using sema_rel::column;
+
+        if (deleted (member_path_))
+          return;
 
         // Ignore inverse containers of object pointers.
         //

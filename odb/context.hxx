@@ -726,7 +726,7 @@ public:
     return m.count ("transient");
   }
 
-  // Return the deletion version or 0 if not deleted.
+  // Return the deletion version or 0 if not fort-deleted.
   //
   static unsigned long long
   deleted (semantics::class_& c)
@@ -735,9 +735,41 @@ public:
   }
 
   static unsigned long long
-  deleted (semantics::data_member& m)
+  deleted (data_member_path const& mp)
   {
-    return m.get<unsigned long long> ("deleted", 0);
+    unsigned long long r (0);
+
+    // Find the earliest version since this member was deleted.
+    //
+    for (data_member_path::const_reverse_iterator i (mp.rbegin ());
+         i != mp.rend (); ++i)
+    {
+      unsigned long long v ((*i)->get<unsigned long long> ("deleted", 0));
+      if (v != 0 && v < r)
+        r = v;
+    }
+
+    return r;
+  }
+
+  // Return the addition version or 0 if not soft-added.
+  //
+  static unsigned long long
+  added (data_member_path const& mp)
+  {
+    unsigned long long r (0);
+
+    // Find the latest version since this member was added.
+    //
+    for (data_member_path::const_reverse_iterator i (mp.rbegin ());
+         i != mp.rend (); ++i)
+    {
+      unsigned long long v ((*i)->get<unsigned long long> ("added", 0));
+      if (v != 0 && v > r)
+        r = v;
+    }
+
+    return r;
   }
 
   static bool
@@ -868,9 +900,12 @@ public:
   static object_section&
   section (data_member_path const& mp)
   {
-    // The direct member of the object specifies the section.
+    // The direct member of the object specifies the section. If the
+    // path is empty (which can happen, for example, for a container
+    // element), assume it is the main section.
     //
-    return section (*mp.front ());
+    //
+    return mp.empty () ? main_section : section (*mp.front ());
   }
 
   // Member belongs to a section that is loaded separately.
@@ -1250,7 +1285,12 @@ public:
   // Treat eager loaded members as belonging to the main section.
   // If this flag is specified, then section must be main_section.
   //
-  static unsigned short const include_eager_load = 0x2000;
+  static unsigned short const include_eager_load = 0x800;
+
+  // Exclude added/deleted members.
+  //
+  static unsigned short const exclude_added   = 0x1000;
+  static unsigned short const exclude_deleted = 0x2000;
 
   // By default the test goes into bases for non-polymorphic
   // hierarchies and doesn't go for polymorphic. The following
@@ -1274,7 +1314,7 @@ public:
         semantics::type&,
         string const& key_prefix);
 
-  // Return the number of matching entities. Can be uses as a just
+  // Return the number of matching entities. Can be used as a just
   // a bool value (0 means no match).
   //
   size_t

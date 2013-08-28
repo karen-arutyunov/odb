@@ -415,9 +415,21 @@ check_spec_decl_type (declaration const& d,
       return false;
     }
   }
+  else if (p == "added")
+  {
+    // Added can be used for data members only.
+    //
+    if (tc != FIELD_DECL)
+    {
+      error (l) << "name '" << name << "' in db pragma " << p << " does "
+                << "not refer to a data member" << endl;
+      return false;
+    }
+  }
   else if (p == "deleted")
   {
-    // Deleted can be used for both data members and classes (object).
+    // Deleted can be used for both data members and classes (object,
+    // view of composite value).
     //
     if (tc != FIELD_DECL && tc != RECORD_TYPE)
     {
@@ -2290,8 +2302,9 @@ handle_pragma (cxx_lexer& l,
 
     tt = l.next (tl, &tn);
   }
-  else if (p == "deleted")
+  else if (p == "added" || p == "deleted")
   {
+    // added (unsigned long long version)
     // deleted (unsigned long long version)
     //
 
@@ -2299,6 +2312,8 @@ handle_pragma (cxx_lexer& l,
     //
     if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
+
+    char const* n (p == "added" ? "addition" : "deletion");
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
     {
@@ -2308,7 +2323,7 @@ handle_pragma (cxx_lexer& l,
 
     if (l.next (tl, &tn) != CPP_NUMBER || TREE_CODE (tn) != INTEGER_CST)
     {
-      error (l) << "unsigned integer expected as deletion version" << endl;
+      error (l) << "unsigned integer expected as " << n << " version" << endl;
       return;
     }
 
@@ -2316,7 +2331,7 @@ handle_pragma (cxx_lexer& l,
 
     if (v == 0)
     {
-      error (l) << "deletion version cannot be zero" << endl;
+      error (l) << n << " version cannot be zero" << endl;
       return;
     }
 
@@ -3243,6 +3258,7 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
            p == "unordered" ||
            p == "readonly" ||
            p == "transient" ||
+           p == "added" ||
            p == "deleted" ||
            p == "version" ||
            p == "virtual")
@@ -3627,6 +3643,12 @@ handle_pragma_db_transient (cpp_reader* r)
 }
 
 extern "C" void
+handle_pragma_db_added (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "added");
+}
+
+extern "C" void
 handle_pragma_db_deleted (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "deleted");
@@ -3719,6 +3741,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "readonly", handle_pragma_db_readonly);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);
+  c_register_pragma_with_expansion ("db", "added", handle_pragma_db_added);
   c_register_pragma_with_expansion ("db", "deleted", handle_pragma_db_deleted);
   c_register_pragma_with_expansion ("db", "version", handle_pragma_db_version);
   c_register_pragma_with_expansion ("db", "virtual", handle_pragma_db_virtual);

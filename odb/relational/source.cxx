@@ -49,6 +49,12 @@ traverse_object (type& c)
       (opt ? context::grow (*opt) : false);
   }
 
+  // Schema name as a string literal or empty.
+  //
+  string schema_name (options.schema_name ()[db]);
+  if (!schema_name.empty ())
+    schema_name = strlit (schema_name);
+
   string const& type (class_fq_name (c));
   string traits ("access::object_traits_impl< " + type + ", id_" +
                  db.string () + " >");
@@ -58,31 +64,6 @@ traverse_object (type& c)
   user_sections* buss (poly_base != 0
                        ? &poly_base->get<user_sections> ("user-sections")
                        : 0);
-
-  // See what kind of containers we've got.
-  //
-  bool containers (has_a (c, test_container));
-  bool straight_containers (false);
-  bool smart_containers (false);
-
-  // Eager load and update containers.
-  //
-  bool load_containers (false);
-  bool update_containers (false);
-
-  if (containers)
-  {
-    load_containers = has_a (
-      c, test_container | include_eager_load, &main_section);
-
-    if ((straight_containers = has_a (c, test_straight_container)))
-    {
-      // Only straight containers can be readwrite or smart.
-      //
-      smart_containers = has_a (c, test_smart_container);
-      update_containers = has_a (c, test_readwrite_container, &main_section);
-    }
-  }
 
   os << "// " << class_name (c) << endl
      << "//" << endl
@@ -103,6 +84,9 @@ traverse_object (type& c)
   //
   if (!reuse_abst && id != 0)
   {
+    bool sections (false);
+    bool containers (has_a (c, test_container));
+
     os << "struct " << traits << "::extra_statement_cache_type"
        << "{";
 
@@ -112,7 +96,6 @@ traverse_object (type& c)
     if (containers)
       os << endl;
 
-    bool sections (false);
     instance<section_cache_members> sm;
     for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
     {
@@ -170,7 +153,6 @@ traverse_object (type& c)
   // Containers (abstract and concrete).
   //
 
-  if (containers)
   {
     instance<container_traits> t (c);
     t->traverse (c);
@@ -1011,6 +993,8 @@ traverse_object (type& c)
 
   // persist ()
   //
+  bool persist_containers (has_a (c, test_straight_container));
+
   os << "void " << traits << "::" << endl
      << "persist (database& db, " << (auto_id ? "" : "const ") <<
     "object_type& obj";
@@ -1199,13 +1183,13 @@ traverse_object (type& c)
   // Initialize id_image and binding if we are a root of a polymorphic
   // hierarchy or if we have non-inverse containers.
   //
-  if (!poly_derived && (poly || straight_containers))
+  if (!poly_derived && (poly || persist_containers))
   {
     // If this is a polymorphic root without containers, then we only
     // need to do this if we are not a top-level call. If we are poly-
     // abstract, then top will always be false.
     //
-    if (poly && !straight_containers && !abst)
+    if (poly && !persist_containers && !abst)
       os << "if (!top)"
          << "{";
 
@@ -1226,11 +1210,11 @@ traverse_object (type& c)
       os << "sts.optimistic_id_image_binding ().version++;";
     os << "}";
 
-    if (poly && !straight_containers && !abst)
+    if (poly && !persist_containers && !abst)
       os << "}";
   }
 
-  if (straight_containers)
+  if (persist_containers)
   {
     os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());"
        << endl;
@@ -1283,6 +1267,9 @@ traverse_object (type& c)
   //
   if (id != 0 && (!readonly || poly))
   {
+    bool update_containers (
+      has_a (c, test_readwrite_container, &main_section));
+
     // See if we have any sections that we might have to update.
     //
     bool sections (false);
@@ -1877,6 +1864,11 @@ traverse_object (type& c)
 
   // erase (id)
   //
+  size_t erase_containers (has_a (c, test_straight_container));
+  bool erase_versioned_containers (
+    erase_containers >
+    has_a (c, test_straight_container | exclude_deleted | exclude_added));
+
   if (id != 0)
   {
     os << "void " << traits << "::" << endl
@@ -1963,10 +1955,15 @@ traverse_object (type& c)
     // here since in case of a custom schema, it might not be
     // there).
     //
-    if (straight_containers)
+    if (erase_containers)
     {
-      os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());"
-         << endl;
+      os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());";
+
+      if (erase_versioned_containers)
+        os << "const schema_version_migration& svm (" <<
+          "db.schema_version_migration (" << schema_name << "));";
+
+      os << endl;
 
       instance<container_calls> t (container_calls::erase_id_call);
       t->traverse (c);
@@ -2000,7 +1997,9 @@ traverse_object (type& c)
 
   // erase (object)
   //
-  if (id != 0 && (poly || opt != 0 || smart_containers))
+  bool erase_smart_containers (has_a (c, test_smart_container));
+
+  if (id != 0 && (poly || opt != 0 || erase_smart_containers))
   {
     os << "void " << traits << "::" << endl
        << "erase (database& db, const object_type& obj";
@@ -2038,7 +2037,7 @@ traverse_object (type& c)
          << "throw abstract_class ();"
          << endl;
 
-    if (opt != 0 || smart_containers)
+    if (opt != 0 || erase_smart_containers)
     {
       string rsts (poly_derived ? "rsts" : "sts");
 
@@ -2067,7 +2066,7 @@ traverse_object (type& c)
            << endl;
       }
 
-      if (!abst || straight_containers)
+      if (!abst || erase_containers)
       {
         if (!id_ma->synthesized)
           os << "// From " << location_string (id_ma->loc, true) << endl;
@@ -2113,11 +2112,16 @@ traverse_object (type& c)
         // there).
         //
 
-        if (straight_containers)
+        if (erase_containers)
         {
           os << "extra_statement_cache_type& esc (" <<
-            "sts.extra_statement_cache ());"
-             << endl;
+            "sts.extra_statement_cache ());";
+
+          if (erase_versioned_containers)
+            os << "const schema_version_migration& svm (" <<
+              "db.schema_version_migration (" << schema_name << "));";
+
+          os << endl;
 
           instance<container_calls> t (container_calls::erase_obj_call);
           t->traverse (c);
@@ -2168,7 +2172,7 @@ traverse_object (type& c)
         // containers since it is more efficient than the find_() method
         // below.
         //
-        if (poly_derived || (poly && straight_containers))
+        if (poly_derived || (poly && erase_containers))
         {
           // Only do the check in the top-level call.
           //
@@ -2188,7 +2192,7 @@ traverse_object (type& c)
                << "}";
           }
         }
-        else if (straight_containers)
+        else if (erase_containers)
         {
           // Things get complicated here: we don't want to trash the
           // containers and then find out that the versions don't match
@@ -2228,11 +2232,16 @@ traverse_object (type& c)
         // here since in case of a custom schema, it might not be
         // there).
         //
-        if (straight_containers)
+        if (erase_containers)
         {
           os << "extra_statement_cache_type& esc (" <<
-            "sts.extra_statement_cache ());"
-             << endl;
+            "sts.extra_statement_cache ());";
+
+          if (erase_versioned_containers)
+            os << "const schema_version_migration& svm (" <<
+              "db.schema_version_migration (" << schema_name << "));";
+
+          os << endl;
 
           instance<container_calls> t (container_calls::erase_obj_call);
           t->traverse (c);
@@ -3111,6 +3120,9 @@ traverse_object (type& c)
   //
   // Load containers, reset/reload sections.
   //
+  bool load_containers (
+    has_a (c, test_container | include_eager_load, &main_section));
+
   if (poly_derived ||
       load_containers ||
       uss.count (user_sections::count_new  |

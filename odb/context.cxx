@@ -2471,6 +2471,12 @@ namespace
       if (m.count ("polymorphic-ref"))
         return;
 
+      // Ignore added/deleted members if so requested.
+      //
+      if (((flags_ & exclude_added) != 0 && added (member_path_)) ||
+          ((flags_ & exclude_deleted) != 0 && deleted (member_path_)))
+        return;
+
       if (context::is_a (member_path_, member_scope_, flags_))
         r_++;
 
@@ -2480,6 +2486,12 @@ namespace
     virtual void
     traverse_simple (semantics::data_member&)
     {
+      // Ignore added/deleted members if so requested.
+      //
+      if (((flags_ & exclude_added) != 0 && added (member_path_)) ||
+          ((flags_ & exclude_deleted) != 0 && deleted (member_path_)))
+        return;
+
       if (context::is_a (member_path_, member_scope_, flags_))
         r_++;
     }
@@ -2487,6 +2499,12 @@ namespace
     virtual void
     traverse_container (semantics::data_member&, semantics::type& c)
     {
+      // Ignore added/deleted members if so requested.
+      //
+      if (((flags_ & exclude_added) != 0 && added (member_path_)) ||
+          ((flags_ & exclude_deleted) != 0 && deleted (member_path_)))
+        return;
+
       // We don't cross the container boundaries (separate table).
       //
       unsigned short f (flags_ & (context::test_container |

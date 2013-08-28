@@ -957,6 +957,9 @@ namespace relational
 
         if (var_override_.empty ())
         {
+          // Ignore inverse, separately-loaded members in the main
+          // section (nothing to persist).
+          //
           if (section_ == 0 && separate_load (mi.m) && inverse (mi.m))
             return false;
 
@@ -3633,6 +3636,26 @@ namespace relational
                                  << endl;
           info (m.location ()) << "container member is defined here" << endl;
           throw operation_failed ();
+        }
+
+        // If the member is soft- added or deleted, check the version.
+        //
+        unsigned long long av (added (member_path_));
+        unsigned long long dv (deleted (member_path_));
+        if (av != 0 || dv != 0)
+        {
+          os << "if (";
+
+          if (av != 0)
+            os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+          if (av != 0 || dv != 0)
+            os << " &&" << endl;
+
+          if (dv != 0)
+            os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+          os << ")" << endl;
         }
 
         if (call_ != erase_id_call && (call_ != erase_obj_call || smart))
