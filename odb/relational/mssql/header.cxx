@@ -40,8 +40,7 @@ namespace relational
             rv = (t.type == sql_type::ROWVERSION);
           }
 
-          os << "static const bool rowversion = " <<
-            (rv ? "true" : "false") << ";"
+          os << "static const bool rowversion = " << rv << ";"
              << endl;
         }
       };
@@ -66,8 +65,7 @@ namespace relational
             rv = (t.type == sql_type::ROWVERSION);
           }
 
-          os << "static const bool rowversion = " <<
-            (rv ? "true" : "false") << ";"
+          os << "static const bool rowversion = " << rv << ";"
              << endl;
         }
       };

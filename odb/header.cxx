@@ -91,7 +91,7 @@ traverse_object (type& c)
 
   // polymorphic, root_type, base_type, etc.
   //
-  os << "static const bool polymorphic = " << (poly ? "true" : "false") << ";"
+  os << "static const bool polymorphic = " << poly << ";"
      << endl;
 
   if (poly)
@@ -176,7 +176,7 @@ traverse_object (type& c)
       }
 
       os << endl
-         << "static const bool auto_id = " << (auto_id ? "true;" : "false;");
+         << "static const bool auto_id = " << auto_id << ";";
     }
 
     os << endl;
@@ -193,7 +193,7 @@ traverse_object (type& c)
 
   // abstract
   //
-  os << "static const bool abstract = " << (abst ? "true" : "false") << ";"
+  os << "static const bool abstract = " << abst << ";"
      << endl;
 
   // id ()

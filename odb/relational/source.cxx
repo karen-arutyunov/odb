@@ -477,6 +477,8 @@ traverse_object (type& c)
   if (reuse_abst)
     return;
 
+  bool versioned (force_versioned);
+
   //
   // Containers (concrete).
   //
@@ -613,6 +615,8 @@ traverse_object (type& c)
   // persist_statement
   //
   {
+    string sep (versioned ? "\n" : " ");
+
     statement_columns sc;
     {
       statement_kind sk (statement_insert); // Imperfect forwarding.
@@ -624,30 +628,52 @@ traverse_object (type& c)
     bool dv (sc.empty ()); // The DEFAULT VALUES syntax.
 
     os << "const char " << traits << "::persist_statement[] =" << endl
-       << strlit ("INSERT INTO " + qtable + (dv ? "" : " (")) << endl;
+       << strlit ("INSERT INTO " + qtable + sep) << endl;
 
-    for (statement_columns::const_iterator i (sc.begin ()),
+    for (statement_columns::const_iterator b (sc.begin ()), i (b),
            e (sc.end ()); i != e;)
     {
-      string const& c (i->column);
-      os << strlit (c + (++i != e ? "," : ")")) << endl;
+      string s;
+
+      if (i == b)
+        s += '(';
+      s += i->column;
+      s += (++i != e ? ',' : ')');
+      s += sep;
+
+      os << strlit (s) << endl;
     }
 
     instance<query_parameters> qp (table);
 
-    persist_statement_extra (c, *qp, persist_after_columns);
+    string extra (persist_statement_extra (c, *qp, persist_after_columns));
 
+    if (!extra.empty ())
+      os << strlit (extra + sep) << endl;
+
+    string values;
     if (!dv)
     {
-      string values;
-      instance<persist_statement_params> pt (values, *qp);
+      os << strlit ("VALUES" + sep) << endl;
+
+      values += '(';
+      instance<persist_statement_params> pt (values, *qp, sep);
       pt->traverse (c);
-      os << strlit (" VALUES (" + values + ")");
+      values += ')';
     }
     else
-      os << strlit (" DEFAULT VALUES");
+      values = "DEFAULT VALUES";
 
-    persist_statement_extra (c, *qp, persist_after_values);
+    extra = persist_statement_extra (c, *qp, persist_after_values);
+
+    if (!extra.empty ())
+      values += sep;
+
+    os << strlit (values);
+
+    if (!extra.empty ())
+      os << endl
+         << strlit (extra);
 
     os << ";"
        << endl;
@@ -662,6 +688,8 @@ traverse_object (type& c)
 
   if (id != 0)
   {
+    string sep (versioned ? "\n" : " ");
+
     instance<object_columns_list> id_cols;
     id_cols->traverse (*id);
 
@@ -689,22 +717,26 @@ traverse_object (type& c)
 
       if (sc.size () != 0)
       {
-        os << strlit ("SELECT ") << endl;
+        os << strlit ("SELECT" + sep) << endl;
 
         for (statement_columns::const_iterator i (sc.begin ()),
                e (sc.end ()); i != e;)
         {
           string const& c (i->column);
-          os << strlit (c + (++i != e ? "," : "")) << endl;
+          os << strlit (c + (++i != e ? "," : "") + sep) << endl;
         }
 
-        os << strlit (" FROM " + qtable) << endl;
+        os << strlit ("FROM " + qtable + sep) << endl;
 
         if (d != 1)
         {
+          bool f (false);    // @@ (im)perfect forwarding
           size_t d1 (d - 1); //@@ (im)perfect forward.
-          instance<polymorphic_object_joins> j (c, d1);
+          instance<polymorphic_object_joins> j (c, f, d1);
           j->traverse (polymorphic_base (c));
+
+          for (strings::const_iterator i (j->begin ()); i != j->end (); ++i)
+            os << strlit (*i + sep) << endl;
         }
 
         {
@@ -714,19 +746,24 @@ traverse_object (type& c)
           object_section* s (&main_section); // @@ (im)perfect forwarding
           instance<object_joins> j (c, f, d, s);
           j->traverse (c);
+
+          for (strings::const_iterator i (j->begin ()); i != j->end (); ++i)
+            os << strlit (*i + sep) << endl;
         }
 
+        string where ("WHERE ");
         instance<query_parameters> qp (table);
         for (object_columns_list::iterator b (id_cols->begin ()), i (b);
              i != id_cols->end (); ++i)
         {
           if (i != b)
-            os << endl;
+            where += " AND ";
 
-          os << strlit ((i == b ? " WHERE " : " AND ") +
-                        qtable + "." + quote_id (i->name) + "=" +
-                        convert_to (qp->next (), i->type, *i->member));
+          where += qtable + "." + quote_id (i->name) + "=" +
+            convert_to (qp->next (), i->type, *i->member);
         }
+
+        os << strlit (where);
       }
       else
         os << strlit (""); // Empty SELECT statement.
@@ -791,24 +828,24 @@ traverse_object (type& c)
              e (sc.end ()); i != e;)
       {
         string const& c (i->column);
-        os << strlit (c + (++i != e ? "," : "")) << endl;
+        os << strlit (c + (++i != e ? ", " : " ")) << endl;
       }
 
-      os << strlit (" FROM " + qtable) << endl;
+      os << strlit ("FROM " + qtable + " ") << endl;
 
+      string where ("WHERE ");
       instance<query_parameters> qp (table);
       for (object_columns_list::iterator b (id_cols->begin ()), i (b);
            i != id_cols->end (); ++i)
       {
         if (i != b)
-          os << endl;
+          where += " AND ";
 
-        os << strlit ((i == b ? " WHERE " : " AND ") +
-                      qtable + "." + quote_id (i->name) + "=" +
-                      convert_to (qp->next (), i->type, *i->member));
+        where += qtable + "." + quote_id (i->name) + "=" +
+          convert_to (qp->next (), i->type, *i->member);
       }
 
-      os << ";"
+      os << strlit (where) << ";"
          << endl;
     }
 
@@ -816,6 +853,8 @@ traverse_object (type& c)
     //
     if (update_columns != 0)
     {
+      string sep (versioned ? "\n" : " ");
+
       instance<query_parameters> qp (table);
 
       statement_columns sc;
@@ -829,13 +868,14 @@ traverse_object (type& c)
       }
 
       os << "const char " << traits << "::update_statement[] =" << endl
-         << strlit ("UPDATE " + qtable + " SET ") << endl;
+         << strlit ("UPDATE " + qtable + sep) << endl
+         << strlit ("SET" + sep) << endl;
 
       for (statement_columns::const_iterator i (sc.begin ()),
              e (sc.end ()); i != e;)
       {
         string const& c (i->column);
-        os << strlit (c + (++i != e ? "," : "")) << endl;
+        os << strlit (c + (++i != e ? "," : "") + sep) << endl;
       }
 
       // This didn't work out: cannot change the identity column.
@@ -850,29 +890,31 @@ traverse_object (type& c)
       //  os << strlit (c + "=" + c) << endl;
       //}
 
-      update_statement_extra (c);
+      string extra (update_statement_extra (c));
 
+      if (!extra.empty ())
+        os << strlit (extra + sep) << endl;
+
+      string where ("WHERE ");
       for (object_columns_list::iterator b (id_cols->begin ()), i (b);
            i != id_cols->end (); ++i)
       {
         if (i != b)
-          os << endl;
+          where += " AND ";
 
-        os << strlit ((i == b ? " WHERE " : " AND ") +
-                      quote_id (i->name) + "=" +
-                      convert_to (qp->next (), i->type, *i->member));
+        where += quote_id (i->name) + "=" +
+          convert_to (qp->next (), i->type, *i->member);
       }
 
+      // Top-level version column.
+      //
       if (opt != 0 && !poly_derived)
       {
-        // Top-level version column.
-        //
-        os << endl
-           << strlit (" AND " + column_qname (*opt, column_prefix ()) + "=" +
-                      convert_to (qp->next (), *opt));
+        where += " AND " + column_qname (*opt, column_prefix ()) + "=" +
+          convert_to (qp->next (), *opt);
       }
 
-      os << ";"
+      os << strlit (where) << ";"
          << endl;
     }
 
@@ -881,19 +923,20 @@ traverse_object (type& c)
     {
       instance<query_parameters> qp (table);
       os << "const char " << traits << "::erase_statement[] =" << endl
-         << strlit ("DELETE FROM " + qtable);
+         << strlit ("DELETE FROM " + qtable + " ") << endl;
 
+      string where ("WHERE ");
       for (object_columns_list::iterator b (id_cols->begin ()), i (b);
            i != id_cols->end (); ++i)
       {
+        if (i != b)
+          where += " AND ";
 
-        os << endl
-           << strlit ((i == b ? " WHERE " : " AND ") +
-                      quote_id (i->name) + "=" +
-                      convert_to (qp->next (), i->type, *i->member));
+        where += quote_id (i->name) + "=" +
+          convert_to (qp->next (), i->type, *i->member);
       }
 
-      os << ";"
+      os << strlit (where) << ";"
          << endl;
     }
 
@@ -903,26 +946,32 @@ traverse_object (type& c)
 
       os << "const char " << traits << "::optimistic_erase_statement[] " <<
         "=" << endl
-         << strlit ("DELETE FROM " + qtable);
+         << strlit ("DELETE FROM " + qtable + " ") << endl;
 
+      string where ("WHERE ");
       for (object_columns_list::iterator b (id_cols->begin ()), i (b);
            i != id_cols->end (); ++i)
       {
-        os << endl
-           << strlit ((i == b ? " WHERE " : " AND ") +
-                      quote_id (i->name) + "=" +
-                      convert_to (qp->next (), i->type, *i->member));
+        if (i != b)
+          where += " AND ";
+
+        where += quote_id (i->name) + "=" +
+          convert_to (qp->next (), i->type, *i->member);
       }
 
       // Top-level version column.
       //
-      os << endl
-         << strlit (" AND " + column_qname (*opt, column_prefix ()) + "=" +
-                    convert_to (qp->next (), *opt)) << ";"
+      where += " AND " + column_qname (*opt, column_prefix ()) + "=" +
+        convert_to (qp->next (), *opt);
+
+      os << strlit (where) << ";"
          << endl;
     }
   }
 
+  // query_statement
+  //
+  bool query_optimize (false);
   if (options.generate_query ())
   {
     // query_statement
@@ -936,23 +985,14 @@ traverse_object (type& c)
       process_statement_columns (sc, statement_select);
     }
 
-    os << "const char " << traits << "::query_statement[] =" << endl
-       << strlit ("SELECT ") << endl;
-
-    for (statement_columns::const_iterator i (sc.begin ()),
-           e (sc.end ()); i != e;)
-    {
-      string const& c (i->column);
-      os << strlit (c + (++i != e ? "," : "")) << endl;
-    }
-
-    os << strlit (" FROM " + qtable) << endl;
-
+    strings joins;
     if (poly_depth != 1)
     {
+      bool t (true);             //@@ (im)perfect forwarding
       size_t d (poly_depth - 1); //@@ (im)perfect forward.
-      instance<polymorphic_object_joins> j (c, d);
+      instance<polymorphic_object_joins> j (c, t, d);
       j->traverse (polymorphic_base (c));
+      joins = j->joins;
     }
 
     if (id != 0)
@@ -961,27 +1001,40 @@ traverse_object (type& c)
       // can be used in the WHERE clause.
       //
       bool t (true); //@@ (im)perfect forwarding
-      instance<object_joins> oj (c, t, poly_depth);
-      oj->traverse (c);
+      instance<object_joins> j (c, t, poly_depth);
+      j->traverse (c);
+      joins.insert (joins.end (), j->begin (), j->end ());
     }
 
-    os << strlit (" ") << ";"
+    query_optimize = !joins.empty ();
+
+    string sep (versioned || query_optimize ? "\n" : " ");
+
+    os << "const char " << traits << "::query_statement[] =" << endl
+       << strlit ("SELECT" + sep) << endl;
+
+    for (statement_columns::const_iterator i (sc.begin ()),
+           e (sc.end ()); i != e;)
+    {
+      string const& c (i->column);
+      os << strlit (c + (++i != e ? "," : "") + sep) << endl;
+    }
+
+    string prev ("FROM " + qtable);
+
+    for (strings::const_iterator i (joins.begin ()); i != joins.end (); ++i)
+    {
+      os << strlit (prev + sep) << endl;
+      prev = *i;
+    }
+
+    os << strlit (prev) << ";"
        << endl;
 
     // erase_query_statement
     //
     os << "const char " << traits << "::erase_query_statement[] =" << endl
-       << strlit ("DELETE FROM " + qtable) << endl;
-
-    // DELETE JOIN:
-    //
-    // MySQL:
-    // << strlit ("DELETE FROM " + qtable + " USING " + qtable) << endl;
-    // << strlit ("DELETE " + qtable + " FROM " + qtable) << endl;
-    // oj->write ();
-    //
-
-    os << strlit (" ") << ";"
+       << strlit ("DELETE FROM " + qtable) << ";"
        << endl;
 
     // table_name
@@ -1822,7 +1875,7 @@ traverse_object (type& c)
               base = true; // We have a readonly optimistic root.
           }
 
-          os << ", " << (base ? "true" : "false");
+          os << ", " << base;
         }
 
         os << ");";
@@ -3444,6 +3497,8 @@ traverse_object (type& c)
     else
       result_type = "no_id_object_result_impl<object_type>";
 
+    string sep (versioned || query_optimize ? "\n" : " ");
+
     // Unprepared.
     //
     if (!options.omit_unprepared ())
@@ -3494,10 +3549,18 @@ traverse_object (type& c)
            << "}";
       }
 
+      os << "std::string text (query_statement);"
+         << "if (!q.empty ())"
+         << "{"
+         << "text += " << strlit (sep) << ";"
+         << "text += q.clause ();"
+         << "}";
+
       os << "q.init_parameters ();"
          << "shared_ptr<select_statement> st (" << endl
          << "new (shared) select_statement (" << endl;
-      object_query_statement_ctor_args (c, "q", false);
+      object_query_statement_ctor_args (
+        c, "q", versioned || query_optimize, false);
       os << "));" << endl
          << "st->execute ();";
 
@@ -3532,6 +3595,12 @@ traverse_object (type& c)
        << db << "::connection& conn (" << endl
        << db << "::transaction::current ().connection ());"
        << endl
+       << "std::string text (erase_query_statement);"
+       << "if (!q.empty ())"
+       << "{"
+       << "text += ' ';"
+       << "text += q.clause ();"
+       << "}"
        << "q.init_parameters ();"
        << "delete_statement st (" << endl;
     object_erase_query_statement_ctor_args (c);
@@ -3601,6 +3670,13 @@ traverse_object (type& c)
            << "}";
       }
 
+      os << "std::string text (query_statement);"
+         << "if (!q.empty ())"
+         << "{"
+         << "text += " << strlit (sep) << ";"
+         << "text += q.clause ();"
+         << "}";
+
       os << "shared_ptr<" << db << "::prepared_query_impl> r (" << endl
          << "new (shared) " << db << "::prepared_query_impl (conn));"
          << "r->name = n;"
@@ -3608,7 +3684,8 @@ traverse_object (type& c)
          << "r->query = q;"
          << "r->stmt.reset (" << endl
          << "new (shared) select_statement (" << endl;
-      object_query_statement_ctor_args (c, "r->query", true);
+      object_query_statement_ctor_args (
+        c, "r->query", versioned || query_optimize, true);
       os << "));"
          << endl
          << "return r;"
@@ -3790,6 +3867,18 @@ traverse_object (type& c)
 void relational::source::class_::
 traverse_view (type& c)
 {
+  view_query& vq (c.get<view_query> ("query"));
+
+  // Only process the view query if it is versioned since the query text
+  // (e.g., in the native view) must be structured. Also, we probably
+  // shouldn't try to optimize JOINs since the objects are JOINed
+  // explicitly by the user, unless we are adding poly-bases/derived.
+  //
+  // When versioning is forced, don't do it for native views.
+  //
+  bool versioned (force_versioned && vq.kind == view_query::condition);
+  bool query_optimize (false);
+
   string const& type (class_fq_name (c));
   string traits ("access::view_traits_impl< " + type + ", id_" +
                  db.string () + " >");
@@ -3862,8 +3951,6 @@ traverse_view (type& c)
 
   // query_statement()
   //
-  view_query& vq (c.get<view_query> ("query"));
-
   if (vq.kind != view_query::runtime)
   {
     os << traits << "::query_base_type" << endl
@@ -3930,8 +4017,13 @@ traverse_view (type& c)
       // at the end.
       //
       if (!ph)
-        os << "r += q.clause_prefix ();"
-           << "r += q;";
+        os << endl
+           << "if (!q.empty ())"
+           << "{"
+           << "r += " << strlit (versioned ? "\n" : " ") << ";"
+           << "r += q.clause_prefix ();"
+           << "r += q;"
+           << "}";
     }
     else // vq.kind == view_query::condition
     {
@@ -3942,21 +4034,9 @@ traverse_view (type& c)
         process_statement_columns (sc, statement_select);
       }
 
-      os << "query_base_type r (" << endl
-         << strlit ("SELECT ") << endl;
-
-      for (statement_columns::const_iterator i (sc.begin ()),
-             e (sc.end ()); i != e;)
-      {
-        string const& c (i->column);
-        os << strlit (c + (++i != e ? "," : "")) << endl;
-      }
-
-      os << ");"
-         << endl;
-
-      // Generate from-list.
+      // Generate the from-list.
       //
+      strings from;
       view_objects const& objs (c.get<view_objects> ("objects"));
 
       for (view_objects::const_iterator i (objs.begin ());
@@ -3980,9 +4060,7 @@ traverse_view (type& c)
             if (!i->alias.empty ())
               l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
 
-            os << "r += " << strlit (l) << ";"
-               << endl;
-
+            from.push_back (l);
             continue;
           }
 
@@ -4001,21 +4079,18 @@ traverse_view (type& c)
 
           if (e.kind != expression::literal)
           {
-            error (i->loc)
-              << "invalid join condition in db pragma table" << endl;
-
+            error (i->loc) << "invalid join condition in db pragma " <<
+              "table" << endl;
             throw operation_failed ();
           }
 
           l += " ON";
 
-          // Output the pragma location for easier error tracking.
+          // Add the pragma location for easier error tracking.
           //
-          os << "r += " << strlit (l) << ";"
-             << "// From " << location_string (i->loc, true) << endl
-             << "r += " << e.value << ";"
-             << endl;
-
+          from.push_back (l);
+          from.push_back ("// From " + location_string (i->loc, true));
+          from.push_back (e.value);
           continue;
         }
 
@@ -4044,18 +4119,18 @@ traverse_view (type& c)
           if (!alias.empty ())
             l += (need_alias_as ? " AS " : " ") + quote_id (alias);
 
-          os << "r += " << strlit (l) << ";";
+          from.push_back (l);
 
           if (poly_depth != 1)
           {
+            bool t (true);             //@@ (im)perfect forwarding
             size_t d (poly_depth - 1); //@@ (im)perfect forward.
-            instance<polymorphic_object_joins> j (
-              o, d, i->alias, "r += ", ";");
+            instance<polymorphic_object_joins> j (o, t, d, i->alias);
             j->traverse (polymorphic_base (o));
+
+            from.insert (from.end (), j->begin (), j->end ());
+            query_optimize = query_optimize || !j->joins.empty ();
           }
-
-          os << endl;
-
           continue;
         }
 
@@ -4078,22 +4153,22 @@ traverse_view (type& c)
 
           l += " ON";
 
-          // Output the pragma location for easier error tracking.
+          // Add the pragma location for easier error tracking.
           //
-          os << "r += " << strlit (l) << ";"
-             << "// From " << location_string (i->loc, true) << endl
-             << "r += " << e.value << ";";
+          from.push_back (l);
+          from.push_back ("// From " + location_string (i->loc, true));
+          from.push_back (e.value);
 
           if (poly_depth != 1)
           {
+            bool t (true);             //@@ (im)perfect forwarding
             size_t d (poly_depth - 1); //@@ (im)perfect forward.
-            instance<polymorphic_object_joins> j (
-              o, d, i->alias, "r += ", ";");
+            instance<polymorphic_object_joins> j (o, t, d, i->alias);
             j->traverse (polymorphic_base (o));
+
+            from.insert (from.end (), j->begin (), j->end ());
+            query_optimize = query_optimize || !j->joins.empty ();
           }
-
-          os << endl;
-
           continue;
         }
 
@@ -4147,39 +4222,28 @@ traverse_view (type& c)
             //
             if (!ambig)
             {
-              error (i->loc)
-                << "pointed-to object '" << class_name (*c) <<  "' is "
-                << "ambiguous" << endl;
-
-              info (i->loc)
-                << "candidates are:" << endl;
-
-              info (vo->loc)
-                << "  '" << vo->name () << "'" << endl;
-
+              error (i->loc) << "pointed-to object '" << class_name (*c) <<
+                "' is ambiguous" << endl;
+              info (i->loc) << "candidates are:" << endl;
+              info (vo->loc) << "  '" << vo->name () << "'" << endl;
               ambig = true;
             }
 
-            info (j->loc)
-              << "  '" << j->name () << "'" << endl;
+            info (j->loc) << "  '" << j->name () << "'" << endl;
           }
 
           if (ambig)
           {
-            info (i->loc)
-              << "use the full join condition clause in db pragma "
-              << "object to resolve this ambiguity" << endl;
-
+            info (i->loc) << "use the full join condition clause in db " <<
+              "pragma object to resolve this ambiguity" << endl;
             throw operation_failed ();
           }
 
           if (vo == 0)
           {
-            error (i->loc)
-              << "pointed-to object '" << class_name (*c) << "' "
-              << "specified in the join condition has not been "
-              << "previously associated with this view" << endl;
-
+            error (i->loc) << "pointed-to object '" << class_name (*c) <<
+              "' specified in the join condition has not been " <<
+              "previously associated with this view" << endl;
             throw operation_failed ();
           }
         }
@@ -4253,7 +4317,7 @@ traverse_view (type& c)
           l = "LEFT JOIN ";
           l += ct;
           l += " ON";
-          os << "r += " << strlit (l) << ";";
+          from.push_back (l);
 
           // If we are the pointed-to object, then we have to turn
           // things around. This is necessary to have the proper
@@ -4330,7 +4394,7 @@ traverse_view (type& c)
             l += '.';
             l += quote_id (j->name);
 
-            os << "r += " << strlit (l) << ";";
+            from.push_back (strlit (l));
           }
         }
 
@@ -4341,7 +4405,7 @@ traverse_view (type& c)
           l += (need_alias_as ? " AS " : " ") + quote_id (alias);
 
         l += " ON";
-        os << "r += " << strlit (l) << ";";
+        from.push_back (l);
 
         if (cont != 0)
         {
@@ -4413,7 +4477,7 @@ traverse_view (type& c)
             l += '.';
             l += quote_id (j->name);
 
-            os << "r += " << strlit (l) << ";";
+            from.push_back (strlit (l));
           }
         }
         else
@@ -4457,27 +4521,60 @@ traverse_view (type& c)
             l += '.';
             l += quote_id (j->name);
 
-            os << "r += " << strlit (l) << ";";
+            from.push_back (strlit (l));
           }
         }
 
         if (poly_depth != 1)
         {
+          bool t (true);             //@@ (im)perfect forwarding
           size_t d (poly_depth - 1); //@@ (im)perfect forward.
-          instance<polymorphic_object_joins> j (
-            o, d, i->alias, "r += ", ";");
+          instance<polymorphic_object_joins> j (o, t, d, i->alias);
           j->traverse (polymorphic_base (o));
+
+          from.insert (from.end (), j->begin (), j->end ());
+          query_optimize = query_optimize || !j->joins.empty ();
         }
-
-        os << endl;
-
       } // End JOIN-generating for-loop.
+
+      string sep (versioned || query_optimize ? "\n" : " ");
+
+      os << "query_base_type r (" << endl
+         << strlit ("SELECT" + sep);
+
+      for (statement_columns::const_iterator i (sc.begin ()),
+             e (sc.end ()); i != e;)
+      {
+        string const& c (i->column);
+        os << endl
+           << strlit (c + (++i != e ? "," : "") + sep);
+      }
+
+      os << ");"
+         << endl;
+
+      // It is much easier to add the separator at the beginning of the
+      // next line since the JOIN condition may not be a string literal.
+      //
+      for (strings::const_iterator i (from.begin ()); i != from.end (); ++i)
+      {
+        if (i->compare (0, 5, "FROM ") == 0)
+          os << "r += " << strlit (*i) << ";";
+        else if (i->compare (0, 5, "LEFT ") == 0)
+          os << endl
+             << "r += " << strlit (sep + *i) << ";";
+        else if (i->compare (0, 3, "// ") == 0)
+          os << *i << endl;
+        else
+          os << "r += " << *i << ";"; // Already a string literal.
+      }
 
       // Generate the query condition.
       //
       if (!vq.literal.empty () || !vq.expr.empty ())
       {
-        os << "query_base_type c (" << endl;
+        os << endl
+           << "query_base_type c (" << endl;
 
         bool ph (false);
 
@@ -4521,21 +4618,31 @@ traverse_view (type& c)
           // rid of useless clauses like WHERE TRUE.
           //
           if (ph)
-            os << "c.optimize ();";
+            os << endl
+               << "c.optimize ();";
         }
 
         if (!ph)
-          os << "c += q;";
+          os << endl
+             << "c += q;";
 
-        os << "r += c.clause_prefix ();"
+        os << endl
+           << "if (!c.empty ())"
+           << "{"
+           << "r += " << strlit (sep) << ";"
+           << "r += c.clause_prefix ();"
            << "r += c;"
-           << endl;
+           << "}";
       }
       else
       {
-        os << "r += q.clause_prefix ();"
+        os << endl
+           << "if (!q.empty ())"
+           << "{"
+           << "r += " << strlit (sep) << ";"
+           << "r += q.clause_prefix ();"
            << "r += q;"
-           << endl;
+           << "}";
       }
     }
 
@@ -4579,7 +4686,8 @@ traverse_view (type& c)
     os << "qs.init_parameters ();"
        << "shared_ptr<select_statement> st (" << endl
        << "new (shared) select_statement (" << endl;
-    view_query_statement_ctor_args (c, "qs", false);
+    view_query_statement_ctor_args (
+      c, "qs", versioned || query_optimize, false);
     os << "));" << endl
        << "st->execute ();";
 
@@ -4651,7 +4759,8 @@ traverse_view (type& c)
 
     os << "r->stmt.reset (" << endl
        << "new (shared) select_statement (" << endl;
-    view_query_statement_ctor_args (c, "r->query", true);
+    view_query_statement_ctor_args (
+      c, "r->query", versioned || query_optimize, true);
     os << "));"
        << endl
        << "return r;"

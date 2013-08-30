@@ -595,30 +595,29 @@ namespace relational
           os << "st.stream_result ();";
         }
 
-        virtual void
+        virtual string
         persist_statement_extra (type& c,
                                  relational::query_parameters& qp,
                                  persist_position p)
         {
-          if (p != persist_after_values)
-            return;
+          string r;
 
-          semantics::data_member* id (id_member (c));
-
-          type* poly_root (polymorphic (c));
-          bool poly_derived (poly_root != 0 && poly_root != &c);
-
-          if (id != 0 && !poly_derived && id->count ("auto"))
+          if (p == persist_after_values)
           {
+            semantics::data_member* id (id_member (c));
+
+            type* poly_root (polymorphic (c));
+            bool poly_derived (poly_root != 0 && poly_root != &c);
+
             // Top-level auto id.
             //
-            os << endl
-               << strlit (" RETURNING " +
-                          convert_from (column_qname (*id, column_prefix ()),
-                                        *id) +
-                          " INTO " +
-                          qp.next ());
+            if (id != 0 && !poly_derived && id->count ("auto"))
+              r = "RETURNING " +
+                convert_from (column_qname (*id, column_prefix ()), *id) +
+                " INTO " + qp.next ();
           }
+
+          return r;
         }
       };
       entry<class_> class_entry_;

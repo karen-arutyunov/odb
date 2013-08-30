@@ -631,28 +631,28 @@ namespace relational
       {
         class_ (base const& x): base (x) {}
 
-        virtual void
+        virtual string
         persist_statement_extra (type& c,
                                  relational::query_parameters&,
                                  persist_position p)
         {
-          if (p != persist_after_values)
-            return;
+          string r;
 
-          semantics::data_member* id (id_member (c));
-
-          type* poly_root (polymorphic (c));
-          bool poly_derived (poly_root != 0 && poly_root != &c);
-
-          if (id != 0 && !poly_derived && id->count ("auto"))
+          if (p == persist_after_values)
           {
+            semantics::data_member* id (id_member (c));
+
+            type* poly_root (polymorphic (c));
+            bool poly_derived (poly_root != 0 && poly_root != &c);
+
             // Top-level auto id.
             //
-            os << endl
-               << strlit (" RETURNING " +
-                          convert_from (column_qname (*id, column_prefix ()),
-                                        *id));
+            if (id != 0 && !poly_derived && id->count ("auto"))
+              r = "RETURNING " +
+                convert_from (column_qname (*id, column_prefix ()), *id);
           }
+
+          return r;
         }
 
         virtual void
@@ -847,7 +847,10 @@ namespace relational
         }
 
         virtual void
-        object_query_statement_ctor_args (type&, string const& q, bool prep)
+        object_query_statement_ctor_args (type&,
+                                          string const& q,
+                                          bool process,
+                                          bool prep)
         {
           os << "sts.connection ()," << endl;
 
@@ -856,7 +859,9 @@ namespace relational
           else
             os << "query_statement_name," << endl;
 
-          os << "query_statement + " << q << ".clause ()," << endl
+          os << "text," << endl
+             << process << "," << endl // Process.
+             << "true," << endl        // Optimize.
              << q << ".parameter_types ()," << endl
              << q << ".parameter_count ()," << endl
              << q << ".parameters_binding ()," << endl
@@ -868,14 +873,17 @@ namespace relational
         {
           os << "conn," << endl
              << "erase_query_statement_name," << endl
-             << "erase_query_statement + q.clause ()," << endl
+             << "text," << endl
              << "q.parameter_types ()," << endl
              << "q.parameter_count ()," << endl
              << "q.parameters_binding ()";
         }
 
         virtual void
-        view_query_statement_ctor_args (type&, string const& q, bool prep)
+        view_query_statement_ctor_args (type&,
+                                        string const& q,
+                                        bool process,
+                                        bool prep)
         {
           os << "sts.connection ()," << endl;
 
@@ -885,6 +893,8 @@ namespace relational
             os << "query_statement_name," << endl;
 
           os << q << ".clause ()," << endl
+             << process << "," << endl   // Process.
+             << "true," << endl          // Optimize.
              << q << ".parameter_types ()," << endl
              << q << ".parameter_count ()," << endl
              << q << ".parameters_binding ()," << endl

@@ -1460,6 +1460,8 @@ public:
   bool multi_static;
   bool multi_dynamic;
 
+  bool force_versioned; // Force statement processing for debugging.
+
   // Outermost object or view currently being traversed.
   //
   semantics::class_*& top_object;

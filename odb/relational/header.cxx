@@ -27,7 +27,6 @@ traverse_object (type& c)
   bool reuse_abst (abst && !poly);
 
   string const& type (class_fq_name (c));
-  column_count_type const& cc (column_count (c));
 
   // Sections.
   //
@@ -325,6 +324,9 @@ traverse_object (type& c)
     return;
   }
 
+  column_count_type const& cc (column_count (c));
+  bool versioned (force_versioned);
+
   // Statements typedefs.
   //
   if (poly)
@@ -401,6 +403,9 @@ traverse_object (type& c)
     cc.separate_load << "UL;"
      << "static const std::size_t separate_update_column_count = " <<
     cc.separate_update << "UL;"
+     << endl;
+
+  os << "static const bool versioned = " << versioned << ";"
      << endl;
 
   // Statements.

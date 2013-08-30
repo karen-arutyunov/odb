@@ -242,6 +242,7 @@ namespace relational
         // Figure out column counts.
         //
         size_t id_columns, value_columns, data_columns, cond_columns;
+        bool versioned;
 
         if (!reuse_abst)
         {
@@ -323,6 +324,8 @@ namespace relational
             data_columns += value_columns;
           }
 
+          versioned = force_versioned;
+
           // Store column counts for the source generator.
           //
           m.set ("id-column-count", id_columns);
@@ -367,6 +370,9 @@ namespace relational
 
           os << "static const std::size_t data_column_count = " <<
             data_columns << "UL;"
+             << endl;
+
+          os << "static const bool versioned = " << versioned << ";"
              << endl;
 
           // Statements.
@@ -986,6 +992,7 @@ namespace relational
         // column_count
         //
         column_count_type const& cc (column_count (poly ? *poly_root : c_));
+        bool versioned (force_versioned);
 
         // Generate load and update column counts even when they are zero so
         // that we can instantiate section_statements.
@@ -1001,6 +1008,9 @@ namespace relational
           " = " << (poly_derived ? 0 : cc.optimistic_managed) << "UL;"
            << "static const std::size_t update_column_count = " <<
           (update ? s.total - s.inverse - s.readonly : 0) << "UL;"
+           << endl;
+
+        os << "static const bool versioned = " << versioned << ";"
            << endl;
 
         // Statements.

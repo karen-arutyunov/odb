@@ -873,22 +873,25 @@ namespace relational
             : "sts.update_statement ().version ()";
         }
 
-        virtual void
+        virtual string
         update_statement_extra (user_section&)
         {
+          string r;
+
           semantics::data_member* ver (optimistic (c_));
 
           if (ver == 0 ||
               parse_sql_type (column_type (*ver), *ver).type !=
               sql_type::ROWVERSION)
-            return;
+            return r;
 
           // Long data & SQL Server 2005 incompatibility is detected
           // in persist_statement_extra.
           //
-          os << strlit (
-            " OUTPUT INSERTED." + convert_from (
-              column_qname (*ver, column_prefix ()), *ver)) << endl;
+          r = "OUTPUT INSERTED." +
+            convert_from (column_qname (*ver, column_prefix ()), *ver);
+
+          return r;
         }
       };
       entry<section_traits> section_traits_;
@@ -930,11 +933,13 @@ namespace relational
           os << "st.stream_result ();";
         }
 
-        virtual void
+        virtual string
         persist_statement_extra (type& c,
                                  relational::query_parameters&,
                                  persist_position p)
         {
+          string r;
+
           type* poly_root (polymorphic (c));
           bool poly_derived (poly_root != 0 && poly_root != &c);
 
@@ -942,7 +947,7 @@ namespace relational
           // auto id/version are handled by the root.
           //
           if (poly_derived)
-            return;
+            return r;
 
           // See if we have auto id or ROWVERSION version.
           //
@@ -960,7 +965,7 @@ namespace relational
           }
 
           if (id == 0 && ver == 0)
-            return;
+            return r;
 
           // SQL Server 2005 has a bug that causes it to fail on an
           // INSERT statement with the OUTPUT clause if data for one
@@ -996,23 +1001,21 @@ namespace relational
                   throw operation_failed ();
                 }
 
-                os << endl
-                   << strlit ("; SELECT " +
-                              convert_from ("SCOPE_IDENTITY()", *id));
+                r = "; SELECT " + convert_from ("SCOPE_IDENTITY()", *id);
               }
 
-              return;
+              return r;
             }
           }
 
           if (p == persist_after_columns)
           {
-            string s (" OUTPUT ");
+            r = "OUTPUT ";
 
             // Top-level auto id column.
             //
             if (id != 0)
-              s += "INSERTED." + convert_from (
+              r += "INSERTED." + convert_from (
                 column_qname (*id, column_prefix ()), *id);
 
             // Top-level version column.
@@ -1020,19 +1023,21 @@ namespace relational
             if (ver != 0)
             {
               if (id != 0)
-                s += ',';
+                r += ',';
 
-              s += "INSERTED." + convert_from (
+              r += "INSERTED." + convert_from (
                 column_qname (*ver, column_prefix ()), *ver);
             }
-
-            os << strlit (s) << endl;
           }
+
+          return r;
         }
 
-        virtual void
+        virtual string
         update_statement_extra (type& c)
         {
+          string r;
+
           type* poly_root (polymorphic (c));
           bool poly_derived (poly_root != 0 && poly_root != &c);
 
@@ -1040,21 +1045,22 @@ namespace relational
           // version is handled by the root.
           //
           if (poly_derived)
-            return;
+            return r;
 
           semantics::data_member* ver (optimistic (c));
 
           if (ver == 0 ||
               parse_sql_type (column_type (*ver), *ver).type !=
               sql_type::ROWVERSION)
-            return;
+            return r;
 
           // Long data & SQL Server 2005 incompatibility is detected
           // in persist_statement_extra.
           //
-          os << strlit (
-            " OUTPUT INSERTED." + convert_from (
-              column_qname (*ver, column_prefix ()), *ver)) << endl;
+          r = "OUTPUT INSERTED." +
+            convert_from (column_qname (*ver, column_prefix ()), *ver);
+
+          return r;
         }
 
         virtual void
