@@ -2,6 +2,8 @@
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
+#include <sqlite3.h>
+
 #include <odb/sqlite/database.hxx>
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/statement.hxx>
@@ -64,6 +66,33 @@ namespace odb
       }
     }
 
+    // In SQLite, when a commit fails (e.g., because of the deferred
+    // foreign key constraint violation), the transaction may not
+    // be automatically rolled back. So we have to do it ourselves.
+    //
+    struct commit_guard
+    {
+      commit_guard (connection& c): c_ (&c) {}
+      void release () {c_ = 0;}
+
+      ~commit_guard ()
+      {
+        if (c_ != 0 && sqlite3_get_autocommit (c_->handle ()) == 0)
+        {
+          // This is happening while another exception is active.
+          //
+          try
+          {
+            c_->statement_cache ().rollback_statement ().execute ();
+          }
+          catch (...) {}
+        }
+      }
+
+    private:
+      connection* c_;
+    };
+
     void transaction_impl::
     commit ()
     {
@@ -79,7 +108,11 @@ namespace odb
       //
       connection_->clear ();
 
-      connection_->statement_cache ().commit_statement ().execute ();
+      {
+        commit_guard cg (*connection_);
+        connection_->statement_cache ().commit_statement ().execute ();
+        cg.release ();
+      }
 
       // Release the connection.
       //
