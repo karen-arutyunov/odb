@@ -2402,6 +2402,9 @@ namespace
       if (discriminator (m))
         c_.discriminator++;
 
+      if (added (member_path_) || deleted (member_path_))
+        c_.soft++;
+
       if (separate_load (member_path_))
         c_.separate_load++;
 

@@ -42,6 +42,27 @@ namespace relational
       virtual bool
       pre (member_info& mi)
       {
+        // If the member is soft- added or deleted, check the version.
+        //
+        unsigned long long av (added (mi.m));
+        unsigned long long dv (deleted (mi.m));
+        if (av != 0 || dv != 0)
+        {
+          os << "if (";
+
+          if (av != 0)
+            os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+          if (av != 0 || dv != 0)
+            os << " &&" << endl;
+
+          if (dv != 0)
+            os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+          os << ")"
+             << "{";
+        }
+
         // If the whole value type is readonly, then set will never be
         // called with sk == statement_update.
         //
@@ -57,6 +78,13 @@ namespace relational
       }
 
       virtual void
+      post (member_info& mi)
+      {
+        if (added (mi.m) || deleted (mi.m))
+          os << "}";
+      }
+
+      virtual void
       traverse_composite (member_info& mi)
       {
         string traits ("composite_value_traits< " + mi.fq_type () + ", id_" +
@@ -64,9 +92,14 @@ namespace relational
 
         if (get_)
           os << "r = r && " << traits << "::get_null (" <<
-            "i." << mi.var << "value);";
+            "i." << mi.var << "value";
         else
-          os << traits << "::set_null (i." << mi.var << "value, sk);";
+          os << traits << "::set_null (i." << mi.var << "value, sk";
+
+        if (versioned (*composite (mi.t)))
+          os << ", svm";
+
+        os << ");";
       }
     };
 
@@ -94,9 +127,14 @@ namespace relational
           os << "if (sk == statement_insert)" << endl;
 
         if (get_)
-          os << "r = r && " << traits << "::get_null (i);";
+          os << "r = r && " << traits << "::get_null (i";
         else
-          os << traits << "::set_null (i, sk);";
+          os << traits << "::set_null (i, sk";
+
+        if (versioned (c))
+          os << ", svm";
+
+        os << ");";
       }
 
     protected:
@@ -373,14 +411,9 @@ namespace relational
         {
           os << "inline" << endl
              << "void " << traits << "::" << endl
-             << "load_ (";
-
-          if (poly && !poly_derived)
-            os << "base_statements_type&, ";
-          else
-            os << "statements_type&, ";
-
-          os << "object_type& obj, bool)"
+             << "load_ (statements_type&," << endl
+             << "object_type& obj," << endl
+             << "bool)"
              << "{"
              << "ODB_POTENTIALLY_UNUSED (obj);"
              << endl;
@@ -499,6 +532,8 @@ namespace relational
       virtual void
       traverse_composite (type& c)
       {
+        bool versioned (context::versioned (c));
+
         string const& type (class_fq_name (c));
         string traits ("access::composite_value_traits< " + type + ", id_" +
                        db.string () + " >");
@@ -513,9 +548,20 @@ namespace relational
           //
           os << "inline" << endl
              << "bool " << traits << "::" << endl
-             << "get_null (const image_type& i)"
-             << "{"
-             << "bool r (true);";
+             << "get_null (const image_type& i";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
+             << "{";
+
+          if (versioned)
+            os << "ODB_POTENTIALLY_UNUSED (svm);"
+               << endl;
+
+          os << "bool r (true);";
 
           inherits (c, get_null_base_inherits_);
           names (c, get_null_member_names_);
@@ -527,10 +573,21 @@ namespace relational
           //
           os << "inline" << endl
              << "void " << traits << "::" << endl
-             << "set_null (image_type& i, " << db << "::statement_kind sk)"
+             << "set_null (image_type& i," << endl
+             << db << "::statement_kind sk";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
              << "{"
-             << "ODB_POTENTIALLY_UNUSED (sk);"
-             << endl
+             << "ODB_POTENTIALLY_UNUSED (sk);";
+
+          if (versioned)
+            os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+          os << endl
              << "using namespace " << db << ";"
              << endl;
 

@@ -324,7 +324,7 @@ namespace relational
             data_columns += value_columns;
           }
 
-          versioned = force_versioned;
+          versioned = context::versioned (m);
 
           // Store column counts for the source generator.
           //

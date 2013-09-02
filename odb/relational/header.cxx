@@ -26,6 +26,8 @@ traverse_object (type& c)
   bool abst (abstract (c));
   bool reuse_abst (abst && !poly);
 
+  bool versioned (context::versioned (c));
+
   string const& type (class_fq_name (c));
 
   // Sections.
@@ -237,10 +239,16 @@ traverse_object (type& c)
     // false).
     //
     os << "static bool" << endl
-       << "grow (image_type&, " << truncated_vector;
+       << "grow (image_type&," << endl
+       << truncated_vector;
+
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration&";
 
     if (poly_derived)
-      os << ", std::size_t = depth";
+      os << "," << endl
+         << "std::size_t = depth";
 
     os << ");"
        << endl;
@@ -259,7 +267,13 @@ traverse_object (type& c)
        << "std::size_t id_size," << endl;
 
   os << "image_type&," << endl
-     << db << "::statement_kind);"
+     << db << "::statement_kind";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration&";
+
+  os << ");"
      << endl;
 
   // bind (id_image_type)
@@ -275,16 +289,31 @@ traverse_object (type& c)
   // init (image, object)
   //
   os << "static " << (generate_grow ? "bool" : "void") << endl
-     << "init (image_type&, const object_type&, " << db << "::statement_kind);"
+     << "init (image_type&," << endl
+     << "const object_type&," << endl
+     << db << "::statement_kind";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration&";
+
+  os << ");"
      << endl;
 
   // init (object, image)
   //
   os << "static void" << endl
-     << "init (object_type&, const image_type&, database*";
+     << "init (object_type&," << endl
+     << "const image_type&," << endl
+     << "database*";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration&";
 
   if (poly_derived)
-    os << ", std::size_t = depth";
+    os << "," << endl
+       << "std::size_t = depth";
 
   os << ");"
      << endl;
@@ -325,7 +354,6 @@ traverse_object (type& c)
   }
 
   column_count_type const& cc (column_count (c));
-  bool versioned (force_versioned);
 
   // Statements typedefs.
   //
@@ -347,8 +375,6 @@ traverse_object (type& c)
          << "statements_type;"
          << endl
          << "typedef statements_type root_statements_type;"
-         << "typedef " << db << "::object_statements<object_type> " <<
-        "base_statements_type;"
          << endl;
   }
   else
@@ -610,17 +636,16 @@ traverse_object (type& c)
     // Load the object image.
     //
     os << "static bool" << endl
-       << "find_ (";
+       << "find_ (statements_type&," << endl
+       << "const id_type*";
 
-    if (poly && !poly_derived)
-      os << "base_statements_type&, ";
-    else
-      os << "statements_type&, ";
-
-    os << "const id_type*";
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration&";
 
     if (poly_derived && !abst)
-      os << ", std::size_t = depth";
+      os << "," << endl
+         << "std::size_t = depth";
 
     os << ");"
        << endl;
@@ -630,14 +655,8 @@ traverse_object (type& c)
     // id.
     //
     os << "static void" << endl
-       << "load_ (";
-
-    if (poly && !poly_derived)
-      os << "base_statements_type&," << endl;
-    else
-      os << "statements_type&," << endl;
-
-    os << "object_type&," << endl
+       << "load_ (statements_type&," << endl
+       << "object_type&," << endl
        << "bool reload = false";
 
     if (poly_derived)
@@ -877,6 +896,8 @@ traverse_view (type& c)
 void relational::header::class1::
 traverse_composite (type& c)
 {
+  bool versioned (context::versioned (c));
+
   string const& type (class_fq_name (c));
 
   os << "// " << class_name (c) << endl
@@ -913,27 +934,57 @@ traverse_composite (type& c)
   if (generate_grow)
   {
     os << "static bool" << endl
-       << "grow (image_type&, " << truncated_vector << ");"
+       << "grow (image_type&," << endl
+       << truncated_vector;
+
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration&";
+
+    os << ");"
        << endl;
   }
 
   // bind (image_type)
   //
   os << "static void" << endl
-     << "bind (" << bind_vector << ", image_type&, " <<
-    db << "::statement_kind);"
+     << "bind (" << bind_vector << "," << endl
+     << "image_type&," << endl
+     << db << "::statement_kind";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration&";
+
+  os << ");"
      << endl;
 
   // init (image, value)
   //
   os << "static " << (generate_grow ? "bool" : "void") << endl
-     << "init (image_type&, const value_type&, " << db << "::statement_kind);"
+     << "init (image_type&," << endl
+     << "const value_type&," << endl
+     << db << "::statement_kind";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration&";
+
+  os << ");"
      << endl;
 
   // init (value, image)
   //
   os << "static void" << endl
-     << "init (value_type&, const image_type&, database*);"
+     << "init (value_type&," << endl
+     << "const image_type&," << endl
+     << "database*";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration&";
+
+  os << ");"
      << endl;
 
   if (!has_a (c, test_container))
@@ -941,13 +992,26 @@ traverse_composite (type& c)
     // get_null (image)
     //
     os << "static bool" << endl
-       << "get_null (const image_type&);"
+       << "get_null (const image_type&";
+
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration&";
+
+    os << ");"
        << endl;
 
     // set_null (image)
     //
     os << "static void" << endl
-       << "set_null (image_type&, " << db << "::statement_kind);"
+       << "set_null (image_type&," << endl
+       << db << "::statement_kind";
+
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration&";
+
+    os << ");"
        << endl;
   }
 

@@ -1001,6 +1001,27 @@ namespace relational
               os << "if (sk != statement_update)"
                  << "{";
           }
+
+          // If the member is soft- added or deleted, check the version.
+          //
+          unsigned long long av (added (mi.m));
+          unsigned long long dv (deleted (mi.m));
+          if (av != 0 || dv != 0)
+          {
+            os << "if (";
+
+            if (av != 0)
+              os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+            if (av != 0 && dv != 0)
+              os << " &&" << endl;
+
+            if (dv != 0)
+              os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+            os << ")"
+               << "{";
+          }
         }
 
         return true;
@@ -1011,9 +1032,13 @@ namespace relational
       {
         if (var_override_.empty ())
         {
-          semantics::class_* c;
+          // We need to increment the index even if we skipped this
+          // member due to the schema version.
+          //
+          if (added (mi.m) || deleted (mi.m))
+            os << "}";
 
-          if ((c = composite (mi.t)))
+          if (semantics::class_* c = composite (mi.t))
           {
             bool ro (readonly (*c));
             column_count_type const& cc (column_count (*c));
@@ -1083,7 +1108,8 @@ namespace relational
       {
         os << "composite_value_traits< " << mi.fq_type () << ", id_" <<
           db << " >::bind (" << endl
-           << "b + n, " << arg << "." << mi.var << "value, sk);";
+           << "b + n, " << arg << "." << mi.var << "value, sk" <<
+          (versioned (*composite (mi.t)) ? ", svm" : "") << ");";
       }
 
     protected:
@@ -1123,7 +1149,8 @@ namespace relational
         else
           os << "composite_value_traits< ";
 
-        os << class_fq_name (c) << ", id_" << db << " >::bind (b + n, i, sk);";
+        os << class_fq_name (c) << ", id_" << db << " >::bind (b + n, i, sk" <<
+          (versioned (c) ? ", svm" : "") << ");";
 
         column_count_type const& cc (column_count (c));
 
@@ -1218,7 +1245,8 @@ namespace relational
           os << "composite_value_traits< ";
 
         os << class_fq_name (c) << ", id_" << db << " >::grow (" << endl
-           << "i, t + " << index_ << "UL))" << endl
+           << "i, t + " << index_ << "UL" <<
+          (versioned (c) ? ", svm" : "") << "))" << endl
            << "grew = true;"
            << endl;
 
@@ -1299,7 +1327,7 @@ namespace relational
         if (mi.ptr != 0 && mi.m.count ("polymorphic-ref"))
           return false;
 
-        bool comp (composite (mi.t));
+        semantics::class_* comp (composite (mi.t));
 
         if (!member_override_.empty ())
         {
@@ -1323,17 +1351,36 @@ namespace relational
           os << "// " << mi.m.name () << endl
              << "//" << endl;
 
+          // If the member is soft- added or deleted, check the version.
+          //
+          unsigned long long av (added (mi.m));
+          unsigned long long dv (deleted (mi.m));
+          if (av != 0 || dv != 0)
+          {
+            os << "if (";
+
+            if (av != 0)
+              os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+            if (av != 0 && dv != 0)
+              os << " &&" << endl;
+
+            if (dv != 0)
+              os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+            os << ")"
+               << "{";
+          }
+
           // If the whole class is readonly, then we will never be
           // called with sk == statement_update.
           //
           if (!readonly (*context::top_object))
           {
-            semantics::class_* c;
-
             if (id (mi.m) ||
                 readonly (mi.m) ||
                 (section_ == 0 && separate_update (mi.m)) ||
-                ((c = composite (mi.t)) && readonly (*c))) // Can't be id.
+                (comp != 0 && readonly (*comp))) // Can't be id.
             {
               // If we are generating section init(), then sk can only be
               // statement_update.
@@ -1356,7 +1403,7 @@ namespace relational
             // Make sure this kind of member can be accessed with this
             // kind of accessor (database-specific, e.g., streaming).
             //
-            if (!comp)
+            if (comp == 0)
               check_accessor (mi, ma);
 
             // If this is not a synthesized expression, then output
@@ -1381,7 +1428,7 @@ namespace relational
         // For simple values this is taken care of by the value_traits
         // specializations.
         //
-        if (mi.wrapper != 0 && comp)
+        if (mi.wrapper != 0 && comp != 0)
         {
           // The wrapper type, not the wrapped type.
           //
@@ -1397,7 +1444,8 @@ namespace relational
               member << "))" << endl
                << "composite_value_traits< " << mi.fq_type () << ", id_" <<
               db << " >::set_null (" << endl
-               << "i." << mi.var << "value, sk);"
+               << "i." << mi.var << "value, sk" <<
+              (versioned (*comp) ? ", svm" : "") << ");"
                << "else"
                << "{";
           }
@@ -1456,7 +1504,7 @@ namespace relational
 
           member = "id";
         }
-        else if (comp)
+        else if (comp != 0)
           type = mi.fq_type ();
         else
         {
@@ -1467,7 +1515,7 @@ namespace relational
           os << "bool is_null (" << null (mi.m, key_prefix_) << ");";
         }
 
-        if (comp)
+        if (comp != 0)
           traits = "composite_value_traits< " + type + ", id_" +
             db.string () + " >";
         else
@@ -1484,6 +1532,8 @@ namespace relational
       virtual void
       post (member_info& mi)
       {
+        semantics::class_* comp (composite (mi.t));
+
         if (mi.ptr != 0)
         {
           os << "}"
@@ -1491,13 +1541,14 @@ namespace relational
 
           if (!null (mi.m, key_prefix_))
             os << "throw null_pointer ();";
-          else if (composite (mi.t))
-            os << traits << "::set_null (i." << mi.var << "value, sk);";
+          else if (comp != 0)
+            os << traits << "::set_null (i." << mi.var << "value, sk" <<
+              (versioned (*comp) ? ", svm" : "") << ");";
           else
             set_null (mi);
         }
 
-        if (mi.wrapper != 0 && composite (mi.t))
+        if (mi.wrapper != 0 && comp != 0)
         {
           if (null (mi.m, key_prefix_) &&
               mi.wrapper->template get<bool> ("wrapper-null-handler"))
@@ -1505,6 +1556,12 @@ namespace relational
         }
 
         os << "}";
+
+        if (member_override_.empty ())
+        {
+          if (added (mi.m) || deleted (mi.m))
+            os << "}";
+        }
       }
 
       virtual void
@@ -1518,7 +1575,13 @@ namespace relational
         os << traits << "::init (" << endl
            << "i." << mi.var << "value," << endl
            << member << "," << endl
-           << "sk)";
+           << "sk";
+
+        if (versioned (*composite (mi.t)))
+          os << "," << endl
+             << "svm";
+
+        os << ")";
 
         if (grow)
           os << ")" << endl
@@ -1570,7 +1633,8 @@ namespace relational
         else
           os << "composite_value_traits< ";
 
-        os << class_fq_name (c) << ", id_" << db << " >::init (i, o, sk)";
+        os << class_fq_name (c) << ", id_" << db << " >::init (i, o, sk" <<
+          (versioned (c) ? ", svm" : "") << ")";
 
         if (generate_grow)
           os << ")" << endl
@@ -1661,7 +1725,7 @@ namespace relational
         if (ignore_implicit_discriminator_ && discriminator (mi.m))
           return false;
 
-        bool comp (composite (mi.t));
+        semantics::class_* comp (composite (mi.t));
 
         if (!member_override_.empty ())
         {
@@ -1676,8 +1740,29 @@ namespace relational
             return false;
 
           os << "// " << mi.m.name () << endl
-             << "//" << endl
-             << "{";
+             << "//" << endl;
+
+          // If the member is soft- added or deleted, check the version.
+          //
+          unsigned long long av (added (mi.m));
+          unsigned long long dv (deleted (mi.m));
+          if (av != 0 || dv != 0)
+          {
+            os << "if (";
+
+            if (av != 0)
+              os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+            if (av != 0 && dv != 0)
+              os << " &&" << endl;
+
+            if (dv != 0)
+              os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+            os << ")";
+          }
+
+          os << "{";
 
           // Get the member using the accessor expression.
           //
@@ -1686,7 +1771,7 @@ namespace relational
           // Make sure this kind of member can be modified with this
           // kind of accessor (database-specific, e.g., streaming).
           //
-          if (!comp)
+          if (comp == 0)
             check_modifier (mi, ma);
 
           // If this is not a synthesized expression, then output
@@ -1734,7 +1819,7 @@ namespace relational
         // simple values this is taken care of by the value_traits
         // specializations.
         //
-        if (mi.wrapper != 0 && comp)
+        if (mi.wrapper != 0 && comp != 0)
         {
           // The wrapper type, not the wrapped type.
           //
@@ -1748,7 +1833,8 @@ namespace relational
           {
             os << "if (composite_value_traits< " << mi.fq_type () <<
               ", id_" << db << " >::get_null (" << endl
-               << "i." << mi.var << "value))" << endl
+               << "i." << mi.var << "value" <<
+              (versioned (*comp) ? ", svm" : "") << "))" << endl
                << "wrapper_traits< " << wt << " >::set_null (" << member + ");"
                << "else" << endl;
           }
@@ -1770,10 +1856,11 @@ namespace relational
 
           os << "if (";
 
-          if (comp)
+          if (comp != 0)
             os << "composite_value_traits< " << type << ", id_" << db <<
               " >::get_null (" << endl
-               << "i." << mi.var << "value)";
+               << "i." << mi.var << "value" <<
+              (versioned (*comp) ? ", svm" : "") << ")";
           else
             get_null (mi);
 
@@ -1795,7 +1882,7 @@ namespace relational
         else
           type = mi.fq_type ();
 
-        if (comp)
+        if (comp != 0)
           traits = "composite_value_traits< " + type + ", id_" +
             db.string () + " >";
         else
@@ -1883,7 +1970,13 @@ namespace relational
         os << traits << "::init (" << endl
            << member << "," << endl
            << "i." << mi.var << "value," << endl
-           << "db);"
+           << "db";
+
+        if (versioned (*composite (mi.t)))
+          os << "," << endl
+             << "svm";
+
+        os << ");"
            << endl;
       }
 
@@ -1918,7 +2011,8 @@ namespace relational
         else
           os << "composite_value_traits< ";
 
-        os << class_fq_name (c) << ", id_" << db << " >::init (o, i, db);"
+        os << class_fq_name (c) << ", id_" << db << " >::init (o, i, db" <<
+          (versioned (c) ? ", svm" : "") << ");"
            << endl;
       }
     };
@@ -2083,7 +2177,7 @@ namespace relational
         //
         if (!reuse_abst)
         {
-          bool versioned (force_versioned);
+          bool versioned (context::versioned (m));
           string sep (versioned ? "\n" : " ");
 
           semantics::type& idt (container_idt (m));
@@ -2625,7 +2719,7 @@ namespace relational
              << "std::size_t n (0);"
              << endl;
 
-          os << "// key" << endl
+          os << "// value" << endl
              << "//" << endl;
           instance<bind_member> bm ("value_", "d", vt, "value_type", "value");
           bm->traverse (m);
@@ -3682,7 +3776,7 @@ namespace relational
           if (av != 0)
             os << "svm >= schema_version_migration (" << av << "ULL, true)";
 
-          if (av != 0 || dv != 0)
+          if (av != 0 && dv != 0)
             os << " &&" << endl;
 
           if (dv != 0)
@@ -5091,6 +5185,8 @@ namespace relational
       virtual void
       traverse_composite (type& c)
       {
+        bool versioned (context::versioned (c));
+
         string const& type (class_fq_name (c));
         string traits ("access::composite_value_traits< " + type + ", id_" +
                        db.string () + " >");
@@ -5111,11 +5207,22 @@ namespace relational
         if (generate_grow)
         {
           os << "bool " << traits << "::" << endl
-             << "grow (image_type& i, " << truncated_vector << " t)"
+             << "grow (image_type& i," << endl
+             << truncated_vector << " t";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
              << "{"
              << "ODB_POTENTIALLY_UNUSED (i);"
-             << "ODB_POTENTIALLY_UNUSED (t);"
-             << endl
+             << "ODB_POTENTIALLY_UNUSED (t);";
+
+          if (versioned)
+            os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+          os << endl
              << "bool grew (false);"
              << endl;
 
@@ -5130,13 +5237,24 @@ namespace relational
         // bind (image_type)
         //
         os << "void " << traits << "::" << endl
-           << "bind (" << bind_vector << " b, image_type& i, " <<
-          db << "::statement_kind sk)"
+           << "bind (" << bind_vector << " b," << endl
+           << "image_type& i," << endl
+           << db << "::statement_kind sk";
+
+        if (versioned)
+          os << "," << endl
+             << "const schema_version_migration& svm";
+
+        os << ")"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (b);"
            << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (sk);"
-           << endl
+           << "ODB_POTENTIALLY_UNUSED (sk);";
+
+        if (versioned)
+          os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+        os << endl
            << "using namespace " << db << ";"
            << endl;
 
@@ -5156,13 +5274,24 @@ namespace relational
         // init (image, value)
         //
         os << (generate_grow ? "bool " : "void ") << traits << "::" << endl
-           << "init (image_type& i, const value_type& o, " <<
-          db << "::statement_kind sk)"
+           << "init (image_type& i," << endl
+           << "const value_type& o," << endl
+           << db << "::statement_kind sk";
+
+        if (versioned)
+          os << "," << endl
+             << "const schema_version_migration& svm";
+
+        os << ")"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (i);"
            << "ODB_POTENTIALLY_UNUSED (o);"
-           << "ODB_POTENTIALLY_UNUSED (sk);"
-           << endl
+           << "ODB_POTENTIALLY_UNUSED (sk);";
+
+        if (versioned)
+          os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+        os << endl
            << "using namespace " << db << ";"
            << endl;
 
@@ -5185,12 +5314,24 @@ namespace relational
         // init (value, image)
         //
         os << "void " << traits << "::" << endl
-           << "init (value_type& o, const image_type&  i, database* db)"
+           << "init (value_type& o," << endl
+           << "const image_type&  i," << endl
+           << "database* db";
+
+        if (versioned)
+          os << "," << endl
+             << "const schema_version_migration& svm";
+
+        os << ")"
            << "{"
            << "ODB_POTENTIALLY_UNUSED (o);"
            << "ODB_POTENTIALLY_UNUSED (i);"
-           << "ODB_POTENTIALLY_UNUSED (db);"
-           << endl;
+           << "ODB_POTENTIALLY_UNUSED (db);";
+
+        if (versioned)
+          os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+        os << endl;
 
         inherits (c, init_value_base_inherits_);
         names (c, init_value_member_names_);

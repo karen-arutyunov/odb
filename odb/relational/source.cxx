@@ -49,6 +49,9 @@ traverse_object (type& c)
       (opt ? context::grow (*opt) : false);
   }
 
+  column_count_type const& cc (column_count (c));
+  bool versioned (context::versioned (c));
+
   // Schema name as a string literal or empty.
   //
   string schema_name (options.schema_name ()[db]);
@@ -58,7 +61,6 @@ traverse_object (type& c)
   string const& type (class_fq_name (c));
   string traits ("access::object_traits_impl< " + type + ", id_" +
                  db.string () + " >");
-  column_count_type const& cc (column_count (c));
 
   user_sections& uss (c.get<user_sections> ("user-sections"));
   user_sections* buss (poly_base != 0
@@ -230,16 +232,26 @@ traverse_object (type& c)
   if (generate_grow)
   {
     os << "bool " << traits << "::" << endl
-       << "grow (image_type& i, " << truncated_vector << " t";
+       << "grow (image_type& i," << endl
+       << truncated_vector << " t";
+
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration& svm";
 
     if (poly_derived)
-      os << ", std::size_t d";
+      os << "," << endl
+         << "std::size_t d";
 
     os << ")"
        << "{"
        << "ODB_POTENTIALLY_UNUSED (i);"
-       << "ODB_POTENTIALLY_UNUSED (t);"
-       << endl
+       << "ODB_POTENTIALLY_UNUSED (t);";
+
+    if (versioned)
+      os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+    os << endl
        << "bool grew (false);"
        << endl;
 
@@ -257,6 +269,7 @@ traverse_object (type& c)
          << "{"
          << "if (base_traits::grow (*i.base, " <<
         "t + " << cols << "UL" <<
+        (context::versioned (*poly_base) ? ", svm" : "") <<
         (poly_base != poly_root ? ", d" : "") << "))" << endl
          << "i.base->version++;"
          << "}";
@@ -283,10 +296,20 @@ traverse_object (type& c)
        << "std::size_t id_size," << endl;
 
   os << "image_type& i," << endl
-     << db << "::statement_kind sk)"
+     << db << "::statement_kind sk";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration& svm";
+
+  os << ")"
      << "{"
-     << "ODB_POTENTIALLY_UNUSED (sk);"
-     << endl
+     << "ODB_POTENTIALLY_UNUSED (sk);";
+
+  if (versioned)
+    os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+  os << endl
      << "using namespace " << db << ";"
      << endl;
 
@@ -336,12 +359,13 @@ traverse_object (type& c)
     os << "// " << class_name (*poly_base) << " base" << endl
        << "//" << endl
        << "if (sk == statement_select)" << endl
-       << "base_traits::";
+       << "base_traits::bind (b + n, ";
 
-    if (poly_base == poly_root)
-      os << "bind (b + n, *i.base, sk);";
-    else
-      os << "bind (b + n, id, id_size, *i.base, sk);";
+    if (poly_base != poly_root)
+      os << "id, id_size, ";
+
+    os << "*i.base, sk" <<
+      (context::versioned (*poly_base) ? ", svm" : "") << ");";
   }
 
   os << "}";
@@ -378,13 +402,24 @@ traverse_object (type& c)
   // init (image, object)
   //
   os << (generate_grow ? "bool " : "void ") << traits << "::" << endl
-     << "init (image_type& i, const object_type& o, " <<
-    db << "::statement_kind sk)"
+     << "init (image_type& i," << endl
+     << "const object_type& o," << endl
+     << db << "::statement_kind sk";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration& svm";
+
+  os << ")"
      << "{"
      << "ODB_POTENTIALLY_UNUSED (i);"
      << "ODB_POTENTIALLY_UNUSED (o);"
-     << "ODB_POTENTIALLY_UNUSED (sk);"
-     << endl
+     << "ODB_POTENTIALLY_UNUSED (sk);";
+
+  if (versioned)
+    os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+  os << endl
      << "using namespace " << db << ";"
      << endl;
 
@@ -411,17 +446,28 @@ traverse_object (type& c)
   // init (object, image)
   //
   os << "void " << traits << "::" << endl
-     << "init (object_type& o, const image_type& i, database* db";
+     << "init (object_type& o," << endl
+     << "const image_type& i," << endl
+     << "database* db";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration& svm";
 
   if (poly_derived)
-    os << ", std::size_t d";
+    os << "," << endl
+       << "std::size_t d";
 
   os << ")"
      << "{"
      << "ODB_POTENTIALLY_UNUSED (o);"
      << "ODB_POTENTIALLY_UNUSED (i);"
-     << "ODB_POTENTIALLY_UNUSED (db);"
-     << endl;
+     << "ODB_POTENTIALLY_UNUSED (db);";
+
+  if (versioned)
+    os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+  os << endl;
 
   if (poly_derived)
   {
@@ -429,6 +475,7 @@ traverse_object (type& c)
        << "//" << endl
        << "if (--d != 0)" << endl
        << "base_traits::init (o, *i.base, db" <<
+      (context::versioned (*poly_base) ? ", svm" : "") <<
       (poly_base != poly_root ? ", d" : "") << ");"
        << endl;
   }
@@ -476,8 +523,6 @@ traverse_object (type& c)
   //
   if (reuse_abst)
     return;
-
-  bool versioned (force_versioned);
 
   //
   // Containers (concrete).
@@ -1087,6 +1132,10 @@ traverse_object (type& c)
        << "throw abstract_class ();"
        << endl;
 
+  if (versioned)
+    os << "const schema_version_migration& svm (" <<
+      "db.schema_version_migration (" << schema_name << "));";
+
   os << db << "::connection& conn (" << endl
      << db << "::transaction::current ().connection ());"
      << "statements_type& sts (" << endl
@@ -1124,7 +1173,7 @@ traverse_object (type& c)
   if (generate_grow)
     os << "if (";
 
-  os << "init (im, obj, statement_insert)";
+  os << "init (im, obj, statement_insert" << (versioned ? ", svm" : "") << ")";
 
   if (generate_grow)
     os << ")" << endl
@@ -1154,7 +1203,7 @@ traverse_object (type& c)
   if (poly_derived)
     os << "idb.bind, idb.count, ";
 
-  os << "im, statement_insert);";
+  os << "im, statement_insert" << (versioned ? ", svm" : "") << ");";
 
   if (poly_derived)
     os << "sts.insert_id_binding_version (idb.version);";
@@ -1440,6 +1489,11 @@ traverse_object (type& c)
            << "}";
       }
 
+      if (versioned && update_columns != 0)
+        os << "const schema_version_migration& svm (" <<
+          "db.schema_version_migration (" << schema_name << "));"
+           << endl;
+
       if (poly_derived)
       {
         bool readonly_base (context::readonly (*poly_base));
@@ -1507,7 +1561,8 @@ traverse_object (type& c)
           if (generate_grow)
             os << "if (";
 
-          os << "init (im, obj, statement_update)";
+          os << "init (im, obj, statement_update" <<
+            (versioned ? ", svm" : "") << ")";
 
           if (generate_grow)
             os << ")" << endl
@@ -1521,7 +1576,8 @@ traverse_object (type& c)
              << "im.version != sts.update_image_version () ||" << endl
              << "imb.version == 0)"
              << "{"
-             << "bind (imb.bind, idb.bind, idb.count, im, statement_update);"
+             << "bind (imb.bind, idb.bind, idb.count, im, statement_update" <<
+            (versioned ? ", svm" : "") << ");"
              << "sts.update_id_binding_version (idb.version);"
              << "sts.update_image_version (im.version);"
              << "imb.version++;"
@@ -1590,7 +1646,8 @@ traverse_object (type& c)
         if (generate_grow)
           os << "if (";
 
-        os << "init (im, obj, statement_update)";
+        os << "init (im, obj, statement_update" <<
+          (versioned ? ", svm" : "") << ")";
 
         if (generate_grow)
           os << ")" << endl
@@ -1599,7 +1656,7 @@ traverse_object (type& c)
         os << ";"
            << endl;
 
-        // Update binding is bound to two images (object and id)
+        // The update binding is bound to two images (object and id)
         // so we have to track both versions.
         //
         os << "bool u (false);" // Avoid incrementing version twice.
@@ -1607,7 +1664,8 @@ traverse_object (type& c)
            << "if (im.version != sts.update_image_version () ||" << endl
            << "imb.version == 0)"
            << "{"
-           << "bind (imb.bind, im, statement_update);"
+           << "bind (imb.bind, im, statement_update" <<
+          (versioned ? ", svm" : "") << ");"
            << "sts.update_image_version (im.version);"
            << "imb.version++;"
            << "u = true;"
@@ -2382,8 +2440,10 @@ traverse_object (type& c)
 
     os << "}";
 
-    // Get the connection.
-    //
+    if (versioned)
+      os << "const schema_version_migration& svm (" <<
+        "db.schema_version_migration (" << schema_name << "));";
+
     os << db << "::connection& conn (" << endl
        << db << "::transaction::current ().connection ());"
        << "statements_type& sts (" << endl
@@ -2404,7 +2464,7 @@ traverse_object (type& c)
     os << endl
        << "if (l.locked ())"
        << "{"
-       << "if (!find_ (sts, &id))" << endl
+       << "if (!find_ (sts, &id" << (versioned ? ", svm" : "") << "))" << endl
        << "return pointer_type ();";
 
     if (delay_freeing_statement_result)
@@ -2486,7 +2546,7 @@ traverse_object (type& c)
     else
       os << "callback (db, obj, callback_event::pre_load);";
 
-    os << "init (obj, sts.image (), &db);";
+    os << "init (obj, sts.image (), &db" << (versioned ? ", svm" : "") << ");";
 
     init_value_extra ();
 
@@ -2506,7 +2566,7 @@ traverse_object (type& c)
          << "pi.dispatch (info_type::call_load, db, &obj, &d);"
          << "}";
 
-    os << rsts << ".load_delayed ();"
+    os << rsts << ".load_delayed (" << (versioned ? "&svm" : "0") << ");"
        << "l.unlock ();";
 
     if (poly)
@@ -2573,6 +2633,10 @@ traverse_object (type& c)
 
     if (!abst)
     {
+      if (versioned)
+        os << "const schema_version_migration& svm (" <<
+          "db.schema_version_migration (" << schema_name << "));";
+
       os << db << "::connection& conn (" << endl
          << db << "::transaction::current ().connection ());"
          << "statements_type& sts (" << endl
@@ -2587,7 +2651,8 @@ traverse_object (type& c)
          << "statements_type::auto_lock l (" << rsts << ");"
          << endl;
 
-      os << "if (!find_ (sts, &id))" << endl
+      os << "if (!find_ (sts, &id" <<
+        (versioned ? ", svm" : "") << "))" << endl
          << "return false;"
          << endl;
 
@@ -2604,7 +2669,8 @@ traverse_object (type& c)
          << "reference_cache_traits::insert_guard ig (pos);"
          << endl
          << "callback (db, obj, callback_event::pre_load);"
-         << "init (obj, sts.image (), &db);";
+         << "init (obj, sts.image (), &db" <<
+        (versioned ? ", svm" : "") << ");";
 
       init_value_extra ();
 
@@ -2612,7 +2678,7 @@ traverse_object (type& c)
         os << "ar.free ();";
 
       os << "load_ (sts, obj);"
-         << rsts << ".load_delayed ();"
+         << rsts << ".load_delayed (" << (versioned ? "&svm" : "0") << ");"
          << "l.unlock ();"
          << "callback (db, obj, callback_event::post_load);"
          << "reference_cache_traits::load (pos);"
@@ -2673,6 +2739,10 @@ traverse_object (type& c)
 
     if (!abst)
     {
+      if (versioned)
+        os << "const schema_version_migration& svm (" <<
+          "db.schema_version_migration (" << schema_name << "));";
+
       os << db << "::connection& conn (" << endl
          << db << "::transaction::current ().connection ());"
          << "statements_type& sts (" << endl
@@ -2694,7 +2764,8 @@ traverse_object (type& c)
          << id_ma->translate ("obj") << ");"
          << endl;
 
-      os << "if (!find_ (sts, &id))" << endl
+      os << "if (!find_ (sts, &id" <<
+        (versioned ? ", svm" : "") << "))" << endl
          << "return false;"
          << endl;
 
@@ -2720,7 +2791,8 @@ traverse_object (type& c)
       }
 
       os << "callback (db, obj, callback_event::pre_load);"
-         << "init (obj, sts.image (), &db);";
+         << "init (obj, sts.image (), &db" <<
+        (versioned ? ", svm" : "") << ");";
 
       init_value_extra ();
 
@@ -2728,7 +2800,7 @@ traverse_object (type& c)
         os << "ar.free ();";
 
       os << "load_ (sts, obj, true);"
-         << rsts << ".load_delayed ();"
+         << rsts << ".load_delayed (" << (versioned ? "&svm" : "0") << ");"
          << "l.unlock ();"
          << "callback (db, obj, callback_event::post_load);"
          << "return true;";
@@ -3043,17 +3115,16 @@ traverse_object (type& c)
   if (id != 0)
   {
     os << "bool " << traits << "::" << endl
-       << "find_ (";
+       << "find_ (statements_type& sts," << endl
+       << "const id_type* id";
 
-    if (poly && !poly_derived)
-      os << "base_statements_type& sts, ";
-    else
-      os << "statements_type& sts, ";
-
-    os << "const id_type* id";
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration& svm";
 
     if (poly_derived && !abst)
-      os << ", std::size_t d";
+      os << "," << endl
+         << "std::size_t d";
 
     os << ")"
        << "{"
@@ -3095,7 +3166,8 @@ traverse_object (type& c)
       os << "if (imb.version == 0 ||" << endl
          << "check_version (sts.select_image_versions (), im))"
          << "{"
-         << "bind (imb.bind, 0, 0, im, statement_select);"
+         << "bind (imb.bind, 0, 0, im, statement_select" <<
+        (versioned ? ", svm" : "") << ");"
          << "update_version (sts.select_image_versions ()," << endl
          << "im," << endl
          << "sts.select_image_bindings ());"
@@ -3106,7 +3178,8 @@ traverse_object (type& c)
       os << "if (im.version != sts.select_image_version () ||" << endl
          << "imb.version == 0)"
          << "{"
-         << "bind (imb.bind, im, statement_select);"
+         << "bind (imb.bind, im, statement_select" <<
+        (versioned ? ", svm" : "") << ");"
          << "sts.select_image_version (im.version);"
          << "imb.version++;"
          << "}";
@@ -3124,6 +3197,7 @@ traverse_object (type& c)
       os << "if (r == select_statement::truncated)"
          << "{"
          << "if (grow (im, sts.select_image_truncated ()" <<
+        (versioned ? ", svm" : "") <<
         (poly_derived ? (abst ? ", depth" : ", d") : "") << "))" << endl
          << "im.version++;"
          << endl;
@@ -3132,7 +3206,8 @@ traverse_object (type& c)
       {
         os << "if (check_version (sts.select_image_versions (), im))"
            << "{"
-           << "bind (imb.bind, 0, 0, im, statement_select);"
+           << "bind (imb.bind, 0, 0, im, statement_select" <<
+          (versioned ? ", svm" : "") << ");"
            << "update_version (sts.select_image_versions ()," << endl
            << "im," << endl
            << "sts.select_image_bindings ());"
@@ -3143,7 +3218,8 @@ traverse_object (type& c)
       {
         os << "if (im.version != sts.select_image_version ())"
            << "{"
-           << "bind (imb.bind, im, statement_select);"
+           << "bind (imb.bind, im, statement_select" <<
+          (versioned ? ", svm" : "") << ");"
            << "sts.select_image_version (im.version);"
            << "imb.version++;"
            << "st.refetch ();"
@@ -3183,14 +3259,8 @@ traverse_object (type& c)
                  (poly ? user_sections::count_load_empty : 0)) != 0)
   {
     os << "void " << traits << "::" << endl
-       << "load_ (";
-
-    if (poly && !poly_derived)
-      os << "base_statements_type& sts," << endl;
-    else
-      os << "statements_type& sts," << endl;
-
-    os << "object_type& obj," << endl
+       << "load_ (statements_type& sts," << endl
+       << "object_type& obj," << endl
        << "bool reload";
 
     if (poly_derived)
@@ -3309,7 +3379,12 @@ traverse_object (type& c)
       os << "if (d > " << (poly_depth - empty_depth) << "UL)"
          << "{";
 
-    os << "if (!find_ (sts, 0, d))" << endl
+    if (versioned)
+      os << "const schema_version_migration& svm (" <<
+        "db.schema_version_migration (" << schema_name << "));"
+         << endl;
+
+    os << "if (!find_ (sts, 0" << (versioned ? ", svm" : "") << ", d))" << endl
        << "throw object_not_persistent ();" // Database inconsistency.
        << endl;
 
@@ -3320,7 +3395,8 @@ traverse_object (type& c)
     if (delay_freeing_statement_result)
       os << "auto_result ar (st);";
 
-    os << "init (obj, sts.image (), &db, d);";
+    os << "init (obj, sts.image (), &db" << (versioned ? ", svm" : "") <<
+      ", d);";
 
     init_value_extra ();
 
@@ -3507,13 +3583,20 @@ traverse_object (type& c)
       //
       os << "result< " << traits << "::object_type >" << endl
          << traits << "::" << endl
-         << "query (database&, const query_base_type& q)"
+         << "query (database& db, const query_base_type& q)"
          << "{"
+         << "ODB_POTENTIALLY_UNUSED (db);"
+         << endl
          << "using namespace " << db << ";"
          << "using odb::details::shared;"
          << "using odb::details::shared_ptr;"
-         << endl
-         << db << "::connection& conn (" << endl
+         << endl;
+
+      if (versioned)
+        os << "const schema_version_migration& svm (" <<
+          "db.schema_version_migration (" << schema_name << "));";
+
+      os << db << "::connection& conn (" << endl
          << db << "::transaction::current ().connection ());"
          << endl
          << "statements_type& sts (" << endl
@@ -3532,7 +3615,8 @@ traverse_object (type& c)
         os << "if (imb.version == 0 ||" << endl
            << "check_version (sts.select_image_versions (), im))"
            << "{"
-           << "bind (imb.bind, 0, 0, im, statement_select);"
+           << "bind (imb.bind, 0, 0, im, statement_select" <<
+          (versioned ? ", svm" : "") << ");"
            << "update_version (sts.select_image_versions ()," << endl
            << "im," << endl
            << "sts.select_image_bindings ());"
@@ -3543,7 +3627,8 @@ traverse_object (type& c)
         os << "if (im.version != sts.select_image_version () ||" << endl
            << "imb.version == 0)"
            << "{"
-           << "bind (imb.bind, im, statement_select);"
+           << "bind (imb.bind, im, statement_select" <<
+          (versioned ? ", svm" : "") << ");"
            << "sts.select_image_version (im.version);"
            << "imb.version++;"
            << "}";
@@ -3569,7 +3654,7 @@ traverse_object (type& c)
       os << endl
          << "shared_ptr< odb::" << result_type << " > r (" << endl
          << "new (shared) " << db << "::" << result_type << " (" << endl
-         << "q, st, sts));"
+         << "q, st, sts, " << (versioned ? "&svm" : "0") << "));"
          << endl
          << "return result<object_type> (r);"
          << "}";
@@ -3633,8 +3718,14 @@ traverse_object (type& c)
          << "using namespace " << db << ";"
          << "using odb::details::shared;"
          << "using odb::details::shared_ptr;"
-         << endl
-         << db << "::connection& conn (" << endl
+         << endl;
+
+      if (versioned)
+        os << "const schema_version_migration& svm (" << endl
+           << "c.database ().schema_version_migration (" <<
+          schema_name << "));";
+
+      os << db << "::connection& conn (" << endl
          << "static_cast<" << db << "::connection&> (c));"
          << endl
          << "statements_type& sts (" << endl
@@ -3653,7 +3744,8 @@ traverse_object (type& c)
         os << "if (imb.version == 0 ||" << endl
            << "check_version (sts.select_image_versions (), im))"
            << "{"
-           << "bind (imb.bind, 0, 0, im, statement_select);"
+           << "bind (imb.bind, 0, 0, im, statement_select" <<
+          (versioned ? ", svm" : "") << ");"
            << "update_version (sts.select_image_versions ()," << endl
            << "im," << endl
            << "sts.select_image_bindings ());"
@@ -3664,7 +3756,8 @@ traverse_object (type& c)
         os << "if (im.version != sts.select_image_version () ||" << endl
            << "imb.version == 0)"
            << "{"
-           << "bind (imb.bind, im, statement_select);"
+           << "bind (imb.bind, im, statement_select" <<
+          (versioned ? ", svm" : "") << ");"
            << "sts.select_image_version (im.version);"
            << "imb.version++;"
            << "}";
@@ -3717,8 +3810,13 @@ traverse_object (type& c)
          << "shared_ptr<select_statement> st (" << endl
          << "odb::details::inc_ref (" << endl
          << "static_cast<select_statement*> (pq.stmt.get ())));"
-         << endl
-         << db << "::connection& conn (" << endl
+         << endl;
+
+      if (versioned)
+        os << "const schema_version_migration& svm (" <<
+          "db.schema_version_migration (" << schema_name << "));";
+
+      os << db << "::connection& conn (" << endl
          << db << "::transaction::current ().connection ());"
          << endl
          << "// The connection used by the current transaction and the" << endl
@@ -3742,7 +3840,8 @@ traverse_object (type& c)
         os << "if (imb.version == 0 ||" << endl
            << "check_version (sts.select_image_versions (), im))"
            << "{"
-           << "bind (imb.bind, 0, 0, im, statement_select);"
+           << "bind (imb.bind, 0, 0, im, statement_select" <<
+          (versioned ? ", svm" : "") << ");"
            << "update_version (sts.select_image_versions ()," << endl
            << "im," << endl
            << "sts.select_image_bindings ());"
@@ -3753,7 +3852,8 @@ traverse_object (type& c)
         os << "if (im.version != sts.select_image_version () ||" << endl
            << "imb.version == 0)"
            << "{"
-           << "bind (imb.bind, im, statement_select);"
+           << "bind (imb.bind, im, statement_select" <<
+          (versioned ? ", svm" : "") << ");"
            << "sts.select_image_version (im.version);"
            << "imb.version++;"
            << "}";
@@ -3766,7 +3866,7 @@ traverse_object (type& c)
       os << endl
          << "return shared_ptr<result_impl> (" << endl
          << "new (shared) " << db << "::" << result_type << " (" << endl
-         << "pq.query, st, sts));"
+         << "pq.query, st, sts, " << (versioned ? "&svm" : "0") << "));"
          << "}";
     }
   }
@@ -3870,13 +3970,11 @@ traverse_view (type& c)
   view_query& vq (c.get<view_query> ("query"));
 
   // Only process the view query if it is versioned since the query text
-  // (e.g., in the native view) must be structured. Also, we probably
-  // shouldn't try to optimize JOINs since the objects are JOINed
-  // explicitly by the user, unless we are adding poly-bases/derived.
+  // (e.g., in the native view) must be structured. We also shouldn't try
+  // to optimize JOINs (since the objects are JOINed explicitly by the
+  // user), unless we are adding poly-base/derived JOINs.
   //
-  // When versioning is forced, don't do it for native views.
-  //
-  bool versioned (force_versioned && vq.kind == view_query::condition);
+  bool versioned (context::versioned (c));
   bool query_optimize (false);
 
   string const& type (class_fq_name (c));

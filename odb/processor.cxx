@@ -1656,6 +1656,13 @@ namespace
           t.set ("key-tree-hint", kh);
           t.set ("key-not-null", true);
         }
+
+        // Check if we are versioned.
+        //
+        // @@ TODO
+        //
+        if (force_versioned)
+          t.set ("versioned", true);
       }
 
       // Process member data.
@@ -1896,12 +1903,16 @@ namespace
       if (k == class_object)
         traverse_object_pre (c);
       else if (k == class_view)
-        traverse_view (c);
+        traverse_view_pre (c);
 
       names (c);
 
       if (k == class_object)
         traverse_object_post (c);
+      else if (k == class_view)
+        traverse_view_post (c);
+      else if (k == class_composite)
+        traverse_composite_post (c);
     }
 
     //
@@ -2085,7 +2096,18 @@ namespace
     traverse_object_post (type& c)
     {
       semantics::class_* poly_root (polymorphic (c));
+      bool poly_derived (poly_root != 0 && poly_root != &c);
+
       semantics::data_member* opt (optimistic (c));
+
+      // Figure out if we are versioned. We are versioned if we have
+      // soft-added/deleted columns ourselves or our poly-base is
+      // versioned.
+      //
+      if (force_versioned ||
+          column_count (c).soft != 0 ||
+          (poly_derived && polymorphic_base (c).count ("versioned")))
+        c.set ("versioned", true);
 
       // Sections.
       //
@@ -2149,7 +2171,7 @@ namespace
     //
 
     virtual void
-    traverse_view (type& c)
+    traverse_view_pre (type& c)
     {
       // Resolve referenced objects from tree nodes to semantic graph
       // nodes. Also populate maps and compute counts.
@@ -2256,6 +2278,31 @@ namespace
           }
         }
       }
+    }
+
+    virtual void
+    traverse_view_post (type& c)
+    {
+      // Figure out if we are versioned. When versioning is forced, ignore
+      // it for native views.
+      //
+      if ((force_versioned &&
+           c.get<view_query> ("query").kind == view_query::condition) ||
+          column_count (c).soft != 0)
+        c.set ("versioned", true);
+    }
+
+    //
+    // Composite.
+    //
+
+    virtual void
+    traverse_composite_post (type& c)
+    {
+      // Figure out if we are versioned.
+      //
+      if (force_versioned || column_count (c).soft != 0)
+        c.set ("versioned", true);
     }
 
     //

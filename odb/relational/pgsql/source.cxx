@@ -304,8 +304,31 @@ namespace relational
           e = ostr.str ();
 
           if (var_override_.empty ())
+          {
             os << "// " << mi.m.name () << endl
                << "//" << endl;
+
+            // If the member is soft- added or deleted, check the version.
+            //
+            unsigned long long av (added (mi.m));
+            unsigned long long dv (deleted (mi.m));
+            if (av != 0 || dv != 0)
+            {
+              os << "if (";
+
+              if (av != 0)
+                os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+              if (av != 0 && dv != 0)
+                os << " &&" << endl;
+
+              if (dv != 0)
+                os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+              os << ")"
+                 << "{";
+            }
+          }
 
           return true;
         }
@@ -313,6 +336,12 @@ namespace relational
         virtual void
         post (member_info& mi)
         {
+          if (var_override_.empty ())
+          {
+            if (added (mi.m) || deleted (mi.m))
+              os << "}";
+          }
+
           if (semantics::class_* c = composite (mi.t))
             index_ += column_count (*c).total;
           else
@@ -324,10 +353,10 @@ namespace relational
         {
           os << "if (composite_value_traits< " << mi.fq_type () <<
             ", id_pgsql >::grow (" << endl
-             << "i." << mi.var << "value, t + " << index_ << "UL))"
-             << "{"
+             << "i." << mi.var << "value, t + " << index_ << "UL" <<
+            (versioned (*composite (mi.t)) ? ", svm" : "") << "))" << endl
              << "grew = true;"
-             << "}";
+             << endl;
         }
 
         virtual void

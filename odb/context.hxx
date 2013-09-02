@@ -726,12 +726,18 @@ public:
     return m.count ("transient");
   }
 
-  // Return the deletion version or 0 if not fort-deleted.
+  // Return the deletion version or 0 if not soft-deleted.
   //
   static unsigned long long
   deleted (semantics::class_& c)
   {
     return c.get<unsigned long long> ("deleted", 0);
+  }
+
+  static unsigned long long
+  deleted (semantics::data_member& m)
+  {
+    return m.get<unsigned long long> ("deleted", 0);
   }
 
   static unsigned long long
@@ -745,7 +751,7 @@ public:
          i != mp.rend (); ++i)
     {
       unsigned long long v ((*i)->get<unsigned long long> ("deleted", 0));
-      if (v != 0 && v < r)
+      if (v != 0 && (r == 0 || v < r))
         r = v;
     }
 
@@ -754,6 +760,12 @@ public:
 
   // Return the addition version or 0 if not soft-added.
   //
+  static unsigned long long
+  added (semantics::data_member& m)
+  {
+    return m.get<unsigned long long> ("added", 0);
+  }
+
   static unsigned long long
   added (data_member_path const& mp)
   {
@@ -886,6 +898,26 @@ public:
   version () const
   {
     return unit.get<model_version> ("model-version");
+  }
+
+  // Versioned object, view, or composite.
+  //
+  static bool
+  versioned (semantics::class_& c)
+  {
+    // Set by processor.
+    //
+    return c.count ("versioned") != 0;
+  }
+
+  // Versioned container.
+  //
+  static bool
+  versioned (semantics::data_member& m)
+  {
+    // Set by processor.
+    //
+    return container (m)->count ("versioned");
   }
 
   // Object sections.
@@ -1145,6 +1177,7 @@ public:
           readonly (0),
           optimistic_managed (0),
           discriminator (0),
+          soft (0),
           separate_load (0),
           separate_update (0)
     {
@@ -1156,6 +1189,8 @@ public:
     size_t readonly;
     size_t optimistic_managed;
     size_t discriminator;
+
+    size_t soft; // Soft-added/deleted.
 
     size_t separate_load;
     size_t separate_update; // Only readwrite.
