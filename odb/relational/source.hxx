@@ -82,7 +82,16 @@ namespace relational
                       query_parameters* param = 0,
                       object_section* section = 0)
           : object_columns_base (true, true, section),
-            sk_ (sk), sc_ (sc), param_ (param), depth_ (1)
+            sk_ (sk), ro_ (true), sc_ (sc), param_ (param), depth_ (1)
+      {
+      }
+
+      object_columns (statement_kind sk,
+                      bool ignore_ro,
+                      statement_columns& sc,
+                      query_parameters* param)
+          : object_columns_base (true, true, 0),
+            sk_ (sk), ro_ (ignore_ro), sc_ (sc), param_ (param), depth_ (1)
       {
       }
 
@@ -93,6 +102,7 @@ namespace relational
                       object_section* section = 0)
           : object_columns_base (true, true, section),
             sk_ (sk),
+            ro_ (true),
             sc_ (sc),
             param_ (0),
             table_name_ (table_qname),
@@ -151,7 +161,7 @@ namespace relational
 
         semantics::data_member* im (inverse (m, key_prefix_));
 
-        // Ignore certain columns depending on what kind statement we are
+        // Ignore certain columns depending on what kind of statement we are
         // generating. Columns corresponding to the inverse members are
         // only present in the select statements.
         //
@@ -253,7 +263,7 @@ namespace relational
         // statements.
         //
         if ((id () || readonly (member_path_, member_scope_)) &&
-            sk_ == statement_update)
+            sk_ == statement_update && ro_)
           return false;
 
         return column (m, table_name_, quote_id (name));
@@ -298,6 +308,7 @@ namespace relational
 
     protected:
       statement_kind sk_;
+      bool ro_;
       statement_columns& sc_;
       query_parameters* param_;
       string table_name_;
@@ -2473,9 +2484,10 @@ namespace relational
             instance<query_parameters> qp (table);
             statement_columns sc;
             {
-              query_parameters* p (qp.get ()); // Imperfect forwarding.
+              bool f (false);                       // Imperfect forwarding.
+              query_parameters* p (qp.get ());      // Imperfect forwarding.
               statement_kind sk (statement_update); // Imperfect forwarding.
-              instance<object_columns> t (sk, sc, p);
+              instance<object_columns> t (sk, f, sc, p);
               t->traverse (m, vt, "value", "value");
               process_statement_columns (sc, statement_update);
             }
@@ -2713,7 +2725,9 @@ namespace relational
              << "{"
              << "using namespace " << db << ";"
              << endl
-             << "statement_kind sk (statement_update);"
+            // Use insert instead of update to include read-only members.
+            //
+             << "statement_kind sk (statement_insert);"
              << "ODB_POTENTIALLY_UNUSED (sk);"
              << endl
              << "std::size_t n (0);"

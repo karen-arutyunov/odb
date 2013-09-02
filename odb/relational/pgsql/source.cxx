@@ -1044,9 +1044,14 @@ namespace relational
                << "update_types[] ="
                << "{";
 
-            statement_oids so (statement_where);
+            {
+              // Use insert instead of update to include read-only members.
+              //
+              statement_oids so (statement_insert);
+              so.traverse (m, vt, "value", "value");
+            }
 
-            so.traverse (m, vt, "value", "value");
+            statement_oids so (statement_where, false);
             so.traverse (m, idt, "id", "object_id");
 
             switch (ck)
