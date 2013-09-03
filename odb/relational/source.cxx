@@ -651,8 +651,8 @@ traverse_object (type& c)
   //
   // Statements.
   //
-  size_t update_columns (
-    cc.total - cc.id - cc.inverse - cc.readonly - cc.separate_update);
+  bool update_columns (
+    cc.total != cc.id + cc.inverse + cc.readonly + cc.separate_update);
 
   qname table (table_name (c));
   string qtable (quote_id (table));
@@ -896,7 +896,7 @@ traverse_object (type& c)
 
     // update_statement
     //
-    if (update_columns != 0)
+    if (update_columns)
     {
       string sep (versioned ? "\n" : " ");
 
@@ -1398,6 +1398,7 @@ traverse_object (type& c)
 
     os << endl
        << "using namespace " << db << ";"
+       << "using " << db << "::update_statement;"
        << endl;
 
     if (poly)
@@ -1489,7 +1490,7 @@ traverse_object (type& c)
            << "}";
       }
 
-      if (versioned && update_columns != 0)
+      if (versioned && update_columns)
         os << "const schema_version_migration& svm (" <<
           "db.schema_version_migration (" << schema_name << "));"
            << endl;
@@ -1499,7 +1500,7 @@ traverse_object (type& c)
         bool readonly_base (context::readonly (*poly_base));
 
         if (readonly_base ||
-            update_columns != 0 ||
+            update_columns ||
             update_containers ||
             sections)
         {
@@ -1525,7 +1526,7 @@ traverse_object (type& c)
           // then we only have to do it if this is not a top-level call.
           // If we are abstract, then top is always false.
           //
-          if (update_columns == 0 && !update_containers && !sections && !abst)
+          if (!update_columns && !update_containers && !sections && !abst)
             os << "if (!top)";
 
           os << "{"
@@ -1548,11 +1549,7 @@ traverse_object (type& c)
              << "}";
         }
 
-        if (update_columns != 0)
-          os << "const binding& idb (sts.id_image_binding ());"
-             << endl;
-
-        if (update_columns != 0)
+        if (update_columns)
         {
           // Initialize the object image.
           //
@@ -1571,7 +1568,8 @@ traverse_object (type& c)
           os << ";"
              << endl;
 
-          os << "binding& imb (sts.update_image_binding ());"
+          os << "const binding& idb (sts.id_image_binding ());"
+             << "binding& imb (sts.update_image_binding ());"
              << "if (idb.version != sts.update_id_binding_version () ||" << endl
              << "im.version != sts.update_image_version () ||" << endl
              << "imb.version == 0)"
@@ -1583,28 +1581,21 @@ traverse_object (type& c)
              << "imb.version++;"
              << "}";
 
-          os << "if (sts.update_statement ().execute () == 0)" << endl
+          os << "update_statement& st (sts.update_statement ());"
+             << "if (";
+
+          if (versioned)
+            os << "!st.empty () && ";
+
+          os << "st.execute () == 0)" << endl
              << "throw object_not_persistent ();"
              << endl;
         }
-        else if (readonly_base)
-        {
-          // If our base is readonly and we don't have any columns to
-          // update, then we have to make sure this object actually
-          // exists in the database. Use the discriminator_() call for
-          // that.
-          //
-          if (!id_ma->synthesized)
-            os << "// From " << location_string (id_ma->loc, true) << endl;
 
-          os << "root_traits::discriminator_ (sts.root_statements (), " <<
-            id_ma->translate ("obj") << ", 0);" << endl;
-        }
         // Otherwise, nothing else to do here if we don't have any columns
         // to update.
-        //
       }
-      else if (update_columns != 0)
+      else if (update_columns)
       {
         os << db << "::transaction& tr (" << db <<
           "::transaction::current ());"
@@ -1700,7 +1691,13 @@ traverse_object (type& c)
            << "imb.version++;"
            << "}";
 
-        os << "if (sts.update_statement ().execute () == 0)" << endl;
+        os << "update_statement& st (sts.update_statement ());"
+           << "if (";
+
+        if (versioned)
+          os << "!st.empty () && ";
+
+        os << "st.execute () == 0)" << endl;
 
         if (opt == 0)
           os << "throw object_not_persistent ();";
@@ -1709,14 +1706,11 @@ traverse_object (type& c)
 
         os << endl;
       }
-      else
+      else if (poly || update_containers || sections)
       {
-        // We don't have any columns to update. Note that we still have
-        // to make sure this object exists in the database. For that we
-        // will run the SELECT query using the find_() function. Note
-        // that this case cannot be optimistic (we always update the
-        // version column) and we don't need to worry about initializing
-        // version in id image for sections below.
+        // We don't have any columns to update but we may still need
+        // to initialize the id image if we are polymorphic or have
+        // any containers or sections.
         //
         os << db << "::transaction& tr (" << db <<
           "::transaction::current ());"
@@ -1725,52 +1719,29 @@ traverse_object (type& c)
            << "conn.statement_cache ().find_object<object_type> ());"
            << endl;
 
+        // The same rationale as a couple of screens up.
+        //
+        if (poly && !update_containers && !sections && !abst)
+          os << "if (!top)";
+
+        os << "{"
+           << "id_image_type& i (sts.id_image ());";
+
         if (!id_ma->synthesized)
           os << "// From " << location_string (id_ma->loc, true) << endl;
 
-        os << "const id_type& id (" << endl
-           << id_ma->translate ("obj") << ");"
+        os << "init (i, " << id_ma->translate ("obj") << ");"
            << endl;
 
-        if (poly)
-        {
-          // In case of a polymorphic root, use discriminator_(), which
-          // is faster. And initialize the id image, unless this is a
-          // top-level call.
-          //
-          os << "discriminator_ (sts, id, 0);"
-             << endl;
-
-          // The same rationale as a couple of screens up.
-          //
-          if (!update_containers && !sections && !abst)
-            os << "if (!top)";
-
-          os << "{"
-             << "id_image_type& i (sts.id_image ());";
-
-          os << "init (i, id);"
-             << endl;
-
-          os << "binding& idb (sts.id_image_binding ());"
-             << "if (i.version != sts.id_image_version () || idb.version == 0)"
-             << "{"
-             << "bind (idb.bind, i);"
-             << "sts.id_image_version (i.version);"
-             << "idb.version++;"
-            // Cannot be optimistic.
-             << "}"
-             << "}";
-        }
-        else
-        {
-          os << "if (!find_ (sts, &id))" << endl
-             << "throw object_not_persistent ();"
-             << endl;
-
-          if (delay_freeing_statement_result)
-            os << "sts.find_statement ().free_result ();";
-        }
+        os << "binding& idb (sts.id_image_binding ());"
+           << "if (i.version != sts.id_image_version () || idb.version == 0)"
+           << "{"
+           << "bind (idb.bind, i);"
+           << "sts.id_image_version (i.version);"
+           << "idb.version++;"
+          // Cannot be optimistic.
+           << "}"
+           << "}";
       }
 
       if (update_containers || sections)
@@ -2283,6 +2254,7 @@ traverse_object (type& c)
         // containers since it is more efficient than the find_() method
         // below.
         //
+        bool svm (false);
         if (poly_derived || (poly && erase_containers))
         {
           // Only do the check in the top-level call.
@@ -2321,7 +2293,17 @@ traverse_object (type& c)
           // have been more efficient but it would complicated and bloat
           // things significantly.
           //
-          os << "if (!find_ (sts, &id))" << endl
+
+          if (versioned)
+          {
+            os << "const schema_version_migration& svm (" <<
+              "db.schema_version_migration (" << schema_name << "));"
+               << endl;
+            svm = true;
+          }
+
+          os << "if (!find_ (sts, &id" <<
+            (versioned ? ", svm" : "") << "))" << endl
              << "throw object_changed ();"
              << endl;
 
@@ -2348,7 +2330,7 @@ traverse_object (type& c)
           os << "extra_statement_cache_type& esc (" <<
             "sts.extra_statement_cache ());";
 
-          if (erase_versioned_containers)
+          if (erase_versioned_containers && !svm)
             os << "const schema_version_migration& svm (" <<
               "db.schema_version_migration (" << schema_name << "));";
 
@@ -3187,7 +3169,16 @@ traverse_object (type& c)
 
     os << "select_statement& st (sts.find_statement (" <<
       (poly_derived ? (abst ? "depth" : "d") : "") << "));"
-       << "st.execute ();"
+       << endl;
+
+    // The dynamic loader SELECT statement can be dynamically empty.
+    //
+    if (versioned && poly_derived && !abst)
+      os << "if (st.empty ())" << endl
+         << "return true;"
+         << endl;
+
+    os << "st.execute ();"
        << "auto_result ar (st);"
        << "select_statement::result r (st.fetch ());"
        << endl;
@@ -3392,6 +3383,12 @@ traverse_object (type& c)
        << "ODB_POTENTIALLY_UNUSED (st);"
        << endl;
 
+    // The resulting SELECT statement may end up being dynamically empty.
+    //
+    if (versioned)
+      os << "if (!st.empty ())"
+         << "{";
+
     if (delay_freeing_statement_result)
       os << "auto_result ar (st);";
 
@@ -3402,6 +3399,9 @@ traverse_object (type& c)
 
     if (delay_freeing_statement_result)
       os << "ar.free ();";
+
+    if (versioned)
+      os << "}";
 
     if (empty_depth != 0)
       os << "}";
