@@ -742,6 +742,8 @@ traverse_object (type& c)
 void relational::header::class1::
 traverse_view (type& c)
 {
+  bool versioned (context::versioned (c));
+
   string const& type (class_fq_name (c));
   size_t obj_count (c.get<size_t> ("object-count"));
 
@@ -801,6 +803,9 @@ traverse_view (type& c)
     os << ";"
        << endl;
 
+  os << "static const bool versioned = " << versioned << ";"
+     << endl;
+
   //
   // Functions.
   //
@@ -810,20 +815,42 @@ traverse_view (type& c)
   if (generate_grow)
   {
     os << "static bool" << endl
-       << "grow (image_type&, " << truncated_vector << ");"
+       << "grow (image_type&," << endl
+       << truncated_vector;
+
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration&";
+
+    os << ");"
        << endl;
   }
 
   // bind (image_type)
   //
   os << "static void" << endl
-     << "bind (" << bind_vector << ", image_type&);"
+     << "bind (" << bind_vector << "," << endl
+     << "image_type&";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration&";
+
+  os << ");"
      << endl;
 
   // init (view, image)
   //
   os << "static void" << endl
-     << "init (view_type&, const image_type&, database*);"
+     << "init (view_type&," << endl
+     << "const image_type&," << endl
+     << "database*";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration&";
+
+  os << ");"
      << endl;
 
   // column_count

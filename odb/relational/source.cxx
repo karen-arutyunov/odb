@@ -3847,8 +3847,9 @@ traverse_object (type& c)
          << endl;
 
       if (versioned)
-        os << "const schema_version_migration& svm (" <<
-          "db.schema_version_migration (" << schema_name << "));";
+        os << "const schema_version_migration& svm (" << endl
+           << "st->connection ().database ().schema_version_migration (" <<
+          schema_name << "));";
 
       os << db << "::connection& conn (" << endl
          << db << "::transaction::current ().connection ());"
@@ -4015,6 +4016,12 @@ traverse_view (type& c)
   string traits ("access::view_traits_impl< " + type + ", id_" +
                  db.string () + " >");
 
+  // Schema name as a string literal or empty.
+  //
+  string schema_name (options.schema_name ()[db]);
+  if (!schema_name.empty ())
+    schema_name = strlit (schema_name);
+
   os << "// " << class_name (c) << endl
      << "//" << endl
      << endl;
@@ -4035,11 +4042,22 @@ traverse_view (type& c)
   if (generate_grow)
   {
     os << "bool " << traits << "::" << endl
-       << "grow (image_type& i, " << truncated_vector << " t)"
+       << "grow (image_type& i," << endl
+       << truncated_vector << " t";
+
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration& svm";
+
+    os << ")"
        << "{"
        << "ODB_POTENTIALLY_UNUSED (i);"
-       << "ODB_POTENTIALLY_UNUSED (t);"
-       << endl
+       << "ODB_POTENTIALLY_UNUSED (t);";
+
+    if (versioned)
+      os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+    os << endl
        << "bool grew (false);"
        << endl;
 
@@ -4053,9 +4071,21 @@ traverse_view (type& c)
   // bind (image_type)
   //
   os << "void " << traits << "::" << endl
-     << "bind (" << bind_vector << " b, image_type& i)"
-     << "{"
-     << "using namespace " << db << ";"
+     << "bind (" << bind_vector << " b," << endl
+     << "image_type& i";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration& svm";
+
+  os << ")"
+     << "{";
+
+  if (versioned)
+    os << "ODB_POTENTIALLY_UNUSED (svm);"
+       << endl;
+
+  os << "using namespace " << db << ";"
      << endl
      << db << "::statement_kind sk (statement_select);"
      << "ODB_POTENTIALLY_UNUSED (sk);"
@@ -4070,12 +4100,24 @@ traverse_view (type& c)
   // init (view, image)
   //
   os << "void " << traits << "::" << endl
-     << "init (view_type& o, const image_type& i, database* db)"
+     << "init (view_type& o," << endl
+     << "const image_type& i," << endl
+     << "database* db";
+
+  if (versioned)
+    os << "," << endl
+       << "const schema_version_migration& svm";
+
+  os << ")"
      << "{"
      << "ODB_POTENTIALLY_UNUSED (o);"
      << "ODB_POTENTIALLY_UNUSED (i);"
-     << "ODB_POTENTIALLY_UNUSED (db);"
-     << endl;
+     << "ODB_POTENTIALLY_UNUSED (db);";
+
+  if (versioned)
+    os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+  os << endl;
 
   names (c, init_value_member_names_);
 
@@ -4788,15 +4830,21 @@ traverse_view (type& c)
   {
     os << "result< " << traits << "::view_type >" << endl
        << traits << "::" << endl
-       << "query (database&, const query_base_type& q)"
+       << "query (database& db, const query_base_type& q)"
        << "{"
+       << "ODB_POTENTIALLY_UNUSED (db);"
+       << endl
        << "using namespace " << db << ";"
        << "using odb::details::shared;"
        << "using odb::details::shared_ptr;"
-       << endl
-       << db << "::connection& conn (" << endl
+       << endl;
+
+    if (versioned)
+      os << "const schema_version_migration& svm (" <<
+        "db.schema_version_migration (" << schema_name << "));";
+
+    os << db << "::connection& conn (" << endl
        << db << "::transaction::current ().connection ());"
-       << endl
        << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_view<view_type> ());"
        << endl
@@ -4805,7 +4853,7 @@ traverse_view (type& c)
        << endl
        << "if (im.version != sts.image_version () || imb.version == 0)"
        << "{"
-       << "bind (imb.bind, im);"
+       << "bind (imb.bind, im" << (versioned ? ", svm" : "") << ");"
        << "sts.image_version (im.version);"
        << "imb.version++;"
        << "}";
@@ -4828,7 +4876,7 @@ traverse_view (type& c)
     os << endl
        << "shared_ptr< odb::view_result_impl<view_type> > r (" << endl
        << "new (shared) " << db << "::view_result_impl<view_type> (" << endl
-       << "qs, st, sts));"
+       << "qs, st, sts, " << (versioned ? "&svm" : "0") << "));"
        << endl
        << "return result<view_type> (r);"
        << "}";
@@ -4859,10 +4907,15 @@ traverse_view (type& c)
        << "using namespace " << db << ";"
        << "using odb::details::shared;"
        << "using odb::details::shared_ptr;"
-       << endl
-       << db << "::connection& conn (" << endl
+       << endl;
+
+    if (versioned)
+        os << "const schema_version_migration& svm (" << endl
+           << "c.database ().schema_version_migration (" <<
+          schema_name << "));";
+
+    os << db << "::connection& conn (" << endl
        << "static_cast<" << db << "::connection&> (c));"
-       << endl
        << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_view<view_type> ());"
        << endl;
@@ -4874,7 +4927,7 @@ traverse_view (type& c)
        << endl
        << "if (im.version != sts.image_version () || imb.version == 0)"
        << "{"
-       << "bind (imb.bind, im);"
+       << "bind (imb.bind, im" << (versioned ? ", svm" : "") << ");"
        << "sts.image_version (im.version);"
        << "imb.version++;"
        << "}";
@@ -4924,8 +4977,14 @@ traverse_view (type& c)
        << "shared_ptr<select_statement> st (" << endl
        << "odb::details::inc_ref (" << endl
        << "static_cast<select_statement*> (pq.stmt.get ())));"
-       << endl
-       << db << "::connection& conn (" << endl
+       << endl;
+
+    if (versioned)
+      os << "const schema_version_migration& svm (" << endl
+         << "st->connection ().database ().schema_version_migration (" <<
+        schema_name << "));";
+
+    os << db << "::connection& conn (" << endl
        << db << "::transaction::current ().connection ());"
        << endl
        << "// The connection used by the current transaction and the" << endl
@@ -4944,7 +5003,7 @@ traverse_view (type& c)
        << endl
        << "if (im.version != sts.image_version () || imb.version == 0)"
        << "{"
-       << "bind (imb.bind, im);"
+       << "bind (imb.bind, im" << (versioned ? ", svm" : "") << ");"
        << "sts.image_version (im.version);"
        << "imb.version++;"
        << "}";
@@ -4957,7 +5016,7 @@ traverse_view (type& c)
     os << endl
        << "return shared_ptr<result_impl> (" << endl
        << "new (shared) " << db << "::view_result_impl<view_type> (" << endl
-       << "pq.query, st, sts));"
+       << "pq.query, st, sts, " << (versioned ? "&svm" : "0") << "));"
        << "}";
   }
 
