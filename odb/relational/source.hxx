@@ -2174,6 +2174,8 @@ namespace relational
             eager_ptr = has_a (*cvt, test_eager_pointer);
         }
 
+        bool versioned (context::versioned (m));
+
         string name (flat_prefix_ + public_name (m) + "_traits");
         string scope (scope_ + "::" + name);
 
@@ -2188,7 +2190,6 @@ namespace relational
         //
         if (!reuse_abst)
         {
-          bool versioned (context::versioned (m));
           string sep (versioned ? "\n" : " ");
 
           semantics::type& idt (container_idt (m));
@@ -2641,7 +2642,13 @@ namespace relational
              << "bind (" << bind_vector << " b," << endl
              << "const " << bind_vector << " id," << endl
              << "std::size_t id_size," << endl
-             << "data_image_type& d)"
+             << "data_image_type& d";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
              << "{"
              << "using namespace " << db << ";"
              << endl
@@ -2721,7 +2728,13 @@ namespace relational
              << "const " << bind_vector << " id," << endl
              << "std::size_t id_size," << endl
              << "cond_image_type& c," << endl
-             << "data_image_type& d)"
+             << "data_image_type& d";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
              << "{"
              << "using namespace " << db << ";"
              << endl
@@ -2799,7 +2812,14 @@ namespace relational
           size_t index (0);
 
           os << "void " << scope << "::" << endl
-             << "grow (data_image_type& i, " << truncated_vector << " t)"
+             << "grow (data_image_type& i," << endl
+             << truncated_vector << " t";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
              << "{"
              << "bool grew (false);"
              << endl;
@@ -2849,35 +2869,36 @@ namespace relational
         //
         if (!inverse)
         {
-          os << "void " << scope << "::" << endl;
+          os << "void " << scope << "::" << endl
+             << "init (data_image_type& i," << endl;
 
           switch (ck)
           {
           case ck_ordered:
             {
               if (ordered)
-                os << "init (data_image_type& i, index_type* j, " <<
-                  "const value_type& v)";
-              else
-                os << "init (data_image_type& i, const value_type& v)";
+                os << "index_type* j," << endl;
               break;
             }
           case ck_map:
           case ck_multimap:
             {
-              os << "init (data_image_type& i, const key_type* k, " <<
-                "const value_type& v)";
+              os << "const key_type* k," << endl;
               break;
             }
           case ck_set:
           case ck_multiset:
-            {
-              os << "init (data_image_type& i, const value_type& v)";
-              break;
-            }
+            break;
           }
 
-          os << "{"
+          os << "const value_type& v";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
+             << "{"
              << "using namespace " << db << ";"
              << endl
              << "statement_kind sk (statement_insert);"
@@ -2987,23 +3008,45 @@ namespace relational
 
         // init (data)
         //
-        os << "void " << scope << "::" << endl;
+        os << "void " << scope << "::" << endl
+           << "init (";
 
         switch (ck)
         {
         case ck_ordered:
           {
             if (ordered)
-              os << "init (index_type& j, value_type& v, " <<
-                "const data_image_type& i, database* db)";
-            else
-              os << "init (value_type& v, const data_image_type& i, " <<
-                "database* db)";
+              os << "index_type& j," << endl;
+            break;
+          }
+        case ck_map:
+        case ck_multimap:
+          {
+            os << "key_type& k," << endl;
+            break;
+          }
+        case ck_set:
+        case ck_multiset:
+          break;
+        }
 
-            os << "{"
-               << "ODB_POTENTIALLY_UNUSED (db);"
-               << endl;
+        os << "value_type& v," << endl;
+        os << "const data_image_type& i," << endl
+           << "database* db";
 
+        if (versioned)
+          os << "," << endl
+             << "const schema_version_migration& svm";
+
+        os << ")"
+           << "{"
+           << "ODB_POTENTIALLY_UNUSED (db);"
+           << endl;
+
+        switch (ck)
+        {
+        case ck_ordered:
+          {
             if (ordered)
             {
               os << "// index" << endl
@@ -3019,12 +3062,7 @@ namespace relational
         case ck_map:
         case ck_multimap:
           {
-            os << "init (key_type& k, value_type& v, " <<
-              "const data_image_type& i, database* db)"
-               << "{"
-               << "ODB_POTENTIALLY_UNUSED (db);"
-               << endl
-               << "// key" << endl
+            os << "// key" << endl
                << "//" << endl;
 
             instance<init_value_member> im (
@@ -3035,14 +3073,7 @@ namespace relational
           }
         case ck_set:
         case ck_multiset:
-          {
-            os << "init (value_type& v, const data_image_type& i, " <<
-              "database* db)"
-               << "{"
-               << "ODB_POTENTIALLY_UNUSED (db);"
-               << endl;
-            break;
-          }
+          break;
         }
 
         os << "// value" << endl
@@ -3105,35 +3136,42 @@ namespace relational
             os << "using namespace " << db << ";"
                << endl
                << "statements_type& sts (*static_cast< statements_type* > (d));"
-               << "data_image_type& di (sts.data_image ());"
-               << endl;
+               << "data_image_type& di (sts.data_image ());";
+
+            if (versioned)
+              os << "const schema_version_migration& svm (" <<
+                "sts.version_migration ());";
+
+            os << endl
+               << "init (di, ";
 
             switch (ck)
             {
             case ck_ordered:
               {
-                os << "init (di, " << (ordered ? "&i, " : "") << "v);";
+                if (ordered)
+                  os << "&i, ";
                 break;
               }
             case ck_map:
             case ck_multimap:
               {
-                os << "init (di, &k, v);";
+                os << "&k, ";
                 break;
               }
             case ck_set:
             case ck_multiset:
-              {
-                os << "init (di, v);";
-                break;
-              }
+              break;
             }
+
+            os << "v" << (versioned ? ", svm" : "") << ");";
 
             os << endl
                << "if (sts.data_binding_test_version ())"
                << "{"
                << "const binding& id (sts.id_binding ());"
-               << "bind (sts.data_bind (), id.bind, id.count, di);"
+               << "bind (sts.data_bind (), id.bind, id.count, di" <<
+              (versioned ? ", svm" : "") << ");"
                << "sts.data_binding_update_version ();"
                << "}"
                << "if (!sts.insert_statement ().execute ())" << endl
@@ -3174,15 +3212,20 @@ namespace relational
              << endl
              << "statements_type& sts (*static_cast< statements_type* > (d));"
              << "cond_image_type& ci (sts.cond_image ());"
-             << "data_image_type& di (sts.data_image ());"
-             << endl;
+             << "data_image_type& di (sts.data_image ());";
+
+          if (versioned)
+            os << "const schema_version_migration& svm (" <<
+              "sts.version_migration ());";
+
+          os << endl;
 
           switch (ck)
           {
           case ck_ordered:
             {
               os << "init (ci, i);";
-              os << "init (di, 0, v);";
+              os << "init (di, 0, v" << (versioned ? ", svm" : "") << ");";
               break;
             }
           case ck_map:
@@ -3203,7 +3246,8 @@ namespace relational
              << "if (sts.update_binding_test_version ())"
              << "{"
              << "const binding& id (sts.id_binding ());"
-             << "bind (sts.update_bind (), id.bind, id.count, ci, di);"
+             << "bind (sts.update_bind (), id.bind, id.count, ci, di" <<
+            (versioned ? ", svm" : "") << ");"
              << "sts.update_binding_update_version ();"
              << "}";
 
@@ -3245,32 +3289,37 @@ namespace relational
            << "statements_type& sts (*static_cast< statements_type* > (d));"
            << "data_image_type& di (sts.data_image ());";
 
+        if (versioned)
+          os << "const schema_version_migration& svm (" <<
+            "sts.version_migration ());";
+
+        os << endl
+           << "init (";
+
         // Extract current element.
         //
         switch (ck)
         {
         case ck_ordered:
           {
-            os << "init (" << (ordered ? "i, " : "") <<
-              "v, di, &sts.connection ().database ());"
-               << endl;
+            if (ordered)
+              os << "i, ";
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "init (k, v, di, &sts.connection ().database ());"
-               << endl;
+            os << "k, ";
             break;
           }
         case ck_set:
         case ck_multiset:
-          {
-            os << "init (v, di, &sts.connection ().database ());"
-               << endl;
-            break;
-          }
+          break;
         }
+
+        os << "v, di, &sts.connection ().database ()" <<
+          (versioned ? ", svm" : "") << ");"
+           << endl;
 
         init_value_extra ();
 
@@ -3283,7 +3332,8 @@ namespace relational
           os << "if (sts.data_binding_test_version ())"
              << "{"
              << "const binding& id (sts.id_binding ());"
-             << "bind (sts.data_bind (), id.bind, id.count, di);"
+             << "bind (sts.data_bind (), id.bind, id.count, di" <<
+            (versioned ? ", svm" : "") << ");"
              << "sts.data_binding_update_version ();"
              << "}";
         }
@@ -3297,13 +3347,15 @@ namespace relational
           os << endl
              << "if (r == select_statement::truncated)"
              << "{"
-             << "grow (di, sts.select_image_truncated ());"
+             << "grow (di, sts.select_image_truncated ()" <<
+            (versioned ? ", svm" : "") << ");"
              << endl
              << "if (sts.data_binding_test_version ())"
              << "{"
             // Id cannot change.
             //
-             << "bind (sts.data_bind (), 0, sts.id_binding ().count, di);"
+             << "bind (sts.data_bind (), 0, sts.id_binding ().count, di" <<
+            (versioned ? ", svm" : "") << ");"
              << "sts.data_binding_update_version ();"
              << "st.refetch ();"
              << "}"
@@ -3391,11 +3443,21 @@ namespace relational
         if (!inverse)
         {
           os << "void " << scope << "::" << endl
-             << "persist (const container_type& c, statements_type& sts)"
+             << "persist (const container_type& c," << endl
+             << "statements_type& sts";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
              << "{"
              << "using namespace " << db << ";"
              << endl
              << "functions_type& fs (sts.functions ());";
+
+          if (versioned)
+            os << "sts.version_migration (svm);";
 
           if (!smart && ck == ck_ordered)
             os << "fs.ordered_ = " << ordered << ";";
@@ -3407,7 +3469,14 @@ namespace relational
         // load
         //
         os << "void " << scope << "::" << endl
-           << "load (container_type& c, statements_type& sts)"
+           << "load (container_type& c," << endl
+           << "statements_type& sts";
+
+        if (versioned)
+          os << "," << endl
+             << "const schema_version_migration& svm";
+
+        os << ")"
            << "{"
            << "using namespace " << db << ";"
            << "using " << db << "::select_statement;" // Conflicts.
@@ -3416,7 +3485,8 @@ namespace relational
            << endl
            << "if (sts.data_binding_test_version ())"
            << "{"
-           << "bind (sts.data_bind (), id.bind, id.count, sts.data_image ());"
+           << "bind (sts.data_bind (), id.bind, id.count, sts.data_image ()" <<
+          (versioned ? ", svm" : "") << ");"
            << "sts.data_binding_update_version ();"
            << "}"
           // We use the id binding directly so no need to check cond binding.
@@ -3438,13 +3508,15 @@ namespace relational
              << "if (r == select_statement::truncated)"
              << "{"
              << "data_image_type& di (sts.data_image ());"
-             << "grow (di, sts.select_image_truncated ());"
+             << "grow (di, sts.select_image_truncated ()" <<
+            (versioned ? ", svm" : "") << ");"
              << endl
              << "if (sts.data_binding_test_version ())"
              << "{"
             // Id cannot change.
             //
-             << "bind (sts.data_bind (), 0, id.count, di);"
+             << "bind (sts.data_bind (), 0, id.count, di" <<
+            (versioned ? ", svm" : "") << ");"
              << "sts.data_binding_update_version ();"
              << "st.refetch ();"
              << "}"
@@ -3453,6 +3525,9 @@ namespace relational
         os << "bool more (r != select_statement::no_data);"
            << endl
            << "functions_type& fs (sts.functions ());";
+
+        if (versioned)
+          os << "sts.version_migration (svm);";
 
         if (!smart && ck == ck_ordered)
           os << "fs.ordered_ = " << ordered << ";";
@@ -3465,18 +3540,21 @@ namespace relational
         if (!(inverse || readonly (member_path_, member_scope_)))
         {
           os << "void " << scope << "::" << endl
-             << "update (const container_type& c, statements_type& sts)"
+             << "update (const container_type& c," << endl
+             << "statements_type& sts";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
              << "{"
              << "using namespace " << db << ";"
              << endl
-             << "const binding& id (sts.id_binding ());"
-             << endl
-             << "if (sts.data_binding_test_version ())"
-             << "{"
-             << "bind (sts.data_bind (), id.bind, id.count, sts.data_image ());"
-             << "sts.data_binding_update_version ();"
-             << "}"
              << "functions_type& fs (sts.functions ());";
+
+          if (versioned)
+            os << "sts.version_migration (svm);";
 
           if (!smart && ck == ck_ordered)
             os << "fs.ordered_ = " << ordered << ";";
@@ -3746,6 +3824,7 @@ namespace relational
 
         bool inverse (context::inverse (m, "value"));
         bool smart (!inverse && !unordered (m) && container_smart (c));
+        bool versioned (context::versioned (m));
 
         // In certain cases we don't need to do anything.
         //
@@ -3865,21 +3944,39 @@ namespace relational
           {
             os << traits << "::persist (" << endl
                << var << "," << endl
-               << "esc." << sts_name << ");";
+               << "esc." << sts_name;
+
+            if (versioned)
+              os << "," << endl
+                 << "svm";
+
+            os << ");";
             break;
           }
         case load_call:
           {
             os << traits << "::load (" << endl
                << var << "," << endl
-               << "esc." << sts_name << ");";
+               << "esc." << sts_name;
+
+            if (versioned)
+              os << "," << endl
+                 << "svm";
+
+            os << ");";
             break;
           }
         case update_call:
           {
             os << traits << "::update (" << endl
                << var << "," << endl
-               << "esc." << sts_name << ");";
+               << "esc." << sts_name;
+
+            if (versioned)
+              os << "," << endl
+                 << "svm";
+
+            os << ");";
             break;
           }
         case erase_obj_call:

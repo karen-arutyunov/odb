@@ -53,7 +53,7 @@ namespace relational
           if (av != 0)
             os << "svm >= schema_version_migration (" << av << "ULL, true)";
 
-          if (av != 0 || dv != 0)
+          if (av != 0 && dv != 0)
             os << " &&" << endl;
 
           if (dv != 0)
@@ -221,6 +221,8 @@ namespace relational
 
         bool abst (abstract (c));
         bool reuse_abst (abst && !poly);
+
+        bool versioned (context::versioned (c));
 
         string const& type (class_fq_name (c));
         string traits ("access::object_traits_impl< " + type + ", id_" +
@@ -413,7 +415,13 @@ namespace relational
              << "void " << traits << "::" << endl
              << "load_ (statements_type&," << endl
              << "object_type& obj," << endl
-             << "bool)"
+             << "bool";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration&";
+
+          os << ")"
              << "{"
              << "ODB_POTENTIALLY_UNUSED (obj);"
              << endl;

@@ -1657,12 +1657,54 @@ namespace
           t.set ("key-not-null", true);
         }
 
-        // Check if we are versioned.
+        // Check if we are versioned. For now we are not allowing for
+        // soft-add/delete in container keys (might be used in WHERE,
+        // primary key).
         //
-        // @@ TODO
-        //
-        if (force_versioned)
-          t.set ("versioned", true);
+        {
+          semantics::class_* comp;
+          switch (ck)
+          {
+          case ck_ordered:
+            {
+              comp = composite (*vt);
+              break;
+            }
+          case ck_map:
+          case ck_multimap:
+            {
+              comp = composite (*kt);
+              if (comp == 0 || column_count (*comp).soft == 0)
+              {
+                comp = composite (*vt);
+                break;
+              }
+
+              error (m.location ()) << "map key type cannot have soft-" <<
+                "added/deleted data members" << endl;
+              info (kt->location ()) << "key type is defined here" << endl;
+              throw operation_failed ();
+            }
+          case ck_set:
+          case ck_multiset:
+            {
+              comp = composite (*vt);
+              if (comp == 0 || column_count (*comp).soft == 0)
+              {
+                comp = 0;
+                break;
+              }
+
+              error (m.location ()) << "set value type cannot have soft-" <<
+                "added/deleted data members" << endl;
+              info (vt->location ()) << "value type is defined here" << endl;
+              throw operation_failed ();
+            }
+          }
+
+          if (force_versioned || (comp != 0 && column_count (*comp).soft != 0))
+            t.set ("versioned", true);
+        }
       }
 
       // Process member data.

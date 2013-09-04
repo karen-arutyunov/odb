@@ -657,7 +657,11 @@ traverse_object (type& c)
     os << "static void" << endl
        << "load_ (statements_type&," << endl
        << "object_type&," << endl
-       << "bool reload = false";
+       << "bool reload";
+
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration&";
 
     if (poly_derived)
       os << "," << endl

@@ -1317,6 +1317,10 @@ public:
   static unsigned short const test_readwrite_container = 0x80;
   static unsigned short const test_smart_container = 0x100;
 
+  // Exclude versioned containers.
+  //
+  static unsigned short const exclude_versioned = 0x200;
+
   // Treat eager loaded members as belonging to the main section.
   // If this flag is specified, then section must be main_section.
   //

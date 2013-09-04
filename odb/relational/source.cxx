@@ -1091,7 +1091,12 @@ traverse_object (type& c)
 
   // persist ()
   //
-  bool persist_containers (has_a (c, test_straight_container));
+  size_t persist_containers (has_a (c, test_straight_container));
+  bool persist_versioned_containers (
+    persist_containers >
+    has_a (c,
+           test_straight_container |
+           exclude_deleted | exclude_added | exclude_versioned));
 
   os << "void " << traits << "::" << endl
      << "persist (database& db, " << (auto_id ? "" : "const ") <<
@@ -1132,7 +1137,7 @@ traverse_object (type& c)
        << "throw abstract_class ();"
        << endl;
 
-  if (versioned)
+  if (versioned || persist_versioned_containers)
     os << "const schema_version_migration& svm (" <<
       "db.schema_version_migration (" << schema_name << "));";
 
@@ -1369,8 +1374,15 @@ traverse_object (type& c)
   //
   if (id != 0 && (!readonly || poly))
   {
-    bool update_containers (
+    size_t update_containers (
       has_a (c, test_readwrite_container, &main_section));
+
+    bool update_versioned_containers (
+      update_containers >
+      has_a (c,
+             test_readwrite_container |
+             exclude_deleted | exclude_added | exclude_versioned,
+             &main_section));
 
     // See if we have any sections that we might have to update.
     //
@@ -1437,6 +1449,11 @@ traverse_object (type& c)
            << endl;
       }
 
+      if ((versioned && update_columns) || update_versioned_containers)
+        os << "const schema_version_migration& svm (" <<
+          "db.schema_version_migration (" << schema_name << "));"
+           << endl;
+
       // If we have change-updated sections that contain change-tracking
       // containers, then mark such sections as changed if any of the
       // containers was changed. Do this before calling the base so that
@@ -1458,6 +1475,9 @@ traverse_object (type& c)
 
         os << "// " << m.name () << endl
            << "//" << endl
+
+          //@@ TODO version check.
+
            << "{";
 
         // Section access is always by reference.
@@ -1489,11 +1509,6 @@ traverse_object (type& c)
         os << "}" // if
            << "}";
       }
-
-      if (versioned && update_columns)
-        os << "const schema_version_migration& svm (" <<
-          "db.schema_version_migration (" << schema_name << "));"
-           << endl;
 
       if (poly_derived)
       {
@@ -2535,7 +2550,7 @@ traverse_object (type& c)
     if (delay_freeing_statement_result)
       os << "ar.free ();";
 
-    os << "load_ (sts, obj);";
+    os << "load_ (sts, obj, false" << (versioned ? ", svm" : "") << ");";
 
     if (poly)
       // Load the dynamic part of the object unless static and dynamic
@@ -2659,7 +2674,7 @@ traverse_object (type& c)
       if (delay_freeing_statement_result)
         os << "ar.free ();";
 
-      os << "load_ (sts, obj);"
+      os << "load_ (sts, obj, false" << (versioned ? ", svm" : "") << ");"
          << rsts << ".load_delayed (" << (versioned ? "&svm" : "0") << ");"
          << "l.unlock ();"
          << "callback (db, obj, callback_event::post_load);"
@@ -2781,7 +2796,7 @@ traverse_object (type& c)
       if (delay_freeing_statement_result)
         os << "ar.free ();";
 
-      os << "load_ (sts, obj, true);"
+      os << "load_ (sts, obj, true" << (versioned ? ", svm" : "") << ");"
          << rsts << ".load_delayed (" << (versioned ? "&svm" : "0") << ");"
          << "l.unlock ();"
          << "callback (db, obj, callback_event::post_load);"
@@ -3240,8 +3255,15 @@ traverse_object (type& c)
   //
   // Load containers, reset/reload sections.
   //
-  bool load_containers (
+  size_t load_containers (
     has_a (c, test_container | include_eager_load, &main_section));
+
+  bool load_versioned_containers (
+    load_containers >
+    has_a (c,
+           test_container | include_eager_load |
+           exclude_deleted | exclude_added | exclude_versioned,
+           &main_section));
 
   if (poly_derived ||
       load_containers ||
@@ -3254,18 +3276,25 @@ traverse_object (type& c)
        << "object_type& obj," << endl
        << "bool reload";
 
+    if (versioned)
+      os << "," << endl
+         << "const schema_version_migration& svm";
+
     if (poly_derived)
       os << "," << endl
          << "std::size_t d";
 
     os << ")"
        << "{"
-       << "ODB_POTENTIALLY_UNUSED (reload);"
-       << endl;
+       << "ODB_POTENTIALLY_UNUSED (reload);";
+    if (versioned)
+      os << "ODB_POTENTIALLY_UNUSED (svm);";
+    os << endl;
 
     if (poly_derived)
       os << "if (--d != 0)" << endl
          << "base_traits::load_ (sts.base_statements (), obj, reload" <<
+        (context::versioned (*poly_base) ? ", svm" : "") <<
         (poly_base != poly_root ? ", d" : "") << ");"
          << endl;
 
@@ -3277,6 +3306,11 @@ traverse_object (type& c)
 
     if (load_containers)
     {
+      if (load_versioned_containers && !versioned)
+        os << "const schema_version_migration& svm (" << endl
+           << "sts.connection ().database ().schema_version_migration (" <<
+          schema_name << "));";
+
       instance<container_calls> t (container_calls::load_call, &main_section);
       t->traverse (c);
     }
@@ -3406,7 +3440,7 @@ traverse_object (type& c)
     if (empty_depth != 0)
       os << "}";
 
-    os << "load_ (sts, obj, false, d);"
+    os << "load_ (sts, obj, false, " << (versioned ? "svm, " : "") << "d);"
        << "}";
   }
 

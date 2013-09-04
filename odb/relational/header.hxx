@@ -242,7 +242,7 @@ namespace relational
         // Figure out column counts.
         //
         size_t id_columns, value_columns, data_columns, cond_columns;
-        bool versioned;
+        bool versioned (context::versioned (m));
 
         if (!reuse_abst)
         {
@@ -323,8 +323,6 @@ namespace relational
 
             data_columns += value_columns;
           }
-
-          versioned = context::versioned (m);
 
           // Store column counts for the source generator.
           //
@@ -586,26 +584,47 @@ namespace relational
            << "bind (" << bind_vector << "," << endl
            << "const " << bind_vector << " id," << endl
            << "std::size_t id_size," << endl
-           << "data_image_type&);"
+           << "data_image_type&";
+
+        if (versioned)
+          os << "," << endl
+             << "const schema_version_migration&";
+
+        os << ");"
            << endl;
 
         // bind (cond_image, data_image) (update)
         //
         if (smart)
+        {
           os << "static void" << endl
              << "bind (" << bind_vector << "," << endl
              << "const " << bind_vector << " id," << endl
              << "std::size_t id_size," << endl
              << "cond_image_type&," << endl
-             << "data_image_type&);"
+             << "data_image_type&";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration&";
+
+          os << ");"
              << endl;
+        }
 
         // grow ()
         //
         if (generate_grow)
         {
           os << "static void" << endl
-             << "grow (data_image_type&, " << truncated_vector << ");"
+             << "grow (data_image_type&," << endl
+             << truncated_vector;
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration&";
+
+          os << ");"
              << endl;
         }
 
@@ -613,33 +632,36 @@ namespace relational
         //
         if (!inverse)
         {
-          os << "static void" << endl;
+          os << "static void" << endl
+             << "init (data_image_type&," << endl;
 
           switch (ck)
           {
           case ck_ordered:
             {
               if (ordered)
-                os << "init (data_image_type&, index_type*, const value_type&);";
-              else
-                os << "init (data_image_type&, const value_type&);";
+                os << "index_type*," << endl;
               break;
             }
           case ck_map:
           case ck_multimap:
             {
-              os << "init (data_image_type&, const key_type*, const value_type&);";
+              os << "const key_type*," << endl;
               break;
             }
           case ck_set:
           case ck_multiset:
-            {
-              os << "init (data_image_type&, const value_type&);";
-              break;
-            }
+            break;
           }
 
-          os << endl;
+          os << "const value_type&";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration&";
+
+          os << ");"
+             << endl;
         }
 
         // init (cond_image)
@@ -674,33 +696,37 @@ namespace relational
 
         // init (data)
         //
-        os << "static void" << endl;
+        os << "static void" << endl
+           << "init (";
 
         switch (ck)
         {
         case ck_ordered:
           {
             if (ordered)
-              os << "init (index_type&, value_type&, ";
-            else
-              os << "init (value_type&, ";
+              os << "index_type&," << endl;
             break;
           }
         case ck_map:
         case ck_multimap:
           {
-            os << "init (key_type&, value_type&, ";
+            os << "key_type&," << endl;
             break;
           }
         case ck_set:
         case ck_multiset:
-          {
-            os << "init (value_type&, ";
-            break;
-          }
+          break;
         }
 
-        os << "const data_image_type&, database*);"
+        os << "value_type&," << endl;
+        os << "const data_image_type&," << endl
+           << "database*";
+
+        if (versioned)
+          os << "," << endl
+             << "const schema_version_migration&";
+
+        os << ");"
            << endl;
 
         // insert
@@ -820,22 +846,47 @@ namespace relational
         // persist
         //
         if (!inverse)
+        {
           os << "static void" << endl
-             << "persist (const container_type&, statements_type&);"
+             << "persist (const container_type&," << endl
+             << "statements_type&";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration&";
+
+          os << ");"
              << endl;
+        }
 
         // load
         //
         os << "static void" << endl
-           << "load (container_type&, statements_type&);"
+           << "load (container_type&," << endl
+           << "statements_type&";
+
+        if (versioned)
+          os << "," << endl
+             << "const schema_version_migration&";
+
+        os << ");"
            << endl;
 
         // update
         //
         if (!(inverse || readonly (member_path_, member_scope_)))
+        {
           os << "static void" << endl
-             << "update (const container_type&, statements_type&);"
+             << "update (const container_type&," << endl
+             << "statements_type&";
+
+          if (versioned)
+            os << "," << endl
+               << "const schema_version_migration&";
+
+          os << ");"
              << endl;
+        }
 
         // erase
         //

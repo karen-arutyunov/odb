@@ -2506,12 +2506,17 @@ namespace
     }
 
     virtual void
-    traverse_container (semantics::data_member&, semantics::type& c)
+    traverse_container (semantics::data_member& m, semantics::type& c)
     {
       // Ignore added/deleted members if so requested.
       //
       if (((flags_ & exclude_added) != 0 && added (member_path_)) ||
           ((flags_ & exclude_deleted) != 0 && deleted (member_path_)))
+        return;
+
+      // Ignore versioned containers if so requested.
+      //
+      if ((flags_ & exclude_versioned) != 0 && versioned (m))
         return;
 
       // We don't cross the container boundaries (separate table).
