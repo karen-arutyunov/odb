@@ -178,12 +178,6 @@ namespace
           valid_ = false;
         }
 
-        if (section)
-        {
-          error (l) << "section cannod be soft-added" << endl;
-          valid_ = false;
-        }
-
         if (!versioned ())
         {
           error (l) << "added data member in a non-versioned object " <<
@@ -231,12 +225,6 @@ namespace
           valid_ = false;
         }
 
-        if (section)
-        {
-          error (l) << "section cannod be soft-deleted" << endl;
-          valid_ = false;
-        }
-
         if (!versioned ())
         {
           error (l) << "deleted data member in a non-versioned object " <<
@@ -279,8 +267,8 @@ namespace
         valid_ = false;
       }
 
-      if (dv == 0)
-        count_++; // Don't include deleted members in the count.
+      if (section)
+        return; // Section data member is transient.
 
       // Resolve null overrides.
       //
@@ -289,7 +277,6 @@ namespace
     }
 
     bool& valid_;
-    size_t count_;
   };
 
   // Find special members (id, version).
@@ -525,7 +512,6 @@ namespace
 
       // Check bases.
       //
-      bool base (false);
       type* poly_root (0);
 
       for (type::inherits_iterator i (c.inherits_begin ());
@@ -536,8 +522,6 @@ namespace
 
         if (object (b))
         {
-          base = true;
-
           if (type* r = polymorphic (b))
           {
             if (poly_root == 0)
@@ -590,16 +574,7 @@ namespace
 
       // Check members.
       //
-      member_.count_ = 0;
       names (c);
-
-      if (member_.count_ == 0 && !base)
-      {
-        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
-           << " error: no persistent data members in the class" << endl;
-
-        valid_ = false;
-      }
 
       // Check special members.
       //
@@ -906,16 +881,7 @@ namespace
 
       // Check members.
       //
-      member_.count_ = 0;
       names (c);
-
-      if (member_.count_ == 0)
-      {
-        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
-           << " error: no persistent data members in the class" << endl;
-
-        valid_ = false;
-      }
 
       // Check id.
       //
@@ -957,17 +923,13 @@ namespace
     virtual void
     traverse_composite (type& c)
     {
-      bool base (false);
-
       for (type::inherits_iterator i (c.inherits_begin ());
            i != c.inherits_end ();
            ++i)
       {
         type& b (i->base ());
 
-        if (composite (b))
-          base = true;
-        else if (object (b) || view (b))
+        if (object (b) || view (b))
         {
           // @@ Should we use hint here?
           //
@@ -991,16 +953,7 @@ namespace
 
       // Check members.
       //
-      member_.count_ = 0;
       names (c);
-
-      if (member_.count_ == 0 && !base)
-      {
-        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
-           << " error: no persistent data members in the class" << endl;
-
-        valid_ = false;
-      }
 
       // Check id.
       //
@@ -1068,12 +1021,17 @@ namespace
     data_member2 (bool& valid): valid_ (valid) {}
 
     virtual void
-    traverse (type&)
+    traverse (type& m)
     {
-      // Enable the names() calls below if adding any tests here.
+      if (transient (m))
+        return;
+
+      if (!deleted (m)) // Don't include deleted members in the count.
+        count_++;
     }
 
     bool& valid_;
+    size_t count_;
   };
 
   struct class2: traversal::class_, context
@@ -1135,6 +1093,15 @@ namespace
     virtual void
     traverse_object (type& c)
     {
+      bool base (false);
+      for (type::inherits_iterator i (c.inherits_begin ());
+           !base && i != c.inherits_end ();
+           ++i)
+      {
+        if (object (i->base ()))
+          base = true;
+      }
+
       bool poly (polymorphic (c));
 
       // Make sure we have no empty or pointless sections unless we
@@ -1261,29 +1228,62 @@ namespace
 
       // Check members.
       //
-      //names (c);
+      member_.count_ = 0;
+      names (c);
+
+      if (member_.count_ == 0 && !base)
+      {
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " error: no persistent data members in the class" << endl;
+        valid_ = false;
+      }
     }
 
     virtual void
-    traverse_view (type&)
+    traverse_view (type& c)
     {
       // Check members.
       //
-      //names (c);
+      member_.count_ = 0;
+      names (c);
+
+      if (member_.count_ == 0)
+      {
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " error: no persistent data members in the class" << endl;
+        valid_ = false;
+      }
     }
 
     virtual void
-    traverse_composite (type&)
+    traverse_composite (type& c)
     {
+      bool base (false);
+      for (type::inherits_iterator i (c.inherits_begin ());
+           !base && i != c.inherits_end ();
+           ++i)
+      {
+        if (composite (i->base ()))
+          base = true;
+      }
+
       // Check members.
       //
-      //names (c);
+      member_.count_ = 0;
+      names (c);
+
+      if (member_.count_ == 0 && !base)
+      {
+        os << c.file () << ":" << c.line () << ":" << c.column () << ":"
+           << " error: no persistent data members in the class" << endl;
+        valid_ = false;
+      }
     }
 
     bool& valid_;
     tree has_lt_operator_;
 
-    data_member1 member_;
+    data_member2 member_;
     traversal::names names_;
   };
 }

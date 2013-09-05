@@ -999,13 +999,21 @@ namespace relational
         // copied at the end (update).
         //
         if (load || load_opt || update || update_opt)
+        {
           os << "static std::size_t" << endl
              << "bind (" << bind_vector << "," << endl
              << "const " << bind_vector << " id," << endl
              << "std::size_t id_size," << endl
              << "image_type&," << endl
-             << db << "::statement_kind);"
+             << db << "::statement_kind";
+
+          if (s.versioned)
+            os << "," << endl
+               << "const schema_version_migration&";
+
+          os << ");"
              << endl;
+        }
 
         // grow ()
         //
@@ -1013,23 +1021,51 @@ namespace relational
         // will have different number of elements.
         //
         if (generate_grow && (load || load_opt))
+        {
           os << "static bool" << endl
-             << "grow (image_type&, " << truncated_vector << ");"
+             << "grow (image_type&," << endl
+             << truncated_vector;
+
+          if (s.versioned)
+            os << "," << endl
+               << "const schema_version_migration&";
+
+          os << ");"
              << endl;
+        }
 
         // init (object, image)
         //
         if (load)
+        {
           os << "static void" << endl
-             << "init (object_type&, const image_type&, database*);"
+             << "init (object_type&," << endl
+             << "const image_type&," << endl
+             << "database*";
+
+          if (s.versioned)
+            os << "," << endl
+               << "const schema_version_migration&";
+
+          os << ");"
              << endl;
+        }
 
         // init (image, object)
         //
         if (update)
+        {
           os << "static " << (generate_grow ? "bool" : "void") << endl
-             << "init (image_type&, const object_type&);"
+             << "init (image_type&," << endl
+             << "const object_type&";
+
+          if (s.versioned)
+            os << "," << endl
+               << "const schema_version_migration&";
+
+          os << ");"
              << endl;
+        }
 
         // The rest does not apply to reuse-abstract sections.
         //
@@ -1043,7 +1079,6 @@ namespace relational
         // column_count
         //
         column_count_type const& cc (column_count (poly ? *poly_root : c_));
-        bool versioned (force_versioned);
 
         // Generate load and update column counts even when they are zero so
         // that we can instantiate section_statements.
@@ -1061,7 +1096,7 @@ namespace relational
           (update ? s.total - s.inverse - s.readonly : 0) << "UL;"
            << endl;
 
-        os << "static const bool versioned = " << versioned << ";"
+        os << "static const bool versioned = " << s.versioned << ";"
            << endl;
 
         // Statements.

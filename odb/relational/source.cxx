@@ -1137,7 +1137,12 @@ traverse_object (type& c)
        << "throw abstract_class ();"
        << endl;
 
-  if (versioned || persist_versioned_containers)
+  if (versioned ||
+      persist_versioned_containers ||
+      uss.count (user_sections::count_new |
+                 user_sections::count_update |
+                 user_sections::count_update_empty |
+                 user_sections::count_versioned_only) != 0)
     os << "const schema_version_migration& svm (" <<
       "db.schema_version_migration (" << schema_name << "));";
 
@@ -1346,6 +1351,26 @@ traverse_object (type& c)
 
     data_member& m (*i->member);
 
+    // If the section is soft- added or deleted, check the version.
+    //
+    unsigned long long av (added (m));
+    unsigned long long dv (deleted (m));
+    if (av != 0 || dv != 0)
+    {
+      os << "if (";
+
+      if (av != 0)
+        os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+      if (av != 0 && dv != 0)
+        os << " &&" << endl;
+
+      if (dv != 0)
+        os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+      os << ")" << endl;
+    }
+
     // Section access is always by reference.
     //
     member_access& ma (m.get<member_access> ("get"));
@@ -1387,12 +1412,28 @@ traverse_object (type& c)
     // See if we have any sections that we might have to update.
     //
     bool sections (false);
+    bool versioned_sections (false);
     for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
     {
       // This test will automatically skip the special version update section.
       //
-      if (!i->update_empty () && i->update != user_section::update_manual)
-        sections = true;
+      if (i->update_empty () || i->update == user_section::update_manual)
+        continue;
+
+      sections = true;
+
+      if (added (*i->member) || deleted (*i->member))
+        versioned_sections = true;
+
+      // For change-updated sections, also check if we have any
+      // versioned smart containers.
+      //
+      if (i->update != user_section::update_change)
+        continue;
+
+      if (has_a (c, test_smart_container, &*i) !=
+          has_a (c, test_smart_container | exclude_deleted | exclude_added, &*i))
+        versioned_sections = true;
     }
 
     os << "void " << traits << "::" << endl
@@ -1449,14 +1490,16 @@ traverse_object (type& c)
            << endl;
       }
 
-      if ((versioned && update_columns) || update_versioned_containers)
+      if ((versioned && update_columns) ||
+          update_versioned_containers ||
+          versioned_sections)
         os << "const schema_version_migration& svm (" <<
           "db.schema_version_migration (" << schema_name << "));"
            << endl;
 
       // If we have change-updated sections that contain change-tracking
       // containers, then mark such sections as changed if any of the
-      // containers was changed. Do this before calling the base so that
+      // containers were changed. Do this before calling the base so that
       // we account for the whole hierarchy before we actually start
       // updating any sections (important for optimistic concurrency
       // version).
@@ -1474,11 +1517,29 @@ traverse_object (type& c)
         data_member& m (*s.member);
 
         os << "// " << m.name () << endl
-           << "//" << endl
+           << "//" << endl;
 
-          //@@ TODO version check.
+        // If the section is soft- added or deleted, check the version.
+        //
+        unsigned long long av (added (m));
+        unsigned long long dv (deleted (m));
+        if (av != 0 || dv != 0)
+        {
+          os << "if (";
 
-           << "{";
+          if (av != 0)
+            os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+          if (av != 0 && dv != 0)
+            os << " &&" << endl;
+
+          if (dv != 0)
+            os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+          os << ")";
+        }
+
+        os << "{";
 
         // Section access is always by reference.
         //
@@ -1852,6 +1913,27 @@ traverse_object (type& c)
         //
         data_member& m (*i->member);
 
+        // If the section is soft- added or deleted, check the version.
+        //
+        unsigned long long av (added (m));
+        unsigned long long dv (deleted (m));
+        if (av != 0 || dv != 0)
+        {
+          os << "if (";
+
+          if (av != 0)
+            os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+          if (av != 0 && dv != 0)
+            os << " &&" << endl;
+
+          if (dv != 0)
+            os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+          os << ")"
+             << "{";
+        }
+
         // Section access is always by reference.
         //
         member_access& ma (m.get<member_access> ("get"));
@@ -1938,6 +2020,9 @@ traverse_object (type& c)
         }
 
         os << "}";
+
+        if (av != 0 || dv != 0)
+          os << "}";
       }
 
       // Call callback (post_update).
@@ -3258,19 +3343,19 @@ traverse_object (type& c)
   size_t load_containers (
     has_a (c, test_container | include_eager_load, &main_section));
 
-  bool load_versioned_containers (
-    load_containers >
-    has_a (c,
-           test_container | include_eager_load |
-           exclude_deleted | exclude_added | exclude_versioned,
-           &main_section));
-
   if (poly_derived ||
       load_containers ||
       uss.count (user_sections::count_new  |
                  user_sections::count_load |
                  (poly ? user_sections::count_load_empty : 0)) != 0)
   {
+    bool load_versioned_containers (
+      load_containers >
+      has_a (c,
+             test_container | include_eager_load |
+             exclude_deleted | exclude_added | exclude_versioned,
+             &main_section));
+
     os << "void " << traits << "::" << endl
        << "load_ (statements_type& sts," << endl
        << "object_type& obj," << endl
@@ -3304,13 +3389,21 @@ traverse_object (type& c)
       os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());"
          << endl;
 
+    if (!versioned && (
+          load_versioned_containers ||
+          uss.count (user_sections::count_new |
+                     user_sections::count_load |
+                     user_sections::count_load_empty |
+                     user_sections::count_versioned_only) != 0))
+    {
+      os << "const schema_version_migration& svm (" << endl
+         << "sts.connection ().database ().schema_version_migration (" <<
+        schema_name << "));"
+         << endl;
+    }
+
     if (load_containers)
     {
-      if (load_versioned_containers && !versioned)
-        os << "const schema_version_migration& svm (" << endl
-           << "sts.connection ().database ().schema_version_migration (" <<
-          schema_name << "));";
-
       instance<container_calls> t (container_calls::load_call, &main_section);
       t->traverse (c);
     }
@@ -3328,6 +3421,27 @@ traverse_object (type& c)
         continue;
 
       data_member& m (*i->member);
+
+      // If the section is soft- added or deleted, check the version.
+      //
+      unsigned long long av (added (m));
+      unsigned long long dv (deleted (m));
+      if (av != 0 || dv != 0)
+      {
+        os << "if (";
+
+        if (av != 0)
+          os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+        if (av != 0 && dv != 0)
+          os << " &&" << endl;
+
+        if (dv != 0)
+          os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+        os << ")"
+           << "{";
+      }
 
       // Section access is always by reference.
       //
@@ -3370,8 +3484,12 @@ traverse_object (type& c)
          << "}"
          << "else" << endl
         // Reset to unloaded, unchanged state.
-         << ma.translate ("obj") << ".reset ();"
-         << endl;
+         << ma.translate ("obj") << ".reset ();";
+
+      if (av != 0 || dv != 0)
+        os << "}";
+      else
+        os << endl;
     }
 
     os << "}";
@@ -3398,16 +3516,16 @@ traverse_object (type& c)
        << "d = depth - d;" // Convert to distance from derived.
        << endl;
 
+    if (versioned)
+      os << "const schema_version_migration& svm (" <<
+        "db.schema_version_migration (" << schema_name << "));"
+         << endl;
+
     // Avoid trying to execute an empty SELECT statement.
     //
     if (empty_depth != 0)
       os << "if (d > " << (poly_depth - empty_depth) << "UL)"
          << "{";
-
-    if (versioned)
-      os << "const schema_version_migration& svm (" <<
-        "db.schema_version_migration (" << schema_name << "));"
-         << endl;
 
     os << "if (!find_ (sts, 0" << (versioned ? ", svm" : "") << ", d))" << endl
        << "throw object_not_persistent ();" // Database inconsistency.

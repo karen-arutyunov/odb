@@ -738,7 +738,7 @@ namespace
         // If the section is in the base, handle polymorphic inheritance.
         //
         class_& b (dynamic_cast<class_&> (us.scope ()));
-        object_section* s (0);
+        user_section* s (0);
 
         if (&c != &b && poly_derived)
         {
@@ -789,7 +789,80 @@ namespace
         else
           s = &process_user_section (us, c);
 
-        m.set ("section", s); // Insert as object_section.
+        // Mark the member as added/deleted if the section is added/deleted.
+        // Also check that the version ordering is correct.
+        //
+        if (unsigned long long sav = added (*s->member))
+        {
+          location_t sl (s->member->get<location_t> ("added-location"));
+
+          if (unsigned long long mav = added (m))
+          {
+            location_t ml (m.get<location_t> ("added-location"));
+
+            if (mav < sav)
+            {
+              error (ml) << "member addition version is less than the " <<
+                "section addition version" << endl;
+              info (sl) << "section addition version is specified here" <<
+                endl;
+              throw operation_failed ();
+            }
+
+            if (mav == sav)
+            {
+              error (ml) << "member addition version is the same as " <<
+                "section addition version" << endl;
+              info (sl) << "section addition version is specified here" <<
+                endl;
+              info (ml) << "delete this pragma" << endl;
+              throw operation_failed ();
+            }
+          }
+          else
+          {
+            m.set ("added", sav);
+            m.set ("added-location", sl);
+          }
+        }
+
+        if (unsigned long long sdv = deleted (*s->member))
+        {
+          location_t sl (s->member->get<location_t> ("deleted-location"));
+
+          if (unsigned long long mdv = deleted (m))
+          {
+            location_t ml (m.get<location_t> ("deleted-location"));
+
+            if (mdv > sdv)
+            {
+              error (ml) << "member deletion version is greater than the " <<
+                "section deletion version" << endl;
+              info (sl) << "section deletion version is specified here" <<
+                endl;
+              throw operation_failed ();
+            }
+
+            if (mdv == sdv)
+            {
+              error (ml) << "member deletion version is the same as " <<
+                "section deletion version" << endl;
+              info (sl) << "section deletion version is specified here" <<
+                endl;
+              info (ml) << "delete this pragma" << endl;
+              throw operation_failed ();
+            }
+          }
+          else
+          {
+            m.set ("deleted", sdv);
+            m.set ("deleted-location", sl);
+          }
+        }
+
+        // Insert as object_section.
+        //
+        m.set ("section", static_cast<object_section*> (s));
       }
       catch (semantics::unresolved const& e)
       {
@@ -2203,8 +2276,33 @@ namespace
         i->inverse = cc.inverse;
         i->readonly = cc.readonly;
 
-        if ((i->containers = has_a (c, test_container, &*i)))
-          i->readwrite_containers = has_a (c, test_readwrite_container, &*i);
+        // Figure out if we are versioned. We are versioned if we have
+        // soft-added/deleted columns ourselves or our poly-base is
+        // versioned.
+        //
+        if (force_versioned || cc.soft != 0 ||
+            (poly_derived && i->base != 0 && i->base->versioned))
+          i->versioned = true;
+
+        if (size_t n = has_a (c, test_container, &*i))
+        {
+          i->containers = true;
+          i->versioned_containers =
+            n != has_a (c,
+                        test_container |
+                        exclude_deleted | exclude_added | exclude_versioned,
+                        &*i);
+
+          if ((n = has_a (c, test_readwrite_container, &*i)))
+          {
+            i->readwrite_containers = true;
+            i->readwrite_versioned_containers =
+              n != has_a (c,
+                          test_readwrite_container |
+                          exclude_deleted | exclude_added | exclude_versioned,
+                          &*i);
+          }
+        }
       }
     }
 
@@ -2325,12 +2423,10 @@ namespace
     virtual void
     traverse_view_post (type& c)
     {
-      // Figure out if we are versioned. When versioning is forced, ignore
-      // it for native views.
+      // Figure out if we are versioned. Forced versioning is handled
+      // in relational/processing.
       //
-      if ((force_versioned &&
-           c.get<view_query> ("query").kind == view_query::condition) ||
-          column_count (c).soft != 0)
+      if (column_count (c).soft != 0)
         c.set ("versioned", true);
     }
 

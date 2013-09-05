@@ -1017,6 +1017,19 @@ namespace relational
           //
           unsigned long long av (added (mi.m));
           unsigned long long dv (deleted (mi.m));
+
+          // If the addition/deletion version is the same as the section's,
+          // then we don't need the test.
+          //
+          if (user_section* s = dynamic_cast<user_section*> (section_))
+          {
+            if (av == added (*s->member))
+              av = 0;
+
+            if (dv == deleted (*s->member))
+              dv = 0;
+          }
+
           if (av != 0 || dv != 0)
           {
             os << "if (";
@@ -1046,7 +1059,18 @@ namespace relational
           // We need to increment the index even if we skipped this
           // member due to the schema version.
           //
-          if (added (mi.m) || deleted (mi.m))
+          unsigned long long av (added (mi.m));
+          unsigned long long dv (deleted (mi.m));
+          if (user_section* s = dynamic_cast<user_section*> (section_))
+          {
+            if (av == added (*s->member))
+              av = 0;
+
+            if (dv == deleted (*s->member))
+              dv = 0;
+          }
+
+          if (av != 0 || dv != 0)
             os << "}";
 
           if (semantics::class_* c = composite (mi.t))
@@ -1366,6 +1390,19 @@ namespace relational
           //
           unsigned long long av (added (mi.m));
           unsigned long long dv (deleted (mi.m));
+
+          // If the addition/deletion version is the same as the section's,
+          // then we don't need the test.
+          //
+          if (user_section* s = dynamic_cast<user_section*> (section_))
+          {
+            if (av == added (*s->member))
+              av = 0;
+
+            if (dv == deleted (*s->member))
+              dv = 0;
+          }
+
           if (av != 0 || dv != 0)
           {
             os << "if (";
@@ -1570,7 +1607,18 @@ namespace relational
 
         if (member_override_.empty ())
         {
-          if (added (mi.m) || deleted (mi.m))
+          unsigned long long av (added (mi.m));
+          unsigned long long dv (deleted (mi.m));
+          if (user_section* s = dynamic_cast<user_section*> (section_))
+          {
+            if (av == added (*s->member))
+              av = 0;
+
+            if (dv == deleted (*s->member))
+              dv = 0;
+          }
+
+          if (av != 0 || dv != 0)
             os << "}";
         }
       }
@@ -1757,6 +1805,19 @@ namespace relational
           //
           unsigned long long av (added (mi.m));
           unsigned long long dv (deleted (mi.m));
+
+          // If the addition/deletion version is the same as the section's,
+          // then we don't need the test.
+          //
+          if (user_section* s = dynamic_cast<user_section*> (section_))
+          {
+            if (av == added (*s->member))
+              av = 0;
+
+            if (dv == deleted (*s->member))
+              dv = 0;
+          }
+
           if (av != 0 || dv != 0)
           {
             os << "if (";
@@ -3862,6 +3923,19 @@ namespace relational
         //
         unsigned long long av (added (member_path_));
         unsigned long long dv (deleted (member_path_));
+
+        // If the addition/deletion version is the same as the section's,
+        // then we don't need the test.
+        //
+        if (user_section* s = dynamic_cast<user_section*> (section_))
+        {
+          if (av == added (*s->member))
+            av = 0;
+
+          if (dv == deleted (*s->member))
+            dv = 0;
+        }
+
         if (av != 0 || dv != 0)
         {
           os << "if (";
@@ -4157,10 +4231,20 @@ namespace relational
              << "const " << bind_vector << (reuse_abst ? "," : " id,") << endl
              << "std::size_t" << (reuse_abst ? "," : " id_size,") << endl
              << "image_type& i," << endl
-             << db << "::statement_kind sk)"
+             << db << "::statement_kind sk";
+
+          if (s.versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
              << "{"
-             << "ODB_POTENTIALLY_UNUSED (sk);"
-             << endl
+             << "ODB_POTENTIALLY_UNUSED (sk);";
+
+          if (s.versioned)
+            os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+          os << endl
              << "using namespace " << db << ";"
              << endl
              << "std::size_t n (0);"
@@ -4184,7 +4268,7 @@ namespace relational
                  << "n += object_traits_impl< " << class_fq_name (*b.object) <<
                 ", id_" << db << " >::" << public_name (*b.member) <<
                 "_traits::bind (" << endl
-                 << "b, 0, 0, i, sk);"
+                 << "b, 0, 0, i, sk" << (b.versioned ? ", svm" : "") << ");"
                  << endl;
           }
 
@@ -4228,7 +4312,8 @@ namespace relational
                  << "n += object_traits_impl< " << class_fq_name (*b->object) <<
                 ", id_" << db << " >::" << public_name (*b->member) <<
                 "_traits::bind (" << endl
-                 << "b + n, 0, 0, *i" << acc << ", sk);"
+                 << "b + n, 0, 0, *i" << acc << ", sk" <<
+                (b->versioned ? ", svm" : "") << ");"
                  << endl;
           }
 
@@ -4249,11 +4334,22 @@ namespace relational
         if (generate_grow && (load || load_opt))
         {
           os << "bool " << scope << "::" << endl
-             << "grow (image_type& i, " << truncated_vector << " t)"
+             << "grow (image_type& i," << endl
+             << truncated_vector << " t";
+
+          if (s.versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
              << "{"
              << "ODB_POTENTIALLY_UNUSED (i);"
-             << "ODB_POTENTIALLY_UNUSED (t);"
-             << endl
+             << "ODB_POTENTIALLY_UNUSED (t);";
+
+          if (s.versioned)
+            os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+          os << endl
              << "bool grew (false);"
              << endl;
 
@@ -4272,7 +4368,7 @@ namespace relational
                  << "//" << endl
                  << "grew = object_traits_impl< " << class_fq_name (*b.object) <<
                 ", id_" << db << " >::" << public_name (*b.member) <<
-                "_traits::grow (i, t);"
+                "_traits::grow (i, t" << (b.versioned ? ", svm" : "") << ");"
                  << endl;
 
               index += b.total + (load_opt ? 1 : 0);
@@ -4319,7 +4415,8 @@ namespace relational
                  << "if (object_traits_impl< " << class_fq_name (*b->object) <<
                 ", id_" << db << " >::" << public_name (*b->member) <<
                 "_traits::grow (" << endl
-                 << "*i" << acc << ", t + " << cols << "UL))" << endl
+                 << "*i" << acc << ", t + " << cols << "UL" <<
+                (b->versioned ? ", svm" : "") << "))" << endl
                  << "i" << acc << "->version++;"
                  << endl;
           }
@@ -4333,10 +4430,22 @@ namespace relational
         if (load)
         {
           os << "void " << scope << "::" << endl
-             << "init (object_type& o, const image_type& i, database* db)"
+             << "init (object_type& o," << endl
+             << "const image_type& i," << endl
+             << "database* db";
+
+          if (s.versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
              << "{"
-             << "ODB_POTENTIALLY_UNUSED (db);"
-             << endl;
+             << "ODB_POTENTIALLY_UNUSED (db);";
+
+          if (s.versioned)
+            os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+          os << endl;
 
           if (s.base != 0)
           {
@@ -4351,7 +4460,8 @@ namespace relational
                    << "//" << endl
                    << "object_traits_impl< " << class_fq_name (*b.object) <<
                   ", id_" << db << " >::" << public_name (*b.member) <<
-                  "_traits::init (o, i, db);"
+                  "_traits::init (o, i, db" <<
+                  (b.versioned ? ", svm" : "") << ");"
                    << endl;
             }
             else
@@ -4383,7 +4493,8 @@ namespace relational
                    << "object_traits_impl< " << class_fq_name (*b->object) <<
                   ", id_" << db << " >::" << public_name (*b->member) <<
                   "_traits::init (" << endl
-                   << "o, *i" << acc << ", db);"
+                   << "o, *i" << acc << ", db" <<
+                  (b->versioned ? ", svm" : "") << ");"
                    << endl;
             }
           }
@@ -4402,9 +4513,21 @@ namespace relational
         if (update)
         {
           os << (generate_grow ? "bool " : "void ") << scope << "::" << endl
-             << "init (image_type& i, const object_type& o)"
-             << "{"
-             << "using namespace " << db << ";"
+             << "init (image_type& i," << endl
+             << "const object_type& o";
+
+          if (s.versioned)
+            os << "," << endl
+               << "const schema_version_migration& svm";
+
+          os << ")"
+             << "{";
+
+          if (s.versioned)
+            os << "ODB_POTENTIALLY_UNUSED (svm);"
+               << endl;
+
+          os << "using namespace " << db << ";"
              << endl
              << "statement_kind sk (statement_insert);"
              << "ODB_POTENTIALLY_UNUSED (sk);"
@@ -4430,7 +4553,7 @@ namespace relational
                  << (generate_grow ? "grew = " : "") <<
                 "object_traits_impl< " << class_fq_name (*b.object) <<
                 ", id_" << db << " >::" << public_name (*b.member) <<
-                "_traits::init (i, o);"
+                "_traits::init (i, o" << (b.versioned ? ", svm" : "") << ");"
                  << endl;
           }
 
@@ -4454,8 +4577,13 @@ namespace relational
           return;
         }
 
-        bool versioned (force_versioned);
-        string sep (versioned ? "\n" : " ");
+        string sep (s.versioned ? "\n" : " ");
+
+        // Schema name as a string literal or empty.
+        //
+        string schema_name (options.schema_name ()[db]);
+        if (!schema_name.empty ())
+          schema_name = strlit (schema_name);
 
         // Statements.
         //
@@ -4613,6 +4741,12 @@ namespace relational
             os << "ODB_POTENTIALLY_UNUSED (top);"
                << endl;
 
+          if (s.versioned || s.versioned_containers)
+            os << "const schema_version_migration& svm (" << endl
+               << "esc." << m.name () << ".connection ().database ()." <<
+              "schema_version_migration (" << schema_name << "));"
+               << endl;
+
           // Load values, if any.
           //
           if (load || load_opt)
@@ -4683,15 +4817,23 @@ namespace relational
             os << "if (" << ver << " != sts.select_image_version () ||" << endl
                << "imb.version == 0)"
                << "{"
-               << "bind (imb.bind, 0, 0, im, statement_select);"
+               << "bind (imb.bind, 0, 0, im, statement_select" <<
+              (s.versioned ? ", svm" : "") << ");"
                << "sts.select_image_version (" << ver << ");"
                << "imb.version++;"
                << "}";
 
             // Id binding is assumed initialized and bound.
             //
-            os << "select_statement& st (sts.select_statement ());"
-               << "st.execute ();"
+            os << "select_statement& st (sts.select_statement ());";
+
+            // The statement can be dynamically empty.
+            //
+            if (s.versioned)
+              os << "if (!st.empty ())"
+                 << "{";
+
+            os << "st.execute ();"
                << "auto_result ar (st);"
                << "select_statement::result r (st.fetch ());"
                << endl;
@@ -4704,7 +4846,8 @@ namespace relational
             {
               os << "if (r == select_statement::truncated)"
                  << "{"
-                 << "if (grow (im, sts.select_image_truncated ()))" << endl
+                 << "if (grow (im, sts.select_image_truncated ()" <<
+                (s.versioned ? ", svm" : "") << "))" << endl
                  << "im.version++;"
                  << endl;
 
@@ -4716,7 +4859,8 @@ namespace relational
 
               os << "if (" << ver << " != sts.select_image_version ())"
                  << "{"
-                 << "bind (imb.bind, 0, 0, im, statement_select);"
+                 << "bind (imb.bind, 0, 0, im, statement_select" <<
+                (s.versioned ? ", svm" : "") << ");"
                  << "sts.select_image_version (" << ver << ");"
                  << "imb.version++;"
                  << "st.refetch ();"
@@ -4752,10 +4896,14 @@ namespace relational
 
             if (load)
             {
-              os << "init (obj, im, &sts.connection ().database ());";
+              os << "init (obj, im, &sts.connection ().database ()" <<
+                (s.versioned ? ", svm" : "") << ");";
               init_value_extra (); // Stream results, etc.
               os << endl;
             }
+
+            if (s.versioned)
+              os << "}"; // if (!st.empty ())
 
             if (poly)
               os << "}"; // if (top)
@@ -4870,11 +5018,18 @@ namespace relational
                  << endl;
           }
 
+          if (s.versioned || s.readwrite_versioned_containers)
+            os << "const schema_version_migration& svm (" << endl
+               << "esc." << m.name () << ".connection ().database ()." <<
+              "schema_version_migration (" << schema_name << "));"
+               << endl;
+
           // Update values, if any.
           //
           if (update || update_opt)
           {
             os << "using namespace " << db << ";"
+               << "using " << db << "::update_statement;" // Conflicts.
                << endl
                << "statements_type& sts (esc." << m.name () << ");"
                << endl
@@ -4888,7 +5043,7 @@ namespace relational
               if (generate_grow)
                 os << "if (";
 
-              os << "init (im, obj)";
+              os << "init (im, obj" << (s.versioned ? ", svm" : "") << ")";
 
               if (generate_grow)
                 os << ")" << endl
@@ -4902,13 +5057,20 @@ namespace relational
                << "id.version != sts.update_id_binding_version () ||" << endl
                << "imb.version == 0)"
                << "{"
-               << "bind (imb.bind, id.bind, id.count, im, statement_update);"
+               << "bind (imb.bind, id.bind, id.count, im, statement_update" <<
+              (s.versioned ? ", svm" : "") << ");"
                << "sts.update_image_version (im.version);"
                << "sts.update_id_binding_version (id.version);"
                << "imb.version++;"
                << "}";
 
-            os << "if (sts.update_statement ().execute () == 0)" << endl;
+            os << "update_statement& st (sts.update_statement ());"
+               << "if (";
+
+            if (s.versioned)
+              os << "!st.empty () && ";
+
+            os << "st.execute () == 0)" << endl;
 
             if (opt == 0)
               os << "throw object_not_persistent ();";

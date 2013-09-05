@@ -312,6 +312,19 @@ namespace relational
             //
             unsigned long long av (added (mi.m));
             unsigned long long dv (deleted (mi.m));
+
+            // If the addition/deletion version is the same as the section's,
+            // then we don't need the test.
+            //
+            if (user_section* s = dynamic_cast<user_section*> (section_))
+            {
+              if (av == added (*s->member))
+                av = 0;
+
+              if (dv == deleted (*s->member))
+                dv = 0;
+            }
+
             if (av != 0 || dv != 0)
             {
               os << "if (";
@@ -338,7 +351,18 @@ namespace relational
         {
           if (var_override_.empty ())
           {
-            if (added (mi.m) || deleted (mi.m))
+            unsigned long long av (added (mi.m));
+            unsigned long long dv (deleted (mi.m));
+            if (user_section* s = dynamic_cast<user_section*> (section_))
+            {
+              if (av == added (*s->member))
+                av = 0;
+
+              if (dv == deleted (*s->member))
+                dv = 0;
+            }
+
+            if (av != 0 || dv != 0)
               os << "}";
           }
 

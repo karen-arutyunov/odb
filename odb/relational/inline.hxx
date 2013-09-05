@@ -224,6 +224,12 @@ namespace relational
 
         bool versioned (context::versioned (c));
 
+        // Schema name as a string literal or empty.
+        //
+        string schema_name (options.schema_name ()[db]);
+        if (!schema_name.empty ())
+          schema_name = strlit (schema_name);
+
         string const& type (class_fq_name (c));
         string traits ("access::object_traits_impl< " + type + ", id_" +
                        db.string () + " >");
@@ -413,18 +419,23 @@ namespace relational
         {
           os << "inline" << endl
              << "void " << traits << "::" << endl
-             << "load_ (statements_type&," << endl
+             << "load_ (statements_type& sts," << endl
              << "object_type& obj," << endl
              << "bool";
 
           if (versioned)
             os << "," << endl
-               << "const schema_version_migration&";
+               << "const schema_version_migration& svm";
 
           os << ")"
              << "{"
-             << "ODB_POTENTIALLY_UNUSED (obj);"
-             << endl;
+             << "ODB_POTENTIALLY_UNUSED (sts);"
+             << "ODB_POTENTIALLY_UNUSED (obj);";
+
+          if (versioned)
+            os << "ODB_POTENTIALLY_UNUSED (svm);";
+
+          os << endl;
 
           // Mark eager sections as loaded.
           //
@@ -436,6 +447,28 @@ namespace relational
               continue;
 
             data_member& m (*i->member);
+
+            // If the section is soft- added or deleted, check the version.
+            // We can only end up here if the object itself is versioned
+            // (simple value section).
+            //
+            unsigned long long av (added (m));
+            unsigned long long dv (deleted (m));
+            if (av != 0 || dv != 0)
+            {
+              os << "if (";
+
+              if (av != 0)
+                os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+              if (av != 0 && dv != 0)
+                os << " &&" << endl;
+
+              if (dv != 0)
+                os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+              os << ")" << endl;
+            }
 
             // Section access is always by reference.
             //

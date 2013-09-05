@@ -1427,6 +1427,12 @@ namespace relational
           }
         }
 
+        // Handle forced versioning. When versioning is forced, ignore
+        // it for native views.
+        //
+        if (force_versioned && vq.kind == view_query::condition)
+          c.set ("versioned", true);
+
         // Handle data members.
         //
         {

@@ -342,6 +342,13 @@ count (unsigned short f) const
         (f & count_special_version) == 0)
       continue;
 
+    // Skip non-versioned sections if we are only interested in the
+    // versioned ones.
+    //
+    if ((f & count_versioned_only) != 0 &&
+        !context::added (*i->member) && !context::deleted (*i->member))
+      continue;
+
     bool ovd (i->base != 0 && poly_derived);
 
     if (i->load != user_section::load_eager)
@@ -2402,8 +2409,25 @@ namespace
       if (discriminator (m))
         c_.discriminator++;
 
-      if (added (member_path_) || deleted (member_path_))
-        c_.soft++;
+      {
+        unsigned long long av (added (member_path_));
+        unsigned long long dv (deleted (member_path_));
+
+        // If the addition/deletion version is the same as the section's,
+        // then don't count.
+        //
+        if (user_section* s = dynamic_cast<user_section*> (section_))
+        {
+          if (av == added (*s->member))
+            av = 0;
+
+          if (dv == deleted (*s->member))
+            dv = 0;
+        }
+
+        if (av != 0 || dv != 0)
+          c_.soft++;
+      }
 
       if (separate_load (member_path_))
         c_.separate_load++;
@@ -2482,8 +2506,7 @@ namespace
 
       // Ignore added/deleted members if so requested.
       //
-      if (((flags_ & exclude_added) != 0 && added (member_path_)) ||
-          ((flags_ & exclude_deleted) != 0 && deleted (member_path_)))
+      if (check_soft ())
         return;
 
       if (context::is_a (member_path_, member_scope_, flags_))
@@ -2497,8 +2520,7 @@ namespace
     {
       // Ignore added/deleted members if so requested.
       //
-      if (((flags_ & exclude_added) != 0 && added (member_path_)) ||
-          ((flags_ & exclude_deleted) != 0 && deleted (member_path_)))
+      if (check_soft ())
         return;
 
       if (context::is_a (member_path_, member_scope_, flags_))
@@ -2510,8 +2532,7 @@ namespace
     {
       // Ignore added/deleted members if so requested.
       //
-      if (((flags_ & exclude_added) != 0 && added (member_path_)) ||
-          ((flags_ & exclude_deleted) != 0 && deleted (member_path_)))
+      if (check_soft ())
         return;
 
       // Ignore versioned containers if so requested.
@@ -2543,6 +2564,35 @@ namespace
         inherits (c);
 
       names (c);
+    }
+
+  private:
+    bool
+    check_soft ()
+    {
+      if ((flags_ & exclude_added) != 0 || (flags_ & exclude_deleted) != 0)
+      {
+        unsigned long long av (added (member_path_));
+        unsigned long long dv (deleted (member_path_));
+
+        // If the addition/deletion version is the same as the section's,
+        // then don't exclude.
+        //
+        if (user_section* s = dynamic_cast<user_section*> (section_))
+        {
+          if (av == added (*s->member))
+            av = 0;
+
+          if (dv == deleted (*s->member))
+            dv = 0;
+        }
+
+        if ((av != 0 && (flags_ & exclude_added) != 0) ||
+            (dv != 0 && (flags_ & exclude_deleted) != 0))
+          return true;
+      }
+
+      return false;
     }
 
   private:

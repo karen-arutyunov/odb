@@ -347,8 +347,9 @@ struct user_section: object_section
                 special_type s = special_ordinary)
       : member (&m), object (&o), base (0), index (i),
         load (l), update (u), special (s),
-        total (0), inverse (0), readonly (0),
-        containers (false), readwrite_containers (false) {}
+        total (0), inverse (0), readonly (0), versioned (false),
+        containers (false), readwrite_containers (false),
+        versioned_containers (false), readwrite_versioned_containers (false) {}
 
   virtual bool
   compare (object_section const& s) const;
@@ -399,8 +400,13 @@ struct user_section: object_section
   std::size_t inverse;
   std::size_t readonly;
 
+  bool versioned;
+
   bool containers;
   bool readwrite_containers;
+
+  bool versioned_containers;
+  bool readwrite_versioned_containers;
 
   // Total counts across overrides.
   //
@@ -475,9 +481,17 @@ struct user_sections: std::list<user_section>
   //
   static unsigned short const count_optimistic = 0x10;
 
+  // Modifiers:
+  //
+
   // Don't exclude fake optimistic version update section from the count.
   //
   static unsigned short const count_special_version = 0x20;
+
+  // Only count versioned sections.
+  //
+  static unsigned short const count_versioned_only = 0x40;
+
 
   // Count all sections, including special.
   //
