@@ -672,7 +672,8 @@ namespace
       }
 
       size_t n (uss.count (user_sections::count_total |
-                           user_sections::count_all));
+                           user_sections::count_all   |
+                           user_sections::count_special_version));
       user_section us (m, c, n, l, u);
 
       // We may already have seen this section (e.g., forward reference
@@ -2236,7 +2237,8 @@ namespace
           user_section (*opt,
                         c,
                         uss.count (user_sections::count_total |
-                                   user_sections::count_all),
+                                   user_sections::count_all   |
+                                   user_sections::count_special_version),
                         user_section::load_lazy,
                         user_section::update_manual,
                         user_section::special_version));

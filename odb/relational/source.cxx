@@ -562,7 +562,8 @@ traverse_object (type& c)
          << "{";
 
       for (size_t i (0), n (uss.count (user_sections::count_total |
-                                       user_sections::count_all));
+                                       user_sections::count_all |
+                                       user_sections::count_special_version));
            i != n; ++i)
       {
         os << (i != 0 ? "," : "") << "{";
@@ -1140,8 +1141,7 @@ traverse_object (type& c)
   if (versioned ||
       persist_versioned_containers ||
       uss.count (user_sections::count_new |
-                 user_sections::count_update |
-                 user_sections::count_update_empty |
+                 user_sections::count_all |
                  user_sections::count_versioned_only) != 0)
     os << "const schema_version_migration& svm (" <<
       "db.schema_version_migration (" << schema_name << "));";
@@ -3392,8 +3392,7 @@ traverse_object (type& c)
     if (!versioned && (
           load_versioned_containers ||
           uss.count (user_sections::count_new |
-                     user_sections::count_load |
-                     user_sections::count_load_empty |
+                     user_sections::count_all |
                      user_sections::count_versioned_only) != 0))
     {
       os << "const schema_version_migration& svm (" << endl

@@ -493,11 +493,10 @@ struct user_sections: std::list<user_section>
   static unsigned short const count_versioned_only = 0x40;
 
 
-  // Count all sections, including special.
+  // Count all sections, but excluding special.
   //
   static unsigned short const count_all = count_update       |
-                                          count_update_empty |
-                                          count_special_version;
+                                          count_update_empty;
 
   static unsigned short const count_new      = 0x1000;
   static unsigned short const count_override = 0x2000;
