@@ -789,13 +789,17 @@ namespace relational
       struct statement_columns_common: context
       {
         void
-        process (relational::statement_columns& cols, statement_kind sk)
+        process (relational::statement_columns& cols,
+                 statement_kind sk,
+                 bool dynamic)
         {
           using relational::statement_columns;
 
-          // Long data columns must come last in the SELECT statement.
+          // Long data columns must come last in the SELECT statement. If
+          // this statement is going to be processed at runtime, then this
+          // will be taken care of then.
           //
-          if (sk != statement_select)
+          if (sk != statement_select || dynamic)
             return;
 
           // Go over the columns list while keeping track of how many
@@ -839,9 +843,10 @@ namespace relational
 
         virtual void
         process_statement_columns (relational::statement_columns& cols,
-                                   statement_kind sk)
+                                   statement_kind sk,
+                                   bool dynamic)
         {
-          statement_columns_common::process (cols, sk);
+          statement_columns_common::process (cols, sk, dynamic);
         }
       };
       entry<container_traits> container_traits_;
@@ -859,9 +864,10 @@ namespace relational
 
         virtual void
         process_statement_columns (relational::statement_columns& cols,
-                                   statement_kind sk)
+                                   statement_kind sk,
+                                   bool dynamic)
         {
-          statement_columns_common::process (cols, sk);
+          statement_columns_common::process (cols, sk, dynamic);
         }
 
         virtual string
@@ -1065,9 +1071,10 @@ namespace relational
 
         virtual void
         process_statement_columns (relational::statement_columns& cols,
-                                   statement_kind sk)
+                                   statement_kind sk,
+                                   bool dynamic)
         {
-          statement_columns_common::process (cols, sk);
+          statement_columns_common::process (cols, sk, dynamic);
         }
 
         virtual string

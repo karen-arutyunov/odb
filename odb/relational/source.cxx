@@ -668,7 +668,7 @@ traverse_object (type& c)
       statement_kind sk (statement_insert); // Imperfect forwarding.
       instance<object_columns> ct (sk, sc);
       ct->traverse (c);
-      process_statement_columns (sc, statement_insert);
+      process_statement_columns (sc, statement_insert, versioned);
     }
 
     bool dv (sc.empty ()); // The DEFAULT VALUES syntax.
@@ -757,7 +757,7 @@ traverse_object (type& c)
         object_section* s (&main_section); // Imperfect forwarding.
         instance<object_columns> t (qtable, sk, sc, d, s);
         t->traverse (c);
-        process_statement_columns (sc, statement_select);
+        process_statement_columns (sc, statement_select, versioned);
         find_column_counts[poly_depth - d] = sc.size ();
       }
 
@@ -863,7 +863,7 @@ traverse_object (type& c)
         if (opt != 0)
           t->traverse (*opt);
 
-        process_statement_columns (sc, statement_select);
+        process_statement_columns (sc, statement_select, false);
       }
 
       os << "const char " << traits << "::" << endl
@@ -910,7 +910,7 @@ traverse_object (type& c)
         object_section* s (&main_section); // Imperfect forwarding.
         instance<object_columns> t (sk, sc, p, s);
         t->traverse (c);
-        process_statement_columns (sc, statement_update);
+        process_statement_columns (sc, statement_update, versioned);
       }
 
       os << "const char " << traits << "::update_statement[] =" << endl
@@ -1022,15 +1022,6 @@ traverse_object (type& c)
   {
     // query_statement
     //
-    statement_columns sc;
-    {
-      statement_kind sk (statement_select); //@@ Imperfect forwarding.
-      object_section* s (&main_section); //@@ Imperfect forwarding.
-      instance<object_columns> oc (qtable, sk, sc, poly_depth, s);
-      oc->traverse (c);
-      process_statement_columns (sc, statement_select);
-    }
-
     strings joins;
     if (poly_depth != 1)
     {
@@ -1053,6 +1044,16 @@ traverse_object (type& c)
     }
 
     query_optimize = !joins.empty ();
+
+    statement_columns sc;
+    {
+      statement_kind sk (statement_select); //@@ Imperfect forwarding.
+      object_section* s (&main_section); //@@ Imperfect forwarding.
+      instance<object_columns> oc (qtable, sk, sc, poly_depth, s);
+      oc->traverse (c);
+      process_statement_columns (
+        sc, statement_select, versioned || query_optimize);
+    }
 
     string sep (versioned || query_optimize ? "\n" : " ");
 
@@ -4318,13 +4319,6 @@ traverse_view (type& c)
     }
     else // vq.kind == view_query::condition
     {
-      statement_columns sc;
-      {
-        instance<view_columns> t (sc);
-        t->traverse (c);
-        process_statement_columns (sc, statement_select);
-      }
-
       // Generate the from-list.
       //
       strings from;
@@ -4827,6 +4821,14 @@ traverse_view (type& c)
           query_optimize = query_optimize || !j->joins.empty ();
         }
       } // End JOIN-generating for-loop.
+
+      statement_columns sc;
+      {
+        instance<view_columns> t (sc);
+        t->traverse (c);
+        process_statement_columns (
+          sc, statement_select, versioned || query_optimize);
+      }
 
       string sep (versioned || query_optimize ? "\n" : " ");
 

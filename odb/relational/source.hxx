@@ -2127,7 +2127,9 @@ namespace relational
       }
 
       virtual void
-      process_statement_columns (statement_columns&, statement_kind)
+      process_statement_columns (statement_columns&,
+                                 statement_kind,
+                                 bool /*dynamic*/)
       {
       }
 
@@ -2358,7 +2360,7 @@ namespace relational
               }
             }
 
-            process_statement_columns (sc, statement_select);
+            process_statement_columns (sc, statement_select, versioned);
 
             os << strlit ("SELECT" + sep) << endl;
 
@@ -2415,7 +2417,7 @@ namespace relational
 
             t->traverse (m, vt, "value", "value");
 
-            process_statement_columns (sc, statement_select);
+            process_statement_columns (sc, statement_select, versioned);
 
             os << strlit ("SELECT" + sep) << endl;
 
@@ -2495,7 +2497,7 @@ namespace relational
 
             t->traverse (m, vt, "value", "value");
 
-            process_statement_columns (sc, statement_insert);
+            process_statement_columns (sc, statement_insert, versioned);
 
             os << strlit ("INSERT INTO " + qtable + sep) << endl;
 
@@ -2551,7 +2553,7 @@ namespace relational
               statement_kind sk (statement_update); // Imperfect forwarding.
               instance<object_columns> t (sk, f, sc, p);
               t->traverse (m, vt, "value", "value");
-              process_statement_columns (sc, statement_update);
+              process_statement_columns (sc, statement_update, versioned);
             }
 
             for (statement_columns::const_iterator i (sc.begin ()),
@@ -4135,7 +4137,9 @@ namespace relational
       }
 
       virtual void
-      process_statement_columns (statement_columns&, statement_kind)
+      process_statement_columns (statement_columns&,
+                                 statement_kind,
+                                 bool /*dynamic*/)
       {
       }
 
@@ -4605,7 +4609,7 @@ namespace relational
             object_section* ps (&s);              // Imperfect forwarding.
             instance<object_columns> t (qtable, sk, sc, depth, ps);
             t->traverse (c_);
-            process_statement_columns (sc, statement_select);
+            process_statement_columns (sc, statement_select, s.versioned);
           }
 
           os << "const char " << scope << "::" << endl
@@ -4675,7 +4679,7 @@ namespace relational
             object_section* ps (&s);              // Imperfect forwarding.
             instance<object_columns> t (sk, sc, p, ps);
             t->traverse (c_);
-            process_statement_columns (sc, statement_update);
+            process_statement_columns (sc, statement_update, s.versioned);
           }
 
           os << "const char " << scope << "::" << endl
@@ -5349,7 +5353,9 @@ namespace relational
       }
 
       virtual void
-      process_statement_columns (statement_columns&, statement_kind)
+      process_statement_columns (statement_columns&,
+                                 statement_kind,
+                                 bool /*dynamic*/)
       {
       }
 
