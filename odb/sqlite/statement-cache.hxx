@@ -89,6 +89,7 @@ namespace odb
                        details::type_info_comparator> map;
 
       connection& conn_;
+      unsigned int version_seq_;
 
       details::shared_ptr<generic_statement> begin_;
       mutable details::shared_ptr<generic_statement> begin_immediate_;

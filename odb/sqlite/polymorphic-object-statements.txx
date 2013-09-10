@@ -10,6 +10,7 @@
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/transaction.hxx>
 #include <odb/sqlite/statement-cache.hxx>
+#include <odb/sqlite/traits-calls.hxx>
 
 namespace odb
 {
@@ -111,7 +112,10 @@ namespace odb
 
     template <typename T>
     void polymorphic_derived_object_statements<T>::
-    delayed_loader (odb::database& db, const id_type& id, root_type& robj)
+    delayed_loader (odb::database& db,
+                    const id_type& id,
+                    root_type& robj,
+                    const schema_version_migration* svm)
     {
       connection_type& conn (transaction::current ().connection ());
       polymorphic_derived_object_statements& sts (
@@ -122,14 +126,16 @@ namespace odb
 
       // The same code as in object_statements::load_delayed_().
       //
-      if (!object_traits::find_ (sts, &id))
+      object_traits_calls<T> tc (svm);
+
+      if (!tc.find_ (sts, &id))
         throw object_not_persistent ();
 
       object_traits::callback (db, obj, callback_event::pre_load);
-      object_traits::init (obj, sts.image (), &db);
-      object_traits::load_ (sts, obj); // Load containers, etc.
+      tc.init (obj, sts.image (), &db);
+      tc.load_ (sts, obj, false); // Load containers, etc.
 
-      rsts.load_delayed ();
+      rsts.load_delayed (svm);
 
       {
         typename root_statements_type::auto_unlock u (rsts);

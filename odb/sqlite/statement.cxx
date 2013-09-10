@@ -24,6 +24,9 @@ namespace odb
     statement::
     ~statement ()
     {
+      if (empty ())
+        return;
+
       {
         odb::tracer* t;
         if ((t = conn_.transaction_tracer ()) ||
@@ -39,8 +42,50 @@ namespace odb
     }
 
     void statement::
-    init (const char* text, std::size_t text_size)
+    init (const char* text,
+          std::size_t text_size,
+          statement_kind sk,
+          const binding* proc,
+          bool optimize)
     {
+      string tmp;
+      if (proc != 0)
+      {
+        switch (sk)
+        {
+        case statement_select:
+          process_select (text,
+                          &proc->bind->buffer, proc->count, sizeof (bind),
+                          '"', '"',
+                          optimize,
+                          tmp);
+          break;
+        case statement_insert:
+          process_insert (text,
+                          &proc->bind->buffer, proc->count, sizeof (bind),
+                          '?',
+                          tmp);
+          break;
+        case statement_update:
+          process_update (text,
+                          &proc->bind->buffer, proc->count, sizeof (bind),
+                          '?',
+                          tmp);
+          break;
+        case statement_delete:
+        case statement_generic:
+          assert (false);
+        }
+
+        text = tmp.c_str ();
+        text_size = tmp.size ();
+      }
+
+      // Empty statement.
+      //
+      if (*text == '\0')
+        return;
+
       int e;
       sqlite3_stmt* stmt (0);
       while ((e = sqlite3_prepare_v2 (conn_.handle (),
@@ -83,15 +128,18 @@ namespace odb
 
       // SQLite parameters are counted from 1.
       //
-      n++;
-      for (size_t i (1); e == SQLITE_OK && i < n; ++i, ++p)
+      for (size_t i (0), j (1); e == SQLITE_OK && i < n; ++i)
       {
-        const bind& b (*p);
-        int j (static_cast<int> (i));
+        const bind& b (p[i]);
+
+        if (b.buffer == 0) // Skip NULL entries.
+          continue;
+
+        int c (static_cast<int> (j++));
 
         if (b.is_null != 0 && *b.is_null)
         {
-          e = sqlite3_bind_null (stmt_, j);
+          e = sqlite3_bind_null (stmt_, c);
           continue;
         }
 
@@ -100,19 +148,19 @@ namespace odb
         case bind::integer:
           {
             long long v (*static_cast<long long*> (b.buffer));
-            e = sqlite3_bind_int64 (stmt_, j, static_cast<sqlite3_int64> (v));
+            e = sqlite3_bind_int64 (stmt_, c, static_cast<sqlite3_int64> (v));
             break;
           }
         case bind::real:
           {
             double v (*static_cast<double*> (b.buffer));
-            e = sqlite3_bind_double (stmt_, j, v);
+            e = sqlite3_bind_double (stmt_, c, v);
             break;
           }
         case bind::text:
           {
             e = sqlite3_bind_text (stmt_,
-                                   j,
+                                   c,
                                    static_cast<const char*> (b.buffer),
                                    static_cast<int> (*b.size),
                                    SQLITE_STATIC);
@@ -121,7 +169,7 @@ namespace odb
         case bind::text16:
           {
             e = sqlite3_bind_text16 (stmt_,
-                                     j,
+                                     c,
                                      b.buffer,
                                      static_cast<int> (*b.size),
                                      SQLITE_STATIC);
@@ -130,7 +178,7 @@ namespace odb
         case bind::blob:
           {
             e = sqlite3_bind_blob (stmt_,
-                                   j,
+                                   c,
                                    b.buffer,
                                    static_cast<int> (*b.size),
                                    SQLITE_STATIC);
@@ -144,21 +192,20 @@ namespace odb
     }
 
     bool statement::
-    bind_result (const bind* p, size_t n, bool truncated)
+    bind_result (const bind* p, size_t count, bool truncated)
     {
-      // Make sure that the number of columns in the result returned by
-      // the database matches the number that we expect. A common cause
-      // of this assertion is a native view with a number of data members
-      // not matching the number of columns in the SELECT-list.
-      //
-      assert (static_cast<size_t> (sqlite3_data_count (stmt_)) == n);
-
       bool r (true);
+      int col_count (sqlite3_data_count (stmt_));
 
-      for (size_t i (0); i < n; ++i)
+      int col (0);
+      for (size_t i (0); i != count && col != col_count; ++i)
       {
         const bind& b (p[i]);
-        int j (static_cast<int> (i));
+
+        if (b.buffer == 0) // Skip NULL entries.
+          continue;
+
+        int c (col++);
 
         if (truncated && (b.truncated == 0 || !*b.truncated))
           continue;
@@ -170,7 +217,7 @@ namespace odb
         //
         if (!truncated)
         {
-          *b.is_null = sqlite3_column_type (stmt_, j) == SQLITE_NULL;
+          *b.is_null = sqlite3_column_type (stmt_, c) == SQLITE_NULL;
 
           if (*b.is_null)
             continue;
@@ -181,13 +228,13 @@ namespace odb
         case bind::integer:
           {
             *static_cast<long long*> (b.buffer) =
-              static_cast<long long> (sqlite3_column_int64 (stmt_, j));
+              static_cast<long long> (sqlite3_column_int64 (stmt_, c));
             break;
           }
         case bind::real:
           {
             *static_cast<double*> (b.buffer) =
-              sqlite3_column_double (stmt_, j);
+              sqlite3_column_double (stmt_, c);
             break;
           }
         case bind::text:
@@ -203,15 +250,15 @@ namespace odb
             if (b.type != bind::text16)
             {
               d = b.type == bind::text
-                ? sqlite3_column_text (stmt_, j)
-                : sqlite3_column_blob (stmt_, j);
-              *b.size = static_cast<size_t> (sqlite3_column_bytes (stmt_, j));
+                ? sqlite3_column_text (stmt_, c)
+                : sqlite3_column_blob (stmt_, c);
+              *b.size = static_cast<size_t> (sqlite3_column_bytes (stmt_, c));
             }
             else
             {
-              d = sqlite3_column_text16 (stmt_, j);
+              d = sqlite3_column_text16 (stmt_, c);
               *b.size = static_cast<size_t> (
-                sqlite3_column_bytes16 (stmt_, j));
+                sqlite3_column_bytes16 (stmt_, c));
             }
 
             if (*b.size > b.capacity)
@@ -229,6 +276,13 @@ namespace odb
         }
       }
 
+      // Make sure that the number of columns in the result returned by
+      // the database matches the number that we expect. A common cause
+      // of this assertion is a native view with a number of data members
+      // not matching the number of columns in the SELECT-list.
+      //
+      assert (col == col_count);
+
       return r;
     }
 
@@ -237,14 +291,18 @@ namespace odb
 
     generic_statement::
     generic_statement (connection_type& conn, const string& text)
-        : statement (conn, text),
+        : statement (conn,
+                     text, statement_generic,
+                     0, false),
           result_set_ (stmt_ ? sqlite3_column_count (stmt_) != 0: false)
     {
     }
 
     generic_statement::
     generic_statement (connection_type& conn, const char* text)
-        : statement (conn, text),
+        : statement (conn,
+                     text, statement_generic,
+                     0, false),
           result_set_ (stmt_ ? sqlite3_column_count (stmt_) != 0: false)
     {
     }
@@ -253,7 +311,9 @@ namespace odb
     generic_statement (connection_type& conn,
                        const char* text,
                        std::size_t text_size)
-        : statement (conn, text, text_size),
+        : statement (conn,
+                     text, text_size, statement_generic,
+                     0, false),
           result_set_ (stmt_ ? sqlite3_column_count (stmt_) != 0: false)
     {
     }
@@ -312,32 +372,58 @@ namespace odb
     select_statement::
     select_statement (connection_type& conn,
                       const string& text,
+                      bool process,
+                      bool optimize,
                       binding& param,
                       binding& result)
-        : statement (conn, text), param_ (&param), result_ (result)
+        : statement (conn,
+                     text, statement_select,
+                     (process ? &result : 0), optimize),
+          param_ (&param),
+          result_ (result)
     {
     }
 
     select_statement::
     select_statement (connection_type& conn,
                       const char* text,
+                      bool process,
+                      bool optimize,
                       binding& param,
                       binding& result)
-        : statement (conn, text), param_ (&param), result_ (result)
+        : statement (conn,
+                     text, statement_select,
+                     (process ? &result : 0), optimize),
+          param_ (&param),
+          result_ (result)
     {
     }
 
     select_statement::
     select_statement (connection_type& conn,
                       const string& text,
+                      bool process,
+                      bool optimize,
                       binding& result)
-        : statement (conn, text), param_ (0), result_ (result)
+        : statement (conn,
+                     text, statement_select,
+                     (process ? &result : 0), optimize),
+          param_ (0),
+          result_ (result)
     {
     }
 
     select_statement::
-    select_statement (connection_type& conn, const char* text, binding& result)
-        : statement (conn, text), param_ (0), result_ (result)
+    select_statement (connection_type& conn,
+                      const char* text,
+                      bool process,
+                      bool optimize,
+                      binding& result)
+        : statement (conn,
+                     text, statement_select,
+                     (process ? &result : 0), optimize),
+          param_ (0),
+          result_ (result)
     {
     }
 
@@ -428,14 +514,24 @@ namespace odb
     insert_statement::
     insert_statement (connection_type& conn,
                       const string& text,
+                      bool process,
                       binding& param)
-        : statement (conn, text), param_ (param)
+        : statement (conn,
+                     text, statement_insert,
+                     (process ? &param : 0), false),
+          param_ (param)
     {
     }
 
     insert_statement::
-    insert_statement (connection_type& conn, const char* text, binding& param)
-        : statement (conn, text), param_ (param)
+    insert_statement (connection_type& conn,
+                      const char* text,
+                      bool process,
+                      binding& param)
+        : statement (conn,
+                     text, statement_insert,
+                     (process ? &param : 0), false),
+          param_ (param)
     {
     }
 
@@ -499,14 +595,24 @@ namespace odb
     update_statement::
     update_statement (connection_type& conn,
                       const string& text,
+                      bool process,
                       binding& param)
-        : statement (conn, text), param_ (param)
+        : statement (conn,
+                     text, statement_update,
+                     (process ? &param : 0), false),
+          param_ (param)
     {
     }
 
     update_statement::
-    update_statement (connection_type& conn, const char* text, binding& param)
-        : statement (conn, text), param_ (param)
+    update_statement (connection_type& conn,
+                      const char* text,
+                      bool process,
+                      binding& param)
+        : statement (conn,
+                     text, statement_update,
+                     (process ? &param : 0), false),
+          param_ (param)
     {
     }
 
@@ -554,13 +660,21 @@ namespace odb
     delete_statement (connection_type& conn,
                       const string& text,
                       binding& param)
-        : statement (conn, text), param_ (param)
+        : statement (conn,
+                     text, statement_delete,
+                     0, false),
+          param_ (param)
     {
     }
 
     delete_statement::
-    delete_statement (connection_type& conn, const char* text, binding& param)
-        : statement (conn, text), param_ (param)
+    delete_statement (connection_type& conn,
+                      const char* text,
+                      binding& param)
+        : statement (conn,
+                     text, statement_delete,
+                     0, false),
+          param_ (param)
     {
     }
 

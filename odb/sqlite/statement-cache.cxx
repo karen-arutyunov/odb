@@ -13,6 +13,7 @@ namespace odb
     statement_cache::
     statement_cache (connection& conn)
         : conn_ (conn),
+          version_seq_ (conn.database ().schema_version_sequence ()),
           // String lengths below include '\0', as per SQLite manual
           // suggestions.
           //

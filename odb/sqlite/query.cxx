@@ -159,8 +159,8 @@ namespace odb
         // We don't want extra spaces after '(' as well as before ','
         // and ')'.
         //
-        if (last != ' ' && last != '(' &&
-            first != ' ' && first != ',' && first != ')')
+        if (last != ' ' && last != '\n' && last != '(' &&
+            first != ' ' && first != '\n' && first != ',' && first != ')')
           s += ' ';
 
         s += q;
@@ -213,7 +213,7 @@ namespace odb
         // It either has to be an exact match, or there should be
         // a whitespace following the keyword.
         //
-        if (s.size () == n || s[n] == ' ' || s[n] =='\t')
+        if (s.size () == n || s[n] == ' ' || s[n] == '\n' || s[n] =='\t')
           return true;
       }
 
@@ -272,7 +272,7 @@ namespace odb
         {
         case clause_part::kind_column:
           {
-            if (last != ' ' && last != '(')
+            if (last != ' ' && last != '\n' && last != '(')
               r += ' ';
 
             r += i->part;
@@ -280,7 +280,7 @@ namespace odb
           }
         case clause_part::kind_param:
           {
-            if (last != ' ' && last != '(')
+            if (last != ' ' && last != '\n' && last != '(')
               r += ' ';
 
             // Add the conversion expression, if any.
@@ -307,8 +307,8 @@ namespace odb
             const string& p (i->part);
             char first (!p.empty () ? p[0] : ' ');
 
-            if (last != ' ' && last != '(' &&
-                first != ' ' && first != ',' && first != ')')
+            if (last != ' ' && first != '\n' && last != '(' &&
+                first != ' ' && last != '\n' && first != ',' && first != ')')
               r += ' ';
 
             r += p;
@@ -316,7 +316,7 @@ namespace odb
           }
         case clause_part::kind_bool:
           {
-            if (last != ' ' && last != '(')
+            if (last != ' ' && last != '\n' && last != '(')
               r += ' ';
 
             r += i->bool_part ? "1" : "0";

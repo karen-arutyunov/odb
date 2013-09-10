@@ -37,11 +37,13 @@ namespace odb
     view_result_impl<T>::
     view_result_impl (const query_base& q,
                       const details::shared_ptr<select_statement>& s,
-                      statements_type& sts)
+                      statements_type& sts,
+                      const schema_version_migration* svm)
         : base_type (sts.connection ()),
           params_ (q.parameters ()),
           statement_ (s),
-          statements_ (sts)
+          statements_ (sts),
+          tc_ (svm)
     {
     }
 
@@ -57,7 +59,7 @@ namespace odb
       if (im.version != statements_.image_version ())
       {
         binding& b (statements_.image_binding ());
-        view_traits::bind (b.bind, im);
+        tc_.bind (b.bind, im);
         statements_.image_version (im.version);
         b.version++;
       }
@@ -66,13 +68,13 @@ namespace odb
 
       if (r == select_statement::truncated)
       {
-        if (view_traits::grow (im, statements_.image_truncated ()))
+        if (tc_.grow (im, statements_.image_truncated ()))
           im.version++;
 
         if (im.version != statements_.image_version ())
         {
           binding& b (statements_.image_binding ());
-          view_traits::bind (b.bind, im);
+          tc_.bind (b.bind, im);
           statements_.image_version (im.version);
           b.version++;
           statement_->reload ();
@@ -80,7 +82,7 @@ namespace odb
       }
 
       view_traits::callback (this->db_, view, callback_event::pre_load);
-      view_traits::init (view, im, &this->db_);
+      tc_.init (view, im, &this->db_);
       view_traits::callback (this->db_, view, callback_event::post_load);
     }
 

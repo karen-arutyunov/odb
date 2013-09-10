@@ -9,6 +9,7 @@
 
 #include <cstddef> // std::size_t
 
+#include <odb/schema-version.hxx>
 #include <odb/simple-object-result.hxx>
 
 #include <odb/details/shared-ptr.hxx>
@@ -16,6 +17,7 @@
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/forward.hxx> // query_base, query_params
 #include <odb/sqlite/statement.hxx>
+#include <odb/sqlite/traits-calls.hxx>
 
 namespace odb
 {
@@ -41,7 +43,8 @@ namespace odb
 
       object_result_impl (const query_base&,
                           const details::shared_ptr<select_statement>&,
-                          statements_type&);
+                          statements_type&,
+                          const schema_version_migration*);
 
       virtual void
       load (object_type&, bool fetch);
@@ -74,6 +77,7 @@ namespace odb
       details::shared_ptr<query_params> params_;
       details::shared_ptr<select_statement> statement_;
       statements_type& statements_;
+      object_traits_calls<object_type> tc_;
     };
   }
 }

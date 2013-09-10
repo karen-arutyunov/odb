@@ -100,6 +100,8 @@ namespace odb
             new (details::shared) select_statement_type (
               conn_,
               traits::select_statement,
+              traits::versioned, // Process if versioned.
+              false,             // Don't optimize.
               id_binding_,
               select_image_binding_));
 
@@ -114,6 +116,7 @@ namespace odb
             new (details::shared) update_statement_type (
               conn_,
               traits::update_statement,
+              traits::versioned, // Process if versioned.
               update_image_binding_));
 
         return *update_;

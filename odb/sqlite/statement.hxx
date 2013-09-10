@@ -53,25 +53,49 @@ namespace odb
         return conn_;
       }
 
-    protected:
-      statement (connection_type& conn, const std::string& text)
-        : conn_ (conn)
+      // A statement can be empty. This is used to handle situations
+      // where a SELECT or UPDATE statement ends up not having any
+      // columns after processing. An empty statement cannot be
+      // executed.
+      //
+      bool
+      empty () const
       {
-        init (text.c_str (), text.size ());
+        return stmt_ == 0;
       }
 
-      statement (connection_type& conn, const char* text)
+    protected:
+      // We keep two versions to take advantage of std::string COW.
+      //
+      statement (connection_type& conn,
+                 const std::string& text,
+                 statement_kind sk,
+                 const binding* process,
+                 bool optimize)
         : conn_ (conn)
       {
-        init (text, std::strlen (text));
+        init (text.c_str (), text.size (), sk, process, optimize);
       }
 
       statement (connection_type& conn,
                  const char* text,
-                 std::size_t text_size)
+                 statement_kind sk,
+                 const binding* process,
+                 bool optimize)
         : conn_ (conn)
       {
-        init (text, text_size);
+        init (text, std::strlen (text), sk, process, optimize);
+      }
+
+      statement (connection_type& conn,
+                 const char* text,
+                 std::size_t text_size,
+                 statement_kind sk,
+                 const binding* process,
+                 bool optimize)
+        : conn_ (conn)
+      {
+        init (text, text_size, sk, process, optimize);
       }
 
     protected:
@@ -128,7 +152,11 @@ namespace odb
 
     private:
       void
-      init (const char* text, std::size_t text_size);
+      init (const char* text,
+            std::size_t text_size,
+            statement_kind,
+            const binding* process,
+            bool optimize);
 
       // Doubly-linked list of active statements.
       //
@@ -188,20 +216,28 @@ namespace odb
     public:
       select_statement (connection_type& conn,
                         const std::string& text,
+                        bool process_text,
+                        bool optimize_text,
                         binding& param,
                         binding& result);
 
       select_statement (connection_type& conn,
                         const char* text,
+                        bool process_text,
+                        bool optimize_text,
                         binding& param,
                         binding& result);
 
       select_statement (connection_type& conn,
                         const std::string& text,
+                        bool process_text,
+                        bool optimize_text,
                         binding& result);
 
       select_statement (connection_type& conn,
                         const char* text,
+                        bool process_text,
+                        bool optimize_text,
                         binding& result);
 
       // Common select interface expected by the generated code.
@@ -283,10 +319,12 @@ namespace odb
     public:
       insert_statement (connection_type& conn,
                         const std::string& text,
+                        bool process_text,
                         binding& param);
 
       insert_statement (connection_type& conn,
                         const char* text,
+                        bool process_text,
                         binding& param);
 
       // Return true if successful and false if the row is a duplicate.
@@ -311,10 +349,12 @@ namespace odb
     public:
       update_statement (connection_type& conn,
                         const std::string& text,
+                        bool process_text,
                         binding& param);
 
       update_statement (connection_type& conn,
                         const char* text,
+                        bool process_text,
                         binding& param);
 
       unsigned long long
