@@ -60,13 +60,7 @@ namespace relational
 
       struct create_column: relational::create_column, context
       {
-        create_column (base const& x): base (x)
-        {
-          // In SQLite it is impossible to alter a column later, so we add
-          // it as is.
-          //
-          override_null_ = false;
-        }
+        create_column (base const& x): base (x) {}
 
         virtual void
         traverse (sema_rel::add_column& ac)
@@ -81,6 +75,12 @@ namespace relational
 
           os << "ALTER TABLE " << quote_id (at.name ()) << endl
              << "  ADD COLUMN ";
+
+          // In SQLite it is impossible to alter a column later, so unless
+          // it has a default value, we add it as NULL. Without this, it
+          // will be impossible to add a column to a table that contains
+          // some rows.
+          //
           create (ac);
 
           // SQLite doesn't support adding foreign keys other than inline
