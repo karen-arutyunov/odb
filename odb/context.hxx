@@ -136,9 +136,10 @@ struct default_value
   };
 };
 
-// Database potentially-qualified name.
+// Database potentially-qualified and unqualifed names.
 //
 using semantics::relational::qname;
+using semantics::relational::uname;
 
 // Object or table associated with the view.
 //
@@ -771,6 +772,28 @@ public:
     return r;
   }
 
+  static semantics::data_member*
+  deleted_member (data_member_path const& mp)
+  {
+    semantics::data_member* m (0);
+
+    // Find the earliest version since this member was deleted.
+    //
+    unsigned long long r (0);
+    for (data_member_path::const_reverse_iterator i (mp.rbegin ());
+         i != mp.rend (); ++i)
+    {
+      unsigned long long v ((*i)->get<unsigned long long> ("deleted", 0));
+      if (v != 0 && (r == 0 || v < r))
+      {
+        r = v;
+        m = *i;
+      }
+    }
+
+    return m;
+  }
+
   // Return the addition version or 0 if not soft-added.
   //
   static unsigned long long
@@ -795,6 +818,28 @@ public:
     }
 
     return r;
+  }
+
+  static semantics::data_member*
+  added_member (data_member_path const& mp)
+  {
+    semantics::data_member* m (0);
+
+    // Find the latest version since this member was added.
+    //
+    unsigned long long r (0);
+    for (data_member_path::const_reverse_iterator i (mp.rbegin ());
+         i != mp.rend (); ++i)
+    {
+      unsigned long long v ((*i)->get<unsigned long long> ("added", 0));
+      if (v != 0 && v > r)
+      {
+        r = v;
+        m = *i;
+      }
+    }
+
+    return m;
   }
 
   static bool

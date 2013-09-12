@@ -2,6 +2,8 @@
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <map>
+
 #include <odb/diagnostics.hxx>
 
 #include <odb/semantics/relational.hxx>
@@ -20,6 +22,9 @@ namespace relational
     using sema_rel::model;
     using sema_rel::changelog;
 
+    typedef std::map<qname, semantics::node*> deleted_table_map;
+    typedef std::map<uname, semantics::data_member*> deleted_column_map;
+
     namespace
     {
       //
@@ -33,8 +38,12 @@ namespace relational
       {
         enum mode_type {mode_add, mode_drop};
 
-        diff_table (table& o, mode_type m, alter_table& a, graph& gr)
-            : other (o), mode (m), at (a), g (gr) {}
+        diff_table (table& o,
+                    mode_type m,
+                    alter_table& a,
+                    graph& gr,
+                    unsigned long long v)
+            : other (o), mode (m), at (a), g (gr), current (v) {}
 
         virtual void
         traverse (sema_rel::column& c)
@@ -71,6 +80,23 @@ namespace relational
             }
             else
             {
+              if (current != 0)
+              {
+                data_member_path const& mp (
+                  c.get<data_member_path> ("member-path"));
+
+                // Make sure the addition version is the current version.
+                //
+                semantics::data_member* m (context::added_member (mp));
+                if (m != 0 && context::added (*m) != current)
+                {
+                  location l (m->get<location_t> ("added-location"));
+                  error (l) << "member addition version is not the same " <<
+                    "as the current model version" << endl;
+                  throw operation_failed ();
+                }
+              }
+
               add_column& ac (g.new_node<add_column> (c, at, g));
               g.new_edge<unames> (at, ac, c.name ());
             }
@@ -79,6 +105,24 @@ namespace relational
           {
             if (other.find<column> (c.name ()) == 0)
             {
+              if (current != 0)
+              {
+                // See if we have an entry for this column in the soft-
+                // deleted map.
+                //
+                deleted_column_map const& dm (
+                  other.get<deleted_column_map> ("deleted-map"));
+                deleted_column_map::const_iterator i (dm.find (c.name ()));
+
+                if (i != dm.end () && context::deleted (*i->second) != current)
+                {
+                  location l (i->second->get<location_t> ("deleted-location"));
+                  error (l) << "member deletion version is not the same " <<
+                    "as the current model version" << endl;
+                  throw operation_failed ();
+                }
+              }
+
               drop_column& dc (g.new_node<drop_column> (c.id ()));
               g.new_edge<unames> (at, dc, c.name ());
             }
@@ -346,14 +390,19 @@ namespace relational
         mode_type mode;
         alter_table& at;
         graph& g;
+        unsigned long long current;
       };
 
       struct diff_model: trav_rel::table
       {
         enum mode_type {mode_add, mode_drop};
 
-        diff_model (model& o, mode_type m, changeset& s, graph& gr)
-            : other (o), mode (m), cs (s), g (gr) {}
+        diff_model (model& o,
+                    mode_type m,
+                    changeset& s,
+                    graph& gr,
+                    unsigned long long c)
+            : other (o), mode (m), cs (s), g (gr), current (c) {}
 
         virtual void
         traverse (sema_rel::table& t)
@@ -380,7 +429,7 @@ namespace relational
               {
                 trav_rel::table table;
                 trav_rel::unames names;
-                diff_table dtable (*ot, diff_table::mode_add, at, g);
+                diff_table dtable (*ot, diff_table::mode_add, at, g, current);
                 table >> names >> dtable;
                 table.traverse (t);
               }
@@ -388,7 +437,7 @@ namespace relational
               {
                 trav_rel::table table;
                 trav_rel::unames names;
-                diff_table dtable (t, diff_table::mode_drop, at, g);
+                diff_table dtable (t, diff_table::mode_drop, at, g, current);
                 table >> names >> dtable;
                 table.traverse (*ot);
               }
@@ -403,8 +452,25 @@ namespace relational
             }
             else
             {
-              // New table.
+              // Soft-add is only applicable to containers.
               //
+              if (current != 0 && t.count ("member-path"))
+              {
+                data_member_path const& mp (
+                  t.get<data_member_path> ("member-path"));
+
+                // Make sure the addition version is the current version.
+                //
+                semantics::data_member* m (context::added_member (mp));
+                if (m != 0 && context::added (*m) != current)
+                {
+                  location l (m->get<location_t> ("added-location"));
+                  error (l) << "member addition version is not the same " <<
+                    "as the current model version" << endl;
+                  throw operation_failed ();
+                }
+              }
+
               add_table& at (g.new_node<add_table> (t, cs, g));
               g.new_edge<qnames> (cs, at, t.name ());
             }
@@ -413,6 +479,42 @@ namespace relational
           {
             if (other.find<table> (t.name ()) == 0)
             {
+              if (current != 0)
+              {
+                // See if we have an entry for this table in the soft-
+                // deleted map.
+                //
+                deleted_table_map const& dm (
+                  other.get<deleted_table_map> ("deleted-map"));
+                deleted_table_map::const_iterator i (dm.find (t.name ()));
+
+                if (i != dm.end ())
+                {
+                  // This table could be derived either from a class (object)
+                  // or data member (container).
+                  //
+                  semantics::class_* c (
+                    dynamic_cast<semantics::class_*> (i->second));
+                  if (c != 0 && context::deleted (*c) != current)
+                  {
+                    location l (c->get<location_t> ("deleted-location"));
+                    error (l) << "class deletion version is not the same " <<
+                      "as the current model version" << endl;
+                    throw operation_failed ();
+                  }
+
+                  semantics::data_member* m (
+                    dynamic_cast<semantics::data_member*> (i->second));
+                  if (m != 0 && context::deleted (*m) != current)
+                  {
+                    location l (m->get<location_t> ("deleted-location"));
+                    error (l) << "member deletion version is not the same " <<
+                      "as the current model version" << endl;
+                    throw operation_failed ();
+                  }
+                }
+              }
+
               drop_table& dt (g.new_node<drop_table> (t.id ()));
               g.new_edge<qnames> (cs, dt, t.name ());
             }
@@ -449,12 +551,15 @@ namespace relational
         mode_type mode;
         changeset& cs;
         graph& g;
+        unsigned long long current;
       };
 
-      // Assumes the new model has cxx-location set.
+      // Assumes the new model has cxx-location set. If current is not 0,
+      // then assume it is the current model version and the new model is
+      // the current model which has member paths and deleted maps set.
       //
       changeset&
-      diff (model& o, model& n, changelog& l)
+      diff (model& o, model& n, changelog& l, unsigned long long current)
       {
         changeset& r (l.new_node<changeset> (n.version ()));
 
@@ -483,7 +588,7 @@ namespace relational
         {
           trav_rel::model model;
           trav_rel::qnames names;
-          diff_model dmodel (o, diff_model::mode_add, r, l);
+          diff_model dmodel (o, diff_model::mode_add, r, l, current);
           model >> names >> dmodel;
           model.traverse (n);
         }
@@ -491,7 +596,7 @@ namespace relational
         {
           trav_rel::model model;
           trav_rel::qnames names;
-          diff_model dmodel (n, diff_model::mode_drop, r, l);
+          diff_model dmodel (n, diff_model::mode_drop, r, l, current);
           model >> names >> dmodel;
           model.traverse (o);
         }
@@ -753,7 +858,7 @@ namespace relational
 
           model& nm (g.new_node<model> (mv.base));
           g.new_edge<contains_model> (*cl, nm);
-          changeset& c (diff (nm, m, *cl));
+          changeset& c (diff (nm, m, *cl, mv.current));
 
           if (!c.names_empty ())
           {
@@ -834,7 +939,7 @@ namespace relational
             base = &g.new_node<model> (mv.base);
             g.new_edge<contains_model> (*cl, *base);
 
-            changeset& c (diff (*base, *last, *cl));
+            changeset& c (diff (*base, *last, *cl, 0));
             if (!c.names_empty ())
             {
               g.new_edge<alters_model> (c, *base);
@@ -895,7 +1000,7 @@ namespace relational
             om = &patch (*last, c, g);
         }
 
-        changeset& c (diff (*om, m, *cl));
+        changeset& c (diff (*om, m, *cl, mv.current));
 
         if (!c.names_empty ())
         {
@@ -914,7 +1019,7 @@ namespace relational
       //
       if (mv.base != mv.current)
       {
-        changeset& c (diff (*last, m, *cl));
+        changeset& c (diff (*last, m, *cl, mv.current));
 
         if (!c.names_empty ())
         {

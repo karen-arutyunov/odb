@@ -71,6 +71,7 @@ namespace relational
       cutl::shared_ptr<sema_rel::model> m (
         new (shared) sema_rel::model (
           ctx.versioned () ? ctx.version ().current : 0));
+      m->set ("deleted-map", deleted_table_map ());
 
       traversal::unit unit;
       traversal::defines unit_defines;

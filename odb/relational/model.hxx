@@ -5,6 +5,7 @@
 #ifndef ODB_RELATIONAL_MODEL_HXX
 #define ODB_RELATIONAL_MODEL_HXX
 
+#include <map>
 #include <set>
 #include <cassert>
 #include <sstream>
@@ -19,6 +20,8 @@ namespace relational
   namespace model
   {
     typedef std::set<qname> tables;
+    typedef std::map<qname, semantics::node*> deleted_table_map;
+    typedef std::map<uname, semantics::data_member*> deleted_column_map;
 
     struct object_columns: object_columns_base, virtual context
     {
@@ -102,8 +105,11 @@ namespace relational
       virtual bool
       traverse_column (semantics::data_member& m, string const& name, bool)
       {
-        if (deleted (member_path_))
+        if (semantics::data_member* m = deleted_member (member_path_))
+        {
+          table_.get<deleted_column_map> ("deleted-map")[name] = m;
           return false;
+        }
 
         string col_id (id_prefix_ +
                        (key_prefix_.empty () ? m.name () : key_prefix_));
@@ -112,6 +118,7 @@ namespace relational
           model_.new_node<sema_rel::column> (
             col_id, column_type (), null (m)));
         c.set ("cxx-location", m.location ());
+        c.set ("member-path", member_path_);
         model_.new_edge<sema_rel::unames> (table_, c, name);
 
         // An id member cannot have a default value.
@@ -233,13 +240,19 @@ namespace relational
         using sema_rel::column;
         using sema_rel::foreign_key;
 
-        if (deleted (member_path_))
-          return;
-
         // Ignore inverse object pointers.
         //
         if (inverse (m, key_prefix_))
           return;
+
+        if (deleted (member_path_))
+        {
+          // Still traverse it as columns so that we can populate the
+          // deleted map.
+          //
+          object_columns_base::traverse_pointer (m, c);
+          return;
+        }
 
         string id (id_prefix_ +
                    (key_prefix_.empty () ? m.name () : key_prefix_));
@@ -494,17 +507,21 @@ namespace relational
 
         using sema_rel::column;
 
-        if (deleted (member_path_))
-          return;
-
         // Ignore inverse containers of object pointers.
         //
         if (inverse (m, "value"))
           return;
 
         container_kind_type ck (container_kind (ct));
-
         qname const& name (table_name (m, table_prefix_));
+
+        // Ignore deleted container members.
+        //
+        if (semantics::data_member* m = deleted_member (member_path_))
+        {
+          model_.get<deleted_table_map> ("deleted-map")[name] = m;
+          return;
+        }
 
         // Add the [] decorator to distinguish this id from non-container
         // ids (we don't want to ever end up comparing, for example, an
@@ -514,6 +531,8 @@ namespace relational
 
         sema_rel::table& t (model_.new_node<sema_rel::table> (id));
         t.set ("cxx-location", m.location ());
+        t.set ("member-path", member_path_);
+        t.set ("deleted-map", deleted_column_map ());
         model_.new_edge<sema_rel::qnames> (model_, t, name);
 
         t.options (table_options (m, ct));
@@ -718,21 +737,25 @@ namespace relational
         if (abstract (c) && !polymorphic (c))
           return;
 
-        if (deleted (c))
-          return;
-
         qname const& name (table_name (c));
 
-        // If the table with this name was already created, assume the
+        // If the table with this name was already seen, assume the
         // user knows what they are doing and skip it.
         //
         if (tables_.count (name))
           return;
 
+        if (deleted (c))
+        {
+          model_.get<deleted_table_map> ("deleted-map")[name] = &c;
+          return;
+        }
+
         string id (class_fq_name (c), 2); // Remove leading '::'.
 
         sema_rel::table& t (model_.new_node<sema_rel::table> (id));
         t.set ("cxx-location", c.location ());
+        t.set ("deleted-map", deleted_column_map ());
         model_.new_edge<sema_rel::qnames> (model_, t, name);
 
         t.options (table_options (c));
