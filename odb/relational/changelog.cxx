@@ -22,8 +22,8 @@ namespace relational
     using sema_rel::model;
     using sema_rel::changelog;
 
-    typedef std::map<qname, semantics::node*> deleted_table_map;
-    typedef std::map<uname, semantics::data_member*> deleted_column_map;
+    typedef map<qname, semantics::node*> deleted_table_map;
+    typedef map<uname, semantics::data_member*> deleted_column_map;
 
     namespace
     {
@@ -42,8 +42,9 @@ namespace relational
                     mode_type m,
                     alter_table& a,
                     graph& gr,
-                    unsigned long long v)
-            : other (o), mode (m), at (a), g (gr), current (v) {}
+                    options const& op,
+                    model_version const* v)
+            : other (o), mode (m), at (a), g (gr), ops (op), version (v) {}
 
         virtual void
         traverse (sema_rel::column& c)
@@ -80,20 +81,54 @@ namespace relational
             }
             else
             {
-              if (current != 0)
+              if (version != 0)
               {
                 data_member_path const& mp (
                   c.get<data_member_path> ("member-path"));
 
-                // Make sure the addition version is the current version.
-                //
                 semantics::data_member* m (context::added_member (mp));
-                if (m != 0 && context::added (*m) != current)
+                if (m != 0)
                 {
-                  location l (m->get<location_t> ("added-location"));
-                  error (l) << "member addition version is not the same " <<
-                    "as the current model version" << endl;
-                  throw operation_failed ();
+                  // Make sure the addition version is the current version.
+                  //
+                  if (context::added (*m) != version->current)
+                  {
+                    location l (m->get<location_t> ("added-location"));
+                    error (l) << "member addition version is not the same " <<
+                      "as the current model version" << endl;
+                    throw operation_failed ();
+                  }
+                }
+                // Warn about hard additions. If the version is closed, then
+                // we have already seen these warnings so no need to repeat
+                // them.
+                //
+                else if (ops.warn_hard_add () && version->open)
+                {
+                  // Issue nicer diagnostics for the direct data member case.
+                  //
+                  if (mp.size () == 1)
+                  {
+                    location l (mp.back ()->location ());
+                    warn (l) << "data member is hard-added" << endl;
+                  }
+                  else
+                  {
+                    semantics::class_& s (
+                      dynamic_cast<semantics::class_&> (
+                        mp.front ()->scope ()));
+
+                    warn (s.location ()) << "column '" << c.name () << "' " <<
+                      "in class '" << s.name () << "' is hard-added" << endl;
+
+                    for (data_member_path::const_iterator i (mp.begin ());
+                         i != mp.end (); ++i)
+                    {
+                      info ((*i)->location ()) << "corresponding hard-" <<
+                        "added data member could be '" << (*i)->name () <<
+                        "'" << endl;
+                    }
+                  }
                 }
               }
 
@@ -105,7 +140,7 @@ namespace relational
           {
             if (other.find<column> (c.name ()) == 0)
             {
-              if (current != 0)
+              if (version != 0)
               {
                 // See if we have an entry for this column in the soft-
                 // deleted map.
@@ -114,12 +149,40 @@ namespace relational
                   other.get<deleted_column_map> ("deleted-map"));
                 deleted_column_map::const_iterator i (dm.find (c.name ()));
 
-                if (i != dm.end () && context::deleted (*i->second) != current)
+                if (i != dm.end ())
                 {
-                  location l (i->second->get<location_t> ("deleted-location"));
-                  error (l) << "member deletion version is not the same " <<
-                    "as the current model version" << endl;
-                  throw operation_failed ();
+                  if (context::deleted (*i->second) != version->current)
+                  {
+                    location l (i->second->get<location_t> ("deleted-location"));
+                    error (l) << "member deletion version is not the same " <<
+                      "as the current model version" << endl;
+                    throw operation_failed ();
+                  }
+                }
+                // Warn about hard deletions. If the version is closed, then
+                // we have already seen these warnings so no need to repeat
+                // them.
+                //
+                else if (ops.warn_hard_delete () && version->open)
+                {
+                  // Here all we have is a column name and a class (object)
+                  // or data member (container) corresponding to the table.
+                  //
+                  if (semantics::class_* s =
+                      other.get<semantics::class_*> ("class", 0))
+                  {
+                    warn (s->location ()) << "column '" << c.name () << "' " <<
+                      "in class '" << s->name () << "' is hard-deleted" << endl;
+                  }
+                  else
+                  {
+                    data_member_path const& mp (
+                      other.get<data_member_path> ("member-path"));
+
+                    warn (mp.back ()->location ()) << "column '" <<
+                      c.name () << "' in container '" <<
+                      mp.back ()->name () << "' is hard-deleted" << endl;
+                  }
                 }
               }
 
@@ -390,7 +453,8 @@ namespace relational
         mode_type mode;
         alter_table& at;
         graph& g;
-        unsigned long long current;
+        options const& ops;
+        model_version const* version;
       };
 
       struct diff_model: trav_rel::table
@@ -401,8 +465,16 @@ namespace relational
                     mode_type m,
                     changeset& s,
                     graph& gr,
-                    unsigned long long c)
-            : other (o), mode (m), cs (s), g (gr), current (c) {}
+                    string const& in,
+                    options const& op,
+                    model_version const* v)
+            : other (o),
+              mode (m),
+              cs (s),
+              g (gr),
+              in_name (in),
+              ops (op),
+              version (v) {}
 
         virtual void
         traverse (sema_rel::table& t)
@@ -429,7 +501,8 @@ namespace relational
               {
                 trav_rel::table table;
                 trav_rel::unames names;
-                diff_table dtable (*ot, diff_table::mode_add, at, g, current);
+                diff_table dtable (
+                  *ot, diff_table::mode_add, at, g, ops, version);
                 table >> names >> dtable;
                 table.traverse (t);
               }
@@ -437,7 +510,8 @@ namespace relational
               {
                 trav_rel::table table;
                 trav_rel::unames names;
-                diff_table dtable (t, diff_table::mode_drop, at, g, current);
+                diff_table dtable (
+                  t, diff_table::mode_drop, at, g, ops, version);
                 table >> names >> dtable;
                 table.traverse (*ot);
               }
@@ -454,7 +528,7 @@ namespace relational
             {
               // Soft-add is only applicable to containers.
               //
-              if (current != 0 && t.count ("member-path"))
+              if (version != 0 && t.count ("member-path"))
               {
                 data_member_path const& mp (
                   t.get<data_member_path> ("member-path"));
@@ -462,12 +536,47 @@ namespace relational
                 // Make sure the addition version is the current version.
                 //
                 semantics::data_member* m (context::added_member (mp));
-                if (m != 0 && context::added (*m) != current)
+                if (m != 0)
                 {
-                  location l (m->get<location_t> ("added-location"));
-                  error (l) << "member addition version is not the same " <<
-                    "as the current model version" << endl;
-                  throw operation_failed ();
+                  if (context::added (*m) != version->current)
+                  {
+                    location l (m->get<location_t> ("added-location"));
+                    error (l) << "member addition version is not the same " <<
+                      "as the current model version" << endl;
+                    throw operation_failed ();
+                  }
+                }
+                // Warn about hard additions. If the version is closed, then
+                // we have already seen these warnings so no need to repeat
+                // them.
+                //
+                else if (ops.warn_hard_add () && version->open)
+                {
+                  // Issue nicer diagnostics for the direct data member case.
+                  //
+                  if (mp.size () == 1)
+                  {
+                    location l (mp.back ()->location ());
+                    warn (l) << "data member is hard-added" << endl;
+                  }
+                  else
+                  {
+                    semantics::class_& s (
+                      dynamic_cast<semantics::class_&> (
+                        mp.front ()->scope ()));
+
+                    warn (s.location ()) << "container table '" <<
+                      t.name () << "' in class '" << s.name () << "' is " <<
+                      "hard-added" << endl;
+
+                    for (data_member_path::const_iterator i (mp.begin ());
+                         i != mp.end (); ++i)
+                    {
+                      info ((*i)->location ()) << "corresponding hard-" <<
+                        "added data member could be '" << (*i)->name () <<
+                        "'" << endl;
+                    }
+                  }
                 }
               }
 
@@ -479,7 +588,7 @@ namespace relational
           {
             if (other.find<table> (t.name ()) == 0)
             {
-              if (current != 0)
+              if (version != 0)
               {
                 // See if we have an entry for this table in the soft-
                 // deleted map.
@@ -495,7 +604,7 @@ namespace relational
                   //
                   semantics::class_* c (
                     dynamic_cast<semantics::class_*> (i->second));
-                  if (c != 0 && context::deleted (*c) != current)
+                  if (c != 0 && context::deleted (*c) != version->current)
                   {
                     location l (c->get<location_t> ("deleted-location"));
                     error (l) << "class deletion version is not the same " <<
@@ -505,13 +614,34 @@ namespace relational
 
                   semantics::data_member* m (
                     dynamic_cast<semantics::data_member*> (i->second));
-                  if (m != 0 && context::deleted (*m) != current)
+                  if (m != 0 && context::deleted (*m) != version->current)
                   {
                     location l (m->get<location_t> ("deleted-location"));
                     error (l) << "member deletion version is not the same " <<
                       "as the current model version" << endl;
                     throw operation_failed ();
                   }
+                }
+                // Warn about hard deletions. If the version is closed, then
+                // we have already seen these warnings so no need to repeat
+                // them.
+                //
+                // At first, it may seem like a good idea not to warn about
+                // class deletions since it is not possible to do anything
+                // useful with a class without referencing it from the code
+                // (in C++ sense). However, things get tricky one we consider
+                // polymorphism since the migration code could be "working"
+                // with the hard-deleted derived class via its base. So we
+                // going to warn about everything and let the user decide.
+                //
+                else if (ops.warn_hard_delete () && version->open)
+                {
+                  // There is no way to distinguish between object and
+                  // container tables. We also don't have any sensible
+                  // location.
+                  //
+                  cerr << in_name << ": warning: object or container " <<
+                    "table '" << t.name () << "' is hard-deleted" << endl;
                 }
               }
 
@@ -551,15 +681,22 @@ namespace relational
         mode_type mode;
         changeset& cs;
         graph& g;
-        unsigned long long current;
+        string in_name;
+        options const& ops;
+        model_version const* version;
       };
 
-      // Assumes the new model has cxx-location set. If current is not 0,
+      // Assumes the new model has cxx-location set. If version is not 0,
       // then assume it is the current model version and the new model is
       // the current model which has member paths and deleted maps set.
       //
       changeset&
-      diff (model& o, model& n, changelog& l, unsigned long long current)
+      diff (model& o,
+            model& n,
+            changelog& l,
+            string const& in_name,
+            options const& ops,
+            model_version const* version)
       {
         changeset& r (l.new_node<changeset> (n.version ()));
 
@@ -588,7 +725,8 @@ namespace relational
         {
           trav_rel::model model;
           trav_rel::qnames names;
-          diff_model dmodel (o, diff_model::mode_add, r, l, current);
+          diff_model dmodel (
+            o, diff_model::mode_add, r, l, in_name, ops, version);
           model >> names >> dmodel;
           model.traverse (n);
         }
@@ -596,7 +734,8 @@ namespace relational
         {
           trav_rel::model model;
           trav_rel::qnames names;
-          diff_model dmodel (n, diff_model::mode_drop, r, l, current);
+          diff_model dmodel (
+            n, diff_model::mode_drop, r, l, in_name, ops, version);
           model >> names >> dmodel;
           model.traverse (o);
         }
@@ -819,8 +958,8 @@ namespace relational
     generate (model& m,
               model_version const& mv,
               changelog* old,
-              std::string const& in_name,
-              std::string const& out_name,
+              string const& in_name,
+              string const& out_name,
               options const& ops)
     {
       cutl::shared_ptr<changelog> cl (
@@ -858,7 +997,7 @@ namespace relational
 
           model& nm (g.new_node<model> (mv.base));
           g.new_edge<contains_model> (*cl, nm);
-          changeset& c (diff (nm, m, *cl, mv.current));
+          changeset& c (diff (nm, m, *cl, in_name, ops, &mv));
 
           if (!c.names_empty ())
           {
@@ -939,7 +1078,7 @@ namespace relational
             base = &g.new_node<model> (mv.base);
             g.new_edge<contains_model> (*cl, *base);
 
-            changeset& c (diff (*base, *last, *cl, 0));
+            changeset& c (diff (*base, *last, *cl, in_name, ops, 0));
             if (!c.names_empty ())
             {
               g.new_edge<alters_model> (c, *base);
@@ -1000,7 +1139,7 @@ namespace relational
             om = &patch (*last, c, g);
         }
 
-        changeset& c (diff (*om, m, *cl, mv.current));
+        changeset& c (diff (*om, m, *cl, in_name, ops, &mv));
 
         if (!c.names_empty ())
         {
@@ -1019,7 +1158,7 @@ namespace relational
       //
       if (mv.base != mv.current)
       {
-        changeset& c (diff (*last, m, *cl, mv.current));
+        changeset& c (diff (*last, m, *cl, in_name, ops, &mv));
 
         if (!c.names_empty ())
         {

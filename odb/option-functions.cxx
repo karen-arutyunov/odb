@@ -20,6 +20,14 @@ process_options (options& o)
   if (o.generate_schema_only ())
     o.generate_schema (true);
 
+  // If --warn-hard was specified, then set both --warn-hard-{add,delete}.
+  //
+  if (o.warn_hard ())
+  {
+    o.warn_hard_add (true);
+    o.warn_hard_delete (true);
+  }
+
   // Set the default schema format depending on the database.
   //
   if (o.generate_schema () && o.schema_format ()[db].empty ())

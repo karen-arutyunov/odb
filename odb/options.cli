@@ -314,6 +314,24 @@ class options
      Valid values are \cb{c++98} (default) and \cb{c++11}."
   };
 
+  // Diagnostics.
+  //
+  bool --warn-hard-add
+  {
+    "Warn about hard-added data members."
+  };
+
+  bool --warn-hard-delete
+  {
+    "Warn about hard-deleted data members and persistent classes."
+  };
+
+  bool --warn-hard
+  {
+    "Warn about both hard-added and hard-deleted data members and
+     persistent classes."
+  };
+
   // Output.
   //
   std::string --output-dir | -o

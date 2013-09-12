@@ -755,6 +755,7 @@ namespace relational
 
         sema_rel::table& t (model_.new_node<sema_rel::table> (id));
         t.set ("cxx-location", c.location ());
+        t.set ("class", &c);
         t.set ("deleted-map", deleted_column_map ());
         model_.new_edge<sema_rel::qnames> (model_, t, name);
 
