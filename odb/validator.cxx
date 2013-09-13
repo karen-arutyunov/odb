@@ -1034,6 +1034,163 @@ namespace
     size_t count_;
   };
 
+  // Make sure soft-delete versions make sense for dependent entities.
+  // We don't seem to need anything for soft-add since if an entity is
+  // not added (e.g., an object), then we cannot reference it in the
+  // C++ sense (e.g., a pointer).
+  //
+  struct version_dependencies: object_members_base
+  {
+    version_dependencies (bool& valid): valid_ (valid) {}
+
+    virtual void
+    traverse_object (semantics::class_& c)
+    {
+      /*
+        @@ TODO
+
+      semantics::class_* poly (polymorphic (c));
+      if (poly != 0 && poly != &c)
+      {
+        semantics::class_& base (polymorphic_base (c));
+        check_strict (
+          c, base, "polymorphic derived object", "polymorphic base");
+      }
+      */
+
+      // Don't go into bases.
+      //
+      names (c);
+    }
+
+    virtual void
+    traverse_simple (semantics::data_member& m)
+    {
+      semantics::class_& c (dynamic_cast<semantics::class_&> (m.scope ()));
+
+      switch (class_kind (c))
+      {
+      case class_object:
+        {
+          // Member shouldn't be deleted after the object that contains it.
+          //
+          check_lax (m, c, "data member", "object");
+          break;
+        }
+        // We leave it up to the user to make sure the view is consistent
+        // with the database schema it is being run on.
+        //
+      default:
+        break;
+      }
+    }
+
+    virtual void
+    traverse_composite (semantics::data_member* m, semantics::class_& c)
+    {
+      if (m != 0)
+        traverse_simple (*m); // Do simple value tests.
+      else
+        names (c); // Don't go into bases.
+    }
+
+    virtual void
+    traverse_pointer (semantics::data_member& m, semantics::class_& c)
+    {
+      traverse_simple (m); // Do simple value tests.
+
+      // Pointer must be deleted before the pointed-to object.
+      //
+      check_strict (m, c, "object pointer", "pointed-to object");
+
+      // Inverse pointer must be deleted before the direct side.
+      //
+      if (semantics::data_member* im = inverse (m))
+        check_strict (m, *im, "inverse object pointer", "direct pointer");
+    }
+
+    virtual void
+    traverse_container (semantics::data_member& m, semantics::type& t)
+    {
+      traverse_simple (m); // Do simple value tests.
+
+      if (semantics::class_* c = object_pointer (container_vt (t)))
+      {
+        // Pointer must be deleted before the pointed-to object.
+        //
+        check_strict (m, *c, "object pointer", "pointed-to object");
+
+        // Inverse pointer must be deleted before the direct side.
+        //
+        if (semantics::data_member* im = inverse (m, "value"))
+          check_strict (m, *im, "inverse object pointer", "direct pointer");
+      }
+    }
+
+  private:
+    // Check for harmless things like a data member deleted after the
+    // object.
+    //
+    template <typename D, typename P>
+    void
+    check_lax (D& dep, P& pre, char const* dname, char const* pname)
+    {
+      unsigned long long dv (deleted (dep));
+      unsigned long long pv (deleted (pre));
+
+      if (pv == 0 || // Prerequisite never deleted.
+          dv == 0 || // Dependent never deleted.
+          dv <= pv)  // Dependent deleted before prerequisite.
+        return;
+
+      location_t dl (dep.template get<location_t> ("deleted-location"));
+      location_t pl (pre.template get<location_t> ("deleted-location"));
+
+      error (dl) << dname << " is deleted after " << dname << endl;
+      info (pl) << pname << " deletion version is specified here" << endl;
+
+      valid_ = false;
+    }
+
+    // Check for harmful things that will result in an invalid database
+    // schema, like a pointer pointing to a deleted object.
+    //
+    template <typename D, typename P>
+    void
+    check_strict (D& dep, P& pre, char const* dname, char const* pname)
+    {
+      unsigned long long dv (deleted (dep));
+      unsigned long long pv (deleted (pre));
+
+      if (pv == 0) // Prerequisite never deleted.
+        return;
+
+      location_t pl (pre.template get<location_t> ("deleted-location"));
+
+      if (dv == 0) // Dependent never deleted.
+      {
+        location dl (dep.location ());
+
+        error (dl) << dname << " is not deleted" << endl;
+        info (pl) << pname << " is deleted here" << endl;
+
+        valid_ = false;
+      }
+      else if (pv > dv) // Prerequisite deleted before dependent.
+      {
+        location_t dl (dep.template get<location_t> ("deleted-location"));
+
+        error (dl) << dname << " is deleted after " << pname << endl;
+        info (pl) << pname << " deletion version is specified here" << endl;
+
+        valid_ = false;
+      }
+    }
+
+  private:
+    bool& valid_;
+  };
+
   struct class2: traversal::class_, context
   {
     class2 (bool& valid)
@@ -1088,6 +1245,13 @@ namespace
         traverse_view (c);
       else if (composite (c))
         traverse_composite (c);
+
+      // Check version dependencies.
+      //
+      {
+        version_dependencies vd (valid_);
+        vd.traverse (c);
+      }
     }
 
     virtual void
