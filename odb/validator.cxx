@@ -1046,9 +1046,14 @@ namespace
     virtual void
     traverse_object (semantics::class_& c)
     {
-      /*
-        @@ TODO
-
+      // For reuse inheritance we allow the base to be soft-deleted. In
+      // a sense, it becomes like an abstract class with the added
+      // functionality of being able to load old data.
+      //
+      // For polymorphism inheritance things are a lot more complicated
+      // and we don't allow a base to be soft-deleted since there is a
+      // link (foreign key) from the derived table.
+      //
       semantics::class_* poly (polymorphic (c));
       if (poly != 0 && poly != &c)
       {
@@ -1056,7 +1061,6 @@ namespace
         check_strict (
           c, base, "polymorphic derived object", "polymorphic base");
       }
-      */
 
       // Don't go into bases.
       //
