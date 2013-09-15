@@ -672,19 +672,37 @@ namespace relational
                 // At first, it may seem like a good idea not to warn about
                 // class deletions since it is not possible to do anything
                 // useful with a class without referencing it from the code
-                // (in C++ sense). However, things get tricky one we consider
+                // (in C++ sense). However, things get tricky once we consider
                 // polymorphism since the migration code could be "working"
                 // with the hard-deleted derived class via its base. So we
-                // going to warn about everything and let the user decide.
+                // are going to warn about polymorphic derived tables.
                 //
                 else if (ops.warn_hard_delete () && version->open)
                 {
-                  // There is no way to distinguish between object and
-                  // container tables. We also don't have any sensible
-                  // location.
+                  string k (t.extra ()["kind"]);
+
+                  // We don't have any sensible location.
                   //
-                  cerr << in_name << ": warning: object or container " <<
-                    "table '" << t.name () << "' is hard-deleted" << endl;
+                  if (k == "container")
+                  {
+                    // We will issue a useless warning if the object table
+                    // that this container references is also deleted.
+                    // While we could detect this, it is going to require
+                    // some effort since we would have to delay the warning
+                    // and check later once we know all the deleted tables.
+                    //
+                    cerr << in_name << ": warning: container table '" <<
+                      t.name () << "' is hard-deleted" << endl;
+                  }
+                  else if (k == "polymorphic derived object")
+                  {
+                    // The same as above: the warning will be useless if
+                    // we are dropping the whole hierarchy.
+                    //
+                    cerr << in_name << ": warning: polymorphic derived " <<
+                      "object table '" << t.name () << "' is hard-deleted" <<
+                      endl;
+                  }
                 }
               }
 
