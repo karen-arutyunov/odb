@@ -465,31 +465,15 @@ namespace relational
       {
       }
 
-      // This version is only called for file schema.
-      //
       virtual void
       traverse (sema_rel::model& m)
-      {
-        traverse (m.names_begin (), m.names_end ());
-      }
-
-      virtual void
-      traverse (sema_rel::model::names_iterator begin,
-                sema_rel::model::names_iterator end)
       {
         // Traverse named entities in the reverse order. This way we
         // drop them in the order opposite to creating.
         //
-        if (begin != end)
-        {
-          for (--end;; --end)
-          {
-            dispatch (*end);
-
-            if (begin == end)
-              break;
-          }
-        }
+        for (sema_rel::model::names_iterator begin (m.names_begin ()),
+               end (m.names_end ()); begin != end;)
+          dispatch (*--end);
       }
 
       void
@@ -1114,22 +1098,6 @@ namespace relational
       create_model (emitter_type& e, ostream& os, schema_format f)
           : common (e, os, f) {}
 
-      // This version is only called for file schema.
-      //
-      virtual void
-      traverse (sema_rel::model& m)
-      {
-        traverse (m.names_begin (), m.names_end ());
-      }
-
-      virtual void
-      traverse (sema_rel::model::names_iterator begin,
-                sema_rel::model::names_iterator end)
-      {
-        for (; begin != end; ++begin)
-          dispatch (*begin);
-      }
-
       void
       pass (unsigned short p)
       {
@@ -1374,22 +1342,6 @@ namespace relational
       changeset_pre (emitter_type& e, ostream& os, schema_format f)
           : common (e, os, f) {}
 
-      // This version is only called for file migration.
-      //
-      virtual void
-      traverse (sema_rel::changeset& m)
-      {
-        traverse (m.names_begin (), m.names_end ());
-      }
-
-      virtual void
-      traverse (sema_rel::changeset::names_iterator begin,
-                sema_rel::changeset::names_iterator end)
-      {
-        for (; begin != end; ++begin)
-          dispatch (*begin);
-      }
-
       void
       pass (unsigned short p)
       {
@@ -1487,20 +1439,15 @@ namespace relational
       changeset_post (emitter_type& e, ostream& os, schema_format f)
           : common (e, os, f) {}
 
-      // This version is only called for file migration.
-      //
       virtual void
       traverse (sema_rel::changeset& m)
       {
-        traverse (m.names_begin (), m.names_end ());
-      }
-
-      virtual void
-      traverse (sema_rel::changeset::names_iterator begin,
-                sema_rel::changeset::names_iterator end)
-      {
-        for (; begin != end; ++begin)
-          dispatch (*begin);
+        // Traverse named entities in the reverse order. This way we
+        // drop them in the order opposite to creating.
+        //
+        for (sema_rel::changeset::names_iterator begin (m.names_begin ()),
+               end (m.names_end ()); begin != end;)
+          dispatch (*--end);
       }
 
       void
