@@ -311,11 +311,42 @@ namespace relational
           : common (e, os, f) {}
 
       virtual void
-      drop (sema_rel::qname const& table, bool migration)
+      drop (sema_rel::table& t, bool migration)
       {
         pre_statement ();
         os << "DROP TABLE " << (migration ? "" : "IF EXISTS ") <<
-          quote_id (table) << endl;
+          quote_id (t.name ()) << endl;
+        post_statement ();
+      }
+
+      virtual void
+      delete_ (sema_rel::qname const& rtable,
+               sema_rel::qname const& dtable,
+               sema_rel::primary_key& rkey,
+               sema_rel::primary_key& dkey)
+      {
+        pre_statement ();
+
+        // This might not be the most efficient way for every database.
+        //
+        os << "DELETE FROM " << quote_id (rtable) << endl
+           << "  WHERE EXISTS (SELECT 1 FROM " << quote_id (dtable) << endl
+           << "    WHERE ";
+
+        for (size_t i (0); i != rkey.contains_size (); ++i)
+        {
+          if (i != 0)
+            os << endl
+               << "      AND ";
+
+          os << quote_id (rtable) << "." <<
+            quote_id (rkey.contains_at (i).column ().name ()) << " = " <<
+            quote_id (dtable) << "." <<
+            quote_id (dkey.contains_at (i).column ().name ());
+        }
+
+        os << ")" << endl;
+
         post_statement ();
       }
 
@@ -345,7 +376,51 @@ namespace relational
           }
         }
         else
-          drop (t.name (), migration);
+        {
+          if (migration &&
+              t.extra ().count ("kind") != 0 &&
+              t.extra ()["kind"] == "polymorphic")
+          {
+            // If we are dropping a polymorphic derived object, then we
+            // also have to clean the base tables. Note that this won't
+            // trigger cascade deletion since we have dropped all the
+            // keys on pass 1. But we still need to do this in the base
+            // to root order in order not to trigger other cascades.
+            //
+            using sema_rel::model;
+            using sema_rel::table;
+            using sema_rel::primary_key;
+            using sema_rel::foreign_key;
+
+            model& m (dynamic_cast<model&> (t.scope ()));
+
+            table* p (&t);
+            do
+            {
+              // The polymorphic link is the first primary key.
+              //
+              for (table::names_iterator i (p->names_begin ());
+                   i != p->names_end (); ++i)
+              {
+                if (foreign_key* fk = dynamic_cast<foreign_key*> (
+                      &i->nameable ()))
+                {
+                  p = m.find<table> (fk->referenced_table ());
+                  assert (p != 0); // Base table should be there.
+                  break;
+                }
+              }
+
+              primary_key& rkey (*p->find<primary_key> (""));
+              primary_key& dkey (*t.find<primary_key> (""));
+              assert (rkey.contains_size () == dkey.contains_size ());
+              delete_ (p->name (), t.name (), rkey, dkey);
+            }
+            while (p->extra ().count ("kind") != 0);
+          }
+
+          drop (t, migration);
+        }
       }
 
       virtual void

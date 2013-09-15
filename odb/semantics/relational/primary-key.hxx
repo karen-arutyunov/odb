@@ -20,7 +20,7 @@ namespace semantics
       bool
       auto_ () const {return auto__;}
 
-      // Extra database information.
+      // Extra information.
       //
     public:
       typedef std::map<string, string> extra_map;

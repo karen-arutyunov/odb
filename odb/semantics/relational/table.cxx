@@ -16,7 +16,8 @@ namespace semantics
     table (table const& t, qscope& s, graph& g, bool b)
         : qnameable (t, g),
           uscope (t, (b ? s.lookup<table, drop_table> (t.name ()) : 0), g),
-          options_ (t.options_)
+          options_ (t.options_),
+          extra_map_ (t.extra_map_)
     {
     }
 
@@ -30,6 +31,16 @@ namespace semantics
             g),
           options_ (p.attribute ("options", string ()))
     {
+      // All unhandled attributes go into the extra map.
+      //
+      typedef xml::parser::attribute_map_type attr_map;
+      attr_map const& am (p.attribute_map ());
+
+      for (attr_map::const_iterator i (am.begin ()); i != am.end (); ++i)
+      {
+        if (!i->second.handled)
+          extra_map_[i->first.name ()] = i->second.value;
+      }
     }
 
     table& table::
@@ -45,6 +56,10 @@ namespace semantics
 
       if (!options_.empty ())
         s.attribute ("options", options_);
+
+      for (extra_map::const_iterator i (extra_map_.begin ());
+           i != extra_map_.end (); ++i)
+        s.attribute (i->first, i->second);
     }
 
     void table::

@@ -183,20 +183,22 @@ namespace relational
         drop_table (base const& x): base (x) {}
 
         virtual void
-        drop (sema_rel::qname const& table, bool migration)
+        drop (sema_rel::table& t, bool migration)
         {
           // SQL Server has no IF EXISTS conditional for dropping tables.
           // The following approach appears to be the recommended way to
           // drop a table if it exists.
           //
+          sema_rel::qname const& name (t.name ());
+
           pre_statement ();
 
           if (!migration)
-            os << "IF OBJECT_ID(" << quote_string (table.string ()) <<
+            os << "IF OBJECT_ID(" << quote_string (name.string ()) <<
               ", " << quote_string ("U") << ") IS NOT NULL" << endl
                << "  ";
 
-          os << "DROP TABLE " << quote_id (table) << endl;
+          os << "DROP TABLE " << quote_id (name) << endl;
 
           post_statement ();
         }

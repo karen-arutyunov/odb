@@ -20,6 +20,17 @@ namespace semantics
       virtual void
       options (string const& o) {options_ = o;}
 
+      // Extra information.
+      //
+    public:
+      typedef std::map<string, string> extra_map;
+
+      extra_map&
+      extra () {return extra_map_;}
+
+      extra_map const&
+      extra () const {return extra_map_;}
+
     public:
       table (string const& id): qnameable (id) {}
       table (table const&, qscope&, graph&, bool base = false);
@@ -44,6 +55,7 @@ namespace semantics
 
     protected:
       string options_;
+      extra_map extra_map_;
     };
 
     class add_table: public table

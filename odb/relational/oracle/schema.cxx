@@ -140,13 +140,8 @@ namespace relational
         drop_table (base const& x): base (x) {}
 
         virtual void
-        traverse (sema_rel::table& t, bool migration)
+        drop (sema_rel::table& t, bool migration)
         {
-          // For Oracle we use the CASCADE clause to drop foreign keys.
-          //
-          if (pass_ != 2)
-            return;
-
           using sema_rel::primary_key;
 
           sema_rel::table::names_iterator i (t.find ("")); // Special name.
@@ -162,7 +157,7 @@ namespace relational
           if (migration)
           {
             pre_statement ();
-            os << "DROP TABLE " << qt << " CASCADE CONSTRAINTS" << endl;
+            os << "DROP TABLE " << qt << endl;
             post_statement ();
 
             // Drop the sequence if we have auto primary key.
@@ -206,6 +201,26 @@ namespace relational
             os << "END;" << endl;
             post_statement ();
           }
+        }
+
+        virtual void
+        traverse (sema_rel::table& t, bool migration)
+        {
+          // For migration drop foreign keys explicitly in pre-migration.
+          //
+          if (migration)
+          {
+            base::traverse (t, migration);
+            return;
+          }
+
+          // For schema creation we use the CASCADE clause to drop foreign
+          // keys.
+          //
+          if (pass_ != 2)
+            return;
+
+          drop (t, migration);
         }
       };
       entry<drop_table> drop_table_;

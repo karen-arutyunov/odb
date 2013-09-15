@@ -49,7 +49,48 @@ namespace relational
           if (pass_ != 2)
             return;
 
-          drop (t.name (), migration);
+          // Polymorphic base cleanup code. Because we cannot drop foreign
+          // keys, we will trigger cascade deletion. The only way to work
+          // around this problem is to delete from the root table and rely
+          // on the cascade to clean up the rest.
+          //
+          if (migration &&
+              t.extra ().count ("kind") != 0 &&
+              t.extra ()["kind"] == "polymorphic")
+          {
+            using sema_rel::model;
+            using sema_rel::table;
+            using sema_rel::primary_key;
+            using sema_rel::foreign_key;
+
+            model& m (dynamic_cast<model&> (t.scope ()));
+
+            table* p (&t);
+            do
+            {
+              // The polymorphic link is the first primary key.
+              //
+              for (table::names_iterator i (p->names_begin ());
+                   i != p->names_end (); ++i)
+              {
+                if (foreign_key* fk = dynamic_cast<foreign_key*> (
+                      &i->nameable ()))
+                {
+                  p = m.find<table> (fk->referenced_table ());
+                  assert (p != 0); // Base table should be there.
+                  break;
+                }
+              }
+            }
+            while (p->extra ().count ("kind") != 0);
+
+            primary_key& rkey (*p->find<primary_key> (""));
+            primary_key& dkey (*t.find<primary_key> (""));
+            assert (rkey.contains_size () == dkey.contains_size ());
+            delete_ (p->name (), t.name (), rkey, dkey);
+          }
+
+          drop (t, migration);
         }
       };
       entry<drop_table> drop_table_;

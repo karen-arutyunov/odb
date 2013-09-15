@@ -536,6 +536,7 @@ namespace relational
         model_.new_edge<sema_rel::qnames> (model_, t, name);
 
         t.options (table_options (m, ct));
+        t.extra ()["kind"] = "container";
 
         // object_id
         //
@@ -545,7 +546,9 @@ namespace relational
           oc->traverse (m, container_idt (m), "id", "object_id");
         }
 
-        // Foreign key and index for the object id.
+        // Foreign key and index for the object id. Keep this foreign
+        // key first since we reply on this information to lookup the
+        // corresponding object table.
         //
         {
           // Derive the name prefix. See the comment for the other foreign
@@ -734,7 +737,9 @@ namespace relational
         if (!object (c))
           return;
 
-        if (abstract (c) && !polymorphic (c))
+        semantics::class_* poly (polymorphic (c));
+
+        if (abstract (c) && poly == 0)
           return;
 
         qname const& name (table_name (c));
@@ -760,6 +765,9 @@ namespace relational
         model_.new_edge<sema_rel::qnames> (model_, t, name);
 
         t.options (table_options (c));
+
+        if (poly != 0 && poly != &c)
+          t.extra ()["kind"] = "polymorphic";
 
         // Add columns.
         //

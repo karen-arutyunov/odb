@@ -29,7 +29,16 @@ namespace relational
         virtual void
         traverse (sema_rel::table& t, bool migration)
         {
-          // For PostgreSQL we use the CASCADE clause to drop foreign keys.
+          // For migration drop foreign keys explicitly in pre-migration.
+          //
+          if (migration)
+          {
+            base::traverse (t, migration);
+            return;
+          }
+
+          // For schema creation we use the CASCADE clause to drop foreign
+          // keys.
           //
           if (pass_ != 2)
             return;
