@@ -2126,8 +2126,9 @@ namespace
       if (poly_root != 0)
       {
         using namespace semantics;
+        using semantics::data_member;
 
-        semantics::data_member& idm (*id_member (*poly_root));
+        data_member* idm (id_member (*poly_root));
 
         if (poly_root != &c)
         {
@@ -2135,38 +2136,44 @@ namespace
           // class hierarchy, then add a synthesized virtual pointer
           // member that points back to the root.
           //
-          path const& f (idm.file ());
-          size_t l (idm.line ()), col (idm.column ());
+          semantics::class_& base (polymorphic_base (c));
+
+          if (&base != poly_root)
+            idm = &dynamic_cast<data_member&> (base.names_begin ()->named ());
+
+          path const& f (idm->file ());
+          size_t l (idm->line ()), col (idm->column ());
 
           semantics::data_member& m (
             unit.new_node<semantics::data_member> (f, l, col, tree (0)));
           m.set ("virtual", true);
 
-          // Make it the first member in the class.
+          // Make it the first member in the class. This is important:
+          // we rely on the corrensponding foreign key to be first.
           //
           node_position<type, scope::names_iterator> np (c, c.names_end ());
           unit.new_edge<semantics::names> (
-            np, m, idm.name (), access::public_);
+            np, m, idm->name (), access::public_);
 
           // Use the raw pointer as this member's type.
           //
-          if (!poly_root->pointed_p ())
+          if (!base.pointed_p ())
           {
             // Create the pointer type in the graph. The pointer node
             // in GCC seems to always be present, even if not explicitly
             // used in the translation unit.
             //
-            tree t (poly_root->tree_node ());
+            tree t (base.tree_node ());
             tree ptr (TYPE_POINTER_TO (t));
             assert (ptr != 0);
             ptr = TYPE_MAIN_VARIANT (ptr);
             pointer& p (unit.new_node<pointer> (f, l, col, ptr));
             unit.insert (ptr, p);
-            unit.new_edge<points> (p, *poly_root);
-            assert (poly_root->pointed_p ());
+            unit.new_edge<points> (p, base);
+            assert (base.pointed_p ());
           }
 
-          unit.new_edge<belongs> (m, poly_root->pointed ().pointer ());
+          unit.new_edge<belongs> (m, base.pointed ().pointer ());
 
           // Mark it as a special kind of id.
           //
@@ -2193,7 +2200,7 @@ namespace
           // from reuse-base).
           //
           node_position<type, scope::names_iterator> np (
-            c, c.find (idm.named ()));
+            c, c.find (idm->named ()));
           unit.new_edge<semantics::names> (
             np, m, "typeid_", access::public_);
 
