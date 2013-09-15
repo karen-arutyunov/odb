@@ -277,6 +277,8 @@ namespace relational
                 diagnose_foreign_key (fk, "on delete action");
 
               if (fk.referenced_table () != ofk->referenced_table ())
+                // See diagnose_foreign_key() if changing this name.
+                //
                 diagnose_foreign_key (fk, "pointed-to class");
 
               if (fk.referenced_columns () != ofk->referenced_columns ())
@@ -409,13 +411,50 @@ namespace relational
         void
         diagnose_foreign_key (sema_rel::foreign_key& fk, char const* name)
         {
-          location const& l (fk.get<location> ("cxx-location"));
+          // This can be an object pointer or a polymorphic base link.
+          // The latter will trigger this call if we change one base
+          // to another.
+          //
+          using sema_rel::table;
+          using sema_rel::foreign_key;
 
-          error (l) << "changing object pointer " << name << " is not " <<
-            "supported" << endl;
-          info (l) << "consider re-implementing this change by adding " <<
-            "a new object pointer with the desired " << name << ", " <<
-            "migrating the data, and deleteing the old pointer" << endl;
+          // Polymorphic base link is the first foreign key.
+          //
+          table& t (fk.table ());
+          table::names_iterator p (t.find (fk.name ()));
+
+          if (t.extra ()["kind"] == "polymorphic derived object" &&
+              (p == t.names_begin () || !(--p)->is_a<foreign_key> ()))
+          {
+            location const& l (t.get<location> ("cxx-location"));
+
+            if (name == string ("pointed-to class"))
+            {
+              error (l) << "changing polymorphic base is not " <<
+                "supported" << endl;
+              info (l) << "consider re-implementing this change by adding " <<
+                "a new derived class with the desired base, migrating the " <<
+                "data, and deleteing the old class" << endl;
+            }
+            else
+            {
+              error (l) << "changing polymorphic base " << name <<
+                " is not supported" << endl;
+              info (l) << "consider re-implementing this change by adding " <<
+                "a new derived class with the desired " << name << ", " <<
+                "migrating the data, and deleteing the old class" << endl;
+            }
+          }
+          else
+          {
+            location const& l (fk.get<location> ("cxx-location"));
+
+            error (l) << "changing object pointer " << name << " is not " <<
+              "supported" << endl;
+            info (l) << "consider re-implementing this change by adding " <<
+              "a new object pointer with the desired " << name << ", " <<
+              "migrating the data, and deleteing the old pointer" << endl;
+          }
 
           throw operation_failed ();
         }
@@ -497,6 +536,10 @@ namespace relational
 
               if (t.options () != ot->options ())
                 diagnose_table (t, "options", ot->options (), t.options ());
+
+              if (ot->extra ()["kind"] != t.extra ()["kind"])
+                diagnose_table (t, "kind",
+                                ot->extra ()["kind"], t.extra ()["kind"]);
 
               {
                 trav_rel::table table;

@@ -766,8 +766,11 @@ namespace relational
 
         t.options (table_options (c));
 
-        if (poly != 0 && poly != &c)
-          t.extra ()["kind"] = "polymorphic";
+        t.extra ()["kind"] =(poly == 0
+                             ? "object"
+                             : (poly == &c
+                                ? "polymorphic root object"
+                                : "polymorphic derived object"));
 
         // Add columns.
         //

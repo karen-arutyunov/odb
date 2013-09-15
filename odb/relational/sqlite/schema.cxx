@@ -54,9 +54,7 @@ namespace relational
           // around this problem is to delete from the root table and rely
           // on the cascade to clean up the rest.
           //
-          if (migration &&
-              t.extra ().count ("kind") != 0 &&
-              t.extra ()["kind"] == "polymorphic")
+          if (migration && t.extra ()["kind"] == "polymorphic derived object")
           {
             using sema_rel::model;
             using sema_rel::table;
@@ -82,7 +80,7 @@ namespace relational
                 }
               }
             }
-            while (p->extra ().count ("kind") != 0);
+            while (p->extra ()["kind"] != "polymorphic root object");
 
             primary_key& rkey (*p->find<primary_key> (""));
             primary_key& dkey (*t.find<primary_key> (""));

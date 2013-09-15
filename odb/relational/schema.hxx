@@ -377,9 +377,7 @@ namespace relational
         }
         else
         {
-          if (migration &&
-              t.extra ().count ("kind") != 0 &&
-              t.extra ()["kind"] == "polymorphic")
+          if (migration && t.extra ()["kind"] == "polymorphic derived object")
           {
             // If we are dropping a polymorphic derived object, then we
             // also have to clean the base tables. Note that this won't
@@ -416,7 +414,7 @@ namespace relational
               assert (rkey.contains_size () == dkey.contains_size ());
               delete_ (p->name (), t.name (), rkey, dkey);
             }
-            while (p->extra ().count ("kind") != 0);
+            while (p->extra ()["kind"] != "polymorphic root object");
           }
 
           drop (t, migration);
