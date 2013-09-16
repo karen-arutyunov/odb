@@ -2425,6 +2425,12 @@ namespace
             dv = 0;
         }
 
+        if (av != 0)
+          c_.added++;
+
+        if (dv != 0)
+          c_.deleted++;
+
         if (av != 0 || dv != 0)
           c_.soft++;
       }

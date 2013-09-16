@@ -984,6 +984,8 @@ namespace relational
           if (section_ == 0 && separate_load (mi.m) && inverse (mi.m))
             return false;
 
+          semantics::class_* comp (composite (mi.t));
+
           os << "// " << mi.m.name () << endl
              << "//" << endl;
 
@@ -1003,11 +1005,9 @@ namespace relational
           //
           else if (!readonly (*context::top_object))
           {
-            semantics::class_* c;
-
             if (id (mi.m) ||
                 readonly (mi.m) ||
-                ((c = composite (mi.t)) && readonly (*c)) ||
+                (comp != 0 && readonly (*comp)) ||
                 (section_ == 0 && separate_update (mi.m)))
               os << "if (sk != statement_update)"
                  << "{";
@@ -1017,6 +1017,21 @@ namespace relational
           //
           unsigned long long av (added (mi.m));
           unsigned long long dv (deleted (mi.m));
+
+          // If this is a composite member, see if it is summarily
+          // added/deleted.
+          //
+          if (comp != 0)
+          {
+            unsigned long long cav (added (*comp));
+            unsigned long long cdv (deleted (*comp));
+
+            if (cav != 0 && (av == 0 || av < cav))
+              av = cav;
+
+            if (cdv != 0 && (dv == 0 || dv > cdv))
+              dv = cdv;
+          }
 
           // If the addition/deletion version is the same as the section's,
           // then we don't need the test.
@@ -1056,11 +1071,26 @@ namespace relational
       {
         if (var_override_.empty ())
         {
+          semantics::class_* comp (composite (mi.t));
+
           // We need to increment the index even if we skipped this
           // member due to the schema version.
           //
           unsigned long long av (added (mi.m));
           unsigned long long dv (deleted (mi.m));
+
+          if (comp != 0)
+          {
+            unsigned long long cav (added (*comp));
+            unsigned long long cdv (deleted (*comp));
+
+            if (cav != 0 && (av == 0 || av < cav))
+              av = cav;
+
+            if (cdv != 0 && (dv == 0 || dv > cdv))
+              dv = cdv;
+          }
+
           if (user_section* s = dynamic_cast<user_section*> (section_))
           {
             if (av == added (*s->member))
@@ -1073,10 +1103,10 @@ namespace relational
           if (av != 0 || dv != 0)
             os << "}";
 
-          if (semantics::class_* c = composite (mi.t))
+          if (comp != 0)
           {
-            bool ro (readonly (*c));
-            column_count_type const& cc (column_count (*c));
+            bool ro (readonly (*comp));
+            column_count_type const& cc (column_count (*comp));
 
             os << "n += " << cc.total << "UL";
 
@@ -1391,6 +1421,21 @@ namespace relational
           unsigned long long av (added (mi.m));
           unsigned long long dv (deleted (mi.m));
 
+          // If this is a composite member, see if it is summarily
+          // added/deleted.
+          //
+          if (comp != 0)
+          {
+            unsigned long long cav (added (*comp));
+            unsigned long long cdv (deleted (*comp));
+
+            if (cav != 0 && (av == 0 || av < cav))
+              av = cav;
+
+            if (cdv != 0 && (dv == 0 || dv > cdv))
+              dv = cdv;
+          }
+
           // If the addition/deletion version is the same as the section's,
           // then we don't need the test.
           //
@@ -1609,6 +1654,19 @@ namespace relational
         {
           unsigned long long av (added (mi.m));
           unsigned long long dv (deleted (mi.m));
+
+          if (comp != 0)
+          {
+            unsigned long long cav (added (*comp));
+            unsigned long long cdv (deleted (*comp));
+
+            if (cav != 0 && (av == 0 || av < cav))
+              av = cav;
+
+            if (cdv != 0 && (dv == 0 || dv > cdv))
+              dv = cdv;
+          }
+
           if (user_section* s = dynamic_cast<user_section*> (section_))
           {
             if (av == added (*s->member))
@@ -1805,6 +1863,21 @@ namespace relational
           //
           unsigned long long av (added (mi.m));
           unsigned long long dv (deleted (mi.m));
+
+          // If this is a composite member, see if it is summarily
+          // added/deleted.
+          //
+          if (comp != 0)
+          {
+            unsigned long long cav (added (*comp));
+            unsigned long long cdv (deleted (*comp));
+
+            if (cav != 0 && (av == 0 || av < cav))
+              av = cav;
+
+            if (cdv != 0 && (dv == 0 || dv > cdv))
+              dv = cdv;
+          }
 
           // If the addition/deletion version is the same as the section's,
           // then we don't need the test.

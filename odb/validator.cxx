@@ -1016,24 +1016,6 @@ namespace
   // Pass 2.
   //
 
-  struct data_member2: traversal::data_member, context
-  {
-    data_member2 (bool& valid): valid_ (valid) {}
-
-    virtual void
-    traverse (type& m)
-    {
-      if (transient (m))
-        return;
-
-      if (!deleted (m)) // Don't include deleted members in the count.
-        count_++;
-    }
-
-    bool& valid_;
-    size_t count_;
-  };
-
   // Make sure soft-delete versions make sense for dependent entities.
   // We don't seem to need anything for soft-add since if an entity is
   // not added (e.g., an object), then we cannot reference it in the
@@ -1198,7 +1180,7 @@ namespace
   struct class2: traversal::class_, context
   {
     class2 (bool& valid)
-    : valid_ (valid), has_lt_operator_ (0), member_ (valid)
+      : valid_ (valid), has_lt_operator_ (0)
     {
       // Find the has_lt_operator function template.
       //
@@ -1236,8 +1218,6 @@ namespace
 
       if (has_lt_operator_ == 0)
         valid_ = false;
-
-      *this >> names_ >> member_;
     }
 
     virtual void
@@ -1261,21 +1241,13 @@ namespace
     virtual void
     traverse_object (type& c)
     {
-      bool base (false);
-      for (type::inherits_iterator i (c.inherits_begin ());
-           !base && i != c.inherits_end ();
-           ++i)
-      {
-        if (object (i->base ()))
-          base = true;
-      }
-
+      bool abst (abstract (c));
       bool poly (polymorphic (c));
 
       // Make sure we have no empty or pointless sections unless we
       // are reuse-abstract or polymorphic.
       //
-      if (!poly && !abstract (c))
+      if (!poly && !abst)
       {
         user_sections& uss (c.get<user_sections> ("user-sections"));
 
@@ -1394,12 +1366,15 @@ namespace
         }
       }
 
-      // Check members.
+      // Allow all the members to be deleted as long as there is no
+      // schema for this class.
       //
-      member_.count_ = 0;
-      names (c);
+      column_count_type const& cc (column_count (c));
+      size_t cont (has_a (c, test_container));
+      size_t dcont (cont - has_a (c, test_container | exclude_deleted));
 
-      if (member_.count_ == 0 && !base)
+      if ((cc.total == 0 && cont == 0) ||
+          (cc.total == cc.deleted && cont == dcont && !(abst || deleted (c))))
       {
         os << c.file () << ":" << c.line () << ":" << c.column () << ":"
            << " error: no persistent data members in the class" << endl;
@@ -1410,12 +1385,11 @@ namespace
     virtual void
     traverse_view (type& c)
     {
-      // Check members.
+      // Allow all the members to be deleted.
       //
-      member_.count_ = 0;
-      names (c);
+      column_count_type const& cc (column_count (c));
 
-      if (member_.count_ == 0)
+      if (cc.total == 0)
       {
         os << c.file () << ":" << c.line () << ":" << c.column () << ":"
            << " error: no persistent data members in the class" << endl;
@@ -1426,21 +1400,12 @@ namespace
     virtual void
     traverse_composite (type& c)
     {
-      bool base (false);
-      for (type::inherits_iterator i (c.inherits_begin ());
-           !base && i != c.inherits_end ();
-           ++i)
-      {
-        if (composite (i->base ()))
-          base = true;
-      }
-
-      // Check members.
+      // Allow all the members to be deleted.
       //
-      member_.count_ = 0;
-      names (c);
+      column_count_type const& cc (column_count (c));
+      size_t cont (has_a (c, test_container));
 
-      if (member_.count_ == 0 && !base)
+      if (cc.total == 0 && cont == 0)
       {
         os << c.file () << ":" << c.line () << ":" << c.column () << ":"
            << " error: no persistent data members in the class" << endl;
@@ -1450,9 +1415,6 @@ namespace
 
     bool& valid_;
     tree has_lt_operator_;
-
-    data_member2 member_;
-    traversal::names names_;
   };
 }
 

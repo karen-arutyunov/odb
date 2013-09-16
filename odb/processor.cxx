@@ -1955,6 +1955,53 @@ namespace
     tree container_traits_;
   };
 
+  // Figure out the "summary" added/deleted version for a composite
+  // value type.
+  //
+  struct summary_version: object_members_base
+  {
+    summary_version (): av (0), dv (0), a_ (true), d_ (true) {}
+
+    virtual void
+    traverse_simple (semantics::data_member&)
+    {
+      if (a_)
+      {
+        if (unsigned long long v = added (member_path_))
+        {
+          if (av == 0 || av < v)
+            av = v;
+        }
+        else
+        {
+          av = 0;
+          a_ = false;
+        }
+      }
+
+      if (d_)
+      {
+        if (unsigned long long v = deleted (member_path_))
+        {
+          if (dv == 0 || dv > v)
+            dv = v;
+        }
+        else
+        {
+          dv = 0;
+          d_ = false;
+        }
+      }
+    }
+
+  public:
+    unsigned long long av;
+    unsigned long long dv;
+
+    bool a_;
+    bool d_;
+  };
+
   struct class_: traversal::class_, context
   {
     class_ ()
@@ -2449,7 +2496,24 @@ namespace
       // Figure out if we are versioned.
       //
       if (force_versioned || column_count (c).soft != 0)
+      {
         c.set ("versioned", true);
+
+        // See if we are "summarily" added/deleted, that is, all the
+        // columns are added/deleted. Note: this does not include
+        // containers.
+        //
+        summary_version sv;
+        sv.traverse (c);
+
+        // Note: there are no locations.
+        //
+        if (sv.av != 0)
+          c.set ("added", sv.av);
+
+        if (sv.dv != 0)
+          c.set ("deleted", sv.dv);
+      }
     }
 
     //

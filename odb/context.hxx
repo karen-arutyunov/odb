@@ -797,6 +797,12 @@ public:
   // Return the addition version or 0 if not soft-added.
   //
   static unsigned long long
+  added (semantics::class_& c) // Used for composite only.
+  {
+    return c.get<unsigned long long> ("added", 0);
+  }
+
+  static unsigned long long
   added (semantics::data_member& m)
   {
     return m.get<unsigned long long> ("added", 0);
@@ -1235,6 +1241,8 @@ public:
           readonly (0),
           optimistic_managed (0),
           discriminator (0),
+          added (0),
+          deleted (0),
           soft (0),
           separate_load (0),
           separate_update (0)
@@ -1248,7 +1256,9 @@ public:
     size_t optimistic_managed;
     size_t discriminator;
 
-    size_t soft; // Soft-added/deleted.
+    size_t added;   // Soft-added.
+    size_t deleted; // Soft-deleted.
+    size_t soft;    // Soft-added/deleted (a column can be both).
 
     size_t separate_load;
     size_t separate_update; // Only readwrite.

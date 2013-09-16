@@ -331,10 +331,27 @@ namespace relational
             os << "// " << mi.m.name () << endl
                << "//" << endl;
 
+            semantics::class_* comp (composite (mi.t));
+
             // If the member is soft- added or deleted, check the version.
             //
             unsigned long long av (added (mi.m));
             unsigned long long dv (deleted (mi.m));
+
+            // If this is a composite member, see if it is summarily
+            // added/deleted.
+            //
+            if (comp != 0)
+            {
+              unsigned long long cav (added (*comp));
+              unsigned long long cdv (deleted (*comp));
+
+              if (cav != 0 && (av == 0 || av < cav))
+                av = cav;
+
+              if (cdv != 0 && (dv == 0 || dv > cdv))
+                dv = cdv;
+            }
 
             // If the addition/deletion version is the same as the section's,
             // then we don't need the test.
@@ -372,10 +389,25 @@ namespace relational
         virtual void
         post (member_info& mi)
         {
+          semantics::class_* comp (composite (mi.t));
+
           if (var_override_.empty ())
           {
             unsigned long long av (added (mi.m));
             unsigned long long dv (deleted (mi.m));
+
+            if (comp != 0)
+            {
+              unsigned long long cav (added (*comp));
+              unsigned long long cdv (deleted (*comp));
+
+              if (cav != 0 && (av == 0 || av < cav))
+                av = cav;
+
+              if (cdv != 0 && (dv == 0 || dv > cdv))
+                dv = cdv;
+            }
+
             if (user_section* s = dynamic_cast<user_section*> (section_))
             {
               if (av == added (*s->member))
@@ -389,8 +421,8 @@ namespace relational
               os << "}";
           }
 
-          if (semantics::class_* c = composite (mi.t))
-            index_ += column_count (*c).total;
+          if (comp != 0)
+            index_ += column_count (*comp).total;
           else
             index_++;
         }
