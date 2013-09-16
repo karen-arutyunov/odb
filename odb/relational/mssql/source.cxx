@@ -35,7 +35,8 @@ namespace relational
       //
       struct object_columns: relational::object_columns, context
       {
-        object_columns (base const& x): base (x) {}
+        object_columns (base const& x)
+          : base (x), rowversion_ (false), column_count_ (0) {}
 
         virtual bool
         column (semantics::data_member& m,
@@ -55,11 +56,39 @@ namespace relational
           {
             sql_type t (parse_sql_type (column_type (), m));
             if (t.type == sql_type::ROWVERSION)
+            {
+              rowversion_ = true;
               return false;
+            }
           }
 
-          return base::column (m, table, column);
+          bool r (base::column (m, table, column));
+
+          // Count the number of columns in the UPDATE statement, but
+          // excluding soft-deleted.
+          //
+          if (sk_ == statement_update && r && !deleted (member_path_))
+            column_count_++;
+
+          return r;
         }
+
+        virtual void
+        traverse_post (semantics::nameable& n)
+        {
+          if (rowversion_ && column_count_ == 0)
+          {
+            location l (n.location ());
+            error (l) << "ROWVERSION in an object without any readwrite "
+              "data members" << endl;
+            error (l) << "UPDATE statement will be empty" << endl;
+            throw operation_failed ();
+          }
+        }
+
+      private:
+        bool rowversion_;
+        size_t column_count_;
       };
       entry<object_columns> object_columns_;
 

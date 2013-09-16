@@ -270,12 +270,24 @@ traverse_view (semantics::class_& c)
 }
 
 void object_columns_base::
+traverse_pre (semantics::nameable&)
+{
+}
+
+void object_columns_base::
+traverse_post (semantics::nameable&)
+{
+}
+
+void object_columns_base::
 traverse (semantics::data_member& m,
           semantics::type& t,
           std::string const& kp,
           std::string const& dn,
           semantics::class_* to)
 {
+  traverse_pre (m);
+
   semantics::class_* oto (context::top_object);
 
   if (to != 0)
@@ -305,6 +317,8 @@ traverse (semantics::data_member& m,
 
   root_ = 0;
   context::top_object = oto;
+
+  traverse_post (m);
 }
 
 void object_columns_base::
@@ -320,7 +334,10 @@ traverse (semantics::class_& c)
   bool f (top_level_);
 
   if (top_level_)
+  {
+    traverse_pre (c);
     top_level_ = false;
+  }
   else
   {
     // Unless requested otherwise, don't go into bases if we are a derived
@@ -365,8 +382,13 @@ traverse (semantics::class_& c)
       context::top_object = 0;
   }
 
-  if (f && !first_)
-    flush ();
+  if (f)
+  {
+    if (!first_)
+      flush ();
+
+    traverse_post (c);
+  }
 }
 
 void object_columns_base::

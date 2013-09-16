@@ -219,6 +219,14 @@ struct object_columns_base: traversal::class_, virtual context
   virtual bool
   section_test (data_member_path const&);
 
+  // Start/end traversal callbacks.
+  //
+  virtual void
+  traverse_pre (semantics::nameable&);
+
+  virtual void
+  traverse_post (semantics::nameable&);
+
 public:
   object_columns_base (bool first = true,
                        column_prefix const& cp = column_prefix (),
