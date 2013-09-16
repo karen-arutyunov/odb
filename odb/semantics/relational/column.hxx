@@ -128,6 +128,13 @@ namespace semantics
           : unameable (c, g) {}
       drop_column (xml::parser&, uscope&, graph&);
 
+    public:
+      typedef relational::table table_type;
+
+      table_type&
+      table () const {return dynamic_cast<table_type&> (scope ());}
+
+    public:
       virtual drop_column&
       clone (uscope&, graph&) const;
 

@@ -19,6 +19,45 @@ namespace relational
       // Drop.
       //
 
+      struct drop_column: trav_rel::drop_column, relational::common
+      {
+        drop_column (relational::common const& c)
+            : relational::common (c), first_ (true) {}
+
+        virtual void
+        traverse (sema_rel::drop_column& dc)
+        {
+          // SQLite does not support dropping columns. If this column is
+          // not NULLable, then there is nothing we can do. Otherwise, do
+          // a logical DROP by setting all the values to NULL.
+          //
+          sema_rel::column& c (find<sema_rel::column> (dc));
+
+          if (!c.null ())
+          {
+            cerr << "error: SQLite does not support dropping of columns" <<
+              endl;
+            cerr << "info: first dropped column is '" << dc.name () <<
+              "' in table '" << dc.table ().name () << "'" << endl;
+            cerr << "info: could have perform logical drop if the column " <<
+              "allowed NULL values" << endl;
+            throw operation_failed ();
+          }
+
+          if (first_)
+            first_ = false;
+          else
+            os << "," << endl
+               << "    ";
+
+          os << quote_id (dc.name ()) << " = NULL";
+        }
+
+      private:
+        bool first_;
+      };
+      // Not registered as an override.
+
       struct drop_index: relational::drop_index, context
       {
         drop_index (base const& x): base (x) {}
@@ -263,16 +302,41 @@ namespace relational
             throw operation_failed ();
           }
 
-          // SQLite does not support dropping constraints.
+          // SQLite does not support dropping constraints. We are going to
+          // ignore this if the column is NULL'able since in most cases
+          // the constraint is going to be dropped as a result of the
+          // column drop (e.g., an object pointer member got deleted).
+          // If we were not to allow this, then it would be impossible
+          // to do logical drop for pointer columns.
           //
-          if (sema_rel::drop_foreign_key* dfk =
-              check<sema_rel::drop_foreign_key> (at))
+          for (sema_rel::alter_table::names_iterator i (at.names_begin ());
+               i != at.names_end (); ++i)
           {
-            cerr << "error: SQLite does not support dropping of foreign keys"
-                 << endl;
-            cerr << "info: first dropped foreign key is '" << dfk->name () <<
-              "' in table '" << at.name () << "'" << endl;
-            throw operation_failed ();
+            using sema_rel::foreign_key;
+            using sema_rel::drop_foreign_key;
+
+            drop_foreign_key* dfk (
+              dynamic_cast<drop_foreign_key*> (&i->nameable ()));
+
+            if (dfk == 0)
+              continue;
+
+            foreign_key& fk (find<foreign_key> (*dfk));
+
+            for (foreign_key::contains_iterator j (fk.contains_begin ());
+                 j != fk.contains_end (); ++j)
+            {
+              if (j->column ().null ())
+                continue;
+
+              cerr << "error: SQLite does not support dropping of foreign " <<
+                "keys" << endl;
+              cerr << "info: first dropped foreign key is '" << dfk->name () <<
+                "' in table '" << at.name () << "'" << endl;
+              cerr << "info: could have ignored it if the contained " <<
+                "column(s) allowed NULL values" << endl;
+              throw operation_failed ();
+            }
           }
         }
       };
@@ -285,15 +349,34 @@ namespace relational
         virtual void
         alter (sema_rel::alter_table& at)
         {
-          // SQLite does not support dropping columns.
+          // SQLite does not support altering columns (we have to do this
+          // in both alter_table_pre/post because of the
+          // check_alter_column_null() test in the common code).
           //
-          if (sema_rel::drop_column* dc = check<sema_rel::drop_column> (at))
+          if (sema_rel::alter_column* ac = check<sema_rel::alter_column> (at))
           {
-            cerr << "error: SQLite does not support dropping of columns"
+            cerr << "error: SQLite does not support altering of columns"
                  << endl;
-            cerr << "info: first dropped column is '" << dc->name () <<
+            cerr << "info: first altered column is '" << ac->name () <<
               "' in table '" << at.name () << "'" << endl;
             throw operation_failed ();
+          }
+
+          // Try to do logical column drop.
+          //
+          if (check<sema_rel::drop_column> (at))
+          {
+            pre_statement ();
+
+            os << "UPDATE " << quote_id (at.name ()) << endl
+               << "  SET ";
+
+            drop_column dc (*this);
+            trav_rel::unames n (dc);
+            names (at, n);
+            os << endl;
+
+            post_statement ();
           }
 
           // SQLite doesn't support adding foreign keys other than inline
