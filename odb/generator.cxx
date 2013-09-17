@@ -261,6 +261,15 @@ generate (options const& ops,
               "'" << endl;
             throw generator::failed ();
           }
+
+          string sn (ops.schema_name ()[db]);
+          if (old_changelog->schema_name () != sn)
+          {
+            cerr << in_log_path << ": error: wrong schema name '" <<
+              old_changelog->schema_name () << "', expected '" << sn <<
+              "'" << endl;
+            throw generator::failed ();
+          }
         }
         catch (const ios_base::failure& e)
         {

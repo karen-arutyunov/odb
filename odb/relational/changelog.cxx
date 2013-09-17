@@ -1023,8 +1023,9 @@ namespace relational
               string const& out_name,
               options const& ops)
     {
+      database db (ops.database ()[0]);
       cutl::shared_ptr<changelog> cl (
-        new (shared) changelog (ops.database ()[0].string ()));
+        new (shared) changelog (db.string (), ops.schema_name ()[db]));
       graph& g (*cl);
 
       if (old == 0)

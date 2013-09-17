@@ -122,8 +122,12 @@ namespace semantics
       string const&
       database () const {return database_;}
 
+      string const&
+      schema_name () const {return schema_name_;}
+
     public:
-      changelog (string const& db): database_ (db), contains_model_ (0) {}
+      changelog (string const& db, string const& sn)
+          : database_ (db), schema_name_ (sn), contains_model_ (0) {}
       changelog (xml::parser&);
 
       void
@@ -151,6 +155,7 @@ namespace semantics
 
     protected:
       string database_;
+      string schema_name_;
       contains_model_type* contains_model_;
       contains_changeset_list contains_changeset_;
     };
