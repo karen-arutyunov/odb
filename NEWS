@@ -10,6 +10,10 @@ Version 2.3.0
    queries. For more information, refer to Section 4.1, "ODB Query Language"
    in the ODB manual.
 
+ * Support for defining composite value types inside persistent classes,
+   views, or other composite values. For more information, refer to Section
+   7.2, "Composite Value Types" in the ODB manual.
+
  * The schema_catalog::create_schema() function now has a third argument
    which indicates whether to drop the schema prior to creating the new one.
    The default is true which is backwards-compatible. The schema_catalog

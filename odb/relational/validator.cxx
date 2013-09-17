@@ -237,27 +237,43 @@ namespace relational
     {
       class2 (bool& valid)
           : valid_ (valid),
+            typedefs_ (true),
             data_member_ (valid),
             object_no_id_members_ (valid),
             composite_id_members_ (valid),
             view_members_ (valid)
       {
-        *this >> data_member_names_ >> data_member_;
+        *this >> defines_ >> *this;
+        *this >> typedefs_ >> *this;
+
+        data_member_names_ >> data_member_;
       }
 
       virtual void
       traverse (type& c)
       {
-        if (object (c))
+        class_kind_type ck (class_kind (c));
+        switch (ck)
+        {
+        case class_object:
+          names (c);
           traverse_object (c);
-        else if (view (c))
+          break;
+        case class_view:
+          names (c);
           traverse_view (c);
-        else if (composite (c))
+          break;
+        case class_composite:
+          names (c);
           traverse_composite (c);
+          break;
+        case class_other:
+          break;
+        }
 
         // Make sure indexes are not defined for anything other than objects.
         //
-        if (c.count ("index") && !object (c))
+        if (c.count ("index") && ck != class_object)
         {
           indexes& ins (c.get<indexes> ("index"));
 
@@ -331,7 +347,7 @@ namespace relational
           }
         }
 
-        names (c);
+        names (c, data_member_names_);
 
         // Validate indexes.
         //
@@ -373,17 +389,20 @@ namespace relational
         //
         view_members_.traverse (c);
 
-        names (c);
+        names (c, data_member_names_);
       }
 
       virtual void
       traverse_composite (type& c)
       {
-        names (c);
+        names (c, data_member_names_);
       }
 
     public:
       bool& valid_;
+
+      traversal::defines defines_;
+      typedefs typedefs_;
 
       data_member2 data_member_;
       traversal::names data_member_names_;

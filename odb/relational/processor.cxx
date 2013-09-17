@@ -992,8 +992,12 @@ namespace relational
     struct class_: traversal::class_, context
     {
       class_ ()
+          : typedefs_ (true)
       {
-        *this >> member_names_ >> member_;
+        *this >> defines_ >> *this;
+        *this >> typedefs_ >> *this;
+
+        member_names_ >> member_;
       }
 
       virtual void
@@ -1004,7 +1008,8 @@ namespace relational
         if (k == class_other)
           return;
 
-        names (c);
+        names (c); // Process nested classes.
+        names (c, member_names_);
 
         if (k == class_object)
           traverse_object (c);
@@ -1536,6 +1541,9 @@ namespace relational
 
     private:
       cxx_string_lexer lex_;
+
+      traversal::defines defines_;
+      typedefs typedefs_;
 
       data_member member_;
       traversal::names member_names_;

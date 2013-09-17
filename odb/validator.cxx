@@ -396,8 +396,6 @@ namespace
   //
   struct value_type: traversal::type, context
   {
-    value_type (bool& valid): valid_ (valid) {}
-
     virtual void
     traverse (semantics::type& t)
     {
@@ -406,33 +404,62 @@ namespace
       override_null (t);
       override_null (t, "value");
     }
+  };
 
-    bool& valid_;
+  struct typedefs1: typedefs
+  {
+    typedefs1 (traversal::declares& d)
+        : typedefs (true), declares_ (d)
+    {
+    }
+
+    void
+    traverse (semantics::typedefs& t)
+    {
+      if (check (t))
+        traversal::typedefs::traverse (t);
+      else
+        declares_.traverse (t);
+    }
+
+  private:
+    traversal::declares& declares_;
   };
 
   //
   //
   struct class1: traversal::class_, context
   {
-    class1 (bool& valid, value_type& vt)
-        : valid_ (valid), vt_ (vt), member_ (valid)
+    class1 (bool& valid)
+      : valid_ (valid), typedefs_ (declares_), member_ (valid)
     {
-      *this >> names_ >> member_;
+      *this >> defines_ >> *this;
+      *this >> typedefs_ >> *this;
+      *this >> declares_ >> vt_;
+
+      names_member_ >> member_;
     }
 
     virtual void
     traverse (type& c)
     {
-      if (object (c))
-        traverse_object (c);
-      else if (view (c))
-        traverse_view (c);
-      else
+      switch (class_kind (c))
       {
-        if (composite (c))
-          traverse_composite (c);
-
+      case class_object:
+        names (c);
+        traverse_object (c);
+        break;
+      case class_view:
+        names (c);
+        traverse_view (c);
+        break;
+      case class_composite:
+        names (c);
+        traverse_composite (c);
+        // Fall through.
+      case class_other:
         vt_.dispatch (c);
+        break;
       }
     }
 
@@ -574,7 +601,7 @@ namespace
 
       // Check members.
       //
-      names (c);
+      names (c, names_member_);
 
       // Check special members.
       //
@@ -881,7 +908,7 @@ namespace
 
       // Check members.
       //
-      names (c);
+      names (c, names_member_);
 
       // Check id.
       //
@@ -953,7 +980,7 @@ namespace
 
       // Check members.
       //
-      names (c);
+      names (c, names_member_);
 
       // Check id.
       //
@@ -986,30 +1013,14 @@ namespace
     }
 
     bool& valid_;
-    value_type& vt_;
 
+    traversal::defines defines_;
+    traversal::declares declares_;
+    typedefs1 typedefs_;
+
+    value_type vt_;
     data_member1 member_;
-    traversal::names names_;
-  };
-
-  struct typedefs1: typedefs
-  {
-    typedefs1 (traversal::declares& d)
-        : typedefs (true), declares_ (d)
-    {
-    }
-
-    void
-    traverse (semantics::typedefs& t)
-    {
-      if (check (t))
-        traversal::typedefs::traverse (t);
-      else
-        declares_.traverse (t);
-    }
-
-  private:
-    traversal::declares& declares_;
+    traversal::names names_member_;
   };
 
   //
@@ -1180,7 +1191,7 @@ namespace
   struct class2: traversal::class_, context
   {
     class2 (bool& valid)
-      : valid_ (valid), has_lt_operator_ (0)
+    : valid_ (valid), has_lt_operator_ (0), typedefs_ (true)
     {
       // Find the has_lt_operator function template.
       //
@@ -1218,17 +1229,28 @@ namespace
 
       if (has_lt_operator_ == 0)
         valid_ = false;
+
+      *this >> defines_ >> *this;
+      *this >> typedefs_ >> *this;
     }
 
     virtual void
     traverse (type& c)
     {
-      if (object (c))
-        traverse_object (c);
-      else if (view (c))
-        traverse_view (c);
-      else if (composite (c))
-        traverse_composite (c);
+      class_kind_type ck (class_kind (c));
+
+      if (ck == class_other)
+        return;
+
+      names (c);
+
+      switch (ck)
+      {
+      case class_object: traverse_object (c); break;
+      case class_view: traverse_view (c); break;
+      case class_composite: traverse_composite (c); break;
+      default: break;
+      }
 
       // Check version dependencies.
       //
@@ -1415,6 +1437,9 @@ namespace
 
     bool& valid_;
     tree has_lt_operator_;
+
+    traversal::defines defines_;
+    typedefs typedefs_;
   };
 }
 
@@ -1478,8 +1503,8 @@ validate (options const& ops,
     traversal::declares unit_declares;
     typedefs1 unit_typedefs (unit_declares);
     traversal::namespace_ ns;
-    value_type vt (valid);
-    class1 c (valid, vt);
+    value_type vt;
+    class1 c (valid);
 
     unit >> unit_defines >> ns;
     unit_defines >> c;

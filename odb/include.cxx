@@ -70,16 +70,28 @@ namespace
 
   struct class_: traversal::class_, context
   {
-    class_ (include_map& map): main_file_loc_ (0), map_ (map) {}
+    class_ (include_map& map)
+      : typedefs_ (true), main_file_loc_ (0), map_ (map)
+    {
+      *this >> defines_ >> *this;
+      *this >> typedefs_ >> *this;
+    }
 
     virtual void
     traverse (type& c)
     {
+      class_kind_type ck (class_kind (c));
+
+      if (ck == class_other)
+        return;
+
+      names (c); // Check nested classes.
+
       // We only generate things for objects and composite value types. In
       // particular, we don't care about views since they cannot be used in
       // definitions of other views, objects, or composite values.
       //
-      if (!(object (c) || composite (c)))
+      if (ck != class_object && ck != class_composite)
         return;
 
       // Not interested in classes that we are generating.
@@ -153,6 +165,9 @@ namespace
     }
 
   private:
+    traversal::defines defines_;
+    typedefs typedefs_;
+
     location_t main_file_loc_;
     include_map& map_;
   };

@@ -1156,37 +1156,49 @@ namespace relational
       typedef class1 base;
 
       class1 ()
-          : id_image_member_ ("id_"),
-            version_image_member_ ("version_"),
-            discriminator_image_member_ ("discriminator_"),
-            query_columns_type_ (false, true, false),
-            pointer_query_columns_type_ (true, true, false)
-      {
-      }
-
-      class1 (class_ const&)
-          : root_context (), //@@ -Wextra
-            context (),
+          : typedefs_ (false),
             id_image_member_ ("id_"),
             version_image_member_ ("version_"),
             discriminator_image_member_ ("discriminator_"),
             query_columns_type_ (false, true, false),
             pointer_query_columns_type_ (true, true, false)
       {
+        *this >> defines_ >> *this;
+        *this >> typedefs_ >> *this;
+      }
+
+      class1 (class1 const&)
+          : root_context (), //@@ -Wextra
+            context (),
+            typedefs_ (false),
+            id_image_member_ ("id_"),
+            version_image_member_ ("version_"),
+            discriminator_image_member_ ("discriminator_"),
+            query_columns_type_ (false, true, false),
+            pointer_query_columns_type_ (true, true, false)
+      {
+        *this >> defines_ >> *this;
+        *this >> typedefs_ >> *this;
       }
 
       virtual void
       traverse (type& c)
       {
-        if (!options.at_once () && class_file (c) != unit.file ())
+        class_kind_type ck (class_kind (c));
+
+        if (ck == class_other ||
+            (!options.at_once () && class_file (c) != unit.file ()))
           return;
 
-        if (object (c))
-          traverse_object (c);
-        else if (view (c))
-          traverse_view (c);
-        else if (composite (c))
-          traverse_composite (c);
+        names (c);
+
+        switch (ck)
+        {
+        case class_object: traverse_object (c); break;
+        case class_view: traverse_view (c); break;
+        case class_composite: traverse_composite (c); break;
+        default: break;
+        }
       }
 
       virtual void
@@ -1219,6 +1231,9 @@ namespace relational
       traverse_composite (type&);
 
     private:
+      traversal::defines defines_;
+      typedefs typedefs_;
+
       instance<image_type> image_type_;
       instance<image_member> id_image_member_;
       instance<image_member> version_image_member_;
@@ -1235,33 +1250,45 @@ namespace relational
       typedef class2 base;
 
       class2 ()
-          : query_columns_type_ (false, true, false),
-            query_columns_type_inst_ (false, false, true),
-            view_query_columns_type_ (true)
-      {
-      }
-
-      class2 (class_ const&)
-          : root_context (), //@@ -Wextra
-            context (),
+          : typedefs_ (false),
             query_columns_type_ (false, true, false),
             query_columns_type_inst_ (false, false, true),
             view_query_columns_type_ (true)
       {
+        *this >> defines_ >> *this;
+        *this >> typedefs_ >> *this;
+      }
+
+      class2 (class2 const&)
+          : root_context (), //@@ -Wextra
+            context (),
+            typedefs_ (false),
+            query_columns_type_ (false, true, false),
+            query_columns_type_inst_ (false, false, true),
+            view_query_columns_type_ (true)
+      {
+        *this >> defines_ >> *this;
+        *this >> typedefs_ >> *this;
       }
 
       virtual void
       traverse (type& c)
       {
-        if (!options.at_once () && class_file (c) != unit.file ())
+        class_kind_type ck (class_kind (c));
+
+        if (ck == class_other ||
+            (!options.at_once () && class_file (c) != unit.file ()))
           return;
 
-        if (object (c))
-          traverse_object (c);
-        else if (view (c))
-          traverse_view (c);
-        else if (composite (c))
-          traverse_composite (c);
+        names (c);
+
+        switch (ck)
+        {
+        case class_object: traverse_object (c); break;
+        case class_view: traverse_view (c); break;
+        case class_composite: traverse_composite (c); break;
+        default: break;
+        }
       }
 
       virtual void
@@ -1311,6 +1338,9 @@ namespace relational
       }
 
     private:
+      traversal::defines defines_;
+      typedefs typedefs_;
+
       instance<query_columns_type> query_columns_type_;
       instance<query_columns_type> query_columns_type_inst_;
       instance<view_query_columns_type> view_query_columns_type_;

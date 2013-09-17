@@ -5294,7 +5294,8 @@ namespace relational
       typedef class_ base;
 
       class_ ()
-          : query_columns_type_ (false, false, false),
+          : typedefs_ (false),
+            query_columns_type_ (false, false, false),
             view_query_columns_type_ (false),
             grow_base_ (index_),
             grow_member_ (index_),
@@ -5318,6 +5319,7 @@ namespace relational
       class_ (class_ const&)
           : root_context (), //@@ -Wextra
             context (),
+            typedefs_ (false),
             query_columns_type_ (false, false, false),
             view_query_columns_type_ (false),
             grow_base_ (index_),
@@ -5342,6 +5344,9 @@ namespace relational
       void
       init ()
       {
+        *this >> defines_ >> *this;
+        *this >> typedefs_ >> *this;
+
         if (generate_grow)
         {
           grow_base_inherits_ >> grow_base_;
@@ -5379,17 +5384,23 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (!options.at_once () && class_file (c) != unit.file ())
+        class_kind_type ck (class_kind (c));
+
+        if (ck == class_other ||
+            (!options.at_once () && class_file (c) != unit.file ()))
           return;
+
+        names (c);
 
         context::top_object = context::cur_object = &c;
 
-        if (object (c))
-          traverse_object (c);
-        else if (view (c))
-          traverse_view (c);
-        else if (composite (c))
-          traverse_composite (c);
+        switch (ck)
+        {
+        case class_object: traverse_object (c); break;
+        case class_view: traverse_view (c); break;
+        case class_composite: traverse_composite (c); break;
+        default: break;
+        }
 
         context::top_object = context::cur_object = 0;
       }
@@ -5692,6 +5703,9 @@ namespace relational
       }
 
     private:
+      traversal::defines defines_;
+      typedefs typedefs_;
+
       instance<query_columns_type> query_columns_type_;
       instance<view_query_columns_type> view_query_columns_type_;
 

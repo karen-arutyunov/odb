@@ -13,19 +13,31 @@ namespace header
   struct class1: traversal::class_, virtual context
   {
     class1 ()
-        : query_columns_type_ (false, true, false),
-          pointer_query_columns_type_ (true, true, false) {}
+        : typedefs_ (false),
+          query_columns_type_ (false, true, false),
+          pointer_query_columns_type_ (true, true, false)
+    {
+      *this >> defines_ >> *this;
+      *this >> typedefs_ >> *this;
+    }
 
     virtual void
     traverse (type& c)
     {
-      if (!options.at_once () && class_file (c) != unit.file ())
+      class_kind_type ck (class_kind (c));
+
+      if (ck == class_other ||
+          (!options.at_once () && class_file (c) != unit.file ()))
         return;
 
-      if (object (c))
-        traverse_object (c);
-      else if (view (c))
-        traverse_view (c);
+      names (c);
+
+      switch (ck)
+      {
+      case class_object: traverse_object (c); break;
+      case class_view: traverse_view (c); break;
+      default: break;
+      }
     }
 
     void
@@ -35,6 +47,9 @@ namespace header
     traverse_view (type&);
 
   private:
+    traversal::defines defines_;
+    typedefs typedefs_;
+
     instance<query_columns_type> query_columns_type_;
     instance<query_columns_type> pointer_query_columns_type_;
   };
@@ -645,22 +660,32 @@ namespace header
   struct class2: traversal::class_, virtual context
   {
     class2 ()
-        : query_columns_type_ (false, true, false),
+        : typedefs_ (false),
+          query_columns_type_ (false, true, false),
           query_columns_type_inst_ (false, false, true),
           view_query_columns_type_ (true)
     {
+      *this >> defines_ >> *this;
+      *this >> typedefs_ >> *this;
     }
 
     virtual void
     traverse (type& c)
     {
-      if (!options.at_once () && class_file (c) != unit.file ())
+      class_kind_type ck (class_kind (c));
+
+      if (ck == class_other ||
+          (!options.at_once () && class_file (c) != unit.file ()))
         return;
 
-      if (object (c))
-        traverse_object (c);
-      else if (view (c))
-        traverse_view (c);
+      names (c);
+
+      switch (ck)
+      {
+      case class_object: traverse_object (c); break;
+      case class_view: traverse_view (c); break;
+      default: break;
+      }
     }
 
     void
@@ -670,6 +695,9 @@ namespace header
     traverse_view (type&);
 
   private:
+    traversal::defines defines_;
+    typedefs typedefs_;
+
     instance<query_columns_type> query_columns_type_;
     instance<query_columns_type> query_columns_type_inst_;
     instance<view_query_columns_type> view_query_columns_type_;

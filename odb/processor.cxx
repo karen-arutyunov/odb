@@ -2005,9 +2005,15 @@ namespace
   struct class_: traversal::class_, context
   {
     class_ ()
-        : std_string_ (0), std_string_hint_ (0), access_ (0)
+        : typedefs_ (true),
+          std_string_ (0),
+          std_string_hint_ (0),
+          access_ (0)
     {
-      *this >> member_names_ >> member_;
+      *this >> defines_ >> *this;
+      *this >> typedefs_ >> *this;
+
+      member_names_ >> member_;
 
       // Resolve the std::string type node.
       //
@@ -2054,6 +2060,8 @@ namespace
       if (k == class_other)
         return;
 
+      names (c); // Process nested classes.
+
       // Check if odb::access is a friend of this class.
       //
       c.set ("friend", access_ != 0 && is_friend (c.tree_node (), access_));
@@ -2068,7 +2076,7 @@ namespace
       else if (k == class_view)
         traverse_view_pre (c);
 
-      names (c);
+      names (c, member_names_);
 
       if (k == class_object)
         traverse_object_post (c);
@@ -2921,6 +2929,9 @@ namespace
     }
 
   private:
+    traversal::defines defines_;
+    typedefs typedefs_;
+
     data_member member_;
     traversal::names member_names_;
 

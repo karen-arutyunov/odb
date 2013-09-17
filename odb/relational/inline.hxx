@@ -148,7 +148,8 @@ namespace relational
       typedef class_ base;
 
       class_ ()
-          : get_null_base_ (true),
+          : typedefs_ (false),
+            get_null_base_ (true),
             get_null_member_ (true),
             set_null_base_ (false),
             set_null_member_ (false)
@@ -159,6 +160,7 @@ namespace relational
       class_ (class_ const&)
           : root_context (), //@@ -Wextra
             context (),
+            typedefs_ (false),
             get_null_base_ (true),
             get_null_member_ (true),
             set_null_base_ (false),
@@ -170,6 +172,9 @@ namespace relational
       void
       init ()
       {
+        *this >> defines_ >> *this;
+        *this >> typedefs_ >> *this;
+
         get_null_base_inherits_ >> get_null_base_;
         get_null_member_names_ >> get_null_member_;
 
@@ -180,17 +185,23 @@ namespace relational
       virtual void
       traverse (type& c)
       {
-        if (!options.at_once () && class_file (c) != unit.file ())
+        class_kind_type ck (class_kind (c));
+
+        if (ck == class_other ||
+            (!options.at_once () && class_file (c) != unit.file ()))
           return;
+
+        names (c);
 
         context::top_object = context::cur_object = &c;
 
-        if (object (c))
-          traverse_object (c);
-        else if (view (c))
-          traverse_view (c);
-        else if (composite (c))
-          traverse_composite (c);
+        switch (ck)
+        {
+        case class_object: traverse_object (c); break;
+        case class_view: traverse_view (c); break;
+        case class_composite: traverse_composite (c); break;
+        default: break;
+        }
 
         context::top_object = context::cur_object = 0;
       }
@@ -640,6 +651,9 @@ namespace relational
       }
 
     private:
+      traversal::defines defines_;
+      typedefs typedefs_;
+
       instance<null_base> get_null_base_;
       traversal::inherits get_null_base_inherits_;
       instance<null_member> get_null_member_;

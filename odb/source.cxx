@@ -14,21 +14,31 @@ namespace source
   struct class_: traversal::class_, virtual context
   {
     class_ ()
-        : query_columns_type_ (false, false, false),
+        : typedefs_ (false),
+          query_columns_type_ (false, false, false),
           view_query_columns_type_ (false)
     {
+      *this >> defines_ >> *this;
+      *this >> typedefs_ >> *this;
     }
 
     virtual void
     traverse (type& c)
     {
-      if (!options.at_once () && class_file (c) != unit.file ())
+      class_kind_type ck (class_kind (c));
+
+      if (ck == class_other ||
+          (!options.at_once () && class_file (c) != unit.file ()))
         return;
 
-      if (object (c))
-        traverse_object (c);
-      else if (view (c))
-        traverse_view (c);
+      names (c);
+
+      switch (ck)
+      {
+      case class_object: traverse_object (c); break;
+      case class_view: traverse_view (c); break;
+      default: break;
+      }
     }
 
     void
@@ -38,6 +48,9 @@ namespace source
     traverse_view (type&);
 
   private:
+    traversal::defines defines_;
+    typedefs typedefs_;
+
     instance<query_columns_type> query_columns_type_;
     instance<view_query_columns_type> view_query_columns_type_;
   };

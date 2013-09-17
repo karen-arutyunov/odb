@@ -7442,6 +7442,30 @@ class person
 };
   </pre>
 
+  <p>A composite value type can be defined inside a persistent class,
+     view, or another composite value and even made private, provided
+     we make <code>odb::access</code> a friend of the containing class,
+     for example:</p>
+
+<pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db value
+  class name
+  {
+    ...
+
+    std::string first_;
+    std::string last_;
+  };
+
+  name name_;
+};
+  </pre>
+
   <p>A composite value type can also be defined as an instantiation
      of a C++ class template, for example:</p>
 
