@@ -552,19 +552,22 @@ traverse_object (type& c)
                  (poly ? user_sections::count_optimistic : 0)) != 0);
     if (sections)
     {
+      string const& fn (flat_name (type));
+
+      size_t n (uss.count (user_sections::count_total |
+                           user_sections::count_all |
+                           user_sections::count_special_version));
+
       map<size_t, user_section*> m;
       for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
         m[i->index] = &*i;
 
       os << "static const "<< traits << "::" << (abst ? "abstract_" : "") <<
         "info_type::section_functions" << endl
-         << "section_table_for_" << flat_name (type) << "[] ="
+         << "section_functions_for_" << fn << "[] ="
          << "{";
 
-      for (size_t i (0), n (uss.count (user_sections::count_total |
-                                       user_sections::count_all |
-                                       user_sections::count_special_version));
-           i != n; ++i)
+      for (size_t i (0); i != n; ++i)
       {
         os << (i != 0 ? "," : "") << "{";
 
@@ -605,6 +608,14 @@ traverse_object (type& c)
       }
 
       os << "};";
+
+      os << "static const "<< traits << "::" << (abst ? "abstract_" : "") <<
+        "info_type::section_list" << endl
+         << "section_list_for_" << fn << " ="
+         << "{"
+         << n << "UL," << endl
+         << "section_functions_for_" << fn
+         << "};";
     }
 
     //
@@ -623,7 +634,7 @@ traverse_object (type& c)
     // Sections.
     //
     if (sections)
-      os << "section_table_for_" << flat_name (type);
+      os << "&section_list_for_" << flat_name (type);
     else
       os << "0";
 
@@ -3175,8 +3186,8 @@ traverse_object (type& c)
           // version without updating anything.
           //
           if (i->optimistic ())
-            os << "if (su != 0 && su != info.sections[" << i->index <<
-              "UL].update)" << endl;
+            os << "if (su != 0 && su != info.sections->functions[" <<
+              i->index << "UL].update)" << endl;
           else
             os << "if (su != 0)" << endl;
         }
