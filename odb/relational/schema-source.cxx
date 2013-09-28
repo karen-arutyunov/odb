@@ -21,8 +21,7 @@ namespace relational
       sema_rel::model& model (*ctx.model);
       string const& schema_name (ops.schema_name ()[db]);
 
-      if (log != 0 &&
-          (log->contains_changeset_empty () || ops.suppress_migration ()))
+      if (log != 0 && ops.suppress_migration ())
         log = 0;
 
       bool schema_version (
@@ -149,6 +148,19 @@ namespace relational
       //
       if (log != 0)
       {
+        // Create NULL migration entry for the base version so that we
+        // get the complete version range (base, current) at runtime.
+        // Code in schema_catalog relies on this.
+        //
+        os << "static const schema_catalog_migrate_entry" << endl
+           << "migrate_schema_entry_" << log->model ().version () <<
+          "_ (" << endl
+           << "id_" << db << "," << endl
+           << context::strlit (schema_name) << "," << endl
+           << log->model ().version () << "ULL," << endl
+           << "0);"
+           << endl;
+
         for (sema_rel::changelog::contains_changeset_iterator i (
                log->contains_changeset_begin ());
              i != log->contains_changeset_end (); ++i)
