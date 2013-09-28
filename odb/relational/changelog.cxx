@@ -1094,8 +1094,6 @@ namespace relational
         throw operation_failed ();
       }
 
-
-
       // Build the new changelog.
       //
       model& oldm (old->model ());
@@ -1220,13 +1218,13 @@ namespace relational
       //
       if (mv.base != mv.current)
       {
+        // Add it even if it is empty. This can be useful, for example,
+        // for data-only migrations were the user relies on the database
+        // version being updated in the version table.
+        //
         changeset& c (diff (*last, m, *cl, in_name, ops, &mv));
-
-        if (!c.names_empty ())
-        {
-          g.new_edge<alters_model> (c, *last);
-          g.new_edge<contains_changeset> (*cl, c);
-        }
+        g.new_edge<alters_model> (c, *last);
+        g.new_edge<contains_changeset> (*cl, c);
       }
 
       return cl;
