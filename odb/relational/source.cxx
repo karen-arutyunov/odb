@@ -1150,19 +1150,20 @@ traverse_object (type& c)
        << "throw abstract_class ();"
        << endl;
 
+  os << db << "::connection& conn (" << endl
+     << db << "::transaction::current ().connection ());"
+     << "statements_type& sts (" << endl
+     << "conn.statement_cache ().find_object<object_type> ());";
+
   if (versioned ||
       persist_versioned_containers ||
       uss.count (user_sections::count_new |
                  user_sections::count_all |
                  user_sections::count_versioned_only) != 0)
     os << "const schema_version_migration& svm (" <<
-      "db.schema_version_migration (" << schema_name << "));";
+      "sts.version_migration (" << schema_name << "));";
 
-  os << db << "::connection& conn (" << endl
-     << db << "::transaction::current ().connection ());"
-     << "statements_type& sts (" << endl
-     << "conn.statement_cache ().find_object<object_type> ());"
-     << endl;
+  os << endl;
 
   // Call callback (pre_persist).
   //
@@ -1502,12 +1503,24 @@ traverse_object (type& c)
            << endl;
       }
 
+      bool sts (false);
+
       if ((versioned && update_columns) ||
           update_versioned_containers ||
           versioned_sections)
-        os << "const schema_version_migration& svm (" <<
-          "db.schema_version_migration (" << schema_name << "));"
+      {
+        sts = true;
+        os << db << "::transaction& tr (" << db <<
+          "::transaction::current ());"
+           << db << "::connection& conn (tr.connection ());"
+           << "statements_type& sts (" << endl
+           << "conn.statement_cache ().find_object<object_type> ());"
            << endl;
+
+        os << "const schema_version_migration& svm (" <<
+          "sts.version_migration (" << schema_name << "));"
+           << endl;
+      }
 
       // If we have change-updated sections that contain change-tracking
       // containers, then mark such sections as changed if any of the
@@ -1587,10 +1600,10 @@ traverse_object (type& c)
       {
         bool readonly_base (context::readonly (*poly_base));
 
-        if (readonly_base ||
-            update_columns ||
-            update_containers ||
-            sections)
+        if (!sts && (readonly_base ||
+                     update_columns ||
+                     update_containers ||
+                     sections))
         {
           os << db << "::transaction& tr (" << db <<
             "::transaction::current ());"
@@ -1685,12 +1698,13 @@ traverse_object (type& c)
       }
       else if (update_columns)
       {
-        os << db << "::transaction& tr (" << db <<
-          "::transaction::current ());"
-           << db << "::connection& conn (tr.connection ());"
-           << "statements_type& sts (" << endl
-           << "conn.statement_cache ().find_object<object_type> ());"
-           << endl;
+        if (!sts)
+          os << db << "::transaction& tr (" << db <<
+            "::transaction::current ());"
+             << db << "::connection& conn (tr.connection ());"
+             << "statements_type& sts (" << endl
+             << "conn.statement_cache ().find_object<object_type> ());"
+             << endl;
 
         // Initialize id image.
         //
@@ -1800,12 +1814,13 @@ traverse_object (type& c)
         // to initialize the id image if we are polymorphic or have
         // any containers or sections.
         //
-        os << db << "::transaction& tr (" << db <<
-          "::transaction::current ());"
-           << db << "::connection& conn (tr.connection ());"
-           << "statements_type& sts (" << endl
-           << "conn.statement_cache ().find_object<object_type> ());"
-           << endl;
+        if (!sts)
+          os << db << "::transaction& tr (" << db <<
+            "::transaction::current ());"
+             << db << "::connection& conn (tr.connection ());"
+             << "statements_type& sts (" << endl
+             << "conn.statement_cache ().find_object<object_type> ());"
+             << endl;
 
         // The same rationale as a couple of screens up.
         //
@@ -2155,7 +2170,7 @@ traverse_object (type& c)
 
       if (erase_versioned_containers)
         os << "const schema_version_migration& svm (" <<
-          "db.schema_version_migration (" << schema_name << "));";
+          "sts.version_migration (" << schema_name << "));";
 
       os << endl;
 
@@ -2313,7 +2328,7 @@ traverse_object (type& c)
 
           if (erase_versioned_containers)
             os << "const schema_version_migration& svm (" <<
-              "db.schema_version_migration (" << schema_name << "));";
+              "sts.version_migration (" << schema_name << "));";
 
           os << endl;
 
@@ -2409,7 +2424,7 @@ traverse_object (type& c)
           if (versioned)
           {
             os << "const schema_version_migration& svm (" <<
-              "db.schema_version_migration (" << schema_name << "));"
+              "sts.version_migration (" << schema_name << "));"
                << endl;
             svm = true;
           }
@@ -2444,7 +2459,7 @@ traverse_object (type& c)
 
           if (erase_versioned_containers && !svm)
             os << "const schema_version_migration& svm (" <<
-              "db.schema_version_migration (" << schema_name << "));";
+              "sts.version_migration (" << schema_name << "));";
 
           os << endl;
 
@@ -2534,14 +2549,14 @@ traverse_object (type& c)
 
     os << "}";
 
-    if (versioned)
-      os << "const schema_version_migration& svm (" <<
-        "db.schema_version_migration (" << schema_name << "));";
-
     os << db << "::connection& conn (" << endl
        << db << "::transaction::current ().connection ());"
        << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_object<object_type> ());";
+
+    if (versioned)
+      os << "const schema_version_migration& svm (" <<
+        "sts.version_migration (" << schema_name << "));";
 
     if (poly_derived)
       os << "root_statements_type& rsts (sts.root_statements ());";
@@ -2727,14 +2742,14 @@ traverse_object (type& c)
 
     if (!abst)
     {
-      if (versioned)
-        os << "const schema_version_migration& svm (" <<
-          "db.schema_version_migration (" << schema_name << "));";
-
       os << db << "::connection& conn (" << endl
          << db << "::transaction::current ().connection ());"
          << "statements_type& sts (" << endl
          << "conn.statement_cache ().find_object<object_type> ());";
+
+      if (versioned)
+        os << "const schema_version_migration& svm (" <<
+          "sts.version_migration (" << schema_name << "));";
 
       if (poly_derived)
         os << "root_statements_type& rsts (sts.root_statements ());";
@@ -2833,14 +2848,14 @@ traverse_object (type& c)
 
     if (!abst)
     {
-      if (versioned)
-        os << "const schema_version_migration& svm (" <<
-          "db.schema_version_migration (" << schema_name << "));";
-
       os << db << "::connection& conn (" << endl
          << db << "::transaction::current ().connection ());"
          << "statements_type& sts (" << endl
          << "conn.statement_cache ().find_object<object_type> ());";
+
+      if (versioned)
+        os << "const schema_version_migration& svm (" <<
+          "sts.version_migration (" << schema_name << "));";
 
       if (poly_derived)
         os << "root_statements_type& rsts (sts.root_statements ());";
@@ -3407,9 +3422,8 @@ traverse_object (type& c)
                      user_sections::count_all |
                      user_sections::count_versioned_only) != 0))
     {
-      os << "const schema_version_migration& svm (" << endl
-         << "sts.connection ().database ().schema_version_migration (" <<
-        schema_name << "));"
+      os << "const schema_version_migration& svm (" <<
+        "sts.version_migration (" << schema_name << "));"
          << endl;
     }
 
@@ -3529,7 +3543,7 @@ traverse_object (type& c)
 
     if (versioned)
       os << "const schema_version_migration& svm (" <<
-        "db.schema_version_migration (" << schema_name << "));"
+        "sts.version_migration (" << schema_name << "));"
          << endl;
 
     // Avoid trying to execute an empty SELECT statement.
@@ -3746,25 +3760,24 @@ traverse_object (type& c)
       //
       os << "result< " << traits << "::object_type >" << endl
          << traits << "::" << endl
-         << "query (database& db, const query_base_type& q)"
+         << "query (database&, const query_base_type& q)"
          << "{"
-         << "ODB_POTENTIALLY_UNUSED (db);"
-         << endl
          << "using namespace " << db << ";"
          << "using odb::details::shared;"
          << "using odb::details::shared_ptr;"
          << endl;
 
-      if (versioned)
-        os << "const schema_version_migration& svm (" <<
-          "db.schema_version_migration (" << schema_name << "));";
-
       os << db << "::connection& conn (" << endl
          << db << "::transaction::current ().connection ());"
          << endl
          << "statements_type& sts (" << endl
-         << "conn.statement_cache ().find_object<object_type> ());"
-         << endl;
+         << "conn.statement_cache ().find_object<object_type> ());";
+
+      if (versioned)
+        os << "const schema_version_migration& svm (" <<
+          "sts.version_migration (" << schema_name << "));";
+
+      os << endl;
 
       // Rebind the image if necessary.
       //
@@ -3883,17 +3896,17 @@ traverse_object (type& c)
          << "using odb::details::shared_ptr;"
          << endl;
 
-      if (versioned)
-        os << "const schema_version_migration& svm (" << endl
-           << "c.database ().schema_version_migration (" <<
-          schema_name << "));";
-
       os << db << "::connection& conn (" << endl
          << "static_cast<" << db << "::connection&> (c));"
          << endl
          << "statements_type& sts (" << endl
-         << "conn.statement_cache ().find_object<object_type> ());"
-         << endl;
+         << "conn.statement_cache ().find_object<object_type> ());";
+
+      if (versioned)
+        os << "const schema_version_migration& svm (" <<
+          "sts.version_migration (" << schema_name << "));";
+
+      os << endl;
 
       // Rebind the image if necessary.
       //
@@ -3975,11 +3988,6 @@ traverse_object (type& c)
          << "static_cast<select_statement*> (pq.stmt.get ())));"
          << endl;
 
-      if (versioned)
-        os << "const schema_version_migration& svm (" << endl
-           << "st->connection ().database ().schema_version_migration (" <<
-          schema_name << "));";
-
       os << db << "::connection& conn (" << endl
          << db << "::transaction::current ().connection ());"
          << endl
@@ -3989,8 +3997,13 @@ traverse_object (type& c)
          << "assert (&conn == &st->connection ());"
          << endl
          << "statements_type& sts (" << endl
-         << "conn.statement_cache ().find_object<object_type> ());"
-         << endl;
+         << "conn.statement_cache ().find_object<object_type> ());";
+
+      if (versioned)
+        os << "const schema_version_migration& svm (" <<
+          "sts.version_migration (" << schema_name << "));";
+
+      os << endl;
 
       // Rebind the image if necessary.
       //
@@ -4960,24 +4973,23 @@ traverse_view (type& c)
   {
     os << "result< " << traits << "::view_type >" << endl
        << traits << "::" << endl
-       << "query (database& db, const query_base_type& q)"
+       << "query (database&, const query_base_type& q)"
        << "{"
-       << "ODB_POTENTIALLY_UNUSED (db);"
-       << endl
        << "using namespace " << db << ";"
        << "using odb::details::shared;"
        << "using odb::details::shared_ptr;"
        << endl;
 
-    if (versioned)
-      os << "const schema_version_migration& svm (" <<
-        "db.schema_version_migration (" << schema_name << "));";
-
     os << db << "::connection& conn (" << endl
        << db << "::transaction::current ().connection ());"
        << "statements_type& sts (" << endl
-       << "conn.statement_cache ().find_view<view_type> ());"
-       << endl
+       << "conn.statement_cache ().find_view<view_type> ());";
+
+    if (versioned)
+      os << "const schema_version_migration& svm (" <<
+        "sts.version_migration (" << schema_name << "));";
+
+    os << endl
        << "image_type& im (sts.image ());"
        << "binding& imb (sts.image_binding ());"
        << endl
@@ -5039,16 +5051,16 @@ traverse_view (type& c)
        << "using odb::details::shared_ptr;"
        << endl;
 
-    if (versioned)
-        os << "const schema_version_migration& svm (" << endl
-           << "c.database ().schema_version_migration (" <<
-          schema_name << "));";
-
     os << db << "::connection& conn (" << endl
        << "static_cast<" << db << "::connection&> (c));"
        << "statements_type& sts (" << endl
-       << "conn.statement_cache ().find_view<view_type> ());"
-       << endl;
+       << "conn.statement_cache ().find_view<view_type> ());";
+
+    if (versioned)
+      os << "const schema_version_migration& svm (" <<
+        "sts.version_migration (" << schema_name << "));";
+
+    os << endl;
 
     // Rebind the image if necessary.
     //
@@ -5109,11 +5121,6 @@ traverse_view (type& c)
        << "static_cast<select_statement*> (pq.stmt.get ())));"
        << endl;
 
-    if (versioned)
-      os << "const schema_version_migration& svm (" << endl
-         << "st->connection ().database ().schema_version_migration (" <<
-        schema_name << "));";
-
     os << db << "::connection& conn (" << endl
        << db << "::transaction::current ().connection ());"
        << endl
@@ -5123,8 +5130,13 @@ traverse_view (type& c)
        << "assert (&conn == &st->connection ());"
        << endl
        << "statements_type& sts (" << endl
-       << "conn.statement_cache ().find_view<view_type> ());"
-       << endl;
+       << "conn.statement_cache ().find_view<view_type> ());";
+
+    if (versioned)
+      os << "const schema_version_migration& svm (" <<
+        "sts.version_migration (" << schema_name << "));";
+
+    os << endl;
 
     // Rebind the image if necessary.
     //

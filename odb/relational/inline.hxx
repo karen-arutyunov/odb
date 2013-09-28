@@ -235,12 +235,6 @@ namespace relational
 
         bool versioned (context::versioned (c));
 
-        // Schema name as a string literal or empty.
-        //
-        string schema_name (options.schema_name ()[db]);
-        if (!schema_name.empty ())
-          schema_name = strlit (schema_name);
-
         string const& type (class_fq_name (c));
         string traits ("access::object_traits_impl< " + type + ", id_" +
                        db.string () + " >");

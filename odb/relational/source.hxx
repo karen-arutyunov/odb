@@ -4820,8 +4820,8 @@ namespace relational
 
           if (s.versioned || s.versioned_containers)
             os << "const schema_version_migration& svm (" << endl
-               << "esc." << m.name () << ".connection ().database ()." <<
-              "schema_version_migration (" << schema_name << "));"
+               << "esc." << m.name () << ".version_migration (" <<
+              schema_name << "));"
                << endl;
 
           // Load values, if any.
@@ -5097,8 +5097,8 @@ namespace relational
 
           if (s.versioned || s.readwrite_versioned_containers)
             os << "const schema_version_migration& svm (" << endl
-               << "esc." << m.name () << ".connection ().database ()." <<
-              "schema_version_migration (" << schema_name << "));"
+               << "esc." << m.name () << ".version_migration (" <<
+              schema_name << "));"
                << endl;
 
           // Update values, if any.
