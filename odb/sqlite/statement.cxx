@@ -88,6 +88,11 @@ namespace odb
 
       int e;
       sqlite3_stmt* stmt (0);
+
+      // sqlite3_prepare_v2() is only available since SQLite 3.3.9
+      // but is buggy until 3.3.11.
+      //
+#if SQLITE_VERSION_NUMBER >= 3003011
       while ((e = sqlite3_prepare_v2 (conn_.handle (),
                                       text,
                                       static_cast<int> (text_size),
@@ -96,11 +101,23 @@ namespace odb
       {
         conn_.wait ();
       }
+#else
+      e = sqlite3_prepare (conn_.handle (),
+                           text,
+                           static_cast<int> (text_size),
+                           &stmt,
+                           0);
+#endif
 
       if (e != SQLITE_OK)
         translate_error (e, conn_);
 
       stmt_.reset (stmt);
+
+#if SQLITE_VERSION_NUMBER < 3005003
+      text_.assign (text, text_size);
+#endif
+
       active_ = false;
 
       prev_ = 0;
@@ -118,7 +135,13 @@ namespace odb
     const char* statement::
     text () const
     {
+      // sqlite3_sql() is only available since 3.5.3.
+      //
+#if SQLITE_VERSION_NUMBER >= 3005003
       return sqlite3_sql (stmt_);
+#else
+      return text_.c_str ();
+#endif
     }
 
     void statement::
@@ -148,7 +171,16 @@ namespace odb
         case bind::integer:
           {
             long long v (*static_cast<long long*> (b.buffer));
-            e = sqlite3_bind_int64 (stmt_, c, static_cast<sqlite3_int64> (v));
+
+            e = sqlite3_bind_int64 (stmt_,
+                                    c,
+            // Prior to 3.5.0, sqlite3_int64 was called sqlite_int64.
+#if SQLITE_VERSION_NUMBER >= 3005000
+                                    static_cast<sqlite3_int64> (v)
+#else
+                                    static_cast<sqlite_int64> (v)
+#endif
+            );
             break;
           }
         case bind::real:
@@ -355,10 +387,42 @@ namespace odb
       for (; e == SQLITE_ROW; e = sqlite3_step (stmt_))
         r++;
 
+      // sqlite3_step() will return a detailed error code only if we used
+      // sqlite3_prepare_v2(). Otherwise, sqlite3_reset() returns the
+      // error.
+      //
+#if SQLITE_VERSION_NUMBER >= 3003011
       sqlite3_reset (stmt_);
 
       if (e != SQLITE_DONE)
         translate_error (e, conn_);
+#else
+      e = sqlite3_reset (stmt_);
+
+      if (e != SQLITE_OK)
+      {
+        // If the schema has changed, try to re-prepare and re-execute the
+        // statement. That's what newer versions of SQLite do automatically.
+        //
+        if (e == SQLITE_SCHEMA)
+        {
+          sqlite3_stmt* stmt (0);
+          e = sqlite3_prepare (h,
+                               text_.c_str (),
+                               static_cast<int> (text_.size () + 1),
+                               &stmt,
+                               0);
+
+          if (e != SQLITE_OK)
+            translate_error (e, conn_);
+
+          stmt_.reset (stmt);
+          return execute (); // Try again by recursively calling ourselves.
+        }
+        else
+          translate_error (e, conn_);
+      }
+#endif
 
       if (!result_set_)
         r = static_cast<unsigned long long> (sqlite3_changes (h));
@@ -479,10 +543,21 @@ namespace odb
 
         if (e != SQLITE_ROW)
         {
-          reset ();
           done_ = true;
 
+          // sqlite3_step() will return a detailed error code only if we used
+          // sqlite3_prepare_v2(). Otherwise, sqlite3_reset() returns the
+          // error.
+          //
+#if SQLITE_VERSION_NUMBER >= 3003011
+          reset ();
+
           if (e != SQLITE_DONE)
+#else
+          e = reset ();
+
+          if (e != SQLITE_OK)
+#endif
             translate_error (e, conn_);
         }
       }
@@ -564,9 +639,19 @@ namespace odb
       e = sqlite3_step (stmt_);
 #endif
 
+      // sqlite3_step() will return a detailed error code only if we used
+      // sqlite3_prepare_v2(). Otherwise, sqlite3_reset() returns the
+      // error.
+      //
+#if SQLITE_VERSION_NUMBER >= 3003011
       sqlite3_reset (stmt_);
 
       if (e != SQLITE_DONE)
+#else
+      e = sqlite3_reset (stmt_);
+
+      if (e != SQLITE_OK)
+#endif
       {
         // SQLITE_CONSTRAINT error code covers more than just a duplicate
         // primary key. Unfortunately, there is nothing more precise that
@@ -645,9 +730,19 @@ namespace odb
       e = sqlite3_step (stmt_);
 #endif
 
+      // sqlite3_step() will return a detailed error code only if we used
+      // sqlite3_prepare_v2(). Otherwise, sqlite3_reset() returns the
+      // error.
+      //
+#if SQLITE_VERSION_NUMBER >= 3003011
       sqlite3_reset (stmt_);
 
       if (e != SQLITE_DONE)
+#else
+      e = sqlite3_reset (stmt_);
+
+      if (e != SQLITE_OK)
+#endif
         translate_error (e, conn_);
 
       return static_cast<unsigned long long> (sqlite3_changes (h));
@@ -707,9 +802,19 @@ namespace odb
       e = sqlite3_step (stmt_);
 #endif
 
+      // sqlite3_step() will return a detailed error code only if we used
+      // sqlite3_prepare_v2(). Otherwise, sqlite3_reset() returns the
+      // error.
+      //
+#if SQLITE_VERSION_NUMBER >= 3003011
       sqlite3_reset (stmt_);
 
       if (e != SQLITE_DONE)
+#else
+      e = sqlite3_reset (stmt_);
+
+      if (e != SQLITE_OK)
+#endif
         translate_error (e, conn_);
 
       return static_cast<unsigned long long> (sqlite3_changes (h));

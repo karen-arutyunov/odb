@@ -51,12 +51,22 @@ namespace odb
         f |= SQLITE_OPEN_NOMUTEX;
 #endif
 
-      const string& vfs (db.vfs ());
-
       sqlite3* h (0);
+
+      // sqlite3_open_v2() was only addedin SQLite 3.5.0.
+      //
+#if SQLITE_VERSION_NUMBER >= 3005000
+      const string& vfs (db.vfs ());
       int e (
         sqlite3_open_v2 (
           n.c_str (), &h, f, (vfs.empty () ? 0 : vfs.c_str ())));
+#else
+      // Readonly opening not supported in SQLite earlier than 3.5.0.
+      //
+      assert ((f & SQLITE_OPEN_READONLY) == 0);
+      int e (sqlite3_open (n.c_str (), &h));
+#endif
+
       handle_.reset (h);
 
       if (e != SQLITE_OK)

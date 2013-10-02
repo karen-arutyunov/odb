@@ -24,9 +24,9 @@ int
 main ()
 {
   sqlite3* handle;
-  sqlite3_open_v2 ("", &handle, 0, 0);
+  sqlite3_open ("", &handle);
   sqlite3_stmt* stmt;
-  sqlite3_prepare_v2 (handle, "", 0, &stmt, 0);
+  sqlite3_prepare (handle, "", 0, &stmt, 0);
   sqlite3_finalize (stmt);
   sqlite3_close (handle);
 }
