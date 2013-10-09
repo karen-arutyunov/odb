@@ -192,6 +192,31 @@ for consistency.
     text-align: left;
   }
 
+  /* scenarios table */
+  .scenarios {
+    margin: 2em 0 2em 0;
+
+    border-collapse   : collapse;
+    border            : 1px solid;
+    border-color      : #000000;
+
+    font-size        : 11px;
+    line-height      : 14px;
+  }
+
+  .scenarios th, .scenarios td {
+    border: 1px solid;
+    padding           : 0.9em 0.9em 0.7em 0.9em;
+  }
+
+  .scenarios th {
+    background : #cde8f6;
+  }
+
+  .scenarios td {
+    text-align: left;
+  }
+
   /* specifiers table */
   .specifiers {
     margin: 2em 0 2em 0;
@@ -303,7 +328,7 @@ for consistency.
     <tr>
       <th>2</th><td><a href="#2">Hello World Example</a>
         <table class="toc">
-          <tr><th>2.1</th><td><a href="#2.1">Declaring a Persistent Class</a></td></tr>
+          <tr><th>2.1</th><td><a href="#2.1">Declaring Persistent Classes</a></td></tr>
           <tr><th>2.2</th><td><a href="#2.2">Generating Database Support Code</a></td></tr>
           <tr><th>2.3</th><td><a href="#2.3">Compiling and Running</a></td></tr>
           <tr><th>2.4</th><td><a href="#2.4">Making Objects Persistent</a></td></tr>
@@ -311,8 +336,9 @@ for consistency.
           <tr><th>2.6</th><td><a href="#2.6">Updating Persistent Objects</a></td></tr>
 	  <tr><th>2.7</th><td><a href="#2.7">Defining and Using Views</a></td></tr>
           <tr><th>2.8</th><td><a href="#2.8">Deleting Persistent Objects</a></td></tr>
-	  <tr><th>2.9</th><td><a href="#2.9">Accessing Multiple Databases</a></td></tr>
-          <tr><th>2.10</th><td><a href="#2.10">Summary</a></td></tr>
+	  <tr><th>2.9</th><td><a href="#2.9">Changing Persistent Classes</a></td></tr>
+	  <tr><th>2.10</th><td><a href="#2.10">Accessing Multiple Databases</a></td></tr>
+          <tr><th>2.11</th><td><a href="#2.11">Summary</a></td></tr>
         </table>
       </td>
     </tr>
@@ -466,6 +492,31 @@ for consistency.
     </tr>
 
     <tr>
+      <th>13</th><td><a href="#13">Database Schema Evolution</a>
+        <table class="toc">
+          <tr><th>13.1</th><td><a href="#13.1">Object Model Version and Changelog</a></td></tr>
+	  <tr><th>13.2</th><td><a href="#13.2">Schema Migration</a></td></tr>
+	  <tr>
+            <th>13.3</th><td><a href="#13.3">Data Migration</a>
+              <table class="toc">
+		<tr><th>13.3.1</th><td><a href="#13.3.1">Immediate Data Migration</a></td></tr>
+		<tr><th>13.3.2</th><td><a href="#13.3.2">Gradual Data Migration</a></td></tr>
+              </table>
+            </td>
+          </tr>
+	  <tr>
+            <th>13.4</th><td><a href="#13.4">Soft Object Model Changes</a>
+              <table class="toc">
+		<tr><th>13.4.1</th><td><a href="#13.4.1">Reuse Inheritance Changes</a></td></tr>
+		<tr><th>13.4.2</th><td><a href="#13.4.2">Polymorphism Inheritance Changes</a></td></tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
       <th>14</th><td><a href="#14">ODB Pragma Language</a>
         <table class="toc">
           <tr>
@@ -484,6 +535,7 @@ for consistency.
 		<tr><th>14.1.11</th><td><a href="#14.1.11"><code>definition</code></a></td></tr>
 		<tr><th>14.1.12</th><td><a href="#14.1.12"><code>transient</code></a></td></tr>
 		<tr><th>14.1.13</th><td><a href="#14.1.13"><code>sectionable</code></a></td></tr>
+		<tr><th>14.1.14</th><td><a href="#14.1.14"><code>deleted</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -551,18 +603,20 @@ for consistency.
 		<tr><th>14.4.19</th><td><a href="#14.4.19"><code>table</code></a></td></tr>
 		<tr><th>14.4.20</th><td><a href="#14.4.20"><code>load</code>/<code>update</code></a></td></tr>
 		<tr><th>14.4.21</th><td><a href="#14.4.21"><code>section</code></a></td></tr>
-		<tr><th>14.4.22</th><td><a href="#14.4.22"><code>index_type</code></a></td></tr>
-		<tr><th>14.4.23</th><td><a href="#14.4.23"><code>key_type</code></a></td></tr>
-		<tr><th>14.4.24</th><td><a href="#14.4.24"><code>value_type</code></a></td></tr>
-		<tr><th>14.4.25</th><td><a href="#14.4.25"><code>value_null</code>/<code>value_not_null</code></a></td></tr>
-		<tr><th>14.4.26</th><td><a href="#14.4.26"><code>id_options</code></a></td></tr>
-		<tr><th>14.4.27</th><td><a href="#14.4.27"><code>index_options</code></a></td></tr>
-		<tr><th>14.4.28</th><td><a href="#14.4.28"><code>key_options</code></a></td></tr>
-		<tr><th>14.4.29</th><td><a href="#14.4.29"><code>value_options</code></a></td></tr>
-		<tr><th>14.4.30</th><td><a href="#14.4.30"><code>id_column</code></a></td></tr>
-		<tr><th>14.4.31</th><td><a href="#14.4.31"><code>index_column</code></a></td></tr>
-		<tr><th>14.4.32</th><td><a href="#14.4.32"><code>key_column</code></a></td></tr>
-		<tr><th>14.4.33</th><td><a href="#14.4.33"><code>value_column</code></a></td></tr>
+		<tr><th>14.4.22</th><td><a href="#14.4.22"><code>added</code></a></td></tr>
+		<tr><th>14.4.23</th><td><a href="#14.4.23"><code>deleted</code></a></td></tr>
+		<tr><th>14.4.24</th><td><a href="#14.4.24"><code>index_type</code></a></td></tr>
+		<tr><th>14.4.25</th><td><a href="#14.4.25"><code>key_type</code></a></td></tr>
+		<tr><th>14.4.26</th><td><a href="#14.4.26"><code>value_type</code></a></td></tr>
+		<tr><th>14.4.27</th><td><a href="#14.4.27"><code>value_null</code>/<code>value_not_null</code></a></td></tr>
+		<tr><th>14.4.28</th><td><a href="#14.4.28"><code>id_options</code></a></td></tr>
+		<tr><th>14.4.29</th><td><a href="#14.4.29"><code>index_options</code></a></td></tr>
+		<tr><th>14.4.30</th><td><a href="#14.4.30"><code>key_options</code></a></td></tr>
+		<tr><th>14.4.31</th><td><a href="#14.4.31"><code>value_options</code></a></td></tr>
+		<tr><th>14.4.32</th><td><a href="#14.4.32"><code>id_column</code></a></td></tr>
+		<tr><th>14.4.33</th><td><a href="#14.4.33"><code>index_column</code></a></td></tr>
+		<tr><th>14.4.34</th><td><a href="#14.4.34"><code>key_column</code></a></td></tr>
+		<tr><th>14.4.35</th><td><a href="#14.4.35"><code>value_column</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -576,21 +630,28 @@ for consistency.
               </table>
             </td>
           </tr>
-          <tr>
-            <th>14.6</th><td><a href="#14.6">Index Definition Pragmas</a></td>
-          </tr>
-          <tr>
-            <th>14.7</th><td><a href="#14.7">Database Type Mapping Pragmas</a></td>
-          </tr>
-          <tr>
-            <th>14.8</th><td><a href="#14.8">C++ Compiler Warnings</a>
+	  <tr>
+            <th>14.6</th><td><a href="#14.6">Object Model Pragmas</a>
               <table class="toc">
-                <tr><th>14.8.1</th><td><a href="#14.8.1">GNU C++</a></td></tr>
-                <tr><th>14.8.2</th><td><a href="#14.8.2">Visual C++</a></td></tr>
-                <tr><th>14.8.3</th><td><a href="#14.8.3">Sun C++</a></td></tr>
-		<tr><th>14.8.4</th><td><a href="#14.8.4">IBM XL C++</a></td></tr>
-		<tr><th>14.8.5</th><td><a href="#14.8.5">HP aC++</a></td></tr>
-		<tr><th>14.8.6</th><td><a href="#14.8.6">Clang</a></td></tr>
+		<tr><th>14.6.1</th><td><a href="#14.6.1"><code>version</code></a></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <th>14.7</th><td><a href="#14.7">Index Definition Pragmas</a></td>
+          </tr>
+          <tr>
+            <th>14.8</th><td><a href="#14.8">Database Type Mapping Pragmas</a></td>
+          </tr>
+          <tr>
+            <th>14.9</th><td><a href="#14.9">C++ Compiler Warnings</a>
+              <table class="toc">
+                <tr><th>14.9.1</th><td><a href="#14.9.1">GNU C++</a></td></tr>
+                <tr><th>14.9.2</th><td><a href="#14.9.2">Visual C++</a></td></tr>
+                <tr><th>14.9.3</th><td><a href="#14.9.3">Sun C++</a></td></tr>
+		<tr><th>14.9.4</th><td><a href="#14.9.4">IBM XL C++</a></td></tr>
+		<tr><th>14.9.5</th><td><a href="#14.9.5">HP aC++</a></td></tr>
+		<tr><th>14.9.6</th><td><a href="#14.9.6">Clang</a></td></tr>
               </table>
             </td>
           </tr>
@@ -674,6 +735,7 @@ for consistency.
 		<tr><th>18.5.4</th><td><a href="#18.5.4">Constraint Violations</a></td></tr>
 		<tr><th>18.5.5</th><td><a href="#18.5.5">Sharing of Queries</a></td></tr>
 		<tr><th>18.5.6</th><td><a href="#18.5.6">Forced Rollback</a></td></tr>
+		<tr><th>18.5.7</th><td><a href="#18.5.7">Database Schema Evolution</a></td></tr>
               </table>
             </td>
           </tr>
@@ -738,6 +800,7 @@ for consistency.
 		<tr><th>20.5.6</th><td><a href="#20.5.6">Timezones</a></td></tr>
 		<tr><th>20.5.7</th><td><a href="#20.5.7"><code>LONG</code> Types</a></td></tr>
 		<tr><th>20.5.8</th><td><a href="#20.5.8">LOB Types and By-Value Accessors/Modifiers</a></td></tr>
+		<tr><th>20.5.9</th><td><a href="#20.5.9">Database Schema Evolution</a></td></tr>
               </table>
             </td>
           </tr>
@@ -1218,7 +1281,7 @@ for consistency.
      <code>hello</code> example which can be found in the
      <code>odb-examples</code> package of the ODB distribution.</p>
 
-  <h2><a name="2.1">2.1 Declaring a Persistent Class</a></h2>
+  <h2><a name="2.1">2.1 Declaring Persistent Classes</a></h2>
 
   <p>In our "Hello World" example we will depart slightly from
      the norm and say hello to people instead of the world. People
@@ -2130,7 +2193,138 @@ max age: 33
     }
   </pre>
 
-  <h2><a name="2.9">2.9 Working with Multiple Databases</a></h2>
+  <h2><a name="2.9">2.9 Changing Persistent Classes</a></h2>
+
+  <p>When the definition of a transient C++ class is changed, for
+     example by adding or deleting a data member, we don't have to
+     worry about any existing instances of this class not matching
+     the new definition. After all, to make the class changes
+     effective we have to restart the application and none of the
+     transient instances will survive this.</p>
+
+  <p>Things are not as simple for persistent classes. Because they
+     are stored in the database and therefore survive application
+     restarts, we have a new problem: what happens to the state of
+     existing objects (which correspond to the old definition) once
+     we change our persistent class?</p>
+
+  <p>The problem of working with old object, called <em>database
+     schema evolution</em>, is a complex issue and ODB provides
+     comprehensive support for handling it. While this support
+     is covered in detail in <a href="#13">Chapter 13,
+     "Database Schema Evolution"</a>, let us consider a simple
+     example that should give us a sense of the functionality
+     provided by ODB in this area.</p>
+
+  <p>Suppose that after using our <code>person</code> persistent
+     class for some time and creating a number of databases
+     containing its instances, we realized that for some people
+     we also need to store their middle name. If we go ahead and
+     just add the new data member, everything will work fine
+     with new databases. Existing databases, however, have a
+     table that does not correspond to the new class definition.
+     Specifically, the generated database support code now
+     expects there to be a column to store the middle name.
+     But such a column was never created in the old databases.</p>
+
+  <p>ODB can automatically generate SQL statements that will
+     migrate old databases to match the new class definitions.
+     But first, we need to enable schema evolution support by
+     defining a version for our object model:</p>
+
+  <pre class="cxx">
+// person.hxx
+//
+
+#pragma db model version(1, 1)
+
+class person
+{
+  ...
+
+  std::string first_;
+  std::string last_;
+  unsigned short age_;
+};
+  </pre>
+
+  <p>The first number in the <code>version</code> pragma is the
+     base model version. This is the lowest version we will be
+     able to migrate from. The second number is the current model
+     version. Since we haven't made any changes yet to our
+     persistent class, both of these values are <code>1</code>.</p>
+
+  <p>Next we need to re-compile our <code>person.hxx</code> header
+     file with the ODB compiler, just as we did before:</p>
+
+  <pre class="terminal">
+odb -d mysql --generate-query --generate-schema person.hxx
+  </pre>
+
+  <p>If we now look at the list of files produced by the ODB compiler,
+     we will notice a new file: <code>person.xml</code>. This
+     is a changelog file where the ODB compiler keeps track of the
+     database changes corresponding to our class changes. Note that
+     this file is automatically maintained by the ODB compiler and
+     all that we have to do is to keep it around between
+     re-compilations.</p>
+
+  <p>Now we are ready to add the middle name to our <code>person</code>
+     class. We also give it a default value (empty string) which
+     is what will be assigned to existing objects in old databases.
+     Notice that we have also incremented the current version:</p>
+
+  <pre class="cxx">
+// person.hxx
+//
+
+#pragma db model version(1, 2)
+
+class person
+{
+  ...
+
+  std::string first_;
+
+  #pragma db default("")
+  std::string middle_;
+
+  std::string last_;
+  unsigned short age_;
+};
+  </pre>
+
+  <p>If we now recompile the <code>person.hxx</code> header again, we will
+     see two extra generated files: <code>person-002-pre.sql</code>
+     and <code>person-002-post.sql</code>. These two files contain
+     schema migration statements from version <code>1</code> to
+     version <code>2</code>. Similar to schema creation, schema
+     migration statements can also be embedded into the generated
+     C++ code.</p>
+
+  <p><code>person-002-pre.sql</code> and <code>person-002-post.sql</code>
+     are the pre and post schema migration files. To migrate
+     one of our old databases, we first execute the pre migration
+     file:</p>
+
+  <pre class="terminal">
+mysql --user=odb_test --database=odb_test &lt; person-002-pre.sql
+  </pre>
+
+  <p>Between the pre and post schema migrations we can run data
+     migration code, if required. At this stage, we can both
+     access the old and store the new data. In our case we don't
+     need any data migration code since we assigned the default
+     value to the middle name for all the existing objects.</p>
+
+  <p>To finish the migration process we execute the post migration
+     statements:</p>
+
+  <pre class="terminal">
+mysql --user=odb_test --database=odb_test &lt; person-002-post.sql
+  </pre>
+
+  <h2><a name="2.10">2.10 Working with Multiple Databases</a></h2>
 
   <p>Accessing multiple databases (that is, data stores) is simply a
      matter of creating multiple <code>odb::&lt;db>::database</code>
@@ -2141,12 +2335,13 @@ odb::mysql::database db1 ("john", "secret", "test_db1");
 odb::mysql::database db2 ("john", "secret", "test_db2");
   </pre>
 
-  <p>A more interesting question is how we access multiple database
-     systems (that is, database implementations) from the same application.
-     For example, our application may need to store some objects in a
-     remote MySQL database and others in a local SQLite file. Or, our
-     application may need to be able to store its objects in a database
-     system that is selected by the user at runtime.</p>
+  <p>Some database systems also allow attaching multiple databases to
+     the same instance. A more interesting question is how we access
+     multiple database systems (that is, database implementations) from
+     the same application. For example, our application may need to store
+     some objects in a remote MySQL database and others in a local SQLite
+     file. Or, our application may need to be able to store its objects
+     in a database system that is selected by the user at runtime.</p>
 
   <p>ODB provides comprehensive multi-database support that ranges from
      tight integration with specific database systems to being able to
@@ -2278,7 +2473,7 @@ psql --user=odb_test --dbname=odb_test -f person-pgsql.sql
 ./driver pgsql --user odb_test --database odb_test
   </pre>
 
-  <h2><a name="2.10">2.10 Summary</a></h2>
+  <h2><a name="2.11">2.11 Summary</a></h2>
 
   <p>This chapter presented a very simple application which, nevertheless,
      exercised all of the core database functions: <code>persist()</code>,
@@ -2910,6 +3105,12 @@ namespace odb
      catalog. Note also that the <code>create_schema()</code> and
      <code>drop_schema()</code> functions should be called within a
      transaction.</p>
+
+  <p>ODB also provides support for database schema evolution. Similar
+     to schema creation, schema migration statements can be generated
+     either as standalone SQL files or embedded into the generated C++
+     code. For more information on schema evolution support, refer to
+     <a href="#13">Chapter 13, "Database Schema Evolution"</a>.</p>
 
   <p>Finally, we can also use a custom database schema with ODB. This approach
      can work similarly to the standalone SQL file described above except that
@@ -4215,6 +4416,15 @@ namespace odb
     what () const throw ();
   };
 
+  struct unknown_schema_version: exception
+  {
+    schema_version
+    version () const;
+
+    virtual const char*
+    what () const throw ();
+  };
+
   // Section exceptions.
   //
   struct section_not_loaded: exception
@@ -4320,7 +4530,11 @@ namespace odb
   <p>The <code>unknown_schema</code> exception is thrown by the
      <code>odb::schema_catalog</code> class if a schema with the specified
      name is not found. Refer to <a href="#3.4">Section 3.4, "Database"</a>
-     for details.</p>
+     for details. The <code>unknown_schema_version</code> exception is
+     thrown by the <code>schema_catalog</code> functions that deal with
+     database schema evolution if the passed version is unknow. Refer
+     to <a href="#13">Chapter 13, "Database Schema Evolution"</a> for
+     details.</p>
 
   <p>The <code>section_not_loaded</code> exception is thrown if we
      attempt to update an object section that hasn't been loaded.
@@ -4509,13 +4723,13 @@ namespace odb
 
     <tr>
       <td><code>is_null()</code></td>
-      <td>value is NULL</td>
+      <td>value is <code>NULL</code></td>
       <td><code>query::age.is_null ()</code></td>
     </tr>
 
     <tr>
       <td><code>is_not_null()</code></td>
-      <td>value is not NULL</td>
+      <td>value is <code>NOT NULL</code></td>
       <td><code>query::age.is_not_null ()</code></td>
     </tr>
   </table>
@@ -5513,7 +5727,7 @@ private:
      column, they can occupy multiple columns. For an ordered
      container table the ODB compiler also defines two indexes:
      one for the object id column(s) and the other for the index
-     column. Refer to <a href="#14.6">Section 14.6, "Index Definition
+     column. Refer to <a href="#14.7">Section 14.7, "Index Definition
      Pragmas"</a> for more information on how to customize these
      indexes.</p>
 
@@ -5608,7 +5822,7 @@ private:
      id or element value are composite, then, instead of a single
      column, they can occupy multiple columns. ODB compiler also
      defines an index on a set container table for the object id
-     column(s). Refer to <a href="#14.6">Section 14.6, "Index Definition
+     column(s). Refer to <a href="#14.7">Section 14.7, "Index Definition
      Pragmas"</a> for more information on how to customize this
      index.</p>
 
@@ -5675,7 +5889,7 @@ private:
      element value are composite, then instead of a single column
      they can occupy multiple columns. ODB compiler also
      defines an index on a map container table for the object id
-     column(s). Refer to <a href="#14.6">Section 14.6, "Index Definition
+     column(s). Refer to <a href="#14.7">Section 14.7, "Index Definition
      Pragmas"</a> for more information on how to customize this
      index.</p>
 
@@ -6135,8 +6349,8 @@ class employee
      use the <code>not_null</code> pragma (<a href="#14.4.6">Section
      14.4.6, "<code>null</code>/<code>not_null</code>"</a>) for
      single object pointers and the <code>value_not_null</code> pragma
-     (<a href="#14.4.25">Section
-     14.4.25, "<code>value_null</code>/<code>value_not_null</code>"</a>)
+     (<a href="#14.4.27">Section
+     14.4.27, "<code>value_null</code>/<code>value_not_null</code>"</a>)
      for containers of object pointers. For example:</p>
 
   <pre class="cxx">
@@ -7681,9 +7895,9 @@ CREATE TABLE person (
   <p>The same principle applies when a composite value type is used
      as an element of a container, except that instead of
      <code>db&nbsp;column</code>, either the <code>db&nbsp;value_column</code>
-     (<a href="#14.4.33">Section 14.4.33, "<code>value_column</code>"</a>) or
+     (<a href="#14.4.35">Section 14.4.35, "<code>value_column</code>"</a>) or
      <code>db&nbsp;key_column</code>
-     (<a href="#14.4.32">Section 14.4.32, "<code>key_column</code>"</a>)
+     (<a href="#14.4.34">Section 14.4.34, "<code>key_column</code>"</a>)
      pragmas are used to specify the column prefix.</p>
 
   <p>When a composite value type contains a container, an extra table
@@ -11142,6 +11356,2054 @@ for (bool done (false); !done; )
 
 
   <hr class="page-break"/>
+  <h1><a name="13">13 Database Schema Evolution</a></h1>
+
+  <p>When we add new persistent classes or change the existing ones, for
+     example, by adding or deleting data members, the database schema
+     necessary to store the new object model changes as well. At the
+     same time, we may have existing databases that contain existing data.
+     If new versions of your application don't need to handle
+     old databases, then the schema creating functionality is all that
+     you need. However, most applications will need to work with data
+     stored by older versions of the same application.</p>
+
+  <p>We will call <em>database schema evolution</em> the overall task
+     of updating the database to match the changes in the object model.
+     Schema evolution usually consists of two sub-tasks: <em>schema
+     migration</em> and <em>data migration</em>. Schema migration
+     modifies the database schema to correspond to the current
+     object model. In a relational database, this, for example, could
+     require adding or dropping tables and columns. The data migration
+     task involves converting the data stored in the existing database
+     from the old format to the new one.</p>
+
+  <p>If performed manually, database schema evolution is a tedious and
+     error-prone task. As a result, ODB provides comprehensive support
+     for automated or, more precisely, semi-automated schema
+     evolution. Specifically, ODB does fully-automatic schema
+     migration and provides facilities to help you with data
+     migration.</p>
+
+  <p>The topic of schema evolution is a complex and sensitive
+     issue since normally there would be valuable, production data at
+     stake. As a result, the approach taken by ODB is to provide simple
+     and bullet-proof elementary building blocks (or migration steps)
+     that we can understand and trust. Using these elementary blocks we
+     can then implement more complex migration scenarios. In particular,
+     ODB does not try to handle data migration automatically since in most
+     cases this requires understanding of application-specific semantics.
+     In other words, there is no magic.</p>
+
+  <p>There are two general approaches to working with older data: the
+     application can either convert it to correspond to the new format
+     or it can be made capable of working with multiple versions of this
+     format. There is also a hybrid approach where the application
+     may convert the data to the new format gradually as part of its
+     normal functionality. ODB is capable of handling all these
+     scenarios. That is, there is support for working with older
+     models without performing any migration (schema or data).
+     Alternatively, we can migrate the schema after
+     which we have the choice of either also immediately migrating the
+     data (<em>immediate data migration</em>) or doing it gradually
+     (<em>gradual data migration</em>).</p>
+
+  <p>Schema evolution is already a complex task and we should not
+     unnecessarily use a more complex approach where a simpler one
+     would be sufficient. From the above, the simplest approach is
+     the immediate schema migration that does not require any data
+     migration. An example of such a change would be adding a new
+     data member with the default value (<a href="#14.3.4">Section
+     14.3.4, "<code>default</code>"</a>). This case ODB can handle
+     completely automatically.</p>
+
+  <p>If we do require data migration, then the next simplest approach
+     is the immediate schema and data migration. Here we have to write
+     custom migration code. However, it is separate from the rest of
+     the core application logic and is executed at a well defined point
+     (database migration). In other words, the core application logic
+     need not be aware of older model versions. The potential drawback
+     of this approach is performance. It may take a lot of resources
+     and/or time to convert all the data upfront.</p>
+
+  <p>If the immediate migration is not possible, then the next option
+     is the immediate schema migration followed by the gradual data
+     migration. With this approach, both old and new data must co-exist
+     in the new database. We also have to change the application
+     logic to both account for different sources of the same data (for
+     example, when either old or new version of the object is loaded)
+     as well as migrate the data when appropriate (for example, when
+     the old version of the object is updated). At some point, usually
+     when the majority of the data has been converted, gradual migrations
+     is terminate with an immediate migration.</p>
+
+  <p>The most complex approach is working with multiple versions of
+     the database without performing any migrations, schema or data.
+     ODB does provide support for implementing this approach
+     (<a href="#13.4">Section 13.4, "Soft Object Model Changes"</a>),
+     however we will not cover it any further in this chapter.
+     Generally, this will require embedding knowledge about each
+     version into the core application logic which makes it hard
+     to maintain for any non-trivial object model.</p>
+
+  <p>Note also that when it comes to data migration, we can use
+     the immediate variant for some changes and gradual for others.
+     We will discuss various migration scenarios in greater detail
+     in section <a href="#13.3">Section 13.3, "Data Migration"</a>.</p>
+
+  <h2><a name="13.1">13.1 Object Model Version and Changelog</a></h2>
+
+  <p>To enable schema evolution support in ODB we need to specify
+     the object model version, or, more precisely, two versions.
+     The first is the base model version. It is the lowest model
+     version from which we will be able to migrate. The second
+     version is the current model version. In ODB we can migrate
+     from multiple previous versions by successively migrating
+     from one to the next until we reach the current version.
+     We use the <code>db&nbsp;model&nbsp;version</code> pragma
+     to specify both the base and current versions.</p>
+
+  <p>When we enable schema evolution for the first time, our
+     base and current versions will be the same, for example:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 1)
+  </pre>
+
+  <p>Once we release our application, its users may create databases
+     with the schema corresponding to this version of the object
+     model. This means that if we make any modifications to our
+     object model that also change the schema, then we will need
+     to be able to migrate the old databases to this new schema.
+     As a result, before making any new changes after a release,
+     we increment the current version, for example:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 2)
+  </pre>
+
+  <p>To put this another way, we can stay on the same version
+     during development and keep adding new changes to it. But
+     once we release it, any new changes to the object model will
+     have to be done in a new version.</p>
+
+  <p>It is easy to forget to increment the version before
+     making new changes to the object model. To help solve this
+     problem, the <code>db&nbsp;model&nbsp;version</code> pragma
+     accepts a third optional argument that specify whether the
+     current version is open or closed for changes. For example:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 2, open)   // Can add new changes to
+                                       // version 2.
+  </pre>
+
+  <pre class="cxx">
+#pragma db model version(1, 2, closed) // Can no longer add new
+                                       // changes to version 2.
+  </pre>
+
+  <p>If the current version is closed, ODB will refuse to accept
+     any new schema changes. In this situation you would
+     normally increment the current version and mark it as open
+     or you could re-open the existing version if, for example,
+     you need to fix something. Note, however, that re-opening
+     versions that have been released will most likely result
+     in migration malfunctions. By default the version is open.</p>
+
+  <p>Normally, an application will have a range of older database
+     versions from which it is able to migrate. When we change
+     this range by removing support for older versions, we also
+     need to adjust the base model version. This will make sure
+     that ODB does not keep unnecessary information around.</p>
+
+  <p>A model version (both base and current) is a 64-bit unsigned
+     integer (<code>unsigned&nbsp;long&nbsp;long</code>). <code>0</code>
+     is reserved to signify special situations, such as the lack of
+     schema in the database. Other than that, we can use any values
+     as versions as long as they are monotonically increasing. In
+     particular, we don't have to start with version <code>1</code>
+     and can increase the versions by any increment.</p>
+
+  <p>One versioning approach is to use an independent
+     object model version by starting from version <code>1</code>
+     and also incrementing by <code>1</code>. The alternative
+     is to make the model version correspond to the application
+     version. For example, if our application is using the
+     <code>X.Y.Z</code> version format, then we could encode it
+     as a hexadecimal number and use that as our model version,
+     for example:</p>
+
+  <pre class="cxx">
+#pragma db model version(0x020000, 0x020306) // 2.0.0-2.3.6
+  </pre>
+
+  <p>Most real-world object models will be spread over multiple
+     header files and it will be burdensome to repeat the
+     <code>db&nbsp;model&nbsp;version</code> pragma in each of
+     them. The recommended way to handle this situation is to
+     place the <code>version</code> pragma into a separate header
+     file and include it into the object model files. If your
+     project already has a header file that defines the
+     application version, then it is natural to place this
+     pragma there. For example:</p>
+
+  <pre class="cxx">
+// version.hxx
+//
+// Define the application version.
+//
+
+#define MYAPP_VERSION 0x020306 // 2.3.6
+
+#ifdef ODB_COMPILER
+#pragma db model version(1, 7)
+#endif
+  </pre>
+
+  <p>Note that we can also use macros in the <code>version</code>
+     pragma which allows us to specify all the versions in a single
+     place. For example:</p>
+
+  <pre class="cxx">
+#define MYAPP_VERSION      0x020306 // 2.3.6
+#define MYAPP_BASE_VERSION 0x020000 // 2.0.0
+
+#ifdef ODB_COMPILER
+#pragma db model version(MYAPP_BASE_VERSION, MYAPP_VERSION)
+#endif
+  </pre>
+
+  <p>It is also possible to have multiple object models within the
+     same application that have different versions. Such models
+     must be independent, that is, no headers from one model shall
+     include a header from another. You will also need to assign
+     different schema names to each model with the
+     <code>--schema-name</code> ODB compiler option.</p>
+
+  <p>Once we specify the object model version, the ODB compiler
+     starts tracking database schema changes in a changelog file.
+     Changelog has an XML-based, line-oriented format. It uses
+     XML in order to provide human readability while also
+     facilitating, if desired, processing and analysis with
+     custom tools. The line orientation makes it easy to review
+     with tools like <code>diff</code>.</p>
+
+  <p>The changelog is maintained by the ODB compiler. Specifically,
+     you do not need to make any manual changes to this file. You
+     will, however, need to keep it around from one invocation of
+     the ODB compiler to the next. In other words, the changelog
+     file is both the input to and the output of the ODB compiler. This,
+     for example, means that if your project's source code is stored
+     in a version control repository, then you will most likely want
+     to store the changelog there as well. If you delete the changelog,
+     then any ability to do schema migration will be lost.</p>
+
+  <p>The only operation that you may want to perform with the
+     changelog is to review the database schema changes that resulted
+     from the C++ object model changes. For this you can use a tool
+     like <code>diff</code> or, better yet, the change review facilities
+     offered by your revision control system. For this purpose the
+     contents of a changelog will be self-explanatory.</p>
+
+  <p>As an example, consider the following initial object model:</p>
+
+  <pre class="cxx">
+// person.hxx
+//
+
+#include &lt;string>
+
+#pragma db model version(1, 1)
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id_;
+
+  std::string first_;
+  std::string last_;
+};
+  </pre>
+
+  <p>We then compile this header file with the ODB compiler (using the
+     PostgreSQL database as an example):</p>
+
+  <pre class="terminal">
+odb --database pgsql --generate-schema person.hxx
+  </pre>
+
+  <p>If we now look at the list of generated files, then in addition to
+     the now familiar <code>person-odb.?xx</code> and <code>person.sql</code>,
+     we will also see <code>person.xml</code> &mdash; the changelog file.
+     Just for illustration, below are the contents of this changelog.</p>
+
+  <pre class="xml">
+&lt;changelog database="pgsql">
+  &lt;model version="1">
+    &lt;table name="person" kind="object">
+      &lt;column name="id" type="BIGINT" null="false"/>
+      &lt;column name="first" type="TEXT" null="false"/>
+      &lt;column name="last" type="TEXT" null="false"/>
+      &lt;primary-key auto="true">
+        &lt;column name="id"/>
+      &lt;/primary-key>
+    &lt;/table>
+  &lt;/model>
+&lt;/changelog>
+  </pre>
+
+  <p>Let's say we now would like to add another data member to the
+     <code>person</code> class &mdash; the middle name. We increment
+     the version and make the change:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 2)
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id_;
+
+  std::string first_;
+  std::string middle_;
+  std::string last_;
+};
+  </pre>
+
+  <p>We use exactly the same command line to re-compile our file:</p>
+
+  <pre class="terminal">
+odb --database pgsql --generate-schema person.hxx
+  </pre>
+
+  <p>This time the ODB compiler will read in the old changelog, update
+     it, and write out the new version. Again, for illustration only,
+     below are the updated changelog contents:</p>
+
+  <pre class="xml">
+&lt;changelog database="pgsql">
+  &lt;changeset version="2">
+    &lt;alter-table name="person">
+      &lt;add-column name="middle" type="TEXT" null="false"/>
+    &lt;/alter-table>
+  &lt;/changeset>
+
+  &lt;model version="1">
+    &lt;table name="person" kind="object">
+      &lt;column name="id" type="BIGINT" null="false"/>
+      &lt;column name="first" type="TEXT" null="false"/>
+      &lt;column name="last" type="TEXT" null="false"/>
+      &lt;primary-key auto="true">
+        &lt;column name="id"/>
+      &lt;/primary-key>
+    &lt;/table>
+  &lt;/model>
+&lt;/changelog>
+  </pre>
+
+  <p>Just to reiterate, while the changelog may look like it could
+     be written by hand, it is maintained completely automatically
+     by the ODB compiler and the only reason you may want to look
+     at its contents is to review the database schema changes. For
+     example, if we compare the above to changelogs with
+     <code>diff</code>, we will get the following summary of the
+     database schema changes:</p>
+
+  <pre class="xml">
+--- person.xml.orig
++++ person.xml
+@@ -1,4 +1,10 @@
+&lt;changelog database="pgsql">
+<span style="color: #009E00">+  &lt;changeset version="2">
++    &lt;alter-table name="person">
++      &lt;add-column name="middle" type="TEXT" null="false"/>
++    &lt;/alter-table>
++  &lt;/changeset>
++</span>
+  &lt;model version="1">
+    &lt;table name="person" kind="object">
+      &lt;column name="id" type="BIGINT" null="false"/>
+  </pre>
+
+  <p>The changelog is only written when we generate the database schema,
+     that is, the <code>--generate-schema</code> option is specified.
+     Invocations of the ODB compiler that only produce the database
+     support code (C++) do not read or update the changelog. To put it
+     another way, the changelog tracks changes in the resulting database
+     schema, not the C++ object model.</p>
+
+  <p>ODB ignores column order when comparing database schemas. This means
+     that we can re-order data members in a class without causing any
+     schema changes. Member renames, however, will result in schema
+     changes since the column name changes as well (unless we specified
+     the column name explicitly). From ODB's perspective such a rename
+     looks like the deletion of one data member and the addition of
+     another. If we don't want this to be treated as a schema change,
+     then we will need to keep the old column name by explicitly
+     specifying it with the <code>db&nbsp;column</code> pragma. For
+     example, here is how we can rename <code>middle_</code> to
+     <code>middle_name_</code> without causing any schema changes:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 2)
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db column("middle") // Keep the original column name.
+  std::string middle_name_;
+
+  ...
+};
+  </pre>
+
+  <p>If your object model consists of a large number of header files and
+     you generate the database schema for each of them individually, then
+     a changelog will be created for each of your header files. This may
+     be what you want, however, the large number of changelogs can quickly
+     become unwieldy. In fact, if you are generating the database schema
+     as standalone SQL files, then you may have already experienced a
+     similar problem caused by a large number of <code>.sql</code> files,
+     one for each header.</p>
+
+  <p>The solution to both of these problems is to generate a combined
+     database schema file and a single changelog. For example, assume
+     we have three header files in our object mode:
+     <code>person.hxx</code>, <code>employee.hxx</code>, and
+     <code>employer.hxx</code>. To generate the database support code
+     we compile them as usual but without specifying the
+     <code>--generate-schema</code> option. In this case no changelog
+     is created or updated:</p>
+
+  <pre class="terminal">
+odb --database pgsql person.hxx
+odb --database pgsql employee.hxx
+odb --database pgsql employer.hxx
+  </pre>
+
+  <p>To generate the database schema, we perform a separate invocation
+     of the ODB compiler. This time, however, we instruct it to only
+     generate the schema (<code>--generate-schema-only</code>) and
+     produce it combined (<code>--at-once</code>) for all the files
+     in our object model:</p>
+
+  <pre class="terminal">
+odb --database pgsql --generate-schema-only --at-once \
+--input-name company person.hxx employee.hxx employer.hxx
+  </pre>
+
+  <p>The result of the above command is a single <code>company.sql</code>
+     file (the name is derived from the <code>--input-name</code> value)
+     that contains the database schema for our entire object model. There
+     is also a single corresponding changelog file &mdash;
+     <code>company.xml</code>.</p>
+
+  <p>The same can be achieved for the embedded schema by instructing
+     the ODB compiler to generate the database creation code into a
+     separate C++ file (<code>--schema-format&nbsp;separate</code>):</p>
+
+  <pre class="terminal">
+odb --database pgsql --generate-schema-only --schema-format separate \
+--at-once --input-name company person.hxx employee.hxx employer.hxx
+  </pre>
+
+  <p>The result of this command is a single <code>company-schema.cxx</code>
+     file and, again, <code>company.xml</code>.</p>
+
+  <p>Note also that by default the changelog file is not placed into
+     the directory specified with the <code>--output-dir</code> option.
+     This is due to the changelog being both an input and an output file
+     at the same time. As a result, by default, the ODB compiler will
+     place it in the directory of the input header file.</p>
+
+  <p>There is, however, a number of command line options (including
+     <code>--changelog-dir</code>) that allow us to fine-tune the name and
+     location of the changelog file. For example, you can instruct the ODB
+     compiler to read the changelog from one file while write it to
+     another. This, for example, can be useful if you want to review
+     the changes before discarding the old file. For more information
+     on these options, refer to the
+     <a href="http://www.codesynthesis.com/products/odb/doc/odb.xhtml">ODB
+     Compiler Command Line Manual</a> and search for "changelog".</p>
+
+  <p>When we were discussing version increments above, we used the
+     terms <em>development</em> and <em>release</em>. Specifically,
+     we talked about keeping the same object model versions during
+     development periods and incrementing them after releases.
+     What is a development period and a release in this context?
+     These definitions can vary from project to project.
+     Generally, during a development period we work on one or
+     more changes to the object model that result in the changes
+     to the database schema. A release is a point where we
+     make our changes available to someone else who may have an
+     older database to migrate from. In a tradition sense, a release
+     is a point where you make a new version of your application available
+     to its users. However, for schema evolution purposes, a release
+     could also mean simply making your schema-altering changes
+     available to other developers on your team. Let us consider
+     two common scenarios to illustrate how all this fits together.</p>
+
+  <p>One way to setup a project would be to re-use the application
+     development period and application release for schema evolution.
+     That is, during a new application version development we keep
+     a single object model version and when we release the application,
+     we increment the model version. In this case it makes sense to
+     also reuse the application version as a model version for
+     consistency. Here is a step-by-step guide for this setup:</p>
+
+  <ol>
+    <li>During development, keep the current object model version open.</li>
+
+    <li>Before the release (for example, when entering a "feature freeze")
+        close the version.</li>
+
+    <li>After the release, update the version and open it.</li>
+
+    <li>For each new feature, review the changeset at the top of the
+        changelog, for example, with <code>diff</code> or your
+        version control facilities. If you are using a version
+        control, then this is best done just before committing
+        your changes to the repository.</li>
+  </ol>
+
+  <p>An alternative way to setup schema versioning in a project would
+     be to define the development period as working on a single
+     feature and the release as making this feature available to
+     other people (developers, testers, etc.) on your team, for
+     example, by committing the changes to a public version control
+     repository. In this case, the object model version will be
+     independent of the application version and can simply be
+     a sequence that starts with <code>1</code> and is
+     incremented by <code>1</code>. Here is a step-by-step guide
+     for this setup:</p>
+
+  <ol>
+    <li>Keep the current model version closed. Once a change is made
+        that affects the database schema, the ODB compiler will refuse
+        to update the changelog.</li>
+
+    <li>If the change is legitimate, open a new version, that is,
+        increment the current version and make it open.</li>
+
+    <li>Once the feature is implemented and tested, review the final
+        set of database changes (with <code>diff</code> or your
+        version control facilities), close the version, and commit
+        the changes to the version control repository (if using).</li>
+  </ol>
+
+  <p>If you are using a version control repository that supports
+     pre-commit checks, then you may want to consider adding such
+     a check to make sure the committed version is always closed.</p>
+
+  <p>If we are just starting schema evolution in our project, which
+     approach should we choose? The two approaches will work better
+     in different situations since they have a different set of
+     advantages and disadvantages. The first approach, which we
+     can call version per application release, is best suited
+     for simpler projects with smaller releases since otherwise
+     a single migration will bundle a large number of unrelated
+     actions corresponding to different features. This can
+     become difficult to review and, if things go wrong, debug.</p>
+
+  <p>The second approach, which we can call version per feature,
+     is much more modular and provides a number additional benefits.
+     We can perform migrations for each feature as a discreet step
+     which makes it easier to debug. We can also place each such
+     migration step into a separate transaction further improving
+     reliability. It also scales much better in larger teams
+     where multiple developers can work concurrently on features
+     that affect the database schema. For example, if you find
+     yourself in a situation where another developer on your
+     team used the same version as you and managed to commit his
+     changes before you (that is, you have a merge conflict),
+     then you can simply change the version to the next available,
+     regenerate the changelog, and continue with your commit.</p>
+
+  <p>Overall, unless you have strong reasons to prefer the version
+     per application release approach, choose version per
+     feature even though it may seem more complex at the
+     beginning. Also, if you do select the first approach, consider
+     provisioning for switching to the second method by reserving
+     a sub-version number. For example, for an application version
+     in the form <code>2.3.4</code> your can make the object model
+     version to be in the form <code>0x0203040000</code>, reserving
+     the last two bytes for a sub-version. Later on you can use it to
+     switch to the version per feature approach.</p>
+
+  <h2><a name="13.2">13.2 Schema Migration</a></h2>
+
+  <p>Once we enable schema evolution by specifying the object model
+     version, in addition to the schema creation statements, the
+     ODB compiler starts generating schema migration statements
+     for each version all the way from the base to the current.
+     As with schema creation, schema migration can be generated
+     either as a set of SQL files or embedded into the generated
+     C++ code (<code>--schema-format</code> option).</p>
+
+  <p>For each migration step, that is from one version to the next,
+     ODB generates two sets of statements: pre-migration and
+     post-migration. The pre-migration statements <em>"relax"</em>
+     the database schema so that both old and new data can co-exist.
+     At this stage new columns and tables are added while old
+     constraints are dropped. The post-migration statements
+     <em>"tighten"</em> the database schema back so that only
+     data conforming to the new format can remain. At this stage
+     old columns and tables are dropped and new constraints are
+     added. Now you can probably guess where the data
+     migration fits into this &mdash; between the pre and post
+     schema migrations where we can both access the old data
+     and create the new one.</p>
+
+  <p>If the schema is being generated as standalone SQL files,
+     then we end up with a pair of files for each step: the pre-migration
+     file and the post-migration file. For the <code>person</code>
+     example we started in the previous section we will have the
+     <code>person-002-pre.sql</code> and <code>person-002-post.sql</code>
+     files. Here <code>002</code> is the version <em>to</em> which
+     we are migrating while the <code>pre</code> and <code>post</code>
+     suffixes specify the migration stage. So if we wanted to migrate
+     a <code>person</code> database from version <code>1</code>
+     to <code>2</code>, then we would first execute
+     <code>person-002-pre.sql</code>, then migrate the data, if any
+     (discussed in more detail in the next section), and finally
+     execute <code>person-002-post.sql</code>. If our database is
+     several versions behind, for example the database has version
+     <code>1</code> while the current version is <code>5</code>,
+     then we simply perform this set of steps for each version
+     until we reach the current version.</p>
+
+  <p>If we look at the contents of the <code>person-002-pre.sql</code>
+     file, we will see the following (or equivalent, depending on the
+     database used) statement:</p>
+
+  <pre class="sql">
+ALTER TABLE "person"
+  ADD COLUMN "middle" TEXT NULL;
+  </pre>
+
+  <p>As we would expect, this statement adds a new column corresponding
+     to the new data member. An observant reader would notice,
+     however, that the column is added as <code>NULL</code>
+     even though we never requested this semantics in our object model.
+     Why is the column added as <code>NULL</code>? If during migration
+     the <code>person</code> table already contains rows (that is, existing
+     objects), then an attempt to add a non-<code>NULL</code> column that
+     doesn't have a default value will fail. As a result, ODB will initially
+     add a new column that doesn't have a default value as <code>NULL</code>
+     but then clean this up at the post-migration stage. This way your data
+     migration code is given a chance to assign some meaningful values for
+     the new data member for all the existing objects. Here are the contents
+     of the <code>person-002-post.sql</code> file:</p>
+
+  <pre class="sql">
+ALTER TABLE "person"
+  ALTER COLUMN "middle" SET NOT NULL;
+  </pre>
+
+  <p>Currently ODB directly supports the following elementary database
+     schema changes:</p>
+
+  <ul class="list">
+    <li>add table</li>
+    <li>drop table</li>
+    <li>add column</li>
+    <li>drop column</li>
+    <li>alter column, set <code>NULL</code>/<code>NOT NULL</code></li>
+    <li>add foreign key</li>
+    <li>drop foreign key</li>
+    <li>add index</li>
+    <li>drop index</li>
+  </ul>
+
+  <p>More complex changes can normally be implemented in terms of
+     these building blocks. For example, to change a type of a
+     data member (which leads to a change of a column type), we
+     can add a new data member with the desired type (add column),
+     migrate the data, and then delete the old data member (drop
+     column). ODB will issue diagnostics for cases that are
+     currently not supported directly. Note also that some database
+     systems (notably SQLite) have a number of limitations in their
+     support for schema changes. For more information on these
+     database-specific limitations, refer to the "Limitations" sections
+     in <a href="#II">Part II, "Database Systems"</a>.</p>
+
+  <p>How do we know what is the current database version is? That is, the
+     version <em>from</em> which we need to migrate? We need to know this,
+     for example, in order to determine the set of migrations we have to
+     perform. By default, when schema evolution is enabled, ODB maintains
+     this information in a special table called <code>schema_version</code>
+     that has the following (or equivalent, depending on the database
+     used) definition:</p>
+
+  <pre class="sql">
+CREATE TABLE "schema_version" (
+  "name" TEXT NOT NULL PRIMARY KEY,
+  "version" BIGINT NOT NULL,
+  "migration" BOOLEAN NOT NULL);
+  </pre>
+
+  <p>The <code>name</code> column is the schema name as specified with
+     the <code>--schema-name</code> option. It is empty for the default
+     schema. The <code>version</code> column contains the current database
+     version. And, finally, the <code>migration</code> flag indicates
+     whether we are in the process of migrating the database, that is,
+     between the pre and post-migration stages.</p>
+
+  <p>The schema creation statements (<code>person.sql</code> in our case)
+     create this table and populate it with the initial model version. For
+     example, if we executed <code>person.sql</code> corresponding to
+     version <code>1</code> of our object model, then <code>name</code>
+     would have been empty (which signifies the default schema since we
+     didn't specify <code>--schema-name</code>), <code>version</code> will
+     be <code>1</code> and <code>migration</code> will be
+     <code>FALSE</code>.</p>
+
+  <p>The pre-migration statements update the version and set the migration
+     flag to <code>TRUE</code>. Continuing with our example, after executing
+     <code>person-002-pre.sql</code>, <code>version</code> will
+     become <code>2</code> and <code>migration</code> will be set to
+     <code>TRUE</code>. The post-migration statements simply clear the
+     migration flag. In our case, after running
+     <code>person-002-post.sql</code>, <code>version</code> will
+     remain <code>2</code> while <code>migration</code> will be reset
+     to <code>FALSE</code>.</p>
+
+  <p>Note also that above we mentioned that the schema creation statements
+     (<code>person.sql</code>) create the <code>schema_version</code> table.
+     This means that if we enable schema evolution support in the middle
+     of a project, then we could already have existing databases that
+     don't include this table. As a result, ODB will not be able to handle
+     migrations for such databases unless we manually add the
+     <code>schema_version</code> table and populate it with correct
+     version information. For this reason, it is highly recommended that
+     you consider whether to use schema evolution and enable it if so
+     from the beginning of your project.</p>
+
+  <p>The <code>odb::database</code> class provides an API for accessing
+     and modifying the current database version:</p>
+
+  <pre class="cxx">
+namespace odb
+{
+  typedef unsigned long long schema_version;
+
+  struct LIBODB_EXPORT schema_version_migration
+  {
+    schema_version_migration (schema_version = 0,
+                              bool migration = false);
+
+    schema_version version;
+    bool migration;
+
+    // This class also provides the ==, !=, &lt;, >, &lt;=, and >= operators.
+    // Version ordering is as follows: {1,f} &lt; {2,t} &lt; {2,f} &lt; {3,t}.
+  };
+
+  class database
+  {
+  public:
+    ...
+
+    schema_version
+    schema_version (const std::string&amp; name = "") const;
+
+    bool
+    schema_migration (const std::string&amp; name = "") const;
+
+    const schema_version_migration&amp;
+    schema_version_migration (const std::string&amp; name = "") const;
+
+    // Set schema version and migration state manually.
+    //
+    void
+    schema_version_migration (schema_version,
+                              bool migration,
+                              const std::string&amp; name = "");
+
+    void
+    schema_version_migration (const schema_version_migration&amp;,
+                              const std::string&amp; name = "");
+
+    // Set default schema version table for all schemas.
+    //
+    void
+    schema_version_table (const std::string&amp; table_name);
+
+    // Set schema version table for a specific schema.
+    //
+    void
+    schema_version_table (const std::string&amp; table_name,
+                          const std::string&amp; name);
+  };
+}
+  </pre>
+
+  <p>The <code>schema_version()</code> and <code>schema_migration()</code>
+     accessors return the current database version and migration flag,
+     respectively. The optional <code>name</code> argument is the schema
+     name. If the database schema hasn't been created (that is, there is
+     no corresponding entry in the <code>schema_version</code> table or
+     this table does not exist), then <code>schema_version()</code> returns
+     <code>0</code>. The <code>schema_version_migration()</code> accessor
+     returns both version and migration flag together in the
+     <code>schema_version_migration</code> <code>struct</code>.</p>
+
+  <p>You may already have a version table in your database or you (or your
+     database administrator) may prefer to keep track of versions your own
+     way. You can instruct ODB not to create the <code>schema_version</code>
+     table with the <code>--suppress-schema-version</code> option. However,
+     ODB still needs to know the current database version in order for certain
+     schema evolution mechanisms to function properly. As a result, in
+     this case, you will need to set the schema version on the database
+     instance manually using the schema_version_migration() modifier.
+     Note that the modifier API is not thread-safe. That is, you should
+     not modify the schema version while other threads may be accessing
+     or modifying the same information.</p>
+
+  <p>Note also that the accessors we discussed above will only query the
+     <code>schema_version</code> table once and, if the version could
+     be determined, cache the result. If, however, the version could
+     not be determined (that is, <code>schema_version()</code> returned
+     0), then a subsequent call will re-query the table. While it is
+     probably a bad idea to modify the database schema while the
+     application is running (other than via the <code>schema_catalog</code>
+     API, as discussed below), if for some reason you need ODB to re-query
+     the version, then you can manually set it to 0 using the
+     <code>schema_version_migration()</code> modifier.</p>
+
+  <p>It is also possible to change the name of the table that stores
+     the schema version using the <code>--schema-version-table</code>
+     option. You will also need to specify this alternative name on
+     the <code>database</code> instance using the <code>schema_version_table()</code>
+     modifier. The first version specifies the default table that is
+     used for all the schema names. The second version specifies the
+     table for a specific schema. The table name should be
+     database-quoted, if necessary.</p>
+
+  <p>If we are generating our schema migrations as standalone SQL files,
+     then the migration workflow could look like this:</p>
+
+  <ol>
+    <li>Database administrator determines the current database version.
+        If migration is required, then for each migration step (that
+        is, from one version to the next), he performs the following:</li>
+
+    <li>Execute the pre-migration file.</li>
+
+    <li>Execute our application (or a separate migration program)
+        to perform data migration (discussed later). Our application
+        can determine that is is executed in the "migration mode"
+        by calling <code>schema_migration()</code> and then which
+        migration code to run by calling <code>schema_version()</code>.</li>
+
+    <li>Execute the post-migration file.</li>
+  </ol>
+
+  <p>These steps become more integrated and automatic if we embed the
+     schema creation and migration code into the generated C++ code.
+     Now we can perform schema creation, schema migration, and data
+     migration as well as determine when each step is necessary
+     programmatically from within the application.</p>
+
+  <p>Schema evolution support adds the following extra functions to
+     the <code>odb::schema_catalog</code> class, which we first discussed
+     in <a href="#3.4">Section 3.4, "Database"</a>.</p>
+
+  <pre class="cxx">
+namespace odb
+{
+  class schema_catalog
+  {
+  public:
+    ...
+
+
+    // Schema migration.
+    //
+    static void
+    migrate_schema_pre (database&amp;,
+                        schema_version,
+                        const std::string&amp; name = "");
+
+    static void
+    migrate_schema_post (database&amp;,
+                         schema_version,
+                         const std::string&amp; name = "");
+
+    static void
+    migrate_schema (database&amp;,
+                    schema_version,
+                    const std::string&amp; name = "");
+
+    // Data migration.
+    //
+    // Discussed in the next section.
+
+
+    // Combined schema and data migration.
+    //
+    static void
+    migrate (database&amp;,
+             schema_version = 0,
+             const std::string&amp; name = "");
+
+    // Schema version information.
+    //
+    static schema_version
+    base_version (const database&amp;,
+                  const std::string&amp; name = "");
+
+    static schema_version
+    base_version (database_id,
+                  const std::string&amp; name = "");
+
+    static schema_version
+    current_version (const database&amp;,
+                     const std::string&amp; name = "");
+
+    static schema_version
+    current_version (database_id,
+                     const std::string&amp; name = "");
+
+    static schema_version
+    next_version (const database&amp;,
+                  schema_version = 0,
+                  const std::string&amp; name = "");
+
+    static schema_version
+    next_version (database_id,
+                  schema_version,
+                  const std::string&amp; name = "");
+  };
+}
+  </pre>
+
+  <p>The <code>migrate_schema_pre()</code> and
+     <code>migrate_schema_post()</code> static functions perform
+     a single stage (that is, pre or post) of a single migration
+     step (that is, from one version to the next). The <code>version</code>
+     argument specifies the version we are migrating to. For
+     instance, in our <code>person</code> example, if we know that
+     the database version is <code>1</code> and the next version
+     is <code>2</code>, then we can execute code like this:</p>
+
+  <pre class="cxx">
+transaction t (db.begin ());
+
+schema_catalog::migrate_schema_pre (db, 2);
+
+// Data migration goes here.
+
+schema_catalog::migrate_schema_post (db, 2);
+
+t.commit ();
+  </pre>
+
+  <p>If you don't have any data migration code to run, then you can
+     perform both stages with a single call using the
+     <code>migrate_schema()</code> static function.</p>
+
+  <p>The <code>migrate()</code> static function perform both schema
+     and data migration (we discuss data migration in the next section).
+     It can also perform several migration steps at once. If we don't
+     specify its target version, then it will migrate (if necessary)
+     all the way to the current model version. As an extra convenience,
+     <code>migrate()</code> will also create the database schema if
+     none exists. As a result, if we don't have any data migration
+     code or we have registered it with <code>schema_catalog</code> (as
+     discussed later), then the database schema creation and migration,
+     whichever is necessary, if at all, can be performed with a single
+     function call:</p>
+
+  <pre class="cxx">
+transaction t (db.begin ());
+schema_catalog::migrate (db);
+t.commit ();
+  </pre>
+
+  <p>Note also that <code>schema_catalog</code> is integrated with the
+    <code>odb::database</code> schema version API. In particular,
+    <code>schema_catalog</code> functions will query and synchronize
+    the schema version on the <code>database</code> instance if and
+    when required.</p>
+
+  <p>The <code>schema_catalog</code> class also allows you to iterate
+     over known versions (remember, there could be "gaps" in version
+     numbers) with the <code>base_version()</code>,
+     <code>current_version()</code> and <code>next_version()</code>
+     static functions. The <code>base_version()</code> and
+     <code>current_version()</code> functions return the base and
+     current object model versions, respectively. That is, the
+     lowest version from which we can migrate and the version that
+     we ultimately want to migrate to. The <code>next_version()</code>
+     function returns the next known version. If the passed version is
+     greater or equal to the current version, then this function
+     will return the current version plus one (that is, one past
+     current). If we don't specify the version, then
+     <code>next_version()</code> will use the current database version
+     as the starting point. Note also that the schema version information
+     provided by these functions is only available if we embed the schema
+     migration code into the generated C++ code. For standalone SQL file
+     migrations this information is normally not needed since the migration
+     process is directed by an external entity, such as a database
+     administrator or a script.</p>
+
+  <p>Most <code>schema_catalog</code> functions presented above also
+     accept the optional schema name argument. If the passed schema
+     name is not found, then the <code>odb::unknown_schema</code> exception
+     is thrown. Similarly, functions that accept the schema version
+     argument will throw the <code>odb::unknown_schema_version</code> exception
+     if the passed version is invalid. Refer to <a href="#3.14">Section
+     3.14, "ODB Exceptions"</a> for more information on these exceptions.</p>
+
+  <p>To illustrate how all these parts fit together, consider the
+     following more realistic database schema management example.
+     Here we want to handle the schema creation in a special way
+     and perform each migration step in its own transaction.</p>
+
+  <pre class="cxx">
+schema_version v (db.schema_version ());
+schema_version bv (schema_catalog::base_version (db));
+schema_version cv (schema_catalog::current_version (db));
+
+if (v == 0)
+{
+  // No schema in the database. Create the schema and
+  // initialize the database.
+  //
+  transaction t (db.begin ());
+  schema_catalog::create_schema (db);
+
+  // Populate the database with initial data, if any.
+
+  t.commit ();
+}
+else if (v &lt; cv)
+{
+  // Old schema (and data) in the database, migrate them.
+  //
+
+  if (v &lt; bv)
+  {
+    // Error: migration from this version is no longer supported.
+  }
+
+  for (v = schema_catalog::next_version (db, v);
+       v &lt;= cv;
+       v = schema_catalog::next_version (db, v))
+  {
+    transaction t (db.begin ());
+    schema_catalog::migrate_schema_pre (db, v);
+
+    // Data migration goes here.
+
+    schema_catalog::migrate_schema_post (db, v);
+    t.commit ();
+  }
+}
+else if (v > cv)
+{
+  // Error: old application trying to access new database.
+}
+  </pre>
+
+  <h2><a name="13.3">13.3 Data Migration</a></h2>
+
+  <p>In quite a few cases specifying the default value for new data
+     members will be all that's required to handle the existing objects.
+     For example, the natural default value for the new middle name
+     that we have added is an empty string. And we can handle
+     this case with the <code>db&nbsp;default</code> pragma and without
+     any extra C++ code:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 2)
+
+#pragma db object
+class person
+{
+  ...
+
+
+  #pragma db default("")
+  std::string middle_;
+};
+  </pre>
+
+  <p>However, there will be situations where we would need to perform
+     more elaborate data migrations, that is, convert old data to the
+     new format. As an example, suppose we want to add gender to our
+     <code>person</code> class. And, instead of leaving it unassigned
+     for all the existing objects, we will try to guess it from the
+     first name. Not particularly accurate but could be sufficient
+     for our hypothetical application:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 3)
+
+enum gender {male, female};
+
+#pragma db object
+class person
+{
+  ...
+
+  gender gender_;
+};
+  </pre>
+
+  <p>As we have discussed earlier, there are two ways to perform data
+     migration: immediate and gradual. To recap, with immediate
+     migration we migrate all the existing objects at once, normally
+     after the schema pre-migration statements but before the
+     post-migration statements. With gradual migration, we make sure
+     the new object model can accommodate both old and new data and
+     gradually migrate existing objects as the application runs and
+     the opportunities to do so arise, for example, an object is
+     updated.</p>
+
+  <p>There is also another option for data migration that is not
+     discussed further in this section. Instead of using our C++
+     object model we could execute ad-hoc SQL statements that
+     perform the necessary conversions and migrations directly
+     on the database server. While in certain cases this can be
+     a better option from the performance point of view, this
+     approach is often limited in terms of the migration logic
+     that we can handle.</p>
+
+  <h2><a name="13.3.1">13.3.1 Immediate Data Migration</a></h2>
+
+  <p>Let's first see how we can implement an immediate migration for the
+     new <code>gender_</code> data member we have added above. If we
+     are using standalone SQL files for migration, then we could add
+     code along these lines somewhere early in <code>main()</code>,
+     before the main application logic:</p>
+
+  <pre class="cxx">
+int
+main ()
+{
+  ...
+
+  odb::database&amp; db = ...
+
+  // Migrate data if necessary.
+  //
+  if (db.schema_migration ())
+  {
+    switch (db.schema_version ())
+    {
+    case 3:
+      {
+        // Assign gender to all the existing objects.
+        //
+        transaction t (db.begin ());
+
+        for (person&amp; p: db.query&lt;person> ())
+        {
+          p.gender (guess_gender (p.first ()));
+          db.update (p);
+        }
+
+        t.commit ();
+        break;
+      }
+    }
+  }
+
+  ...
+}
+  </pre>
+
+  <p>If you have a large number of objects to migrate, it may also be
+     a good idea, from the performance point of view, to break one big
+     transaction that we have now into multiple smaller transactions
+     (<a href="#3.5">Section 3.5, "Transactions"</a>). For example:</p>
+
+  <pre class="cxx">
+case 3:
+  {
+    transaction t (db.begin ());
+
+    size_t n (0);
+    for (person&amp; p: db.query&lt;person> ())
+    {
+      p.gender (guess_gender (p.first ()));
+      db.update (p);
+
+      // Commit the current transaction and start a new one after
+      // every 100 updates.
+      //
+      if (n++ % 100 == 0)
+      {
+        t.commit ();
+        t.reset (db.begin ());
+      }
+    }
+
+    t.commit ();
+    break;
+  }
+  </pre>
+
+  <p>While it looks straightforward enough, as we add more migration
+     snippets, this approach can quickly become unmaintainable. Instead
+     of having all the migrations in a single function and determining
+     when to run each piece ourselves, we can package each migration into
+     a separate function, register it with the <code>schema_catalog</code>
+     class, and let ODB figure out when to run which migration functions.
+     To support this functionality, <code>schema_catalog</code> provides
+     the following data migration API:</p>
+
+  <pre class="cxx">
+namespace odb
+{
+  class schema_catalog
+  {
+  public:
+    ...
+
+    // Data migration.
+    //
+    static std::size_t
+    migrate_data (database&amp;,
+                  schema_version = 0,
+                  const std::string&amp; name = "");
+
+    // C++98/03 version:
+    //
+    typedef void (*data_migration_function_type) (database&amp;);
+
+    // C++11 version:
+    //
+    typedef std::function&lt;void (database&amp;)> data_migration_function_type;
+
+    // Common (for all the databases) data migration.
+    //
+    template &lt;schema_version v, schema_version base>
+    static void
+    data_migration_function (data_migration_function_type,
+                             const std::string&amp; name = "");
+
+    // Database-specific data migration.
+    //
+    template &lt;schema_version v, schema_version base>
+    static void
+    data_migration_function (database&amp;,
+                             data_migration_function_type,
+                             const std::string&amp; name = "");
+
+    template &lt;schema_version v, schema_version base>
+    static void
+    data_migration_function (database_id,
+                             data_migration_function_type,
+                             const std::string&amp; name = "");
+  };
+
+  // Static data migration function registration.
+  //
+  template &lt;schema_version v, schema_version base>
+  struct data_migration_entry
+  {
+    data_migration_entry (data_migration_function_type,
+                          const std::string&amp; name = "");
+
+    data_migration_entry (database_id,
+                          data_migration_function_type,
+                          const std::string&amp; name = "");
+  };
+}
+  </pre>
+
+  <p>The <code>migrate_data()</code> static function performs data
+     migration for the specified version. If no version is specified,
+     then it will use the current database version and also check
+     whether the database is in migration, that is,
+     <code>database::schema_migration()</code> returns <code>true</code>.
+     As a result, all we need to do in our <code>main()</code> is call
+     this function. It will check if migration is required and if so,
+     call all the migration functions registered for this version. For
+     example:</p>
+
+  <pre class="cxx">
+int
+main ()
+{
+  ...
+
+  database&amp; db = ...
+
+  // Check if we need to migrate any data and do so
+  // if that's the case.
+  //
+  schema_catalog::migrate_data (db);
+
+  ...
+}
+  </pre>
+
+  <p>The <code>migrate_data()</code> function returns the number of
+     migration functions called. You can use this value for debugging
+     or logging.</p>
+
+  <p>The only other step that we need to perform is register our data
+     migration functions with <code>schema_catalog</code>. At the
+     lower level we can call the <code>data_migration_function()</code>
+     static function for every migration function we have, for example,
+     at the beginning of <code>main()</code>. Data migration functions
+     are called in the order of registration.</p>
+
+  <p>A more convenient approach, however, is to use the
+     <code>data_migration_entry</code> helper class template to register the
+     migration functions during static initialization. This way we
+     can keep the migration function and its registration code next
+     to each other. Here is how we can reimplement our <code>gender</code>
+     migration code to use this mechanism:</p>
+
+  <pre class="cxx">
+static void
+migrate_gender (odb::database&amp; db)
+{
+  transaction t (db.begin ());
+
+  for (person&amp; p: db.query&lt;person> ())
+  {
+    p.gender (guess_gender (p.first ()));
+    db.update (p);
+  }
+
+  t.commit ();
+}
+
+static const odb::data_migration_entry&lt;3, MYAPP_BASE_VERSION>
+migrate_gender_entry (&amp;migrate_gender);
+  </pre>
+
+  <p>The first template argument to the <code>data_migration_entry</code>
+     class template is the version we want this data migration function
+     to be called for. The second template argument is the base model
+     version. This second argument is necessary to detect the situation
+     where we no longer need this data migration function. Remember
+     that when we move the base model version forward, migrations from
+     any version below the new base are no longer possible. We, however,
+     may still have migration functions registered for those lower
+     versions. Since these functions will never be called, they are
+     effectively dead code and it would be useful to identify and
+     remove them. To assist with this, <code>data_migration_entry</code>
+     (and lower lever <code>data_migration_function()</code>) will
+     check at compile time (that is, <code>static_assert</code>) that
+     the registration version is greater than the base model version.</p>
+
+  <p>In the above example we use the <code>MYAPP_BASE_VERSION</code>
+     macro that is presumably defined in a central place, for example,
+     <code>version.hxx</code>. This is the recommended approach since
+     we can update the base version in a single place and have the
+     C++ compiler automatically identify all the data migration
+     functions that can be removed.</p>
+
+  <p>In C++11 we can also create a template alias so that we don't
+     have to repeat the base model macro in every registration, for
+     example:</p>
+
+  <pre class="cxx">
+template &lt;schema_version v>
+using migration_entry = odb::data_migration_entry&lt;v, MYAPP_BASE_VERSION>;
+
+static const migration_entry&lt;3>
+migrate_gender_entry (&amp;migrate_gender);
+  </pre>
+
+  <p>For cases where you need to by-pass the base version check, for
+     example, to implement your own registration helper, ODB also
+     provides "unsafe" versions of the <code>data_migration_function()</code>
+     functions that take the version as a function argument rather than
+     as a template parameter.</p>
+
+  <p>In C++11 we can also use lambdas as migration functions, which makes
+     the migration code more concise:</p>
+
+  <pre class="cxx">
+static const migration_entry&lt;3>
+migrate_gender_entry (
+  [] (odb::database&amp; db)
+  {
+    transaction t (db.begin ());
+
+    for (person&amp; p: db.query&lt;person> ())
+    {
+      p.gender (guess_gender (p.first ()));
+      db.update (p);
+    }
+
+    t.commit ();
+  });
+  </pre>
+
+  <p>If we are using embedded schema migrations, then both schema and
+     data migration is integrated and can be performed with a single
+     call to the <code>schema_catalog::migrate()</code> function that
+     we discussed earlier. For example:</p>
+
+<pre class="cxx">
+int
+main ()
+{
+  ...
+
+  database&amp; db = ...
+
+  // Check if we need to migrate the database and do so
+  // if that's the case.
+  //
+  {
+    transaction t (db.begin ());
+    schema_catalog::migrate (db);
+    t.end ();
+  }
+
+  ...
+}
+  </pre>
+
+  <p>Note, however, that in this case we call <code>migrate()</code>
+     within a transaction (for the schema migration part) which means
+     that our migration functions will also be called within this
+     transaction. As a result, we will need to adjust our migration
+     functions not to start their own transaction:</p>
+
+  <pre class="cxx">
+static void
+migrate_gender (odb::database&amp; db)
+{
+  // Assume we are already in a transaction.
+  //
+  for (person&amp; p: db.query&lt;person> ())
+  {
+    p.gender (guess_gender (p.first ()));
+    db.update (p);
+  }
+}
+  </pre>
+
+  <p>If, however, we want more granular transactions, then we can
+     use the lower-level <code>schema_catalog</code> functions to
+     gain more control, as we have seen at the end of previous
+     section.  Here is the relevant part of that example with
+     an added data migration call:</p>
+
+  <pre class="cxx">
+  // Old schema (and data) in the database, migrate them.
+  //
+  for (v = schema_catalog::next_version (db, v);
+       v &lt;= cv;
+       v = schema_catalog::next_version (db, v))
+  {
+    transaction t (db.begin ());
+    schema_catalog::migrate_schema_pre (db, v);
+    schema_catalog::migrate_data (db, v);
+    schema_catalog::migrate_schema_post (db, v);
+    t.commit ();
+  }
+  </pre>
+
+  <h2><a name="13.3.2">13.3.2 Gradual Data Migration</a></h2>
+
+  <p>If the number of existing objects that require migration is large,
+     then an all-at-once, immediate migration, while simple, may not
+     be practical from the performance point of view. In this case,
+     we can perform a gradual migration as the application does
+     its normal functions.</p>
+
+  <p>With gradual migrations, the object model must be capable of
+     representing data that conforms to both old and new formats at
+     the same time since, in general, the database will contain a
+     mixture of old and new objects. For example, in case of our
+     <code>gender</code> data member, we need a special value that
+     represents the "no gender assigned yet" case (an old object).
+     We also need to assign this special value to all the existing
+     objects during the schema pre-migration stage. One way to do
+     this would be add a special value to our <code>gender</code>
+     enum and then make it the default value with the
+     <code>db&nbsp;default</code> pragma. A cleaner and easier approach,
+     however, is to use <code>NULL</code> as a special value. We
+     can add support for the <code>NULL</code> value semantics
+     to any existing type by wrapping it with
+     <code>odb::nullable</code>, <code>boost::optional</code>
+     or similar (<a href="#7.3">Section 7.3, "Pointers and <code>NULL</code>
+     Value Semantics"</a>). We also don't need to specify the default value
+     explicitly since <code>NULL</code> is used automatically. Here
+     is how we can use this approach in our <code>gender</code>
+     example:</p>
+
+  <pre class="cxx">
+#include &lt;odb/nullable.hxx>
+
+#pragma db object
+class person
+{
+  ...
+
+  odb::nullable&lt;gender> gender_;
+};
+  </pre>
+
+  <p>A variety of strategies can be employed to implement gradual
+     migrations. For example, we can migrate the data when the object
+     is updated as part of the normal application logic. While there
+     is no migration cost associated with this approach (the object
+     is updated anyway), depending on how often objects are typically
+     updated, this strategy can take a long time to complete. An
+     alternative strategy would be to perform an update whenever
+     an old object is loaded. Yet another strategy is to have a
+     separate thread that slowly migrates all the old objects as
+     the application runs.</p>
+
+  <p>As an example, let us implement the first approach for our
+     <code>gender</code> migration. While we could have added
+     the necessary code throughout the application, from the
+     maintenance point of view, it is best to try and localize
+     the gradual migration logic to the persistent classes that
+     it affects. And for this database operation callbacks
+     (<a href="#14.1.7">Section 14.1.7, "<code>callback</code>"</a>)
+     are a very useful mechanism. In our case, all we have to do is handle
+     the <code>post_load</code> event where we guess the gender
+     if it is <code>NULL</code>:</p>
+
+  <pre class="cxx">
+#include &lt;odb/core.hxx>     // odb::database
+#include &lt;odb/callback.hxx> // odb::callback_event
+#include &lt;odb/nullable.hxx>
+
+#pragma db object callback(migrate)
+class person
+{
+  ...
+
+  void
+  migrate (odb::callback_event e, odb::database&amp;)
+  {
+    if (e == odb::callback_event::post_load)
+    {
+      // Guess gender if not assigned.
+      //
+      if (gender_.null ())
+        gender_ = guess_gender (first_);
+    }
+  }
+
+  odb::nullable&lt;gender> gender_;
+};
+  </pre>
+
+  <p>In particular, we don't have to touch any of the accessors
+     or modifiers or the application logic &mdash; all of them
+     can assume that the value can never be <code>NULL</code>.
+     And when the object is next updated, the new <code>gender</code>
+     value will be stored automatically.</p>
+
+  <p>All gradual migrations normally end up with a terminating
+     immediate migration some number of versions down the line,
+     when the bulk of the objects has presumably been converted.
+     This way we don't have to keep the gradual migration code
+     around forever. Here is how we could implement a terminating
+     migration for our example:</p>
+
+  <pre class="cxx">
+// person.hxx
+//
+#pragma db model version(1, 4)
+
+#pragma db object
+class person
+{
+  ...
+
+  gender gender_;
+};
+
+// person.cxx
+//
+static void
+migrate_gender (odb::database&amp; db)
+{
+  typedef odb::query&lt;person> query;
+
+  for (person&amp; p: db.query&lt;person> (query::gender.is_null ()))
+  {
+    p.gender (guess_gender (p.first ()));
+    db.update (p);
+  }
+}
+
+static const odb::data_migration_entry&lt;4, MYAPP_BASE_VERSION>
+migrate_gender_entry (&amp;migrate_gender);
+  </pre>
+
+  <p>A couple of points to note about this code. Firstly, we
+     removed all the gradual migration logic (the callback)
+     from the class and replaced it with the immediate migration
+     function. We also removed the <code>odb::nullable</code>
+     wrapper (and therefore disallowed the <code>NULL</code> values)
+     since after this migration all the objects will have been
+     converted. Finally, in the migration function, we only query
+     the database for objects that need migration, that is, have
+     <code>NULL</code> gender.</p>
+
+  <h2><a name="13.4">13.4 Soft Object Model Changes</a></h2>
+
+  <p>Let us consider another common kind of an object model change:
+     we delete an old member, add a new one, and need to copy
+     the data from the old to the new, perhaps applying some
+     conversion. For example, we may realize that in our application
+     it is a better idea to store a person's name as a single string
+     rather than split it into three fields. So what we would like to do
+     is add a new data member, let's call it <code>name_</code>, convert
+     all the existing split names, and then delete the <code>first_</code>,
+     <code>middle_</code>, and <code>last_</code> data members.</p>
+
+  <p>While this sounds straightforward, there is a problem. If we
+     delete (that is, physically remove from the source code) the
+     old data members, then we won't be able to access the old
+     data. The data will still be available in the database between
+     the schema pre and post-migrations, it is just we will no longer
+     be able to access it through our object model. And if we keep
+     the old data members around, then the old data will remain
+     stored in the database even after the schema post-migration.</p>
+
+  <p>There is also a more subtle problem that has to do with existing
+     migrations for previous version. Remember, in version <code>3</code>
+     of our <code>person</code> example we've added the <code>gender_</code>
+     data member. We also have a data migration function which guesses
+     the gender based on the first name. Deleting the <code>first_</code>
+     data member from our class will obviously break this code. But
+     even adding the new <code>name_</code> data member will cause
+     problems because when we try to update the object in order to
+     store the new gender, ODB will try to update <code>name_</code>
+     as well. But there is no corresponding column in the database
+     yet. When we run this migration function, we are still several
+     versions away from the point where the <code>name</code> column
+     will be added.</p>
+
+  <p>This is a very subtle but also very important implication to
+     understand. Unlike the main application logic, which only needs
+     to deal with the current model version, data migration code works
+     on databases that can be multiple versions behind the current
+     version.</p>
+
+  <p>How can we resolve this problem? It appears what we need is the
+     ability to add or delete data members starting from a specific
+     version. In ODB this mechanism is called soft member additions
+     and deletions. A soft-added member is only treated as persistent
+     starting from the addition version. A soft-deleted member is
+     persistent until the deletion version (but including the migration
+     stage). In its essence, soft model changes allow us to maintain
+     multiple versions of our object model all with a single set of
+     persistent classes. Let us now see how this functionality can
+     help implement our changes:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 4)
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db deleted(4)
+  std::string first_;
+
+  #pragma db deleted(4)
+  std::string middle_;
+
+  #pragma db deleted(4)
+  std::string last_;
+
+  #pragma db added(4)
+  std::string name_;
+
+  gender gender_;
+};
+  </pre>
+
+  <p>The migration function for this change could then look like
+     this:</p>
+
+  <pre class="cxx">
+static void
+migrate_name (odb::database&amp; db)
+{
+  for (person&amp; p: db.query&lt;person> ())
+  {
+    p.name (p.first () + " " +
+            p.middle () + (p.middle ().empty () ? "" : " ") +
+            p.last ());
+    db.update (p);
+  }
+}
+
+static const odb::data_migration_entry&lt;4, MYAPP_BASE_VERSION>
+migrate_name_entry (&amp;migrate_name);
+  </pre>
+
+  <p>Note also that no changes are required to the gender migration
+     function.</p>
+
+  <p>As you may have noticed, in the code above we assumed that the
+     <code>person</code> class still provides public accessors for
+     the now deleted data members. This might not be ideal since now
+     they should not be used by the application logic. The only code
+     that may still need to access them is the migration functions. The
+     recommended way to resolve this is to remove the accessors/modifiers
+     corresponding to the deleted data member, make migration functions
+     static function of the class being migrated, and then access
+     the deleted data members directly. For example:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 4)
+
+#pragma db object
+class person
+{
+  ...
+
+private:
+  friend class odb::access;
+
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db deleted(4)
+  std::string first_;
+
+  #pragma db deleted(4)
+  std::string middle_;
+
+  #pragma db deleted(4)
+  std::string last_;
+
+  #pragma db added(4)
+  std::string name_;
+
+  gender gender_;
+
+private:
+  static void
+  migrate_gender (odb::database&amp;);
+
+  static void
+  migrate_name (odb::database&amp;);
+};
+
+void person::
+migrate_gender (odb::database&amp; db)
+{
+  for (person&amp; p: db.query&lt;person> ())
+  {
+    p.gender_ = guess_gender (p.first_);
+    db.update (p);
+  }
+}
+
+static const odb::data_migration_entry&lt;3, MYAPP_BASE_VERSION>
+migrate_name_entry (&amp;migrate_gender);
+
+void person::
+migrate_name (odb::database&amp; db)
+{
+  for (person&amp; p: db.query&lt;person> ())
+  {
+    p.name_ = p.first_ + " " +
+              p.middle_ + (p.middle_.empty () ? "" : " ") +
+              p.last_;
+    db.update (p);
+  }
+}
+
+static const odb::data_migration_entry&lt;4, MYAPP_BASE_VERSION>
+migrate_name_entry (&amp;migrate_name);
+  </pre>
+
+  <p>Another potential issue with the soft-deletion is the requirement
+     to keep the delete data members in the class. While they will not
+     be initialized in the normal operation of the application (that
+     is, not a migration), this can still be a problem if we need to
+     minimize the memory footprint of our classes. For example, we may
+     cache a large number of objects in memory and having three
+     <code>std::string</code> data members can be a significant
+     overhead.</p>
+
+  <p>The recommended way to resolve this issue is to place all the
+     deleted data members into a dynamically allocated composite
+     value type. For example:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 4)
+
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id_;
+
+  #pragma db added(4)
+  std::string name_;
+
+  gender gender_;
+
+  #pragma db value
+  struct deleted_data
+  {
+    #pragma db deleted(4)
+    std::string first_;
+
+    #pragma db deleted(4)
+    std::string middle_;
+
+    #pragma db deleted(4)
+    std::string last_;
+  };
+
+  std::unique_ptr&lt;deleted_data> dd_;
+
+  ...
+};
+  </pre>
+
+  <p>ODB will then automatically allocate the deleted value type if
+     any of the deleted data members are being loaded. During the normal
+     operation, however, the pointer will stay <code>NULL</code> and
+     therefore reducing the common case overhead to a single pointer
+     per class.</p>
+
+  <p>Soft-added and deleted data members can be used in objects,
+     composite values, views, and container value types. We can
+     also soft-add and delete data members of simple, composite,
+     pointer to object, and container types. Only special data
+     members, such as the object id and the optimistic concurrency
+     version, cannot be soft-added or deleted.</p>
+
+  <p>It is also possible to soft-delete a persistent class. We
+     can still work with the existing objects of such a class,
+     however, no table is created in new databases for soft-deleted
+     classes. To put it another way, a soft-delete class is like an
+     abstract class (no table) but which can still be loaded, updated,
+     etc. Soft-added persistent classes do not make much sense and
+     are therefore not supported.</p>
+
+  <p>As an example of a soft-deleted class, suppose we want to
+     replace our <code>person</code> class with the new
+     <code>employee</code> object and migrate the data. Here is
+     how we could do this:</p>
+
+  <pre class="cxx">
+#pragma db model version(1, 5)
+
+#pragma db object deleted(5)
+class person
+{
+  ...
+};
+
+#pragma db object
+class employee
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id_;
+
+  std::string name_;
+  gender gender_;
+
+  static void
+  migrate_person (odb::database&amp;);
+};
+
+void employee::
+migrate_person (odb::database&amp; db)
+{
+  for (person&amp; p: db.query&lt;person> ())
+  {
+    employee e (p.name (), p.gender ());
+    db.persist (e);
+  }
+}
+
+static const odb::data_migration_entry&lt;5, MYAPP_BASE_VERSION>
+migrate_person_entry (&amp;migrate_person);
+  </pre>
+
+  <p>As we have seen above, hard member additions and deletions can
+     (and most likely will) break existing data migration code. Why,
+     then, not treat all the changes, or at least additions, as soft?
+     ODB requires you to explicitly request this semantics because
+     support for soft-added and deleted data members incurs runtime
+     overhead. And there can be plenty of cases where there is no
+     existing data migration and therefore hard additions and deletions
+     are sufficient.</p>
+
+  <p>In some cases a hard addition or deletion will result in a
+     compile-time error. For example, one of the data migration
+     functions may reference the data member we just deleted. In
+     many cases, however, such errors can only be detected at
+     runtime, and, worse yet, only when the migration function
+     is executed. For example, we may hard-add a new data member
+     that an existing migration function will try to indirectly
+     store in the database as part of an object update. As a result,
+     it is highly recommended that you always test your application
+     with the database that starts at the base version so that every
+     data migration function is called and therefore made sure to
+     still work correctly.</p>
+
+  <p>To help with this problem you can also instruct ODB to warn
+     you about any hard additions or deletions with the
+     <code>--warn-hard-add</code>, <code>--warn-hard-delete</code>,
+     and <code>--warn-hard</code> command line options. ODB will
+     only warn you about hard changes in the current version and
+     only for as long as it is open, which makes this mechanism
+     fairly usable.</p>
+
+  <p>You may also be wondering why we have to specify the addition
+     and deletion versions explicitly. It may seem like the ODB compiler
+     should be able to figure this out automatically. While it is
+     theoretically possible, to achieve this, ODB would have to also
+     maintain a separate changelog of the C++ object model in
+     addition to the database schema changelog it already maintains.
+     While being a lot more complex, such an additional changelog
+     would also complicate the workflow significantly. In this light,
+     maintaining this change information as part of the original
+     source files appears to be a cleaner and simpler approach.</p>
+
+  <p>As we discussed before, when we move the base model version
+     forward we essentially drop support for migrations from
+     versions before the new base. As a result, it is no longer
+     necessary to maintain the soft semantics of additions and
+     deletions up to and including the new base version. ODB
+     will issue diagnostics for all such members and classes.
+     For soft deletions we can simply remove the data member or
+     class entirely. For soft additions we only need to remove the
+     <code>db&nbsp;added</code> pragma.</p>
+
+  <h2><a name="13.4.1">13.4.1 Reuse Inheritance Changes</a></h2>
+
+  <p>Besides adding and deleting data member, another way to alter
+     the object's table is using reuse-style inheritance. If we add
+     a new reuse base, then, from the database schema point of view,
+     this is equivalent to adding all its columns to the derived
+     object's table. Similarly, deleting reuse inheritance result in
+     all the base's columns being deleted from the derived's table.</p>
+
+  <p>In the future ODB may provide direct support for soft addition
+     and deletion of inheritance. Currently, however, this semantics
+     can be emulated with soft-added and deleted data members. The
+     following table describes the most common scenarios depending
+     on where columns are added or deleted, that is, base table,
+     derived table, or both.</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table class="scenarios" border="1">
+    <tr>
+      <th>DELETE</th>
+      <th style="width: 40%">HARD</th>
+      <th style="width: 40%">SOFT</th>
+    </tr>
+
+    <tr>
+      <td>In both (delete inheritance and base)</td>
+      <td>Delete inheritance and base. Move object id to derived.</td>
+      <td>Soft-delete base. Mark all data members (except id) in
+          base as soft-deleted.</td>
+    </tr>
+
+    <tr>
+      <td>In base only (delete base)</td>
+      <td>Option 1: mark base as abstract.<br/><br/>
+          Option 2: move all the base member to derived, delete base.</td>
+      <td>Soft-delete base.</td>
+    </tr>
+
+    <tr>
+      <td>In derived only (delete inheritance)</td>
+      <td>Delete inheritance, add object id to derived.</td>
+      <td>Option 1: copy base to a new soft-deleted base, inherit
+          from it instead. Mark all the data members (expect id) in
+          this new base as soft-deleted. Note: we add the new base
+          as soft-deleted to get notified when we can remove it.<br/><br/>
+          Option 2: Copy all the data members from base to derived
+          and mark them as soft-deleted in derived.</td>
+    </tr>
+  </table>
+
+
+  <table class="scenarios" border="1">
+    <tr>
+      <th>ADD</th>
+      <th style="width: 40%">HARD</th>
+      <th style="width: 40%">SOFT</th>
+    </tr>
+
+    <tr>
+      <td>In both (add new base and inheritance)</td>
+      <td>Add new base and inheritance. Potentially move object id
+          member from derived to base.</td>
+      <td>Add new base and mark all its data members as soft-added.
+          Add inheritance. Move object id from derived to base.</td>
+    </tr>
+
+    <tr>
+      <td>In base only (refactor existing data to new base)</td>
+      <td>Add new base and move data members from derived to base.
+          Note: in most cases the new base will be made abstract
+          which make this scenario non-schema changing.</td>
+      <td>The same as HARD.</td>
+    </tr>
+
+    <tr>
+      <td>In derived only (add inheritance to existing base)</td>
+      <td>Add inheritance, delete object id in derived.</td>
+      <td>Copy existing base to a new abstract base and inherit
+          from it. Mark all the database members in the new base
+          as soft-added (except object id). When notified by the
+          ODB compiler that the soft addition of the data members
+          is not longer necessary, delete the copy and inherit from
+          the original base.</td>
+    </tr>
+  </table>
+
+  <h2><a name="13.4.2">13.4.2 Polymorphism Inheritance Changes</a></h2>
+
+  <p>Unlike reuse inheritance, adding or deleting a polymorphic base
+     does not result in the base's data members being added or deleted
+     from the derived object's table because each class in a polymorphic
+     hierarchy is stored in a separate table. There are, however, other
+     complications due to the presence of special columns (discriminator
+     in the root table and object id links in derived tables) which makes
+     altering the hierarchy structure difficult to handle automatically.
+     Adding or deleting (including soft-deleting) of leaf classes (or
+     leaf sub-hierarchies) in a polymorphic hierarchy is fully supported.
+     Any more complex changes, such as adding or deleting the root or
+     an intermediate base or getting an existing class into or out of
+     a polymorphic hierarchy can be handled by creating a new leaf class
+     (or leaf sub-hierarchy), soft-deleting the old class, and migrating
+     the data.</p>
+
+  <!-- CHAPTER -->
+
+
+  <hr class="page-break"/>
   <h1><a name="14">14 ODB Pragma Language</a></h1>
 
   <p>As we have already seen in previous chapters, ODB uses a pragma-based
@@ -11159,7 +13421,8 @@ for (bool done (false); !done; )
   <p>The <em>qualifier</em> tells the ODB compiler what kind of C++ construct
      this pragma describes. Valid qualifiers are <code>object</code>,
      <code>view</code>, <code>value</code>, <code>member</code>,
-     <code>namespace</code>, <code>index</code>, and <code>map</code>.
+     <code>namespace</code>, <code>model</code>, <code>index</code>, and
+     <code>map</code>.
      A pragma with the <code>object</code> qualifier describes a persistent
      object type. It tells the ODB compiler that the C++ class it describes
      is a persistent class. Similarly, pragmas with the <code>view</code>
@@ -11168,8 +13431,9 @@ for (bool done (false); !done; )
      to describe data members of persistent object, view, and value types.
      The <code>namespace</code> qualifier is used to describe common
      properties of objects, views, and value types that belong to
-     a C++ namespace. The <code>index</code> qualifier defines a
-     database index. And, finally, the <code>map</code> qualifier
+     a C++ namespace while the <code>model</code> qualifier describes
+     the whole C++ object model. The <code>index</code> qualifier defines
+     a database index. And, finally, the <code>map</code> qualifier
      describes a mapping between additional database types and types
      for which ODB provides built-in support.</p>
 
@@ -11311,7 +13575,7 @@ class person
      the C++ compiler to build the application. Some C++ compilers
      issue warnings about pragmas that they do not recognize. There
      are several ways to deal with this problem which are covered
-     at the end of this chapter in <a href="#14.8">Section 14.8,
+     at the end of this chapter in <a href="#14.9">Section 14.9,
      "C++ Compiler Warnings"</a>.</p>
 
   <h2><a name="14.1">14.1 Object Type Pragmas</a></h2>
@@ -11404,6 +13668,12 @@ class person
       <td><code>sectionable</code></td>
       <td>support addition of new sections in derived classes</td>
       <td><a href="#14.1.13">14.1.13</a></td>
+    </tr>
+
+    <tr>
+      <td><code>deleted</code></td>
+      <td>persistent class is soft-deleted</td>
+      <td><a href="#14.1.14">14.1.14</a></td>
     </tr>
 
   </table>
@@ -12033,6 +14303,14 @@ class employer
      <a href="#9.2">Section 9.2, "Sections and Optimistic
      Concurrency"</a>.</p>
 
+  <h3><a name="14.1.14">14.1.14 <code>deleted</code></a></h3>
+
+  <p>The <code>deleted</code> specifier marks the persistent class as
+     soft-deleted. The single required argument to this specifier is
+     the deletion version. For more information on this functionality,
+     refer to <a href="#13.4">Section 13.4, "Soft Object Model
+     Changes"</a>.</p>
+
   <h2><a name="14.2">14.2 View Type Pragmas</a></h2>
 
   <p>A pragma with the <code>view</code> qualifier declares a C++ class
@@ -12341,7 +14619,7 @@ class person
      refer to <a href="#II">Part II, "Database Systems"</a>. The
      <code>null</code> and <code>not_null</code> (<a href="#14.3.3">Section
      14.3.3, "<code>null</code>/<code>not_null</code>"</a>) specifiers
-     can be used to control the NULL semantics of a type.</p>
+     can be used to control the <code>NULL</code> semantics of a type.</p>
 
   <p>In the above example we changed the mapping for the <code>bool</code>
      type which is now mapped to the <code>INT</code> database type. In
@@ -12682,7 +14960,8 @@ typedef std::vector&lt;std::string> names;
   <p>The <code>value_null</code> and <code>value_not_null</code>
      (<a href="#14.3.13">Section 14.3.13,
      "<code>value_null</code>/<code>value_not_null</code>"</a>) specifiers
-     can be used to control the NULL semantics of a value column.</p>
+     can be used to control the <code>NULL</code> semantics of a value
+     column.</p>
 
   <h3><a name="14.3.13">14.3.13 <code>value_null</code>/<code>value_not_null</code></a></h3>
 
@@ -12725,7 +15004,7 @@ typedef std::vector&lt;std::string> nicknames;
 
   <p>The semantics of the <code>id_options</code> specifier for a container
      type are similar to those of the <code>id_options</code> specifier for
-     a container data member (<a href="#14.4.26">Section 14.4.26,
+     a container data member (<a href="#14.4.28">Section 14.4.28,
      "<code>id_options</code>"</a>).</p>
 
 
@@ -12742,7 +15021,7 @@ typedef std::vector&lt;std::string> nicknames;
 
   <p>The semantics of the <code>index_options</code> specifier for a container
      type are similar to those of the <code>index_options</code> specifier for
-     a container data member (<a href="#14.4.27">Section 14.4.27,
+     a container data member (<a href="#14.4.29">Section 14.4.29,
      "<code>index_options</code>"</a>).</p>
 
 
@@ -12759,7 +15038,7 @@ typedef std::map&lt;std::string, std::string> properties;
 
   <p>The semantics of the <code>key_options</code> specifier for a container
      type are similar to those of the <code>key_options</code> specifier for
-     a container data member (<a href="#14.4.28">Section 14.4.28,
+     a container data member (<a href="#14.4.30">Section 14.4.30,
      "<code>key_options</code>"</a>).</p>
 
 
@@ -12776,7 +15055,7 @@ typedef std::set&lt;std::string> nicknames;
 
   <p>The semantics of the <code>value_options</code> specifier for a container
      type are similar to those of the <code>value_options</code> specifier for
-     a container data member (<a href="#14.4.29">Section 14.4.29,
+     a container data member (<a href="#14.4.31">Section 14.4.31,
      "<code>value_options</code>"</a>).</p>
 
 
@@ -12981,75 +15260,87 @@ typedef std::map&lt;unsigned short, float> age_weight_map;
     </tr>
 
     <tr>
+      <td><code>added</code></td>
+      <td>member is soft-added</td>
+      <td><a href="#14.4.22">14.4.22</a></td>
+    </tr>
+
+    <tr>
+      <td><code>deleted</code></td>
+      <td>member is soft-deleted</td>
+      <td><a href="#14.4.23">14.4.23</a></td>
+    </tr>
+
+    <tr>
       <td><code>index_type</code></td>
       <td>database type for a container's index type</td>
-      <td><a href="#14.4.22">14.4.22</a></td>
+      <td><a href="#14.4.24">14.4.24</a></td>
     </tr>
 
     <tr>
       <td><code>key_type</code></td>
       <td>database type for a container's key type</td>
-      <td><a href="#14.4.23">14.4.23</a></td>
+      <td><a href="#14.4.25">14.4.25</a></td>
     </tr>
 
     <tr>
       <td><code>value_type</code></td>
       <td>database type for a container's value type</td>
-      <td><a href="#14.4.24">14.4.24</a></td>
+      <td><a href="#14.4.26">14.4.26</a></td>
     </tr>
 
     <tr>
       <td><code>value_null</code>/<code>value_not_null</code></td>
       <td>container's value can/cannot be <code>NULL</code></td>
-      <td><a href="#14.4.25">14.4.25</a></td>
+      <td><a href="#14.4.27">14.4.27</a></td>
     </tr>
 
     <tr>
       <td><code>id_options</code></td>
       <td>database options for a container's id column</td>
-      <td><a href="#14.4.26">14.4.26</a></td>
+      <td><a href="#14.4.28">14.4.28</a></td>
     </tr>
 
     <tr>
       <td><code>index_options</code></td>
       <td>database options for a container's index column</td>
-      <td><a href="#14.4.27">14.4.27</a></td>
+      <td><a href="#14.4.29">14.4.29</a></td>
     </tr>
 
     <tr>
       <td><code>key_options</code></td>
       <td>database options for a container's key column</td>
-      <td><a href="#14.4.28">14.4.28</a></td>
+      <td><a href="#14.4.30">14.4.30</a></td>
     </tr>
 
     <tr>
       <td><code>value_options</code></td>
       <td>database options for a container's value column</td>
-      <td><a href="#14.4.29">14.4.29</a></td>
+      <td><a href="#14.4.31">14.4.31</a></td>
     </tr>
 
     <tr>
       <td><code>id_column</code></td>
       <td>column name for a container's object id</td>
-      <td><a href="#14.4.30">14.4.30</a></td>
+      <td><a href="#14.4.32">14.4.32</a></td>
     </tr>
 
     <tr>
       <td><code>index_column</code></td>
       <td>column name for a container's index</td>
-      <td><a href="#14.4.31">14.4.31</a></td>
+      <td><a href="#14.4.33">14.4.33</a></td>
     </tr>
 
     <tr>
       <td><code>key_column</code></td>
       <td>column name for a container's key</td>
-      <td><a href="#14.4.32">14.4.32</a></td>
+      <td><a href="#14.4.34">14.4.34</a></td>
     </tr>
 
     <tr>
       <td><code>value_column</code></td>
       <td>column name for a container's value</td>
-      <td><a href="#14.4.33">14.4.33</a></td>
+      <td><a href="#14.4.35">14.4.35</a></td>
     </tr>
 
   </table>
@@ -13138,8 +15429,8 @@ class person
 
   <p>The <code>null</code> and <code>not_null</code> (<a href="#14.4.6">Section
      14.4.6, "<code>null</code>/<code>not_null</code>"</a>) specifiers
-     can be used to control the NULL semantics of a data member. It is
-     also possible to specify the database type on the per-type instead
+     can be used to control the <code>NULL</code> semantics of a data member.
+     It is also possible to specify the database type on the per-type instead
      of the per-member basis using the value <code>type</code>
      specifier (<a href="#14.3.1">Section 14.3.1, "<code>type</code>"</a>).</p>
 
@@ -14101,7 +16392,7 @@ class person
   </pre>
 
   <p>For more information on defining database indexes, refer to
-     <a href="#14.6">Section 14.6, "Index Definition Pragmas"</a>.</p>
+     <a href="#14.7">Section 14.7, "Index Definition Pragmas"</a>.</p>
 
   <h3><a name="14.4.17">14.4.17 <code>unique</code></a></h3>
 
@@ -14120,7 +16411,7 @@ class person
   </pre>
 
   <p>For more information on defining database indexes, refer to
-     <a href="#14.6">Section 14.6, "Index Definition Pragmas"</a>.</p>
+     <a href="#14.7">Section 14.7, "Index Definition Pragmas"</a>.</p>
 
   <h3><a name="14.4.18">14.4.18 <code>unordered</code></a></h3>
 
@@ -14212,7 +16503,23 @@ class person
      members of a persistent class. For more information on object
      sections, refer to <a href="#9">Chapter 9, "Sections"</a>.</p>
 
-  <h3><a name="14.4.22">14.4.22 <code>index_type</code></a></h3>
+  <h3><a name="14.4.22">14.4.22 <code>added</code></a></h3>
+
+  <p>The <code>added</code> specifier marks the data member as
+     soft-added. The single required argument to this specifier is
+     the addition version. For more information on this functionality,
+     refer to <a href="#13.4">Section 13.4, "Soft Object Model
+     Changes"</a>.</p>
+
+  <h3><a name="14.4.23">14.4.23 <code>deleted</code></a></h3>
+
+  <p>The <code>deleted</code> specifier marks the data member as
+     soft-deleted. The single required argument to this specifier is
+     the deletion version. For more information on this functionality,
+     refer to <a href="#13.4">Section 13.4, "Soft Object Model
+     Changes"</a>.</p>
+
+  <h3><a name="14.4.24">14.4.24 <code>index_type</code></a></h3>
 
   <p>The <code>index_type</code> specifier specifies the native
      database type that should be used for an ordered container's
@@ -14232,7 +16539,7 @@ class person
 };
   </pre>
 
-  <h3><a name="14.4.23">14.4.23 <code>key_type</code></a></h3>
+  <h3><a name="14.4.25">14.4.25 <code>key_type</code></a></h3>
 
   <p>The <code>key_type</code> specifier specifies the native
      database type that should be used for a map container's
@@ -14252,7 +16559,7 @@ class person
 };
   </pre>
 
-  <h3><a name="14.4.24">14.4.24 <code>value_type</code></a></h3>
+  <h3><a name="14.4.26">14.4.26 <code>value_type</code></a></h3>
 
   <p>The <code>value_type</code> specifier specifies the native
      database type that should be used for a container's
@@ -14273,11 +16580,12 @@ class person
   </pre>
 
   <p>The <code>value_null</code> and <code>value_not_null</code>
-     (<a href="#14.4.25">Section 14.4.25,
+     (<a href="#14.4.27">Section 14.4.27,
      "<code>value_null</code>/<code>value_not_null</code>"</a>) specifiers
-     can be used to control the NULL semantics of a value column.</p>
+     can be used to control the <code>NULL</code> semantics of a value
+     column.</p>
 
-  <h3><a name="14.4.25">14.4.25 <code>value_null</code>/<code>value_not_null</code></a></h3>
+  <h3><a name="14.4.27">14.4.27 <code>value_null</code>/<code>value_not_null</code></a></h3>
 
   <p>The <code>value_null</code> and <code>value_not_null</code> specifiers
      specify that a container's element value for the data member can or
@@ -14310,7 +16618,7 @@ class account
      Multiset Containers"</a>) the element value is automatically treated
      as not allowing a <code>NULL</code> value.</p>
 
-  <h3><a name="14.4.26">14.4.26 <code>id_options</code></a></h3>
+  <h3><a name="14.4.28">14.4.28 <code>id_options</code></a></h3>
 
   <p>The <code>id_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -14334,7 +16642,7 @@ class person
      of the <code>options</code> specifier (<a href="#14.4.8">Section
      14.4.8, "<code>options</code>"</a>).</p>
 
-  <h3><a name="14.4.27">14.4.27 <code>index_options</code></a></h3>
+  <h3><a name="14.4.29">14.4.29 <code>index_options</code></a></h3>
 
   <p>The <code>index_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -14355,7 +16663,7 @@ class person
      of the <code>options</code> specifier (<a href="#14.4.8">Section
      14.4.8, "<code>options</code>"</a>).</p>
 
-  <h3><a name="14.4.28">14.4.28 <code>key_options</code></a></h3>
+  <h3><a name="14.4.30">14.4.30 <code>key_options</code></a></h3>
 
   <p>The <code>key_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -14376,7 +16684,7 @@ class person
      of the <code>options</code> specifier (<a href="#14.4.8">Section
      14.4.8, "<code>options</code>"</a>).</p>
 
-  <h3><a name="14.4.29">14.4.29 <code>value_options</code></a></h3>
+  <h3><a name="14.4.31">14.4.31 <code>value_options</code></a></h3>
 
   <p>The <code>value_options</code> specifier specifies additional
      column definition options that should be used for a container's
@@ -14397,7 +16705,7 @@ class person
      of the <code>options</code> specifier (<a href="#14.4.8">Section
      14.4.8, "<code>options</code>"</a>).</p>
 
-  <h3><a name="14.4.30">14.4.30 <code>id_column</code></a></h3>
+  <h3><a name="14.4.32">14.4.32 <code>id_column</code></a></h3>
 
   <p>The <code>id_column</code> specifier specifies the column
      name that should be used to store the object id in a
@@ -14421,7 +16729,7 @@ class person
   <p>If the column name is not specified, then <code>object_id</code>
      is used by default.</p>
 
-  <h3><a name="14.4.31">14.4.31 <code>index_column</code></a></h3>
+  <h3><a name="14.4.33">14.4.33 <code>index_column</code></a></h3>
 
   <p>The <code>index_column</code> specifier specifies the column
      name that should be used to store the element index in an
@@ -14445,7 +16753,7 @@ class person
   <p>If the column name is not specified, then <code>index</code>
      is used by default.</p>
 
-  <h3><a name="14.4.32">14.4.32 <code>key_column</code></a></h3>
+  <h3><a name="14.4.34">14.4.34 <code>key_column</code></a></h3>
 
   <p>The <code>key_column</code> specifier specifies the column
      name that should be used to store the key in a map
@@ -14469,7 +16777,7 @@ class person
   <p>If the column name is not specified, then <code>key</code>
      is used by default.</p>
 
-  <h3><a name="14.4.33">14.4.33 <code>value_column</code></a></h3>
+  <h3><a name="14.4.35">14.4.35 <code>value_column</code></a></h3>
 
   <p>The <code>value_column</code> specifier specifies the column
      name that should be used to store the element value in a
@@ -14709,7 +17017,48 @@ namespace hr
      "<code>session</code>"</a>). For more information on sessions,
      refer to <a href="#11">Chapter 11, "Session"</a>.</p>
 
-  <h2><a name="14.6">14.6 Index Definition Pragmas</a></h2>
+<h2><a name="14.6">14.6 Object Model Pragmas</a></h2>
+
+  <p>A pragma with the <code>model</code> qualifier describes the
+     whole C++ object model. For example:</p>
+
+  <pre class="cxx">
+#pragma db model ...
+  </pre>
+
+  <p>The <code>model</code> qualifier can be followed, in any order,
+     by one or more specifiers summarized in the table below:</p>
+
+  <!-- border="1" is necessary for html2ps -->
+  <table class="specifiers" border="1">
+    <tr>
+      <th>Specifier</th>
+      <th>Summary</th>
+      <th>Section</th>
+    </tr>
+
+    <tr>
+      <td><code>version</code></td>
+      <td>object model version</td>
+      <td><a href="#14.6.1">14.6.1</a></td>
+    </tr>
+
+  </table>
+
+  <h3><a name="14.6.1">14.6.1 <code>version</code></a></h3>
+
+  <p>The <code>version</code> specifier specifies the object model
+     version when schema evolution support is used. The first two
+     required arguments to this specifier are the base and current
+     model versions, respectively. The third optional argument
+     specifies whether the current version is open for changes.
+     Valid values for this argument are <code>open</code> (the
+     default) and <code>closed</code>. For more information on
+     this functionality, refer to <a href="#13">Chapter 13,
+     "Database Schema Evolution"</a>.</p>
+
+
+  <h2><a name="14.7">14.7 Index Definition Pragmas</a></h2>
 
   <p>While it is possible to manually add indexes to the generated
      database schema, it is more convenient to do this as part of
@@ -14909,7 +17258,7 @@ class object
 };
 </pre>
 
-  <h2><a name="14.7">14.7 Database Type Mapping Pragmas</a></h2>
+  <h2><a name="14.8">14.8 Database Type Mapping Pragmas</a></h2>
 
   <p>A pragma with the <code>map</code> qualifier describes a
      mapping between two database types. For each database system
@@ -15110,7 +17459,7 @@ class object
      for each database, shows how to provide custom mapping for some of
      the extended types.</p>
 
-  <h2><a name="14.8">14.8 C++ Compiler Warnings</a></h2>
+  <h2><a name="14.9">14.9 C++ Compiler Warnings</a></h2>
 
   <p>When a C++ header file defining persistent classes and containing
      ODB pragmas is used to build the application, the C++ compiler may
@@ -15163,7 +17512,7 @@ class person
   <p>The disadvantage of this approach is that it can quickly become
      overly verbose when positioned pragmas are used.</p>
 
-  <h3><a name="14.8.1">14.8.1 GNU C++</a></h3>
+  <h3><a name="14.9.1">14.9.1 GNU C++</a></h3>
 
   <p>GNU g++ does not issue warnings about unknown pragmas
      unless requested with the <code>-Wall</code> command line option.
@@ -15175,7 +17524,7 @@ class person
 g++ -Wall -Wno-unknown-pragmas ...
   </pre>
 
-  <h3><a name="14.8.2">14.8.2 Visual C++</a></h3>
+  <h3><a name="14.9.2">14.9.2 Visual C++</a></h3>
 
   <p>Microsoft Visual C++ issues an unknown pragma warning (C4068) at
      warning level 1 or higher. This means that unless we have disabled
@@ -15209,7 +17558,7 @@ class person
 #pragma warning (pop)
   </pre>
 
-  <h3><a name="14.8.3">14.8.3 Sun C++</a></h3>
+  <h3><a name="14.9.3">14.9.3 Sun C++</a></h3>
 
   <p>The Sun C++ compiler does not issue warnings about unknown pragmas
      unless the <code>+w</code> or <code>+w2</code> option is specified.
@@ -15221,7 +17570,7 @@ class person
 CC +w -erroff=unknownpragma ...
   </pre>
 
-  <h3><a name="14.8.4">14.8.4 IBM XL C++</a></h3>
+  <h3><a name="14.9.4">14.9.4 IBM XL C++</a></h3>
 
   <p>IBM XL C++ issues an unknown pragma warning (1540-1401) by default.
      To disable this warning we can add the <code>-qsuppress=1540-1401</code>
@@ -15231,7 +17580,7 @@ CC +w -erroff=unknownpragma ...
 xlC -qsuppress=1540-1401 ...
   </pre>
 
-  <h3><a name="14.8.5">14.8.5 HP aC++</a></h3>
+  <h3><a name="14.9.5">14.9.5 HP aC++</a></h3>
 
   <p>HP aC++ (aCC) issues an unknown pragma warning (2161) by default.
      To disable this warning we can add the <code>+W2161</code>
@@ -15241,7 +17590,7 @@ xlC -qsuppress=1540-1401 ...
 aCC +W2161 ...
   </pre>
 
-  <h3><a name="14.8.6">14.8.6 Clang</a></h3>
+  <h3><a name="14.9.6">14.9.6 Clang</a></h3>
 
   <p>Clang does not issue warnings about unknown pragmas
      unless requested with the <code>-Wall</code> command line option.
@@ -16350,7 +18699,7 @@ class object
 
   <p>It is also possible to add support for additional MySQL types,
      such as geospatial types. For more information, refer to
-     <a href="#14.7">Section 14.7, "Database Type Mapping
+     <a href="#14.8">Section 14.8, "Database Type Mapping
      Pragmas"</a>.</p>
 
   <h3><a name="17.1.1">17.1.1 String Type Mapping</a></h3>
@@ -16911,7 +19260,7 @@ namespace odb
 
   <h2><a name="17.6">17.6 MySQL Index Definitions</a></h2>
 
-  <p>When the <code>index</code> pragma (<a href="#14.6">Section 14.6,
+  <p>When the <code>index</code> pragma (<a href="#14.7">Section 14.7,
      "Index Definition Pragmas"</a>) is used to define a MySQL index,
      the <code>type</code> clause specifies the index type (for example,
      <code>UNIQUE</code>, <code>FULLTEXT</code>, <code>SPATIAL</code>),
@@ -17096,7 +19445,7 @@ class object
 
   <p>It is also possible to add support for additional SQLite types,
      such as <code>NUMERIC</code>. For more information, refer to
-     <a href="#14.7">Section 14.7, "Database Type Mapping
+     <a href="#14.8">Section 14.8, "Database Type Mapping
      Pragmas"</a>.</p>
 
   <h3><a name="18.1.1">18.1.1 String Type Mapping</a></h3>
@@ -17824,9 +20173,81 @@ CREATE TABLE Employee (
      Recovery</a>). As a result, the recommended way to handle this
      exception is to re-execute the affected transaction.</p>
 
+  <h3><a name="18.5.7">18.5.7 Database Schema Evolution</a></h3>
+
+  <p>From the list of schema migration changes supported by ODB
+     (<a href="#13.2">Section 13.2, "Schema Migration"</a>), the
+     following are not supported by SQLite:</p>
+
+  <ul class="list">
+    <li>drop column</li>
+    <li>alter column, set <code>NULL</code>/<code>NOT NULL</code></li>
+    <li>add foreign key</li>
+    <li>drop foreign key</li>
+  </ul>
+
+  <p>The biggest problem is the lack of support for dropping columns.
+     This means that it would be impossible to delete a data member
+     in a persistent class. To work around this limitation ODB
+     implements <em>logical delete</em> for columns that allow
+     <code>NULL</code> values. In this case, instead of dropping
+     the column (in the post-migration stage), the schema migration
+     statements will automatically reset this column in all the
+     existing rows to <code>NULL</code>. Any new rows that are
+     inserted later will also automatically have this column set
+     to <code>NULL</code> (unless the column specifies a default
+     value).</p>
+
+  <p>Since it is also impossible to change the column's
+     <code>NULL</code>/<code>NOT NULL</code> attribute after it
+     has been added, to make schema evolution support usable in
+     SQLite, all the columns should be added as <code>NULL</code>
+     even if semantically they should not allow <code>NULL</code>
+     values. We should also normally refrain from assigning
+     default value to columns (<a href="#14.4.7">Section 14.4.7,
+     <code>default</code></a>), unless the space overhead of
+     a default value is not a concern. Explicitly making all
+     the data members <code>NULL</code> would be burdensome
+     and ODB provides the <code>--sqlite-override-null</code>
+     command line option that forces all the columns, even those
+     that were explicitly marked <code>NOT NULL</code>, to be
+     <code>NULL</code> in SQLite.</p>
+
+  <p>SQLite only supports adding foreign keys as part of the
+     column addition. As a result, we can only add a new
+     data member of an object pointer type if it points
+     to an object with a simple (single-column) object id.</p>
+
+  <p>SQLite also doesn't support dropping of foreign keys.
+     Leaving a foreign key around works well with logical
+     delete unless we also want to delete the pointed-to
+     object. In this case we will have to leave an
+     empty table corresponding to the pointed-to object
+     around. An alternative would be to make a copy of the
+     pointing object without the object pointer, migrate the
+     data, and then delete both the old pointing and the
+     pointed-to objects. Since this will result in dropping
+     of the pointing table, the foreign key will be dropped
+     as well. Yet another, more radical, solution to this
+     problem is to disable foreign keys checking altogether
+     (see the <code>foreign_keys</code> SQLite pragma).</p>
+
+  <p>To summarize, to make schema evolution support usable
+     in SQLite we should pass the <code>--sqlite-override-null</code>
+     option when compiling our persistent classes and also refrain
+     from assigning default values to data members. Note also that
+     this has to be done from the start so that every column is added
+     as <code>NULL</code> and therefore can be logically deleted later.
+     In particular, you cannot add the <code>--sqlite-override-null</code>
+     option when you realize you need to delete a data member. At this
+     point it is too late since the column has already been added
+     as <code>NOT NULL</code> in existing databases. We should also
+     avoid composite object ids if we are planning to use object
+     relationships.</p>
+
   <h2><a name="18.6">18.6 SQLite Index Definitions</a></h2>
 
-  <p>When the <code>index</code> pragma (<a href="#14.6">Section 14.6,
+  <p>When the <code>index</code> pragma (<a href="#14.7">Section 14.7,
      "Index Definition Pragmas"</a>) is used to define an SQLite index,
      the <code>type</code> clause specifies the index type (for example,
      <code>UNIQUE</code>) while the <code>method</code> and
@@ -18002,7 +20423,7 @@ class object
      such as <code>NUMERIC</code>, geometry types, <code>XML</code>,
      <code>JSON</code>, enumeration types, composite types, arrays,
      geospatial types, and the key-value store (<code>HSTORE</code>).
-     For more information, refer to <a href="#14.7">Section 14.7,
+     For more information, refer to <a href="#14.8">Section 14.8,
      "Database Type Mapping Pragmas"</a>.</p>
 
   <h3><a name="19.1.1">19.1.1 String Type Mapping</a></h3>
@@ -18562,7 +20983,7 @@ SHOW integer_datetimes
   <p>ODB does not currently natively support the PostgreSQL date-time types
      with timezone information. However, these types can be accessed by
      mapping them to one of the natively supported types, as discussed
-     in <a href="#14.7">Section 14.7, "Database Type Mapping Pragmas"</a>.</p>
+     in <a href="#14.8">Section 14.8, "Database Type Mapping Pragmas"</a>.</p>
 
   <h3><a name="19.5.6">19.5.6 <code>NUMERIC</code> Type Support</a></h3>
 
@@ -18572,13 +20993,13 @@ SHOW integer_datetimes
      store <code>NUMERIC</code> values refer to the PostgreSQL
      documentation. An alternative approach to accessing <code>NUMERIC</code>
      values is to map this type to one of the natively supported
-     ones, as discussed in <a href="#14.7">Section 14.7, "Database
+     ones, as discussed in <a href="#14.8">Section 14.8, "Database
      Type Mapping Pragmas"</a>.</p>
 
 
   <h2><a name="19.6">19.6 PostgreSQL Index Definitions</a></h2>
 
-  <p>When the <code>index</code> pragma (<a href="#14.6">Section 14.6,
+  <p>When the <code>index</code> pragma (<a href="#14.7">Section 14.7,
      "Index Definition Pragmas"</a>) is used to define a PostgreSQL index,
      the <code>type</code> clause specifies the index type (for example,
      <code>UNIQUE</code>), the <code>method</code> clause specifies the
@@ -18760,7 +21181,7 @@ class object
   <p>It is also possible to add support for additional Oracle types,
      such as <code>XML</code>, geospatial types, user-defined types,
      and collections (arrays, table types). For more information, refer to
-     <a href="#14.7">Section 14.7, "Database Type Mapping
+     <a href="#14.8">Section 14.8, "Database Type Mapping
      Pragmas"</a>.</p>
 
   <h3><a name="20.1.1">20.1.1 String Type Mapping</a></h3>
@@ -19455,8 +21876,8 @@ CREATE TABLE Employee (
 
   <p>An alternative approach to accessing large <code>FLOAT</code> and
      <code>NUMBER</code> values is to map these type to one of the
-     natively supported ones, as discussed in <a href="#14.7">Section
-     14.7, "Database Type Mapping Pragmas"</a>.</p>
+     natively supported ones, as discussed in <a href="#14.8">Section
+     14.8, "Database Type Mapping Pragmas"</a>.</p>
 
   <p>Note that a <code>NUMBER</code> type that is used to represent a
      floating point number (declared by specifying <code>NUMBER</code>
@@ -19468,14 +21889,14 @@ CREATE TABLE Employee (
   <p>ODB does not currently support the Oracle date-time types with timezone
      information. However, these types can be accessed by mapping them to
      one of the natively supported types, as discussed in
-     <a href="#14.7">Section 14.7, "Database Type Mapping Pragmas"</a>.</p>
+     <a href="#14.8">Section 14.8, "Database Type Mapping Pragmas"</a>.</p>
 
   <h3><a name="20.5.7">20.5.7 <code>LONG</code> Types</a></h3>
 
   <p>ODB does not support the deprecated Oracle <code>LONG</code> and
      <code>LONG RAW</code> data types. However, these types can be accessed
      by mapping them to one of the natively supported types, as discussed
-     in <a href="#14.7">Section 14.7, "Database Type Mapping Pragmas"</a>.</p>
+     in <a href="#14.8">Section 14.8, "Database Type Mapping Pragmas"</a>.</p>
 
   <h3><a name="20.5.8">20.5.8 LOB Types and By-Value Accessors/Modifiers</a></h3>
 
@@ -19488,9 +21909,24 @@ CREATE TABLE Employee (
      data members. As a result, by-reference accessors and modifiers
      should be used for these data types.</p>
 
+  <h3><a name="20.5.9">20.5.9 Database Schema Evolution</a></h3>
+
+  <p>In Oracle, the type of the <code>name</code> column in the
+     <code>schema_version</code> table is <code>VARCHAR2(512)</code>.
+     Because this column is a primary key and <code>VARCHAR2</code>
+     represents empty strings as <code>NULL</code> values, it is
+     impossible to store an empty string in this column, which
+     is what is used to represent the default schema name. As a
+     result, in Oracle, the empty schema name is stored as a
+     string containing a single space character. ODB performs
+     all the necessary translations automatically and normally
+     you do not need to worry about this implementation detail
+     unless you are querying or modifying the <code>schema_version</code>
+     table directly.</p>
+
   <h2><a name="20.6">20.6 Oracle Index Definitions</a></h2>
 
-  <p>When the <code>index</code> pragma (<a href="#14.6">Section 14.6,
+  <p>When the <code>index</code> pragma (<a href="#14.7">Section 14.7,
      "Index Definition Pragmas"</a>) is used to define an Oracle index,
      the <code>type</code> clause specifies the index type (for example,
      <code>UNIQUE</code>, <code>BITMAP</code>), the <code>method</code>
@@ -19698,7 +22134,7 @@ class object
 
   <p>It is also possible to add support for additional SQL Server types,
      such as geospatial types, <code>XML</code>, and user-defined types.
-     For more information, refer to <a href="#14.7">Section 14.7, "Database
+     For more information, refer to <a href="#14.8">Section 14.8, "Database
      Type Mapping Pragmas"</a>.</p>
 
   <h3><a name="21.1.1">21.1.1 String Type Mapping</a></h3>
@@ -20624,7 +23060,7 @@ namespace odb
 
   <h2><a name="21.6">21.6 SQL Server Index Definitions</a></h2>
 
-  <p>When the <code>index</code> pragma (<a href="#14.6">Section 14.6,
+  <p>When the <code>index</code> pragma (<a href="#14.7">Section 14.7,
      "Index Definition Pragmas"</a>) is used to define an SQL Server index,
      the <code>type</code> clause specifies the index type (for example,
      <code>UNIQUE</code>, <code>CLUSTERED</code>), the <code>method</code>
@@ -21634,8 +24070,8 @@ class object
   </table>
 
   <p>Instances of the <code>QString</code> and <code>QByteArray</code>
-     types are stored as a NULL value if their <code>isNull()</code>
-     member function returns <code>true</code>.</p>
+     types are stored as a <code>NULL</code> value if their
+     <code>isNull()</code> member function returns <code>true</code>.</p>
 
   <p>Note also that the <code>QString</code> type is mapped
      differently depending on whether a member of this type
@@ -21697,8 +24133,8 @@ class Person
   </table>
 
   <p>Instances of the <code>QString</code> and <code>QByteArray</code> types
-     are stored as a NULL value if their <code>isNull()</code> member
-     function returns <code>true</code>.</p>
+     are stored as a <code>NULL</code> value if their <code>isNull()</code>
+     member function returns <code>true</code>.</p>
 
   <h3><a name="24.1.3">24.1.3 PostgreSQL Database Type Mapping</a></h3>
 
@@ -21733,8 +24169,8 @@ class Person
   </table>
 
   <p>Instances of the <code>QString</code> and <code>QByteArray</code> types
-     are stored as a NULL value if their <code>isNull()</code> member
-     function returns <code>true</code>.</p>
+     are stored as a <code>NULL</code> value if their <code>isNull()</code>
+     member function returns <code>true</code>.</p>
 
   <p>The <code>basic</code> sub-profile also provides support
      for mapping <code>QString</code> to the <code>CHAR</code>
@@ -21788,8 +24224,8 @@ class Person
   </table>
 
   <p>Instances of the <code>QString</code> and <code>QByteArray</code> types
-     are stored as a NULL value if their <code>isNull()</code> member
-     function returns <code>true</code>.</p>
+     are stored as a <code>NULL</code> value if their <code>isNull()</code>
+     member function returns <code>true</code>.</p>
 
   <p>The <code>basic</code> sub-profile also provides support
      for mapping <code>QString</code> to the <code>CHAR</code>,
@@ -21847,8 +24283,8 @@ class Person
   </table>
 
   <p>Instances of the <code>QString</code> and <code>QByteArray</code> types
-     are stored as a NULL value if their <code>isNull()</code> member
-     function returns <code>true</code>.</p>
+     are stored as a <code>NULL</code> value if their <code>isNull()</code>
+     member function returns <code>true</code>.</p>
 
   <p>Note also that the <code>QString</code> type is mapped
      differently depending on whether a member of this type
@@ -22249,8 +24685,8 @@ namespace odb
   </table>
 
   <p>Instances of the <code>QDate</code>, <code>QTime</code>, and
-     <code>QDateTime</code> types are stored as a NULL value if their
-     <code>isNull()</code> member function returns true.</p>
+     <code>QDateTime</code> types are stored as a <code>NULL</code> value
+     if their <code>isNull()</code> member function returns true.</p>
 
   <p>The <code>date-time</code> sub-profile implementation also provides
      support for mapping <code>QDateTime</code> to the <code>TIMESTAMP</code>
@@ -22340,8 +24776,8 @@ class Person
   </table>
 
   <p>Instances of the <code>QDate</code>, <code>QTime</code>, and
-     <code>QDateTime</code> types are stored as a NULL value if their
-     <code>isNull()</code> member function returns true.</p>
+     <code>QDateTime</code> types are stored as a <code>NULL</code> value
+     if their <code>isNull()</code> member function returns true.</p>
 
   <p>The <code>date-time</code> sub-profile implementation also provides
      support for mapping <code>QDate</code> and <code>QDateTime</code> to the
@@ -22402,8 +24838,8 @@ class Person
   </table>
 
   <p>Instances of the <code>QDate</code>, <code>QTime</code>, and
-     <code>QDateTime</code> types are stored as a NULL value if their
-     <code>isNull()</code> member function returns true.</p>
+     <code>QDateTime</code> types are stored as a <code>NULL</code> value
+     if their <code>isNull()</code> member function returns true.</p>
 
   <h3><a name="24.4.4">24.4.4 Oracle Database Type Mapping</a></h3>
 
@@ -22438,8 +24874,8 @@ class Person
   </table>
 
   <p>Instances of the <code>QDate</code>, <code>QTime</code>, and
-     <code>QDateTime</code> types are stored as a NULL value if their
-     <code>isNull()</code> member function returns true.</p>
+     <code>QDateTime</code> types are stored as a <code>NULL</code> value
+     if their <code>isNull()</code> member function returns true.</p>
 
   <p>The <code>date-time</code> sub-profile implementation also provides
      support for mapping <code>QDateTime</code> to the
@@ -22492,8 +24928,8 @@ class person
   </table>
 
   <p>Instances of the <code>QDate</code>, <code>QTime</code>, and
-     <code>QDateTime</code> types are stored as a NULL value if their
-     <code>isNull()</code> member function returns true.</p>
+     <code>QDateTime</code> types are stored as a <code>NULL</code> value
+     if their <code>isNull()</code> member function returns true.</p>
 
   <p>Note that the <code>DATE</code>, <code>TIME</code>, and
      <code>DATETIME2</code> types are only available in SQL Server 2008 and
