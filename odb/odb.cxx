@@ -695,13 +695,6 @@ main (int argc, char* argv[])
           //
           continue;
         }
-        else if (a == "--std")
-        {
-          // Translated to GCC -std=.
-          //
-          ++i;
-          continue;
-        }
         else if (a == "-d" || a == "--databse")
         {
           // Ignore all other databases.
