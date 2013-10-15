@@ -12658,8 +12658,8 @@ main ()
      migration functions with <code>schema_catalog</code>. At the
      lower level we can call the <code>data_migration_function()</code>
      static function for every migration function we have, for example,
-     at the beginning of <code>main()</code>. Data migration functions
-     are called in the order of registration.</p>
+     at the beginning of <code>main()</code>. For each version, data
+     migration functions are called in the order of registration.</p>
 
   <p>A more convenient approach, however, is to use the
      <code>data_migration_entry</code> helper class template to register the
