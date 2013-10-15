@@ -1926,16 +1926,25 @@ database_type_impl (semantics::type& t,
                     bool id,
                     bool* null)
 {
-  type_map_type::const_iterator i (data_->type_map_.find (t, hint));
+  using semantics::enum_;
 
+  // By default map an enum as its underlying type.
+  //
+  if (enum_* e = dynamic_cast<enum_*> (&t))
+    return database_type_impl (
+      e->underlying_type (), e->underlying_type_hint (), id, null);
+
+  // Built-in type mapping.
+  //
+  type_map_type::const_iterator i (data_->type_map_.find (t, hint));
   if (i != data_->type_map_.end ())
   {
     if (null != 0)
       *null = i->second.null;
     return id ? i->second.id_type : i->second.type;
   }
-  else
-    return string ();
+
+  return string ();
 }
 
 static string

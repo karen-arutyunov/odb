@@ -13,7 +13,7 @@ namespace semantics
   // Fundamental C++ types.
   //
 
-  struct fund_type: public type
+  struct fund_type: type
   {
     virtual string
     fq_name () const;
@@ -27,84 +27,105 @@ namespace semantics
     fund_void (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
   };
 
-  struct fund_bool: fund_type
-  {
-    fund_bool (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
-  };
-
   //
   // Integral.
   //
 
-  struct fund_char: fund_type
+  struct integral_type: fund_type
+  {
+    virtual bool
+    unsigned_ () const = 0;
+  };
+
+  struct fund_bool: integral_type
+  {
+    fund_bool (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return true;}
+  };
+
+  struct fund_char: integral_type
   {
     fund_char (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const;
   };
 
-  struct fund_wchar: fund_type
+  struct fund_wchar: integral_type
   {
     fund_wchar (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const;
   };
 
-  struct fund_char16: fund_type
+  struct fund_char16: integral_type
   {
     fund_char16 (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return true;}
   };
 
-  struct fund_char32: fund_type
+  struct fund_char32: integral_type
   {
     fund_char32 (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return true;}
   };
 
-  struct fund_signed_char: fund_type
+  struct fund_signed_char: integral_type
   {
     fund_signed_char (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return false;}
   };
 
-  struct fund_unsigned_char: fund_type
+  struct fund_unsigned_char: integral_type
   {
     fund_unsigned_char (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return true;}
   };
 
-  struct fund_short: fund_type
+  struct fund_short: integral_type
   {
     fund_short (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return false;}
   };
 
-  struct fund_unsigned_short: fund_type
+  struct fund_unsigned_short: integral_type
   {
     fund_unsigned_short (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return true;}
   };
 
-  struct fund_int: fund_type
+  struct fund_int: integral_type
   {
     fund_int (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return false;}
   };
 
-  struct fund_unsigned_int: fund_type
+  struct fund_unsigned_int: integral_type
   {
     fund_unsigned_int (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return true;}
   };
 
-  struct fund_long: fund_type
+  struct fund_long: integral_type
   {
     fund_long (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return false;}
   };
 
-  struct fund_unsigned_long: fund_type
+  struct fund_unsigned_long: integral_type
   {
     fund_unsigned_long (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return true;}
   };
 
-  struct fund_long_long: fund_type
+  struct fund_long_long: integral_type
   {
     fund_long_long (tree tn): node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return false;}
   };
 
-  struct fund_unsigned_long_long: fund_type
+  struct fund_unsigned_long_long: integral_type
   {
     fund_unsigned_long_long (tree tn)
         : node (path ("<fundamental>"), 0, 0, tn) {}
+    virtual bool unsigned_ () const {return true;}
   };
 
   //

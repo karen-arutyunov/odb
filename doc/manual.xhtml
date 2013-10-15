@@ -15809,10 +15809,11 @@ class person
   <p>Default values specified as enumerators are only supported for
      members that are mapped to an <code>ENUM</code> or an integer
      type in the database, which is the case for the automatic
-     mapping of C++ enums to suitable database types as performed
-     by the ODB compiler. If you have mapped a C++ enum to another
-     database type, then you should use a literal corresponding
-     to that type to specify the default value. For example:</p>
+     mapping of C++ enums and enum classes to suitable database
+     types as performed by the ODB compiler. If you have mapped
+     a C++ enum or enum class to another database type, then you
+     should use a literal corresponding to that type to specify
+     the default value. For example:</p>
 
   <pre class="cxx">
 enum gender {male, female, undisclosed};
@@ -18670,16 +18671,18 @@ person.hxx
      to the <code>VARCHAR(255)</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT</code>.</p>
 
-  <p>Additionally, by default, C++ enumerations are automatically
-     mapped to a suitable MySQL type. Contiguous enumerations with
-     the zero first enumerator are mapped to the MySQL <code>ENUM</code>
-     type. All other enumerations are mapped to <code>INT</code> or
-     <code>INT UNSIGNED</code>. In both cases the default <code>NULL</code>
-     semantics is <code>NOT NULL</code>. For example:</p>
+  <p>Additionally, by default, C++ enums and C++11 enum classes are
+     automatically mapped to suitable MySQL types. Contiguous
+     enumerations with the zero first enumerator are mapped to
+     the MySQL <code>ENUM</code> type. All other enumerations
+     are mapped to the MySQL types corresponding to their
+     underlying integral types (see table above). In both
+     cases the default <code>NULL</code> semantics is
+     <code>NOT NULL</code>. For example:</p>
 
   <pre class="cxx">
 enum color {red, green, blue};
-enum taste
+enum class taste: unsigned char
 {
   bitter = 1, // Non-zero first enumerator.
   sweet,
@@ -18693,7 +18696,7 @@ class object
   ...
 
   color color_; // Mapped to ENUM ('red', 'green', 'blue') NOT NULL.
-  taste taste_; // Mapped to INT UNSIGNED NOT NULL.
+  taste taste_; // Mapped to TINYNT UNSIGNED NOT NULL.
 };
   </pre>
 
@@ -19433,9 +19436,30 @@ class object
      <code>db&nbsp;not_null</code> pragma (<a href="#14.4.6">Section
      14.4.6, "<code>null/not_null</code>"</a>).</p>
 
-  <p>Additionally, by default, C++ enumerations are automatically mapped to
-     the SQLite <code>INTEGER</code> type with the default <code>NULL</code>
-     semantics being <code>NOT NULL</code>.</p>
+  <p>Additionally, by default, C++ enums and C++11 enum classes are
+     automatically mapped to the SQLite <code>INTEGER</code> type with
+     the default <code>NULL</code> semantics being <code>NOT NULL</code>.
+     For example:</p>
+
+  <pre class="cxx">
+enum color {red, green, blue};
+enum class taste: unsigned char
+{
+  bitter = 1,
+  sweet,
+  sour = 4,
+  salty
+};
+
+#pragma db object
+class object
+{
+  ...
+
+  color color_; // Automatically mapped to INTEGER.
+  taste taste_; // Automatically mapped to INTEGER.
+};
+  </pre>
 
   <p>Note also that SQLite only operates with signed integers and the largest
      value that an SQLite database can store is a signed 64-bit integer. As
@@ -20406,9 +20430,31 @@ class object
      <code>db&nbsp;type</code> pragma (<a href="#14.4.3">Section 14.4.3,
      "<code>type</code>"</a>).</p>
 
-  <p>Additionally, by default, C++ enumerations are automatically
-     mapped to <code>INTEGER</code> with the default <code>NULL</code>
-     semantics being <code>NOT NULL</code>.</p>
+  <p>Additionally, by default, C++ enums and C++11 enum classes are
+     automatically mapped to the PostgreSQL types corresponding to their
+     underlying integral types (see table above). The default
+     <code>NULL</code> semantics is <code>NOT NULL</code>. For
+     example:</p>
+
+  <pre class="cxx">
+enum color {red, green, blue};
+enum class taste: unsigned char
+{
+  bitter = 1,
+  sweet,
+  sour = 4,
+  salty
+};
+
+#pragma db object
+class object
+{
+  ...
+
+  color color_; // Automatically mapped to INTEGER.
+  taste taste_; // Automatically mapped to SMALLINT.
+};
+  </pre>
 
   <p>Note also that because PostgreSQL does not support unsigned integers,
      the <code>unsigned&nbsp;short</code>, <code>unsigned&nbsp;int</code>, and
@@ -21174,9 +21220,31 @@ class object
      object ids that are mapped to these Oracle types, an empty string is
      an invalid value.</p>
 
-  <p>Additionally, by default, C++ enumerations are automatically
-     mapped to <code>NUMBER(10)</code> with the default <code>NULL</code>
-     semantics being <code>NOT NULL</code>.</p>
+  <p>Additionally, by default, C++ enums and C++11 enum classes are
+     automatically mapped to the Oracle types corresponding to their
+     underlying integral types (see table above). The default
+     <code>NULL</code> semantics is <code>NOT NULL</code>. For
+     example:</p>
+
+  <pre class="cxx">
+enum color {red, green, blue};
+enum class taste: unsigned char
+{
+  bitter = 1,
+  sweet,
+  sour = 4,
+  salty
+};
+
+#pragma db object
+class object
+{
+  ...
+
+  color color_; // Automatically mapped to NUMBER(10).
+  taste taste_; // Automatically mapped to NUMBER(3).
+};
+  </pre>
 
   <p>It is also possible to add support for additional Oracle types,
      such as <code>XML</code>, geospatial types, user-defined types,
@@ -22114,9 +22182,31 @@ class object
      always change this mapping using the <code>db&nbsp;type</code> pragma
      (<a href="#14.4.3">Section 14.4.3, "<code>type</code>"</a>).</p>
 
-  <p>Additionally, by default, C++ enumerations are automatically
-     mapped to <code>INT</code> with the default <code>NULL</code>
-     semantics being <code>NOT NULL</code>.</p>
+  <p>Additionally, by default, C++ enums and C++11 enum classes are
+     automatically mapped to the SQL Server types corresponding to their
+     underlying integral types (see table above). The default
+     <code>NULL</code> semantics is <code>NOT NULL</code>. For
+     example:</p>
+
+  <pre class="cxx">
+enum color {red, green, blue};
+enum class taste: unsigned char
+{
+  bitter = 1,
+  sweet,
+  sour = 4,
+  salty
+};
+
+#pragma db object
+class object
+{
+  ...
+
+  color color_; // Automatically mapped to INT.
+  taste taste_; // Automatically mapped to TINYINT.
+};
+  </pre>
 
   <p>Note also that because SQL Server does not support unsigned integers,
      the <code>unsigned&nbsp;short</code>, <code>unsigned&nbsp;int</code>, and

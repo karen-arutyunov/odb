@@ -10,6 +10,10 @@ Version 2.3.0
    to Chapter 9, "Sections" in the ODB manual as well as the 'section'
    example in the odb-examples package.
 
+ * Support for automatic mapping of C++11 enum classes in addition to the
+   "old" enums. For more information, refer to the ODB manual "Type Mapping"
+   sections for each database system.
+
  * Support for pattern matching (SQL LIKE operator) in the C++-integrated
    queries. For more information, refer to Section 4.1, "ODB Query Language"
    in the ODB manual.

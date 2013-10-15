@@ -22,13 +22,18 @@ namespace semantics
   {
   }
 
+  underlies::
+  underlies ()
+      : type_ (0), enum__ (0), hint_ (0)
+  {
+  }
+
   enum_::
   enum_ (path const& file,
          size_t line,
          size_t column,
-         tree tn,
-         bool unsigned_)
-      : node (file, line, column, tn), unsigned__ (unsigned_)
+         tree tn)
+      : node (file, line, column, tn)
   {
   }
 
@@ -54,7 +59,16 @@ namespace semantics
         //
         {
           type_info ti (typeid (enumerator));
+          ti.add_base (typeid (nameable));
           ti.add_base (typeid (instance));
+          insert (ti);
+        }
+
+        // underlies
+        //
+        {
+          type_info ti (typeid (underlies));
+          ti.add_base (typeid (edge));
           insert (ti);
         }
 
@@ -63,6 +77,7 @@ namespace semantics
         {
           type_info ti (typeid (enum_));
           ti.add_base (typeid (type));
+          ti.add_base (typeid (scope));
           insert (ti);
         }
       }

@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <odb/semantics/elements.hxx>
+#include <odb/semantics/fundamental.hxx>
 
 namespace semantics
 {
@@ -101,7 +102,62 @@ namespace semantics
 
   //
   //
-  class enum_: public type
+  class underlies: public edge
+  {
+  public:
+    typedef semantics::enum_ enum_type;
+
+    integral_type&
+    type () const
+    {
+      return *type_;
+    }
+
+    enum_type&
+    enum_ () const
+    {
+      return *enum__;
+    }
+
+    // Names edge in terms of which this edge was defined. Can be NULL.
+    //
+  public:
+    void
+    hint (names& hint)
+    {
+      hint_ = &hint;
+    }
+
+    names*
+    hint () const
+    {
+      return hint_;
+    }
+
+  public:
+    underlies ();
+
+    void
+    set_left_node (integral_type& n)
+    {
+      type_ = &n;
+    }
+
+    void
+    set_right_node (enum_type& n)
+    {
+      enum__ = &n;
+    }
+
+  protected:
+    integral_type* type_;
+    enum_type* enum__;
+    names* hint_;
+  };
+
+  //
+  //
+  class enum_: public type, public scope
   {
   private:
     typedef std::vector<enumerates*> enumerates_list;
@@ -123,14 +179,38 @@ namespace semantics
       return enumerates_.end ();
     }
 
+    underlies&
+    underlied () const
+    {
+      return *underlied_;
+    }
+
+    integral_type&
+    underlying_type () const
+    {
+      return underlied_->type ();
+    }
+
+    names*
+    underlying_type_hint () const
+    {
+      return underlied_->hint ();
+    }
+
     bool
     unsigned_ () const
     {
-      return unsigned__;
+      return underlying_type ().unsigned_ ();
     }
 
   public:
-    enum_ (path const&, size_t line, size_t column, tree, bool unsigned_);
+    enum_ (path const&, size_t line, size_t column, tree);
+
+    void
+    add_edge_right (underlies& e)
+    {
+      underlied_ = &e;
+    }
 
     void
     add_edge_left (enumerates& e)
@@ -138,9 +218,11 @@ namespace semantics
       enumerates_.push_back (&e);
     }
 
+    using scope::add_edge_left;
+
   private:
-    bool unsigned__;
     enumerates_list enumerates_;
+    underlies* underlied_;
   };
 }
 

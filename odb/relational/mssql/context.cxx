@@ -156,18 +156,11 @@ namespace relational
       if (!r.empty ())
         return r;
 
-      using semantics::enum_;
       using semantics::array;
 
-      // Enum mapping.
-      //
-      if (t.is_a<semantics::enum_> ())
-      {
-        r = "INT";
-      }
       // char[N] mapping.
       //
-      else if (array* a = dynamic_cast<array*> (&t))
+      if (array* a = dynamic_cast<array*> (&t))
       {
         semantics::type& bt (a->base_type ());
         bool c (bt.is_a<semantics::fund_char> ());

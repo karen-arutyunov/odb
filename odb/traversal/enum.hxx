@@ -12,10 +12,7 @@ namespace traversal
 {
   struct enumerates: edge<semantics::enumerates>
   {
-    enumerates ()
-    {
-    }
-
+    enumerates () {}
     enumerates (node_dispatcher& n)
     {
       node_traverser (n);
@@ -27,10 +24,28 @@ namespace traversal
 
   struct enumerator: node<semantics::enumerator> {};
 
+  struct underlies: edge<semantics::underlies>
+  {
+    underlies () {}
+    underlies (node_dispatcher& n)
+    {
+      node_traverser (n);
+    }
+
+    virtual void
+    traverse (type&);
+  };
+
   struct enum_: node<semantics::enum_>
   {
     virtual void
     traverse (type&);
+
+    virtual void
+    underlied (type&);
+
+    virtual void
+    underlied (type&, edge_dispatcher&);
 
     virtual void
     enumerates (type&);

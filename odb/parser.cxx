@@ -746,7 +746,7 @@ parse (tree global_scope, path const& main_file)
   define_fund<fund_char> (char_type_node);
   define_fund<fund_wchar> (wchar_type_node);
 
-  if (ops_.std () == cxx_version::cxx11)
+  if (ops_.std () >= cxx_version::cxx11)
   {
     define_fund<fund_char16> (char16_type_node);
     define_fund<fund_char32> (char32_type_node);
@@ -1422,8 +1422,29 @@ emit_enum (tree e,
     e_node = &dynamic_cast<enum_&> (*n);
   else
   {
-    e_node = &unit_->new_node<enum_> (
-      file, line, clmn, e, TYPE_UNSIGNED (e) != 0);
+    e_node = &unit_->new_node<enum_> (file, line, clmn, e);
+
+    // Set the underlying type even for incomplete (forward-declared) enums.
+    //
+    tree ut (ENUM_UNDERLYING_TYPE (e));
+    names* hint (unit_->find_hint (ut));
+    integral_type* un = dynamic_cast<integral_type*> (
+      unit_->find (TYPE_MAIN_VARIANT (ut)));
+
+    // For "old" enums GCC creates a distinct type node and the only way to
+    // get to one of the known integrals is via its name.
+    //
+    if (un == 0)
+    {
+      ut =  TREE_TYPE (TYPE_NAME (ut));
+      un = dynamic_cast<integral_type*> (unit_->find (TYPE_MAIN_VARIANT (ut)));
+    }
+
+    underlies& edge (unit_->new_edge<underlies> (*un, *e_node));
+
+    if (hint != 0)
+      edge.hint (*hint);
+
     unit_->insert (e, *e_node);
   }
 
@@ -1459,9 +1480,17 @@ emit_enum (tree e,
     unit_->new_edge<enumerates> (*e_node, er_node);
     unit_->insert (decl, er_node);
 
-    // Inject enumerators into the outer scope.
+    // In C++11 the enumerators are always available in the enum's
+    // scope, even for old enums.
     //
-    unit_->new_edge<names> (*scope_, er_node, name, access);
+    if (ops_.std () >= cxx_version::cxx11)
+      unit_->new_edge<names> (*e_node, er_node, name, access::public_);
+
+    // Inject enumerators into the outer scope unless this is an
+    // enum class.
+    //
+    if (UNSCOPED_ENUM_P (e))
+      unit_->new_edge<names> (*scope_, er_node, name, access);
 
     if (trace)
       ts << "\tenumerator " << name << " at " << file << ":" << line << endl;

@@ -178,9 +178,10 @@ namespace semantics
     // edges.
     //
     void
-    add_edge_right (edge&)
-    {
-    }
+    add_edge_left (edge&) {}
+
+    void
+    add_edge_right (edge&) {}
 
   protected:
     // For virtual inheritance. Should never be actually called.

@@ -286,14 +286,11 @@ namespace relational
                         bool id,
                         bool* null)
     {
-      string r (base_context::database_type_impl (t, hint, id, null));
-
-      if (!r.empty ())
-        return r;
-
       using semantics::enum_;
       using semantics::enumerator;
       using semantics::array;
+
+      string r;
 
       // Enum mapping.
       //
@@ -302,43 +299,41 @@ namespace relational
         // We can only map to ENUM if the C++ enumeration is contiguous
         // and starts with 0.
         //
-        if (e->unsigned_ ())
-        {
-          enum_::enumerates_iterator i (e->enumerates_begin ()),
-            end (e->enumerates_end ());
+        enum_::enumerates_iterator i (e->enumerates_begin ()),
+          end (e->enumerates_end ());
 
-          if (i != end)
+        if (i != end)
+        {
+          r += "ENUM(";
+
+          for (unsigned long long j (0); i != end; ++i, ++j)
           {
-            r += "ENUM(";
+            enumerator const& er (i->enumerator ());
 
-            for (unsigned long long j (0); i != end; ++i, ++j)
-            {
-              enumerator const& er (i->enumerator ());
+            if (er.value () != j)
+              break;
 
-              if (er.value () != j)
-                break;
+            if (j != 0)
+              r += ", ";
 
-              if (j != 0)
-                r += ", ";
-
-              r += quote_string (er.name ());
-            }
-
-            if (i == end)
-              r += ")";
-            else
-              r.clear ();
+            r += quote_string (er.name ());
           }
+
+          if (i == end)
+            r += ")";
+          else
+            r.clear ();
         }
 
-        if (r.empty ())
-        {
-          r = "INT";
-
-          if (e->unsigned_ ())
-            r += " UNSIGNED";
-        }
+        if (!r.empty ())
+          return r;
       }
+
+      r = base_context::database_type_impl (t, hint, id, null);
+
+      if (!r.empty ())
+        return r;
+
       // char[N] mapping.
       //
       else if (array* a = dynamic_cast<array*> (&t))

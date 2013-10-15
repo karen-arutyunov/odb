@@ -2,6 +2,8 @@
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <odb/gcc.hxx>
+
 #include <cutl/compiler/type-info.hxx>
 #include <odb/semantics/fundamental.hxx>
 
@@ -20,6 +22,22 @@ namespace semantics
       return name ();
 
     return type::fq_name (hint);
+  }
+
+  // char
+  //
+  bool fund_char::
+  unsigned_ () const
+  {
+    return TYPE_UNSIGNED (tree_node ()) != 0;
+  }
+
+  // wchar_t
+  //
+  bool fund_wchar::
+  unsigned_ () const
+  {
+    return TYPE_UNSIGNED (tree_node ()) != 0;
   }
 
   // type info
@@ -48,11 +66,19 @@ namespace semantics
           insert (ti);
         }
 
+        // integral_type
+        //
+        {
+          type_info ti (typeid (integral_type));
+          ti.add_base (typeid (fund_type));
+          insert (ti);
+        }
+
         // fund_bool
         //
         {
           type_info ti (typeid (fund_bool));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -60,7 +86,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_char));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -68,7 +94,23 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_wchar));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
+          insert (ti);
+        }
+
+        // fund_char16
+        //
+        {
+          type_info ti (typeid (fund_char16));
+          ti.add_base (typeid (integral_type));
+          insert (ti);
+        }
+
+        // fund_char32
+        //
+        {
+          type_info ti (typeid (fund_char32));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -76,7 +118,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_signed_char));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -84,7 +126,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_unsigned_char));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -92,7 +134,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_short));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -100,7 +142,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_unsigned_short));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -108,7 +150,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_int));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -116,7 +158,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_unsigned_int));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -124,7 +166,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_long));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -132,7 +174,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_unsigned_long));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -140,7 +182,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_long_long));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 
@@ -148,7 +190,7 @@ namespace semantics
         //
         {
           type_info ti (typeid (fund_unsigned_long_long));
-          ti.add_base (typeid (fund_type));
+          ti.add_base (typeid (integral_type));
           insert (ti);
         }
 

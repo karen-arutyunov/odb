@@ -152,18 +152,11 @@ namespace relational
       if (!r.empty ())
         return r;
 
-      using semantics::enum_;
       using semantics::array;
 
-      // Enum mapping.
-      //
-      if (t.is_a<semantics::enum_> ())
-      {
-        r = "NUMBER(10)";
-      }
       // char[N] mapping.
       //
-      else if (array* a = dynamic_cast<array*> (&t))
+      if (array* a = dynamic_cast<array*> (&t))
       {
         semantics::type& bt (a->base_type ());
         if (bt.is_a<semantics::fund_char> ())

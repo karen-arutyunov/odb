@@ -14,10 +14,31 @@ namespace traversal
 
   //
   //
+  void underlies::
+  traverse (type& u)
+  {
+    dispatch (u.type ());
+  }
+
+  //
+  //
   void enum_::
   traverse (type& e)
   {
+    underlied (e);
     enumerates (e);
+  }
+
+  void enum_::
+  underlied (type& e)
+  {
+    underlied (e, *this);
+  }
+
+  void enum_::
+  underlied (type& e, edge_dispatcher& d)
+  {
+    d.dispatch (e.underlied ());
   }
 
   void enum_::
