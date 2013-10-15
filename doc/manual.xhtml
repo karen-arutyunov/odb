@@ -2208,7 +2208,7 @@ max age: 33
      existing objects (which correspond to the old definition) once
      we change our persistent class?</p>
 
-  <p>The problem of working with old object, called <em>database
+  <p>The problem of working with old objects, called <em>database
      schema evolution</em>, is a complex issue and ODB provides
      comprehensive support for handling it. While this support
      is covered in detail in <a href="#13">Chapter 13,
@@ -2266,8 +2266,7 @@ odb -d mysql --generate-query --generate-schema person.hxx
      is a changelog file where the ODB compiler keeps track of the
      database changes corresponding to our class changes. Note that
      this file is automatically maintained by the ODB compiler and
-     all that we have to do is to keep it around between
-     re-compilations.</p>
+     all we have to do is keep it around between re-compilations.</p>
 
   <p>Now we are ready to add the middle name to our <code>person</code>
      class. We also give it a default value (empty string) which
@@ -11430,11 +11429,11 @@ for (bool done (false); !done; )
      migration. With this approach, both old and new data must co-exist
      in the new database. We also have to change the application
      logic to both account for different sources of the same data (for
-     example, when either old or new version of the object is loaded)
+     example, when either an old or new version of the object is loaded)
      as well as migrate the data when appropriate (for example, when
      the old version of the object is updated). At some point, usually
      when the majority of the data has been converted, gradual migrations
-     is terminate with an immediate migration.</p>
+     are terminated with an immediate migration.</p>
 
   <p>The most complex approach is working with multiple versions of
      the database without performing any migrations, schema or data.
@@ -11454,7 +11453,7 @@ for (bool done (false); !done; )
 
   <p>To enable schema evolution support in ODB we need to specify
      the object model version, or, more precisely, two versions.
-     The first is the base model version. It is the lowest model
+     The first is the base model version. It is the lowest
      version from which we will be able to migrate. The second
      version is the current model version. In ODB we can migrate
      from multiple previous versions by successively migrating
@@ -11592,7 +11591,7 @@ for (bool done (false); !done; )
      you do not need to make any manual changes to this file. You
      will, however, need to keep it around from one invocation of
      the ODB compiler to the next. In other words, the changelog
-     file is both the input to and the output of the ODB compiler. This,
+     file is both the input and the output of the ODB compiler. This,
      for example, means that if your project's source code is stored
      in a version control repository, then you will most likely want
      to store the changelog there as well. If you delete the changelog,
@@ -11682,7 +11681,7 @@ class person
 odb --database pgsql --generate-schema person.hxx
   </pre>
 
-  <p>This time the ODB compiler will read in the old changelog, update
+  <p>This time the ODB compiler will read the old changelog, update
      it, and write out the new version. Again, for illustration only,
      below are the updated changelog contents:</p>
 
@@ -11711,7 +11710,7 @@ odb --database pgsql --generate-schema person.hxx
      be written by hand, it is maintained completely automatically
      by the ODB compiler and the only reason you may want to look
      at its contents is to review the database schema changes. For
-     example, if we compare the above to changelogs with
+     example, if we compare the above two changelogs with
      <code>diff</code>, we will get the following summary of the
      database schema changes:</p>
 
@@ -11827,7 +11826,7 @@ odb --database pgsql --generate-schema-only --schema-format separate \
   <p>There is, however, a number of command line options (including
      <code>--changelog-dir</code>) that allow us to fine-tune the name and
      location of the changelog file. For example, you can instruct the ODB
-     compiler to read the changelog from one file while write it to
+     compiler to read the changelog from one file while writing it to
      another. This, for example, can be useful if you want to review
      the changes before discarding the old file. For more information
      on these options, refer to the
@@ -11844,7 +11843,7 @@ odb --database pgsql --generate-schema-only --schema-format separate \
      more changes to the object model that result in the changes
      to the database schema. A release is a point where we
      make our changes available to someone else who may have an
-     older database to migrate from. In a tradition sense, a release
+     older database to migrate from. In the traditional sense, a release
      is a point where you make a new version of your application available
      to its users. However, for schema evolution purposes, a release
      could also mean simply making your schema-altering changes
@@ -11914,7 +11913,7 @@ odb --database pgsql --generate-schema-only --schema-format separate \
      become difficult to review and, if things go wrong, debug.</p>
 
   <p>The second approach, which we can call version per feature,
-     is much more modular and provides a number additional benefits.
+     is much more modular and provides a number of additional benefits.
      We can perform migrations for each feature as a discreet step
      which makes it easier to debug. We can also place each such
      migration step into a separate transaction further improving
@@ -11924,16 +11923,16 @@ odb --database pgsql --generate-schema-only --schema-format separate \
      yourself in a situation where another developer on your
      team used the same version as you and managed to commit his
      changes before you (that is, you have a merge conflict),
-     then you can simply change the version to the next available,
-     regenerate the changelog, and continue with your commit.</p>
+     then you can simply change the version to the next available
+     one, regenerate the changelog, and continue with your commit.</p>
 
   <p>Overall, unless you have strong reasons to prefer the version
-     per application release approach, choose version per
+     per application release approach, rather choose version per
      feature even though it may seem more complex at the
      beginning. Also, if you do select the first approach, consider
      provisioning for switching to the second method by reserving
      a sub-version number. For example, for an application version
-     in the form <code>2.3.4</code> your can make the object model
+     in the form <code>2.3.4</code> you can make the object model
      version to be in the form <code>0x0203040000</code>, reserving
      the last two bytes for a sub-version. Later on you can use it to
      switch to the version per feature approach.</p>
@@ -12035,7 +12034,7 @@ ALTER TABLE "person"
      database-specific limitations, refer to the "Limitations" sections
      in <a href="#II">Part II, "Database Systems"</a>.</p>
 
-  <p>How do we know what is the current database version is? That is, the
+  <p>How do we know what the current database version is? That is, the
      version <em>from</em> which we need to migrate? We need to know this,
      for example, in order to determine the set of migrations we have to
      perform. By default, when schema evolution is enabled, ODB maintains
@@ -12082,9 +12081,9 @@ CREATE TABLE "schema_version" (
      of a project, then we could already have existing databases that
      don't include this table. As a result, ODB will not be able to handle
      migrations for such databases unless we manually add the
-     <code>schema_version</code> table and populate it with correct
+     <code>schema_version</code> table and populate it with the correct
      version information. For this reason, it is highly recommended that
-     you consider whether to use schema evolution and enable it if so
+     you consider whether to use schema evolution and, if so, enable it
      from the beginning of your project.</p>
 
   <p>The <code>odb::database</code> class provides an API for accessing
@@ -12192,7 +12191,7 @@ namespace odb
      then the migration workflow could look like this:</p>
 
   <ol>
-    <li>Database administrator determines the current database version.
+    <li>The database administrator determines the current database version.
         If migration is required, then for each migration step (that
         is, from one version to the next), he performs the following:</li>
 
@@ -12200,7 +12199,7 @@ namespace odb
 
     <li>Execute our application (or a separate migration program)
         to perform data migration (discussed later). Our application
-        can determine that is is executed in the "migration mode"
+        can determine that is is being executed in the "migration mode"
         by calling <code>schema_migration()</code> and then which
         migration code to run by calling <code>schema_version()</code>.</li>
 
@@ -12443,8 +12442,8 @@ class person
      new format. As an example, suppose we want to add gender to our
      <code>person</code> class. And, instead of leaving it unassigned
      for all the existing objects, we will try to guess it from the
-     first name. Not particularly accurate but could be sufficient
-     for our hypothetical application:</p>
+     first name. This is not particularly accurate but it could be
+     sufficient for our hypothetical application:</p>
 
   <pre class="cxx">
 #pragma db model version(1, 3)
@@ -12525,7 +12524,7 @@ main ()
 
   <p>If you have a large number of objects to migrate, it may also be
      a good idea, from the performance point of view, to break one big
-     transaction that we have now into multiple smaller transactions
+     transaction that we now have into multiple smaller transactions
      (<a href="#3.5">Section 3.5, "Transactions"</a>). For example:</p>
 
   <pre class="cxx">
@@ -12795,7 +12794,7 @@ migrate_gender (odb::database&amp; db)
 
   <p>If, however, we want more granular transactions, then we can
      use the lower-level <code>schema_catalog</code> functions to
-     gain more control, as we have seen at the end of previous
+     gain more control, as we have seen at the end of the previous
      section.  Here is the relevant part of that example with
      an added data migration call:</p>
 
@@ -12818,7 +12817,7 @@ migrate_gender (odb::database&amp; db)
 
   <p>If the number of existing objects that require migration is large,
      then an all-at-once, immediate migration, while simple, may not
-     be practical from the performance point of view. In this case,
+     be practical from a performance point of view. In this case,
      we can perform a gradual migration as the application does
      its normal functions.</p>
 
@@ -12959,7 +12958,7 @@ migrate_gender_entry (&amp;migrate_gender);
 
   <h2><a name="13.4">13.4 Soft Object Model Changes</a></h2>
 
-  <p>Let us consider another common kind of an object model change:
+  <p>Let us consider another common kind of object model change:
      we delete an old member, add a new one, and need to copy
      the data from the old to the new, perhaps applying some
      conversion. For example, we may realize that in our application
@@ -12979,8 +12978,8 @@ migrate_gender_entry (&amp;migrate_gender);
      stored in the database even after the schema post-migration.</p>
 
   <p>There is also a more subtle problem that has to do with existing
-     migrations for previous version. Remember, in version <code>3</code>
-     of our <code>person</code> example we've added the <code>gender_</code>
+     migrations for the previous versions. Remember, in version <code>3</code>
+     of our <code>person</code> example we added the <code>gender_</code>
      data member. We also have a data migration function which guesses
      the gender based on the first name. Deleting the <code>first_</code>
      data member from our class will obviously break this code. But
@@ -13066,7 +13065,7 @@ migrate_name_entry (&amp;migrate_name);
      that may still need to access them is the migration functions. The
      recommended way to resolve this is to remove the accessors/modifiers
      corresponding to the deleted data member, make migration functions
-     static function of the class being migrated, and then access
+     static functions of the class being migrated, and then access
      the deleted data members directly. For example:</p>
 
   <pre class="cxx">
@@ -13185,7 +13184,7 @@ class person
   <p>ODB will then automatically allocate the deleted value type if
      any of the deleted data members are being loaded. During the normal
      operation, however, the pointer will stay <code>NULL</code> and
-     therefore reducing the common case overhead to a single pointer
+     therefore reduce the common case overhead to a single pointer
      per class.</p>
 
   <p>Soft-added and deleted data members can be used in objects,
@@ -13265,7 +13264,7 @@ migrate_person_entry (&amp;migrate_person);
      store in the database as part of an object update. As a result,
      it is highly recommended that you always test your application
      with the database that starts at the base version so that every
-     data migration function is called and therefore made sure to
+     data migration function is called and therefore ensured to
      still work correctly.</p>
 
   <p>To help with this problem you can also instruct ODB to warn
@@ -13299,11 +13298,11 @@ migrate_person_entry (&amp;migrate_person);
 
   <h2><a name="13.4.1">13.4.1 Reuse Inheritance Changes</a></h2>
 
-  <p>Besides adding and deleting data member, another way to alter
+  <p>Besides adding and deleting data members, another way to alter
      the object's table is using reuse-style inheritance. If we add
      a new reuse base, then, from the database schema point of view,
      this is equivalent to adding all its columns to the derived
-     object's table. Similarly, deleting reuse inheritance result in
+     object's table. Similarly, deleting reuse inheritance results in
      all the base's columns being deleted from the derived's table.</p>
 
   <p>In the future ODB may provide direct support for soft addition
@@ -13378,7 +13377,7 @@ migrate_person_entry (&amp;migrate_person);
           from it. Mark all the database members in the new base
           as soft-added (except object id). When notified by the
           ODB compiler that the soft addition of the data members
-          is not longer necessary, delete the copy and inherit from
+          is no longer necessary, delete the copy and inherit from
           the original base.</td>
     </tr>
   </table>
@@ -20228,7 +20227,7 @@ CREATE TABLE Employee (
      SQLite, all the columns should be added as <code>NULL</code>
      even if semantically they should not allow <code>NULL</code>
      values. We should also normally refrain from assigning
-     default value to columns (<a href="#14.4.7">Section 14.4.7,
+     default values to columns (<a href="#14.4.7">Section 14.4.7,
      <code>default</code></a>), unless the space overhead of
      a default value is not a concern. Explicitly making all
      the data members <code>NULL</code> would be burdensome
@@ -20242,7 +20241,7 @@ CREATE TABLE Employee (
      data member of an object pointer type if it points
      to an object with a simple (single-column) object id.</p>
 
-  <p>SQLite also doesn't support dropping of foreign keys.
+  <p>SQLite also doesn't support dropping foreign keys.
      Leaving a foreign key around works well with logical
      delete unless we also want to delete the pointed-to
      object. In this case we will have to leave an
@@ -20251,7 +20250,7 @@ CREATE TABLE Employee (
      pointing object without the object pointer, migrate the
      data, and then delete both the old pointing and the
      pointed-to objects. Since this will result in dropping
-     of the pointing table, the foreign key will be dropped
+     the pointing table, the foreign key will be dropped
      as well. Yet another, more radical, solution to this
      problem is to disable foreign keys checking altogether
      (see the <code>foreign_keys</code> SQLite pragma).</p>
