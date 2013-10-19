@@ -6,36 +6,36 @@ Version 2.3.0
 
  * Support for object sections. Sections are an optimization mechanism that
    allows the partitioning of data members of a persistent class into groups
-   that can be separately loaded and/or updated. For more information, refer
+   that can be loaded and/or updated separately. For more information, refer
    to Chapter 9, "Sections" in the ODB manual as well as the 'section'
    example in the odb-examples package.
 
- * Support for automatic mapping of C++11 enum classes in addition to the
-   "old" enums. For more information, refer to the ODB manual "Type Mapping"
+ * Support for automatic mapping of C++11 enum classes in addition to "old"
+   enums. For more information, refer to the ODB manual "Type Mapping"
    sections for each database system.
+
+ * Support for defining composite value types inside persistent classes,
+   views, and other composite values. For more information, refer to Section
+   7.2, "Composite Value Types" in the ODB manual.
 
  * Support for pattern matching (SQL LIKE operator) in the C++-integrated
    queries. For more information, refer to Section 4.1, "ODB Query Language"
    in the ODB manual.
-
- * Support for defining composite value types inside persistent classes,
-   views, or other composite values. For more information, refer to Section
-   7.2, "Composite Value Types" in the ODB manual.
 
  * The schema_catalog::create_schema() function now has a third argument
    which indicates whether to drop the schema prior to creating the new one.
    The default is true which is backwards-compatible. The schema_catalog
    class now also provides the drop_schema() function which allows you to
    drop the schema without creating the new one. Finally, the exists()
-   function now has the schema name argument default to the empty string
-   (the default schema name). For more information, refer to Section 3.4,
-   "Database" in the ODB manual.
+   function now has the schema name argument which by default is an empty
+   string (the default schema name). For more information, refer to Section
+   3.4, "Database" in the ODB manual.
 
  * The transaction class now provides the default constructor that allows
    the creation of a finalized transactions which can then be re-initialized
    with the reset() function. The finalized() accessor has also been added
-   which allows querying of the finalized state. For more information, refer
-   to Section 3.5, "Transactions" in the ODB manual.
+   which allows querying of the finalization state. For more information,
+   refer to Section 3.5, "Transactions" in the ODB manual.
 
  * New option, --fkeys-deferrable-mode, specifies the alternative deferrable
    mode for foreign keys. By default, the ODB compiler generates deferred
@@ -67,7 +67,7 @@ Version 2.3.0
  * The --output-name option has been renamed to --input-name, which is more
    semantically correct.
 
- * The generated database schemas now explicitly specify NULL for nullable
+ * The generated database schema now explicitly specify NULL for nullable
    columns.
 
  * The generated separate C++ schema file (--schema-format separate) no
