@@ -180,7 +180,7 @@ namespace
 
       // Accessor is a function with no arguments (other than 'this').
       //
-      if (DECL_CHAIN (DECL_ARGUMENTS (f)) != NULL_TREE)
+      if (FUNCTION_FIRST_USER_PARM (f) != NULL_TREE)
         return found_none;
 
       // Note that to get the return type we have to use
@@ -235,8 +235,7 @@ namespace
                     member_access& ma,
                     bool strict)
     {
-      tree a (DECL_ARGUMENTS (f));
-      a = DECL_CHAIN (a); // Skip this.
+      tree a (FUNCTION_FIRST_USER_PARM (f));
 
       // For a modifier, it can either be a function that returns a non-
       // const reference (or non-const pointer, in case the member is an
