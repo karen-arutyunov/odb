@@ -1735,7 +1735,7 @@ namespace
         // primary key).
         //
         {
-          semantics::class_* comp;
+          semantics::class_* comp (0);
           switch (ck)
           {
           case ck_ordered:
