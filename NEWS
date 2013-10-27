@@ -32,7 +32,7 @@ Version 2.3.0
    3.4, "Database" in the ODB manual.
 
  * The transaction class now provides the default constructor that allows
-   the creation of a finalized transactions which can then be re-initialized
+   the creation of finalized transactions which can then be re-initialized
    with the reset() function. The finalized() accessor has also been added
    which allows querying of the finalization state. For more information,
    refer to Section 3.5, "Transactions" in the ODB manual.
@@ -40,7 +40,7 @@ Version 2.3.0
  * New option, --fkeys-deferrable-mode, specifies the alternative deferrable
    mode for foreign keys. By default, the ODB compiler generates deferred
    foreign keys for databases that support them (SQLite, PostgreSQL, and
-   Oracle) and comments the foreign keys out for database that don't (MySQL
+   Oracle) and comments the foreign keys out for databases that don't (MySQL
    and SQL Server). This option can be used to override this behavior. Refer
    to the ODB compiler command line interface documentation (man pages) for
    details.
