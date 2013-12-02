@@ -66,11 +66,7 @@ endif
 endif
 endif # disfigure
 
-define include-dep
-$(call -include,$1)
-endef
-
-endif
+endif # cxx_id
 
 # If we don't have dependency auto-generation then we need to manually
 # make sure that generated files are generated before C++ file are
