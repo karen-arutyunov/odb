@@ -53,7 +53,8 @@ namespace semantics
       enum action_type
       {
         no_action,
-        cascade
+        cascade,
+        set_null
       };
 
       action_type

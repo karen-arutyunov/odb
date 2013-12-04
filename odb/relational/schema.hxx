@@ -857,14 +857,20 @@ namespace relational
 
         switch (a)
         {
+        case foreign_key::no_action:
+          break;
         case foreign_key::cascade:
           {
             os << endl
                << "    ON DELETE CASCADE";
             break;
           }
-        case foreign_key::no_action:
-          break;
+        case foreign_key::set_null:
+          {
+            os << endl
+               << "    ON DELETE SET NULL";
+            break;
+          }
         }
       }
 

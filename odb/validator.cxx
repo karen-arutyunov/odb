@@ -1027,6 +1027,18 @@ namespace
   // Pass 2.
   //
 
+  struct data_member2: traversal::data_member, context
+  {
+    data_member2 (bool& valid): valid_ (valid) {}
+
+    virtual void
+    traverse (type&)
+    {
+    }
+
+    bool& valid_;
+  };
+
   // Make sure soft-delete versions make sense for dependent entities.
   // We don't seem to need anything for soft-add since if an entity is
   // not added (e.g., an object), then we cannot reference it in the
@@ -1191,7 +1203,7 @@ namespace
   struct class2: traversal::class_, context
   {
     class2 (bool& valid)
-    : valid_ (valid), has_lt_operator_ (0), typedefs_ (true)
+    : valid_ (valid), has_lt_operator_ (0), typedefs_ (true), member_ (valid)
     {
       // Find the has_lt_operator function template.
       //
@@ -1232,6 +1244,8 @@ namespace
 
       *this >> defines_ >> *this;
       *this >> typedefs_ >> *this;
+
+      names_member_ >> member_;
     }
 
     virtual void
@@ -1249,8 +1263,12 @@ namespace
       case class_object: traverse_object (c); break;
       case class_view: traverse_view (c); break;
       case class_composite: traverse_composite (c); break;
-      default: break;
+      default: return;
       }
+
+      // Check members.
+      //
+      names (c, names_member_);
 
       // Check version dependencies.
       //
@@ -1440,6 +1458,9 @@ namespace
 
     traversal::defines defines_;
     typedefs typedefs_;
+
+    data_member1 member_;
+    traversal::names names_member_;
   };
 }
 

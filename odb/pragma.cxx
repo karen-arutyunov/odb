@@ -386,6 +386,7 @@ check_spec_decl_type (declaration const& d,
            p == "auto"      ||
            p == "column"    ||
            p == "inverse"   ||
+           p == "on_delete" ||
            p == "section"   ||
            p == "load"      ||
            p == "update"    ||
@@ -2151,6 +2152,39 @@ handle_pragma (cxx_lexer& l,
 
     tt = l.next (tl, &tn);
   }
+  else if (p == "on_delete")
+  {
+    // on_delete (cascade|set_null)
+    //
+
+    // Make sure we've got the correct declaration type.
+    //
+    if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
+      return;
+
+    if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+    {
+      error (l) << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    if (l.next (tl, &tn) != CPP_NAME || (tl != "cascade" && tl != "set_null"))
+    {
+      error (l) << "cascade or set_null expected after '('" << endl;
+      return;
+    }
+
+    using semantics::relational::foreign_key;
+    val = (tl == "cascade" ? foreign_key::cascade : foreign_key::set_null);
+
+    if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
+    {
+      error (l) << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+  }
   else if (p == "section")
   {
     // section (name)
@@ -3255,6 +3289,7 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
            p == "load"    ||
            p == "update"  ||
            p == "inverse" ||
+           p == "on_delete" ||
            p == "unordered" ||
            p == "readonly" ||
            p == "transient" ||
@@ -3625,6 +3660,12 @@ handle_pragma_db_inverse (cpp_reader* r)
 }
 
 extern "C" void
+handle_pragma_db_on_delete (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "on_delete");
+}
+
+extern "C" void
 handle_pragma_db_unordered (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "unordered");
@@ -3738,6 +3779,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "load", handle_pragma_db_load);
   c_register_pragma_with_expansion ("db", "update", handle_pragma_db_update);
   c_register_pragma_with_expansion ("db", "inverse", handle_pragma_db_inverse);
+  c_register_pragma_with_expansion ("db", "on_delete", handle_pragma_db_on_delete);
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "readonly", handle_pragma_db_readonly);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);

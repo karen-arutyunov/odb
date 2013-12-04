@@ -145,6 +145,20 @@ namespace relational
       {
         create_foreign_key (base const& x): base (x) {}
 
+        void
+        diagnose (sema_rel::foreign_key& fk)
+        {
+          if (fk.on_delete () != sema_rel::foreign_key::no_action)
+          {
+            cerr << "warning: foreign key '" << fk.name () << "' has " <<
+              "ON DELETE clause but is disabled in MySQL due to lack "
+              "of deferrable constraint support" << endl;
+
+            cerr << "info: consider using non-deferrable foreign keys (" <<
+              "--fkeys-deferrable-mode)" << endl;
+          }
+        }
+
         virtual void
         traverse_create (sema_rel::foreign_key& fk)
         {
@@ -156,6 +170,8 @@ namespace relational
             base::traverse_create (fk);
           else
           {
+            diagnose (fk);
+
             // Don't bloat C++ code with comment strings if we are
             // generating embedded schema.
             //
@@ -178,6 +194,8 @@ namespace relational
             base::traverse_add (fk);
           else
           {
+            diagnose (fk);
+
             if (format_ != schema_format::sql)
               return;
 

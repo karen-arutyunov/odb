@@ -15,7 +15,7 @@ namespace semantics
 {
   namespace relational
   {
-    static const char* action_str[] = {"NO ACTION", "CASCADE"};
+    static const char* action_str[] = {"NO ACTION", "CASCADE", "SET NULL"};
 
     ostream&
     operator<< (ostream& os, foreign_key::action_type v)
@@ -38,6 +38,8 @@ namespace semantics
           v = foreign_key::no_action;
         else if (s == "CASCADE")
           v = foreign_key::cascade;
+        else if (s == "SET NULL")
+          v = foreign_key::set_null;
         else
           is.setstate (istream::failbit);
       }

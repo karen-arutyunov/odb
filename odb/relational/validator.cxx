@@ -51,6 +51,44 @@ namespace relational
             }
           }
         }
+
+        // Check on-delete.
+        //
+        if (m.count ("on-delete"))
+        {
+          const char* kp (container (m) ? "value" : "");
+          location l (m.location ());
+
+          // Make sure it is a pointer.
+          //
+          if (!object_pointer (member_utype (m, kp)))
+          {
+            error (l) << "on_delete specified for non-object pointer" << endl;
+            valid_ = false;
+          }
+
+          // Make sure it is not inverse.
+          //
+          if (inverse (m, kp))
+          {
+            error (l) << "on_delete specified for inverse object " <<
+              "pointer" << endl;
+            valid_ = false;
+          }
+
+          // Make sure the pointer is nullable if asked to set it to NULL.
+          //
+          using sema_rel::foreign_key;
+
+          if (m.get<foreign_key::action_type> ("on-delete") ==
+              foreign_key::set_null &&
+              !null (m, kp))
+          {
+            error (l) << "set_null specified for non-nullable object "
+              "pointer" << endl;
+            valid_ = false;
+          }
+        }
       }
 
       bool& valid_;
