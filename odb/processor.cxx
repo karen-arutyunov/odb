@@ -1825,6 +1825,15 @@ namespace
       if (kt != 0)
         process_container_value (*kt, m, "key", false);
 
+      // A map cannot be an inverse container.
+      //
+      if (m.count ("value-inverse") && (ck == ck_map || ck == ck_multimap))
+      {
+        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+           << " error: inverse container cannot be a map" << endl;
+        throw operation_failed ();
+      }
+
       // If this is an inverse side of a bidirectional object relationship
       // and it is an ordered container, mark it as unordred since there is
       // no concept of order in this construct.
