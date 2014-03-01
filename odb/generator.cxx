@@ -482,6 +482,15 @@ generate (options const& ops,
           << "#define " << guard << endl
           << endl;
 
+      // Copy prologue.
+      //
+      append_logue (hxx,
+                    db,
+                    ops.hxx_prologue (),
+                    ops.hxx_prologue_file (),
+                    "// Begin prologue.\n//",
+                    "//\n// End prologue.");
+
       // Version check.
       //
       hxx << "#include <odb/version.hxx>" << endl
@@ -493,15 +502,6 @@ generate (options const& ops,
 
       hxx << "#include <odb/pre.hxx>" << endl
           << endl;
-
-      // Copy prologue.
-      //
-      append_logue (hxx,
-                    db,
-                    ops.hxx_prologue (),
-                    ops.hxx_prologue_file (),
-                    "// Begin prologue.\n//",
-                    "//\n// End prologue.");
 
       // Include main file(s).
       //
@@ -557,6 +557,9 @@ generate (options const& ops,
       hxx << "#include " << ctx->process_include_path (ixx_name) << endl
           << endl;
 
+      hxx << "#include <odb/post.hxx>" << endl
+          << endl;
+
       // Copy epilogue.
       //
       append_logue (hxx,
@@ -565,9 +568,6 @@ generate (options const& ops,
                     ops.hxx_epilogue_file (),
                     "// Begin epilogue.\n//",
                     "//\n// End epilogue.");
-
-      hxx << "#include <odb/post.hxx>" << endl
-          << endl;
 
       hxx << "#endif // " << guard << endl;
 
@@ -646,9 +646,6 @@ generate (options const& ops,
 
       sloc_filter sloc (ctx->os);
 
-      cxx << "#include <odb/pre.hxx>" << endl
-          << endl;
-
       // Copy prologue.
       //
       append_logue (cxx,
@@ -657,6 +654,9 @@ generate (options const& ops,
                     ops.cxx_prologue_file (),
                     "// Begin prologue.\n//",
                     "//\n// End prologue.");
+
+      cxx << "#include <odb/pre.hxx>" << endl
+          << endl;
 
       // Include query columns implementations for explicit instantiations.
       //
@@ -713,6 +713,8 @@ generate (options const& ops,
         }
       }
 
+      cxx << "#include <odb/post.hxx>" << endl;
+
       // Copy epilogue.
       //
       append_logue (cxx,
@@ -721,8 +723,6 @@ generate (options const& ops,
                     ops.cxx_epilogue_file (),
                     "// Begin epilogue.\n//",
                     "//\n// End epilogue.");
-
-      cxx << "#include <odb/post.hxx>" << endl;
 
       if (ops.show_sloc ())
         cerr << cxx_name << ": " << sloc.stream ().count () << endl;
@@ -739,9 +739,6 @@ generate (options const& ops,
 
       sloc_filter sloc (ctx->os);
 
-      sch << "#include <odb/pre.hxx>" << endl
-          << endl;
-
       // Copy prologue.
       //
       append_logue (sch,
@@ -750,6 +747,9 @@ generate (options const& ops,
                     ops.schema_prologue_file (),
                     "// Begin prologue.\n//",
                     "//\n// End prologue.");
+
+      sch << "#include <odb/pre.hxx>" << endl
+          << endl;
 
       sch << "#include <odb/database.hxx>" << endl
           << "#include <odb/schema-catalog-impl.hxx>" << endl
@@ -778,6 +778,8 @@ generate (options const& ops,
         }
       }
 
+      sch << "#include <odb/post.hxx>" << endl;
+
       // Copy epilogue.
       //
       append_logue (sch,
@@ -786,8 +788,6 @@ generate (options const& ops,
                     ops.schema_epilogue_file (),
                     "// Begin epilogue.\n//",
                     "//\n// End epilogue.");
-
-      sch << "#include <odb/post.hxx>" << endl;
 
       if (ops.show_sloc ())
         cerr << sch_name << ": " << sloc.stream ().count () << endl;
