@@ -681,6 +681,12 @@ main (int argc, char* argv[])
 
       // Encode plugin options.
       //
+      // Add the database we are compiling for first. More databases
+      // could be specified in options files but they will be ignored
+      // by the plugin (it only cares about the first).
+      //
+      db_args.push_back (encode_plugin_option ("database", db.string ()));
+
       cli::options const& desc (options::description ());
       for (size_t i (0); i < end; ++i)
       {
@@ -699,11 +705,7 @@ main (int argc, char* argv[])
         {
           // Ignore all other databases.
           //
-          if (plugin_args[i + 1] != db.string ())
-          {
-            ++i;
-            continue;
-          }
+          continue;
         }
 
         cli::options::const_iterator it (desc.find (a));
