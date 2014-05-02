@@ -701,7 +701,7 @@ main (int argc, char* argv[])
           //
           continue;
         }
-        else if (a == "-d" || a == "--databse")
+        else if (a == "-d" || a == "--database")
         {
           // Ignore all other databases.
           //
