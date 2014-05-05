@@ -705,6 +705,7 @@ main (int argc, char* argv[])
         {
           // Ignore all other databases.
           //
+          i++; // Skip the value.
           continue;
         }
 
