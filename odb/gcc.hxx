@@ -16,8 +16,6 @@
 
 #include <cstdlib> // Include before GCC poisons some declarations.
 
-#include <bversion.h>
-
 // GCC 4.7 can be built using either C or C++ compiler. From 4.8 it
 // is always built as C++.
 //
@@ -56,11 +54,31 @@ extern "C"
 #  include <c-pragma.h>
 #endif
 
+#if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 8
+#  include <stringpool.h> // get_identifier
+#endif
+
 #include <diagnostic.h>
 #include <output.h>
 
 #ifdef ODB_GCC_PLUGIN_C
 } // extern "C"
+#endif
+
+// In 4.9.0 the tree code type was changed from int to enum tree_code.
+// the tree_code_name array is also gone with the get_tree_code_name()
+// function in its place.
+//
+#if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 8
+typedef enum tree_code gcc_tree_code_type;
+
+inline const char*
+gcc_tree_code_name (gcc_tree_code_type tc) {return get_tree_code_name (tc);}
+#else
+typedef int gcc_tree_code_type;
+
+inline const char*
+gcc_tree_code_name (gcc_tree_code_type tc) {return tree_code_name[tc];}
 #endif
 
 // Only since GCC 4.7.0.

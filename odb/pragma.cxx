@@ -368,7 +368,7 @@ check_spec_decl_type (declaration const& d,
                       string const& p,
                       location_t l)
 {
-  int tc (d.tree_code ());
+  gcc_tree_code_type tc (d.tree_code ());
   bool type (TREE_CODE_CLASS (tc) == tcc_type);
 
   if (p == "no_id")
@@ -2509,7 +2509,7 @@ check_qual_decl_type (declaration const& d,
                       string const& p,
                       location_t l)
 {
-  int tc (d.tree_code ());
+  gcc_tree_code_type tc (d.tree_code ());
   bool type (TREE_CODE_CLASS (tc) == tcc_type);
 
   if (p == "model" ||

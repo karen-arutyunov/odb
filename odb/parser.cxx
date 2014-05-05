@@ -1028,7 +1028,7 @@ type* parser::impl::
 emit_type_decl (tree decl)
 {
   tree t (TREE_TYPE (decl));
-  int tc (TREE_CODE (t));
+  gcc_tree_code_type tc (TREE_CODE (t));
 
   tree decl_name (DECL_NAME (decl));
   char const* name (IDENTIFIER_POINTER (decl_name));
@@ -1086,7 +1086,7 @@ emit_type_decl (tree decl)
     {
 
       if (trace)
-        ts << "start " <<  tree_code_name[tc] << " " << name
+        ts << "start " <<  gcc_tree_code_name(tc) << " " << name
            << " at " << file << ":" << line << endl;
 
       switch (tc)
@@ -1106,10 +1106,12 @@ emit_type_decl (tree decl)
           node = &emit_enum (t, decl_access (decl), file, line, clmn);
           break;
         }
+      default:
+        break;
       }
 
       if (trace)
-        ts << "end " <<  tree_code_name[tc] << " " << name
+        ts << "end " <<  gcc_tree_code_name(tc) << " " << name
            << " (" << node << ") at "
            << DECL_SOURCE_FILE (decl) << ":"
            << DECL_SOURCE_LINE (decl) << endl;
@@ -1176,11 +1178,11 @@ emit_template_decl (tree decl)
   // Currently we only handle class/union templates.
   //
   tree t (TREE_TYPE (DECL_TEMPLATE_RESULT (decl)));
-  int tc (TREE_CODE (t));
+  gcc_tree_code_type tc (TREE_CODE (t));
 
   if (trace)
   {
-    ts << tree_code_name[tc] << " template (" << decl << ") "
+    ts << gcc_tree_code_name(tc) << " template (" << decl << ") "
        << IDENTIFIER_POINTER (DECL_NAME (decl)) << " (" << t << ") at "
        << DECL_SOURCE_FILE (decl) << ":"
        << DECL_SOURCE_LINE (decl) << endl;
@@ -1215,7 +1217,7 @@ emit_template_decl (tree decl)
   char const* name (IDENTIFIER_POINTER (DECL_NAME (decl)));
 
   if (trace)
-    ts << "start " <<  tree_code_name[tc] << " template " << name << " at "
+    ts << "start " <<  gcc_tree_code_name(tc) << " template " << name << " at "
        << DECL_SOURCE_FILE (decl) << ":"
        << DECL_SOURCE_LINE (decl) << endl;
 
@@ -1232,7 +1234,7 @@ emit_template_decl (tree decl)
     unit_->new_edge<declares> (*scope_, *t_node, name);
 
   if (trace)
-    ts << "end " <<  tree_code_name[tc] << " template " << name
+    ts << "end " <<  gcc_tree_code_name(tc) << " template " << name
        << " (" << t_node << ") at "
        << DECL_SOURCE_FILE (decl) << ":"
        << DECL_SOURCE_LINE (decl) << endl;
@@ -1510,7 +1512,7 @@ emit_type (tree t,
 
   if (trace)
   {
-    ts << tree_code_name[TREE_CODE (t)] << " " << t
+    ts << gcc_tree_code_name(TREE_CODE (t)) << " " << t
        << " main " << mv << endl;
 
     for (tree v (TYPE_MAIN_VARIANT (t)); v != 0; v = TYPE_NEXT_VARIANT (v))
@@ -1630,7 +1632,7 @@ create_type (tree t,
              size_t clmn)
 {
   type* r (0);
-  int tc (TREE_CODE (t));
+  gcc_tree_code_type tc (TREE_CODE (t));
 
   switch (tc)
   {
@@ -1671,7 +1673,7 @@ create_type (tree t,
           tree d (TYPE_NAME (t));
 
           if (trace)
-            ts << "start anon/stub " << tree_code_name[tc] << " at "
+            ts << "start anon/stub " << gcc_tree_code_name(tc) << " at "
                << file << ":" << line << endl;
 
           if (d == NULL_TREE || ANON_AGGRNAME_P (DECL_NAME (d)))
@@ -1697,7 +1699,7 @@ create_type (tree t,
           }
 
           if (trace)
-            ts << "end anon/stub " << tree_code_name[tc] << " (" << r << ")"
+            ts << "end anon/stub " << gcc_tree_code_name(tc) << " (" << r << ")"
                << " at " << file << ":" << line << endl;
         }
       }
@@ -1722,7 +1724,7 @@ create_type (tree t,
         else
         {
           if (trace)
-            ts << "start stub " << tree_code_name[tc] << " template for ("
+            ts << "start stub " << gcc_tree_code_name(tc) << " template for ("
                << decl << ") at " << file << ":" << line << endl;
 
           if (tc == RECORD_TYPE)
@@ -1731,12 +1733,12 @@ create_type (tree t,
             t_node = &emit_union_template (decl, true);
 
           if (trace)
-            ts << "end stub " << tree_code_name[tc] << " template ("
+            ts << "end stub " << gcc_tree_code_name(tc) << " template ("
                << t_node << ") at " << file << ":" << line << endl;
         }
 
         if (trace)
-          ts << "start " << tree_code_name[tc] << " instantiation ("
+          ts << "start " << gcc_tree_code_name(tc) << " instantiation ("
              << t << ") for template (" << t_node << ")"
              << " at " << file << ":" << line << endl;
 
@@ -1748,7 +1750,7 @@ create_type (tree t,
           i_node = &emit_union<union_instantiation> (t, file, line, clmn);
 
         if (trace)
-          ts << "end " << tree_code_name[tc] << " instantiation ("
+          ts << "end " << gcc_tree_code_name(tc) << " instantiation ("
              << static_cast<type*> (i_node) << ")"
              << " at " << file << ":" << line << endl;
 
@@ -1769,7 +1771,7 @@ create_type (tree t,
       tree d (TYPE_NAME (t));
 
       if (trace)
-        ts << "start anon/stub " << tree_code_name[tc] << " at "
+        ts << "start anon/stub " << gcc_tree_code_name(tc) << " at "
            << file << ":" << line << endl;
 
       if (d == NULL_TREE || ANON_AGGRNAME_P (DECL_NAME (d)))
@@ -1789,7 +1791,7 @@ create_type (tree t,
       }
 
       if (trace)
-        ts << "end anon/stub " << tree_code_name[tc] << " (" << r << ")"
+        ts << "end anon/stub " << gcc_tree_code_name(tc) << " (" << r << ")"
            << " at " << file << ":" << line << endl;
 
       break;
@@ -1828,7 +1830,8 @@ create_type (tree t,
         else
         {
           error (file, line, clmn)
-            << "non-integer array index " << tree_code_name[TREE_CODE (max)]
+            << "non-integer array index " <<
+            gcc_tree_code_name(TREE_CODE (max))
             << endl;
 
           throw failed ();
@@ -1915,11 +1918,11 @@ create_type (tree t,
     {
       t = TYPE_MAIN_VARIANT (t);
       r = &unit_->new_node<unsupported_type> (
-        file, line, clmn, t, tree_code_name[tc]);
+        file, line, clmn, t, gcc_tree_code_name(tc));
       unit_->insert (t, *r);
 
       if (trace)
-        ts << "unsupported " << tree_code_name[tc] << " (" << r << ")"
+        ts << "unsupported " << gcc_tree_code_name(tc) << " (" << r << ")"
            << " at " << file << ":" << line << endl;
 
       break;
@@ -1956,7 +1959,7 @@ emit_type_name (tree type, bool direct)
   if (CP_TYPE_RESTRICT_P (type))
     r += " __restrict";
 
-  int tc (TREE_CODE (type));
+  gcc_tree_code_type tc (TREE_CODE (type));
 
   switch (tc)
   {
@@ -2107,7 +2110,7 @@ emit_type_name (tree type, bool direct)
     }
   default:
     {
-      r = "<" + string (tree_code_name[tc]) + ">";
+      r = "<" + string (gcc_tree_code_name(tc)) + ">";
       break;
     }
   }

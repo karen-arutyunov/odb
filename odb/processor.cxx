@@ -188,7 +188,7 @@ namespace
       // suggested in the documentation.
       //
       tree r (TYPE_MAIN_VARIANT (TREE_TYPE (TREE_TYPE (f))));
-      int tc (TREE_CODE (r));
+      gcc_tree_code_type tc (TREE_CODE (r));
 
       // In the strict mode make sure the function returns for non-array
       // types a value or a (const) reference to the member type and for
@@ -253,7 +253,7 @@ namespace
         // suggested in the documentation.
         //
         tree r (TYPE_MAIN_VARIANT (TREE_TYPE (TREE_TYPE (f))));
-        int tc (TREE_CODE (r));
+        gcc_tree_code_type tc (TREE_CODE (r));
 
         // By-reference modifier. Should return a reference or a pointer.
         //
@@ -297,7 +297,7 @@ namespace
           // with regards to arrays, references, etc.
           //
           tree at (TREE_TYPE (a));
-          int tc (TREE_CODE (at));
+          gcc_tree_code_type tc (TREE_CODE (at));
 
           if (ar != 0 && tc != POINTER_TYPE)
             return found_none;
@@ -2621,7 +2621,7 @@ namespace
             // template or a type.
             //
             decl = resolve_name (p, cp->scope, true);
-            int tc (TREE_CODE (decl));
+            gcc_tree_code_type tc (TREE_CODE (decl));
 
             if (tc == TYPE_DECL)
             {
@@ -2711,7 +2711,7 @@ namespace
               // Resolve this name and make sure it is a template.
               //
               decl = resolve_name (p, cp->scope, true);
-              int tc (TREE_CODE (decl));
+              gcc_tree_code_type tc (TREE_CODE (decl));
 
               if (tc == TEMPLATE_DECL && DECL_CLASS_TEMPLATE_P (decl))
               {

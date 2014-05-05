@@ -20,12 +20,15 @@
 
 struct virt_declaration
 {
-  virt_declaration (location_t l, std::string const& n, int tc, tree t)
+  virt_declaration (location_t l, 
+                    std::string const& n,
+                    gcc_tree_code_type tc,
+                    tree t)
       : loc (l), name (n), tree_code (tc), type (t) {}
 
   location_t loc;
   std::string name;
-  int tree_code;
+  gcc_tree_code_type tree_code;
   tree type;      // Declaration's type.
 };
 
@@ -89,7 +92,7 @@ struct declaration
     virt_declaration const* virt;
   } decl;
 
-  int
+  gcc_tree_code_type
   tree_code () const
   {
     return (virt ? decl.virt->tree_code : TREE_CODE (decl.real));
