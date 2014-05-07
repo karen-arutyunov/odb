@@ -180,7 +180,7 @@ namespace
 
       // Accessor is a function with no arguments (other than 'this').
       //
-      if (FUNCTION_FIRST_USER_PARM (f) != NULL_TREE)
+      if (FUNCTION_FIRST_USER_PARMTYPE (f) != void_list_node)
         return found_none;
 
       // Note that to get the return type we have to use
@@ -235,7 +235,7 @@ namespace
                     member_access& ma,
                     bool strict)
     {
-      tree a (FUNCTION_FIRST_USER_PARM (f));
+      tree a (FUNCTION_FIRST_USER_PARMTYPE (f));
 
       // For a modifier, it can either be a function that returns a non-
       // const reference (or non-const pointer, in case the member is an
@@ -246,7 +246,7 @@ namespace
       semantics::type& t (utype (m));
       semantics::array* ar (dynamic_cast<semantics::array*> (&t));
 
-      if (a == NULL_TREE)
+      if (a == void_list_node)
       {
         // Note that to get the return type we have to use
         // TREE_TYPE(TREE_TYPE()) and not DECL_RESULT, as
@@ -285,7 +285,7 @@ namespace
       // Otherwise look for a by value modifier, which is a function
       // with a single argument.
       //
-      else if (DECL_CHAIN (a) == NULL_TREE)
+      else if (DECL_CHAIN (a) == void_list_node)
       {
         // In the lax mode any function with a single argument works
         // for us. And we don't care what it returns.
@@ -296,7 +296,7 @@ namespace
           // member. This is exactly the same logic as in accessor
           // with regards to arrays, references, etc.
           //
-          tree at (TREE_TYPE (a));
+          tree at (TREE_VALUE (a));
           gcc_tree_code_type tc (TREE_CODE (at));
 
           if (ar != 0 && tc != POINTER_TYPE)
