@@ -20,7 +20,7 @@
 
 struct virt_declaration
 {
-  virt_declaration (location_t l, 
+  virt_declaration (location_t l,
                     std::string const& n,
                     gcc_tree_code_type tc,
                     tree t)
@@ -38,7 +38,7 @@ struct virt_declaration
 //
 struct virt_declaration_set
 {
-  typedef cutl::container::key<std::string, int> key;
+  typedef cutl::container::key<std::string, gcc_tree_code_type> key;
   typedef std::map<key, virt_declaration> map;
   typedef cutl::container::map_const_iterator<map> const_iterator;
 
@@ -57,7 +57,7 @@ struct virt_declaration_set
   }
 
   const_iterator
-  find (std::string const& name, int tree_code) const
+  find (std::string const& name, gcc_tree_code_type tree_code) const
   {
     return map_.find (key (name, tree_code));
   }
