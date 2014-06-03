@@ -103,7 +103,8 @@ $(dist): data_dist := $(cli_tun) details/config.h.in
 $(dist): export extra_dist := $(data_dist)                    \
 libodb-sqlite-vc8.vcproj libodb-sqlite-vc9.vcproj             \
 libodb-sqlite-vc10.vcxproj libodb-sqlite-vc10.vcxproj.filters \
-libodb-sqlite-vc11.vcxproj libodb-sqlite-vc11.vcxproj.filters
+libodb-sqlite-vc11.vcxproj libodb-sqlite-vc11.vcxproj.filters \
+libodb-sqlite-vc12.vcxproj libodb-sqlite-vc12.vcxproj.filters
 $(dist): export interface_version = $(shell sed -e \
 's/^\([0-9]*\.[0-9]*\).*/\1/' $(src_root)/version)
 
@@ -114,6 +115,7 @@ $(dist): $(gen)
 	$(call meta-vc9proj,$(src_base)/libodb-sqlite-vc9.vcproj)
 	$(call meta-vc10proj,$(src_base)/libodb-sqlite-vc10.vcxproj)
 	$(call meta-vc11proj,$(src_base)/libodb-sqlite-vc11.vcxproj)
+	$(call meta-vc12proj,$(src_base)/libodb-sqlite-vc12.vcxproj)
 	$(call meta-automake)
 
 # Clean.
@@ -143,6 +145,7 @@ $(call include,$(bld_root)/meta/vc8proj.make)
 $(call include,$(bld_root)/meta/vc9proj.make)
 $(call include,$(bld_root)/meta/vc10proj.make)
 $(call include,$(bld_root)/meta/vc11proj.make)
+$(call include,$(bld_root)/meta/vc12proj.make)
 $(call include,$(bld_root)/meta/automake.make)
 
 $(call include,$(cli_rules))
