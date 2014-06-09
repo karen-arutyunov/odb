@@ -39,7 +39,7 @@ namespace relational
               endl;
             cerr << "info: first dropped column is '" << dc.name () <<
               "' in table '" << dc.table ().name () << "'" << endl;
-            cerr << "info: could have perform logical drop if the column " <<
+            cerr << "info: could have performed logical drop if the column " <<
               "allowed NULL values" << endl;
             throw operation_failed ();
           }
