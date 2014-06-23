@@ -2207,6 +2207,12 @@ namespace relational
       }
 
       virtual void
+      traverse_pointer (semantics::data_member&, semantics::class_&)
+      {
+        // We don't want to traverse composite id.
+      }
+
+      virtual void
       traverse_composite (semantics::data_member* m, semantics::class_& c)
       {
         if (object (c_))
@@ -3873,6 +3879,12 @@ namespace relational
           (call_ == load_call &&
            *section_ == main_section &&
            !s.separate_load ());
+      }
+
+      virtual void
+      traverse_pointer (semantics::data_member&, semantics::class_&)
+      {
+        // We don't want to traverse composite id.
       }
 
       virtual void

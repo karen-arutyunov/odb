@@ -453,6 +453,12 @@ namespace relational
       }
 
       virtual void
+      traverse_pointer (semantics::data_member&, semantics::class_&)
+      {
+        // We don't want to traverse composite id.
+      }
+
+      virtual void
       traverse_object (semantics::class_& c)
       {
         if (context::top_object != &c)
