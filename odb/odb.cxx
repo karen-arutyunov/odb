@@ -821,6 +821,28 @@ main (int argc, char* argv[])
             pi.out_fd, ios_base::out | ios_base::binary);
           ostream os (&fb);
 
+          if (!at_once)
+          {
+            // See if we there is a UTF-8 BOM in the input file. If so,
+            // then we need to write it before prologues.
+            //
+            if (ifs.peek () == 0xEF)
+            {
+              ifs.get ();
+              if (ifs.get () != 0xBB || ifs.get () != 0xBF)
+              {
+                e << name << ": error: invalid UTF-8 BOM sequence" << endl;
+                fb.close ();
+                wait_process (pi, argv[0]);
+                return 1;
+              }
+
+              os.put (0xEF);
+              os.put (0xBB);
+              os.put (0xBF);
+            }
+          }
+
           if (!ops.trace ())
           {
             // Add the standard prologue.
