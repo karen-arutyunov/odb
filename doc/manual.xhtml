@@ -664,6 +664,7 @@ for consistency.
       <th>15</th><td><a href="#15">Advanced Techniques and Mechanisms</a>
         <table class="toc">
           <tr><th>15.1</th><td><a href="#15.1">Transaction Callbacks</a></td></tr>
+	  <tr><th>15.2</th><td><a href="#15.2">Persistent Class Template Instantiations</a></td></tr>
         </table>
       </td>
     </tr>
@@ -17928,6 +17929,93 @@ class object
     if (tran_ != 0)
       tran_->callback_unregister (this);
   }
+};
+  </pre>
+
+  <h2><a name="15.2">15.2 Persistent Class Template Instantiations</a></h2>
+
+  <p>Similar to composite value types (<a href="#7.2">Section 7.2, "Composite
+     Value Types"</a>), a persistent object can be defined as an instantiation
+     of a C++ class template, for example:</p>
+
+  <pre class="cxx">
+template &lt;typename T>
+class person
+{
+  ...
+
+  T first_;
+  T last_;
+};
+
+typedef person&lt;std::string> std_person;
+
+#pragma db object(std_person)
+#pragma db member(std_person::last_) id
+  </pre>
+
+  <p>Note that the database support code for such a persistent object
+     is generated when compiling the header containing the
+     <code>db&nbsp;object</code> pragma and not the header containing
+     the template definition or the <code>typedef</code> name. This
+     allows us to use templates defined in other files, for example:</p>
+
+  <pre class="cxx">
+#include &lt;utility> // std::pair
+
+typedef std::pair&lt;unsigned int, std::string> person;
+#pragma db object(person)
+#pragma db member(person::first) id auto column("id")
+#pragma db member(person::second) column("name")
+  </pre>
+
+  <p>You may also have to explicitly specify the object type in
+     calls to certain <code>database</code> class functions due
+     to the inability do distinguish, at the API level, between
+     smart pointers and persistent objects defined as class
+     template instantiations. For example:</p>
+
+  <pre class="cxx">
+person p;
+
+db.update (p); // Error.
+db.reload (p); // Error.
+db.erase (p);  // Error.
+
+db.update&lt;person> (p); // Ok.
+db.reload&lt;person> (p); // Ok.
+db.erase&lt;person> (p);  // Ok.
+  </pre>
+
+  <p>It also makes sense to factor persistent data members that do not
+     depend on template arguments into a common, non-template base class.
+     The following more realistic example illustrates this approach:</p>
+
+  <pre class="cxx">
+#pragma db object abstract
+class base_common
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id;
+};
+
+template &lt;typename T>
+class base: public base_common
+{
+  ...
+
+  T value;
+};
+
+typedef base&lt;std::string> string_base;
+#pragma db object(string_base) abstract
+
+#pragma db object
+class derived: public string_base
+{
+  ...
 };
   </pre>
 

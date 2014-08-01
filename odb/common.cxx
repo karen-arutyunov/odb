@@ -504,9 +504,9 @@ check (semantics::typedefs& t)
   if (ci == 0)
     return false;
 
-  // It must be a composite value.
+  // It must be an object or composite value.
   //
-  if (!composite (*ci))
+  if (!object (*ci) && !composite (*ci))
     return false;
 
   // This typedef name should be the one that was used in the pragma.
