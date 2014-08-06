@@ -3793,7 +3793,7 @@ register_odb_pragmas (void*, void*)
 void
 post_process_pragmas ()
 {
-  // Make sure composite class template instantiations are fully
+  // Make sure object and composite class template instantiations are fully
   // instantiated.
   //
   for (decl_pragmas::iterator i (decl_pragmas_.begin ()),
@@ -3807,18 +3807,30 @@ post_process_pragmas ()
     if (!(CLASS_TYPE_P (type) && CLASSTYPE_TEMPLATE_INSTANTIATION (type)))
       continue;
 
-    // Check whether this is a composite value type. We don't want to
-    // instantiate simple values since they may be incomplete.
+    // Check whether this is an object or composite value type.
     //
     pragma const* p (0);
+    string diag_name;
 
     for (pragma_set::iterator j (i->second.begin ()), e (i->second.end ());
          j != e; ++j)
     {
       string const& name (j->context_name);
 
-      if (name == "value")
+      if (name == "object")
+      {
         p = &*j;
+        diag_name = "persistent object";
+        break;
+      }
+      else if (name == "value")
+      {
+        p = &*j;
+        diag_name = "composite value";
+      }
+      // We don't want to instantiate simple values since they may be
+      // incomplete.
+      //
       else if (name == "simple" || name == "container")
       {
         p = 0;
@@ -3843,9 +3855,8 @@ post_process_pragmas ()
         errorcount != 0 ||
         !COMPLETE_TYPE_P (type))
     {
-      error (loc) << "unable to instantiate composite value class template"
+      error (loc) << "unable to instantiate " << diag_name << " class template"
                   << endl;
-
       throw pragmas_failed ();
     }
   }
