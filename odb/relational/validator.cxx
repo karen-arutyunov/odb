@@ -392,7 +392,8 @@ namespace relational
         {
           indexes& ins (c.get<indexes> ("index"));
 
-          // Make sure index members are not transient or containers.
+          // Make sure index members are not transient, inverse, or
+          // containers.
           //
           for (indexes::iterator i (ins.begin ()); i != ins.end (); ++i)
           {
@@ -407,6 +408,13 @@ namespace relational
               if (transient (m))
               {
                 error (im.loc) << "index member is transient" << endl;
+                valid_ = false;
+              }
+
+              if (inverse (m))
+              {
+                error (im.loc) << "index member is an inverse object " <<
+                  "pointer" << endl;
                 valid_ = false;
               }
 
