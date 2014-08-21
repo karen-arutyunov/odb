@@ -29,7 +29,7 @@ struct query_nested_types: object_columns_base, virtual context
     if (m != 0)
     {
       string name (prefix_ + public_name (*m));
-      name += in_ptr_ ? "_column_type_" : "_type_";
+      name += in_ptr_ ? "_column_class_" : "_class_";
       types.push_back (name);
 
       string p (prefix_);
@@ -486,8 +486,11 @@ traverse_composite (semantics::data_member* m, semantics::class_& c)
     return;
   }
 
+  // Use _class_ instead of _type_ to avoid potential clashes between
+  // the class and member names.
+  //
   string name (public_name (*m));
-  string suffix (in_ptr_ ? "_column_type_" : "_type_");
+  string suffix (in_ptr_ ? "_column_class_" : "_class_");
 
   if (decl_)
   {
@@ -525,7 +528,7 @@ traverse_composite (semantics::data_member* m, semantics::class_& c)
     os << "};";
 
     if (!in_ptr_)
-      os << "static " << const_ << name << "_type_ " << name << ";"
+      os << "static " << const_ << name << "_class_ " << name << ";"
          << endl;
   }
   else
@@ -545,7 +548,8 @@ traverse_composite (semantics::data_member* m, semantics::class_& c)
     tmpl += "< " + fq_name_ + ", id_" + db.string () + ", A >" + scope_;
 
     os << "template <typename A>" << endl
-       << const_ << "typename " << tmpl << "::" << name << "_type_" << endl
+       << const_ << "typename " << tmpl << "::" << name <<
+      (in_ptr_ ? "_type_" : "_class_") << endl
        << tmpl << "::" << name << ";"
        << endl;
   }
@@ -667,7 +671,7 @@ traverse_pointer (semantics::data_member& m, semantics::class_& c)
            << endl;
 
         os << "struct " << name << "_type_: " <<
-          name << "_pointer_type_, " << name << "_column_type_"
+          name << "_pointer_type_, " << name << "_column_class_"
            << "{";
 
         if (!const_.empty ())
