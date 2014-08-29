@@ -510,7 +510,7 @@ namespace relational
           os << "inline" << endl
              << traits << "::image_type*" << endl
              << traits << "::" << endl
-             << "clone_image (const image_type& i)"
+             << "clone_image (image_type& i)"
              << "{";
 
           if (poly_derived)
@@ -528,7 +528,7 @@ namespace relational
           //
           os << "inline" << endl
              << "void " << traits << "::" << endl
-             << "copy_image (image_type& d, const image_type& s)"
+             << "copy_image (image_type& d, image_type& s)"
              << "{";
 
           if (poly_derived)

@@ -706,12 +706,16 @@ traverse_object (type& c)
        << "root_image (image_type&);"
        << endl;
 
+    // Note that the original image is non-const since for some databases
+    // the copy "steals" stuff from the original (e.g., LOB descriptors in
+    // Oracle).
+    //
     os << "static image_type*" << endl
-       << "clone_image (const image_type&);"
+       << "clone_image (image_type&);"
        << endl;
 
     os << "static void" << endl
-       << "copy_image (image_type&, const image_type&);"
+       << "copy_image (image_type&, image_type&);"
        << endl;
 
     os << "static void" << endl
