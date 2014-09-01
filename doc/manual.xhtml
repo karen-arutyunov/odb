@@ -13183,6 +13183,7 @@ class person
     std::string last_;
   };
 
+  #pragma db column("")
   std::unique_ptr&lt;deleted_data> dd_;
 
   ...
@@ -13193,7 +13194,9 @@ class person
      any of the deleted data members are being loaded. During the normal
      operation, however, the pointer will stay <code>NULL</code> and
      therefore reduce the common case overhead to a single pointer
-     per class.</p>
+     per class. Note that we make the composite value column prefix
+     empty (the <code>db&nbsp;column("")</code> pragma) in order to
+     keep the same column names for the deleted data members.</p>
 
   <p>Soft-added and deleted data members can be used in objects,
      composite values, views, and container value types. We can
