@@ -1051,6 +1051,14 @@ class_fq_name (semantics::class_& c)
     : c.fq_name ();
 }
 
+semantics::scope& context::
+class_scope (semantics::class_& c)
+{
+  return c.is_a<semantics::class_instantiation> ()
+    ? c.get<semantics::names*> ("tree-hint")->scope ()
+    : c.scope ();
+}
+
 semantics::path context::
 class_file (semantics::class_& c)
 {
@@ -1310,8 +1318,8 @@ table_prefix (semantics::class_& c)
 {
   context& ctx (context::current ());
 
-  ns_schema = ctx.schema (c.scope ());
-  ns_prefix = ctx.table_name_prefix (c.scope ());
+  ns_schema = ctx.schema (class_scope (c));
+  ns_prefix = ctx.table_name_prefix (class_scope (c));
   prefix = ctx.table_name (c, &derived);
   prefix += "_";
 }
@@ -1530,14 +1538,14 @@ table_name (semantics::class_& c, bool* pd) const
   //
   if (!r.fully_qualified ())
   {
-    qname n (schema (c.scope ()));
+    qname n (schema (class_scope (c)));
     n.append (r);
     n.swap (r);
   }
 
   // Add the table prefix if any.
   //
-  r.uname () = table_name_prefix (c.scope ()) + r.uname ();
+  r.uname () = table_name_prefix (class_scope (c)) + r.uname ();
 
   if (derived)
     r.uname () = transform_name (r.uname (), sql_name_table);

@@ -2184,7 +2184,7 @@ namespace
           // the session value.
           //
           bool found (false);
-          for (semantics::scope* s (&c.scope ());; s = &s->scope_ ())
+          for (semantics::scope* s (&class_scope (c));; s = &s->scope_ ())
           {
             using semantics::namespace_;
 
@@ -2667,7 +2667,7 @@ namespace
           // See if any of the namespaces containing this class specify
           // a pointer.
           //
-          for (semantics::scope* s (&c.scope ());; s = &s->scope_ ())
+          for (semantics::scope* s (&class_scope (c));; s = &s->scope_ ())
           {
             using semantics::namespace_;
 
@@ -2754,7 +2754,7 @@ namespace
 
             // Resolve scope is the scope of the class.
             //
-            resolve_scope = c.scope ().tree_node ();
+            resolve_scope = class_scope (c).tree_node ();
           }
         }
 

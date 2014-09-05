@@ -1136,7 +1136,7 @@ namespace relational
           // Add the table prefix if this database has global index names.
           //
           if (!in.name.empty () && global_index)
-            in.name = table_name_prefix (c.scope ()) + in.name;
+            in.name = table_name_prefix (class_scope (c)) + in.name;
 
           // Handle container indexes.
           //

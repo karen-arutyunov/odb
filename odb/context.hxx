@@ -1049,6 +1049,13 @@ public:
   static string
   class_fq_name (semantics::class_&);
 
+  // Return class scope. For ordinary classes, this will be the scope
+  // where the class is defined. For class template instantiations this
+  // will be the scope of the typedef name used in the pragma.
+  //
+  static semantics::scope&
+  class_scope (semantics::class_&);
+
   // Return the class file. For ordinary classes, this will be the file
   // where the class is defined. For class template instantiations this
   // will be the file containing the pragma.
