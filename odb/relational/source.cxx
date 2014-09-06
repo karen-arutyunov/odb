@@ -4309,7 +4309,7 @@ traverse_view (type& c)
 
             p += 3;
             if (p != vq.literal.size ())
-              os << strlit (string (vq.literal, p));
+              os << " + " << strlit (string (vq.literal, p));
           }
         }
         else
