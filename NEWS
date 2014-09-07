@@ -13,6 +13,9 @@ Version 2.4.0
    pre.hxx/post.hxx includes. This allows the use of precompiled headers
    with the generated files.
 
+ * Support for calling MySQL stored procedures. For details and limitations
+   refer to Section 17.7, "MySQL Stored Procedures" in the ODB manual.
+
 Version 2.3.0
 
  * Support for database schema evolution, including schema migration, data

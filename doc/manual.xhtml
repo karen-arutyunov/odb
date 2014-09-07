@@ -710,6 +710,7 @@ for consistency.
             </td>
           </tr>
           <tr><th>17.6</th><td><a href="#17.6">MySQL Index Definition</a></td></tr>
+	  <tr><th>17.7</th><td><a href="#17.7">MySQL Stored Procedures</a></td></tr>
         </table>
       </td>
     </tr>
@@ -1062,9 +1063,10 @@ for consistency.
      database schema for your persistent classes, and use simple, safe,
      and yet powerful object query language instead of SQL. Or you can
      assign SQL types to individual data members, use the existing
-     database schema, and run native SQL <code>SELECT</code> queries.
-     In fact, at an extreme, ODB can be used as <em>just</em> a convenient
-     way to handle results of native SQL queries.</p>
+     database schema, run native SQL <code>SELECT</code> queries, and
+     call stored procedures. In fact, at an extreme, ODB can be used
+     as <em>just</em> a convenient way to handle results of native SQL
+     queries.</p>
 
   <p>ODB is not a framework. It does not dictate how you should write
      your application. Rather, it is designed to fit into your
@@ -1278,7 +1280,8 @@ for consistency.
      for persistent objects that match certain criteria. The example
      also shows how to define and use views, a mechanism that allows
      us to create projections of persistent objects, database tables,
-     or to handle results of native SQL queries.</p>
+     or to handle results of native SQL queries or stored procedure
+     calls.</p>
 
   <p>The code presented in this chapter is based on the
      <code>hello</code> example which can be found in the
@@ -2085,7 +2088,8 @@ Hello, Joe!
   <p>To support such cases ODB provides the notion of views. An ODB view
      is a C++ <code>class</code> that embodies a light-weight, read-only
      projection of one or more persistent objects or database tables or
-     the result of a native SQL query execution.</p>
+     the result of a native SQL query execution or stored procedure
+     call.</p>
 
   <p>Some of the common applications of views include loading a subset of
      data members from objects or columns database tables, executing and
@@ -9634,8 +9638,9 @@ t.commit ();
   <p>Some of the common applications of views include loading a subset
      of data members from objects or columns from database tables, executing
      and handling results of arbitrary SQL queries, including aggregate
-     queries, as well as joining multiple objects and/or database tables
-     using object relationships or custom join conditions.</p>
+     queries and stored procedure calls, as well as joining multiple
+     objects and/or database tables using object relationships or custom
+     join conditions.</p>
 
   <p>Many relational databases also define the concept of views. Note,
      however, that ODB views are not mapped to database views. Rather,
@@ -10481,12 +10486,13 @@ struct employer_age
 
   <p>The last kind of view supported by ODB is a native view. Native
      views are a low-level mechanism for capturing results of native
-     SQL queries. Native views don't have associated tables or objects.
-     Instead, we use the <code>db&nbsp;query</code> pragma to specify
-     the native SQL query, which must at a minimum include the
-     select-list and, if applicable, the from-list. For example, here
-     is how we can re-implement the <code>employee_vacation</code> table
-     view from Section 10.2 above as a native view:</p>
+     SQL queries, stored procedure calls, etc. Native views don't have
+     associated tables or objects. Instead, we use the
+     <code>db&nbsp;query</code> pragma to specify the native SQL query,
+     which should normally include the select-list and, if applicable,
+     the from-list. For example, here is how we can re-implement the
+     <code>employee_vacation</code> table view from Section 10.2 above
+     as a native view:</p>
 
   <pre class="cxx">
 #pragma db view query("SELECT employee_id, vacation_days " \
@@ -10603,6 +10609,13 @@ result n (db.query&lt;sequence_value> (
   "SELECT nextval('" + seq_name + "')"));
   </pre>
 
+   <p>Native views can also be used to call and handle results of
+      stored procedures. The semantics and limitations of stored
+      procedures vary greatly between database systems while some
+      do not support this functionality at all. As a result, support
+      for calling stored procedures using native views is described
+      for each database system in <a href="#II">Part II, "Database
+      Systems"</a>.</p>
 
   <h2><a name="10.6">10.6 Other View Features and Limitations</a></h2>
 
@@ -19512,9 +19525,130 @@ class object
 };
   </pre>
 
+  <h2><a name="17.7">17.7 MySQL Stored Procedures</a></h2>
 
-  <!-- CHAPTER -->
+  <p>ODB native views (<a href="#10.5">Section 10.5, "Native Views"</a>)
+     can be used to call MySQL stored procedures. For example, assuming
+     we are using the <code>person</code> class from <a href="#2">Chapter
+     2, "Hello World Example"</a> (and the corresponding <code>person</code>
+     table), we can create a stored procedure that given the min and max
+     ages returns some information about all the people in that range:</p>
 
+  <pre class="sql">
+CREATE PROCEDURE person_range (
+  IN min_age SMALLINT,
+  IN max_age SMALLINT)
+BEGIN
+  SELECT age, first, last FROM person
+    WHERE age >= min_age AND age &lt;= max_age;
+END
+  </pre>
+
+  <p>Given the above stored procedure we can then define an ODB view
+     that can be used to call it and retrieve its result:</p>
+
+  <pre class="cxx">
+#pragma db view query("CALL person_range((?))")
+struct person_range
+{
+  unsigned short age;
+  std::string first;
+  std::string last;
+};
+  </pre>
+
+  <p>The following example shows how we can use the above view to
+     print the list of people in a specific age range:</p>
+
+  <pre class="cxx">
+typedef odb::query&lt;person_range> query;
+typedef odb::result&lt;person_range> result;
+
+transaction t (db.begin ());
+
+result r (
+  db.query&lt;person_range> (
+    query::_val (1) + "," + query::_val (18)));
+
+for (result::iterator i (r.begin ()); i != r.end (); ++i)
+  cerr &lt;&lt; i->first &lt;&lt; " " &lt;&lt; i->last &lt;&lt; " " &lt;&lt; i->age &lt;&lt; endl;
+
+t.commit ();
+  </pre>
+
+   <p>Note that as with all native views, the order and types of data members
+      must match the order of columns in the <code>SELECT</code> list inside
+      the stored procedure.</p>
+
+   <p>There are also a number of limitations when it comes to support for
+      MySQL stored procedures in ODB views. First of all, you have to use
+      MySQL server and client libraries version 5.5.3 or later since this
+      is the version in which support for calling stored procedures with
+      prepared statements was first added (the
+      <code>mysql_stmt_next_result()</code> function).</p>
+
+   <p>In MySQL, a stored procedure can produce multiple results.
+      For example, if a stored procedure executes several
+      <code>SELECT</code> statements, then the result of calling such
+      a procedure consists of two row sets, one for each <code>SELECT</code>
+      statement. Additionally, if the procedure has any <code>OUT</code>
+      or <code>INOUT</code> parameters, then their values are returned as
+      an additional special row set containing only a single row.
+      Because such multiple row sets can contain varying number
+      and type of columns, they cannot be all extracted into a
+      single view. As a result, an ODB view will only extract the
+      data from the first row set and ignore all the subsequent
+      ones.</p>
+
+   <p>In particular, this means that we can use an ODB view to extract
+      the values of the <code>OUT</code> and <code>INOUT</code>
+      parameters provided that the stored procedure does not generate
+      any other row sets. For example:</p>
+
+  <pre class="sql">
+CREATE PROCEDURE person_min_max_age (
+  OUT min_age SMALLINT,
+  OUT max_age SMALLINT)
+BEGIN
+  SELECT MIN(age), MAX(age) INTO min_age, max_age FROM person;
+END
+  </pre>
+
+  <pre class="cxx">
+#pragma db view query("CALL person_min_max_age((?))")
+struct person_min_max_age
+{
+  unsigned short min_age;
+  unsigned short max_age;
+};
+  </pre>
+
+  <pre class="cxx">
+typedef odb::query&lt;person_min_max_age> query;
+typedef odb::result&lt;person_min_max_age> result;
+
+transaction t (db.begin ());
+
+// We have to pass dummy values for OUT parameters.
+//
+result r (
+  db.query&lt;person_min_max_age> (
+    query::_val (0) + "," + query::_val (0)));
+
+// We know this query always returns a single row.
+//
+person_min_max_age mma (*r.begin ());
+
+cerr &lt;&lt; mma.min_age &lt;&lt; " " &lt;&lt; mma.max_age &lt;&lt; endl;
+
+t.commit ();
+  </pre>
+
+  <p>Another limitation that stems from having multiple results is the
+     inability to cache the result of a stored procedure call. In
+     other words, a MySQL stored procedure call always produces an
+     uncached query result (<a href="#4.4">Section 4.4, "Query
+     Result"</a>).</p>
 
   <hr class="page-break"/>
   <h1><a name="18">18 SQLite Database</a></h1>
