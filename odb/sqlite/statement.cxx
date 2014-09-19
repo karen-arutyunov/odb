@@ -24,21 +24,21 @@ namespace odb
     statement::
     ~statement ()
     {
-      if (empty ())
-        return;
-
+      if (stmt_ != 0)
       {
-        odb::tracer* t;
-        if ((t = conn_.transaction_tracer ()) ||
-            (t = conn_.tracer ()) ||
-            (t = conn_.database ().tracer ()))
-          t->deallocate (conn_, *this);
+        {
+          odb::tracer* t;
+          if ((t = conn_.transaction_tracer ()) ||
+              (t = conn_.tracer ()) ||
+              (t = conn_.database ().tracer ()))
+            t->deallocate (conn_, *this);
+        }
+
+        if (next_ != this)
+          list_remove ();
+
+        stmt_.reset ();
       }
-
-      if (next_ != this)
-        list_remove ();
-
-      stmt_.reset ();
     }
 
     void statement::
@@ -48,6 +48,10 @@ namespace odb
           const binding* proc,
           bool optimize)
     {
+      active_ = false;
+      prev_ = 0;
+      next_ = this;
+
       string tmp;
       if (proc != 0)
       {
@@ -81,10 +85,33 @@ namespace odb
         text_size = tmp.size ();
       }
 
+#if SQLITE_VERSION_NUMBER < 3005003
+      text_.assign (text, text_size);
+#endif
+
       // Empty statement.
       //
       if (*text == '\0')
         return;
+
+      {
+        odb::tracer* t;
+        if ((t = conn_.transaction_tracer ()) ||
+            (t = conn_.tracer ()) ||
+            (t = conn_.database ().tracer ()))
+        {
+          // Temporarily store the statement text in prev_ so that
+          // text() which may be called by the tracer can access it.
+          //
+#if SQLITE_VERSION_NUMBER >= 3005003
+          prev_ = reinterpret_cast<statement*> (const_cast<char*> (text));
+#endif
+          t->prepare (conn_, *this);
+#if SQLITE_VERSION_NUMBER >= 3005003
+          prev_ = 0;
+#endif
+        }
+      }
 
       int e;
       sqlite3_stmt* stmt (0);
@@ -113,23 +140,6 @@ namespace odb
         translate_error (e, conn_);
 
       stmt_.reset (stmt);
-
-#if SQLITE_VERSION_NUMBER < 3005003
-      text_.assign (text, text_size);
-#endif
-
-      active_ = false;
-
-      prev_ = 0;
-      next_ = this;
-
-      {
-        odb::tracer* t;
-        if ((t = conn_.transaction_tracer ()) ||
-            (t = conn_.tracer ()) ||
-            (t = conn_.database ().tracer ()))
-          t->prepare (conn_, *this);
-      }
     }
 
     const char* statement::
@@ -138,7 +148,12 @@ namespace odb
       // sqlite3_sql() is only available since 3.5.3.
       //
 #if SQLITE_VERSION_NUMBER >= 3005003
-      return sqlite3_sql (stmt_);
+      if (stmt_ == 0)
+        // See init() above for details on what's going on here.
+        //
+        return prev_ != 0 ? reinterpret_cast<const char*> (prev_) : "";
+      else
+        return sqlite3_sql (stmt_);
 #else
       return text_.c_str ();
 #endif
