@@ -2,6 +2,8 @@
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <sstream>
+
 #include <odb/common-query.hxx>
 
 using namespace std;
@@ -13,7 +15,7 @@ using namespace std;
 //
 struct query_nested_types: object_columns_base, virtual context
 {
-  query_nested_types (bool ptr): ptr_ (ptr), in_ptr_ (false) {}
+  query_nested_types (bool ptr): ptr_ (ptr), in_ptr_ (false), depth_ (0) {}
 
   virtual void
   traverse_object (semantics::class_& c)
@@ -30,12 +32,15 @@ struct query_nested_types: object_columns_base, virtual context
     {
       string name (prefix_ + public_name (*m));
       name += in_ptr_ ? "_column_class_" : "_class_";
+      name += query_columns::depth_suffix (depth_);
       types.push_back (name);
 
+      depth_++;
       string p (prefix_);
       prefix_ = name + "::";
       object_columns_base::traverse_composite (m, c);
       prefix_ = p;
+      depth_--;
     }
     else
       object_columns_base::traverse_composite (m, c); // Base
@@ -69,6 +74,7 @@ protected:
   bool ptr_;
   bool in_ptr_;    // True while we are "inside" an object pointer.
   string prefix_;
+  size_t depth_;
 };
 
 void query_utils::
@@ -463,8 +469,22 @@ query_columns::
 query_columns (bool decl, bool ptr, semantics::class_& c)
     : decl_ (decl), ptr_ (ptr), in_ptr_ (false),
       fq_name_ (class_fq_name (c)),
-      resue_abstract_ (abstract (c) && !polymorphic (c))
+      resue_abstract_ (abstract (c) && !polymorphic (c)),
+      depth_ (0)
 {
+}
+
+string query_columns::
+depth_suffix (size_t d)
+{
+  if (d != 0)
+  {
+    ostringstream os;
+    os << d;
+    return os.str () + '_';
+  }
+
+  return string ();
 }
 
 void query_columns::
@@ -491,6 +511,17 @@ traverse_composite (semantics::data_member* m, semantics::class_& c)
   //
   string name (public_name (*m));
   string suffix (in_ptr_ ? "_column_class_" : "_class_");
+
+  // Add depth to the nested composite to avoid potential name conflicts
+  // in situations like these:
+  //
+  // struct inner { ... };
+  // struct outer { inner value; };
+  // struct object { outer value; }
+  //
+  suffix += depth_suffix (depth_);
+
+  depth_++;
 
   if (decl_)
   {
@@ -528,7 +559,7 @@ traverse_composite (semantics::data_member* m, semantics::class_& c)
     os << "};";
 
     if (!in_ptr_)
-      os << "static " << const_ << name << "_class_ " << name << ";"
+      os << "static " << const_ << name << suffix << " " << name << ";"
          << endl;
   }
   else
@@ -542,17 +573,22 @@ traverse_composite (semantics::data_member* m, semantics::class_& c)
 
     scope_ = old_scope;
 
-    // Composite member. Note that here we don't use suffix.
+    // Composite member. Note that here we don't use suffix for the in-
+    // pointer case because the actual pointer column type derives from
+    // the composite column type (dual interface; see traverse_pointer()
+    // below).
     //
     string tmpl (ptr_ ? "pointer_query_columns" : "query_columns");
     tmpl += "< " + fq_name_ + ", id_" + db.string () + ", A >" + scope_;
 
     os << "template <typename A>" << endl
        << const_ << "typename " << tmpl << "::" << name <<
-      (in_ptr_ ? "_type_" : "_class_") << endl
+      (in_ptr_ ? string ("_type_") : suffix) << endl
        << tmpl << "::" << name << ";"
        << endl;
   }
+
+  depth_--;
 }
 
 void query_columns::
@@ -671,7 +707,8 @@ traverse_pointer (semantics::data_member& m, semantics::class_& c)
            << endl;
 
         os << "struct " << name << "_type_: " <<
-          name << "_pointer_type_, " << name << "_column_class_"
+          name << "_pointer_type_, " <<
+          name << "_column_class_" << depth_suffix (depth_)
            << "{";
 
         if (!const_.empty ())

@@ -143,6 +143,9 @@ struct query_columns: object_columns_base, virtual context
   virtual void
   traverse_pointer (semantics::data_member&, semantics::class_&);
 
+  static string
+  depth_suffix (size_t);
+
 protected:
   bool decl_;
   bool ptr_;
@@ -151,6 +154,7 @@ protected:
   string fq_name_;
   bool resue_abstract_;  // Object is reuse-abstract.
   string scope_;
+  size_t depth_;
 };
 
 // Generate the list of base classes for the query_columns or
