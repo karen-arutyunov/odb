@@ -33,7 +33,7 @@ struct query_nested_types: object_columns_base, virtual context
       types.push_back (name);
 
       string p (prefix_);
-      prefix_ += name + "::";
+      prefix_ = name + "::";
       object_columns_base::traverse_composite (m, c);
       prefix_ = p;
     }
