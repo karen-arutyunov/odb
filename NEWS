@@ -9,6 +9,13 @@ Version 2.4.0
    Section 15.2, "Persistent Class Template Instantiations" in the ODB
    manual.
 
+ * Besides odb::stderr_tracer there is now odb::stderr_full_tracer that
+   traces statement preparations and deallocations in addition to their
+   executions. This new implementation can be useful when you want to
+   see text of a statement that contains a syntax error and therefore
+   will not actually be executed. For more information, refer to Section
+   3.13, "Tracing SQL Statement Execution" in the ODB manual.
+
  * User-supplied prologues and epilogues are now generated outside the
    pre.hxx/post.hxx includes. This allows the use of precompiled headers
    with the generated files.

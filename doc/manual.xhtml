@@ -4139,9 +4139,16 @@ t.commit ();
 
   <p>The <code>odb::tracer</code> class defines a callback interface
      that can be used to create custom tracer implementations. The
-     <code>odb::stderr_tracer</code> is a built-in tracer implementation
-     provided by the ODB runtime. It prints each executed SQL statement
-     to the standard error stream.</p>
+     <code>odb::stderr_tracer</code> and <code>odb::stderr_full_tracer</code>
+     are built-in tracer implementations provided by the ODB runtime.
+     They both print SQL statements being executed to the standard error
+     stream. The full tracer, in addition to tracing statement executions,
+     also traces their preparations and deallocations. One situation where
+     the full tracer can be particularly useful is if a statement (for
+     example a custom query) contains a syntax error. In this case the
+     error will be detected during preparation and, as a result, the
+     statement will never be executed. The only way to see such a statement
+     is by using the full tracing.</p>
 
   <p>The <code>odb::tracer</code> class is defined in the
      <code>&lt;odb/tracer.hxx></code> header file which you will need to
