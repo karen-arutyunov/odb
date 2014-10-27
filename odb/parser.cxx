@@ -32,7 +32,7 @@ public:
 private:
   typedef semantics::access access;
 
-  // Extended GGC tree declaration that is either a GCC tree
+  // Extended GCC tree declaration that is either a GCC tree
   // declaration, a virtual declaration, or a pragma. If it is
   // a pragma, then the assoc flag indicated whether this pragma
   // has been associated with a declaration. Otherwise, the assoc
@@ -190,12 +190,12 @@ operator< (tree_decl const& y) const
 {
   location_t xloc (
     decl != 0
-    ? DECL_SOURCE_LOCATION (decl)
+    ? real_source_location (decl)
     : (vdecl != 0 ? vdecl->loc : prag->loc));
 
   location_t yloc (
     y.decl != 0
-    ? DECL_SOURCE_LOCATION (y.decl)
+    ? real_source_location (y.decl)
     : (y.vdecl != 0 ? y.vdecl->loc : y.prag->loc));
 
   return xloc < yloc;
@@ -393,7 +393,7 @@ emit_class (tree c, path const& file, size_t line, size_t clmn, bool stub)
                            << "' conflicts with a previous declaration"
                            << endl;
 
-            location_t l (DECL_SOURCE_LOCATION (d));
+            location_t l (real_source_location (d));
             info (l) << "'" << vd.name << "' was previously declared here"
                      << endl;
 
@@ -860,7 +860,7 @@ collect (tree ns)
   //
   for (; decl != NULL_TREE; decl = TREE_CHAIN (decl))
   {
-    all_decls_[DECL_SOURCE_LOCATION (decl)] = decl;
+    all_decls_[real_source_location (decl)] = decl;
 
     if (DECL_IS_BUILTIN (decl))
       continue;

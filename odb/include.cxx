@@ -121,7 +121,7 @@ namespace
       {
         f = c.file ();
         tree decl (TYPE_NAME (c.tree_node ()));
-        l = DECL_SOURCE_LOCATION (decl);
+        l = real_source_location (decl);
 
         // Any include directives that follow are trailing (specified at
         // the end of the main file). Note that we ignore views in this

@@ -3844,7 +3844,7 @@ post_process_pragmas ()
     // Make sure it is instantiated.
     //
     tree decl (TYPE_NAME (p->value.value<tree> ()));
-    location_t loc (DECL_SOURCE_LOCATION (decl));
+    location_t loc (real_source_location (decl));
 
     // Reset input location so that we get nice diagnostics in case
     // of an error.

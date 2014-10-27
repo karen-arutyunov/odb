@@ -444,7 +444,7 @@ namespace
                 // Update the location of the access expression to point
                 // to this function.
                 //
-                ma.loc = location (DECL_SOURCE_LOCATION (f));
+                ma.loc = location (real_source_location (f));
                 found = r;
               }
             }

@@ -65,6 +65,23 @@ extern "C"
 } // extern "C"
 #endif
 
+// Since 4.7.0 the location may point inside a macro rather than at
+// the expansion point. We are only really interested in the expansion
+// points so we use the real_source_location() wrapper rather than
+// DECL_SOURCE_LOCATION() to do this at the source.
+//
+inline location_t
+real_source_location (tree n)
+{
+  location_t l (DECL_SOURCE_LOCATION (n));
+
+#if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 6
+  l = linemap_resolve_location (line_table, l, LRK_MACRO_EXPANSION_POINT, 0);
+#endif
+
+  return l;
+}
+
 // In 4.9.0 the tree code type was changed from int to enum tree_code.
 // the tree_code_name array is also gone with the get_tree_code_name()
 // function in its place.
