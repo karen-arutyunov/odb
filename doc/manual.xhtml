@@ -12605,46 +12605,74 @@ namespace odb
                   schema_version = 0,
                   const std::string&amp; name = "");
 
-    // C++98/03 version:
-    //
-    typedef void (*data_migration_function_type) (database&amp;);
+    typedef void data_migration_function_type (database&amp;);
 
-    // C++11 version:
-    //
-    typedef std::function&lt;void (database&amp;)> data_migration_function_type;
-
-    // Common (for all the databases) data migration.
+    // Common (for all the databases) data migration, C++98/03 version:
     //
     template &lt;schema_version v, schema_version base>
     static void
-    data_migration_function (data_migration_function_type,
+    data_migration_function (data_migration_function_type*,
                              const std::string&amp; name = "");
 
-    // Database-specific data migration.
+    // Common (for all the databases) data migration, C++11 version:
+    //
+    template &lt;schema_version v, schema_version base>
+    static void
+    data_migration_function (std::function&lt;data_migration_function_type>,
+                             const std::string&amp; name = "");
+
+    // Database-specific data migration, C++98/03 version:
     //
     template &lt;schema_version v, schema_version base>
     static void
     data_migration_function (database&amp;,
-                             data_migration_function_type,
+                             data_migration_function_type*,
                              const std::string&amp; name = "");
 
     template &lt;schema_version v, schema_version base>
     static void
     data_migration_function (database_id,
-                             data_migration_function_type,
+                             data_migration_function_type*,
+                             const std::string&amp; name = "");
+
+    // Database-specific data migration, C++11 version:
+    //
+    template &lt;schema_version v, schema_version base>
+    static void
+    data_migration_function (database&amp;,
+                             std::function&lt;data_migration_function_type>,
+                             const std::string&amp; name = "");
+
+    template &lt;schema_version v, schema_version base>
+    static void
+    data_migration_function (database_id,
+                             std::function&lt;data_migration_function_type>,
                              const std::string&amp; name = "");
   };
 
-  // Static data migration function registration.
+  // Static data migration function registration, C++98/03 version:
   //
   template &lt;schema_version v, schema_version base>
   struct data_migration_entry
   {
-    data_migration_entry (data_migration_function_type,
+    data_migration_entry (data_migration_function_type*,
                           const std::string&amp; name = "");
 
     data_migration_entry (database_id,
-                          data_migration_function_type,
+                          data_migration_function_type*,
+                          const std::string&amp; name = "");
+  };
+
+  // Static data migration function registration, C++11 version:
+  //
+  template &lt;schema_version v, schema_version base>
+  struct data_migration_entry
+  {
+    data_migration_entry (std::function&lt;data_migration_function_type>,
+                          const std::string&amp; name = "");
+
+    data_migration_entry (database_id,
+                          std::function&lt;data_migration_function_type>,
                           const std::string&amp; name = "");
   };
 }
