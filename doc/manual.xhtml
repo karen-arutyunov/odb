@@ -2052,14 +2052,16 @@ Hello, Joe!
     {
       transaction t (db->begin ());
 
-      result r (db->query&lt;person> (query::first == "Joe" &amp;&amp;
-                                   query::last == "Dirt"));
+      // Here we know that there can be only one Joe Dirt in our
+      // database so we use the query_one() shortcut instead of
+      // manually iterating over the result returned by query().
+      //
+      auto_ptr&lt;person> joe (
+        db->query_one&lt;person> (query::first == "Joe" &amp;&amp;
+                               query::last == "Dirt"));
 
-      result::iterator i (r.begin ());
-
-      if (i != r.end ())
+      if (joe.get () != 0)
       {
-        auto_ptr&lt;person> joe (i.load ());
         joe->age (joe->age () + 1);
         db->update (*joe);
       }
@@ -2117,8 +2119,12 @@ struct person_stat
 };
   </pre>
 
-  <p>To get the result of a view we use the same <code>query()</code>
-     function as when querying the database for an object. Here is
+  <p>Normally, to get the result of a view we use the same
+     <code>query()</code> function as when querying the database for
+     an object. Here, however, we are executing an aggregate query
+     which always returns exactly one element. Therefore, instead
+     of getting the result instance and then iterating over it, we
+     can use the shortcut <code>query_value()</code> function. Here is
      how we can load and print our statistics using the view we have
      just created:</p>
 
@@ -2128,11 +2134,9 @@ struct person_stat
     {
       transaction t (db->begin ());
 
-      odb::result&lt;person_stat> r (db->query&lt;person_stat> ());
-
       // The result of this query always has exactly one element.
       //
-      const person_stat&amp; ps (*r.begin ());
+      person_stat ps (db->query_value&lt;person_stat> ());
 
       cout &lt;&lt; "count  : " &lt;&lt; ps.count &lt;&lt; endl
            &lt;&lt; "min age: " &lt;&lt; ps.min_age &lt;&lt; endl
@@ -2185,16 +2189,15 @@ max age: 33
     {
       transaction t (db->begin ());
 
-      result r (db->query&lt;person> (query::first == "John" &amp;&amp;
-                                   query::last == "Doe"));
+      // Here we know that there can be only one John Doe in our
+      // database so we use the query_one() shortcut again.
+      //
+      auto_ptr&lt;person> john (
+        db->query_one&lt;person> (query::first == "John" &amp;&amp;
+                               query::last == "Doe"));
 
-      result::iterator i (r.begin ());
-
-      if (i != r.end ())
-      {
-        auto_ptr&lt;person> john (i.load ());
+      if (john.get () != 0)
         db->erase (*john);
-      }
 
       t.commit ();
     }
@@ -2493,8 +2496,6 @@ psql --user=odb_test --dbname=odb_test -f person-pgsql.sql
     <li>Link the application with the generated code and two ODB runtime
         libraries.</li>
   </ol>
-
-
 
   <p>Do not be concerned if, at this point, much appears unclear. The intent
      of this chapter is to give you only a general idea of how to persist C++
@@ -4920,11 +4921,104 @@ find_minors (database&amp; db, const query&amp; name_query)
 result r (find_minors (db, query::first == "John"));
   </pre>
 
+  <p>The result of executing a query is zero, one, or more objects
+     matching the query criteria. The <code>query()</code> function
+     returns this result as an instance of the <code>odb::result</code>
+     class template, which provides a stream-like interface and is
+     discussed in detail in the next section.</p>
+
+  <p>In situations where we know that a query produces at most one
+     element, we can instead use the <code>database::query_one()</code> and
+     <code>database::query_value()</code> shortcut functions, for example:</p>
+
+  <pre class="cxx">
+  typedef odb::query&lt;person> query;
+
+  auto_ptr&lt;person> p (
+    db.query_one&lt;person> (
+      query::email == "jon@example.com"));
+  </pre>
+
+  <p>The shortcut query functions have the following signatures:</p>
+
+  <pre class="cxx">
+  template &lt;typename T>
+  typename object_traits&lt;T>::pointer_type
+  query_one ();
+
+  template &lt;typename T>
+  bool
+  query_one (T&amp;);
+
+  template &lt;typename T>
+  T
+  query_value ();
+
+  template &lt;typename T>
+  typename object_traits&lt;T>::pointer_type
+  query_one (const odb::query&lt;T>&amp;);
+
+  template &lt;typename T>
+  bool
+  query_one (const odb::query&lt;T>&amp;, T&amp;);
+
+  template &lt;typename T>
+  T
+  query_value (const odb::query&lt;T>&amp;);
+  </pre>
+
+  <p>Similar to <code>query()</code>, the first three functions are used
+     to return the only persistent object of a given type stored in the
+     database. The second three versions use the passed query instance
+     to only return the object matching the query criteria.</p>
+
+  <p>Similar to the <code>database::find()</code> functions
+     (<a href="#3.9">Section 3.9, "Loading Persistent Objects"</a>),
+     <code>query_one()</code> can either allocate a new instance of the
+     object class in the dynamic memory or it can load the object's state
+     into an existing instance. The <code>query_value()</code> function
+     allocates and returns the object by value.</p>
+
+  <p>The <code>query_one()</code> function allows us to determine
+     if the query result contains zero or one element. If no objects
+     matching the query criteria were found in the database, the
+     first version of <code>query_one()</code> returns the <code>NULL</code>
+     pointer while the second &mdash; <code>false</code>. If the second
+     version returns <code>false</code>, then the passed object
+     remains unchanged. For example:</p>
+
+  <pre class="cxx">
+  if (unique_ptr&lt;person> p = db.query_one&lt;person> (
+        query::email == "jon@example.com"))
+  {
+    ...
+  }
+
+  person p;
+  if (db.query_one&lt;person> (query::email == "jon@example.com", p))
+  {
+    ...
+  }
+  </pre>
+
+  <p>If the query executed using <code>query_one()</code> or
+     <code>query_value()</code> returns more than one element,
+     then these functions fail with an assertion. Additionally,
+     <code>query_value()</code> also fails with an assertion if
+     the query returned no elements.</p>
+
+  <p>Common situations where we can use the shortcut functions are a
+     query condition that uses a data member with the
+     <code>unique</code> constraint (at most one element returned;
+     see <a href="#14.7">Section 14.7, "Index Definition Pragmas"</a>)
+     as well as aggregate queries (exactly one element returned; see
+     <a href="#10">Chapter 10, "Views"</a>).</p>
+
   <h2><a name="4.4">4.4 Query Result</a></h2>
 
-  <p>The result of executing a query is zero, one, or more objects
-     matching the query criteria. The result is returned as an instance
-     of the <code>odb::result</code> class template, for example:</p>
+  <p>The <code>database::query()</code> function returns the result of
+     executing a query as an instance of the <code>odb::result</code>
+     class template, for example:</p>
 
   <pre class="cxx">
   typedef odb::query&lt;person> query;
@@ -5183,7 +5277,6 @@ namespace odb
   }
   </pre>
 
-
   <h2><a name="4.5">4.5 Prepared Queries</a></h2>
 
   <p>Most modern relational database systems have the notion of a prepared
@@ -5195,12 +5288,12 @@ namespace odb
 
   <p>In ODB all the non-query database operations such as
      <code>persist()</code>, <code>load()</code>, <code>update()</code>,
-     etc., are implemented in terms of prepared statements that are
-     cached and reused. While the <code>query()</code> database
-     operation also uses the prepared statement, this statement
-     is not cached or reused by default since ODB has no knowledge
-     of whether a query will be executed multiple times or only
-     once. Instead, ODB provides a mechanism, called prepared queries,
+     etc., are implemented in terms of prepared statements that are cached
+     and reused. While the <code>query()</code>, <code>query_one()</code>,
+     and <code>query_one()</code> database operations also use prepared
+     statements, these statements are not cached or reused by default since
+     ODB has no knowledge of whether a query will be executed multiple times
+     or only once. Instead, ODB provides a mechanism, called prepared queries,
      that allows us to prepare a query once and execute it multiple
      times. In other words, ODB prepared queries are a thin wrapper
      around the underlying database's prepared statement functionality.</p>
@@ -5302,6 +5395,15 @@ namespace odb
     result&lt;T>
     execute (bool cache = true);
 
+    typename object_traits&lt;T>::pointer_type
+    execute_one ();
+
+    bool
+    execute_one (T&amp; object);
+
+    T
+    execute_value ();
+
     const char*
     name () const;
 
@@ -5342,6 +5444,21 @@ namespace odb
      <code>execute()</code> takes the second (the cache flag). Note
      also that re-executing a prepared query invalidates the
      previous execution result, whether cached or uncached. </p>
+
+  <p>The <code>execute_one()</code> and <code>execute_value()</code>
+     functions can be used as shortcuts to execute a query that is
+     known to return at most one or exactly one object, respectively.
+     The arguments and return values in these functions have the same
+     semantics as in <code>query_one()</code> and <code>query_value()</code>.
+     And similar to <code>execute()</code> above, <code>prepare_query()</code>
+     and <code>execute_one/value()</code> can be seen as the
+     <code>query_one/value()</code> function split into two:
+     <code>prepare_query()</code> takes the first
+     <code>query_one/value()</code> argument (the query condition) while
+     <code>execute_one/value()</code> takes the second argument (if any)
+     and returns the result. Note also that <code>execute_one/value()</code>
+     never caches its result but invalidates the result of any previous
+     <code>execute()</code> call on the same prepared query.</p>
 
   <p>The <code>name()</code> function returns the prepared query name.
      This is the same name as was passed as the first argument in the
@@ -9746,11 +9863,12 @@ struct employee_name
      to compile any header that defines a view with the
      <code>--generate-query</code> ODB compiler option.</p>
 
-  <p>To query the database for a view we use the <code>database::query()</code>
-     function in exactly the same way as we would use it to query the
-     database for an object. For example, the following code fragment
-     shows how we can find the names of all the employees that are
-     younger than 31:</p>
+  <p>To query the database for a view we use the
+     <code>database::query()</code>, <code>database::query_one()</code>, or
+     <code>database::query_value()</code> functions in exactly the same way
+     as we would use them to query the database for an object. For example,
+     the following code fragment shows how we can find the names of all the
+     employees that are younger than 31:</p>
 
   <pre class="cxx">
 typedef odb::query&lt;employee_name> query;
@@ -10028,18 +10146,18 @@ struct employee_count
      querying the database for an object. For example:</p>
 
   <pre class="cxx">
-typedef odb::result&lt;employee_count> result;
 typedef odb::query&lt;employee_count> query;
 
 transaction t (db.begin ());
 
-// Find the number of employees with the Doe last name.
+// Find the number of employees with the Doe last name. Result of this
+// aggregate query contains only one element so use the query_value()
+// shortcut function.
 //
-result r (db.query&lt;employee_count> (query::last == "Doe"));
+employee_count ec (
+  db.query_value&lt;employee_count> (query::last == "Doe"));
 
-// Result of this aggregate query contains only one element.
-//
-cout &lt;&lt; r.begin ()->count &lt;&lt; endl;
+cout &lt;&lt; ec.count &lt;&lt; endl;
 
 t.commit ();
   </pre>
@@ -19660,19 +19778,15 @@ struct person_min_max_age
 
   <pre class="cxx">
 typedef odb::query&lt;person_min_max_age> query;
-typedef odb::result&lt;person_min_max_age> result;
 
 transaction t (db.begin ());
 
+// We know this query always returns a single row, so use query_value().
 // We have to pass dummy values for OUT parameters.
 //
-result r (
-  db.query&lt;person_min_max_age> (
+person_min_max_age mma (
+  db.query_value&lt;person_min_max_age> (
     query::_val (0) + "," + query::_val (0)));
-
-// We know this query always returns a single row.
-//
-person_min_max_age mma (*r.begin ());
 
 cerr &lt;&lt; mma.min_age &lt;&lt; " " &lt;&lt; mma.max_age &lt;&lt; endl;
 

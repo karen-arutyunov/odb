@@ -1,5 +1,12 @@
 Version 2.4.0
 
+ * New database class functions, query_one(), query_value(), provide
+   convenient shortcuts for situations where the query is know to return
+   at most one element (query_one) or exactly one element (query_value).
+   Corresponding execute_one() and execute_value() functions for prepared
+   queries are also provided. For details, refer to Sections 4.3, "Executing
+   a Query" and 4.5, "Prepared Queries" in the ODB manual.
+
  * New pragma, on_delete, allows the specification of an on-delete semantics
    (translated to the ON DELETE SQL clause) for an object pointer. For more
    information, refer to Section 14.4.15, "on_delete" in the ODB manual.
