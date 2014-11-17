@@ -328,12 +328,14 @@ namespace odb
       insert_statement (connection_type& conn,
                         const std::string& text,
                         bool process_text,
-                        binding& param);
+                        binding& param,
+                        binding* returning);
 
       insert_statement (connection_type& conn,
                         const char* text,
                         bool process_text,
-                        binding& param);
+                        binding& param,
+                        binding* returning);
 
       // Return true if successful and false if the row is a duplicate.
       // All other errors are reported by throwing exceptions.
@@ -341,15 +343,13 @@ namespace odb
       bool
       execute ();
 
-      unsigned long long
-      id ();
-
     private:
       insert_statement (const insert_statement&);
       insert_statement& operator= (const insert_statement&);
 
     private:
       binding& param_;
+      binding* returning_;
     };
 
     class LIBODB_SQLITE_EXPORT update_statement: public statement

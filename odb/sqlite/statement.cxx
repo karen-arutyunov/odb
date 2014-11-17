@@ -605,11 +605,13 @@ namespace odb
     insert_statement (connection_type& conn,
                       const string& text,
                       bool process,
-                      binding& param)
+                      binding& param,
+                      binding* returning)
         : statement (conn,
                      text, statement_insert,
                      (process ? &param : 0), false),
-          param_ (param)
+          param_ (param),
+          returning_ (returning)
     {
     }
 
@@ -617,11 +619,13 @@ namespace odb
     insert_statement (connection_type& conn,
                       const char* text,
                       bool process,
-                      binding& param)
+                      binding& param,
+                      binding* returning)
         : statement (conn,
                      text, statement_insert,
                      (process ? &param : 0), false),
-          param_ (param)
+          param_ (param),
+          returning_ (returning)
     {
     }
 
@@ -679,14 +683,17 @@ namespace odb
           translate_error (e, conn_);
       }
 
-      return true;
-    }
+      if (returning_ != 0)
+      {
+        bind& b (returning_->bind[0]);
 
-    unsigned long long insert_statement::
-    id ()
-    {
-      return static_cast<unsigned long long> (
-        sqlite3_last_insert_rowid (conn_.handle ()));
+        *b.is_null = false;
+        *static_cast<long long*> (b.buffer) =
+          static_cast<long long> (
+            sqlite3_last_insert_rowid (conn_.handle ()));
+      }
+
+      return true;
     }
 
     // update_statement

@@ -22,6 +22,12 @@ namespace odb
       return "transaction is forced to rollback";
     }
 
+    forced_rollback* forced_rollback::
+    clone () const
+    {
+      return new forced_rollback (*this);
+    }
+
     //
     // database_exception
     //
@@ -51,6 +57,12 @@ namespace odb
       return what_.c_str ();
     }
 
+    database_exception* database_exception::
+    clone () const
+    {
+      return new database_exception (*this);
+    }
+
     //
     // cli_exception
     //
@@ -70,6 +82,12 @@ namespace odb
     what () const throw ()
     {
       return what_.c_str ();
+    }
+
+    cli_exception* cli_exception::
+    clone () const
+    {
+      return new cli_exception (*this);
     }
   }
 }

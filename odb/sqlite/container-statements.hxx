@@ -126,7 +126,8 @@ namespace odb
               conn_,
               insert_text_,
               versioned_, // Process if versioned.
-              insert_image_binding_));
+              insert_image_binding_,
+              0));
 
         return *insert_;
       }

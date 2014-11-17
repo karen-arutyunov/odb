@@ -29,6 +29,9 @@ namespace odb
     {
       virtual const char*
       what () const throw ();
+
+      virtual forced_rollback*
+      clone () const;
     };
 
     struct LIBODB_SQLITE_EXPORT database_exception: odb::database_exception
@@ -60,6 +63,9 @@ namespace odb
       virtual const char*
       what () const throw ();
 
+      virtual database_exception*
+      clone () const;
+
     private:
       int error_;
       int extended_error_;
@@ -74,6 +80,9 @@ namespace odb
 
       virtual const char*
       what () const throw ();
+
+      virtual cli_exception*
+      clone () const;
 
     private:
       std::string what_;

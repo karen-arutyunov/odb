@@ -36,6 +36,7 @@ namespace odb
       typedef ST traits;
 
       typedef typename traits::image_type image_type;
+      typedef typename traits::id_image_type id_image_type;
 
       typedef sqlite::select_statement select_statement_type;
       typedef sqlite::update_statement update_statement_type;
@@ -43,7 +44,7 @@ namespace odb
       typedef sqlite::connection connection_type;
 
       section_statements (connection_type&,
-                          image_type&,
+                          image_type&, id_image_type&,
                           binding& id, binding& idv);
 
       connection_type&

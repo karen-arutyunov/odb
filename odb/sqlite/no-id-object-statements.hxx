@@ -88,7 +88,8 @@ namespace odb
               conn_,
               object_traits::persist_statement,
               object_traits::versioned, // Process if versioned.
-              insert_image_binding_));
+              insert_image_binding_,
+              0));
         }
 
         return *persist_;
