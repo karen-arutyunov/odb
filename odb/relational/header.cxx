@@ -749,6 +749,7 @@ traverse_view (type& c)
   bool versioned (context::versioned (c));
 
   string const& type (class_fq_name (c));
+  size_t columns (column_count (c).total);
   size_t obj_count (c.get<size_t> ("object-count"));
 
   os << "// " << class_name (c) << endl
@@ -826,8 +827,7 @@ traverse_view (type& c)
       os << "," << endl
          << "const schema_version_migration&";
 
-    os << ");"
-       << endl;
+    os << ")" << (columns != 0 ? ";\n" : "{}");
   }
 
   // bind (image_type)
@@ -840,8 +840,7 @@ traverse_view (type& c)
     os << "," << endl
        << "const schema_version_migration&";
 
-  os << ");"
-     << endl;
+  os << ")" << (columns != 0 ? ";\n" : "{}");
 
   // init (view, image)
   //
@@ -854,13 +853,11 @@ traverse_view (type& c)
     os << "," << endl
        << "const schema_version_migration&";
 
-  os << ");"
-     << endl;
+  os << ")" << (columns != 0 ? ";\n" : "{}");
 
   // column_count
   //
-  os << "static const std::size_t column_count = " <<
-    column_count (c).total << "UL;"
+  os << "static const std::size_t column_count = " << columns << "UL;"
      << endl;
 
   // Statements.
