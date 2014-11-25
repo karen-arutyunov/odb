@@ -83,6 +83,12 @@ namespace odb
       if (m.empty ())
         m = sqlite3_errmsg (h);
 
+      // Get rid of a trailing newline if there is one.
+      //
+      string::size_type n (m.size ());
+      if (n != 0 && m[n - 1] == '\n')
+        m.resize (n - 1);
+
       throw database_exception (e, ee, m);
     }
   }
