@@ -675,9 +675,10 @@ namespace odb
         // SQLITE_CONSTRAINT error code covers more than just a duplicate
         // primary key. Unfortunately, there is nothing more precise that
         // we can use (even sqlite3_errmsg() returns generic "constraint
-        // failed").
+        // failed"). But an auto-assigned object id should never cause a
+        // duplicate primary key.
         //
-        if (e == SQLITE_CONSTRAINT)
+        if (returning_ == 0 && e == SQLITE_CONSTRAINT)
           return false;
         else
           translate_error (e, conn_);
