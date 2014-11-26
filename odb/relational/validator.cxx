@@ -409,17 +409,9 @@ namespace relational
             break;
           }
 
-          if (optimistic (c))
-          {
-            error (l) << "bulk operations on optimistic objects are not "
-              "supported" << endl;
-            valid_ = false;
-            break;
-          }
-
           bool update (true);
 
-          // If we have a change-updated section, then we cannot generate
+          // Unless we only have manually-updated sections, we cannot generate
           // the bulk update operation.
           //
           user_sections& uss (c.get<user_sections> ("user-sections"));

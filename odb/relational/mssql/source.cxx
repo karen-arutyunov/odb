@@ -1118,21 +1118,25 @@ namespace relational
         }
 
         virtual string
-        optimistic_version_init (semantics::data_member& m)
+        optimistic_version_init (semantics::data_member& m, bool index)
         {
           sql_type t (parse_sql_type (column_type (m), m));
           return t.type != sql_type::ROWVERSION
             ? "1"
-            : "version (sts.id_image ())";
+            : (index
+               ? "version (sts.id_image (i))"
+               : "version (sts.id_image ())");
         }
 
         virtual string
-        optimistic_version_increment (semantics::data_member& m)
+        optimistic_version_increment (semantics::data_member& m, bool index)
         {
           sql_type t (parse_sql_type (column_type (m), m));
           return t.type != sql_type::ROWVERSION
             ? "1"
-            : "version (sts.id_image ())";
+            : (index
+               ? "version (sts.id_image (i))"
+               : "version (sts.id_image ())");
         }
 
         virtual bool

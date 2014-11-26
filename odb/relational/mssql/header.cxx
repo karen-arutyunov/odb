@@ -53,6 +53,12 @@ namespace relational
 
           os << "static const bool rowversion = " << rv << ";"
              << endl;
+
+          // Disable bulk update if we have ROWVERSION since we don't
+          // yet support batch extraction of the version.
+          //
+          if (rv && c.count ("bulk-update"))
+            c.remove ("bulk-update");
         }
 
         virtual void

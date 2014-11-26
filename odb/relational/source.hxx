@@ -5491,7 +5491,7 @@ namespace relational
       }
 
       virtual string
-      optimistic_version_init (semantics::data_member&)
+      optimistic_version_init (semantics::data_member&, bool /*index*/ = false)
       {
         return "1";
       }
@@ -5499,7 +5499,8 @@ namespace relational
       // Returning "1" means increment by one.
       //
       virtual string
-      optimistic_version_increment (semantics::data_member&)
+      optimistic_version_increment (semantics::data_member&,
+                                    bool /*index*/ = false)
       {
         return "1";
       }
