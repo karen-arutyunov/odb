@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libodb-sqlite", "odb\sqlite\libodb-sqlite-vc11.vcxproj", "{BE62AFC4-4624-4CDA-A7CD-E9451D34AB6E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libodb-sqlite", "odb\sqlite\libodb-sqlite-vc12.vcxproj", "{BE62AFC4-4624-4CDA-A7CD-E9451D34AB6E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
