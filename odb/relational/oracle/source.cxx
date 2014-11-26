@@ -580,7 +580,7 @@ namespace relational
 
             os << "if (" << i << ".change_callback_.callback != 0)" << endl
                << "(" << i << ".change_callback_.callback) (" <<
-              i << ".change_callback_.context, 0);";
+              i << ".change_callback_.context);";
 
             if (poly_derived)
               os << "}";
