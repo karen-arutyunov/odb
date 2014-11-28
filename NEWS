@@ -1,7 +1,13 @@
 Version 2.4.0
 
- * New database class functions, query_one(), query_value(), provide
-   convenient shortcuts for situations where the query is know to return
+ * Support for bulk operations in Oracle and SQL Server. Bulk operations
+   persist, update, or erase a range of objects using a single database
+   statement execution which often translates to significantly better
+   performance. For details, refer to Section 15.3, "Bulk Database
+   Operations" in the ODB manual.
+
+ * New database class functions, query_one() and query_value(), provide
+   convenient shortcuts for situations where the query is known to return
    at most one element (query_one) or exactly one element (query_value).
    Corresponding execute_one() and execute_value() functions for prepared
    queries are also provided. For details, refer to Sections 4.3, "Executing

@@ -536,6 +536,7 @@ for consistency.
 		<tr><th>14.1.12</th><td><a href="#14.1.12"><code>transient</code></a></td></tr>
 		<tr><th>14.1.13</th><td><a href="#14.1.13"><code>sectionable</code></a></td></tr>
 		<tr><th>14.1.14</th><td><a href="#14.1.14"><code>deleted</code></a></td></tr>
+		<tr><th>14.1.15</th><td><a href="#14.1.15"><code>bulk</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -665,6 +666,7 @@ for consistency.
         <table class="toc">
           <tr><th>15.1</th><td><a href="#15.1">Transaction Callbacks</a></td></tr>
 	  <tr><th>15.2</th><td><a href="#15.2">Persistent Class Template Instantiations</a></td></tr>
+	  <tr><th>15.3</th><td><a href="#15.3">Bulk Database Operations</a></td></tr>
         </table>
       </td>
     </tr>
@@ -838,6 +840,7 @@ for consistency.
 		<tr><th>21.5.5</th><td><a href="#21.5.5">Affected Row Count and DDL Statements</a></td></tr>
 		<tr><th>21.5.6</th><td><a href="#21.5.6">Long Data and Auto Object Ids, <code>ROWVERSION</code></a></td></tr>
 		<tr><th>21.5.7</th><td><a href="#21.5.7">Long Data and By-Value Accessors/Modifiers</a></td></tr>
+		<tr><th>21.5.8</th><td><a href="#21.5.8">Bulk Update and <code>ROWVERSION</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -3679,6 +3682,12 @@ cerr &lt;&lt; "Jane's id: " &lt;&lt; jane_id &lt;&lt; endl;
      threads in your application and to other applications as soon as
      possible.</p>
 
+  <p>Some database systems support persisting multiple objects with a
+     single underlying statement execution which can result in significantly
+     improved performance. For such database systems ODB provides
+     bulk <code>persist()</code> functions. For details, refer to
+     <a href="#15.3">Section 15.3, "Bulk Database Operations"</a>.</p>
+
   <h2><a name="3.9">3.9 Loading Persistent Objects</a></h2>
 
   <p>Once an object is made persistent, and you know its object id, it
@@ -3898,6 +3907,11 @@ t.commit ();
      <code>update()</code> functions for such an object will result in a
      compile-time error.</p>
 
+  <p>Similar to <code>persist()</code>, for database systems that support
+     this functionality, ODB provides bulk <code>update()</code> functions.
+     For details, refer to <a href="#15.3">Section 15.3, "Bulk Database
+     Operations"</a>.</p>
+
   <h2><a name="3.11">3.11 Deleting Persistent Objects</a></h2>
 
   <p>To delete a persistent object's state from the database we use the
@@ -3965,6 +3979,11 @@ t.commit ();
      change of object state and <code>object_changed</code> is thrown
      instead. For a more detailed discussion of optimistic concurrency,
      refer to <a href="#12">Chapter 12, "Optimistic Concurrency"</a>.</p>
+
+  <p>Similar to <code>persist()</code> and <code>update()</code>, for
+     database systems that support this functionality, ODB provides
+     bulk <code>erase()</code> functions. For details, refer to
+     <a href="#15.3">Section 15.3, "Bulk Database Operations"</a>.</p>
 
   <p>The <code>erase_query()</code> function allows us to delete
      the state of multiple objects matching certain criteria. It uses
@@ -4452,6 +4471,16 @@ namespace odb
     virtual const char*
     what () const throw ();
   };
+
+  // Bulk operation exceptions.
+  //
+  struct multiple_exceptions: exception
+  {
+    ...
+
+    virtual const char*
+    what () const throw ();
+  };
 }
   </pre>
 
@@ -4556,6 +4585,10 @@ namespace odb
      the section instance being loaded or updated does not belong
      to the corresponding object. See <a href="#9">Chapter 9,
      "Sections"</a> for more information on these exceptions.</p>
+
+  <p>The <code>multiple_exceptions</code> exception is thrown by the
+     bulk API functions. Refer to <a href="#15.3">Section 15.3, "Bulk
+     Database Operations"</a> for details.</p>
 
   <p>The <code>odb::exception</code> class is defined in the
      <code>&lt;odb/exception.hxx></code> header file. All the
@@ -13852,6 +13885,12 @@ class person
       <td><a href="#14.1.14">14.1.14</a></td>
     </tr>
 
+    <tr>
+      <td><code>bulk</code></td>
+      <td>enable bulk operations for a persistent class</td>
+      <td><a href="#14.1.15">14.1.15</a></td>
+    </tr>
+
   </table>
 
   <h3><a name="14.1.1">14.1.1 <code>table</code></a></h3>
@@ -14486,6 +14525,13 @@ class employer
      the deletion version. For more information on this functionality,
      refer to <a href="#13.4">Section 13.4, "Soft Object Model
      Changes"</a>.</p>
+
+  <h3><a name="14.1.15">14.1.15 <code>bulk</code></a></h3>
+
+  <p>The <code>bulk</code> specifier enables bulk operation support for
+     the persistent class. The single required argument to this specifier
+     is the batch size. For more information on this functionality, refer
+     to <a href="#15.3">Section 15.3, "Bulk Database Operations"</a>.</p>
 
   <h2><a name="14.2">14.2 View Type Pragmas</a></h2>
 
@@ -18187,6 +18233,401 @@ class derived: public string_base
   ...
 };
   </pre>
+
+  <h2><a name="15.3">15.3 Bulk Database Operations</a></h2>
+
+  <p>Some database systems supported by ODB provide a mechanism, often
+     called bulk or batch statement execution, that allows us to execute
+     the same SQL statement on multiple sets of data at once and with a
+     single database API call. This often results in significantly
+     better performance if we need to execute the same statement for a
+     large number of data sets (thousands to millions).</p>
+
+  <p>ODB translates this mechanism to bulk operations which allow
+     us to persist, update, or erase a range of objects in the database.
+     Currently, from all the database systems supported by ODB, only
+     Oracle and Microsoft SQL Server are capable of bulk operations.
+     There is also currently no emulation of the bulk API for other
+     databases nor dynamic multi-database support. As a result, if
+     you are using dynamic multi-database support, you will need to
+     "drop down" to static support in order to access the bulk API.
+     Refer to <a href="#16">Chapter 16, "Multi-Database Support"</a>
+     for details.</p>
+
+  <p>As we will discuss later in this section, bulk operations have
+     complex failure semantics that is dictated by the underlying
+     database API. As a result, support for bulk persist, update,
+     and erase is limited to persistent classes for which these
+     operations can be performed with a single database statement
+     execution. In particular, bulk operations are not available
+     for polymorphic objects (<a href="#8.2">Section 8.2,
+     "Polymorphism Inheritance"</a>) or objects that have
+     containers (inverse containers of object pointers are an
+     exception). Furthermore, for objects that have sections
+     (<a href="#9">Chapter 9, "Sections"</a>) the bulk update operation
+     will only be available if all the sections are manually-updated.
+     On the other hand, bulk operations are supported for objects
+     that use optimistic concurrency (<a href="#12">Chapter 12,
+     "Optimistic Concurrency"</a>) or have no object id
+     (<a href="#14.1.6">Section 14.1.6, "<code>no_id</code>"</a>).</p>
+
+  <p>To enable the generation of bulk operation support for a persistent
+     class we use the <code>bulk</code> pragma. For example:</p>
+
+  <pre class="cxx">
+#pragma db object bulk(5000)
+class person
+{
+  ...
+
+  #pragma db id auto
+  unsigned long id;
+};
+  </pre>
+
+  <p>The single argument to the <code>bulk</code> pragma is the batch
+     size. The batch size specifies the maximum number of data sets
+     that should be handled with a single underlying statement execution.
+     If the range that we want to perform the bulk operation on contains
+     more objects than the batch size, then ODB will split this operation
+     into multiple underlying statement executions (batches). To illustrate
+     this point with an example, suppose we want to persist 53,000 objects
+     and the batch size is 5,000. ODB will then execute the statement
+     11 times, the first 10 times with 5,000 data sets each, and the
+     last time with the remaining 3,000 data sets.</p>
+
+  <p>The commonly used batch sizes are in the 2,000-5,000 range, though
+     smaller or larger batches could provide better performance,
+     depending on the situation. As a result, it is recommended to
+     experiment with different batch sizes to determine the optimum
+     number for a particular object and its use-cases. Note also that
+     you may achieve better performance by also splitting a large bulk
+     operation into multiple transactions (<a href="#3.5">Section 3.5,
+     "Transactions"</a>).</p>
+
+  <p>For database systems that do not support bulk operations the
+     <code>bulk</code> pragma is ignored. It is also possible to
+     specify different batch sizes for different database systems
+     by using the database prefix, for example:</p>
+
+  <pre class="cxx">
+#pragma db object mssql:bulk(3000) oracle:bulk(4000)
+class person
+{
+  ...
+};
+  </pre>
+
+  <p>Once the bulk support is enabled for a particular object, we can
+     use the following <code>database</code> functions to perform bulk
+     operations:</p>
+
+  <pre class="cxx">
+template &lt;typename I>
+void
+persist (I begin, I end, bool continue_failed = true);
+
+template &lt;typename I>
+void
+update (I begin, I end, bool continue_failed = true);
+
+template &lt;typename I>
+void
+erase (I obj_begin, I obj_end, bool continue_failed = true);
+
+template &lt;typename T, typename I>
+void
+erase (I id_begin, I id_end, bool continue_failed = true);
+  </pre>
+
+  <p>Every bulk API function expects a range of elements, passed in
+     the canonical C++ form as a pair of input iterators. In case of
+     <code>persist()</code>, <code>update()</code>, and the first
+     <code>erase()</code> overload, we pass a range of objects,
+     either as references or as pointers, raw or smart. The following
+     example illustrates the most common scenarios using the
+     <code>persist()</code> call:</p>
+
+  <pre class="cxx">
+// C array of objects.
+//
+person a[2] {{"John", "Doe"}, {"Jane", "Doe"}};
+
+db.persist (a, a + sizeof(a) / sizeof(a[0]));
+
+
+// Vector of objects.
+//
+std::vector&lt;person> v {{"John", "Doe"}, {"Jane", "Doe"}};
+
+db.persist (v.begin (), v.end ());
+
+
+// C array of raw pointers to objects.
+//
+person p1 ("John", "Doe");
+person p2 ("Jane", "Doe");
+person* pa[2] {&amp;p1, &amp;p2};
+
+db.persist (pa, pa + sizeof(pa) / sizeof(pa[0]));
+
+
+// Vector of raw pointers to objects.
+//
+std::vector&lt;person*> pv {&amp;p1, &amp;p2};
+
+db.persist (pv.begin (), pv.end ());
+
+
+// Vector of smart (shared) pointers to objects.
+//
+std::vector&lt;std::shared_ptr&lt;person>> sv {
+  std::make_shared&lt;person> ("John", "Doe"),
+  std::make_shared&lt;person> ("Jane", "Doe")};
+
+db.persist (sv.begin (), sv.end ());
+  </pre>
+
+  <p>The ability to perform a bulk operation on a range of raw pointers
+     to objects can be especially useful when the application stores
+     objects in a way that does not easily conform to the pair of
+     iterators interface. In such cases we can create a temporary
+     container of shallow pointers to objects and use that to perform
+     the bulk operation, for example:</p>
+
+  <pre class="cxx">
+struct person_entry
+{
+  person obj;
+
+  // Some additional data.
+  ...
+};
+
+typedef std::vector&lt;person_entry> people;
+
+void
+persist (odb::database&amp; db, people&amp; p)
+{
+  std::vector&lt;person*> tmp;
+  tmp.reserve (p.size ());
+  std::for_each (p.begin (),
+                 p.end (),
+                 [&amp;tmp] (person_entry&amp; pe)
+                 {
+                   tmp.push_back (&amp;pe.obj);
+                 });
+
+
+  db.persist (tmp.begin (), tmp.end ());
+}
+  </pre>
+
+  <p>The second overload of the bulk <code>erase()</code> function
+     allows us to pass a range of object ids rather than objects
+     themselves. As with the corresponding non-bulk version, we
+     have to specify the object type explicitly, for example:</p>
+
+  <pre class="cxx">
+std::vector&lt;unsigned long> ids {1, 2};
+
+db.erase&lt;person> (ids.begin (), ids.end ());
+  </pre>
+
+  <p>Conceptually, a bulk operation is equivalent to performing the
+     corresponding non-bulk version in a loop, except when it comes to the
+     failure semantics. Both databases that currently are capable of
+     bulk operations (Oracle and SQL Server) do not stop when a data
+     set in a batch fails (for example, because of a unique constraint
+     violation). Instead, they continue executing subsequent data
+     sets until every element in the batch has been attempted. The
+     <code>continue_failed</code> argument in the bulk functions listed
+     above specifies whether ODB should extend this behavior and continue
+     with subsequent batches if the one it has tried to execute has failed
+     elements. The default behavior is to continue.</p>
+
+  <p>The consequence of this failure semantics is that we may have
+     multiple elements in the range failed for different reasons.
+     For example, if we tried to persist a number of objects, some
+     of them might have failed because they are already persistent
+     while others &mdash; because of a unique constraint violation.
+     As a result, ODB uses the special <code>odb::multiple_exceptions</code>
+     exception to report failures in the bulk API functions. This
+     exception is thrown if one or more elements in the range have
+     failed and it contains the error information in the form of other
+     ODB exception for each failed position. The
+     <code>multiple_exceptions</code> class has the following interface:</p>
+
+  <pre class="cxx">
+struct multiple_exceptions: odb::exception
+{
+  // Element type.
+  //
+  struct value_type
+  {
+    std::size_t
+    position () const;
+
+    const odb::exception&amp;
+    exception () const;
+
+    bool
+    maybe () const;
+  };
+
+  // Iteration.
+  //
+  typedef set_type::const_iterator iterator;
+  typedef set_type::const_iterator const_iterator;
+
+  iterator
+  begin () const;
+
+  iterator
+  end () const;
+
+  // Lookup.
+  //
+  const value_type*
+  operator[] (std::size_t) const;
+
+  // Severity, failed and attempted counts.
+  //
+  std::size_t
+  attempted () const;
+
+  std::size_t
+  failed () const;
+
+  bool
+  fatal () const;
+
+  void
+  fatal (bool);
+
+  // Direct data access.
+  //
+  typedef std::set&lt;value_type> set_type;
+
+  const set_type&amp;
+  set () const;
+
+  // odb::exception interface.
+  //
+  virtual const char*
+  what () const throw ();
+};
+  </pre>
+
+  <p>The <code>multiple_exceptions</code> class has a map-like interface
+     with the key being the position in the range and the value being
+     the exception plus the <code>maybe</code> flag (discussed below).
+     As a result, we can either iterate over the failed positions or
+     we can check whether a specific position in the range has failed.
+     The following example shows what a <code>catch</code>-handler for
+     this exception might look like:</p>
+
+  <pre class="cxx">
+std::vector&lt;person> objs {{"John", "Doe"}, {"Jane", "Doe"}};
+
+try
+{
+  db.persist (objs.begin (), objs.end ());
+}
+catch (const odb::multiple_exceptions&amp; me)
+{
+  for (const auto&amp; v: me)
+  {
+    size_t p (v.position ());
+
+    try
+    {
+      throw v.exception ();
+    }
+    catch (const odb::object_already_persistent&amp;)
+    {
+      cerr &lt;&lt; p &lt;&lt; ": duplicate id: " &lt;&lt; objs[p].id () &lt;&lt; endl;
+    }
+    catch (const odb::exception&amp; e)
+    {
+      cerr &lt;&lt; p &lt;&lt; ": " &lt;&lt; e.what () &lt;&lt; endl;
+    }
+  }
+}
+  </pre>
+
+  <p>If, however, all we want is to show the diagnostics to the user,
+     then the string returned by the <code>what()</code> function
+     will contain the error information for each failed position.
+     Here is what it might look like (using Oracle as an example):</p>
+
+  <pre class="terminal">
+multiple exceptions, 4 elements attempted, 2 failed:
+[0] object already persistent
+[3] 1: ORA-00001: unique constraint (ODB_TEST.person_last_i) violated
+  </pre>
+
+  <p>Both databases that currently are capable of bulk operations return
+     a total count of affected rows rather than individual counts for
+     each data set. This limitation prevents ODB from being able to
+     always determine which elements in the batch haven't affected
+     any rows and, for the update and erase operations, translate
+     this to the <code>object_not_persistent</code> exceptions. As
+     a result, if some elements in the batch haven't affected any
+     rows and ODB is unable to determine exactly which ones, it will mark
+     all the elements in this batch as "maybe not persistent". That
+     is, it will insert the <code>object_not_persistent</code> exception
+     and set the <code>maybe</code> flag for every position in the
+     batch. The diagnostics string returned by <code>what()</code>
+     will also reflect this situation, for example (assuming batch
+     size of 3):</p>
+
+  <pre class="terminal">
+multiple exceptions, 4 elements attempted, 4 failed:
+[0-2] (some) object not persistent
+[3] object not persistent
+  </pre>
+
+  <p>The way to handle and recover from such "maybe failures" will have
+     to be application-specific. For example, for some applications the
+     fact that some objects no longer exist in the database when
+     performing bulk erase might be an ignorable error. If, however,
+     the application needs to determine exactly which elements in the batch
+     have failed, then a <code>load()</code> call will be required for each
+     element in the batch (or a query using a view to avoid loading all
+     the data members; <a href="#10">Chapter 10, "Views"</a>). This is also
+     something to keep in mind when selecting the batch size since for
+     larger sizes it will be more expensive (more loads to perform) to
+     handle such "maybe failures". If the failures are not uncommon, as
+     is the case, for example, when using optimistic concurrency, then
+     it may make sense to use a smaller batch.</p>
+
+  <p>The lookup operator (<code>operator[]</code>) returns <code>NULL</code>
+     if the element at this position has no exception. Note also that the
+     returned value is <code>value_type*</code> and not
+     <code>odb::exception*</code> in order to provide access to the
+     <code>maybe</code> flag discussed above.</p>
+
+  <p>The <code>multiple_exceptions</code> class also provides access
+     to the number of positions attempted (the <code>attempted()</code>
+     accessor) and failed (the <code>failed()</code> accessor). Note
+     that the failed count includes the "maybe failed" positions.</p>
+
+  <p>The <code>multiple_exceptions</code> exception can also be fatal.
+     If the <code>fatal()</code> accessor returns <code>true</code>, then
+     (some of) the exceptions were fatal. In this case, even for positions
+     that did not fail, no attempts were made to complete the operation
+     and the transaction must be aborted.</p>
+
+  <p>If <code>fatal()</code> returns false, then the operation on the
+     elements that don't have an exception has succeeded. The application
+     can ignore the errors or try to correct the errors and re-attempt
+     the operation on the elements that did fail. In either case, the
+     transaction can be committed.</p>
+
+  <p>The <code>fatal()</code> modifier allows you to "upgrade" an
+     exception to fatal, for example, for specific database error
+     codes.</p>
 
 
   <!-- PART -->
@@ -23657,6 +24098,14 @@ namespace odb
      reading/writing long data directly from/to data members. As a result,
      by-reference accessors and modifiers should be used for these data
      types.</p>
+
+  <h3><a name="21.5.8">21.5.8 Bulk Update and <code>ROWVERSION</code></a></h3>
+
+  <p>The bulk update operation (<a href="#15.3">Section 15.3, "Bulk Database
+     Operations"</a>) is not yet supported for persistent classes that use
+     <code>ROWVERSION</code>-based optimistic concurrency. For such classes
+     the bulk <code>update()</code> function is not available. The bulk
+     persist and erase support is still provided.</p>
 
   <h2><a name="21.6">21.6 SQL Server Index Definitions</a></h2>
 
