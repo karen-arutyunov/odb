@@ -18318,6 +18318,12 @@ class person
 };
   </pre>
 
+  <p>Note that while specifying the batch size at compile time might
+     seem inflexible, this approach allows ODB to place internal
+     arrays of the fixed batch size on the stack rather than
+     allocating them in the dynamic memory. However, specifying the
+     batch size at runtime may be supported in the future.</p>
+
   <p>Once the bulk support is enabled for a particular object, we can
      use the following <code>database</code> functions to perform bulk
      operations:</p>
@@ -18452,7 +18458,7 @@ db.erase&lt;person> (ids.begin (), ids.end ());
      of them might have failed because they are already persistent
      while others &mdash; because of a unique constraint violation.
      As a result, ODB uses the special <code>odb::multiple_exceptions</code>
-     exception to report failures in the bulk API functions. This
+     class to report failures in the bulk API functions. This
      exception is thrown if one or more elements in the range have
      failed and it contains the error information in the form of other
      ODB exception for each failed position. The
@@ -18477,6 +18483,8 @@ struct multiple_exceptions: odb::exception
 
   // Iteration.
   //
+  typedef std::set&lt;value_type> set_type;
+
   typedef set_type::const_iterator iterator;
   typedef set_type::const_iterator const_iterator;
 
@@ -18507,8 +18515,6 @@ struct multiple_exceptions: odb::exception
 
   // Direct data access.
   //
-  typedef std::set&lt;value_type> set_type;
-
   const set_type&amp;
   set () const;
 
@@ -18624,6 +18630,11 @@ multiple exceptions, 4 elements attempted, 4 failed:
      can ignore the errors or try to correct the errors and re-attempt
      the operation on the elements that did fail. In either case, the
      transaction can be committed.</p>
+
+  <p>An example of a fatal exception would be the situation where the
+     execution of the underlying statement failed summarily, without
+     attempting any data sets, for instance, because of an error in
+     the statement itself.</p>
 
   <p>The <code>fatal()</code> modifier allows you to "upgrade" an
      exception to fatal, for example, for specific database error
