@@ -84,16 +84,16 @@ struct process_info
   HANDLE id;
 #endif
 
-  int out_fd;
-  int in_efd;
-  int in_ofd;
+  int out_fd; // Write to this fd to send to the new process' stdin.
+  int in_efd; // Read from this fd to receive from the new process' stderr.
+  int in_ofd; // Read from this fd to receive from the new process' stdout.
 };
 
 struct process_failure {};
 
 // Start another process using the specified command line. Connect the
-// newly created process' stdin to out_fd. Also if connect_out is true,
-// connect the created process' stdout and stderr to in_fd. Issue
+// newly created process' stdin to out_fd. Also if connect_* are true,
+// connect the created process' stdout and stderr to in_*fd. Issue
 // diagnostics and throw process_failure if anything goes wrong. The
 // name argument is the name of the current process for diagnostics.
 //
