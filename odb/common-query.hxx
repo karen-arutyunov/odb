@@ -22,7 +22,7 @@ struct query_utils: virtual context
                       semantics::class_&);   // Traverse for nested structs.
 };
 
-// Generate query tags for pointers in this objects.
+// Generate query tags for pointers in this object.
 //
 struct query_tags: object_columns_base, virtual context
 {
@@ -149,6 +149,7 @@ struct query_columns: object_columns_base, virtual context
 protected:
   bool decl_;
   bool ptr_;
+  bool poly_ref_;
   string const_;   // Const prefix or empty.
   bool in_ptr_;    // True while we are "inside" an object pointer.
   string fq_name_;

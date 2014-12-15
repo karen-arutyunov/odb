@@ -51,12 +51,14 @@ struct query_nested_types: object_columns_base, virtual context
   {
     // The same logic as in query_columns.
     //
-    if (m.count ("polymorphic-ref") || inverse (m, key_prefix_))
+    if (inverse (m, key_prefix_))
       return;
+
+    bool poly_ref (m.count ("polymorphic-ref"));
 
     if (composite_wrapper (utype (*id_member (c))))
     {
-      if (ptr_)
+      if (ptr_ || poly_ref)
         object_columns_base::traverse_pointer (m, c);
       else
       {
@@ -467,7 +469,7 @@ generate_inst (semantics::data_member& m, semantics::class_& c)
 
 query_columns::
 query_columns (bool decl, bool ptr, semantics::class_& c)
-    : decl_ (decl), ptr_ (ptr), in_ptr_ (false),
+    : decl_ (decl), ptr_ (ptr), poly_ref_ (false), in_ptr_ (false),
       fq_name_ (class_fq_name (c)),
       resue_abstract_ (abstract (c) && !polymorphic (c)),
       depth_ (0)
@@ -544,7 +546,7 @@ traverse_composite (semantics::data_member* m, semantics::class_& c)
     // Derive from the base in query_columns_base. It contains columns
     // data for the pointer members.
     //
-    if (!ptr_ && has_a (c, test_pointer))
+    if (!ptr_ && !poly_ref_ && has_a (c, test_pointer))
       os << ": " << name << "_base_";
 
     os << "{";
@@ -654,11 +656,6 @@ traverse_column (semantics::data_member& m, string const& column, bool)
 void query_columns::
 traverse_pointer (semantics::data_member& m, semantics::class_& c)
 {
-  // Ignore polymorphic id references.
-  //
-  if (m.count ("polymorphic-ref"))
-    return;
-
   // If this is for the pointer_query_columns and the member is not
   // inverse, then create the normal member corresponding to the id
   // column. This will allow the user to check it for NULL or to
@@ -667,6 +664,13 @@ traverse_pointer (semantics::data_member& m, semantics::class_& c)
   //
   if (inverse (m, key_prefix_))
     return;
+
+  // If we ignore polymorphic references, then a view that uses a custom
+  // join condition based on id will use the id column from the base
+  // table. But the base table hasn't been joined yet. To resolve this
+  // we will generate the id member that points to our column.
+  //
+  poly_ref_ = m.count ("polymorphic-ref");
 
   string name (public_name (m));
 
@@ -679,9 +683,10 @@ traverse_pointer (semantics::data_member& m, semantics::class_& c)
     // Composite id.
     //
 
-    // For pointer_query_columns generate normal composite mapping.
+    // For pointer_query_columns and poly refs generate normal composite
+    // mapping.
     //
-    if (ptr_)
+    if (ptr_ || poly_ref_)
       object_columns_base::traverse_pointer (m, c);
     else
     {
@@ -730,9 +735,9 @@ traverse_pointer (semantics::data_member& m, semantics::class_& c)
     string type (t.fq_name (hint));
     string col (column_name (m, key_prefix_, default_name_, column_prefix_));
 
-    // For pointer_query_columns generate normal column mapping.
+    // For pointer_query_columns and poly refs generate normal column mapping.
     //
-    if (ptr_)
+    if (ptr_ || poly_ref_)
       column_common (m, type, col);
     else
     {
@@ -769,6 +774,8 @@ traverse_pointer (semantics::data_member& m, semantics::class_& c)
       os << "static " << const_ << name << "_type_ " << name << ";"
          << endl;
   }
+
+  poly_ref_ = false;
 }
 
 // query_columns_bases
