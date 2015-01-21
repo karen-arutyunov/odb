@@ -1642,6 +1642,7 @@ create_type (tree t,
   case RECORD_TYPE:
   case UNION_TYPE:
     {
+      t = TYPE_MAIN_VARIANT (t);
       tree ti (TYPE_TEMPLATE_INFO (t));
 
       if (ti == NULL_TREE)
@@ -1657,7 +1658,6 @@ create_type (tree t,
         // create a "stub" class node which will be processed and
         // filled in later.
         //
-        t = TYPE_MAIN_VARIANT (t);
 
         // Pointers to member functions are represented as record
         // types. Detect and handle this case.
@@ -1707,7 +1707,6 @@ create_type (tree t,
       {
         // Template instantiation.
         //
-        t = TYPE_MAIN_VARIANT (t);
         tree decl (TI_TEMPLATE (ti)); // DECL_TEMPLATE
 
         // Get to the most general template declaration.
