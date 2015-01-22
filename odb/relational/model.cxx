@@ -107,14 +107,11 @@ namespace relational
                  << endl;
 
         if (e.dup.kind () == "index")
-          error (d) << "use #pragma db index to change one of the names"
-                    << endl;
+          info (d) << "use #pragma db index to change its name" << endl;
         else if (e.dup.kind () == "table")
-          error (d) << "use #pragma db table to change one of the names"
-                    << endl;
+          info (d) << "use #pragma db table to change its name" << endl;
         else
-          error (d) << "use #pragma db column to change its name"
-                    << endl;
+          info (d) << "use #pragma db column to change its name" << endl;
 
         throw operation_failed ();
       }

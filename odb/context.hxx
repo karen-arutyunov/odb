@@ -1512,7 +1512,8 @@ protected:
     ~data () {}
 
     data (std::ostream& os)
-        : os_ (os.rdbuf ()),
+        : extra_ (0),
+          os_ (os.rdbuf ()),
           in_comment_ (false),
           top_object_ (0),
           cur_object_ (0),
@@ -1522,6 +1523,8 @@ protected:
     }
 
   public:
+    void* extra_;
+
     std::ostream os_;
     std::stack<std::streambuf*> os_stack_;
 
@@ -1550,6 +1553,8 @@ protected:
 
 public:
   typedef ::features features_type;
+
+  void*& extra; // Extra data that may need to be shared by a sub-system.
 
   std::ostream& os;
   semantics::unit& unit;

@@ -1027,6 +1027,15 @@ class options
      \cb{10.1} or later is assumed."
   };
 
+  bool --oracle-warn-truncation
+  {
+    "Warn about SQL names that are longer than 30 characters and are
+     therefore truncated. Note that during database schema generation
+     (\cb{--generate-schema}) ODB detects when such truncations lead
+     to name conflicts and issues diagnostics even without this option
+     specified."
+  };
+
   //
   // SQL Server-specific options.
   //

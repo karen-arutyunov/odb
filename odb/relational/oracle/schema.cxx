@@ -2,6 +2,11 @@
 // copyright : Copyright (c) 2009-2013 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
+#include <map>
+#include <utility> // pair
+
+#include <odb/diagnostics.hxx>
+
 #include <odb/relational/schema.hxx>
 
 #include <odb/relational/oracle/common.hxx>
@@ -228,10 +233,119 @@ namespace relational
       //
       // Create.
       //
+      static sema_rel::uname
+      truncate (location const& l, const char* kind, sema_rel::uname n, bool w)
+      {
+        if (n.size () > 30)
+        {
+          if (w)
+            warn (l) << kind << " name '" << n << "' is longer than 30 "
+                     << "characters and will be truncated" << endl;
+
+          n.resize (30);
+        }
+
+        return n;
+      }
+
+      static sema_rel::qname
+      truncate (location const& l,
+                const char* kind,
+                sema_rel::qname const& n,
+                bool w)
+      {
+        // Don't bother verifying the schema name since that is
+        // specified explicitly and in a single place.
+        //
+        qname r (n.qualifier ());
+        r.append (truncate (l, kind, n.uname (), w));
+        return r;
+      }
+
+      template <typename N>
+      struct scope
+      {
+        typedef std::map<N, pair<N, location> > map;
+
+        scope (const char* k, const char* p, bool w)
+            : kind_ (k), prag_ (p), warn_ (w) {}
+
+        void
+        check (location const& l, N const& n)
+        {
+          N tn (truncate (l, kind_, n, warn_));
+
+          pair<typename map::iterator, bool> r (
+            map_.insert (make_pair (tn, make_pair (n, l))));
+
+          if (r.second)
+            return;
+
+          error (l) << kind_ << " name '" << tn << "' conflicts with an "
+                    << "already defined " << kind_ << " name" << endl;
+
+          if (tn != n)
+            info (l) << kind_ << " name '" << tn << "' is truncated '"
+                     << n << "'" << endl;
+
+          N const& n1 (r.first->second.first);
+          location const& l1 (r.first->second.second);
+
+          info (l1) << "conflicting " << kind_ << " is defined here" << endl;
+
+          if (tn != n)
+            info (l1) << "conflicting " << kind_ << " name '" << tn
+                      << "' is truncated '" << n1 << "'" << endl;
+
+          info (l) << "use #pragma db " << prag_ << " to change one of "
+                   << "the names" << endl;
+
+          throw operation_failed ();
+        }
+
+        void
+        clear () {map_.clear ();}
+
+        const char* kind_;
+        const char* prag_;
+        bool warn_;
+        map map_;
+      };
+
+      struct scopes
+      {
+        scopes (bool warn)
+            : tables ("table", "table", warn),
+              fkeys ("foreign key", "column", warn), // Change column name.
+              indexes ("index", "index", warn),
+              sequences ("sequence", "table", warn), // Change table name.
+              columns ("column", "column", warn) {}
+
+        // In Oracle, all these entities are in their own name spaces,
+        // as in an index and a foreign key with the same name do not
+        // conflict.
+        //
+        scope<sema_rel::qname> tables;
+        scope<sema_rel::uname> fkeys; // Global but can't have schema.
+        scope<sema_rel::qname> indexes;
+        scope<sema_rel::qname> sequences;
+        scope<sema_rel::uname> columns;
+      };
 
       struct create_column: relational::create_column, context
       {
         create_column (base const& x): base (x) {}
+
+        virtual void
+        traverse (sema_rel::column& c)
+        {
+          // Check name trunction and conflicts.
+          //
+          if (scopes* s = static_cast<scopes*> (context::extra))
+            s->columns.check (c.get<location> ("cxx-location"), c.name ());
+
+          base::traverse (c);
+        }
 
         virtual void
         traverse (sema_rel::add_column& ac)
@@ -272,8 +386,24 @@ namespace relational
         create_foreign_key (base const& x): base (x) {}
 
         virtual void
+        traverse_create (sema_rel::foreign_key& fk)
+        {
+          // Check name trunction and conflicts.
+          //
+          if (scopes* s = static_cast<scopes*> (context::extra))
+            s->fkeys.check (fk.get<location> ("cxx-location"), fk.name ());
+
+          base::traverse_create (fk);
+        }
+
+        virtual void
         traverse_add (sema_rel::foreign_key& fk)
         {
+          // Check name trunction and conflicts.
+          //
+          if (scopes* s = static_cast<scopes*> (context::extra))
+            s->fkeys.check (fk.get<location> ("cxx-location"), fk.name ());
+
           os << endl
              << "  ADD CONSTRAINT ";
           create (fk);
@@ -293,6 +423,12 @@ namespace relational
           sema_rel::table& t (static_cast<sema_rel::table&> (in.scope ()));
           sema_rel::qname n (t.name ().qualifier ());
           n.append (in.name ());
+
+          // Check name trunction and conflicts.
+          //
+          if (scopes* s = static_cast<scopes*> (context::extra))
+            s->indexes.check (in.get<location> ("cxx-location"), n);
+
           return quote_id (n);
         }
       };
@@ -305,6 +441,17 @@ namespace relational
         void
         traverse (sema_rel::table& t)
         {
+          // Check name trunction and conflicts.
+          //
+          if (scopes* s = static_cast<scopes*> (context::extra))
+          {
+            if (pass_ == 1)
+            {
+              s->tables.check (t.get<location> ("cxx-location"), t.name ());
+              s->columns.clear ();
+            }
+          }
+
           base::traverse (t);
 
           if (pass_ == 1)
@@ -320,11 +467,16 @@ namespace relational
 
             if (pk != 0 && pk->auto_ ())
             {
-              string qs (
-                quote_id (qname::from_string (pk->extra ()["sequence"])));
+              // Already qualified with the table's schema, if any.
+              //
+              sema_rel::qname n (
+                qname::from_string (pk->extra ()["sequence"]));
+
+              if (scopes* s = static_cast<scopes*> (context::extra))
+                s->sequences.check (pk->get<location> ("cxx-location"), n);
 
               pre_statement ();
-              os_ << "CREATE SEQUENCE " << qs << endl
+              os_ << "CREATE SEQUENCE " << quote_id (n) << endl
                   << "  START WITH 1 INCREMENT BY 1" << endl;
               post_statement ();
             }
@@ -332,6 +484,21 @@ namespace relational
         }
       };
       entry<create_table> create_table_;
+
+      struct create_model: relational::create_model, context
+      {
+        create_model (base const& x): base (x) {}
+
+        void
+        traverse (sema_rel::model& m)
+        {
+          scopes s (options.oracle_warn_truncation ());
+          context::extra = &s;
+          base::traverse (m);
+          context::extra = 0;
+        }
+      };
+      entry<create_model> create_model_;
 
       //
       // Alter.

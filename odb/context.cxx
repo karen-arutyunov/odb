@@ -617,6 +617,7 @@ context (ostream& os_,
          features_type& f,
          data_ptr d)
     : data_ (d ? d : data_ptr (new (shared) data (os_))),
+      extra (data_->extra_),
       os (data_->os_),
       unit (u),
       options (ops),
@@ -727,6 +728,7 @@ context (ostream& os_,
 context::
 context ()
   : data_ (current ().data_),
+    extra (current ().extra),
     os (current ().os),
     unit (current ().unit),
     options (current ().options),

@@ -618,7 +618,7 @@ namespace relational
           {
             in = &model_.new_node<sema_rel::index> (
               id + ".id", sin->type, sin->method, sin->options);
-            in->set ("cxx-location", sin->loc);
+            in->set ("cxx-location", location (sin->loc));
           }
           else
           {
@@ -675,7 +675,7 @@ namespace relational
           {
             in = &model_.new_node<sema_rel::index> (
               id + ".index", sin->type, sin->method, sin->options);
-            in->set ("cxx-location", sin->loc);
+            in->set ("cxx-location", location (sin->loc));
           }
           else
           {
