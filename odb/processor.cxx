@@ -1313,6 +1313,9 @@ namespace
         }
       }
 
+      bool poly (polymorphic (*c));
+      bool abst (abstract (*c));
+
       // Make sure the pointed-to class is complete.
       //
       if (!c->complete ())
@@ -1334,7 +1337,7 @@ namespace
 
       // Make sure the pointed-to class is not reuse-abstract.
       //
-      if (abstract (*c) && !polymorphic (*c))
+      if (abst && !poly)
       {
         os << m.file () << ":" << m.line () << ":" << m.column () << ": "
            << "error: pointed-to class '" << class_fq_name (*c) << "' "
@@ -1354,6 +1357,23 @@ namespace
         os << m.file () << ":" << m.line () << ":" << m.column () << ": "
            << "error: pointed-to class '" << class_fq_name (*c) << "' "
            << "has no object id" << endl;
+
+        os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+           << "info: class '" << class_name (*c) << "' is defined here"
+           << endl;
+
+        throw operation_failed ();
+      }
+
+      // Make sure the pointed-to class has a default ctor. Since we will
+      // use database::load() in the generated code, lack of a default ctor
+      // will lead to uncompilable generated code. Poly-abstract is Ok.
+      //
+      if (!c->default_ctor () && !(abst && poly))
+      {
+        os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+           << "error: pointed-to class '" << class_fq_name (*c) << "' "
+           << "has no default constructor" << endl;
 
         os << c->file () << ":" << c->line () << ":" << c->column () << ": "
            << "info: class '" << class_name (*c) << "' is defined here"

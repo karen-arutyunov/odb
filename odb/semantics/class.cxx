@@ -24,7 +24,13 @@ namespace semantics
   bool class_::
   default_ctor () const
   {
-    return TYPE_HAS_DEFAULT_CONSTRUCTOR (tree_node ());
+    tree t (tree_node ());
+
+    // TYPE_HAS_DEFAULT_CONSTRUCTOR() returns true if we have a
+    // deleted default ctor. locate_ctor(), on the other hand,
+    // returns NULL_TREE in this case.
+    //
+    return TYPE_HAS_DEFAULT_CONSTRUCTOR (t) && locate_ctor (t) != NULL_TREE;
   }
 
   bool class_::
