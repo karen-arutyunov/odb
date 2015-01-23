@@ -36,6 +36,12 @@ Version 2.4.0
  * Support for calling MySQL stored procedures. For details and limitations
    refer to Section 17.7, "MySQL Stored Procedures" in the ODB manual.
 
+ * New option, --statement-regex, can be used to process prepared statement
+   names that are used by PostgreSQL. This can be useful, for example, to
+   shorten names that exceed the PostgreSQL name limit. To this effect, ODB
+   now also warns when an SQL name exceeds the default PostgreSQL limit of
+   63 characters.
+
  * New option, --oracle-warn-truncation, makes ODB warn about SQL names
    that are longer than 30 characters and are therefore truncated. ODB
    now also detects when such truncations lead to name conflicts and

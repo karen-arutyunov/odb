@@ -1191,6 +1191,7 @@ public:
     sql_name_index,
     sql_name_fkey,
     sql_name_sequence,
+    sql_name_statement,
     sql_name_count
   };
 

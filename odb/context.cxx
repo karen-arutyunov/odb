@@ -691,6 +691,12 @@ context (ostream& os_,
     data_->sql_name_regex_[sql_name_sequence].assign (s.begin (), s.end ());
   }
 
+  if (ops.statement_regex ().count (db) != 0)
+  {
+    strings const& s (ops.statement_regex ()[db]);
+    data_->sql_name_regex_[sql_name_statement].assign (s.begin (), s.end ());
+  }
+
   if (ops.sql_name_regex ().count (db) != 0)
   {
     strings const& s (ops.sql_name_regex ()[db]);

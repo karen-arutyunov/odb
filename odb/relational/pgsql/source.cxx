@@ -765,7 +765,8 @@ namespace relational
           string traits ("access::object_traits_impl< " + n + ", id_pgsql >");
 
           os << "const char " << traits << "::" << endl
-             << "persist_statement_name[] = " << strlit (fn + "_persist") << ";"
+             << "persist_statement_name[] = " <<
+            strlit (statement_name ("persist", fn, c)) << ";"
              << endl;
 
           if (id != 0)
@@ -784,37 +785,39 @@ namespace relational
                   os << "," << endl;
 
                 ostringstream ostr;
-                ostr << fn << "_find_" << i;
-                os << strlit (ostr.str ());
+                ostr << "find_" << i;
+                os << strlit (statement_name (ostr.str (), fn, c));
               }
 
               os << "};";
             }
             else
               os << "const char " << traits << "::" << endl
-                 << "find_statement_name[] = " << strlit (fn + "_find") << ";"
+                 << "find_statement_name[] = " <<
+                strlit (statement_name ("find", fn, c)) << ";"
                  << endl;
 
             if (poly && !poly_derived)
               os << "const char " << traits << "::" << endl
                  << "find_discriminator_statement_name[] = " <<
-                strlit (fn + "_find_discriminator") << ";"
+                strlit (statement_name ("find_discriminator", fn, c)) << ";"
                  << endl;
 
             if (update_columns != 0)
               os << "const char " << traits << "::" << endl
-                 << "update_statement_name[] = " << strlit (fn + "_update") <<
-                ";"
+                 << "update_statement_name[] = " <<
+                strlit (statement_name ("update", fn, c)) << ";"
                  << endl;
 
             os << "const char " << traits << "::" << endl
-               << "erase_statement_name[] = " << strlit (fn + "_erase") << ";"
+               << "erase_statement_name[] = " <<
+              strlit (statement_name ("erase", fn, c)) << ";"
                << endl;
 
             if (optimistic != 0)
               os << "const char " << traits << "::" << endl
                  << "optimistic_erase_statement_name[] = " <<
-                strlit (fn + "_optimistic_erase") << ";"
+                strlit (statement_name ("erase_optimistic", fn, c)) << ";"
                  << endl;
           }
 
@@ -823,11 +826,12 @@ namespace relational
           if (options.generate_query ())
           {
             os << "const char " << traits << "::" << endl
-               << "query_statement_name[] = " << strlit (fn + "_query") << ";"
+               << "query_statement_name[] = " <<
+              strlit (statement_name ("query", fn, c)) << ";"
                << endl
                << "const char " << traits << "::" << endl
                << "erase_query_statement_name[] = " <<
-              strlit (fn + "_erase_query") << ";"
+              strlit (statement_name ("erase_query", fn, c)) << ";"
                << endl;
           }
 
@@ -927,7 +931,8 @@ namespace relational
           string traits ("access::view_traits_impl< " + n + ", id_pgsql >");
 
           os << "const char " << traits << "::" << endl
-             << "query_statement_name[] = " << strlit (fn + "_query") << ";"
+             << "query_statement_name[] = " <<
+            strlit (statement_name ("query", fn, c)) << ";"
              << endl;
         }
 
@@ -1026,19 +1031,23 @@ namespace relational
               class_fq_name (*top_object) + "_" + flat_prefix_ + pn));
 
           os << "const char " << scope << "::" << endl
-             << "select_name[] = " << strlit (fn + "_select") << ";"
+             << "select_name[] = " <<
+            strlit (statement_name ("select", fn, m)) << ";"
              << endl
              << "const char " << scope << "::" << endl
-             << "insert_name[] = " << strlit (fn + "_insert") << ";"
+             << "insert_name[] = " <<
+            strlit (statement_name ("insert", fn, m)) << ";"
              << endl;
 
           if (smart)
             os << "const char " << scope << "::" << endl
-               << "update_name[] = " << strlit (fn + "_update") << ";"
+               << "update_name[] = " <<
+              strlit (statement_name ("update", fn, m)) << ";"
                << endl;
 
           os << "const char " << scope << "::" << endl
-             << "delete_name[] = " << strlit (fn + "_delete") << ";"
+             << "delete_name[] = " <<
+            strlit (statement_name ("delete", fn, m)) << ";"
              << endl;
 
           // Statement types.
@@ -1209,12 +1218,14 @@ namespace relational
 
           if (load || load_opt)
             os << "const char " << scope << "::" << endl
-               << "select_name[] = " << strlit (fn + "_select") << ";"
+               << "select_name[] = " <<
+              strlit (statement_name ("select", fn, *s.member)) << ";"
                << endl;
 
           if (update || update_opt)
             os << "const char " << scope << "::" << endl
-               << "update_name[] = " << strlit (fn + "_update") << ";"
+               << "update_name[] = " <<
+              strlit (statement_name ("update", fn, *s.member)) << ";"
                << endl;
 
           // Statement types.

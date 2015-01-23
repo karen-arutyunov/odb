@@ -770,6 +770,14 @@ class options
      TRANSFORMATIONS section below for details."
   };
 
+  database_map<std::vector<std::string> > --statement-regex
+  {
+    "<regex>",
+    "Add <regex> to the list of regular expressions that is used to
+     transform automatically-derived prepared statement names. See
+     the SQL NAME TRANSFORMATIONS section below for details."
+  };
+
   database_map<std::vector<std::string> > --sql-name-regex
   {
     "<regex>",

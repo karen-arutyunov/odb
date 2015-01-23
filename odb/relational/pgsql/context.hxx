@@ -98,9 +98,20 @@ namespace relational
       static sql_type
       parse_sql_type (string, custom_db_types const* = 0);
 
+    public:
+      // Construct statement name from a given type and name.
+      //
+      string
+      statement_name (string const& type,
+                      string const& name,
+                      semantics::node&);
+
     protected:
       virtual string const&
       convert_expr (string const&, semantics::data_member&, bool);
+
+      virtual string
+      quote_id_impl (qname const&) const;
 
       virtual bool
       grow_impl (semantics::class_&, user_section*);

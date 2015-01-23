@@ -5,6 +5,8 @@
 #include <cassert>
 #include <sstream>
 
+#include <odb/diagnostics.hxx>
+
 #include <odb/sql-token.hxx>
 #include <odb/sql-lexer.hxx>
 
@@ -240,6 +242,79 @@ namespace relational
     {
       sql_type const& t (parse_sql_type (sqlt, m));
       return to ? t.to : t.from;
+    }
+
+    string context::
+    quote_id_impl (qname const& id) const
+    {
+      string r;
+
+      bool f (true);
+      for (qname::iterator i (id.begin ()); i < id.end (); ++i)
+      {
+        if (i->empty ())
+          continue;
+
+        // Warn if the name is greater than the (NAMEDATALEN - 1) limit,
+        // which is 63 in the default PG build.
+        //
+        if (i->size () > 63)
+        {
+          cerr << "warning: SQL name '" << *i << "' is longer than "
+               << "the default PostgreSQL name limit of 63 characters "
+               << "and may be truncated" << endl;
+
+          cerr << "info: consider shortening it using #pragma db "
+               << "table/column/index or --*-regex options" << endl;
+        }
+
+        if (f)
+          f = false;
+        else
+          r += '.';
+
+        r += '"';
+        r += *i;
+        r += '"';
+      }
+
+      return r;
+    }
+
+    string context::
+    statement_name (string const& type, string const& name, semantics::node& n)
+    {
+      // Put the type first so that in the case of truncation it
+      // remains thus lowering the chance of a clash.
+      //
+      string r (type);
+      r += '_';
+      r += name;
+
+      r = transform_name (r, sql_name_statement);
+
+      // Warn if the name is greater than the (NAMEDATALEN - 1) limit,
+      // which is 63 in the default PG build.
+      //
+      // Note that we have to do it in addition to the above since this
+      // name doesn't go through quote_id().
+      //
+      if (r.size () > 63)
+      {
+        location const& l (n.location ());
+
+        warn (l) << "prepared statement name '" << r << "' is longer than "
+                 << "the default PostgreSQL name limit of 63 characters "
+                 << "and may be truncated" << endl;
+
+        info (l) << "consider shortening the corresponding namespace "
+                 << "name, class name, or data member name" << endl;
+
+        info (l) << "or shortening the statement name itself using the "
+                 << "--statement-regex option" << endl;
+      }
+
+      return r;
     }
 
     string context::
