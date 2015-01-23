@@ -129,13 +129,25 @@ namespace relational
         if (i->empty ())
           continue;
 
+        // Warn if the name is greater than the 64 limit.
+        //
+        if (i->size () > 64)
+        {
+          cerr << "warning: SQL name '" << *i << "' is longer than "
+               << "the MySQL name limit of 64 characters and will "
+               << "be truncated" << endl;
+
+          cerr << "info: consider shortening it using #pragma db "
+               << "table/column/index or --*-regex options" << endl;
+        }
+
         if (f)
           f = false;
         else
           r += '.';
 
         r += '`';
-        r += *i;
+        r.append (*i, 0, 64); // Max identifier length is 64.
         r += '`';
       }
 

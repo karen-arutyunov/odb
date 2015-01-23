@@ -133,6 +133,18 @@ namespace relational
         if (i->empty ())
           continue;
 
+        // Warn if the name is greater than the 128 limit.
+        //
+        if (i->size () > 128)
+        {
+          cerr << "warning: SQL name '" << *i << "' is longer than the "
+               << "SQL Server name limit of 128 characters and will be "
+               << "truncated" << endl;
+
+          cerr << "info: consider shortening it using #pragma db "
+               << "table/column/index or --*-regex options" << endl;
+        }
+
         if (f)
           f = false;
         else
