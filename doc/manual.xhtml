@@ -845,6 +845,7 @@ for consistency.
             </td>
           </tr>
           <tr><th>21.6</th><td><a href="#21.6">SQL Server Index Definition</a></td></tr>
+	  <tr><th>21.7</th><td><a href="#21.7">SQL Server Stored Procedures</a></td></tr>
         </table>
       </td>
     </tr>
@@ -20182,7 +20183,7 @@ t.commit ();
   </pre>
 
    <p>Note that as with all native views, the order and types of data members
-      must match the order of columns in the <code>SELECT</code> list inside
+      must match those of columns in the <code>SELECT</code> list inside
       the stored procedure.</p>
 
    <p>There are also a number of limitations when it comes to support for
@@ -24143,6 +24144,155 @@ class object
 };
   </pre>
 
+  <h2><a name="21.7">21.7 SQL Server Stored Procedures</a></h2>
+
+  <p>ODB native views (<a href="#10.5">Section 10.5, "Native Views"</a>)
+     can be used to call SQL Server stored procedures. For example, assuming
+     we are using the <code>person</code> class from <a href="#2">Chapter
+     2, "Hello World Example"</a> (and the corresponding <code>person</code>
+     table), we can create a stored procedure that given the min and max
+     ages returns some information about all the people in that range:</p>
+
+  <pre class="sql">
+CREATE PROCEDURE dbo.person_range (
+  @min_age SMALLINT,
+  @max_age SMALLINT)
+AS
+  SELECT age, first, last FROM person
+    WHERE age >= @min_age AND age &lt;= @max_age;
+  </pre>
+
+  <p>Given the above stored procedure we can then define an ODB view
+     that can be used to call it and retrieve its result:</p>
+
+  <pre class="cxx">
+#pragma db view query("EXEC person_range (?)")
+struct person_range
+{
+  unsigned short age;
+  std::string first;
+  std::string last;
+};
+  </pre>
+
+  <p>The following example shows how we can use the above view to
+     print the list of people in a specific age range:</p>
+
+  <pre class="cxx">
+typedef odb::query&lt;person_range> query;
+typedef odb::result&lt;person_range> result;
+
+transaction t (db.begin ());
+
+result r (
+  db.query&lt;person_range> (
+    query::_val (1) + "," + query::_val (18)));
+
+for (result::iterator i (r.begin ()); i != r.end (); ++i)
+  cerr &lt;&lt; i->first &lt;&lt; " " &lt;&lt; i->last &lt;&lt; " " &lt;&lt; i->age &lt;&lt; endl;
+
+t.commit ();
+  </pre>
+
+   <p>Note that as with all native views, the order and types of data members
+      must match those of columns in the <code>SELECT</code> list inside
+      the stored procedure.</p>
+
+   <p>There are also a number of limitations when it comes to calling
+      SQL Server stored procedures with ODB views. There is currently
+      no support for output parameters, however, this is planned for
+      a future version. In the meantime, to call a stored procedure
+      that has output parameters we have to use a wrapper procedure
+      that converts such parameters to a <code>SELECT</code>
+      result. For example, given the following procedure that
+      calculates the age range of the people in our database:</p>
+
+   <pre class="sql">
+CREATE PROCEDURE dbo.person_age_range (
+  @min_age SMALLINT = NULL OUTPUT,
+  @max_age SMALLINT = NULL OUTPUT)
+AS
+  SELECT @min_age = MIN(age), @max_age = MAX(max) FROM person;
+  </pre>
+
+   <p>We can create a wrapper procedure like this:</p>
+
+   <pre class="sql">
+CREATE PROCEDURE dbo.person_age_range_odb
+AS
+  DECLARE @min_age SMALLINT, @max_age SMALLINT;
+  EXEC person_age_range @min_age OUTPUT, @max_age OUTPUT;
+  SELECT @min_age, @max_age;
+   </pre>
+
+   <p>And a view like this:</p>
+
+   <pre class="cxx">
+#pragma db view query("EXEC person_age_range_odb")
+struct person_age_range
+{
+  unsigned short min_age;
+  unsigned short max_age;
+};
+  </pre>
+
+  <p>Which we can then use to call the stored procedure:</p>
+
+  <pre class="cxx">
+transaction t (db.begin ());
+
+person_age_range ar (db.query_value&lt;person_age_range> ());
+cerr &lt;&lt; ar.min_age &lt;&lt; " " &lt;&lt; ar.max_age &lt;&lt; endl;
+
+t.commit ();
+  </pre>
+
+  <p>In SQL Server, a stored procedure can produce multiple results.
+     For example, if a stored procedure executes several
+     <code>SELECT</code> statements, then the result of calling such
+     a procedure consists of two row sets, one for each <code>SELECT</code>
+     statement. Because such multiple row sets can contain varying number
+     and type of columns, they cannot be all extracted into a
+     single view. Consequently, these kind of stored procedures are
+     currently not supported.</p>
+
+  <p>A stored procedure may also produce no row sets at all. For
+     example, a stored procedure that only executes DML statements
+     would exhibit this behavior. To call such a procedure we use
+     an empty view, for example:</p>
+
+  <pre class="sql">
+CREATE PROCEDURE dbo.insert_person (
+  @first VARCHAR(512),
+  @last VARCHAR(512),
+  @age SMALLINT)
+AS
+  INSERT INTO person(first, last, age)
+    VALUES(@first, @last, @age);
+  </pre>
+
+  <pre class="cxx">
+#pragma db view
+struct no_result {};
+
+transaction t (db.begin ());
+
+db.query_one&lt;no_result> (
+  "EXEC insert_person" +
+    query::_val ("John") + "," +
+    query::_val ("Doe") + "," +
+    query::_val (21));
+
+t.commit ();
+  </pre>
+
+  <p>Finally, an SQL Server stored procedure can also return an
+     integer status code. Similar to output parameters, this code
+     can only be observed by an ODB view if it is converted to a
+     <code>SELECT</code> result. For more information on how to
+     do this and for other examples of stored procedure calls,
+     refer to the <code>mssql/stored-proc</code> test in the
+     <code>odb-tests</code> package.</p>
 
   <!-- PART -->
 
