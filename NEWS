@@ -52,6 +52,9 @@ Version 2.4.0
    names that are used by PostgreSQL. This can be useful, for example, to
    shorten names that exceed the PostgreSQL name limit.
 
+ * ODB can now compile headers that use #pragma once instead of include
+   guards.
+
 Version 2.3.0
 
  * Support for database schema evolution, including schema migration, data

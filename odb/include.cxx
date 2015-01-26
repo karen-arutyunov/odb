@@ -67,7 +67,6 @@ namespace
   std::multiset<include_directive const*, include_comparator>
   include_set;
 
-
   struct class_: traversal::class_, context
   {
     class_ (include_map& map)

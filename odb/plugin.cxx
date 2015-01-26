@@ -4,10 +4,14 @@
 
 #include <odb/gcc.hxx> // Keep it first.
 
+#include <unistd.h>    // stat()
+#include <sys/types.h> // stat
+#include <sys/stat.h>  // stat
+
 #include <memory>  // std::auto_ptr
 #include <string>
 #include <vector>
-#include <cstring> // std::strcpy
+#include <cstring> // std::strcpy, std::strstr
 #include <cassert>
 #include <iostream>
 
@@ -40,6 +44,30 @@ paths profile_paths_;
 path file_;    // File being compiled.
 paths inputs_; // List of input files in at-once mode or just file_.
 
+bool (*cpp_error_prev) (
+  cpp_reader*, int, int, location_t, unsigned int, const char*, va_list*);
+
+static bool
+cpp_error_filter (cpp_reader* r,
+                  int level,
+                  int reason,
+                  location_t l,
+                  unsigned int column_override,
+                  const char* msg,
+                  va_list* ap)
+{
+  // #pragma once in the main file. Note that the message that we get is
+  // potentially translated so we search for the substring (there is
+  // currently only one warning in libcpp that mentions #pragma once).
+  // Unfortunately, some translations translate the 'once' word (e.g,
+  // #pragma uno; I wonder if one can actually specify it like that in
+  // the source code). Oh, well, there is only so much we can do.
+  //
+  if (strstr (msg, "#pragma once") != 0)
+    return true;
+
+  return cpp_error_prev (r, level, reason, l, column_override, msg, ap);
+}
 
 // A prefix of the _cpp_file struct. This struct is not part of the
 // public interface so we have to resort to this technique (based on
@@ -51,26 +79,52 @@ struct cpp_file_prefix
   char const* path;
   char const* pchname;
   char const* dir_name;
+  _cpp_file* next_file;
+  const uchar* buffer;
+  const uchar* buffer_start;
+  const cpp_hashnode *cmacro;
+  cpp_dir *dir;
+  struct stat st;
 };
 
 extern "C" void
 start_unit_callback (void*, void*)
 {
+  // Set the preprocessor error callback to filter out useless diagnostics.
+  //
+  cpp_callbacks* cb (cpp_get_callbacks (parse_in));
+
+  if (cb->error == 0)
+  {
+    cerr << "ice: expected cpp error callback to be set" << endl;
+    exit (1);
+  }
+
+  cpp_error_prev = cb->error;
+  cb->error = &cpp_error_filter;
+
   // Set the directory of the main file (stdin) to that of the orginal
-  // file.
+  // file so that relative inclusion works. Also adjust the path and
+  // re-stat the file so that #pragma once works.
   //
   cpp_buffer* b (cpp_get_buffer (parse_in));
   _cpp_file* f (cpp_get_file (b));
+  cpp_dir* d (cpp_get_dir (f));
   char const* p (cpp_get_path (f));
+
   cpp_file_prefix* fp (reinterpret_cast<cpp_file_prefix*> (f));
 
-  // Perform sanity checks.
+  // Perform some sanity checks.
   //
   if (p != 0 && *p == '\0'     // The path should be empty (stdin).
       && cpp_get_prev (b) == 0 // This is the only buffer (main file).
       && fp->path == p         // Our prefix corresponds to the actual type.
+      && fp->dir == d          // Our prefix corresponds to the actual type.
       && fp->dir_name == 0)    // The directory part hasn't been initialized.
   {
+    // The dir_name is initialized by libcpp lazily so we can preemptively
+    // set it to what we need.
+    //
     path d (file_.directory ());
     char* s;
 
@@ -89,6 +143,32 @@ start_unit_callback (void*, void*)
     }
 
     fp->dir_name = s;
+
+    // Unless we are in the at-once mode (where input files are actually
+    // #include'ed into the synthesized stdin), pretend that we are the
+    // actual input file. This is necessary for the #pragma once to work.
+    //
+    // All this relies on the way things are implemented in libcpp. In
+    // particular, the #pragma once code first checks if the mtime and
+    // size of files match (that's why we need stat() below). If they
+    // do, then it goes ahead and compares their contents. To re-load
+    // the contents of the file libcpp uses the path (that's why we
+    // need to adjust that as well).
+    //
+    if (inputs_.size () == 1)
+    {
+      string const& f (file_.string ());
+
+      XDELETEVEC (fp->path);
+      size_t n (f.size ());
+      char* p (XNEWVEC (char, n + 1));
+      strcpy (p, f.c_str ());
+      p[n] = '\0';
+      fp->path = p;
+
+      // This call shouldn't fail since we've just opened it in the driver.
+      stat (fp->path, &fp->st);
+    }
   }
   else
   {
