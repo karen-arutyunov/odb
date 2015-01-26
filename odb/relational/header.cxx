@@ -1077,6 +1077,9 @@ traverse_composite (type& c)
        << endl;
   }
 
+  column_count_type const& cc (column_count (c));
+  os << "static const std::size_t column_count = " << cc.total << "UL;";
+
   os << "};";
 }
 
