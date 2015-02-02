@@ -2715,10 +2715,10 @@ class person
 
   <p>The object id can be of a simple or composite (<a href="#7.2.1">Section
      7.2.1, "Composite Object Ids"</a>) value type. This type should be
-     default-constructible. It is also possible to declare a persistent
-     class without an object id, however, such a class will have limited
-     functionality (<a href="#14.1.6">Section 14.1.6,
-     "<code>no_id</code>"</a>).</p>
+     default-constructible, copy-constructible, and copy-assignable. It
+     is also possible to declare a persistent class without an object id,
+     however, such a class will have limited functionality
+     (<a href="#14.1.6">Section 14.1.6, "<code>no_id</code>"</a>).</p>
 
   <p>The above two pragmas are the minimum required to declare a
      persistent class with an object id. Other pragmas can be used to
@@ -7953,7 +7953,8 @@ class person
   <p>However, a value type that can be used as an object id has a number
      of restrictions. Such a value type cannot have container, object
      pointer, or read-only data members. It also must be
-     default-constructible. Furthermore, if the persistent class in which
+     default-constructible, copy-constructible, and copy-assignable.
+     Furthermore, if the persistent class in which
      this composite value type is used as object id has session support
      enabled (<a href="#11">Chapter 11, "Session"</a>), then it must also
      implement the less-than comparison operator (<code>operator&lt;</code>).</p>
