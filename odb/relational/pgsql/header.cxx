@@ -177,39 +177,14 @@ namespace relational
       };
       entry<section_traits> section_traits_;
 
-      struct image_member: relational::image_member, member_base
+      struct image_member: relational::image_member_impl<sql_type>,
+                           member_base
       {
         image_member (base const& x)
-            : member_base::base (x), // virtual base
-              base (x),
-              member_base (x),
-              member_image_type_ (base::type_override_,
-                                  base::fq_type_override_,
-                                  base::key_prefix_)
-        {
-        }
-
-        virtual bool
-        pre (member_info& mi)
-        {
-          if (container (mi))
-            return false;
-
-          image_type = member_image_type_.image_type (mi.m);
-
-          if (var_override_.empty ())
-            os << "// " << mi.m.name () << endl
-               << "//" << endl;
-
-          return true;
-        }
-
-        virtual void
-        traverse_composite (member_info& mi)
-        {
-          os << image_type << " " << mi.var << "value;"
-             << endl;
-        }
+            : member_base::base (x),      // virtual base
+              member_base::base_impl (x), // virtual base
+              base_impl (x),
+              member_base (x) {}
 
         virtual void
         traverse_integer (member_info& mi)
@@ -290,11 +265,6 @@ namespace relational
              << "bool " << mi.var << "null;"
              << endl;
         }
-
-      private:
-        string image_type;
-
-        member_image_type member_image_type_;
       };
       entry<image_member> image_member_;
     }

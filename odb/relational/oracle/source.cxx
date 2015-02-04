@@ -375,9 +375,9 @@ namespace relational
         }
 
         virtual void
-        get_null (member_info& mi)
+        get_null (string const& var) const
         {
-          os << "i." << mi.var << "indicator == -1";
+          os << "i." << var << "indicator == -1";
         }
 
         virtual void

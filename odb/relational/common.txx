@@ -31,8 +31,11 @@ namespace relational
     semantics::type* cont;
     if (semantics::class_* c = object_pointer (t))
     {
-      semantics::type& t (utype (*id_member (*c)));
-      semantics::class_* comp (composite_wrapper (t));
+      // A pointer in view might point to an object without id.
+      //
+      semantics::data_member* idm (id_member (*c));
+      semantics::type& t (utype (idm != 0 ? *idm : m));
+      semantics::class_* comp (idm != 0 ? composite_wrapper (t) : 0);
 
       member_info mi (m,
                       (comp != 0 ? *comp : t),
@@ -43,12 +46,14 @@ namespace relational
 
       mi.ptr = c;
 
-      if (comp == 0)
+      // Pointer in views aren't really a "column".
+      //
+      if (!view_member (m) && comp == 0)
         mi.st = &member_sql_type (m);
 
       if (pre (mi))
       {
-        traverse_object_pointer (mi);
+        traverse_pointer (mi);
         post (mi);
       }
     }
@@ -102,11 +107,14 @@ namespace relational
 
   template <typename T>
   void member_base_impl<T>::
-  traverse_object_pointer (member_info& mi)
+  traverse_pointer (member_info& mi)
   {
-    if (composite (mi.t)) // Already unwrapped.
-      traverse_composite (mi);
-    else
-      traverse_simple (mi);
+    if (!view_member (mi.m)) // Not really "as if" pointed-to id member.
+    {
+      if (composite (mi.t)) // Already unwrapped.
+        traverse_composite (mi);
+      else
+        traverse_simple (mi);
+    }
   }
 }

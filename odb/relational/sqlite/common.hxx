@@ -58,12 +58,14 @@ namespace relational
       }
     };
 
-    struct member_image_type: member_base
+    struct member_image_type: relational::member_image_type,
+                              member_base
     {
+      member_image_type (base const&);
       member_image_type (semantics::type* type = 0,
                          string const& fq_type = string (),
                          string const& key_prefix = string ());
-      string
+      virtual string
       image_type (semantics::data_member&);
 
       virtual void
@@ -86,7 +88,6 @@ namespace relational
                                     member_base
     {
       member_database_type_id (base const&);
-
       member_database_type_id (semantics::type* type = 0,
                                string const& fq_type = string (),
                                string const& key_prefix = string ());

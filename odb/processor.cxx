@@ -350,7 +350,9 @@ namespace
       {
         found_type found (found_none);
         semantics::access const& a (m.named ().access ());
-        member_access& ma (m.set (k, member_access (m.location (), true)));
+        member_access& ma (
+          m.set (
+            k, member_access (m.location (), kind, true)));
 
         // If this member is not virtual and is either public or if we
         // are a friend of this class, then go for the member directly.
@@ -490,6 +492,10 @@ namespace
       }
 
       member_access& ma (m.get<member_access> (k));
+
+      if (ma.empty ())
+        return;
+
       cxx_tokens& e (ma.expr);
 
       // If it is just a name, resolve it and convert to an appropriate
@@ -1350,9 +1356,10 @@ namespace
         throw operation_failed ();
       }
 
-      // Make sure the pointed-to class has object id.
+      // Make sure the pointed-to class has object id unless it is in a
+      // view where we can load no-id objects.
       //
-      if (id_member (*c) == 0)
+      if (id_member (*c) == 0 && !view_member (m))
       {
         os << m.file () << ":" << m.line () << ":" << m.column () << ": "
            << "error: pointed-to class '" << class_fq_name (*c) << "' "
@@ -2014,6 +2021,96 @@ namespace
     tree container_traits_;
   };
 
+  struct view_data_member: traversal::data_member, context
+  {
+    view_data_member (semantics::class_& c)
+        : view_ (c),
+          amap_ (c.get<view_alias_map> ("alias-map")),
+          omap_ (c.get<view_object_map> ("object-map")) {}
+
+    virtual void
+    traverse (semantics::data_member& m)
+    {
+      using semantics::data_member;
+
+      if (transient (m))
+        return;
+
+      semantics::type& t (utype (m));
+
+      if (semantics::class_* c = object_pointer (t))
+      {
+        location const& l (m.location ());
+
+        if (lazy_pointer (t))
+        {
+          error (l) << "lazy object pointer in view" << endl;
+          throw operation_failed ();
+        }
+
+        // Find the corresponding associated object. First see if this
+        // data member name matches any aliases.
+        //
+        view_alias_map::iterator i (amap_.find (m.name ()));
+
+        if (i == amap_.end ())
+          i = amap_.find (public_name (m, false));
+
+        view_object* vo (0);
+
+        if (i != amap_.end ())
+        {
+          vo = i->second;
+
+          if (vo->obj != c) // @@ Poly base/derived difference?
+          {
+            error (l) << "different pointed-to and associated objects" << endl;
+            info (vo->loc) << "associated object is defined here" << endl;
+            throw operation_failed ();
+          }
+        }
+        else
+        {
+          // If there is no alias match, try the object type.
+          //
+          view_object_map::iterator i (omap_.find (c));
+
+          if (i == omap_.end ())
+          {
+            error (l) << "unable to find associated object for object "
+                      << "pointer" << endl;
+            info (l) << "use associated object alias as this data member "
+                     << "name" << endl;
+            throw operation_failed ();
+          }
+
+          vo = i->second;
+        }
+
+        if (vo->ptr != 0)
+        {
+          location const& l2 (vo->ptr->location ());
+
+          error (l) << "associated object is already loaded via another "
+                    << "object pointer" << endl;
+          info (l2) << "the other data member is defined here" << endl;
+          info (l2) << "use associated object alias as this data member "
+                    << "name to load a different object" << endl;
+
+          throw operation_failed ();
+        }
+
+        vo->ptr = &m;
+        m.set ("view-object", vo);
+      }
+    }
+
+  private:
+    semantics::class_& view_;
+    view_alias_map& amap_;
+    view_object_map& omap_;
+  };
+
   // Figure out the "summary" added/deleted version for a composite
   // value type.
   //
@@ -2485,6 +2582,7 @@ namespace
           }
 
           i->obj = &o;
+          i->ptr = 0; // Nothing yet.
 
           if (i->alias.empty ())
           {
@@ -2546,6 +2644,14 @@ namespace
     virtual void
     traverse_view_post (type& c)
     {
+      // Handle data members.
+      //
+      {
+        view_data_member t (c);
+        traversal::names n (t);
+        names (c, n);
+      }
+
       // Figure out if we are versioned. Forced versioning is handled
       // in relational/processing.
       //
@@ -2594,6 +2700,7 @@ namespace
 
       try
       {
+        bool raw;
         string ptr;
         string const& type (class_fq_name (c));
 
@@ -2623,15 +2730,20 @@ namespace
 
           if (p == "*")
           {
+            raw = true;
             ptr = type + "*";
             cp_template = true;
           }
           else if (p[p.size () - 1] == '*')
+          {
+            raw = true;
             ptr = p;
+          }
           else if (p.find ('<') != string::npos)
           {
             // Template-id.
             //
+            raw = false; // Fair to assume not raw, though technically can be.
             ptr = p;
             decl_name.assign (p, 0, p.find ('<'));
           }
@@ -2645,6 +2757,7 @@ namespace
 
             if (tc == TYPE_DECL)
             {
+              raw = (TREE_CODE (TREE_TYPE (decl)) == POINTER_TYPE);
               ptr = p;
 
               // This can be a typedef'ed alias for a TR1 template-id.
@@ -2663,6 +2776,7 @@ namespace
             }
             else if (tc == TEMPLATE_DECL && DECL_CLASS_TEMPLATE_P (decl))
             {
+              raw = false;
               ptr = p + "< " + type + " >";
               decl_name = p;
               cp_template = true;
@@ -2713,7 +2827,10 @@ namespace
             // Namespace-specified pointer can only be '*' or are template.
             //
             if (p == "*")
+            {
+              raw = true;
               ptr = type + "*";
+            }
             else if (p[p.size () - 1] == '*')
             {
               error (cp->loc)
@@ -2735,6 +2852,7 @@ namespace
 
               if (tc == TEMPLATE_DECL && DECL_CLASS_TEMPLATE_P (decl))
               {
+                raw = false;
                 ptr = p + "< " + type + " >";
                 decl_name = p;
               }
@@ -2765,9 +2883,13 @@ namespace
             string const& p (options.default_pointer ());
 
             if (p == "*")
+            {
+              raw = true;
               ptr = type + "*";
+            }
             else
             {
+              raw = false;
               ptr = p + "< " + type + " >";
               decl_name = p;
             }
@@ -2917,6 +3039,7 @@ namespace
         }
 
         c.set ("object-pointer", ptr);
+        c.set ("object-pointer-raw", raw);
       }
       catch (invalid_name const& ex)
       {

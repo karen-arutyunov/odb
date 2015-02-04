@@ -1089,17 +1089,22 @@ handle_pragma (cxx_lexer& l,
       return;
     }
 
+    member_access ma (loc, p == "set" ? "modifier" : "accessor", false);
+
     tt = l.next (tl, &tn);
-
-    val = member_access (loc, false);
-    if (!parse_expression (l, tt, tl, tn, val.value<member_access> ().expr, p))
-      return; // Diagnostics has already been issued.
-
-    if (tt != CPP_CLOSE_PAREN)
+    if (tt != CPP_CLOSE_PAREN) // Empty expression are ok.
     {
-      error (l) << "')' expected at the end of db pragma " << p << endl;
-      return;
+      if (!parse_expression (l, tt, tl, tn, ma.expr, p))
+        return; // Diagnostics has already been issued.
+
+      if (tt != CPP_CLOSE_PAREN)
+      {
+        error (l) << "')' expected at the end of db pragma " << p << endl;
+        return;
+      }
     }
+
+    val = ma;
 
     // Convert access to the get/set pair.
     //
@@ -1109,6 +1114,8 @@ handle_pragma (cxx_lexer& l,
         add_pragma (
           pragma (p, "get", val, loc, &check_spec_decl_type, 0), decl, ns);
 
+      ma.kind = "modifier";
+      val = ma;
       name = "set";
     }
 

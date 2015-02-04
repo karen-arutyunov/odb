@@ -758,6 +758,9 @@ namespace header
     if (ctx.features.polymorphic_object)
       os << "#include <string>" << endl; // For discriminator.
 
+    if (ctx.options.std () >= cxx_version::cxx11)
+      os << "#include <utility>" << endl; // move()
+
     os << endl;
 
     os << "#include <odb/core.hxx>" << endl
@@ -819,7 +822,8 @@ namespace header
         os << "#include <odb/no-id-object-result.hxx>" << endl;
 
       if (ctx.features.view)
-        os << "#include <odb/view-result.hxx>" << endl;
+        os << "#include <odb/view-image.hxx>" << endl
+           << "#include <odb/view-result.hxx>" << endl;
     }
 
     os << endl

@@ -469,11 +469,12 @@ for consistency.
       <th>10</th><td><a href="#10">Views</a>
         <table class="toc">
           <tr><th>10.1</th><td><a href="#10.1">Object Views</a></td></tr>
-	  <tr><th>10.2</th><td><a href="#10.2">Table Views</a></td></tr>
-	  <tr><th>10.3</th><td><a href="#10.3">Mixed Views</a></td></tr>
-	  <tr><th>10.4</th><td><a href="#10.4">View Query Conditions</a></td></tr>
-	  <tr><th>10.5</th><td><a href="#10.5">Native Views</a></td></tr>
-	  <tr><th>10.6</th><td><a href="#10.6">Other View Features and Limitations</a></td></tr>
+	  <tr><th>10.2</th><td><a href="#10.2">Object Loading Views</a></td></tr>
+	  <tr><th>10.3</th><td><a href="#10.3">Table Views</a></td></tr>
+	  <tr><th>10.4</th><td><a href="#10.4">Mixed Views</a></td></tr>
+	  <tr><th>10.5</th><td><a href="#10.5">View Query Conditions</a></td></tr>
+	  <tr><th>10.6</th><td><a href="#10.6">Native Views</a></td></tr>
+	  <tr><th>10.7</th><td><a href="#10.7">Other View Features and Limitations</a></td></tr>
         </table>
       </td>
     </tr>
@@ -9962,7 +9963,7 @@ struct employee_employer
      below. The optional <i>join-condition</i> part provides the
      criteria which should be used to associate this object with any
      of the previously associated objects or, as we will see in
-     <a href="#10.3">Section 10.3, "Mixed Views"</a>, tables. Note that
+     <a href="#10.4">Section 10.4, "Mixed Views"</a>, tables. Note that
      while the first associated object can have an alias, it cannot
      have a join condition.</p>
 
@@ -10311,7 +10312,398 @@ t.commit ();
      query expression, and you need to qualify the column with
      the table, then you will need to use the table alias instead.</p>
 
-  <h2><a name="10.2">10.2 Table Views</a></h2>
+  <h2><a name="10.2">10.2 Object Loading Views</a></h2>
+
+  <p>A special variant of object views is object loading views. Object
+     loading views allow us to load one or more complete objects
+     instead of, or in addition to, a subset of data member. While we
+     can often achieve the same end result by calling
+     <code>database::load()</code>, using a view has several advantages.</p>
+
+  <p>If we need to load multiple objects, then using a view allows us
+     to do this with a single <code>SELECT</code> statement execution
+     instead of one for each object that would be necessary in case of
+     <code>load()</code>. A view can also be useful for loading only
+     a single object if the query criterion that we would like to use
+     involves other, potentially unrelated, objects. We will examine
+     concrete examples of these and other scenarios in the rest of this
+     section.</p>
+
+  <p>To load a complete object as part of a view we use a data member of
+     the pointer to object type, just like for object relationships
+     (<a href="#6">Chapter 6, "Relationships"</a>). As an example, here
+     is how we can load both the <code>employee</code> and
+     <code>employer</code> objects from the previous section with a single
+     statement:</p>
+
+  <pre class="cxx">
+#pragma db view object(employee) object(employer)
+struct employee_employer
+{
+  shared_ptr&lt;employee> ee;
+  shared_ptr&lt;employer> er;
+};
+  </pre>
+
+  <p>We use an object loading view just like any other view. In the
+     result of a query, as we would expect, the pointer data members
+     point to the loaded objects. For example:</p>
+
+  <pre class="cxx">
+typedef odb::query&lt;employee_employer> query;
+
+transaction t (db.begin ());
+
+for (const employee_employer&amp; r:
+       db.query&lt;employee_employer> (query::employee::age &lt; 31))
+{
+  cout &lt;&lt; r.ee->age () &lt;&lt; " " &lt;&lt; r.er->name () &lt;&lt; endl;
+}
+
+t.commit ();
+  </pre>
+
+  <p>As another example, consider a query that loads the <code>employer</code>
+     objects using some condition based on its employees. For instance, we
+     want to find all the employers that employ people over 65 years old.
+     We can use this object loading view to implement such a query:</p>
+
+  <pre class="cxx">
+#pragma db view object(employer) object(employee)
+struct employer_view
+{
+  shared_ptr&lt;employer> er;
+};
+  </pre>
+
+  <p>And this is how we can use this view to find all the employers that
+     employ seniors:</p>
+
+  <pre class="cxx">
+typedef odb::query&lt;employee_employer> query;
+
+db.query&lt;employer_view> ((query::employee::age > 65) + distinct))
+  </pre>
+
+  <p>We can even use object loading views to load completely unrelated
+     (from the ODB object relationships point of view) objects. For example,
+     the following view will load all the employers that are named the
+     same as a country (notice the <code>inner</code> join type):</p>
+
+  <pre class="cxx">
+#pragma db view object(employer) \
+  object(country inner: employer::name == country::name)
+struct employer_named_country
+{
+  shared_ptr&lt;employer> e;
+  shared_ptr&lt;country> c;
+};
+  </pre>
+
+  <p>An object loading view can contain ordinary data members
+     in addition to object pointers. For example, if we are only
+     interested in the country code in the above view, then we
+     can reimplement it like this:</p>
+
+  <pre class="cxx">
+#pragma db view object(employer) \
+  object(country inner: employer::name == country::name)
+struct employer_named_country
+{
+  shared_ptr&lt;employer> e;
+  std::string code;
+};
+  </pre>
+
+  <p>Object loading views also have a few rules and restrictions.
+     Firstly, the pointed-to object in the data member must be associated
+     with the view. Furthermore, if the associated object has an alias,
+     then the data member name must be the same as the alias (more
+     precisely, the public name derived from the data member must
+     match the alias; which means we can use normal data member
+     decorations such as trailing underscores, etc., see the previous
+     section for more information on public names). The following view
+     illustrates the use of aliases as data member names:</p>
+
+  <pre class="cxx">
+#pragma db view object(employee)               \
+  object(country = res: employee::residence_)  \
+  object(country = nat: employee::nationality_)
+struct employee_country
+{
+  shared_ptr&lt;country> res;
+  shared_ptr&lt;country> nat_;
+};
+  </pre>
+
+  <p>Finally, the object pointers must be direct data members of
+     the view. Using, for example, a composite value that contains
+     pointers as a view data member is not supported. Note also
+     that depending on the join type you are using, some of the
+     resulting pointers might be <code>NULL</code>.</p>
+
+  <p>Up until now we have consistently used <code>shared_ptr</code>
+     as an object pointer in our views. Can we use other pointers,
+     such as <code>unique_ptr</code> or raw pointers? To answer
+     this question we first need to discuss what happens with
+     object pointers that may be inside objects that a view
+     loads. As a concrete example, let us revisit the
+     <code>employee_employer</code> view from the beginning of
+     this section:</p>
+
+  <pre class="cxx">
+#pragma db view object(employee) object(employer)
+struct employee_employer
+{
+  shared_ptr&lt;employee> ee;
+  shared_ptr&lt;employer> er;
+};
+  </pre>
+
+  <p>This view loads two objects: <code>employee</code> and
+     <code>employer</code>. The <code>employee</code> object,
+     however, also contains a pointer to <code>employer</code>
+     (see the <code>employed_by_</code> data member). In fact,
+     this is the same object that the view loads since <code>employer</code>
+     is associated with the view using this same relationship (ODB
+     automatically uses it since it is the only one). The correct
+     result of loading such a view is then clear: both <code>er</code> and
+     <code>er->employed_by_</code> must point to (or share) the
+     same instance.</p>
+
+  <p>Just like object loading via the <code>database</code> class
+     functions, views achieve this correct behavior of only loading
+     a single instance of the same object with the help of session's
+     object cache (<a href="#11">Chapter 11, "Session"</a>). In fact,
+     object loading views enforce this by throwing the
+     <code>session_required</code> exception if there is no current
+     session and the view loads an object that is also indirectly
+     loaded by one of the other objects. The ODB compiler will also
+     issue diagnostics if such an object has session support
+     disabled (<a href="#14.1.10">Section 14.1.10,
+     "<code>session</code>"</a>).</p>
+
+  <p>With this understanding we can now provide the correct implementation
+     of our transaction that uses the <code>employee_employer</code> view:</p>
+
+  <pre class="cxx">
+typedef odb::query&lt;employee_employer> query;
+
+transaction t (db.begin ());
+odb::session s;
+
+for (const employee_employer&amp; r:
+       db.query&lt;employee_employer> (query::employee::age &lt; 31))
+{
+  assert (r.ee->employed_by_ == r.er);
+  cout &lt;&lt; r.ee->age () &lt;&lt; " " &lt;&lt; r.er->name () &lt;&lt; endl;
+}
+
+t.commit ();
+  </pre>
+
+  <p>It might seem logical, then, to always load all the objects from
+     all the eager relationships with the view. After all, this will
+     lead to them all being loaded with a single statement. While
+     this is theoretically true, the reality is slightly more nuanced.
+     If there is a high probability of the object already have been
+     loaded and sitting in the cache, then not loading the object
+     as part of the view (and therefore not fetching all its data
+     from the database) might result in better performance.</p>
+
+  <p>Now we can also answer the question about which pointers we can
+     use in object loading views. From the above discussion it should
+     be clear that if an object that we are loading is also part of a
+     relationship inside another object that we are loading, then we
+     should use some form of a shared ownership pointer. If, however,
+     there are no relationships involved, as is the case, for example,
+     in our <code>employer_named_country</code> and
+     <code>employee_country</code> views above, then we can use a
+     unique ownership pointer such as <code>unique_ptr</code>.</p>
+
+  <p>Note also that your choice of a pointer type can be limited by the
+     "official" object pointer type assigned to the object
+     (<a href="#3.3">Section 3.3, "Object and View Pointers"</a>).
+     For example, if the object pointer type is <code>shared_ptr</code>,
+     you will not be able to use <code>unique_ptr</code> to load
+     such an object into a view since initializing <code>unique_ptr</code>
+     from <code>shared_ptr</code> would be a mistake.</p>
+
+  <p>Unless you want to perform your own object cleanup, raw object
+     pointers in views are not particularly useful. They do have one
+     special semantics, however: If a raw pointer is used as a view
+     member, then, before creating a new instance, the implementation
+     will check if the member is <code>NULL</code>. If it is not, then
+     it is assumed to point to an existing instance and the implementation
+     will load the data into it instead of creating a new one. The
+     primary use of this special functionality is to implement by-value
+     loading with the ability to detect <code>NULL</code> values.</p>
+
+  <p>To illustrate this functionality, consider the following view that
+     load the employee's residence country by value:</p>
+
+  <pre class="cxx">
+#pragma db view object(employee) \
+  object(country = res: employee::residence_) transient
+struct employee_res_country
+{
+  typedef country* country_ptr;
+
+  #pragma db member(res_) virtual(country_ptr) get(&amp;this.res) \
+    set(this.res_null = ((?) == nullptr))
+
+  country res;
+  bool res_null;
+};
+  </pre>
+
+  <p>Here we are using a virtual data member
+     (<a href="#14.4.13">Section 14.4.13, "<code>virtual</code>"</a>) to
+     add an object pointer member to the view. Its accessor expression
+     returns the pointer to the <code>res</code> member so that
+     the implementation can load the data into it. The modifier
+     expression checks the passed pointer to initialize the
+     <code>NULL</code> value indicator. Here, the two possible
+     values that can be passed to the modifier expression are
+     the address of the <code>res</code> member that we returned
+     earlier from the accessor and <code>NULL</code> (strictly
+     speaking, there is a third possibility: the address of an
+     object that was found in the session cache).</p>
+
+  <p>If we are not interested in the <code>NULL</code> indicator,
+     then the above view can simplified to this:</p>
+
+  <pre class="cxx">
+#pragma db view object(employee) \
+  object(country = res: employee::residence_) transient
+struct employee_res_country
+{
+  typedef country* country_ptr;
+
+  #pragma db member(res_) virtual(country_ptr) get(&amp;this.res) set()
+
+  country res;
+};
+  </pre>
+
+  <p>That is, we specify an empty modifier expression which leads to
+     the value being ignored.</p>
+
+  <p>As another example of by-value loading, consider a view that allows
+     us to load objects into existing instances that have been allocated
+     outside the view:</p>
+
+  <pre class="cxx">
+#pragma db view object(employee)               \
+  object(country = res: employee::residence_)  \
+  object(country = nat: employee::nationality_)
+struct employee_country
+{
+  employee_country (country&amp; r, country&amp; n): res (&amp;r), nat (&amp;n) {}
+
+  country* res;
+  country* nat;
+};
+  </pre>
+
+  <p>And here is how we can use this view:</p>
+
+  <pre class="cxx">
+typedef odb::result&lt;employee_country> result;
+
+transaction t (db.begin ());
+
+result r (db.query&lt;employee_country> (...);
+
+for (result::iterator i (r.begin ()); i != r.end (); ++i)
+{
+  country res, nat;
+  employee_country v (res, nat);
+  i.load (v);
+
+  if (v.res != nullptr)
+    ... // Result is in res.
+
+  if (v.nat != nullptr)
+    ... // Result is in nat.
+}
+
+t.commit ();
+  </pre>
+
+  <p>As a final example of the by-value loading, consider the following
+     view which implements a slightly more advanced logic: if the object
+     is already in the session cache, then it sets the pointer data member
+     in the view (<code>er_p</code>) to that. Otherwise, it loads the data
+     into the by-value instance (<code>er</code>). We can also check
+     whether the pointer data member points to the instance to distinguish
+     between the two outcomes. And we can check it for <code>nullptr</code>
+     to detect <code>NULL</code> values.</p>
+
+  <pre class="cxx">
+#pragma db view object(employer)
+struct employer_view
+{
+  // Since we may be getting the pointer as both smart and raw, we
+  // need to create a bit of support code to use in the modifier
+  // expression.
+  //
+  void set_er (employer* p) {er_p = p;}                   // &amp;er or NULL.
+  void set_er (shared_ptr&lt;employer> p) {er_p = p.get ();} // From cache.
+
+  #pragma db get(&amp;this.er) set(set_er(?))
+  employer* er_p;
+
+  #pragma db transient
+  employer er;
+
+  // Return-by-value support (e.g., query_value()).
+  //
+  employer_view (): er_p (0) {}
+  employer_view (const employer_view&amp; x)
+    : er_p (x.er_p == &amp;x.er ? &amp;er : x.er_p), er (x.er) {}
+};
+  </pre>
+
+  <p>We can use object loading views with polymorphic objects
+     (<a href="#8.2">Section 8.2, "Polymorphism Inheritance"</a>). Note,
+     however, that when loading a derived object via the base pointer
+     in a view, a separate statement will be executed to load the
+     dynamic part of the object. There is no support for by-value
+     loading for polymorphic objects.</p>
+
+  <p>We can also use object loading views with objects without id
+     (<a href="#14.1.6">Section 14.1.6, "<code>no_id</code>"</a>).
+     Note, however, that for such objects, <code>NULL</code> values
+     are not automatically detected (since there is no primary key,
+     which is otherwise guaranteed to be not <code>NULL</code>, there
+     might not be a column on which to base this detection). The
+     workaround for this limitation is to load an otherwise not
+     <code>NULL</code> column next to the object which will serve
+     as an indicator. For example:</p>
+
+  <pre class="cxx">
+#pragma db object no_id
+class object
+{
+  ...
+
+  int n; // NOT NULL
+  std::string s;
+};
+
+#include &lt;odb/nullable.hxx>
+
+#pragma db view object(object)
+struct view
+{
+
+  odb::nullable&lt;int> n; // If 'n' is NULL, then, logically, so is 'o'.
+  unique_ptr&lt;object> o;
+};
+  </pre>
+
+  <h2><a name="10.3">10.3 Table Views</a></h2>
 
   <p>A table view is similar to an object view except that it is
      based on one or more database tables instead of persistent
@@ -10400,7 +10792,7 @@ struct employee_max_vacation
      column names, and query expressions. The optional <i>join-condition</i>
      part provides the criteria which should be used to associate this
      table with any of the previously associated tables or, as we will see in
-     <a href="#10.3">Section 10.3, "Mixed Views"</a>, objects. Note that
+     <a href="#10.4">Section 10.4, "Mixed Views"</a>, objects. Note that
      while the first associated table can have an alias, it cannot have
      a join condition.</p>
 
@@ -10468,7 +10860,7 @@ t.commit ();
   </pre>
 
 
-  <h2><a name="10.3">10.3 Mixed Views</a></h2>
+  <h2><a name="10.4">10.4 Mixed Views</a></h2>
 
   <p>A mixed view has both associated objects and tables. As a first
      example of a mixed view, let us improve <code>employee_vacation</code>
@@ -10531,7 +10923,7 @@ struct employee_prev_employer
 };
   </pre>
 
-  <h2><a name="10.4">10.4 View Query Conditions</a></h2>
+  <h2><a name="10.5">10.5 View Query Conditions</a></h2>
 
   <p>Object, table, and mixed views can also specify an optional query
      condition that should be used whenever the database is queried for
@@ -10642,7 +11034,7 @@ struct employer_age
 };
   </pre>
 
-  <h2><a name="10.5">10.5 Native Views</a></h2>
+  <h2><a name="10.6">10.6 Native Views</a></h2>
 
   <p>The last kind of view supported by ODB is a native view. Native
      views are a low-level mechanism for capturing results of native
@@ -10651,7 +11043,7 @@ struct employer_age
      <code>db&nbsp;query</code> pragma to specify the native SQL query,
      which should normally include the select-list and, if applicable,
      the from-list. For example, here is how we can re-implement the
-     <code>employee_vacation</code> table view from Section 10.2 above
+     <code>employee_vacation</code> table view from Section 10.3 above
      as a native view:</p>
 
   <pre class="cxx">
@@ -10777,7 +11169,7 @@ result n (db.query&lt;sequence_value> (
       for each database system in <a href="#II">Part II, "Database
       Systems"</a>.</p>
 
-  <h2><a name="10.6">10.6 Other View Features and Limitations</a></h2>
+  <h2><a name="10.7">10.7 Other View Features and Limitations</a></h2>
 
   <p>Views cannot be derived from other views. However, you can derive
      a view from a transient C++ class. View data members cannot be
@@ -14608,7 +15000,7 @@ class employer
 
   <p>The <code>table</code> specifier specifies a database table
      that should be associated with the view. For more information
-     on table associations refer to <a href="#10.2">Section 10.2, "Table
+     on table associations refer to <a href="#10.3">Section 10.3, "Table
      Views"</a>.</p>
 
   <h3><a name="14.2.3">14.2.3 <code>query</code></a></h3>
@@ -14617,9 +15009,9 @@ class employer
      for an object or table view or a native SQL query for a native
      view. An empty <code>query</code> specifier indicates that a
      native SQL query is provided at runtime. For more information
-     on query conditions refer to <a href="#10.4">Section 10.4, "View
+     on query conditions refer to <a href="#10.5">Section 10.5, "View
      Query Conditions"</a>. For more information on native SQL queries,
-     refer to <a href="#10.5">Section 10.5, "Native Views"</a>.</p>
+     refer to <a href="#10.6">Section 10.6, "Native Views"</a>.</p>
 
   <h3><a name="14.2.4">14.2.4 <code>pointer</code></a></h3>
 
@@ -16183,7 +16575,7 @@ class person
      object data member, the potentially qualified column name, or the column
      expression for the data member of a view class. For more information,
      refer to <a href="#10.1">Section 10.1, "Object Views"</a> and
-     <a href="#10.2">Section 10.2, "Table Views"</a>.</p>
+     <a href="#10.3">Section 10.3, "Table Views"</a>.</p>
 
   <h3><a name="14.4.11">14.4.11 <code>transient</code></a></h3>
 
@@ -20134,7 +20526,7 @@ class object
 
   <h2><a name="17.7">17.7 MySQL Stored Procedures</a></h2>
 
-  <p>ODB native views (<a href="#10.5">Section 10.5, "Native Views"</a>)
+  <p>ODB native views (<a href="#10.6">Section 10.6, "Native Views"</a>)
      can be used to call MySQL stored procedures. For example, assuming
      we are using the <code>person</code> class from <a href="#2">Chapter
      2, "Hello World Example"</a> (and the corresponding <code>person</code>
@@ -23399,7 +23791,7 @@ for (result::iterator i (r.begin ()); i != r.end (); ++i)
 t.commit ();
   </pre>
 
-  <p>Finally, if a native view (<a href="#10.5">Section 10.5, "Native
+  <p>Finally, if a native view (<a href="#10.6">Section 10.6, "Native
      Views"</a>) contains one or more long data members, then such
      members should come last both in the select-list of the native
      SQL query and the list of data members in the C++ class.</p>
@@ -24147,7 +24539,7 @@ class object
 
   <h2><a name="21.7">21.7 SQL Server Stored Procedures</a></h2>
 
-  <p>ODB native views (<a href="#10.5">Section 10.5, "Native Views"</a>)
+  <p>ODB native views (<a href="#10.6">Section 10.6, "Native Views"</a>)
      can be used to call SQL Server stored procedures. For example, assuming
      we are using the <code>person</code> class from <a href="#2">Chapter
      2, "Hello World Example"</a> (and the corresponding <code>person</code>

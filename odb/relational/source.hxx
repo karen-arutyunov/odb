@@ -77,12 +77,29 @@ namespace relational
     {
       typedef object_columns base;
 
+      // If provided, used to resolve table/alias names for inverse
+      // pointed-to and base objects. Returns qualified name.
+      //
+      struct table_name_resolver
+      {
+        virtual string
+        resolve_pointer (semantics::data_member&) const = 0;
+
+        virtual string
+        resolve_base (semantics::class_&) const = 0;
+      };
+
       object_columns (statement_kind sk,
                       statement_columns& sc,
                       query_parameters* param = 0,
                       object_section* section = 0)
           : object_columns_base (true, true, section),
-            sk_ (sk), ro_ (true), sc_ (sc), param_ (param), depth_ (1)
+            sk_ (sk),
+            ro_ (true),
+            sc_ (sc),
+            param_ (param),
+            table_name_resolver_ (0),
+            depth_ (1)
       {
       }
 
@@ -91,7 +108,12 @@ namespace relational
                       statement_columns& sc,
                       query_parameters* param)
           : object_columns_base (true, true, 0),
-            sk_ (sk), ro_ (ignore_ro), sc_ (sc), param_ (param), depth_ (1)
+            sk_ (sk),
+            ro_ (ignore_ro),
+            sc_ (sc),
+            param_ (param),
+            table_name_resolver_ (0),
+            depth_ (1)
       {
       }
 
@@ -99,13 +121,15 @@ namespace relational
                       statement_kind sk,
                       statement_columns& sc,
                       size_t depth = 1,
-                      object_section* section = 0)
+                      object_section* section = 0,
+                      table_name_resolver* tnr = 0)
           : object_columns_base (true, true, section),
             sk_ (sk),
             ro_ (true),
             sc_ (sc),
             param_ (0),
             table_name_ (table_qname),
+            table_name_resolver_ (tnr),
             depth_ (depth)
       {
       }
@@ -143,7 +167,12 @@ namespace relational
 
           if (sk_ == statement_select && --depth_ != 0)
           {
-            table_name_ = table_qname (polymorphic_base (c));
+            semantics::class_& b (polymorphic_base (c));
+
+            table_name_ = table_name_resolver_ != 0
+              ? table_name_resolver_->resolve_base (b)
+              : table_qname (b);
+
             inherits (c);
           }
         }
@@ -196,7 +225,12 @@ namespace relational
             string table;
 
             if (!table_name_.empty ())
-              table = table_qname (*im, table_prefix (imc));
+            {
+              if (table_name_resolver_ != 0)
+                table = table_name_resolver_->resolve_pointer (m);
+              else
+                table = table_qname (*im, table_prefix (imc));
+            }
 
             instance<object_columns> oc (table, sk_, sc_);
             oc->traverse (*im, idt, "id", "object_id", &imc);
@@ -219,32 +253,37 @@ namespace relational
 
             if (!table_name_.empty ())
             {
-              string n;
-
-              if (composite_wrapper (idt))
-              {
-                n = column_prefix (m, key_prefix_, default_name_).prefix;
-
-                if (n.empty ())
-                  n = public_name_db (m);
-                else if (n[n.size () - 1] == '_')
-                  n.resize (n.size () - 1); // Remove trailing underscore.
-              }
+              if (table_name_resolver_ != 0)
+                alias = table_name_resolver_->resolve_pointer (m);
               else
               {
-                bool dummy;
-                n = column_name (m, key_prefix_, default_name_, dummy);
-              }
+                string n;
 
-              alias = compose_name (column_prefix_.prefix, n);
+                if (composite_wrapper (idt))
+                {
+                  n = column_prefix (m, key_prefix_, default_name_).prefix;
 
-              if (poly)
-              {
-                qname const& table (table_name (imc));
-                alias = quote_id (alias + "_" + table.uname ());
+                  if (n.empty ())
+                    n = public_name_db (m);
+                  else if (n[n.size () - 1] == '_')
+                    n.resize (n.size () - 1); // Remove trailing underscore.
+                }
+                else
+                {
+                  bool dummy;
+                  n = column_name (m, key_prefix_, default_name_, dummy);
+                }
+
+                alias = compose_name (column_prefix_.prefix, n);
+
+                if (poly)
+                {
+                  qname const& table (table_name (imc));
+                  alias = quote_id (alias + "_" + table.uname ());
+                }
+                else
+                  alias = quote_id (alias);
               }
-              else
-                alias = quote_id (alias);
             }
 
             instance<object_columns> oc (alias, sk_, sc_);
@@ -312,14 +351,233 @@ namespace relational
       statement_columns& sc_;
       query_parameters* param_;
       string table_name_;
+      table_name_resolver* table_name_resolver_;
       size_t depth_;
     };
 
-    struct view_columns: object_columns_base, virtual context
+    struct view_columns: object_columns_base,
+                         object_columns::table_name_resolver,
+                         virtual context
     {
       typedef view_columns base;
 
-      view_columns (statement_columns& sc): sc_ (sc), in_composite_ (false) {}
+      view_columns (statement_columns& sc,
+                    strings& from,
+                    const view_relationship_map& rm)
+          : sc_ (sc), from_ (from), rel_map_ (rm), in_composite_ (false) {}
+
+      // Implementation of table_name_resolver for object_columns.
+      //
+      virtual string
+      resolve_pointer (semantics::data_member& m) const
+      {
+        view_object& us (*ptr_->get<view_object*> ("view-object"));
+
+        semantics::data_member& im (*inverse (m));
+
+        typedef view_relationship_map::const_iterator iterator;
+
+        std::pair<iterator, iterator> r (
+          rel_map_.equal_range (data_member_path (im)));
+
+        using semantics::class_;
+
+        for (; r.first != r.second; ++r.first)
+        {
+          if (r.first->second.second != &us) // Not our associated.
+            continue;
+
+          view_object& vo (*r.first->second.first); // First because inverse.
+
+          // Derive the table name the same way as the JOIN code.
+          //
+          class_* c (vo.obj);
+          if (class_* root = polymorphic (*c))
+          {
+            // Can be in base.
+            //
+            c = &static_cast<class_&> (im.scope ());
+
+            if (!polymorphic (*c))
+              c = root;
+          }
+
+          string const& a (vo.alias);
+
+          if (container (im))
+          {
+            // If this is a container, then object_columns will use the
+            // column from the container table, not from the object table
+            // (which, strictly speaking, might not have been JOIN'ed).
+            //
+            qname t (table_name (im, table_prefix (*c)));
+            return a.empty ()
+              ? quote_id (t)
+              : quote_id (a + '_' + t.uname ());
+          }
+          else
+          {
+            qname t;
+            if (a.empty ())
+              t = table_name (*c);
+            else
+            {
+              if (polymorphic (*c))
+                t = qname (a + "_" + table_name (*c).uname ());
+              else
+                t = qname (a);
+            }
+            return quote_id (t);
+          }
+        }
+
+        // So there is no associated object for this column. The initial
+        // plan was to complain and ask the user to explicitly associate
+        // the object. This is not a bad plan except for one thing: if
+        // the direct side of the relationship is a container, then
+        // associating that object explicitly will result in both the
+        // container table and the object table being JOIN'ed. But we
+        // only need the container table (for the object id) So we will
+        // be joining a table for nothing, which is not very clean. So
+        // the alternative, and more difficult, plan is to go ahead and
+        // add the necessary JOIN's automatically.
+        //
+        // This code follows the normal JOIN generation code.
+        //
+        class_* o (object_pointer (utype (m)));
+        if (class_* root = polymorphic (*o))
+        {
+          o = &static_cast<class_&> (im.scope ());
+
+          if (!polymorphic (*o))
+            o = root;
+        }
+
+        string const& a (us.alias);
+        string lt (a.empty () ? table_qname (*us.obj) : quote_id (a));
+        string rt;
+
+        qname ct (
+          container (im)
+          ? table_name (im, table_prefix (*o))
+          : table_name (*o));
+
+        string l ("LEFT JOIN ");
+
+        if (a.empty ())
+        {
+          rt = quote_id (ct);
+          l += rt;
+        }
+        else
+        {
+          // The same relationship can be used by multiple associated
+          // objects. So if we have an alias, then also construct one
+          // for the table that we are joining.
+          //
+          rt = quote_id (a + '_' + ct.uname ());
+          l += quote_id (ct);
+          l += (need_alias_as ? " AS " : " ") + rt;
+        }
+
+        l += " ON";
+        from_.push_back (l);
+
+        instance<object_columns_list> l_cols; // Our id columns.
+        instance<object_columns_list> r_cols; // Other side id columns.
+
+        semantics::data_member& id (*id_member (*us.obj));
+
+        l_cols->traverse (id);
+
+        if (container (im))
+          r_cols->traverse (im, utype (id), "value", "value");
+        else
+          r_cols->traverse (im);
+
+        for (object_columns_list::iterator b (l_cols->begin ()), i (b),
+               j (r_cols->begin ()); i != l_cols->end (); ++i, ++j)
+        {
+          l.clear ();
+
+          if (i != b)
+            l += "AND ";
+
+          l += lt;
+          l += '.';
+          l += quote_id (i->name);
+          l += '=';
+          l += rt;
+          l += '.';
+          l += quote_id (j->name);
+
+          from_.push_back (strlit (l));
+        }
+
+        return rt;
+
+        /*
+        // The alternative implementation:
+        //
+        location const& l1 (m.location ());
+        location const& l2 (ptr_->location ());
+
+        string n1 (class_name (*object_pointer (utype (m))));
+        string n2 (class_name (*object_pointer (utype (*ptr_))));
+
+        error (l1) << "object '" << n1 << "' pointed-to by the inverse "
+                   << "data member in object '" << n2 << "' must be "
+                   << "explicitly associated with the view" << endl;
+
+        info (l2) << "view data member that loads '" << n2 << "' is "
+                  << "defined here" << endl;
+
+        throw operation_failed ();
+        */
+      }
+
+      virtual string
+      resolve_base (semantics::class_& b) const
+      {
+        view_object& vo (*ptr_->get<view_object*> ("view-object"));
+
+        qname t (vo.alias.empty ()
+                 ? table_name (b)
+                 : qname (vo.alias + "_" + table_name (b).uname ()));
+
+        return quote_id (t);
+      }
+
+      virtual void
+      traverse_pointer (semantics::data_member& m, semantics::class_& c)
+      {
+        type* poly_root (polymorphic (c));
+        bool poly (poly_root != 0);
+        bool poly_derived (poly && poly_root != &c);
+        size_t poly_depth (poly_derived ? polymorphic_depth (c) : 1);
+
+        view_object& vo (*m.get<view_object*> ("view-object"));
+        string const& a (vo.alias);
+
+        qname t;
+        if (a.empty ())
+          t = table_name (c);
+        else
+        {
+          if (poly)
+            t = qname (a + "_" + table_name (c).uname ());
+          else
+            t = qname (a);
+        }
+        string qt (quote_id (t));
+
+        ptr_ = &m;
+
+        statement_kind sk (statement_select); // Imperfect forwarding.
+        object_section* s (&main_section); // Imperfect forwarding.
+        instance<object_columns> oc (qt, sk, sc_, poly_depth, s, this);
+        oc->traverse (c);
+      }
 
       virtual void
       traverse_composite (semantics::data_member* pm, semantics::class_& c)
@@ -492,8 +750,15 @@ namespace relational
 
     protected:
       statement_columns& sc_;
+      strings& from_;
+      const view_relationship_map& rel_map_;
+
       bool in_composite_;
       qname table_prefix_; // Table corresponding to column_prefix_;
+
+      // Set to the current pointer data member that we are traversing.
+      //
+      semantics::data_member* ptr_;
     };
 
     struct polymorphic_object_joins: object_columns_base, virtual context
@@ -909,6 +1174,148 @@ namespace relational
       instance<object_columns_list> id_cols_;
     };
 
+    // Check that eager object pointers in the objects that a view loads
+    // can be loaded from the cache (i.e., they have session support
+    // enabled).
+    //
+    struct view_object_check: object_members_base
+    {
+      typedef view_object_check base;
+
+      view_object_check (view_object& vo, view_relationship_map& rm)
+          : object_members_base (false, &main_section),
+            session_ (false), vo_ (vo), rel_map_ (rm) {}
+
+      virtual bool
+      section_test (data_member_path const& mp)
+      {
+        // Include eager loaded members into the main section.
+        //
+        object_section& s (section (mp));
+        return *section_ == s || !s.separate_load ();
+      }
+
+      virtual void
+      traverse_pointer (semantics::data_member& m, semantics::class_& c)
+      {
+        // Ignore polymorphic id references.
+        //
+        if (m.count ("polymorphic-ref"))
+          return;
+
+        check (m, inverse (m), utype (m), c);
+      }
+
+      virtual void
+      traverse_container (semantics::data_member& m, semantics::type& t)
+      {
+        semantics::type& vt (container_vt (t));
+        semantics::data_member* im (inverse (m, "value"));
+
+        if (semantics::class_* cvt = composite_wrapper (vt))
+        {
+          // Check this composite value for any pointers.
+          //
+          instance<view_object_check> t (vo_, rel_map_);
+          t->traverse (*cvt);
+
+          session_ = session_ || t->session_;
+        }
+        else if (semantics::class_* c = object_pointer (vt))
+          check (m, im, vt, *c);
+      }
+
+      void
+      check (semantics::data_member& m,
+             semantics::data_member* im,
+             semantics::type& pt, // Pointer type.
+             semantics::class_& c)
+      {
+        // We don't care about lazy pointers.
+        //
+        if (lazy_pointer (pt))
+          return;
+
+        // First check the pointed-to object recursively.
+        //
+        if (!c.count ("view-object-check-seen"))
+        {
+          c.set ("view-object-check-seen", true);
+          instance<view_object_check> t (vo_, rel_map_);
+          t->traverse (c);
+
+          // We may come again for another view.
+          //
+          c.remove ("view-object-check-seen");
+
+          session_ = session_ || t->session_;
+        }
+
+        // See if the pointed-to object in this relationship is loaded
+        // by this view.
+        //
+        typedef view_relationship_map::const_iterator iterator;
+
+        std::pair<iterator, iterator> r (
+          rel_map_.equal_range (
+            im != 0 ? data_member_path (*im) : member_path_));
+
+        if (r.first == r.second)
+          return; // This relationship does not figure in the view.
+
+        view_object& vo (*(im != 0
+                           ? r.first->second.first
+                           : r.first->second.second));
+
+        assert (vo.obj == &c); // Got the above right?
+
+        if (vo.ptr == 0)
+          return; // This object is not loaded by the view.
+
+        // The pointed-to object in this relationship is loaded
+        // by the view. The hard question, of course, is whether
+        // it has anything to do with us. We assume it does.
+        //
+        if (!session (c))
+        {
+          // Always direct data member.
+          //
+          semantics::class_& v (
+            dynamic_cast<semantics::class_&> (vo.ptr->scope ()));
+
+          location const& l1 (c.location ());
+          location const& l2 (m.location ());
+          location const& l3 (vo_.ptr->location ());
+          location const& l4 (vo.ptr->location ());
+
+          string on (class_name (c));
+          string vn (class_name (v));
+
+          error (l1) << "object '" << on << "' has session support disabled "
+                     << "but may be loaded by view '" << vn << "' via "
+                     << "several data members" << endl;
+
+          info (l2) << "indirectly via this data member..." << endl;
+          info (l3) << "...as a result of this object load" << endl;
+          info (l4) << "and directly as a result of this load" << endl;
+          info (l1) << "session support is required to only load one copy "
+                    << "of the object" << endl;
+          info (l1) << "and don't forget to create a session instance when "
+                    << "using this view" << endl;
+
+          throw operation_failed ();
+        }
+
+        session_ = true;
+      }
+
+      bool session_;
+
+    private:
+      view_object& vo_;
+      view_relationship_map& rel_map_;
+    };
+
     //
     // bind
     //
@@ -1103,7 +1510,30 @@ namespace relational
           if (av != 0 || dv != 0)
             os << "}";
 
-          if (comp != 0)
+          if (mi.ptr != 0 && view_member (mi.m))
+          {
+            // See column_count_impl for details on what's going on here.
+            //
+            column_count_type cc;
+            if (semantics::class_* root = polymorphic (*mi.ptr))
+            {
+              for (semantics::class_* b (mi.ptr);; b = &polymorphic_base (*b))
+              {
+                column_count_type const& ccb (column_count (*b));
+
+                cc.total += ccb.total - (b != root ? ccb.id : 0);
+                cc.separate_load += ccb.separate_load;
+
+                if (b == root)
+                  break;
+              }
+            }
+            else
+              cc = column_count (*mi.ptr);
+
+            os << "n += " << cc.total - cc.separate_load << "UL;";
+          }
+          else if (comp != 0)
           {
             bool ro (readonly (*comp));
             column_count_type const& cc (column_count (*comp));
@@ -1166,6 +1596,26 @@ namespace relational
           else
             os << endl;
         }
+      }
+
+      virtual void
+      traverse_pointer (member_info& mi)
+      {
+        // Object pointers in views require special treatment.
+        //
+        if (view_member (mi.m))
+        {
+          semantics::class_& c (*mi.ptr);
+          semantics::class_* poly_root (polymorphic (c));
+          bool poly_derived (poly_root != 0 && poly_root != &c);
+
+          os << "object_traits_impl< " << class_fq_name (c) << ", id_" <<
+            db << " >::bind (" << endl
+             << "b + n, " << (poly_derived ? "0, 0, " : "") << arg << "." <<
+            mi.var << "value, sk" << (versioned (c) ? ", svm" : "") << ");";
+        }
+        else
+          member_base_impl<T>::traverse_pointer (mi);
       }
 
       virtual void
@@ -1281,6 +1731,195 @@ namespace relational
 
     protected:
       size_t& index_;
+    };
+
+    template <typename T>
+    struct grow_member_impl: grow_member, virtual member_base_impl<T>
+    {
+      typedef grow_member_impl base_impl;
+
+      grow_member_impl (base const& x)
+          : member_base::base (x), // virtual base
+            base (x) {}
+
+      typedef typename member_base_impl<T>::member_info member_info;
+
+      virtual bool
+      pre (member_info& mi)
+      {
+        if (container (mi))
+          return false;
+
+        // Ignore polymorphic id references; they are not returned by
+        // the select statement.
+        //
+        if (mi.ptr != 0 && mi.m.count ("polymorphic-ref"))
+          return false;
+
+        std::ostringstream ostr;
+        ostr << "t[" << index_ << "UL]";
+        e = ostr.str ();
+
+        if (var_override_.empty ())
+        {
+          os << "// " << mi.m.name () << endl
+             << "//" << endl;
+
+          semantics::class_* comp (composite (mi.t));
+
+          // If the member is soft- added or deleted, check the version.
+          //
+          unsigned long long av (added (mi.m));
+          unsigned long long dv (deleted (mi.m));
+
+          // If this is a composite member, see if it is summarily
+          // added/deleted.
+          //
+          if (comp != 0)
+          {
+            unsigned long long cav (added (*comp));
+            unsigned long long cdv (deleted (*comp));
+
+            if (cav != 0 && (av == 0 || av < cav))
+              av = cav;
+
+            if (cdv != 0 && (dv == 0 || dv > cdv))
+              dv = cdv;
+          }
+
+          // If the addition/deletion version is the same as the section's,
+          // then we don't need the test.
+          //
+          if (user_section* s = dynamic_cast<user_section*> (section_))
+          {
+            if (av == added (*s->member))
+              av = 0;
+
+            if (dv == deleted (*s->member))
+              dv = 0;
+          }
+
+          if (av != 0 || dv != 0)
+          {
+            os << "if (";
+
+            if (av != 0)
+              os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+            if (av != 0 && dv != 0)
+              os << " &&" << endl;
+
+            if (dv != 0)
+              os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+            os << ")"
+               << "{";
+          }
+        }
+
+        return true;
+      }
+
+      virtual void
+      post (member_info& mi)
+      {
+        semantics::class_* comp (composite (mi.t));
+
+        if (var_override_.empty ())
+        {
+          unsigned long long av (added (mi.m));
+          unsigned long long dv (deleted (mi.m));
+
+          if (comp != 0)
+          {
+            unsigned long long cav (added (*comp));
+            unsigned long long cdv (deleted (*comp));
+
+            if (cav != 0 && (av == 0 || av < cav))
+              av = cav;
+
+            if (cdv != 0 && (dv == 0 || dv > cdv))
+              dv = cdv;
+          }
+
+          if (user_section* s = dynamic_cast<user_section*> (section_))
+          {
+            if (av == added (*s->member))
+              av = 0;
+
+            if (dv == deleted (*s->member))
+              dv = 0;
+          }
+
+          if (av != 0 || dv != 0)
+            os << "}";
+        }
+
+        if (mi.ptr != 0 && view_member (mi.m))
+        {
+          // See column_count_impl for details on what's going on here.
+          //
+          column_count_type cc;
+          if (semantics::class_* root = polymorphic (*mi.ptr))
+          {
+            for (semantics::class_* b (mi.ptr);; b = &polymorphic_base (*b))
+            {
+              column_count_type const& ccb (column_count (*b));
+
+              cc.total += ccb.total - (b != root ? ccb.id : 0);
+              cc.separate_load += ccb.separate_load;
+
+              if (b == root)
+                break;
+            }
+          }
+          else
+            cc = column_count (*mi.ptr);
+
+          index_ += cc.total - cc.separate_load;
+        }
+        else if (comp != 0)
+          index_ += column_count (*comp).total;
+        else
+          index_++;
+      }
+
+      virtual void
+      traverse_pointer (member_info& mi)
+      {
+        // Object pointers in views require special treatment. They
+        // can only be immediate members of the view class.
+        //
+        if (view_member (mi.m))
+        {
+          semantics::class_& c (*mi.ptr);
+
+          os << "if (object_traits_impl< " << class_fq_name (c) <<
+            ", id_" << db << " >::grow (" << endl
+             << "i." << mi.var << "value, t + " << index_ << "UL" <<
+            (versioned (c) ? ", svm" : "") << "))" << endl
+             << "grew = true;"
+             << endl;
+        }
+        else
+          member_base_impl<T>::traverse_pointer (mi);
+      }
+
+      virtual void
+      traverse_composite (member_info& mi)
+      {
+        semantics::class_& c (*composite (mi.t));
+
+        os << "if (composite_value_traits< " << mi.fq_type () <<
+          ", id_" << db << " >::grow (" << endl
+           << "i." << mi.var << "value, t + " << index_ << "UL" <<
+          (versioned (c) ? ", svm" : "") << "))" << endl
+           << "grew = true;"
+           << endl;
+      }
+
+    protected:
+      string e;
     };
 
     struct grow_base: traversal::class_, virtual context
@@ -1795,6 +2434,9 @@ namespace relational
       {
       }
 
+      virtual void
+      get_null (string const& /*var*/) const {};
+
     protected:
       string member_override_;
       bool ignore_implicit_discriminator_;
@@ -1817,7 +2459,7 @@ namespace relational
       typedef typename member_base_impl<T>::member_info member_info;
 
       virtual void
-      get_null (member_info&) = 0;
+      get_null (string const& var) const = 0;
 
       virtual void
       check_modifier (member_info&, member_access&) {}
@@ -1908,6 +2550,9 @@ namespace relational
           }
 
           os << "{";
+
+          if (mi.ptr != 0 && view_member (mi.m))
+            return true; // That's enough for the object pointer in view.
 
           // Get the member using the accessor expression.
           //
@@ -2007,7 +2652,7 @@ namespace relational
                << "i." << mi.var << "value" <<
               (versioned (*comp) ? ", svm" : "") << ")";
           else
-            get_null (mi);
+            get_null (mi.var);
 
           os << ")" << endl;
 
@@ -2046,6 +2691,13 @@ namespace relational
       {
         if (mi.ptr != 0)
         {
+          if (view_member (mi.m))
+          {
+            // The object pointer in view doesn't need any of this.
+            os << "}";
+            return;
+          }
+
           // Restore the member variable name.
           //
           member = member_override_.empty () ? "v" : member_override_;
@@ -2110,6 +2762,116 @@ namespace relational
       }
 
       virtual void
+      traverse_pointer (member_info& mi)
+      {
+        // Object pointers in views require special treatment.
+        //
+        if (view_member (mi.m))
+        {
+          // This is the middle part. The pre and post parts are generated
+          // by init_view_pointer_member below.
+          //
+          using semantics::class_;
+
+          class_& c (*mi.ptr);
+          class_* poly_root (polymorphic (c));
+          bool poly (poly_root != 0);
+          bool poly_derived (poly && poly_root != &c);
+
+          string o_tp (mi.var + "object_type");
+          string o_tr (mi.var + "object_traits");
+          string r_tr (poly_derived ? mi.var + "root_traits" : o_tr);
+          string i_tp (mi.var + "info_type");
+
+          string id (mi.var + "id");
+          string o  (mi.var + "o");
+          string pi (mi.var + "pi"); // Polymorphic type info.
+
+          // If load_() will be loading containers or the rest of the
+          // polymorphic object, then we need to perform several extra
+          // things. We need to initialize the id image in the object
+          // statements. We also have to lock the statements so that
+          // nobody messes up this id image.
+          //
+          bool init_id (
+            poly ||
+            has_a (c, test_container | include_eager_load, &main_section));
+
+          bool versioned (context::versioned (c));
+
+          os << "if (" << o << " != 0)"
+             << "{";
+
+          if (poly)
+            os << "callback_event ce (callback_event::pre_load);"
+               << pi << "->dispatch (" << i_tp << "::call_callback, " <<
+              "*db, " << o << ", &ce);";
+          else
+            os << o_tr << "::callback (*db, *" << o <<
+              ", callback_event::pre_load);";
+
+          os << o_tr << "::init (*" << o << ", i." << mi.var << "value, db" <<
+            (versioned ? ", svm" : "") << ");";
+
+          // Call load_() to load the rest of the object (containers, etc).
+          //
+          if (id_member (poly ? *poly_root : c) != 0)
+          {
+            const char* s (poly_derived ? "osts" : "sts");
+
+            os << o_tr << "::statements_type& " << s << " (" << endl
+               << "conn.statement_cache ().find_object<" << o_tp << "> ());";
+
+            if (poly_derived)
+              os << r_tr << "::statements_type& sts (osts.root_statements ());";
+
+            if (init_id)
+            {
+              // This can only be top-level call so lock must succeed.
+              //
+              os << r_tr << "::statements_type::auto_lock l (sts);"
+                 << endl
+                 << r_tr << "::id_image_type& i (sts.id_image ());"
+                 << r_tr << "::init (i, " << id << ");"
+                 << db << "::binding& idb (sts.id_image_binding ());"
+                 << "if (i.version != sts.id_image_version () || " <<
+                "idb.version == 0)"
+                 << "{"
+                 << r_tr << "::bind (idb.bind, i);"
+                 << "sts.id_image_version (i.version);"
+                 << "idb.version++;";
+              if (optimistic (poly ? *poly_root : c) != 0)
+                os << "sts.optimistic_id_image_binding ().version++;";
+              os << "}";
+            }
+
+            os << o_tr << "::load_ (" << s << ", *" << o << ", false" <<
+              (versioned ? ", svm" : "") << ");";
+
+            // Load the dynamic part of the object unless static and dynamic
+            // types are the same.
+            //
+            if (poly)
+              os << endl
+                 << "if (" << pi << " != &" << o_tr << "::info)"
+                 << "{"
+                 << "std::size_t d (" << o_tr << "::depth);"
+                 << pi << "->dispatch (" << i_tp << "::call_load, *db, " <<
+                o << ", &d);"
+                 << "}";
+
+            if (init_id)
+              os << "sts.load_delayed (" << (versioned ? "&svm" : "0") << ");"
+                 << "l.unlock ();";
+          }
+
+          os << "}";
+        }
+        else
+          member_base_impl<T>::traverse_pointer (mi);
+      }
+
+      virtual void
       traverse_composite (member_info& mi)
       {
         os << traits << "::init (" << endl
@@ -2132,6 +2894,377 @@ namespace relational
       string member;
 
       instance<member_database_type_id> member_database_type_id_;
+    };
+
+    // This class generates the pre and post parts. The middle part is
+    // generated by init_value_member above.
+    //
+    struct init_view_pointer_member: virtual member_base,
+                                     member_base_impl<bool> // Dummy SQL type.
+    {
+      typedef init_view_pointer_member base;
+
+      init_view_pointer_member (bool pre, init_value_member const& ivm)
+          : member_base ("", 0, "", "", 0),
+            pre_ (pre), init_value_member_ (ivm) {}
+
+      virtual bool
+      pre (member_info& mi)
+      {
+        // Only interested in object pointers inside views.
+        //
+        return mi.ptr != 0 && view_member (mi.m);
+      }
+
+      virtual void
+      traverse_pointer (member_info& mi)
+      {
+        using semantics::class_;
+
+        class_& c (*mi.ptr);
+        bool abst (abstract (c));
+        class_* poly_root (polymorphic (c));
+        bool poly (poly_root != 0);
+        bool poly_derived (poly && poly_root != &c);
+        size_t poly_depth (poly_derived ? polymorphic_depth (c) : 1);
+
+        semantics::data_member* idm (id_member (poly ? *poly_root : c));
+
+        os << "// " << mi.m.name () << (pre_ ? " pre" : " post") << endl
+           << "//" << endl;
+
+        string o_tp (mi.var + "object_type");
+        string o_tr (mi.var + "object_traits");
+        string r_tr (poly_derived ? mi.var + "root_traits" : o_tr);
+        string i_tp (mi.var + "info_type");
+        string p_tp (mi.var + "pointer_type");
+        string p_tr (mi.var + "pointer_traits");
+        string c_tr (mi.var + "cache_traits");
+
+        string id (mi.var + "id"); // Object id.
+        string p  (mi.var + "p");  // Object pointer.
+        string pg (mi.var + "pg"); // Pointer guard.
+        string ig (mi.var + "ig"); // Cache insert guard.
+        string o  (mi.var + "o");  // Object.
+        string pi (mi.var + "pi"); // Polymorphic type info.
+
+        bool op_raw (c.get<bool> ("object-pointer-raw"));
+        bool mp_raw (utype (mi.m).is_a<semantics::pointer> ());
+
+        // Output aliases and variables before any schema version if-
+        // blocks since we need to be able to access them across all
+        // three parts.
+        //
+        if (pre_)
+        {
+          os << "typedef " << class_fq_name (c) << " " << o_tp << ";"
+             << "typedef object_traits_impl<" << o_tp << ", id_" << db <<
+            "> " << o_tr << ";";
+
+          if (poly_derived)
+            os << "typedef " << o_tr << "::root_traits " << r_tr << ";";
+
+          if (poly)
+            os << "typedef " << r_tr << "::info_type " << i_tp << ";";
+
+          os << "typedef " << r_tr << "::pointer_type " << p_tp << ";"
+             << "typedef " << r_tr << "::pointer_traits " << p_tr << ";";
+          if (idm != 0)
+            os << "typedef " << r_tr << "::pointer_cache_traits " <<
+              c_tr << ";";
+          os << endl;
+
+          if (idm != 0)
+            os << r_tr << "::id_type " << id << ";";
+          os << p_tp << " " << p << (op_raw ? " = 0" : "") << ";" // VC++
+             << p_tr << "::guard " << pg << ";";
+          if (idm != 0)
+            os << c_tr << "::insert_guard " << ig << ";";
+          os << o_tp << "* " << o << " (0);";
+
+          if (poly)
+            os << "const " << i_tp << "* " << pi << " = 0;"; // VC++
+
+          os << endl;
+        }
+
+        // If the member is soft- added or deleted, check the version.
+        //
+        unsigned long long av (added (mi.m));
+        unsigned long long dv (deleted (mi.m));
+
+        if (av != 0 || dv != 0)
+        {
+          os << "if (";
+
+          if (av != 0)
+            os << "svm >= schema_version_migration (" << av << "ULL, true)";
+
+          if (av != 0 && dv != 0)
+            os << " &&" << endl;
+
+          if (dv != 0)
+            os << "svm <= schema_version_migration (" << dv << "ULL, true)";
+
+          os << ")";
+        }
+
+        os << "{";
+
+        if (pre_)
+        {
+          string id_im;
+          if (idm != 0)
+          {
+            // Check for NULL.
+            //
+            string id_var;
+            {
+              id_im = mi.var + "value";
+
+              // In a polymorphic class, the id is in the root image.
+              //
+              for (size_t i (0); i < poly_depth - 1; ++i)
+                id_im += (i == 0 ? ".base" : "->base");
+
+              string const& n (idm->name ());
+              id_var = id_im + (poly_derived ? "->" : ".") + n +
+                (n[n.size () - 1] == '_' ? "" : "_");
+
+              id_im = (poly_derived ? "*i." : "i.") + id_im;
+            }
+
+            os << "if (";
+
+            if (semantics::class_* comp = composite (mi.t))
+              os << "!composite_value_traits< " << o_tr << "::id_type, id_" <<
+                db << " >::get_null (" << endl
+                 << "i." << id_var << "value" <<
+                (versioned (*comp) ? ", svm" : "") << ")";
+            else
+            {
+              os << "!(";
+              init_value_member_.get_null (id_var);
+              os << ")";
+            }
+
+            os << ")"
+               << "{";
+
+            // Check cache.
+            //
+            os << id << " = " << r_tr << "::id (" << id_im << ");"
+               << p << " = " << c_tr << "::find (*db, " << id << ");"
+               << endl;
+
+            os << "if (" << p_tr << "::null_ptr (" << p << "))"
+               << "{";
+          }
+
+          // To support by-value object loading, we are going to load
+          // into an existing instance if the pointer is already not
+          // NULL. To limit the potential misuse (especially when it
+          // comes to sessions), we are going to limit this support
+          // only to raw pointers. Furthermore, we will only insert
+          // such an object into the cache if its object pointer is
+          // also raw.
+          //
+          if (mp_raw && !poly)
+          {
+            // Get the member using the accessor expression.
+            //
+            member_access& ma (mi.m.get<member_access> ("get"));
+
+            // If this is not a synthesized expression, then output
+            // its location for easier error tracking.
+            //
+            if (!ma.synthesized)
+              os << "// From " << location_string (ma.loc, true) << endl;
+
+            // Use the original type to form the const reference. VC++
+            // cannot grok the constructor syntax.
+            //
+            os << member_ref_type (mi.m, true, "m") << " =" << endl
+               << "  " << ma.translate ("o") << ";"
+               << endl;
+
+            os << "if (m != 0)"
+               << "{";
+
+            if (op_raw)
+              os << ig << ".reset (" << c_tr << "::insert (*db, " << id <<
+                ", m));";
+
+            os << o << " = m;"
+               << "}"
+               << "else"
+               << "{";
+          }
+
+          if (poly)
+          {
+            os << r_tr << "::discriminator_type d (" << endl
+               << r_tr << "::discriminator (" << id_im << "));";
+
+            if (abst)
+              os << pi << " = &" << r_tr << "::map->find (d);";
+            else
+              os << pi << " = (d == " << o_tr << "::info.discriminator" << endl
+                 << "? &" << o_tr << "::info" << endl
+                 << ": &" << r_tr << "::map->find (d));";
+
+            os << p << " = " << pi << "->create ();";
+          }
+          else
+            os << p << " = object_factory<" << o_tp << ", " << p_tp <<
+              ">::create ();";
+
+          os << pg << ".reset (" << p << ");";
+          if (idm != 0)
+            os << ig << ".reset (" << c_tr << "::insert (*db, " << id <<
+              ", " << p << "));";
+
+          if (poly_derived)
+            os << o << " = static_cast<" << o_tp << "*> (" << p_tr <<
+              "::get_ptr (" << p << "));";
+          else
+            os << o << " = " << p_tr << "::get_ptr (" << p << ");";
+
+          if (mp_raw && !poly)
+            os << "}";
+
+          if (idm != 0)
+            os << "}"  // Cache.
+               << "}"; // NULL.
+        }
+        else
+        {
+          os << "if (" << o << " != 0)"
+             << "{";
+
+          if (poly)
+            os << "callback_event ce (callback_event::post_load);"
+               << pi << "->dispatch (" << i_tp << "::call_callback, " <<
+              "*db, " << o << ", &ce);";
+          else
+            os << o_tr << "::callback (*db, *" << o <<
+              ", callback_event::post_load);";
+
+          if (idm != 0)
+          {
+            if (mp_raw && !op_raw && !poly)
+              os << "if (!" << p_tr << "::null_ptr (" << p << "))"
+                 << "{";
+
+            os << c_tr << "::load (" << ig << ".position ());"
+               << ig << ".release ();";
+
+            if (mp_raw && !op_raw && !poly)
+              os << "}";
+          }
+
+          os << pg  << ".release ();";
+
+          os << "}";
+
+          // If member pointer is not raw, then result is in p.
+          // If both member and object are raw, then result is in o.
+          // If member is raw but object is not, then result is in
+          // p if it is not NULL, and in o (either NULL or the same
+          // as the member value) otherwise.
+          //
+          member_access& ma (mi.m.get<member_access> ("set"));
+
+          if (ma.empty () && !poly)
+          {
+            // It is ok to have empty modifier expression as long as
+            // the member pointer is raw. This is the by-value load
+            // and the user is not interested in learning whether the
+            // object is NULL.
+            //
+            if (!mp_raw)
+            {
+              error (ma.loc) << "non-empty modifier expression required " <<
+                "for loading an object via a smart pointer" << endl;
+              throw operation_failed ();
+            }
+
+            os << "// Empty modifier expression was specified for this\n"
+               << "// object so make sure we have actually loaded the\n"
+               << "// data into the existing instance rather than, say,\n"
+               << "// finding the object in the cache or creating a new one.\n"
+               << "//\n"
+               << "assert (" << p_tr << "::null_ptr (" << p << "));";
+          }
+          else
+          {
+            if (!(mp_raw && op_raw) || poly)
+            {
+              string r (options.std () >= cxx_version::cxx11
+                        ? "std::move (" + p + ")"
+                        : p);
+
+              if (poly_derived)
+                // This pointer could have from from cache, so use dynamic
+                // cast.
+                //
+                r = p_tr + "::dynamic_pointer_cast<" + o_tp + "> (\n" +
+                  r + ")";
+
+              // Unless the pointer is raw, explicitly construct the
+              // smart pointer from the object pointer so that we get
+              // the behavior similar to calling database::load() (in
+              // both cases we are the "ownership end-points"; unless
+              // the object was already in the session before loading
+              // this view (in which case using raw pointers as object
+              // pointers is a really stupid idea), this logic will do
+              // the right thing and what the user most likely expects.
+              //
+              if (!mp_raw)
+                r = member_val_type (mi.m, false) + " (\n" + r + ")";
+
+              if (mp_raw && !op_raw)
+                os << "if (!" << p_tr << "::null_ptr (" << p << "))" << endl;
+
+              os << "// If a compiler error points to the line below, then\n"
+                 << "// it most likely means that a pointer used in view\n"
+                 << "// member cannot be initialized from an object pointer.\n"
+                 << "//" << endl;
+
+              if (!ma.synthesized)
+                os << "// From " << location_string (ma.loc, true) << endl;
+
+              if (ma.placeholder ())
+                os << ma.translate ("o", r) << ";";
+              else
+                os << ma.translate ("o") << " = " << r << ";";
+            }
+
+            if (mp_raw && !poly)
+            {
+              if (!op_raw)
+                os << "else" << endl; // NULL p
+
+              if (!ma.synthesized)
+                os << "// From " << location_string (ma.loc, true) << endl;
+
+              if (ma.placeholder ())
+                os << ma.translate ("o", o) << ";";
+              else
+                os << ma.translate ("o") << " = " << o << ";";
+            }
+          }
+        }
+
+        os << "}";
+      }
+
+      virtual bool const&
+      member_sql_type (semantics::data_member&) {return pre_;};
+
+    protected:
+      bool pre_;
+      init_value_member const& init_value_member_;
     };
 
     struct init_value_base: traversal::class_, virtual context
@@ -5318,6 +6451,8 @@ namespace relational
             bind_discriminator_member_ ("discriminator_"),
             init_id_image_member_ ("id_", "id"),
             init_version_image_member_ ("version_", "(*v)"),
+            init_view_pointer_member_pre_ (true, *init_value_member_),
+            init_view_pointer_member_post_ (false, *init_value_member_),
             init_id_value_member_ ("id"),
             init_id_value_member_id_image_ ("id", "id_"),
             init_version_value_member_ ("v"),
@@ -5344,6 +6479,8 @@ namespace relational
             bind_discriminator_member_ ("discriminator_"),
             init_id_image_member_ ("id_", "id"),
             init_version_image_member_ ("version_", "(*v)"),
+            init_view_pointer_member_pre_ (true, *init_value_member_),
+            init_view_pointer_member_post_ (false, *init_value_member_),
             init_id_value_member_ ("id"),
             init_id_value_member_id_image_ ("id", "id_"),
             init_version_value_member_ ("v"),
@@ -5375,6 +6512,9 @@ namespace relational
 
         init_value_base_inherits_ >> init_value_base_;
         init_value_member_names_ >> init_value_member_;
+
+        init_view_pointer_member_pre_names_ >> init_view_pointer_member_pre_;
+        init_view_pointer_member_post_names_ >> init_view_pointer_member_post_;
       }
 
       virtual void
@@ -5759,6 +6899,11 @@ namespace relational
       traversal::inherits init_value_base_inherits_;
       instance<init_value_member> init_value_member_;
       traversal::names init_value_member_names_;
+
+      instance<init_view_pointer_member> init_view_pointer_member_pre_;
+      instance<init_view_pointer_member> init_view_pointer_member_post_;
+      traversal::names init_view_pointer_member_pre_names_;
+      traversal::names init_view_pointer_member_post_names_;
 
       instance<init_value_member> init_id_value_member_;
       instance<init_value_member> init_id_value_member_id_image_;

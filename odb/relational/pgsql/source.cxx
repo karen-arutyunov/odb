@@ -267,153 +267,14 @@ namespace relational
       // grow
       //
 
-      struct grow_member: relational::grow_member, member_base
+      struct grow_member: relational::grow_member_impl<sql_type>,
+                          member_base
       {
         grow_member (base const& x)
-            : member_base::base (x), // virtual base
-              base (x),
-              member_base (x)
-        {
-        }
-
-        virtual bool
-        pre (member_info& mi)
-        {
-          if (container (mi))
-            return false;
-
-          if (section_ != 0 && *section_ != section (mi.m))
-            return false;
-
-          if (var_override_.empty ())
-          {
-            // Ignore separately loaded members.
-            //
-            if (section_ == 0 && separate_load (mi.m))
-              return false;
-          }
-
-          // Ignore polymorphic id references; they are not returned by
-          // the select statement.
-          //
-          if (mi.ptr != 0 && mi.m.count ("polymorphic-ref"))
-            return false;
-
-          ostringstream ostr;
-          ostr << "t[" << index_ << "UL]";
-          e = ostr.str ();
-
-          if (var_override_.empty ())
-          {
-            os << "// " << mi.m.name () << endl
-               << "//" << endl;
-
-            semantics::class_* comp (composite (mi.t));
-
-            // If the member is soft- added or deleted, check the version.
-            //
-            unsigned long long av (added (mi.m));
-            unsigned long long dv (deleted (mi.m));
-
-            // If this is a composite member, see if it is summarily
-            // added/deleted.
-            //
-            if (comp != 0)
-            {
-              unsigned long long cav (added (*comp));
-              unsigned long long cdv (deleted (*comp));
-
-              if (cav != 0 && (av == 0 || av < cav))
-                av = cav;
-
-              if (cdv != 0 && (dv == 0 || dv > cdv))
-                dv = cdv;
-            }
-
-            // If the addition/deletion version is the same as the section's,
-            // then we don't need the test.
-            //
-            if (user_section* s = dynamic_cast<user_section*> (section_))
-            {
-              if (av == added (*s->member))
-                av = 0;
-
-              if (dv == deleted (*s->member))
-                dv = 0;
-            }
-
-            if (av != 0 || dv != 0)
-            {
-              os << "if (";
-
-              if (av != 0)
-                os << "svm >= schema_version_migration (" << av << "ULL, true)";
-
-              if (av != 0 && dv != 0)
-                os << " &&" << endl;
-
-              if (dv != 0)
-                os << "svm <= schema_version_migration (" << dv << "ULL, true)";
-
-              os << ")"
-                 << "{";
-            }
-          }
-
-          return true;
-        }
-
-        virtual void
-        post (member_info& mi)
-        {
-          semantics::class_* comp (composite (mi.t));
-
-          if (var_override_.empty ())
-          {
-            unsigned long long av (added (mi.m));
-            unsigned long long dv (deleted (mi.m));
-
-            if (comp != 0)
-            {
-              unsigned long long cav (added (*comp));
-              unsigned long long cdv (deleted (*comp));
-
-              if (cav != 0 && (av == 0 || av < cav))
-                av = cav;
-
-              if (cdv != 0 && (dv == 0 || dv > cdv))
-                dv = cdv;
-            }
-
-            if (user_section* s = dynamic_cast<user_section*> (section_))
-            {
-              if (av == added (*s->member))
-                av = 0;
-
-              if (dv == deleted (*s->member))
-                dv = 0;
-            }
-
-            if (av != 0 || dv != 0)
-              os << "}";
-          }
-
-          if (comp != 0)
-            index_ += column_count (*comp).total;
-          else
-            index_++;
-        }
-
-        virtual void
-        traverse_composite (member_info& mi)
-        {
-          os << "if (composite_value_traits< " << mi.fq_type () <<
-            ", id_pgsql >::grow (" << endl
-             << "i." << mi.var << "value, t + " << index_ << "UL" <<
-            (versioned (*composite (mi.t)) ? ", svm" : "") << "))" << endl
-             << "grew = true;"
-             << endl;
-        }
+            : member_base::base (x),      // virtual base
+              member_base::base_impl (x), // virtual base
+              base_impl (x),
+              member_base (x) {}
 
         virtual void
         traverse_integer (member_info&)
@@ -479,9 +340,6 @@ namespace relational
           os << e << " = 0;"
              << endl;
         }
-
-      private:
-        string e;
       };
       entry<grow_member> grow_member_;
 
@@ -617,9 +475,9 @@ namespace relational
         }
 
         virtual void
-        get_null (member_info& mi)
+        get_null (string const& var) const
         {
-          os << "i." << mi.var << "null";
+          os << "i." << var << "null";
         }
 
         virtual void

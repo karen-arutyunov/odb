@@ -75,53 +75,61 @@ namespace relational
 
           if (semantics::class_* c = object_pointer (t))
           {
-            // This is an object pointer. The column type is the pointed-to
-            // object id type.
+            // An object pointer in view doesn't really have a "column"
+            // so pretend that it has already been handled.
             //
-            semantics::data_member& id (*id_member (*c));
-
-            semantics::names* idhint;
-            semantics::type& idt (utype (id, idhint));
-
-            // The id type can be a composite value type.
-            //
-            if (composite_wrapper (idt))
-              kind = composite;
+            if (view_member (m))
+              kind = simple;
             else
             {
-              semantics::type* wt;
-              semantics::names* whint (0);
-              if ((wt = wrapper (idt, whint)))
-                wt = &utype (*wt, whint);
-
-              if (type.empty () && id.count ("id-type"))
-                type = id.get<string> ("id-type");
-
-              if (type.empty () && id.count ("type"))
-                type = id.get<string> ("type");
-
-              // The rest should be identical to the code for the id_type in
-              // the else block.
+              // This is an object pointer. The column type is the pointed-to
+              // object id type.
               //
-              if (type.empty () && idt.count ("id-type"))
-                type = idt.get<string> ("id-type");
+              semantics::data_member& id (*id_member (*c));
 
-              if (type.empty () && wt != 0 && wt->count ("id-type"))
-                type = wt->get<string> ("id-type");
+              semantics::names* idhint;
+              semantics::type& idt (utype (id, idhint));
 
-              if (type.empty () && idt.count ("type"))
-                type = idt.get<string> ("type");
+              // The id type can be a composite value type.
+              //
+              if (composite_wrapper (idt))
+                kind = composite;
+              else
+              {
+                semantics::type* wt;
+                semantics::names* whint (0);
+                if ((wt = wrapper (idt, whint)))
+                  wt = &utype (*wt, whint);
 
-              if (type.empty () && wt != 0 && wt->count ("type"))
-                type = wt->get<string> ("type");
+                if (type.empty () && id.count ("id-type"))
+                  type = id.get<string> ("id-type");
 
-              if (type.empty ())
-                type = database_type (idt, idhint, true);
+                if (type.empty () && id.count ("type"))
+                  type = id.get<string> ("type");
 
-              if (type.empty () && wt != 0)
-                type = database_type (*wt, whint, true);
+                // The rest should be identical to the code for the id_type in
+                // the else block.
+                //
+                if (type.empty () && idt.count ("id-type"))
+                  type = idt.get<string> ("id-type");
 
-              id_type = type;
+                if (type.empty () && wt != 0 && wt->count ("id-type"))
+                  type = wt->get<string> ("id-type");
+
+                if (type.empty () && idt.count ("type"))
+                  type = idt.get<string> ("type");
+
+                if (type.empty () && wt != 0 && wt->count ("type"))
+                  type = wt->get<string> ("type");
+
+                if (type.empty ())
+                  type = database_type (idt, idhint, true);
+
+                if (type.empty () && wt != 0)
+                  type = database_type (*wt, whint, true);
+
+                id_type = type;
+              }
             }
           }
           else
@@ -452,6 +460,13 @@ namespace relational
         using semantics::data_member;
 
         if (transient (m))
+          return;
+
+        semantics::type& t (utype (m));
+
+        // Object pointers are associated with objects.
+        //
+        if (object_pointer (t))
           return;
 
         data_member* src_m (0); // Source member.
@@ -1493,10 +1508,16 @@ namespace relational
 
           // Ignore inverse sides of the same relationship to avoid
           // phony conflicts caused by the direct side that will end
-          // up in the relationship list as well.
+          // up in the relationship list as well. Unless the inverse
+          // member is in the polymorphic base in which case we will
+          // miss it since we don't examine inside poly bases on the
+          // backwards scan (see above).
           //
-          if (inverse (m))
-            return;
+          if (semantics::data_member* im = inverse (m))
+          {
+            if (&im->scope () == &c) // Direct member.
+              return;
+          }
 
           // Ignore self-pointers if requested.
           //

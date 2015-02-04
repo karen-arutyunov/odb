@@ -34,6 +34,81 @@ namespace relational
       }
     };
 
+    template <typename T>
+    struct image_member_impl: image_member, virtual member_base_impl<T>
+    {
+      typedef image_member_impl base_impl;
+
+      image_member_impl (base const& x)
+          : member_base::base (x), // virtual base
+            base (x),
+            member_image_type_ (base::type_override_,
+                                base::fq_type_override_,
+                                base::key_prefix_)
+      {
+      }
+
+      typedef typename member_base_impl<T>::member_info member_info;
+
+      virtual bool
+      pre (member_info& mi)
+      {
+        if (container (mi))
+          return false;
+
+        image_type = member_image_type_->image_type (mi.m);
+
+        if (var_override_.empty ())
+          os << "// " << mi.m.name () << endl
+             << "//" << endl;
+
+        return true;
+      }
+
+      virtual void
+      traverse_pointer (member_info& mi)
+      {
+        // Object pointers in views require special treatment.
+        //
+        if (view_member (mi.m))
+        {
+          using semantics::class_;
+
+          class_& c (*mi.ptr);
+          class_* poly_root (polymorphic (c));
+          bool poly_derived (poly_root != 0 && poly_root != &c);
+
+          if (poly_derived)
+            // Use a helper to create a complete chain of images all
+            // the way to the root (see libodb/odb/view-image.hxx).
+            //
+            os << "view_object_image<" << endl
+               << "  " << class_fq_name (c) << "," << endl
+               << "  " << class_fq_name (*poly_root) << "," << endl
+               << "  id_" << db << " >";
+          else
+            os << "object_traits_impl< " << class_fq_name (c) << ", " <<
+              "id_" << db << " >::image_type";
+
+          os << " " << mi.var << "value;"
+             << endl;
+        }
+        else
+          member_base_impl<T>::traverse_pointer (mi);
+      }
+
+      virtual void
+      traverse_composite (member_info& mi)
+      {
+        os << image_type << " " << mi.var << "value;"
+           << endl;
+      }
+
+    protected:
+      string image_type;
+      instance<member_image_type> member_image_type_;
+    };
+
     struct image_base: traversal::class_, virtual context
     {
       typedef image_base base;

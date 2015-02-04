@@ -170,6 +170,13 @@ namespace relational
     //
 
     member_image_type::
+    member_image_type (base const& x)
+        : member_base::base (x), // virtual base
+          base (x)
+    {
+    }
+
+    member_image_type::
     member_image_type (semantics::type* type,
                        string const& fq_type,
                        string const& key_prefix)
@@ -269,6 +276,8 @@ namespace relational
     {
       type_ = "oracle::lob_callback";
     }
+
+    entry<member_image_type> member_image_type_;
 
     //
     // member_database_type

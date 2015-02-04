@@ -174,34 +174,44 @@ namespace relational
     // should be called for this member.
     //
     virtual bool
-    pre (member_info&)
-    {
-      return true;
-    }
+    pre (member_info&) {return true;}
 
     virtual void
-    post (member_info&)
-    {
-    }
+    post (member_info&) {}
 
     virtual void
-    traverse_composite (member_info&)
-    {
-    }
+    traverse_composite (member_info&) {}
 
     virtual void
-    traverse_container (member_info&)
-    {
-    }
+    traverse_container (member_info&) {}
 
-    // Note that by default traverse_object_pointer() will traverse the
+    // Note that by default traverse_pointer() will traverse the
     // pointed-to object id type.
     //
     virtual void
-    traverse_object_pointer (member_info&);
+    traverse_pointer (member_info&);
 
     virtual void
-    traverse_simple (member_info&) = 0;
+    traverse_simple (member_info&) {}
+  };
+
+  //
+  //
+  struct member_image_type: virtual member_base
+  {
+    typedef member_image_type base;
+
+    member_image_type (semantics::type* type = 0,
+                       string const& fq_type = string (),
+                       string const& key_prefix = string ())
+        : member_base (type, fq_type, key_prefix)
+    {
+    }
+
+    // Has to be overriden.
+    //
+    virtual string
+    image_type (semantics::data_member&);
   };
 
   //

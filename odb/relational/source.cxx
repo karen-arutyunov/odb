@@ -4741,6 +4741,594 @@ traverse_view (type& c)
   if (!schema_name.empty ())
     schema_name = strlit (schema_name);
 
+  // Generate the from-list. Also collect relationships via which
+  // the objects are joined.
+  //
+  strings from;
+  view_relationship_map rel_map;
+
+  if (vq.kind == view_query::condition)
+  {
+    view_objects& objs (c.get<view_objects> ("objects"));
+
+    for (view_objects::iterator i (objs.begin ()); i != objs.end (); ++i)
+    {
+      bool first (i == objs.begin ());
+      string l;
+
+      //
+      // Tables.
+      //
+
+      if (i->kind == view_object::table)
+      {
+        if (first)
+        {
+          l = "FROM ";
+          l += quote_id (i->tbl_name);
+
+          if (!i->alias.empty ())
+            l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
+
+          from.push_back (l);
+          continue;
+        }
+
+        l = "LEFT JOIN ";
+        l += quote_id (i->tbl_name);
+
+        if (!i->alias.empty ())
+          l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
+
+        semantics::scope& scope (
+          dynamic_cast<semantics::scope&> (*unit.find (i->scope)));
+
+        expression e (
+          translate_expression (
+            c, i->cond, scope, i->loc, "table"));
+
+        if (e.kind != expression::literal)
+        {
+          error (i->loc) << "invalid join condition in db pragma " <<
+            "table" << endl;
+          throw operation_failed ();
+        }
+
+        l += " ON";
+
+        // Add the pragma location for easier error tracking.
+        //
+        from.push_back (l);
+        from.push_back ("// From " + location_string (i->loc, true));
+        from.push_back (e.value);
+        continue;
+      }
+
+      //
+      // Objects.
+      //
+      semantics::class_& o (*i->obj);
+
+      bool poly (polymorphic (o));
+      size_t poly_depth (poly ? polymorphic_depth (o) : 1);
+
+      string alias (i->alias);
+
+      // For polymorphic objects, alias is just a prefix.
+      //
+      if (poly && !alias.empty ())
+        alias += "_" + table_name (o).uname ();
+
+      // First object.
+      //
+      if (first)
+      {
+        l = "FROM ";
+        l += table_qname (o);
+
+        if (!alias.empty ())
+          l += (need_alias_as ? " AS " : " ") + quote_id (alias);
+
+        from.push_back (l);
+
+        if (poly_depth != 1)
+        {
+          bool t (true);             //@@ (im)perfect forwarding
+          size_t d (poly_depth - 1); //@@ (im)perfect forward.
+          instance<polymorphic_object_joins> j (o, t, d, i->alias);
+          j->traverse (polymorphic_base (o));
+
+          from.insert (from.end (), j->begin (), j->end ());
+          query_optimize = query_optimize || !j->joins.empty ();
+        }
+        continue;
+      }
+
+      semantics::scope& scope (
+        dynamic_cast<semantics::scope&> (*unit.find (i->scope)));
+
+      expression e (
+        translate_expression (
+          c, i->cond, scope, i->loc, "object"));
+
+      // Literal expression.
+      //
+      if (e.kind == expression::literal)
+      {
+        l = "LEFT JOIN ";
+        l += table_qname (o);
+
+        if (!alias.empty ())
+          l += (need_alias_as ? " AS " : " ") + quote_id (alias);
+
+        l += " ON";
+
+        // Add the pragma location for easier error tracking.
+        //
+        from.push_back (l);
+        from.push_back ("// From " + location_string (i->loc, true));
+        from.push_back (e.value);
+
+        if (poly_depth != 1)
+        {
+          bool t (true);             //@@ (im)perfect forwarding
+          size_t d (poly_depth - 1); //@@ (im)perfect forward.
+          instance<polymorphic_object_joins> j (o, t, d, i->alias);
+          j->traverse (polymorphic_base (o));
+
+          from.insert (from.end (), j->begin (), j->end ());
+          query_optimize = query_optimize || !j->joins.empty ();
+        }
+        continue;
+      }
+
+      // We have an object relationship (pointer) for which we need
+      // to come up with the corresponding JOIN condition. If this
+      // is a to-many relationship, then we first need to JOIN the
+      // container table. This code is similar to object_joins.
+      //
+      using semantics::data_member;
+
+      data_member& m (*e.member_path.back ());
+      data_member* im (inverse (m));
+
+      // Resolve the pointed-to object to view_object and do
+      // some sanity checks while at it.
+      //
+      semantics::class_* c (0);
+
+      if (semantics::type* cont = container (m))
+        c = object_pointer (container_vt (*cont));
+      else
+        c = object_pointer (utype (m));
+
+      view_object* vo (0);
+
+      // Check if the pointed-to object has been previously associated
+      // with this view and is unambiguous. A pointer to ourselves is
+      // always assumed to point to this association.
+      //
+      if (&o == c)
+        vo = &*i;
+      else
+      {
+        bool ambig (false);
+
+        for (view_objects::iterator j (objs.begin ()); j != i; ++j)
+        {
+          if (j->obj != c)
+            continue;
+
+          if (vo == 0)
+          {
+            vo = &*j;
+            continue;
+          }
+
+          // If it is the first ambiguous object, issue the
+          // error.
+          //
+          if (!ambig)
+          {
+            error (i->loc) << "pointed-to object '" << class_name (*c) <<
+              "' is ambiguous" << endl;
+            info (i->loc) << "candidates are:" << endl;
+            info (vo->loc) << "  '" << vo->name () << "'" << endl;
+            ambig = true;
+          }
+
+          info (j->loc) << "  '" << j->name () << "'" << endl;
+        }
+
+        if (ambig)
+        {
+          info (i->loc) << "use the other side of the relationship " <<
+            "or full join condition clause in db pragma object to " <<
+            "resolve this ambiguity" << endl;
+          throw operation_failed ();
+        }
+
+        if (vo == 0)
+        {
+          error (i->loc) << "pointed-to object '" << class_name (*c) <<
+            "' specified in the join condition has not been " <<
+            "previously associated with this view" << endl;
+          throw operation_failed ();
+        }
+      }
+
+      // JOIN relationship points to us:
+      //   vo            - us
+      //   e.vo          - other side
+      //   e.member_path - in other side
+      //
+      // JOIN relationship points to other side:
+      //   vo            - other side
+      //   e.vo          - us
+      //   e.member_path - in us
+      //
+      if (im == 0)
+        rel_map.insert (make_pair (e.member_path, make_pair (e.vo, vo)));
+      else
+        rel_map.insert (
+          make_pair (data_member_path (*im), make_pair (vo, e.vo)));
+
+      // Left and right-hand side table names.
+      //
+      qname lt;
+      {
+        using semantics::class_;
+
+        class_& o (*e.vo->obj);
+        string const& a (e.vo->alias);
+
+        if (class_* root = polymorphic (o))
+        {
+          // If the object is polymorphic, then figure out which of the
+          // bases this member comes from and use the corresponding
+          // table.
+          //
+          class_* c (
+            &static_cast<class_&> (
+              e.member_path.front ()->scope ()));
+
+          // If this member's class is not polymorphic (root uses reuse
+          // inheritance), then use the root table.
+          //
+          if (!polymorphic (*c))
+            c = root;
+
+          qname const& t (table_name (*c));
+
+          if (a.empty ())
+            lt = t;
+          else
+            lt = qname (a + "_" + t.uname ());
+        }
+        else
+          lt = a.empty () ? table_name (o) : qname (a);
+      }
+
+      qname rt;
+      {
+        qname t (table_name (*vo->obj));
+        string const& a (vo->alias);
+        rt = a.empty ()
+          ? t
+          : qname (polymorphic (*vo->obj) ? a + "_" + t.uname () : a);
+      }
+
+      // First join the container table if necessary.
+      //
+      semantics::type* cont (container (im != 0 ? *im : m));
+
+      string ct; // Container table.
+      if (cont != 0)
+      {
+        l = "LEFT JOIN ";
+
+        // The same relationship can be used by multiple associated
+        // objects. So if the object that contains this container has
+        // an alias, then also construct one for the table that we
+        // are joining.
+        //
+        {
+          using semantics::class_;
+
+          qname t;
+
+          // In a polymorphic hierarchy the member can be in a base (see
+          // above).
+          //
+          if (class_* root = polymorphic (im != 0 ? *vo->obj : *e.vo->obj))
+          {
+            class_* c;
+            if (im == 0)
+            {
+              c = &static_cast<class_&> (e.member_path.front ()->scope ());
+
+              if (!polymorphic (*c))
+                c = root;
+
+              t = table_name (*c, e.member_path);
+            }
+            else
+            {
+              c = &static_cast<class_&> (im->scope ());
+
+              if (!polymorphic (*c))
+                c = root;
+
+              t = table_name (*im, table_prefix (*c));
+            }
+          }
+          else
+            t = im != 0
+              ? table_name (*im, table_prefix (*vo->obj))
+              : table_name (*e.vo->obj, e.member_path);
+
+          // The tricky part is to figure out which view_object, vo
+          // or e.vo we should use. We want to use the alias from the
+          // object that actually contains this container. The following
+          // might not make intuitive sense, but it has been verified
+          // with the truth table.
+          //
+          string const& a (im != 0 ? vo->alias : e.vo->alias);
+
+          if (a.empty ())
+          {
+            ct = quote_id (t);
+            l += ct;
+          }
+          else
+          {
+            ct = quote_id (a + '_' + t.uname ());
+            l += quote_id (t);
+            l += (need_alias_as ? " AS " : " ") + ct;
+          }
+        }
+
+        l += " ON";
+        from.push_back (l);
+
+        // If we are the pointed-to object, then we have to turn
+        // things around. This is necessary to have the proper
+        // JOIN order. There seems to be a pattern there but it
+        // is not yet intuitively clear what it means.
+        //
+        instance<object_columns_list> c_cols; // Container columns.
+        instance<object_columns_list> o_cols; // Object columns.
+
+        qname* ot; // Object table (either lt or rt).
+
+        if (im != 0)
+        {
+          if (&o == c)
+          {
+            // container.value = pointer.id
+            //
+            semantics::data_member& id (*id_member (*e.vo->obj));
+
+            c_cols->traverse (*im, utype (id), "value", "value");
+            o_cols->traverse (id);
+            ot = &lt;
+          }
+          else
+          {
+            // container.id = pointed-to.id
+            //
+            semantics::data_member& id (*id_member (*vo->obj));
+
+            c_cols->traverse (
+              *im, utype (id), "id", "object_id", vo->obj);
+            o_cols->traverse (id);
+            ot = &rt;
+          }
+        }
+        else
+        {
+          if (&o == c)
+          {
+            // container.id = pointer.id
+            //
+            semantics::data_member& id (*id_member (*e.vo->obj));
+
+            c_cols->traverse (
+              m, utype (id), "id", "object_id", e.vo->obj);
+            o_cols->traverse (id);
+            ot = &lt;
+          }
+          else
+          {
+            // container.value = pointed-to.id
+            //
+            semantics::data_member& id (*id_member (*vo->obj));
+
+            c_cols->traverse (m, utype (id), "value", "value");
+            o_cols->traverse (id);
+            ot = &rt;
+          }
+        }
+
+        for (object_columns_list::iterator b (c_cols->begin ()), i (b),
+               j (o_cols->begin ()); i != c_cols->end (); ++i, ++j)
+        {
+          l.clear ();
+
+          if (i != b)
+            l += "AND ";
+
+          l += ct;
+          l += '.';
+          l += quote_id (i->name);
+          l += '=';
+          l += quote_id (*ot);
+          l += '.';
+          l += quote_id (j->name);
+
+          from.push_back (strlit (l));
+        }
+      }
+
+      l = "LEFT JOIN ";
+      l += table_qname (o);
+
+      if (!alias.empty ())
+        l += (need_alias_as ? " AS " : " ") + quote_id (alias);
+
+      l += " ON";
+      from.push_back (l);
+
+      if (cont != 0)
+      {
+        instance<object_columns_list> c_cols; // Container columns.
+        instance<object_columns_list> o_cols; // Object columns.
+
+        qname* ot; // Object table (either lt or rt).
+
+        if (im != 0)
+        {
+          if (&o == c)
+          {
+            // container.id = pointed-to.id
+            //
+            semantics::data_member& id (*id_member (*vo->obj));
+
+            c_cols->traverse (*im, utype (id), "id", "object_id", vo->obj);
+            o_cols->traverse (id);
+            ot = &rt;
+          }
+          else
+          {
+            // container.value = pointer.id
+            //
+            semantics::data_member& id (*id_member (*e.vo->obj));
+
+            c_cols->traverse (*im, utype (id), "value", "value");
+            o_cols->traverse (id);
+            ot = &lt;
+          }
+        }
+        else
+        {
+          if (&o == c)
+          {
+            // container.value = pointed-to.id
+            //
+            semantics::data_member& id (*id_member (*vo->obj));
+
+            c_cols->traverse (m, utype (id), "value", "value");
+            o_cols->traverse (id);
+            ot = &rt;
+          }
+          else
+          {
+            // container.id = pointer.id
+            //
+            semantics::data_member& id (*id_member (*e.vo->obj));
+
+            c_cols->traverse (m, utype (id), "id", "object_id", e.vo->obj);
+            o_cols->traverse (id);
+            ot = &lt;
+          }
+        }
+
+        for (object_columns_list::iterator b (c_cols->begin ()), i (b),
+               j (o_cols->begin ()); i != c_cols->end (); ++i, ++j)
+        {
+          l.clear ();
+
+          if (i != b)
+            l += "AND ";
+
+          l += ct;
+          l += '.';
+          l += quote_id (i->name);
+          l += '=';
+          l += quote_id (*ot);
+          l += '.';
+          l += quote_id (j->name);
+
+          from.push_back (strlit (l));
+        }
+      }
+      else
+      {
+        column_prefix col_prefix;
+
+        if (im == 0)
+          col_prefix = column_prefix (e.member_path);
+
+        instance<object_columns_list> l_cols (col_prefix);
+        instance<object_columns_list> r_cols;
+
+        if (im != 0)
+        {
+          // our.id = pointed-to.pointer
+          //
+          l_cols->traverse (*id_member (*e.vo->obj));
+          r_cols->traverse (*im);
+        }
+        else
+        {
+          // our.pointer = pointed-to.id
+          //
+          l_cols->traverse (*e.member_path.back ());
+          r_cols->traverse (*id_member (*vo->obj));
+        }
+
+        for (object_columns_list::iterator b (l_cols->begin ()), i (b),
+               j (r_cols->begin ()); i != l_cols->end (); ++i, ++j)
+        {
+          l.clear ();
+
+          if (i != b)
+            l += "AND ";
+
+          l += quote_id (lt);
+          l += '.';
+          l += quote_id (i->name);
+          l += '=';
+          l += quote_id (rt);
+          l += '.';
+          l += quote_id (j->name);
+
+          from.push_back (strlit (l));
+        }
+      }
+
+      if (poly_depth != 1)
+      {
+        bool t (true);             //@@ (im)perfect forwarding
+        size_t d (poly_depth - 1); //@@ (im)perfect forward.
+        instance<polymorphic_object_joins> j (o, t, d, i->alias);
+        j->traverse (polymorphic_base (o));
+
+        from.insert (from.end (), j->begin (), j->end ());
+        query_optimize = query_optimize || !j->joins.empty ();
+      }
+    } // End JOIN-generating for-loop.
+  }
+
+  // Check that pointed-to objects inside objects that we are loading
+  // have session support enabled (required to have a shared copy).
+  // Also see if we need to throw if there is no session.
+  //
+  bool need_session (false);
+  if (vq.kind == view_query::condition)
+  {
+    view_objects& objs (c.get<view_objects> ("objects"));
+    for (view_objects::iterator i (objs.begin ()); i != objs.end (); ++i)
+    {
+      if (i->kind != view_object::object || i->ptr == 0)
+        continue; // Not an object or not loaded.
+
+      instance<view_object_check> t (*i, rel_map);
+      t->traverse (*i->obj);
+      need_session = need_session || t->session_;
+    }
+  }
+
   os << "// " << class_name (c) << endl
      << "//" << endl
      << endl;
@@ -4843,7 +5431,19 @@ traverse_view (type& c)
 
     os << endl;
 
+    if (need_session)
+      os << "if (!session::has_current ())" << endl
+         << "throw session_required ();"
+         << endl;
+
+    if (has_a (c, test_pointer))
+      os << db << "::connection& conn (" << endl
+         << db << "::transaction::current ().connection ());"
+         << endl;
+
+    names (c, init_view_pointer_member_pre_names_);
     names (c, init_value_member_names_);
+    names (c, init_view_pointer_member_post_names_);
 
     os << "}";
   }
@@ -4926,512 +5526,11 @@ traverse_view (type& c)
     }
     else // vq.kind == view_query::condition
     {
-      // Generate the from-list.
+      // Use the from-list generated above.
       //
-      strings from;
-      view_objects const& objs (c.get<view_objects> ("objects"));
-
-      for (view_objects::const_iterator i (objs.begin ());
-           i != objs.end ();
-           ++i)
-      {
-        bool first (i == objs.begin ());
-        string l;
-
-        //
-        // Tables.
-        //
-
-        if (i->kind == view_object::table)
-        {
-          if (first)
-          {
-            l = "FROM ";
-            l += quote_id (i->tbl_name);
-
-            if (!i->alias.empty ())
-              l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
-
-            from.push_back (l);
-            continue;
-          }
-
-          l = "LEFT JOIN ";
-          l += quote_id (i->tbl_name);
-
-          if (!i->alias.empty ())
-            l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
-
-          semantics::scope& scope (
-            dynamic_cast<semantics::scope&> (*unit.find (i->scope)));
-
-          expression e (
-            translate_expression (
-              c, i->cond, scope, i->loc, "table"));
-
-          if (e.kind != expression::literal)
-          {
-            error (i->loc) << "invalid join condition in db pragma " <<
-              "table" << endl;
-            throw operation_failed ();
-          }
-
-          l += " ON";
-
-          // Add the pragma location for easier error tracking.
-          //
-          from.push_back (l);
-          from.push_back ("// From " + location_string (i->loc, true));
-          from.push_back (e.value);
-          continue;
-        }
-
-        //
-        // Objects.
-        //
-        semantics::class_& o (*i->obj);
-
-        bool poly (polymorphic (o));
-        size_t poly_depth (poly ? polymorphic_depth (o) : 1);
-
-        string alias (i->alias);
-
-        // For polymorphic objects, alias is just a prefix.
-        //
-        if (poly && !alias.empty ())
-          alias += "_" + table_name (o).uname ();
-
-        // First object.
-        //
-        if (first)
-        {
-          l = "FROM ";
-          l += table_qname (o);
-
-          if (!alias.empty ())
-            l += (need_alias_as ? " AS " : " ") + quote_id (alias);
-
-          from.push_back (l);
-
-          if (poly_depth != 1)
-          {
-            bool t (true);             //@@ (im)perfect forwarding
-            size_t d (poly_depth - 1); //@@ (im)perfect forward.
-            instance<polymorphic_object_joins> j (o, t, d, i->alias);
-            j->traverse (polymorphic_base (o));
-
-            from.insert (from.end (), j->begin (), j->end ());
-            query_optimize = query_optimize || !j->joins.empty ();
-          }
-          continue;
-        }
-
-        semantics::scope& scope (
-          dynamic_cast<semantics::scope&> (*unit.find (i->scope)));
-
-        expression e (
-          translate_expression (
-            c, i->cond, scope, i->loc, "object"));
-
-        // Literal expression.
-        //
-        if (e.kind == expression::literal)
-        {
-          l = "LEFT JOIN ";
-          l += table_qname (o);
-
-          if (!alias.empty ())
-            l += (need_alias_as ? " AS " : " ") + quote_id (alias);
-
-          l += " ON";
-
-          // Add the pragma location for easier error tracking.
-          //
-          from.push_back (l);
-          from.push_back ("// From " + location_string (i->loc, true));
-          from.push_back (e.value);
-
-          if (poly_depth != 1)
-          {
-            bool t (true);             //@@ (im)perfect forwarding
-            size_t d (poly_depth - 1); //@@ (im)perfect forward.
-            instance<polymorphic_object_joins> j (o, t, d, i->alias);
-            j->traverse (polymorphic_base (o));
-
-            from.insert (from.end (), j->begin (), j->end ());
-            query_optimize = query_optimize || !j->joins.empty ();
-          }
-          continue;
-        }
-
-        // We have an object relationship (pointer) for which we need
-        // to come up with the corresponding JOIN condition. If this
-        // is a to-many relationship, then we first need to JOIN the
-        // container table. This code is similar to object_joins.
-        //
-        using semantics::data_member;
-
-        data_member& m (*e.member_path.back ());
-
-        // Resolve the pointed-to object to view_object and do
-        // some sanity checks while at it.
-        //
-        semantics::class_* c (0);
-
-        if (semantics::type* cont = container (m))
-          c = object_pointer (container_vt (*cont));
-        else
-          c = object_pointer (utype (m));
-
-        view_object const* vo (0);
-
-        // Check if the pointed-to object has been previously
-        // associated with this view and is unambiguous. A
-        // pointer to ourselves is always assumed to point
-        // to this association.
-        //
-        if (&o == c)
-          vo = &*i;
-        else
-        {
-          bool ambig (false);
-
-          for (view_objects::const_iterator j (objs.begin ());
-               j != i;
-               ++j)
-          {
-            if (j->obj != c)
-              continue;
-
-            if (vo == 0)
-            {
-              vo = &*j;
-              continue;
-            }
-
-            // If it is the first ambiguous object, issue the
-            // error.
-            //
-            if (!ambig)
-            {
-              error (i->loc) << "pointed-to object '" << class_name (*c) <<
-                "' is ambiguous" << endl;
-              info (i->loc) << "candidates are:" << endl;
-              info (vo->loc) << "  '" << vo->name () << "'" << endl;
-              ambig = true;
-            }
-
-            info (j->loc) << "  '" << j->name () << "'" << endl;
-          }
-
-          if (ambig)
-          {
-            info (i->loc) << "use the full join condition clause in db " <<
-              "pragma object to resolve this ambiguity" << endl;
-            throw operation_failed ();
-          }
-
-          if (vo == 0)
-          {
-            error (i->loc) << "pointed-to object '" << class_name (*c) <<
-              "' specified in the join condition has not been " <<
-              "previously associated with this view" << endl;
-            throw operation_failed ();
-          }
-        }
-
-        // Left and right-hand side table names.
-        //
-        qname lt;
-        {
-          using semantics::class_;
-
-          class_& o (*e.vo->obj);
-          string const& a (e.vo->alias);
-
-          if (class_* root = polymorphic (o))
-          {
-            // If the object is polymorphic, then figure out which of the
-            // bases this member comes from and use the corresponding
-            // table.
-            //
-            class_* c (
-              &static_cast<class_&> (
-                e.member_path.front ()->scope ()));
-
-            // If this member's class is not polymorphic (root uses reuse
-            // inheritance), then use the root table.
-            //
-            if (!polymorphic (*c))
-              c = root;
-
-            qname const& t (table_name (*c));
-
-            if (a.empty ())
-              lt = t;
-            else
-              lt = qname (a + "_" + t.uname ());
-          }
-          else
-            lt = a.empty () ? table_name (o) : qname (a);
-        }
-
-        qname rt;
-        {
-          qname t (table_name (*vo->obj));
-          string const& a (vo->alias);
-          rt = a.empty ()
-            ? t
-            : qname (polymorphic (*vo->obj) ? a + "_" + t.uname () : a);
-        }
-
-        // First join the container table if necessary.
-        //
-        data_member* im (inverse (m));
-
-        semantics::type* cont (container (im != 0 ? *im : m));
-
-        string ct; // Container table.
-        if (cont != 0)
-        {
-          if (im != 0)
-          {
-            // For now a direct member can only be directly in
-            // the object scope. If this changes, the inverse()
-            // function would have to return a member path instead
-            // of just a single member.
-            //
-            ct = table_qname (*im, table_prefix (*vo->obj));
-          }
-          else
-            ct = table_qname (*e.vo->obj, e.member_path);
-
-          l = "LEFT JOIN ";
-          l += ct;
-          l += " ON";
-          from.push_back (l);
-
-          // If we are the pointed-to object, then we have to turn
-          // things around. This is necessary to have the proper
-          // JOIN order. There seems to be a pattern there but it
-          // is not yet intuitively clear what it means.
-          //
-          instance<object_columns_list> c_cols; // Container columns.
-          instance<object_columns_list> o_cols; // Object columns.
-
-          qname* ot; // Object table (either lt or rt).
-
-          if (im != 0)
-          {
-            if (&o == c)
-            {
-              // container.value = pointer.id
-              //
-              semantics::data_member& id (*id_member (*e.vo->obj));
-
-              c_cols->traverse (*im, utype (id), "value", "value");
-              o_cols->traverse (id);
-              ot = &lt;
-            }
-            else
-            {
-              // container.id = pointed-to.id
-              //
-              semantics::data_member& id (*id_member (*vo->obj));
-
-              c_cols->traverse (
-                *im, utype (id), "id", "object_id", vo->obj);
-              o_cols->traverse (id);
-              ot = &rt;
-            }
-          }
-          else
-          {
-            if (&o == c)
-            {
-              // container.id = pointer.id
-              //
-              semantics::data_member& id (*id_member (*e.vo->obj));
-
-              c_cols->traverse (
-                m, utype (id), "id", "object_id", e.vo->obj);
-              o_cols->traverse (id);
-              ot = &lt;
-            }
-            else
-            {
-              // container.value = pointed-to.id
-              //
-              semantics::data_member& id (*id_member (*vo->obj));
-
-              c_cols->traverse (m, utype (id), "value", "value");
-              o_cols->traverse (id);
-              ot = &rt;
-            }
-          }
-
-          for (object_columns_list::iterator b (c_cols->begin ()), i (b),
-                 j (o_cols->begin ()); i != c_cols->end (); ++i, ++j)
-          {
-            l.clear ();
-
-            if (i != b)
-              l += "AND ";
-
-            l += ct;
-            l += '.';
-            l += quote_id (i->name);
-            l += '=';
-            l += quote_id (*ot);
-            l += '.';
-            l += quote_id (j->name);
-
-            from.push_back (strlit (l));
-          }
-        }
-
-        l = "LEFT JOIN ";
-        l += table_qname (o);
-
-        if (!alias.empty ())
-          l += (need_alias_as ? " AS " : " ") + quote_id (alias);
-
-        l += " ON";
-        from.push_back (l);
-
-        if (cont != 0)
-        {
-          instance<object_columns_list> c_cols; // Container columns.
-          instance<object_columns_list> o_cols; // Object columns.
-
-          qname* ot; // Object table (either lt or rt).
-
-          if (im != 0)
-          {
-            if (&o == c)
-            {
-              // container.id = pointed-to.id
-              //
-              semantics::data_member& id (*id_member (*vo->obj));
-
-              c_cols->traverse (*im, utype (id), "id", "object_id", vo->obj);
-              o_cols->traverse (id);
-              ot = &rt;
-            }
-            else
-            {
-              // container.value = pointer.id
-              //
-              semantics::data_member& id (*id_member (*e.vo->obj));
-
-              c_cols->traverse (*im, utype (id), "value", "value");
-              o_cols->traverse (id);
-              ot = &lt;
-            }
-          }
-          else
-          {
-            if (&o == c)
-            {
-              // container.value = pointed-to.id
-              //
-              semantics::data_member& id (*id_member (*vo->obj));
-
-              c_cols->traverse (m, utype (id), "value", "value");
-              o_cols->traverse (id);
-              ot = &rt;
-            }
-            else
-            {
-              // container.id = pointer.id
-              //
-              semantics::data_member& id (*id_member (*e.vo->obj));
-
-              c_cols->traverse (m, utype (id), "id", "object_id", e.vo->obj);
-              o_cols->traverse (id);
-              ot = &lt;
-            }
-          }
-
-          for (object_columns_list::iterator b (c_cols->begin ()), i (b),
-                 j (o_cols->begin ()); i != c_cols->end (); ++i, ++j)
-          {
-            l.clear ();
-
-            if (i != b)
-              l += "AND ";
-
-            l += ct;
-            l += '.';
-            l += quote_id (i->name);
-            l += '=';
-            l += quote_id (*ot);
-            l += '.';
-            l += quote_id (j->name);
-
-            from.push_back (strlit (l));
-          }
-        }
-        else
-        {
-          column_prefix col_prefix;
-
-          if (im == 0)
-            col_prefix = column_prefix (e.member_path);
-
-          instance<object_columns_list> l_cols (col_prefix);
-          instance<object_columns_list> r_cols;
-
-          if (im != 0)
-          {
-            // our.id = pointed-to.pointer
-            //
-            l_cols->traverse (*id_member (*e.vo->obj));
-            r_cols->traverse (*im);
-          }
-          else
-          {
-            // our.pointer = pointed-to.id
-            //
-            l_cols->traverse (*e.member_path.back ());
-            r_cols->traverse (*id_member (*vo->obj));
-          }
-
-          for (object_columns_list::iterator b (l_cols->begin ()), i (b),
-                 j (r_cols->begin ()); i != l_cols->end (); ++i, ++j)
-          {
-            l.clear ();
-
-            if (i != b)
-              l += "AND ";
-
-            l += quote_id (lt);
-            l += '.';
-            l += quote_id (i->name);
-            l += '=';
-            l += quote_id (rt);
-            l += '.';
-            l += quote_id (j->name);
-
-            from.push_back (strlit (l));
-          }
-        }
-
-        if (poly_depth != 1)
-        {
-          bool t (true);             //@@ (im)perfect forwarding
-          size_t d (poly_depth - 1); //@@ (im)perfect forward.
-          instance<polymorphic_object_joins> j (o, t, d, i->alias);
-          j->traverse (polymorphic_base (o));
-
-          from.insert (from.end (), j->begin (), j->end ());
-          query_optimize = query_optimize || !j->joins.empty ();
-        }
-      } // End JOIN-generating for-loop.
-
       statement_columns sc;
       {
-        instance<view_columns> t (sc);
+        instance<view_columns> t (sc, from, rel_map);
         t->traverse (c);
         process_statement_columns (
           sc, statement_select, versioned || query_optimize);

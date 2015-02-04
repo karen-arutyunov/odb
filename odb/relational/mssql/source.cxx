@@ -607,9 +607,9 @@ namespace relational
         }
 
         virtual void
-        get_null (member_info& mi)
+        get_null (string const& var) const
         {
-          os << "i." << mi.var << "size_ind == SQL_NULL_DATA";
+          os << "i." << var << "size_ind == SQL_NULL_DATA";
         }
 
         virtual void

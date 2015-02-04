@@ -212,6 +212,23 @@ struct instance
     x_ = factory_type::create (prototype);
   }
 
+  template <typename A1, typename A2, typename A3, typename A4, typename A5,
+            typename A6>
+  instance (A1& a1, A2& a2, A3& a3, A4& a4, A5& a5, A6 a6)
+  {
+    base_type prototype (a1, a2, a3, a4, a5, a6);
+    x_ = factory_type::create (prototype);
+  }
+
+  template <typename A1, typename A2, typename A3, typename A4, typename A5,
+            typename A6>
+  instance (A1 const& a1, A2 const& a2, A3 const& a3, A4 const& a4,
+            A5 const& a5, A6 const& a6)
+  {
+    base_type prototype (a1, a2, a3, a4, a5, a6);
+    x_ = factory_type::create (prototype);
+  }
+
   instance (instance const& i)
   {
     // This is tricky: use the other instance as a prototype.

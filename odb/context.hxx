@@ -84,7 +84,13 @@ enum class_kind
 // that lead all the way from the object member to the innermost
 // composite value member.
 //
-typedef std::vector<semantics::data_member*> data_member_path;
+struct data_member_path: std::vector<semantics::data_member*>
+{
+  data_member_path () {}
+
+  explicit
+  data_member_path (semantics::data_member& m) {push_back (&m);}
+};
 
 // Class inheritance chain, from the most derived to base.
 //
@@ -162,6 +168,7 @@ struct view_object
   tree scope;
   location_t loc;
   semantics::class_* obj;
+  semantics::data_member* ptr; // Corresponding object pointer, if any.
 
   cxx_tokens cond; // Join condition tokens.
 };
@@ -172,6 +179,21 @@ typedef std::vector<view_object> view_objects;
 //
 typedef std::map<std::string, view_object*> view_alias_map;
 typedef std::map<semantics::class_*, view_object*> view_object_map;
+
+// Collection of relationships via which the objects are joined.
+// We need this information to figure out which alias/table
+// names to use for columns corresponding to inverse object
+// pointers inside objects that this view may be loading.
+//
+// The first object is the pointer (i.e., the one containing
+// this data member) while the other is the pointee. In other
+// words, first -> second. We always store the direct (i.e.,
+// non-inverse) side of the relationship. Note also that there
+// could be multiple objects joined using the same relationship.
+//
+typedef
+std::multimap<data_member_path, std::pair<view_object*, view_object*> >
+view_relationship_map;
 
 //
 //
@@ -232,8 +254,8 @@ struct column_expr: std::vector<column_expr_part>
 //
 struct member_access
 {
-  member_access (const location& l, bool s)
-      : loc (l), synthesized (s), by_value (false) {}
+  member_access (const location& l, const char* k, bool s)
+      : loc (l), kind (k), synthesized (s), by_value (false) {}
 
   // Return true of we have the (?) placeholder.
   //
@@ -249,11 +271,21 @@ struct member_access
     return synthesized && expr.size () == 3; // this.member
   }
 
+  bool
+  empty () const
+  {
+    return expr.empty ();
+  }
+
+  // Issues diagnostics and throws operation_failed if expression is
+  // empty.
+  //
   std::string
   translate (std::string const& obj,
              std::string const& val = std::string ()) const;
 
   location loc;
+  const char* kind; // accessor/modifier; used for diagnostics.
   bool synthesized; // If true, then this is a synthesized expression.
   cxx_tokens expr;
   bool by_value;   // True if accessor returns by value. False doesn't
@@ -621,6 +653,14 @@ public:
   view (semantics::type& t)
   {
     return t.count ("view");
+  }
+
+  // Direct member of a view.
+  //
+  static bool
+  view_member (semantics::data_member& m)
+  {
+    return view (dynamic_cast<semantics::class_&> (m.scope ()));
   }
 
   // Check whether the type is a wrapper. Return the wrapped type if

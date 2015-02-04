@@ -221,18 +221,16 @@ namespace relational
       }
 
       virtual void
-      traverse_simple (semantics::data_member& m)
+      traverse_pointer (semantics::data_member& m, semantics::class_&)
       {
-        if (object_pointer (utype (m)))
+        if (dm_ != 0 && object_pointer (utype (m)))
         {
-          semantics::data_member& dm (dm_ != 0 ? *dm_ : m);
+          location const& l (dm_->location ());
 
-          os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-             << " error: view data member '" << member_prefix_ << m.name ()
-             << "' is an object pointer" << endl;
-
-          os << dm.file () << ":" << dm.line () << ":" << dm.column () << ":"
-             << ": info: views cannot contain object pointers" << endl;
+          error (l) << "nested view data member '" << member_prefix_
+                    << m.name () << "' is an object pointer" << endl;
+          info (l) << "views can only contain direct object pointer members"
+                   << endl;
 
           valid_ = false;
         }

@@ -12,6 +12,7 @@
 #include <odb/common.hxx>
 #include <odb/pragma.hxx>
 #include <odb/cxx-lexer.hxx>
+#include <odb/diagnostics.hxx>
 
 #include <odb/relational/mssql/context.hxx>
 #include <odb/relational/mysql/context.hxx>
@@ -69,6 +70,12 @@ add_space (string& s)
 string member_access::
 translate (string const& obj, string const& val) const
 {
+  if (empty ())
+  {
+    error (loc) << "non-empty " << kind << " expression required" << endl;
+    throw operation_failed ();
+  }
+
   // This code is similar to translate_expression() from relations/source.cxx.
   //
   string r;
@@ -2400,18 +2407,59 @@ namespace
     virtual void
     traverse_pointer (semantics::data_member& m, semantics::class_& c)
     {
-      size_t t (c_.total);
-
-      object_members_base::traverse_pointer (m, c);
-
-      if (context::inverse (m))
+      // Object pointers in views require special treatment.
+      //
+      if (view_member (m))
       {
-        size_t n (c_.total - t);
+        using semantics::class_;
 
-        c_.inverse += n;
+        column_count_type cc;
 
-        if (separate_update (member_path_))
-          c_.separate_update -= n;
+        if (class_* root = polymorphic (c))
+        {
+          // For a polymorphic class we are going to load all the members
+          // from all the bases (i.e., equivalent to the first statement
+          // in the list of SELECT statements generated for the object).
+          // So our count should be the same as the first value in the
+          // generated column_counts array.
+          //
+          for (class_* b (&c);; b = &polymorphic_base (*b))
+          {
+            column_count_type const& ccb (column_count (*b, section_));
+
+            cc.total += ccb.total - (b != root ? ccb.id : 0);
+            cc.separate_load += ccb.separate_load;
+            cc.soft += ccb.soft;
+
+            if (b == root)
+              break;
+          }
+        }
+        else
+          cc = column_count (c, section_);
+
+        c_.total += cc.total - cc.separate_load;
+
+        if (added (member_path_) != 0 || deleted (member_path_) != 0)
+          c_.soft += cc.total;
+        else
+          c_.soft += cc.soft;
+      }
+      else
+      {
+        size_t t (c_.total);
+
+        object_members_base::traverse_pointer (m, c);
+
+        if (context::inverse (m))
+        {
+          size_t n (c_.total - t);
+
+          c_.inverse += n;
+
+          if (separate_update (member_path_))
+            c_.separate_update -= n;
+        }
       }
     }
 
