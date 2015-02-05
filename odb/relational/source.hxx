@@ -6677,6 +6677,15 @@ namespace relational
            << "imb";
       }
 
+      virtual string
+      from_trailer (type&) { return "";}
+
+      virtual string
+      select_trailer (type& c)
+      {
+        return c.get<view_query> ("query").for_update ? "FOR UPDATE" : "";
+      }
+
       virtual void
       traverse_view (type& c);
 

@@ -246,6 +246,15 @@ namespace relational
         {
           os << im << "null = true;";
         }
+
+        virtual string
+        select_trailer (type&)
+        {
+          // SQLite has not support for FOR UPDATE and since this is an
+          // optimization, we simply ignore it.
+          //
+          return "";
+        }
       };
       entry<class_> class_entry_;
     }

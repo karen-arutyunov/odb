@@ -27,6 +27,12 @@ Version 2.4.0
    Section 15.2, "Persistent Class Template Instantiations" in the ODB
    manual.
 
+ * Support for result modifiers in view query conditions. Currently
+   supported result modifiers are 'distinct' (which is translated to
+   SELECT DISTINCT) and 'for_update' (which is translated to FOR UPDATE or
+   equivalent for database systems that support it). For details, refer to
+   Section 10.5, "View Query Conditions" in the ODB manual.
+
  * Besides odb::stderr_tracer there is now odb::stderr_full_tracer that
    traces statement preparations and deallocations in addition to their
    executions. This new implementation can be useful when you want to

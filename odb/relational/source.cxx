@@ -4770,6 +4770,8 @@ traverse_view (type& c)
           if (!i->alias.empty ())
             l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
 
+          l += from_trailer (c);
+
           from.push_back (l);
           continue;
         }
@@ -4828,6 +4830,8 @@ traverse_view (type& c)
 
         if (!alias.empty ())
           l += (need_alias_as ? " AS " : " ") + quote_id (alias);
+
+        l += from_trailer (c);
 
         from.push_back (l);
 
@@ -5539,7 +5543,7 @@ traverse_view (type& c)
       string sep (versioned || query_optimize ? "\n" : " ");
 
       os << "query_base_type r (" << endl
-         << strlit ("SELECT" + sep);
+         << strlit ((vq.distinct ? "SELECT DISTINCT" : "SELECT") + sep);
 
       for (statement_columns::const_iterator i (sc.begin ()),
              e (sc.end ()); i != e;)
@@ -5632,6 +5636,13 @@ traverse_view (type& c)
            << "r += c.clause_prefix ();"
            << "r += c;"
            << "}";
+
+        string st (select_trailer (c));
+        if (!st.empty ())
+        {
+          os << "r += " << strlit (sep) << ";"
+             << "r += " << strlit (st) << ";";
+        }
       }
       else
       {

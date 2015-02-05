@@ -619,6 +619,21 @@ namespace relational
 
           return r;
         }
+
+        virtual string
+        select_trailer (type& c)
+        {
+          view_query const& vq (c.get<view_query> ("query"));
+
+          if (vq.for_update && vq.distinct)
+          {
+            error (vq.loc)
+              << "Oracle does not support FOR UPDATE with DISTINCT" << endl;
+            throw operation_failed ();
+          }
+
+          return base::select_trailer (c);
+        }
       };
       entry<class_> class_entry_;
     }

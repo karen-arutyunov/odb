@@ -1298,10 +1298,22 @@ namespace relational
               vq.kind = view_query::condition;
           }
           else
-            vq.kind = view_query::runtime;
+            vq.kind = (vq.distinct || vq.for_update)
+              ? view_query::condition // The query(distinct) case.
+              : view_query::runtime;
         }
         else
           vq.kind = has_o ? view_query::condition : view_query::runtime;
+
+        if ((vq.distinct || vq.for_update) && vq.kind != view_query::condition)
+        {
+          error (vq.loc)
+            << "result modifier specified for "
+            << (vq.kind == view_query::runtime ? "runtime" : "native")
+            << " query" << endl;
+
+          throw operation_failed ();
+        }
 
         // We cannot have an incomplete query if there are not objects
         // to derive the rest from.

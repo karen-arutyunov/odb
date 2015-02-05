@@ -176,8 +176,8 @@ parse_expression (cxx_lexer& l,
                   cxx_tokens& ts,
                   string const& prag)
 {
-  // Keep reading tokens until we see a matching ')' while keeping track
-  // of their balance.
+  // Keep reading tokens until we see a mis-matching ')' or ',' while
+  // keeping track of the '()' balance.
   //
   size_t balance (0);
 
@@ -200,6 +200,13 @@ parse_expression (cxx_lexer& l,
         else
           balance--;
         break;
+      }
+    case CPP_COMMA:
+      {
+        if (balance == 0)
+          done = true;
+        else
+          break;
       }
     case CPP_STRING:
       {
@@ -1582,6 +1589,55 @@ handle_pragma (cxx_lexer& l,
 
       if (!parse_expression (l, tt, tl, tn, vq.expr, p))
         return; // Diagnostics has already been issued.
+    }
+
+    // Disallow query(, distinct).
+    //
+    if (tt == CPP_COMMA && vq.expr.empty ())
+    {
+      error (l) << "query expression expected in db pragma " << p << endl;
+      return;
+    }
+
+    // The query expression can be omitted with the modifier in its
+    // place. Handle this case.
+    //
+    if (vq.expr.size () == 1 && vq.expr.front ().type == CPP_NAME)
+    {
+      string const& n (vq.expr.front ().literal);
+
+      if (n == "distinct")
+        vq.distinct = true;
+      else if (n == "for_update")
+        vq.for_update = true;
+
+      if (vq.distinct || vq.for_update)
+        vq.expr.clear ();
+    }
+
+    if (tt == CPP_COMMA)
+    {
+      do
+      {
+        if (l.next (tl, &tn) != CPP_NAME)
+        {
+          error (l) << "result modifier expected in db pragma " << p << endl;
+          return;
+        }
+
+        if (tl == "distinct")
+          vq.distinct = true;
+        else if (tl == "for_update")
+          vq.for_update = true;
+        else
+        {
+          error (l) << "unknown result modifier '" << tl << "'" << endl;
+          return;
+        }
+
+        tt = l.next (tl, &tn);
+
+      } while (tt == CPP_COMMA);
     }
 
     if (tt != CPP_CLOSE_PAREN)

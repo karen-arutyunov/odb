@@ -1179,6 +1179,17 @@ namespace relational
           }
         }
 
+        virtual string
+        from_trailer (type& c)
+        {
+          return c.get<view_query> ("query").for_update
+            ? " WITH (UPDLOCK)"
+            : "";
+        }
+
+        virtual string
+        select_trailer (type&) {return "";}
+
       private:
         // Go via the dynamic creation to get access to the constructor.
         //

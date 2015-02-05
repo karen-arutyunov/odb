@@ -199,6 +199,8 @@ view_relationship_map;
 //
 struct view_query
 {
+  view_query (): distinct (false), for_update (false) {}
+
   enum kind_type
   {
     runtime,
@@ -212,6 +214,11 @@ struct view_query
   cxx_tokens expr;
   tree scope;
   location_t loc;
+
+  // Result modifiers (only for condition).
+  //
+  bool distinct;   // SELECT DISTINCT
+  bool for_update; // SELECT FOR UPDATE
 };
 
 //

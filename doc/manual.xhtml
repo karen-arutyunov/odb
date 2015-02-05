@@ -10366,10 +10366,12 @@ t.commit ();
   <p>As another example, consider a query that loads the <code>employer</code>
      objects using some condition based on its employees. For instance, we
      want to find all the employers that employ people over 65 years old.
-     We can use this object loading view to implement such a query:</p>
+     We can use this object loading view to implement such a query (notice
+     the <code>distinct</code> result modifier discussed later in
+     <a href="#10.5">Section 10.5, "View Query Conditions"</a>):</p>
 
   <pre class="cxx">
-#pragma db view object(employer) object(employee)
+#pragma db view object(employer) object(employee) query(distinct)
 struct employer_view
 {
   shared_ptr&lt;employer> er;
@@ -10382,7 +10384,7 @@ struct employer_view
   <pre class="cxx">
 typedef odb::query&lt;employee_employer> query;
 
-db.query&lt;employer_view> ((query::employee::age > 65) + distinct))
+db.query&lt;employer_view> (query::employee::age > 65)
   </pre>
 
   <p>We can even use object loading views to load completely unrelated
@@ -11020,7 +11022,7 @@ struct employee_vacation
 
   <pre class="cxx">
 #pragma db view object(employee) object(employer) \
-  query ((?) + "GROUP BY" + employer::name_)
+  query((?) + "GROUP BY" + employer::name_)
 struct employer_age
 {
   #pragma db column(employer::name_)
@@ -11031,6 +11033,36 @@ struct employer_age
 
   #pragma db column("max(" + employee::age_ + ")")
   unsigned short max_age;
+};
+  </pre>
+
+  <p>The query condition can be optionally followed (or replaced,
+     if no constant query expression is needed) by one or more
+     <em>result modifiers</em>. Currently supported result modifiers
+     are <code>distinct</code> (which is translated to <code>SELECT
+     DISTINCT</code>) and <code>for_update</code> (which is translated
+     to <code>FOR UPDATE</code> or equivalent for database systems
+     that support it). As an example, consider a view that
+     allows us to get some information about employers ordered
+     by the object id and without any duplicates:</p>
+
+  <pre class="cxx">
+#pragma db view object(employer) object(employee) \
+  query((?) + "ORDER BY" + employer::name_, distinct)
+struct employer_info
+{
+  ...
+};
+  </pre>
+
+  <p>If we don't require ordering, then this view can be re-implemented
+     like this:</p>
+
+  <pre class="cxx">
+#pragma db view object(employer) object(employee) query(distinct)
+struct employer_info
+{
+  ...
 };
   </pre>
 
@@ -15006,12 +15038,13 @@ class employer
   <h3><a name="14.2.3">14.2.3 <code>query</code></a></h3>
 
   <p>The <code>query</code> specifier specifies a query condition
-     for an object or table view or a native SQL query for a native
-     view. An empty <code>query</code> specifier indicates that a
-     native SQL query is provided at runtime. For more information
-     on query conditions refer to <a href="#10.5">Section 10.5, "View
-     Query Conditions"</a>. For more information on native SQL queries,
-     refer to <a href="#10.6">Section 10.6, "Native Views"</a>.</p>
+     and, optionally, result modifiers for an object or table view
+     or a native SQL query for a native view. An empty <code>query</code>
+     specifier indicates that a native SQL query is provided at runtime.
+     For more information on query conditions refer to
+     <a href="#10.5">Section 10.5, "View Query Conditions"</a>. For
+     more information on native SQL queries, refer to
+     <a href="#10.6">Section 10.6, "Native Views"</a>.</p>
 
   <h3><a name="14.2.4">14.2.4 <code>pointer</code></a></h3>
 
