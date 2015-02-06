@@ -159,8 +159,10 @@ struct view_object
   name () const;
 
   enum kind_type { object, table };
+  enum join_type { left, right, full, inner, cross };
 
   kind_type kind;
+  join_type join;
   tree obj_node;         // Tree node if kind is object.
   std::string obj_name;  // Name as specified in the pragma if kind is object.
   qname tbl_name;        // Table name if kind is table.

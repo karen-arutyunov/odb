@@ -27,6 +27,11 @@ Version 2.4.0
    Section 15.2, "Persistent Class Template Instantiations" in the ODB
    manual.
 
+ * Support for object and table join types in views. Supported join type
+   are left, right, full, inner, and cross with left being the default.
+   For details, refer to Sections 10.1, "Object Views" and 10.3, "Table
+   Views" in the ODB manual.
+
  * Support for result modifiers in view query conditions. Currently
    supported result modifiers are 'distinct' (which is translated to
    SELECT DISTINCT) and 'for_update' (which is translated to FOR UPDATE or

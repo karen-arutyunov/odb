@@ -9953,6 +9953,7 @@ struct employee_employer
 
   <p><code><b>object(</b><i>name</i>
                      [<b>=</b> <i>alias</i>]
+                     [<i>join-type</i>]
                      [<b>:</b> <i>join-condition</i>]<b>)</b></code></p>
 
   <p>The <i>name</i> part is a potentially qualified persistent class
@@ -9960,12 +9961,16 @@ struct employee_employer
      part gives this object an alias. If provided, the alias is used
      in several contexts instead of the object's unqualified name. We
      will discuss aliases further as we cover each of these contexts
-     below. The optional <i>join-condition</i> part provides the
+     below. The optional <i>join-type</i> part specifies the way this
+     object is associated. It can be <code>left</code>, <code>right</code>,
+     <code>full</code>, <code>inner</code>, and <code>cross</code>
+     with <code>left</code> being the default.
+     Finally, the optional <i>join-condition</i> part provides the
      criteria which should be used to associate this object with any
      of the previously associated objects or, as we will see in
      <a href="#10.4">Section 10.4, "Mixed Views"</a>, tables. Note that
      while the first associated object can have an alias, it cannot
-     have a join condition.</p>
+     have a join type or condition.</p>
 
   <p>For each subsequent associated object the ODB compiler needs
      a join condition and there are several ways to specify
@@ -10784,6 +10789,7 @@ struct employee_max_vacation
 
   <p><code><b>table("</b><i>name</i><b>"</b>
                     [<b>=</b> <b>"</b><i>alias</i><b>"</b>]
+                    [<i>join-type</i>]
                     [<b>:</b> <i>join-condition</i>]<b>)</b></code></p>
 
   <p>The <i>name</i> part is a database table name. The optional
@@ -10791,12 +10797,16 @@ struct employee_max_vacation
      alias must be used instead of the table whenever a reference
      to a table is used. Contexts where such a reference may
      be needed include the join condition (discussed below),
-     column names, and query expressions. The optional <i>join-condition</i>
+     column names, and query expressions. The optional <i>join-type</i>
+     part specifies the way this table is associated. It can
+     be <code>left</code>, <code>right</code>, <code>full</code>,
+     <code>inner</code>, and <code>cross</code> with <code>left</code>
+     being the default. Finally, the optional <i>join-condition</i>
      part provides the criteria which should be used to associate this
      table with any of the previously associated tables or, as we will see in
      <a href="#10.4">Section 10.4, "Mixed Views"</a>, objects. Note that
      while the first associated table can have an alias, it cannot have
-     a join condition.</p>
+     a join type or condition.</p>
 
   <p>Similar to object views, for each subsequent associated table the
      ODB compiler needs a join condition. However, unlike for object views,

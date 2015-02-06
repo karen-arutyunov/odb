@@ -255,6 +255,25 @@ namespace relational
           //
           return "";
         }
+
+        virtual string
+        join_syntax (view_object const& vo)
+        {
+          const char* n (0);
+
+          if (vo.join == view_object::full)
+            n = "FULL OUTER JOIN";
+          else if (vo.join == view_object::right)
+            n = "RIGHT OUTER JOIN";
+
+          if (n != 0)
+          {
+            error (vo.loc) << n << " is not supported by SQLite" << endl;
+            throw operation_failed ();
+          }
+
+          return base::join_syntax (vo);
+        }
       };
       entry<class_> class_entry_;
     }

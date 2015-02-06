@@ -1131,7 +1131,7 @@ handle_pragma (cxx_lexer& l,
   else if (p == "table")
   {
     // table (<name>)
-    // table (<name> [= "<alias>"] [: "<cond>"]  (view only)
+    // table (<name> [= "<alias>"] [type] [: "<cond>"]  (view only)
     //
     // <name> := "name" | "name.name" | "name"."name"
     //
@@ -1183,9 +1183,41 @@ handle_pragma (cxx_lexer& l,
       tt = l.next (tl, &tn);
     }
 
+    if (tt == CPP_NAME)
+    {
+      // We have a JOIN type.
+      //
+      if (tl == "left")
+        vo.join = view_object::left;
+      else if (tl == "right")
+        vo.join = view_object::right;
+      else if (tl == "full")
+        vo.join = view_object::full;
+      else if (tl == "inner")
+        vo.join = view_object::inner;
+      else if (tl == "cross")
+        vo.join = view_object::cross;
+      else
+      {
+        error (l) << "unknown join type '" << tl << "'" << endl;
+        return;
+      }
+
+      tt = l.next (tl, &tn);
+    }
+    else
+      vo.join = view_object::left;
+
     if (tt == CPP_COLON)
     {
       // We have a condition.
+      //
+      if (vo.join == view_object::cross)
+      {
+        error (l)
+          << "no join condition can be specified for a cross join" << endl;
+        return;
+      }
 
       tt = l.next (tl, &tn);
 
@@ -1653,7 +1685,7 @@ handle_pragma (cxx_lexer& l,
   }
   else if (p == "object")
   {
-    // object (fq-name [ = name] [: expr])
+    // object (fq-name [ = name] [type] [: expr])
     //
 
     // Make sure we've got the correct declaration type.
@@ -1706,9 +1738,41 @@ handle_pragma (cxx_lexer& l,
       tt = l.next (tl, &tn);
     }
 
+    if (tt == CPP_NAME)
+    {
+      // We have a JOIN type.
+      //
+      if (tl == "left")
+        vo.join = view_object::left;
+      else if (tl == "right")
+        vo.join = view_object::right;
+      else if (tl == "full")
+        vo.join = view_object::full;
+      else if (tl == "inner")
+        vo.join = view_object::inner;
+      else if (tl == "cross")
+        vo.join = view_object::cross;
+      else
+      {
+        error (l) << "unknown join type '" << tl << "'" << endl;
+        return;
+      }
+
+      tt = l.next (tl, &tn);
+    }
+    else
+      vo.join = view_object::left;
+
     if (tt == CPP_COLON)
     {
       // We have a condition.
+      //
+      if (vo.join == view_object::cross)
+      {
+        error (l)
+          << "no join condition can be specified for a cross join" << endl;
+        return;
+      }
 
       tt = l.next (tl, &tn);
 

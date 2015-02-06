@@ -6686,6 +6686,23 @@ namespace relational
         return c.get<view_query> ("query").for_update ? "FOR UPDATE" : "";
       }
 
+      virtual string
+      join_syntax (view_object const& vo)
+      {
+        const char* r;
+
+        switch (vo.join)
+        {
+        case view_object::left:  r = "LEFT JOIN";  break;
+        case view_object::right: r = "RIGHT JOIN"; break;
+        case view_object::full:  r = "FULL JOIN";  break;
+        case view_object::inner: r = "INNER JOIN"; break;
+        case view_object::cross: r = "CROSS JOIN"; break;
+        }
+
+        return r;
+      }
+
       virtual void
       traverse_view (type& c);
 

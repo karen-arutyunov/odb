@@ -681,6 +681,19 @@ namespace relational
         {
           os << im << "value = 0;";
         }
+
+        virtual string
+        join_syntax (view_object const& vo)
+        {
+          if (vo.join == view_object::full)
+          {
+            error (vo.loc)
+              << "FULL OUTER JOIN is not supported by MySQL" << endl;
+            throw operation_failed ();
+          }
+
+          return base::join_syntax (vo);
+        }
       };
       entry<class_> class_entry_;
 

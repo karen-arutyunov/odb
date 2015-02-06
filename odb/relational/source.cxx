@@ -4776,11 +4776,18 @@ traverse_view (type& c)
           continue;
         }
 
-        l = "LEFT JOIN ";
+        l = join_syntax (*i);
+        l += ' ';
         l += quote_id (i->tbl_name);
 
         if (!i->alias.empty ())
           l += (need_alias_as ? " AS " : " ") + quote_id (i->alias);
+
+        if (i->join == view_object::cross) // No ON condition for CROSS JOIN.
+        {
+          from.push_back (l);
+          continue;
+        }
 
         semantics::scope& scope (
           dynamic_cast<semantics::scope&> (*unit.find (i->scope)));
@@ -4851,19 +4858,27 @@ traverse_view (type& c)
       semantics::scope& scope (
         dynamic_cast<semantics::scope&> (*unit.find (i->scope)));
 
-      expression e (
-        translate_expression (
-          c, i->cond, scope, i->loc, "object"));
+      expression e (i->join == view_object::cross
+                    ? expression ("") // Dummy literal expression.
+                    : translate_expression (
+                        c, i->cond, scope, i->loc, "object"));
 
       // Literal expression.
       //
       if (e.kind == expression::literal)
       {
-        l = "LEFT JOIN ";
+        l = join_syntax (*i);
+        l += ' ';
         l += table_qname (o);
 
         if (!alias.empty ())
           l += (need_alias_as ? " AS " : " ") + quote_id (alias);
+
+        if (i->join == view_object::cross) // No ON condition for CROSS JOIN.
+        {
+          from.push_back (l);
+          continue;
+        }
 
         l += " ON";
 
@@ -4890,6 +4905,9 @@ traverse_view (type& c)
       // to come up with the corresponding JOIN condition. If this
       // is a to-many relationship, then we first need to JOIN the
       // container table. This code is similar to object_joins.
+      //
+      // Note that this cannot be CROSS JOIN; we've handled that case
+      // above.
       //
       using semantics::data_member;
 
@@ -5029,7 +5047,8 @@ traverse_view (type& c)
       string ct; // Container table.
       if (cont != 0)
       {
-        l = "LEFT JOIN ";
+        l = join_syntax (*i);
+        l += ' ';
 
         // The same relationship can be used by multiple associated
         // objects. So if the object that contains this container has
@@ -5174,7 +5193,15 @@ traverse_view (type& c)
         }
       }
 
-      l = "LEFT JOIN ";
+      // If we have already joined the container with the desired
+      // join type, then use LEFT JOIN to join the object to the
+      // container. This is the right thing to do since an entry
+      // in the container can only point (either via id or value)
+      // to a single object.
+      //
+      l = (cont == 0 ? join_syntax (*i) : "LEFT JOIN");
+      l += ' ';
+
       l += table_qname (o);
 
       if (!alias.empty ())
@@ -5563,13 +5590,36 @@ traverse_view (type& c)
       {
         if (i->compare (0, 5, "FROM ") == 0)
           os << "r += " << strlit (*i) << ";";
-        else if (i->compare (0, 5, "LEFT ") == 0)
-          os << endl
-             << "r += " << strlit (sep + *i) << ";";
         else if (i->compare (0, 3, "// ") == 0)
           os << *i << endl;
         else
-          os << "r += " << *i << ";"; // Already a string literal.
+        {
+          // See if this is a JOIN. The exact spelling is database-dependent,
+          // but we know there is the JOIN word in there somewhere and before
+          // it we should only have keywords and spaces.
+          //
+          size_t p (i->find ("JOIN "));
+          if (p != string::npos)
+          {
+            // Make sure before it we only have A-Z and spaces.
+            //
+            for (char c; p != 0; --p)
+            {
+              c = (*i)[p - 1];
+              if ((c < 'A' || c > 'Z') && c != ' ')
+                break;
+            }
+
+            if (p == 0)
+              os << endl
+                 << "r += " << strlit (sep + *i) << ";";
+          }
+
+          // Something else, assume already a string literal.
+          //
+          if (p != 0)
+            os << "r += " << *i << ";";
+        }
       }
 
       // Generate the query condition.

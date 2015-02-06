@@ -1344,6 +1344,15 @@ namespace relational
 
           for (view_objects::iterator i (objs.begin ()); i != objs.end (); ++i)
           {
+            if (i == objs.begin () && i->join != view_object::left)
+            {
+              error (i->loc)
+                << "no join type can be specified for the first associated "
+                << (i->kind == view_object::object ? "object" : "table")
+                << endl;
+              throw operation_failed ();
+            }
+
             if (i->kind != view_object::object)
             {
               // Make sure we have join conditions for tables unless it
@@ -1362,11 +1371,13 @@ namespace relational
 
             // If we have to generate the query and there was no JOIN
             // condition specified by the user, try to come up with one
-            // automatically based on object relationships.
+            // automatically based on object relationships. CROSS JOIN
+            // has no condition.
             //
             if (vq.kind == view_query::condition &&
                 i->cond.empty () &&
-                i != objs.begin ())
+                i != objs.begin () &&
+                i->join != view_object::cross)
             {
               relationships rs;
 
