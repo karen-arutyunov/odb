@@ -5778,8 +5778,8 @@ db.query_factory (
 
   <p>The ODB runtime library provides built-in persistence support for all the
      commonly used standard C++98/03 containers, namely,
-     <code>std::vector</code>, <code>std::list</code>, <code>std::set</code>,
-     <code>std::multiset</code>, <code>std::map</code>, and
+     <code>std::vector</code>, <code>std::list</code>, <code>std::deque</code>,
+     <code>std::set</code>, <code>std::multiset</code>, <code>std::map</code>, and
      <code>std::multimap</code> as well as C++11 <code>std::array</code>,
      <code>std::forward_list</code>, <code>std::unordered_set</code>,
      <code>std::unordered_multiset</code>, <code>std::unordered_map</code>,
@@ -5876,7 +5876,7 @@ private:
   <p>In ODB an ordered container is any container that maintains (explicitly
      or implicitly) an order of its elements in the form of an integer index.
      Standard C++ containers that are ordered include <code>std::vector</code>
-     and <code>std::list</code> as well as C++11 <code>std::array</code> and
+     <code>std::list</code>, and <code>std::deque</code> as well as C++11 <code>std::array</code> and
      <code>std::forward_list</code>. While elements in <code>std::set</code>
      are also kept in a specific order, this order is not based on an
      integer index but rather on the relationship between elements. As

@@ -38,6 +38,8 @@ Version 2.4.0
    equivalent for database systems that support it). For details, refer to
    Section 10.5, "View Query Conditions" in the ODB manual.
 
+ * Support for persisting std::deque containers.
+
  * Besides odb::stderr_tracer there is now odb::stderr_full_tracer that
    traces statement preparations and deallocations in addition to their
    executions. This new implementation can be useful when you want to
