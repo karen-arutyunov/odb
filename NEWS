@@ -7,7 +7,7 @@ Version 2.4.0
 
  * Support for bulk operations in Oracle and SQL Server. Bulk operations
    persist, update, or erase a range of objects using a single database
-   statement execution which often translates to significantly better
+   statement execution which often translates to a significantly better
    performance. For details, refer to Section 15.3, "Bulk Database
    Operations" in the ODB manual.
 
@@ -17,10 +17,6 @@ Version 2.4.0
    Corresponding execute_one() and execute_value() functions for prepared
    queries are also provided. For details, refer to Sections 4.3, "Executing
    a Query" and 4.5, "Prepared Queries" in the ODB manual.
-
- * New pragma, on_delete, allows the specification of an on-delete semantics
-   (translated to the ON DELETE SQL clause) for an object pointer. For more
-   information, refer to Section 14.4.15, "on_delete" in the ODB manual.
 
  * Support for defining persistent objects as instantiations of C++ class
    templates, similar to composite value types. For details, refer to
@@ -40,12 +36,19 @@ Version 2.4.0
 
  * Support for persisting std::deque containers.
 
+ * New pragma, on_delete, allows the specification of an on-delete semantics
+   (translated to the ON DELETE SQL clause) for an object pointer. For more
+   information, refer to Section 14.4.15, "on_delete" in the ODB manual.
+
  * Besides odb::stderr_tracer there is now odb::stderr_full_tracer that
    traces statement preparations and deallocations in addition to their
-   executions. This new implementation can be useful when you want to
-   see text of a statement that contains a syntax error and therefore
+   executions. This new implementation can be useful when you want to see
+   the text of a statement that contains a syntax error and therefore
    will not actually be executed. For more information, refer to Section
    3.13, "Tracing SQL Statement Execution" in the ODB manual.
+
+ * ODB can now compile headers that use #pragma once instead of include
+   guards.
 
  * User-supplied prologues and epilogues are now generated outside the
    pre.hxx/post.hxx includes. This allows the use of precompiled headers
@@ -67,15 +70,12 @@ Version 2.4.0
    exceeds the database limit (64, 63, and 128 characters, respectively).
    SQLite has no limitation on name lengths. For Oracle, which has a limit
    that is much more likely to be reached in normal circumstances (30
-   characters), a more comprehensive detection is implemented (see item
+   characters), a more comprehensive detection is implemented (see the item
    above).
 
  * New option, --statement-regex, can be used to process prepared statement
    names that are used by PostgreSQL. This can be useful, for example, to
    shorten names that exceed the PostgreSQL name limit.
-
- * ODB can now compile headers that use #pragma once instead of include
-   guards.
 
 Version 2.3.0
 
