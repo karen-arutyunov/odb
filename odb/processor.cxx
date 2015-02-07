@@ -285,7 +285,7 @@ namespace
       // Otherwise look for a by value modifier, which is a function
       // with a single argument.
       //
-      else if (DECL_CHAIN (a) == void_list_node)
+      else if (TREE_CHAIN (a) == void_list_node)
       {
         // In the lax mode any function with a single argument works
         // for us. And we don't care what it returns.
@@ -1028,20 +1028,7 @@ namespace
         if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
           throw operation_failed ();
 
-        unsigned long long e;
-
-        {
-          HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
-          HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
-
-          unsigned long long l (hwl);
-          unsigned long long h (hwh);
-          unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-          e = (h << width) + l;
-        }
-
-        null_handler = static_cast<bool> (e);
+        null_handler = static_cast<bool> (integer_value (init));
         t.set ("wrapper-null-handler", null_handler);
       }
       catch (operation_failed const&)
@@ -1077,20 +1064,8 @@ namespace
           if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
             throw operation_failed ();
 
-          unsigned long long e;
-
-          {
-            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
-            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
-
-            unsigned long long l (hwl);
-            unsigned long long h (hwh);
-            unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-            e = (h << width) + l;
-          }
-
-          t.set ("wrapper-null-default", static_cast<bool> (e));
+          t.set ("wrapper-null-default",
+                 static_cast<bool> (integer_value (init)));
         }
         catch (operation_failed const&)
         {
@@ -1250,20 +1225,8 @@ namespace
           if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
             throw operation_failed ();
 
-          unsigned long long e;
-
-          {
-            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
-            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
-
-            unsigned long long l (hwl);
-            unsigned long long h (hwh);
-            unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-            e = (h << width) + l;
-          }
-
-          pointer_kind_type pk = static_cast<pointer_kind_type> (e);
+          pointer_kind_type pk = static_cast<pointer_kind_type> (
+            integer_value (init));
           t.set ("pointer-kind", pk);
         }
         catch (operation_failed const&)
@@ -1296,20 +1259,7 @@ namespace
           if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
             throw operation_failed ();
 
-          unsigned long long e;
-
-          {
-            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
-            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
-
-            unsigned long long l (hwl);
-            unsigned long long h (hwh);
-            unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-            e = (h << width) + l;
-          }
-
-          t.set ("pointer-lazy", static_cast<bool> (e));
+          t.set ("pointer-lazy", static_cast<bool> (integer_value (init)));
         }
         catch (operation_failed const&)
         {
@@ -1552,20 +1502,7 @@ namespace
           if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
             throw operation_failed ();
 
-          unsigned long long e;
-
-          {
-            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
-            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
-
-            unsigned long long l (hwl);
-            unsigned long long h (hwh);
-            unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-            e = (h << width) + l;
-          }
-
-          ck = static_cast<container_kind_type> (e);
+          ck = static_cast<container_kind_type> (integer_value (init));
         }
         catch (operation_failed const&)
         {
@@ -1601,20 +1538,7 @@ namespace
           if (init == error_mark_node || TREE_CODE (init) != INTEGER_CST)
             throw operation_failed ();
 
-          unsigned long long e;
-
-          {
-            HOST_WIDE_INT hwl (TREE_INT_CST_LOW (init));
-            HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (init));
-
-            unsigned long long l (hwl);
-            unsigned long long h (hwh);
-            unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-            e = (h << width) + l;
-          }
-
-          smart = static_cast<bool> (e);
+          smart = static_cast<bool> (integer_value (init));
         }
         catch (operation_failed const&)
         {
@@ -3002,6 +2926,19 @@ namespace
                 {
                   tree decl (resolve_name (t, resolve_scope, false));
                   tree scope (CP_DECL_CONTEXT (decl));
+
+                  // If this is an inline namespace, skip it until we get
+                  // to the non-inline one.
+                  //
+                  while (scope != global_namespace)
+                  {
+                    tree prev (CP_DECL_CONTEXT (scope));
+
+                    if (!is_associated_namespace (prev, scope))
+                      break;
+
+                    scope = prev;
+                  }
 
                   if (scope != global_namespace)
                   {

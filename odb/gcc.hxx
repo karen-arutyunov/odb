@@ -33,6 +33,11 @@ extern "C"
 {
 #endif
 
+// GCC's system.h below includes safe-ctype.h which "disables" versions
+// from ctype.h. Well, now it's gonna learn how it feels to be disabled.
+//
+#define SAFE_CTYPE_H
+
 #include <gcc-plugin.h>
 
 #include <config.h>
@@ -64,6 +69,34 @@ extern "C"
 #ifdef ODB_GCC_PLUGIN_C
 } // extern "C"
 #endif
+
+// Get the value of INTEGER_CST reinterpreted as unsigned.
+//
+inline unsigned long long
+integer_value (tree n)
+{
+  unsigned long long val;
+
+#if BUILDING_GCC_MAJOR >= 5
+  if (tree_fits_uhwi_p (n))
+    val = static_cast<unsigned long long> (tree_to_uhwi (n));
+  else
+    val = static_cast<unsigned long long> (tree_to_shwi (n));
+#else
+  HOST_WIDE_INT hwl (TREE_INT_CST_LOW (n));
+  HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (n));
+  unsigned short width (HOST_BITS_PER_WIDE_INT);
+
+  if (hwh == 0)
+    val = static_cast<unsigned long long> (hwl);
+  else if (hwh == -1 && hwl != 0)
+    val = static_cast<unsigned long long> (hwl);
+  else
+    val = static_cast<unsigned long long> ((hwh << width) + hwl);
+#endif
+
+  return val;
+}
 
 // Since 4.7.0 the location may point inside a macro rather than at
 // the expansion point. We are only really interested in the expansion

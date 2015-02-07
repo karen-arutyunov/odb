@@ -113,8 +113,25 @@ namespace semantics
 
         tree s (CP_DECL_CONTEXT (decl));
 
-        if (TREE_CODE (s) == TYPE_DECL)
+        gcc_tree_code_type tc (TREE_CODE (s));
+
+        if (tc == TYPE_DECL)
           s = TREE_TYPE (s);
+        else if (tc == NAMESPACE_DECL)
+        {
+          // "Unwind" any inline namespaces since they are not in
+          // semantic grapth.
+          //
+          while (s != global_namespace)
+          {
+            tree prev (CP_DECL_CONTEXT (s));
+
+            if (!is_associated_namespace (prev, s))
+              break;
+
+            s = prev;
+          }
+        }
 
         if (nameable* n = dynamic_cast<nameable*> (unit ().find (s)))
           return scope.find (n)  || n->fq_anonymous_ (&scope);
@@ -155,12 +172,23 @@ namespace semantics
     bool punc (false);
     bool scoped (false);
 
-    for (cpp_ttype tt = l.next (t); tt != CPP_EOF; tt = l.next (t))
+    // Names returned by GCC's type_as_string() (on which this function
+    // is called) include inline namespaces (e.g., std::__cxx11::string).
+    // So, besides fully-qualifying names, this function also needs to get
+    // rid of those. The idea is to resolve names as we lex them, skipping
+    // inline namespaces and stopping once we reach something other than a
+    // namespace.
+    //
+    tree ns (global_namespace);
+    tree id;
+
+    for (cpp_ttype tt = l.next (t, &id); tt != CPP_EOF; tt = l.next (t, &id))
     {
       if (punc && tt > CPP_LAST_PUNCTUATOR)
         r += ' ';
 
       punc = false;
+      tree new_ns (global_namespace); // By default, revert to global.
 
       switch (static_cast<unsigned> (tt))
       {
@@ -181,6 +209,35 @@ namespace semantics
         }
       case CPP_NAME:
         {
+          // Check if this is a namespace and, if so, whether it is
+          // inline.
+          //
+          if (ns != 0)
+          {
+            new_ns = lookup_qualified_name (ns, id, false, false);
+
+            if (new_ns == error_mark_node ||
+                TREE_CODE (new_ns) != NAMESPACE_DECL)
+              new_ns = 0; // Not a namespace, stop resolving.
+            else
+            {
+              // Check if this is an inline namespace and skip it if so.
+              //
+              if (is_associated_namespace (ns, new_ns))
+              {
+                // Skip also the following scope operator. Strictly speaking
+                // there could be none (i.e., this is a name of an inline
+                // namespace) but we only use this function to print names
+                // of anonymous types.
+                //
+                assert (l.next (t) == CPP_SCOPE);
+                continue;
+              }
+            }
+          }
+          else
+            new_ns = 0; // Keep it disabled until we hit a new name.
+
           // If the name was not preceeded with '::', qualify it.
           //
           if (!scoped)
@@ -202,6 +259,11 @@ namespace semantics
           punc = true;
           break;
         }
+      case CPP_SCOPE:
+        {
+          new_ns = ns; // Don't change the namespace.
+          // Fall through.
+        }
       default:
         {
           r += t;
@@ -210,6 +272,7 @@ namespace semantics
       }
 
       scoped = (tt == CPP_SCOPE);
+      ns = new_ns;
     }
 
     return r;

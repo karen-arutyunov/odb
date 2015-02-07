@@ -277,10 +277,7 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
     //
     {
       strings argv_str;
-      vector<char*> argv;
-
       argv_str.push_back (plugin_info->base_name);
-      argv.push_back (const_cast<char*> (argv_str.back ().c_str ()));
 
       for (int i (0); i < plugin_info->argc; ++i)
       {
@@ -319,22 +316,22 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
         opt += a.key;
 
         argv_str.push_back (opt);
-        argv.push_back (const_cast<char*> (argv_str.back ().c_str ()));
 
         if (!v.empty ())
-        {
           argv_str.push_back (v);
-          argv.push_back (const_cast<char*> (argv_str.back ().c_str ()));
-        }
       }
+
+      vector<char*> argv;
+      for (strings::iterator i (argv_str.begin ()); i != argv_str.end (); ++i)
+        argv.push_back (const_cast<char*> (i->c_str ()));
+
+      int argc (static_cast<int> (argv.size ()));
 
       if (inputs_.empty ())
         inputs_.push_back (file_);
 
       // Two-phase options parsing, similar to the driver.
       //
-      int argc (static_cast<int> (argv.size ()));
-
       cli::argv_file_scanner::option_info oi[3];
       oi[0].option = "--options-file";
       oi[0].search_func = 0;

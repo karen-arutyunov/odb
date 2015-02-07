@@ -932,6 +932,9 @@ emit ()
       if (ns.compare (0, pfx.size (), pfx) == 0)
         break;
 
+      if (trace)
+        ts << "closing namespace " << scope_->name () << endl;
+
       scope_ = &scope_->scope_ ();
     }
 
@@ -949,7 +952,7 @@ emit ()
         string n (ns, b, e == string::npos ? e : e - b);
 
         if (trace)
-          ts << "creating namespace " << n << " for "
+          ts << "opening namespace " << n << " for "
              << DECL_SOURCE_FILE (decl) << ":"
              << DECL_SOURCE_LINE (decl) << endl;
 
@@ -1164,8 +1167,8 @@ emit_type_decl (tree decl)
     {
       string s (emit_type_name (t, false));
 
-      ts << "typedef " << s << " (" << &node << ") -> " << name << " at "
-         << f << ":" << l << endl;
+      ts << "typedef " << s << " (" << &node << ") -> " << name
+         << " at " << f << ":" << l << endl;
     }
 
     return 0;
@@ -1461,18 +1464,7 @@ emit_enum (tree e,
     tree decl (TREE_VALUE (er));
     tree tval (DECL_INITIAL (decl));
 
-    HOST_WIDE_INT hwl (TREE_INT_CST_LOW (tval));
-    HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (tval));
-    unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-    unsigned long long val;
-
-    if (hwh == 0)
-      val = static_cast<unsigned long long> (hwl);
-    else if (hwh == -1 && hwl != 0)
-      val = static_cast<unsigned long long> (hwl);
-    else
-      val = static_cast<unsigned long long> ((hwh << width) + hwl);
+    unsigned long long val (integer_value (tval));
 
     // There doesn't seem to be a way to get the proper position for
     // each enumerator.
@@ -1810,28 +1802,22 @@ create_type (tree t,
 
         if (TREE_CODE (max) == INTEGER_CST)
         {
-          HOST_WIDE_INT hwl (TREE_INT_CST_LOW (max));
-          HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (max));
+          size = integer_value (max);
 
           // The docs say that TYPE_DOMAIN will be NULL if the
-          // array doesn't specify bounds. In reality, both
-          // low and high parts are set to HOST_WIDE_INT_MAX.
+          // array doesn't specify bounds. In reality, it is
+          // set to ~0.
           //
-          if (hwl != ~(HOST_WIDE_INT) (0) && hwh != ~(HOST_WIDE_INT) (0))
-          {
-            unsigned long long l (hwl);
-            unsigned long long h (hwh);
-            unsigned short width (HOST_BITS_PER_WIDE_INT);
+          if (size == ~(unsigned long long) (0))
+            size = 0;
 
-            size = (h << width) + l + 1;
-          }
+          size++; // Convert max index to size.
         }
         else
         {
           error (file, line, clmn)
             << "non-integer array index " <<
-            gcc_tree_code_name(TREE_CODE (max))
-            << endl;
+            gcc_tree_code_name(TREE_CODE (max)) << endl;
 
           throw failed ();
         }
@@ -2041,17 +2027,14 @@ emit_type_name (tree type, bool direct)
 
         if (TREE_CODE (max) == INTEGER_CST)
         {
-          HOST_WIDE_INT hwl (TREE_INT_CST_LOW (max));
-          HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (max));
+          size = integer_value (max);
 
-          if (hwl != ~(HOST_WIDE_INT) (0) && hwh != ~(HOST_WIDE_INT) (0))
-          {
-            unsigned long long l (hwl);
-            unsigned long long h (hwh);
-            unsigned short width (HOST_BITS_PER_WIDE_INT);
+          // Same as above.
+          //
+          if (size == ~(unsigned long long) (0))
+            size = 0;
 
-            size = (h << width) + l + 1;
-          }
+          size++;
         }
         else
         {
@@ -2227,15 +2210,23 @@ fq_scope (tree decl)
   string s, tmp;
 
   for (tree scope (CP_DECL_CONTEXT (decl));
-       scope != global_namespace;
-       scope = CP_DECL_CONTEXT (scope))
+       scope != global_namespace;)
   {
-    tree n = DECL_NAME (scope);
+    tree prev (CP_DECL_CONTEXT (scope));
 
-    tmp = "::";
-    tmp += (n != NULL_TREE ? IDENTIFIER_POINTER (n) : "");
-    tmp += s;
-    s.swap (tmp);
+    // If this is an inline namespace, pretend it doesn't exist.
+    //
+    if (!is_associated_namespace (prev, scope))
+    {
+      tree n = DECL_NAME (scope);
+
+      tmp = "::";
+      tmp += (n != NULL_TREE ? IDENTIFIER_POINTER (n) : "");
+      tmp += s;
+      s.swap (tmp);
+    }
+
+    scope = prev;
   }
 
   return s;

@@ -6689,7 +6689,7 @@ namespace relational
       virtual string
       join_syntax (view_object const& vo)
       {
-        const char* r;
+        const char* r (0);
 
         switch (vo.join)
         {

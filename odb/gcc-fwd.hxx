@@ -12,6 +12,10 @@
 #  include <config.h>
 #endif
 
+#if BUILDING_GCC_MAJOR >= 5
+#  include <stdint.h> // Needed by coretypes.h
+#endif
+
 extern "C"
 {
 // The hwint.h header uses gcc_checking_assert macro from system.h. But

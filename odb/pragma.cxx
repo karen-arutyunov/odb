@@ -31,20 +31,6 @@ ns_loc_pragmas ns_loc_pragmas_;
 database pragma_db_;
 multi_database pragma_multi_;
 
-static unsigned long long
-integer (tree n)
-{
-  HOST_WIDE_INT hwl (TREE_INT_CST_LOW (n));
-  HOST_WIDE_INT hwh (TREE_INT_CST_HIGH (n));
-
-  unsigned long long l (hwl);
-  unsigned long long h (hwh);
-  unsigned short width (HOST_BITS_PER_WIDE_INT);
-
-  unsigned long long v ((h << width) + l);
-  return v;
-}
-
 template <typename X>
 void
 accumulate (compiler::context& ctx, string const& k, any const& v, location_t)
@@ -226,7 +212,7 @@ parse_expression (cxx_lexer& l,
         case INTEGER_CST:
           {
             tree type (TREE_TYPE (tn));
-            unsigned long long v (integer (tn));
+            unsigned long long v (integer_value (tn));
 
             ostringstream os;
             os << v;
@@ -734,7 +720,7 @@ handle_pragma (cxx_lexer& l,
         return;
       }
 
-      v.base = integer (tn);
+      v.base = integer_value (tn);
 
       if (v.base == 0)
       {
@@ -756,7 +742,7 @@ handle_pragma (cxx_lexer& l,
         return;
       }
 
-      v.current = integer (tn);
+      v.current = integer_value (tn);
 
       if (v.current == 0)
       {
@@ -1550,7 +1536,7 @@ handle_pragma (cxx_lexer& l,
       return;
     }
 
-    unsigned long long b (integer (tn));
+    unsigned long long b (integer_value (tn));
 
     if (b == 0 || b == 1)
     {
@@ -2217,12 +2203,11 @@ handle_pragma (cxx_lexer& l,
       }
     case CPP_NUMBER:
       {
-        ///////
         switch (TREE_CODE (tn))
         {
         case INTEGER_CST:
           {
-            dv.int_value = integer (tn);
+            dv.int_value = integer_value (tn);
             dv.kind = default_value::integer;
             break;
           }
@@ -2531,7 +2516,7 @@ handle_pragma (cxx_lexer& l,
       return;
     }
 
-    unsigned long long v (integer (tn));
+    unsigned long long v (integer_value (tn));
 
     if (v == 0)
     {

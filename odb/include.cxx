@@ -496,12 +496,9 @@ namespace
     std::locale loc_;
     options const& options_;
   };
-}
 
-namespace include
-{
   bool
-  generate (bool header)
+  generate_impl (bool header)
   {
     bool r (false);
 
@@ -717,4 +714,10 @@ namespace include
 
     return r;
   }
+}
+
+namespace include
+{
+  bool
+  generate (bool header) {return generate_impl (header);}
 }

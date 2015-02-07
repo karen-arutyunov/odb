@@ -181,7 +181,11 @@ cxx_string_lexer::
 cxx_string_lexer ()
     : reader_ (0)
 {
+#if BUILDING_GCC_MAJOR >= 5
+  linemap_init (&line_map_, UNKNOWN_LOCATION);
+#else
   linemap_init (&line_map_);
+#endif
 
 #if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 6
   line_map_.round_alloc_size = ggc_round_alloc_size;
