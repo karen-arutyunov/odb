@@ -21,7 +21,8 @@ struct cxx_version
   enum value
   {
     cxx98,
-    cxx11
+    cxx11,
+    cxx14
   };
 
   cxx_version (value v = value (0)) : v_ (v) {}

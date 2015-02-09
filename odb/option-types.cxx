@@ -18,6 +18,7 @@ static const char* cxx_version_[] =
 {
   "c++98",
   "c++11"
+  "c++14"
 };
 
 string cxx_version::
@@ -38,6 +39,8 @@ operator>> (istream& is, cxx_version& v)
       v = cxx_version::cxx98;
     else if (s == "c++11")
       v = cxx_version::cxx11;
+    else if (s == "c++14")
+      v = cxx_version::cxx14;
     else
       is.setstate (istream::failbit);
   }

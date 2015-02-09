@@ -311,7 +311,7 @@ class options
   {
     "<version>",
     "Specify the C++ standard that should be used during compilation.
-     Valid values are \cb{c++98} (default) and \cb{c++11}."
+     Valid values are \cb{c++98} (default), \cb{c++11}, and \cb{c++14}."
   };
 
   // Diagnostics.

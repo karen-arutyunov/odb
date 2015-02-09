@@ -194,7 +194,7 @@ cxx_string_lexer ()
   linemap_add (&line_map_, LC_ENTER, 0, "<memory>", 0);
 
   reader_ = cpp_create_reader (
-    cxx_dialect == cxx0x
+    cxx_dialect == cxx0x // Nothing new for C++14.
 #if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 6
     ? CLK_CXX11
 #else

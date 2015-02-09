@@ -613,6 +613,11 @@ main (int argc, char* argv[])
           args[3] = "-std=gnu++0x"; // gnu++11 was only added in GCC 4.7.0.
           break;
         }
+      case cxx_version::cxx14:
+        {
+          args[3] = "-std=gnu++14";
+          break;
+        }
       }
     }
 
