@@ -10387,7 +10387,7 @@ struct employer_view
      employ seniors:</p>
 
   <pre class="cxx">
-typedef odb::query&lt;employee_employer> query;
+typedef odb::query&lt;employer_view> query;
 
 db.query&lt;employer_view> (query::employee::age > 65)
   </pre>

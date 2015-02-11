@@ -2,7 +2,7 @@ Version 2.4.0
 
  * Support for object loading views. Object loading views allow loading of
    one or more complete objects instead of, or in addition to, a subset of
-   data member and with a single SELECT statement execution. For details,
+   data members and with a single SELECT statement execution. For details,
    refer to Section 10.2, "Object Loading Views" in the ODB manual.
 
  * Support for bulk operations in Oracle and SQL Server. Bulk operations
