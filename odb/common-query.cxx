@@ -123,23 +123,27 @@ traverse (semantics::class_& c)
   {
     object_columns_base::traverse (c);
   }
-  else if (c.get<size_t> ("object-count") != 0) // View.
+  else if (view (c))
   {
-    view_objects& objs (c.get<view_objects> ("objects"));
-
-    for (view_objects::const_iterator i (objs.begin ());
-         i < objs.end ();
-         ++i)
+    if (c.get<size_t> ("object-count") != 0)
     {
-      if (i->kind != view_object::object)
-        continue; // Skip tables.
+      view_objects& objs (c.get<view_objects> ("objects"));
 
-      if (i->alias.empty ())
-        continue;
+      for (view_objects::const_iterator i (objs.begin ());
+           i < objs.end ();
+           ++i)
+      {
+        if (i->kind != view_object::object)
+          continue; // Skip tables.
 
-      generate (i->alias);
+        if (i->alias.empty ())
+          continue;
+
+        generate (i->alias);
+      }
     }
   }
+  // Otherwise it is a transient base (of a composite value).
 
   if (nl_)
     os << endl;
