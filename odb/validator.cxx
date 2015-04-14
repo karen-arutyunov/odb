@@ -1423,11 +1423,25 @@ namespace
     }
 
     virtual void
-    traverse_view (type&)
+    traverse_view (type& c)
     {
       // We don't check for the column count here since we may want to
       // allow certain kinds of empty views. Instead, this is handled
       // in relational::validation.
+
+      // See if any of the associated objects are polymorphic. If so,
+      // we need to include polymorphism-specific headers.
+      //
+      if (c.count ("objects"))
+      {
+        view_objects& objs (c.get<view_objects> ("objects"));
+
+        for (view_objects::iterator i (objs.begin ()); i != objs.end (); ++i)
+        {
+          if (i->kind == view_object::object && polymorphic (*i->obj))
+            features.polymorphic_object = true;
+        }
+      }
     }
 
     virtual void
