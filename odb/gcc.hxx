@@ -46,8 +46,6 @@ extern "C"
 #include <tree.h>
 #include <real.h>
 
-#include <tm.h>
-
 #include <cpplib.h>
 #include <cp/cp-tree.h>
 
