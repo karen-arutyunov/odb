@@ -9,25 +9,15 @@
 #include <odb/features.hxx>
 #include <odb/semantics/unit.hxx>
 
-class validator
-{
-public:
-  struct failed {};
+class validator_failed {};
 
-  // The first pass is performed before processing. The second -- after.
-  //
-  void
-  validate (options const&,
-            features&,
-            semantics::unit&,
-            semantics::path const&,
-            unsigned short pass);
-
-  validator () {}
-
-private:
-  validator (validator const&);
-  validator& operator= (validator const&);
-};
+// The first pass is performed before processing. The second -- after.
+//
+void
+validate (options const&,
+          features&,
+          semantics::unit&,
+          semantics::path const&,
+          unsigned short pass);
 
 #endif // ODB_VALIDATOR_HXX

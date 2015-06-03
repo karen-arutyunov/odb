@@ -9,22 +9,12 @@
 #include <odb/features.hxx>
 #include <odb/semantics/unit.hxx>
 
-class processor
-{
-public:
-  class failed {};
+class processor_failed {};
 
-  void
-  process (options const&,
-           features&,
-           semantics::unit&,
-           semantics::path const&);
-
-  processor () {}
-
-private:
-  processor (processor const&);
-  processor& operator= (processor const&);
-};
+void
+process (options const&,
+         features&,
+         semantics::unit&,
+         semantics::path const&);
 
 #endif // ODB_PROCESSOR_HXX

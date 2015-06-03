@@ -11,26 +11,15 @@
 
 namespace relational
 {
-  class validator
-  {
-  public:
-    struct failed {};
-
-    // The first pass is performed before processing. The second -- after.
-    //
-    void
-    validate (options const&,
-              features&,
-              semantics::unit&,
-              semantics::path const&,
-              unsigned short pass);
-
-    validator () {}
-
-  private:
-    validator (validator const&);
-    validator& operator= (validator const&);
-  };
+  // The first pass is performed before processing. The second -- after.
+  // Throws operation_failed to signal a failure.
+  //
+  void
+  validate (options const&,
+            features&,
+            semantics::unit&,
+            semantics::path const&,
+            unsigned short pass);
 }
 
 #endif // ODB_RELATIONAL_VALIDATOR_HXX

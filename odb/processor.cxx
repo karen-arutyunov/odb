@@ -3064,7 +3064,7 @@ namespace
   };
 }
 
-void processor::
+void
 process (options const& ops,
          features& f,
          semantics::unit& unit,
@@ -3120,6 +3120,6 @@ process (options const& ops,
   {
     // Processing failed. Diagnostics has already been issued.
     //
-    throw failed ();
+    throw processor_failed ();
   }
 }

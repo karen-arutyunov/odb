@@ -528,7 +528,7 @@ namespace relational
     };
   }
 
-  void validator::
+  void
   validate (options const&,
             features&,
             semantics::unit& u,
@@ -608,7 +608,7 @@ namespace relational
     }
 
     if (!valid)
-      throw failed ();
+      throw operation_failed ();
 
     if (pass == 1)
     {
@@ -636,6 +636,6 @@ namespace relational
     }
 
     if (!valid)
-      throw failed ();
+      throw operation_failed ();
   }
 }

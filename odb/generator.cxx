@@ -58,7 +58,7 @@ namespace
     if (!ifs.is_open ())
     {
       cerr << "error: unable to open '" << p << "' in read mode" << endl;
-      throw generator::failed ();
+      throw generator_failed ();
     }
   }
 
@@ -70,7 +70,7 @@ namespace
     if (!ofs.is_open ())
     {
       cerr << "error: unable to open '" << p << "' in write mode" << endl;
-      throw generator::failed ();
+      throw generator_failed ();
     }
   }
 
@@ -118,7 +118,7 @@ namespace
   }
 }
 
-void generator::
+void
 generate (options const& ops,
           features& fts,
           semantics::unit& unit,
@@ -259,7 +259,7 @@ generate (options const& ops,
             cerr << in_log_path << ": error: wrong database '" <<
               old_changelog->database () << "', expected '" << db <<
               "'" << endl;
-            throw generator::failed ();
+            throw generator_failed ();
           }
 
           string sn (ops.schema_name ()[db]);
@@ -268,18 +268,18 @@ generate (options const& ops,
             cerr << in_log_path << ": error: wrong schema name '" <<
               old_changelog->schema_name () << "', expected '" << sn <<
               "'" << endl;
-            throw generator::failed ();
+            throw generator_failed ();
           }
         }
         catch (const ios_base::failure& e)
         {
           cerr << in_log_path << ": read failure" << endl;
-          throw failed ();
+          throw generator_failed ();
         }
         catch (const xml::parsing& e)
         {
           cerr << e.what () << endl;
-          throw failed ();
+          throw generator_failed ();
         }
       }
 
@@ -976,12 +976,12 @@ generate (options const& ops,
       catch (const ios_base::failure& e)
       {
         cerr << out_log_path << ": write failure" << endl;
-        throw failed ();
+        throw generator_failed ();
       }
       catch (const xml::serialization& e)
       {
         cerr << e.what () << endl;
-        throw failed ();
+        throw generator_failed ();
       }
     }
 
@@ -998,18 +998,18 @@ generate (options const& ops,
   {
     // Code generation failed. Diagnostics has already been issued.
     //
-    throw failed ();
+    throw generator_failed ();
   }
   catch (semantics::invalid_path const& e)
   {
     cerr << "error: '" << e.path () << "' is not a valid filesystem path"
          << endl;
-    throw failed ();
+    throw generator_failed ();
   }
   catch (fs::error const&)
   {
     // Auto-removal of generated files failed. Ignore it.
     //
-    throw failed ();
+    throw generator_failed ();
   }
 }

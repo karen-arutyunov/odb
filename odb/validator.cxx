@@ -1471,7 +1471,7 @@ namespace
   };
 }
 
-void validator::
+void
 validate (options const& ops,
           features& f,
           semantics::unit& u,
@@ -1520,7 +1520,7 @@ validate (options const& ops,
   }
 
   if (!valid)
-    throw failed ();
+    throw validator_failed ();
 
   auto_ptr<context> ctx (create_context (cerr, u, ops, f, 0));
 
@@ -1573,7 +1573,7 @@ validate (options const& ops,
   }
 
   if (!valid)
-    throw failed ();
+    throw validator_failed ();
 
   switch (db)
   {
@@ -1589,12 +1589,11 @@ validate (options const& ops,
     {
       try
       {
-        relational::validator v;
-        v.validate (ops, f, u, p, pass);
+        relational::validate (ops, f, u, p, pass);
       }
-      catch (relational::validator::failed const&)
+      catch (operation_failed const&)
       {
-        throw failed ();
+        throw validator_failed ();
       }
 
       break;

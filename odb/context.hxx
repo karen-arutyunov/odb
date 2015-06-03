@@ -41,7 +41,8 @@ typedef cutl::re::format regex_format;
 
 typedef std::vector<regexsub> regex_mapping;
 
-//
+// Generic exception thrown to indicate a failure when diagnostics
+// has already been issued (to stderr).
 //
 class operation_failed {};
 

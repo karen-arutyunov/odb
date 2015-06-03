@@ -199,27 +199,23 @@ gate_callback (void*, void*)
     parser p (*options_, loc_pragmas_, ns_loc_pragmas_, decl_pragmas_);
     auto_ptr<unit> u (p.parse (global_namespace, file_));
 
-
     features f;
 
     // Validate, pass 1.
     //
-    validator v;
-    v.validate (*options_, f, *u, file_, 1);
+    validate (*options_, f, *u, file_, 1);
 
     // Process.
     //
-    processor pr;
-    pr.process (*options_, f, *u, file_);
+    process (*options_, f, *u, file_);
 
     // Validate, pass 2.
     //
-    v.validate (*options_, f, *u, file_, 2);
+    validate (*options_, f, *u, file_, 2);
 
     // Generate.
     //
-    generator g;
-    g.generate (*options_, f, *u, file_, inputs_);
+    generate (*options_, f, *u, file_, inputs_);
   }
   catch (cutl::re::format const& e)
   {
@@ -239,19 +235,19 @@ gate_callback (void*, void*)
     //
     r = 1;
   }
-  catch (validator::failed const&)
+  catch (validator_failed const&)
   {
     // Diagnostics has aready been issued.
     //
     r = 1;
   }
-  catch (processor::failed const&)
+  catch (processor_failed const&)
   {
     // Diagnostics has aready been issued.
     //
     r = 1;
   }
-  catch (generator::failed const&)
+  catch (generator_failed const&)
   {
     // Diagnostics has aready been issued.
     //
