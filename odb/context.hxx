@@ -769,6 +769,12 @@ public:
   static semantics::data_member*
   object_pointer (data_member_path const&);
 
+  static semantics::class_*
+  points_to (semantics::data_member& m)
+  {
+    return m.get<semantics::class_*> ("points-to", 0);
+  }
+
   static bool
   abstract (semantics::class_& c)
   {

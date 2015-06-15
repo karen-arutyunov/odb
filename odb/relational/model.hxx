@@ -237,9 +237,6 @@ namespace relational
       virtual void
       traverse_pointer (semantics::data_member& m, semantics::class_& c)
       {
-        using sema_rel::column;
-        using sema_rel::foreign_key;
-
         // Ignore inverse object pointers.
         //
         if (inverse (m, key_prefix_))
@@ -253,6 +250,76 @@ namespace relational
           object_columns_base::traverse_pointer (m, c);
           return;
         }
+
+        // Get the position of the last column.
+        //
+        sema_rel::table::names_iterator i (table_.names_end ());
+
+        while (i != table_.names_begin ())
+        {
+          --i;
+          if (i->nameable ().is_a<sema_rel::column> ())
+            break;
+        }
+
+        // Traverse the object pointer as columns.
+        //
+        object_columns_base::traverse_pointer (m, c);
+
+        // Get to the first column that we have added.
+        //
+        if (i != table_.names_end ())
+          ++i; // Next column.
+        else
+          i = table_.names_begin ();
+
+        foreign_key (m, c, i);
+      }
+
+      virtual void
+      traverse_points_to (semantics::data_member& m, semantics::class_& c)
+      {
+        if (deleted (member_path_))
+        {
+          // Still traverse it as columns so that we can populate the
+          // deleted map.
+          //
+          object_columns_base::traverse_points_to (m, c);
+          return;
+        }
+
+        // Get the position of the last column.
+        //
+        sema_rel::table::names_iterator i (table_.names_end ());
+
+        while (i != table_.names_begin ())
+        {
+          --i;
+          if (i->nameable ().is_a<sema_rel::column> ())
+            break;
+        }
+
+        // Traverse the data member as columns.
+        //
+        object_columns_base::traverse_points_to (m, c);
+
+        // Get to the first column that we have added.
+        //
+        if (i != table_.names_end ())
+          ++i; // Next column.
+        else
+          i = table_.names_begin ();
+
+        foreign_key (m, c, i);
+      }
+
+      virtual void
+      foreign_key (semantics::data_member& m,
+                   semantics::class_& c,
+                   sema_rel::table::names_iterator i)
+      {
+        using sema_rel::column;
+        using sema_rel::foreign_key;
 
         string id (id_prefix_ +
                    (key_prefix_.empty () ? m.name () : key_prefix_));
@@ -287,29 +354,8 @@ namespace relational
           simple = (fk.referenced_columns ().size () == 1);
         }
 
-        // Get the position of the last column.
+        // Get referencing columns.
         //
-        sema_rel::table::names_iterator i (table_.names_end ());
-
-        while (i != table_.names_begin ())
-        {
-          --i;
-
-          if (i->nameable ().is_a<column> ())
-            break;
-        }
-
-        // Traverse the object pointer as columns.
-        //
-        object_columns_base::traverse_pointer (m, c);
-
-        // Add the newly added columns to the foreign key.
-        //
-        if (i != table_.names_end ())
-          ++i;
-        else
-          i = table_.names_begin ();
-
         for (; i != table_.names_end (); ++i)
         {
           if (column* c = dynamic_cast<column*> (&i->nameable ()))

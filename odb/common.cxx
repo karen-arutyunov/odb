@@ -250,6 +250,12 @@ traverse_pointer (semantics::data_member& m, semantics::class_& c)
 }
 
 void object_columns_base::
+traverse_points_to (semantics::data_member& m, semantics::class_&)
+{
+  traverse_member (m, utype (m));
+}
+
+void object_columns_base::
 traverse_composite (semantics::data_member*, semantics::class_& c)
 {
   inherits (c);
@@ -453,10 +459,13 @@ traverse (semantics::data_member& m)
 
   if (oc_.section_test (oc_.member_path_))
   {
+    using semantics::class_;
     semantics::type& t (utype (m));
 
-    if (semantics::class_* c = object_pointer (t))
+    if (class_* c = object_pointer (t))
       oc_.traverse_pointer (m, *c);
+    else if (class_* c = points_to (m))
+      oc_.traverse_points_to (m, *c);
     else
       oc_.traverse_member (m, t);
   }

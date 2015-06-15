@@ -380,6 +380,7 @@ check_spec_decl_type (declaration const& d,
            p == "column"    ||
            p == "inverse"   ||
            p == "on_delete" ||
+           p == "points_to" ||
            p == "section"   ||
            p == "load"      ||
            p == "update"    ||
@@ -2340,6 +2341,65 @@ handle_pragma (cxx_lexer& l,
 
     tt = l.next (tl, &tn);
   }
+  else if (p == "points_to")
+  {
+    // points_to(<fq-name>)
+    //
+
+    tree type;
+    string type_name;
+
+    string p (tl);
+    location_t loc (l.location ());
+
+    if (l.next (tl, &tn) != CPP_OPEN_PAREN)
+    {
+      error (l) << "'(' expected after db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+
+    if (tt == CPP_NAME || tt == CPP_SCOPE)
+    {
+      type = resolve_scoped_name (
+        l, tt, tl, tn, current_scope (), type_name, true, p);
+
+      if (type == 0)
+        return; // Diagnostics has already been issued.
+
+      // Get the actual type if this is a TYPE_DECL. Also get the main
+      // variant.
+      //
+      if (TREE_CODE (type) == TYPE_DECL)
+        type = TREE_TYPE (type);
+
+      if (TYPE_P (type)) // Can be a template.
+        type = TYPE_MAIN_VARIANT (type);
+
+      if (TREE_CODE (type) != RECORD_TYPE)
+      {
+        error (loc) << "name '" << type_name << "' in db pragma " << p
+                    << " does not refer to a class" << endl;
+        return;
+      }
+
+      val = type;
+    }
+    else
+    {
+      error (l) << "class name expected in db pragma " << p << endl;
+      return;
+    }
+
+    if (tt != CPP_CLOSE_PAREN)
+    {
+      error (l) << "')' expected at the end of db pragma " << p << endl;
+      return;
+    }
+
+    tt = l.next (tl, &tn);
+  }
   else if (p == "section")
   {
     // section (name)
@@ -3445,6 +3505,7 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
            p == "update"  ||
            p == "inverse" ||
            p == "on_delete" ||
+           p == "points_to" ||
            p == "unordered" ||
            p == "readonly" ||
            p == "transient" ||
@@ -3821,6 +3882,12 @@ handle_pragma_db_on_delete (cpp_reader* r)
 }
 
 extern "C" void
+handle_pragma_db_points_to (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "points_to");
+}
+
+extern "C" void
 handle_pragma_db_unordered (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "unordered");
@@ -3935,6 +4002,7 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "update", handle_pragma_db_update);
   c_register_pragma_with_expansion ("db", "inverse", handle_pragma_db_inverse);
   c_register_pragma_with_expansion ("db", "on_delete", handle_pragma_db_on_delete);
+  c_register_pragma_with_expansion ("db", "points_to", handle_pragma_db_points_to);
   c_register_pragma_with_expansion ("db", "unordered", handle_pragma_db_unordered);
   c_register_pragma_with_expansion ("db", "readonly", handle_pragma_db_readonly);
   c_register_pragma_with_expansion ("db", "transient", handle_pragma_db_transient);

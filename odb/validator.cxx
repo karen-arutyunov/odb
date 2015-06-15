@@ -1032,8 +1032,86 @@ namespace
     data_member2 (bool& valid): valid_ (valid) {}
 
     virtual void
-    traverse (type&)
+    traverse (type& m)
     {
+      // Validate pointed-to objects.
+      //
+      semantics::class_* c;
+      if ((c = object_pointer (utype (m))) || (c = points_to (m)))
+      {
+        bool poly (polymorphic (*c));
+        bool abst (abstract (*c));
+
+        // Make sure the pointed-to class is complete.
+        //
+        if (!c->complete ())
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "error: pointed-to class '" << class_fq_name (*c) << "' "
+             << "is incomplete" << endl;
+
+          os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+             << "info: class '" << class_name (*c) << "' is declared here"
+             << endl;
+
+          os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+             << "info: consider including its definition with the "
+             << "--odb-epilogue option" << endl;
+
+          valid_ = false;
+          return;
+        }
+
+        // Make sure the pointed-to class is not reuse-abstract.
+        //
+        if (abst && !poly)
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "error: pointed-to class '" << class_fq_name (*c) << "' "
+             << "is abstract" << endl;
+
+          os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+             << "info: class '" << class_name (*c) << "' is defined here"
+             << endl;
+
+          throw operation_failed ();
+        }
+
+        // Make sure the pointed-to class has object id unless it is in a
+        // view where we can load no-id objects.
+        //
+        if (id_member (*c) == 0 && !view_member (m))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "error: pointed-to class '" << class_fq_name (*c) << "' "
+             << "has no object id" << endl;
+
+          os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+             << "info: class '" << class_name (*c) << "' is defined here"
+             << endl;
+
+          valid_ = false;
+          return;
+        }
+
+        // Make sure the pointed-to class has a default ctor. Since we will
+        // use database::load() in the generated code, lack of a default ctor
+        // will lead to uncompilable generated code. Poly-abstract is Ok.
+        //
+        if (!c->default_ctor () && !(abst && poly))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "error: pointed-to class '" << class_fq_name (*c) << "' "
+             << "has no default constructor" << endl;
+
+          os << c->file () << ":" << c->line () << ":" << c->column () << ": "
+             << "info: class '" << class_name (*c) << "' is defined here"
+             << endl;
+
+          valid_ = false;
+          return;
+        }
+      }
     }
 
     bool& valid_;
@@ -1466,7 +1544,7 @@ namespace
     traversal::defines defines_;
     typedefs typedefs_;
 
-    data_member1 member_;
+    data_member2 member_;
     traversal::names names_member_;
   };
 }

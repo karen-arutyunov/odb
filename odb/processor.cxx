@@ -130,6 +130,8 @@ namespace
           m.set ("readonly", true);
       }
 
+      process_points_to (m);
+
       if (composite_wrapper (t))
         return;
 
@@ -1118,15 +1120,15 @@ namespace
                             semantics::type& t,
                             string const& kp = string ())
     {
-      // The overall idea is as follows: try to instantiate the pointer
-      // traits class template. If we are successeful, then get the
-      // element type and see if it is an object.
-      //
       using semantics::class_;
       using semantics::data_member;
 
       class_* c (0);
 
+      // The overall idea is as follows: try to instantiate the pointer
+      // traits class template. If we are successeful, then get the
+      // element type and see if it is an object.
+      //
       if (t.count ("element-type"))
         c = t.get<class_*> ("element-type");
       else
@@ -1269,76 +1271,6 @@ namespace
         }
       }
 
-      bool poly (polymorphic (*c));
-      bool abst (abstract (*c));
-
-      // Make sure the pointed-to class is complete.
-      //
-      if (!c->complete ())
-      {
-        os << m.file () << ":" << m.line () << ":" << m.column () << ": "
-           << "error: pointed-to class '" << class_fq_name (*c) << "' "
-           << "is incomplete" << endl;
-
-        os << c->file () << ":" << c->line () << ":" << c->column () << ": "
-           << "info: class '" << class_name (*c) << "' is declared here"
-           << endl;
-
-        os << c->file () << ":" << c->line () << ":" << c->column () << ": "
-           << "info: consider including its definition with the "
-           << "--odb-epilogue option" << endl;
-
-        throw operation_failed ();
-      }
-
-      // Make sure the pointed-to class is not reuse-abstract.
-      //
-      if (abst && !poly)
-      {
-        os << m.file () << ":" << m.line () << ":" << m.column () << ": "
-           << "error: pointed-to class '" << class_fq_name (*c) << "' "
-           << "is abstract" << endl;
-
-        os << c->file () << ":" << c->line () << ":" << c->column () << ": "
-           << "info: class '" << class_name (*c) << "' is defined here"
-           << endl;
-
-        throw operation_failed ();
-      }
-
-      // Make sure the pointed-to class has object id unless it is in a
-      // view where we can load no-id objects.
-      //
-      if (id_member (*c) == 0 && !view_member (m))
-      {
-        os << m.file () << ":" << m.line () << ":" << m.column () << ": "
-           << "error: pointed-to class '" << class_fq_name (*c) << "' "
-           << "has no object id" << endl;
-
-        os << c->file () << ":" << c->line () << ":" << c->column () << ": "
-           << "info: class '" << class_name (*c) << "' is defined here"
-           << endl;
-
-        throw operation_failed ();
-      }
-
-      // Make sure the pointed-to class has a default ctor. Since we will
-      // use database::load() in the generated code, lack of a default ctor
-      // will lead to uncompilable generated code. Poly-abstract is Ok.
-      //
-      if (!c->default_ctor () && !(abst && poly))
-      {
-        os << m.file () << ":" << m.line () << ":" << m.column () << ": "
-           << "error: pointed-to class '" << class_fq_name (*c) << "' "
-           << "has no default constructor" << endl;
-
-        os << c->file () << ":" << c->line () << ":" << c->column () << ": "
-           << "info: class '" << class_name (*c) << "' is defined here"
-           << endl;
-
-        throw operation_failed ();
-      }
-
       // See if this is the inverse side of a bidirectional relationship.
       // If so, then resolve the member and cache it in the context.
       //
@@ -1405,6 +1337,35 @@ namespace
       }
 
       return c;
+    }
+
+    //
+    // Process points-to pragma.
+    //
+
+    void
+    process_points_to (semantics::data_member& m,
+                       string const& /*kp*/ = string ())
+    {
+      if (!m.count ("points-to"))
+        return;
+
+      using semantics::class_;
+
+      tree t (m.get<tree> ("points-to"));
+      location_t l (m.get<location_t> ("points-to-location"));
+
+      class_* c (dynamic_cast<class_*> (unit.find (t)));
+
+      if (c == 0 || !object (*c))
+      {
+        error (l) << "name specified with '#pragma db points_to' does "
+                  << "not refer to an object" << endl;
+        throw operation_failed ();
+      }
+
+      m.remove ("points-to");
+      m.set (/*kp + (kp.empty () ? "": "-") + */"points-to", c);
     }
 
     //

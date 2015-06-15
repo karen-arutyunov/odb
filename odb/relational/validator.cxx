@@ -59,9 +59,9 @@ namespace relational
           const char* kp (container (m) ? "value" : "");
           location l (m.location ());
 
-          // Make sure it is a pointer.
+          // Make sure it is a pointer or a member with points_to pragma.
           //
-          if (!object_pointer (member_utype (m, kp)))
+          if (!object_pointer (member_utype (m, kp)) && !points_to (m))
           {
             error (l) << "on_delete specified for non-object pointer" << endl;
             valid_ = false;
