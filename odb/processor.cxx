@@ -1303,9 +1303,9 @@ namespace
           }
 
           // @@ Would be good to check that the other end is actually
-          // an object pointer and points to the correct object. But
-          // the other class may not have been processed yet. Need to
-          // do in validator, pass 2.
+          // an object pointer/points_to and points to the correct
+          // object. But the other class may not have been processed
+          // yet. Need to do in validator, pass 2.
           //
           m.remove ("inverse");
           m.set (kp + (kp.empty () ? "": "-") + "inverse", &im);
