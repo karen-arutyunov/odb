@@ -1064,9 +1064,6 @@ namespace relational
 
           // First resolve member names.
           //
-          string tl;
-          cpp_ttype tt (CPP_EOF);
-
           index::members_type::iterator j (in.members.begin ());
           for (; j != in.members.end (); ++j)
           {
@@ -1075,83 +1072,10 @@ namespace relational
             if (!im.path.empty ())
               continue; // Already resolved.
 
-            try
-            {
-              using semantics::data_member;
+            im.path = resolve_data_members (c, im.name, im.loc, lex_);
 
-              // The name was already verified to be syntactically correct so
-              // we don't need to do any extra error checking in this area.
-              //
-              lex_.start (im.name);
-              tt = lex_.next (tl);
-
-              data_member& m (
-                c.lookup<data_member> (tl, type::include_hidden));
-
-              im.path.push_back (&m);
-              tt = lex_.next (tl);
-
-              if (container (m))
-                break;
-
-              // Resolve nested members if any.
-              //
-              for (; tt == CPP_DOT; tt = lex_.next (tl))
-              {
-                lex_.next (tl); // Get CPP_NAME.
-
-                data_member& om (*im.path.back ());
-
-                // Check that the outer member is composite and also
-                // unwrap it while at it.
-                //
-                semantics::class_* comp (composite_wrapper (utype (om)));
-                if (comp == 0)
-                {
-                  error (im.loc) << "data member '" << om.name () << "' " <<
-                    "specified in db pragma member is not composite" << endl;
-                  throw operation_failed ();
-                }
-
-                data_member& nm (
-                  comp->lookup<data_member> (tl, type::include_hidden));
-
-                im.path.push_back (&nm);
-
-                if (container (nm))
-                {
-                  tt = lex_.next (tl); // Get CPP_DOT.
-                  break; // Only breaks out of the inner loop.
-                }
-              }
-
-              if (container (*im.path.back ()))
-                break;
-            }
-            catch (semantics::unresolved const& e)
-            {
-              if (e.type_mismatch)
-                error (im.loc) << "name '" << e.name << "' in db pragma " <<
-                  "member does not refer to a data member" << endl;
-              else
-                error (im.loc) << "unable to resolve data member '" <<
-                  e.name << "' specified with db pragma member" << endl;
-
-              throw operation_failed ();
-            }
-            catch (semantics::ambiguous const& e)
-            {
-              error (im.loc) << "data member name '" << e.first.name () <<
-                "' specified with db pragma member is ambiguous" << endl;
-
-              info (e.first.named ().location ()) << "could resolve to " <<
-                "this data member" << endl;
-
-              info (e.second.named ().location ()) << "or could resolve " <<
-                "to this data member" << endl;
-
-              throw operation_failed ();
-            }
+            if (container (*im.path.back ()))
+              break;
           }
 
           // Add the table prefix if this database has global index names.
@@ -1172,7 +1096,8 @@ namespace relational
               throw operation_failed ();
             }
 
-            if (tt != CPP_DOT || lex_.next (tl) != CPP_NAME ||
+            string tl;
+            if (lex_.next (tl) != CPP_DOT || lex_.next (tl) != CPP_NAME ||
                 (tl != "id" && tl != "index"))
             {
               error (j->loc) << ".id or .index special member expected in a "
