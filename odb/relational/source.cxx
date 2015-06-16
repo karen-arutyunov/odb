@@ -1289,7 +1289,9 @@ traverse_object (type& c)
       os << "// From " << location_string (ma.loc, true) << endl;
 
     if (ma.placeholder ())
-      os << ma.translate ("obj", "id (sts.id_image ())") << ";"
+      os << ma.translate (
+        "obj", "id (sts.id_image ())",
+        "static_cast<" + db.string () + "::database&> (db)") << ";"
          << endl;
     else
     {
@@ -1546,7 +1548,9 @@ traverse_object (type& c)
         os << "// From " << location_string (ma.loc, true) << endl;
 
       if (ma.placeholder ())
-        os << ma.translate ("obj", "id (sts.id_image (i))") << ";"
+        os << ma.translate (
+          "obj", "id (sts.id_image (i))",
+          "static_cast<" + db.string () + "::database&> (db)") << ";"
            << endl;
       else
       {

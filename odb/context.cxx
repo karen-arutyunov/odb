@@ -68,7 +68,7 @@ add_space (string& s)
 }
 
 string member_access::
-translate (string const& obj, string const& val) const
+translate (string const& obj, string const& val, string const& db) const
 {
   if (empty ())
   {
@@ -91,12 +91,6 @@ translate (string const& obj, string const& val) const
     //
     switch (tt)
     {
-    case CPP_NOT:
-      {
-        add_space (r);
-        r += '!';
-        break;
-      }
     case CPP_COMMA:
       {
         r += ", ";
@@ -235,6 +229,7 @@ translate (string const& obj, string const& val) const
         r += tl;
         break;
       }
+    case CPP_NOT:
     case CPP_QUERY:
       {
         if (ptt == CPP_OPEN_PAREN)
@@ -245,13 +240,25 @@ translate (string const& obj, string const& val) const
           tt = l.next (tl);
 
           if (tt == CPP_CLOSE_PAREN)
-            r += val;
+          {
+            if (ptt == CPP_NOT)
+            {
+              if (db.empty ())
+              {
+                error (loc) << "database instance (!) not available in this "
+                            << "context" << endl;
+                throw operation_failed ();
+              }
+
+              r += db;
+            }
+            else
+              r += val;
+          }
           else
           {
-            // The same as in the default case.
-            //
             add_space (r);
-            r += "? ";
+            r += (ptt == CPP_NOT ? "!" : "? ");
           }
           continue; // We have already gotten the next token.
         }

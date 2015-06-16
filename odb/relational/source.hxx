@@ -2753,7 +2753,9 @@ namespace relational
             if (!ma.synthesized)
               os << "// From " << location_string (ma.loc, true) << endl;
 
-            os << ma.translate ("o", "v") << ";";
+            os << ma.translate (
+              "o", "v", "*static_cast<" + db.string () + "::database*> (db)")
+               << ";";
           }
         }
 
@@ -3234,7 +3236,9 @@ namespace relational
                 os << "// From " << location_string (ma.loc, true) << endl;
 
               if (ma.placeholder ())
-                os << ma.translate ("o", r) << ";";
+                os << ma.translate (
+                  "o", r, "*static_cast<" + db.string () + "::database*> (db)")
+                   << ";";
               else
                 os << ma.translate ("o") << " = " << r << ";";
             }
@@ -3248,7 +3252,9 @@ namespace relational
                 os << "// From " << location_string (ma.loc, true) << endl;
 
               if (ma.placeholder ())
-                os << ma.translate ("o", o) << ";";
+                os << ma.translate (
+                  "o", o, "*static_cast<" + db.string () + "::database*> (db)")
+                   << ";";
               else
                 os << ma.translate ("o") << " = " << o << ";";
             }
@@ -5320,7 +5326,9 @@ namespace relational
             if (!ma.synthesized)
               os << "// From " << location_string (ma.loc, true) << endl;
 
-            os << ma.translate (obj_prefix_, "v") << ";";
+            os << ma.translate (
+              obj_prefix_, "v", "static_cast<" + db.string () +
+              "::database&> (db)") << ";";
           }
 
           os << "}";

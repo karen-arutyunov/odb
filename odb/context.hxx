@@ -296,7 +296,8 @@ struct member_access
   //
   std::string
   translate (std::string const& obj,
-             std::string const& val = std::string ()) const;
+              std::string const& val = std::string (),
+              std::string const& db = std::string ()) const;
 
   location loc;
   const char* kind; // accessor/modifier; used for diagnostics.
