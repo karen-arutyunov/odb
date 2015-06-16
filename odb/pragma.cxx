@@ -294,7 +294,6 @@ parse_expression (cxx_lexer& l,
   return true;
 }
 
-
 static string
 parse_scoped_name (cxx_lexer& l,
                    cpp_ttype& tt,
@@ -353,6 +352,56 @@ resolve_scoped_name (cxx_lexer& l,
 
     return 0;
   }
+}
+
+// Resolve a data member in the specified scope taking into account virtual
+// member declarations.
+//
+declaration
+resolve_data_member (tree scope,
+                     const cxx_tokens& name,
+                     string& decl_name, // Note: appended to.
+                     string const& prag)
+{
+  declaration decl;
+
+  if (name.size () == 1 && name.back ().type == CPP_NAME)
+  {
+    virt_declarations::iterator i (virt_declarations_.find (scope));
+
+    if (i != virt_declarations_.end ())
+    {
+      string const& n (name.back ().literal);
+
+      virt_declaration_set::const_iterator j (i->second.find (n, FIELD_DECL));
+
+      if (j != i->second.end ())
+      {
+        decl = declaration (*j);
+        decl_name += n;
+      }
+    }
+  }
+
+  if (!decl)
+  {
+    cxx_tokens_lexer l;
+    l.start (name);
+
+    tree tn;
+    string tl;
+    cpp_ttype tt (l.next (tl));
+
+    tree d (resolve_scoped_name (
+              l, tt, tl, tn, scope, decl_name, false, prag));
+
+    if (d == 0)
+      return decl; // Diagnostics has already been issued.
+
+    decl = declaration (d);
+  }
+
+  return decl;
 }
 
 static bool
@@ -2629,6 +2678,13 @@ handle_pragma (cxx_lexer& l,
     error (l) << "virtual member declaration requires name" << endl;
     return;
   }
+  else if (p == "before" || p == "after")
+  {
+    // Stray before/after specifier (i.e., without preceding virtual).
+    //
+    error (l) << p << " specifier must follow virtual" << endl;
+    return;
+  }
   else
   {
     error (l) << "unknown db pragma " << p << endl;
@@ -3371,6 +3427,8 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
         //
         tree type;
         string type_name;
+        location_t ord (loc);
+        int ord_bias (0);
         {
           string p (tl);
           location_t loc (l.location ());
@@ -3415,11 +3473,107 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
           }
 
           tt = l.next (tl, &tn);
+
+          // See if we have before/after specifiers.
+          //
+          if (tt == CPP_NAME && tl == "before")
+          {
+            // before[(<member>)]
+            //
+            // Before without the member name means first.
+            //
+            tt = l.next (tl, &tn);
+
+            if (tt == CPP_OPEN_PAREN)
+            {
+              if (l.next (tl, &tn) != CPP_NAME)
+              {
+                error (l) << "')' member name expected in db pragma before"
+                          << endl;
+              }
+
+              string dn;
+              cxx_tokens ts (1, cxx_token (l.location (), CPP_NAME, tl));
+              declaration d (resolve_data_member (scope, ts, dn, "before"));
+
+              if (!d)
+                return; // Diagnostics has already been issued.
+
+              if (d.virt)
+              {
+                ord = d.decl.virt->ord;
+                ord_bias = d.decl.virt->ord_bias - 1;
+              }
+              else
+              {
+                ord = real_source_location (d.decl.real);
+                ord_bias = -1;
+              }
+
+              if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
+              {
+                error (l) << "')' expected at the end of db pragma before"
+                          << endl;
+                return;
+              }
+
+              tt = l.next (tl, &tn);
+            }
+            else
+              ord = 0;
+          }
+
+          if (tt == CPP_NAME && tl == "after")
+          {
+            // after[(<member>)]
+            //
+            // Before without the member name means last.
+            //
+            tt = l.next (tl, &tn);
+
+            if (tt == CPP_OPEN_PAREN)
+            {
+              if (l.next (tl, &tn) != CPP_NAME)
+              {
+                error (l) << "')' member name expected in db pragma after"
+                          << endl;
+              }
+
+              string dn;
+              cxx_tokens ts (1, cxx_token (l.location (), CPP_NAME, tl));
+              declaration d (resolve_data_member (scope, ts, dn, "after"));
+
+              if (!d)
+                return; // Diagnostics has already been issued.
+
+              if (d.virt)
+              {
+                ord = d.decl.virt->ord;
+                ord_bias = d.decl.virt->ord_bias + 1;
+              }
+              else
+              {
+                ord = real_source_location (d.decl.real);
+                ord_bias = 1;
+              }
+
+              if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
+              {
+                error (l) << "')' expected at the end of db pragma after"
+                          << endl;
+                return;
+              }
+
+              tt = l.next (tl, &tn);
+            }
+            else
+              ord = ~location_t (0);
+          }
         }
 
         pair<virt_declaration_set::const_iterator, bool> r (
           virt_declarations_[scope].insert (
-            virt_declaration (loc, name, FIELD_DECL, type)));
+            virt_declaration (loc, ord, ord_bias, name, FIELD_DECL, type)));
 
         if (!r.second)
         {
@@ -3443,41 +3597,12 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
       }
       else
       {
-        // This is not a virtual member declaration but the name can
-        // still refer to one. To handle this look for real and virtual
-        // members in the scope that we just resolved.
+        // Not a virtual member declaration.
         //
-        if (name_tokens.size () == 1 && name_tokens.back ().type == CPP_NAME)
-        {
-          virt_declarations::iterator i (virt_declarations_.find (scope));
-
-          if (i != virt_declarations_.end ())
-          {
-            virt_declaration_set::const_iterator j (
-              i->second.find (name_tokens.back ().literal, FIELD_DECL));
-
-            if (j != i->second.end ())
-              decl = declaration (*j);
-          }
-        }
+        decl = resolve_data_member (scope, name_tokens, decl_name, p);
 
         if (!decl)
-        {
-          cxx_tokens_lexer l;
-          l.start (name_tokens);
-
-          tree tn;
-          string tl;
-          cpp_ttype tt (l.next (tl));
-
-          orig_decl = resolve_scoped_name (
-            l, tt, tl, tn, scope, decl_name, false, p);
-
-          if (orig_decl == 0)
-            return; // Diagnostics has already been issued.
-
-          decl = declaration (orig_decl);
-        }
+          return; // Diagnostics has already been issued.
 
         // Make sure we've got the correct declaration type.
         //

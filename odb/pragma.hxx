@@ -21,12 +21,16 @@
 struct virt_declaration
 {
   virt_declaration (location_t l,
+                    location_t o,
+                    int ob,
                     std::string const& n,
                     gcc_tree_code_type tc,
                     tree t)
-      : loc (l), name (n), tree_code (tc), type (t) {}
+      : loc (l), ord (o), ord_bias (ob), name (n), tree_code (tc), type (t) {}
 
   location_t loc;
+  location_t ord; // Ordering location for before/after support.
+  int ord_bias;   // Ordering bias for the same locations.
   std::string name;
   gcc_tree_code_type tree_code;
   tree type;      // Declaration's type.

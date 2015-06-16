@@ -188,17 +188,39 @@ private:
 bool parser::impl::tree_decl::
 operator< (tree_decl const& y) const
 {
-  location_t xloc (
-    decl != 0
-    ? real_source_location (decl)
-    : (vdecl != 0 ? vdecl->loc : prag->loc));
+  location_t xl, yl;
+  int xb (0), yb (0);
 
-  location_t yloc (
-    y.decl != 0
-    ? real_source_location (y.decl)
-    : (y.vdecl != 0 ? y.vdecl->loc : y.prag->loc));
+  if (decl != 0)
+    xl = real_source_location (decl);
+  else if (vdecl != 0)
+  {
+    xl = vdecl->ord;
+    xb = vdecl->ord_bias;
+  }
+  else
+    xl = prag->loc;
 
-  return xloc < yloc;
+  if (y.decl != 0)
+    yl = real_source_location (y.decl);
+  else if (y.vdecl != 0)
+  {
+    yl = y.vdecl->ord;
+    yb = y.vdecl->ord_bias;
+  }
+  else
+    yl = y.prag->loc;
+
+  // If both are virtual and at the same location, use the definition
+  // location to order them.
+  //
+  if (vdecl != 0 && y.vdecl != 0 && xl == yl && xb == yb)
+  {
+    xl = vdecl->loc;
+    yl = y.vdecl->loc;
+  }
+
+  return xl < yl || (xl == yl && xb < yb);
 }
 
 //
