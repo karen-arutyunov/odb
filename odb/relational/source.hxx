@@ -188,31 +188,33 @@ namespace relational
         if (sk_ == statement_select && m.count ("polymorphic-ref"))
           return;
 
-        semantics::data_member* im (inverse (m, key_prefix_));
+        data_member_path* imp (inverse (m, key_prefix_));
 
         // Ignore certain columns depending on what kind of statement we are
         // generating. Columns corresponding to the inverse members are
         // only present in the select statements.
         //
-        if (im != 0 && sk_ != statement_select)
+        if (imp != 0 && sk_ != statement_select)
           return;
 
         // Inverse object pointers come from a joined table.
         //
-        if (im != 0)
+        if (imp != 0)
         {
           bool poly (polymorphic (c) != 0);
+          semantics::data_member& imf (*imp->front ());
+          semantics::data_member& imb (*imp->back ());
 
           // In a polymorphic hierarchy the inverse member can be in
           // the base class, in which case we should use that table.
           //
           semantics::class_& imc (
-            poly ? dynamic_cast<semantics::class_&> (im->scope ()) : c);
+            poly ? dynamic_cast<semantics::class_&> (imf.scope ()) : c);
 
           semantics::data_member& id (*id_member (imc));
           semantics::type& idt (utype (id));
 
-          if (container (*im))
+          if (container (imb))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name. We don't assign join
@@ -229,11 +231,11 @@ namespace relational
               if (table_name_resolver_ != 0)
                 table = table_name_resolver_->resolve_pointer (m);
               else
-                table = table_qname (*im, table_prefix (imc));
+                table = table_qname (imc, *imp);
             }
 
             instance<object_columns> oc (table, sk_, sc_);
-            oc->traverse (*im, idt, "id", "object_id", &imc);
+            oc->traverse (imb, idt, "id", "object_id", &imc);
           }
           else
           {
@@ -373,14 +375,14 @@ namespace relational
       {
         view_object& us (*ptr_->get<view_object*> ("view-object"));
 
-        semantics::data_member& im (*inverse (m));
-
-        typedef view_relationship_map::const_iterator iterator;
-
-        std::pair<iterator, iterator> r (
-          rel_map_.equal_range (data_member_path (im)));
+        data_member_path& imp (*inverse (m));
+        semantics::data_member& imf (*imp.front ());
+        semantics::data_member& imb (*imp.back ());
 
         using semantics::class_;
+        typedef view_relationship_map::const_iterator iterator;
+
+        std::pair<iterator, iterator> r (rel_map_.equal_range (imp));
 
         for (; r.first != r.second; ++r.first)
         {
@@ -396,7 +398,7 @@ namespace relational
           {
             // Can be in base.
             //
-            c = &static_cast<class_&> (im.scope ());
+            c = &static_cast<class_&> (imf.scope ());
 
             if (!polymorphic (*c))
               c = root;
@@ -404,13 +406,13 @@ namespace relational
 
           string const& a (vo.alias);
 
-          if (container (im))
+          if (container (imb))
           {
             // If this is a container, then object_columns will use the
             // column from the container table, not from the object table
             // (which, strictly speaking, might not have been JOIN'ed).
             //
-            qname t (table_name (im, table_prefix (*c)));
+            qname t (table_name (*c, imp));
             return a.empty ()
               ? quote_id (t)
               : quote_id (a + '_' + t.uname ());
@@ -447,7 +449,7 @@ namespace relational
         class_* o (object_pointer (utype (m)));
         if (class_* root = polymorphic (*o))
         {
-          o = &static_cast<class_&> (im.scope ());
+          o = &static_cast<class_&> (imf.scope ());
 
           if (!polymorphic (*o))
             o = root;
@@ -456,11 +458,7 @@ namespace relational
         string const& a (us.alias);
         string lt (a.empty () ? table_qname (*us.obj) : quote_id (a));
         string rt;
-
-        qname ct (
-          container (im)
-          ? table_name (im, table_prefix (*o))
-          : table_name (*o));
+        qname ct (container (imb) ? table_name (*o, imp) : table_name (*o));
 
         string l ("LEFT JOIN ");
 
@@ -490,10 +488,10 @@ namespace relational
 
         l_cols->traverse (id);
 
-        if (container (im))
-          r_cols->traverse (im, utype (id), "value", "value");
+        if (container (imb))
+          r_cols->traverse (imb, utype (id), "value", "value");
         else
-          r_cols->traverse (im);
+          r_cols->traverse (imb, column_prefix (imp));
 
         for (object_columns_list::iterator b (l_cols->begin ()), i (b),
                j (r_cols->begin ()); i != l_cols->end (); ++i, ++j)
@@ -973,25 +971,28 @@ namespace relational
 
         semantics::class_* joined_obj (0);
 
-        if (semantics::data_member* im = inverse (m, key_prefix_))
+        if (data_member_path* imp = inverse (m, key_prefix_))
         {
+          semantics::data_member& imf (*imp->front ());
+          semantics::data_member& imb (*imp->back ());
+
           // In a polymorphic hierarchy the inverse member can be in
           // the base class, in which case we should use that table.
           //
           semantics::class_& imc (
-            poly ? dynamic_cast<semantics::class_&> (im->scope ()) : c);
+            poly ? dynamic_cast<semantics::class_&> (imf.scope ()) : c);
 
-          if (container (*im))
+          if (container (imb))
           {
             // This container is a direct member of the class so the table
             // prefix is just the class table name.
             //
-            t = table_qname (*im, table_prefix (imc));
+            t = table_qname (imc, *imp);
 
             // Container's value is our id.
             //
             instance<object_columns_list> id_cols;
-            id_cols->traverse (*im, utype (id_), "value", "value");
+            id_cols->traverse (imb, utype (id_), "value", "value");
 
             for (object_columns_list::iterator b (id_cols->begin ()), i (b),
                    j (id_cols_->begin ()); i != id_cols->end (); ++i, ++j)
@@ -1021,7 +1022,7 @@ namespace relational
 
               instance<object_columns_list> oid_cols, cid_cols;
               oid_cols->traverse (id);
-              cid_cols->traverse (*im, utype (id), "id", "object_id", &c);
+              cid_cols->traverse (imb, utype (id), "id", "object_id", &c);
 
               for (object_columns_list::iterator b (cid_cols->begin ()), i (b),
                    j (oid_cols->begin ()); i != cid_cols->end (); ++i, ++j)
@@ -1045,7 +1046,7 @@ namespace relational
             a = quote_id (poly ? alias + "_" + table.uname () : alias);
 
             instance<object_columns_list> id_cols;
-            id_cols->traverse (*im);
+            id_cols->traverse (imb, column_prefix (*imp));
 
             for (object_columns_list::iterator b (id_cols->begin ()), i (b),
                    j (id_cols_->begin ()); i != id_cols->end (); ++i, ++j)
@@ -1210,7 +1211,6 @@ namespace relational
       traverse_container (semantics::data_member& m, semantics::type& t)
       {
         semantics::type& vt (container_vt (t));
-        semantics::data_member* im (inverse (m, "value"));
 
         if (semantics::class_* cvt = composite_wrapper (vt))
         {
@@ -1222,12 +1222,12 @@ namespace relational
           session_ = session_ || t->session_;
         }
         else if (semantics::class_* c = object_pointer (vt))
-          check (m, im, vt, *c);
+          check (m, inverse (m, "value"), vt, *c);
       }
 
       void
       check (semantics::data_member& m,
-             semantics::data_member* im,
+             data_member_path* imp,
              semantics::type& pt, // Pointer type.
              semantics::class_& c)
       {
@@ -1257,13 +1257,12 @@ namespace relational
         typedef view_relationship_map::const_iterator iterator;
 
         std::pair<iterator, iterator> r (
-          rel_map_.equal_range (
-            im != 0 ? data_member_path (*im) : member_path_));
+          rel_map_.equal_range (imp != 0 ? *imp : member_path_));
 
         if (r.first == r.second)
           return; // This relationship does not figure in the view.
 
-        view_object& vo (*(im != 0
+        view_object& vo (*(imp != 0
                            ? r.first->second.first
                            : r.first->second.second));
 
@@ -3393,10 +3392,10 @@ namespace relational
         type* it (0);
         type* kt (0);
 
-        semantics::data_member* im (context::inverse (m, "value"));
+        data_member_path* imp (context::inverse (m, "value"));
 
         bool ordered (false);
-        bool inverse (im != 0);
+        bool inverse (imp != 0);
         bool grow (false);
 
         switch (ck)
@@ -3504,13 +3503,15 @@ namespace relational
           if (inverse)
           {
             semantics::class_* c (object_pointer (vt));
+            semantics::data_member& imf (*imp->front ());
+            semantics::data_member& imb (*imp->back ());
 
             // In a polymorphic hierarchy the inverse member can be in
             // the base class, in which case we should use that class
             // for the table name, etc.
             //
             if (polymorphic (*c))
-              c = &dynamic_cast<semantics::class_&> (im->scope ());
+              c = &dynamic_cast<semantics::class_&> (imf.scope ());
 
             semantics::data_member& inv_id (*id_member (*c));
 
@@ -3521,7 +3522,7 @@ namespace relational
                                                         // column (ref to us).
             statement_columns sc;
 
-            if (container (*im))
+            if (container (imb))
             {
               // many(i)-to-many
               //
@@ -3529,11 +3530,11 @@ namespace relational
               // This other container is a direct member of the class so the
               // table prefix is just the class table name.
               //
-              inv_table = table_name (*im, table_prefix (*c));
+              inv_table = table_name (*c, *imp);
               inv_qtable = quote_id (inv_table);
 
-              inv_id_cols->traverse (*im, utype (inv_id), "id", "object_id", c);
-              inv_fid_cols->traverse (*im, idt, "value", "value");
+              inv_id_cols->traverse (imb, utype (inv_id), "id", "object_id", c);
+              inv_fid_cols->traverse (imb, idt, "value", "value");
 
               for (object_columns_list::iterator i (inv_id_cols->begin ());
                    i != inv_id_cols->end (); ++i)
@@ -3558,7 +3559,7 @@ namespace relational
               inv_qtable = quote_id (inv_table);
 
               inv_id_cols->traverse (inv_id);
-              inv_fid_cols->traverse (*im);
+              inv_fid_cols->traverse (imb, column_prefix (*imp));
 
               for (object_columns_list::iterator i (inv_id_cols->begin ());
                    i != inv_id_cols->end (); ++i)

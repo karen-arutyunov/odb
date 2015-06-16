@@ -873,8 +873,8 @@ namespace relational
           string const& pn (public_name (m));
           string scope (scope_ + "::" + flat_prefix_ + pn + "_traits");
 
-          semantics::data_member* inv_m (inverse (m, "value"));
-          bool inv (inv_m != 0);
+          data_member_path* imp (inverse (m, "value"));
+          bool inv (imp != 0);
 
           bool smart (!inv && !unordered (m) && container_smart (t));
 

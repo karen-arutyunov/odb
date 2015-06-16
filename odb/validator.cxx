@@ -1192,8 +1192,8 @@ namespace
 
       // Inverse pointer must be deleted before the direct side.
       //
-      if (semantics::data_member* im = inverse (m))
-        check_strict (m, *im, "inverse object pointer", "direct pointer");
+      if (data_member_path* imp = inverse (m))
+        check_strict (m, *imp, "inverse object pointer", "direct pointer");
     }
 
     virtual void
@@ -1209,8 +1209,8 @@ namespace
 
         // Inverse pointer must be deleted before the direct side.
         //
-        if (semantics::data_member* im = inverse (m, "value"))
-          check_strict (m, *im, "inverse object pointer", "direct pointer");
+        if (data_member_path* imp = inverse (m, "value"))
+          check_strict (m, *imp, "inverse object pointer", "direct pointer");
       }
     }
 
@@ -1246,13 +1246,12 @@ namespace
     void
     check_strict (D& dep, P& pre, char const* dname, char const* pname)
     {
-      unsigned long long dv (deleted (dep));
-      unsigned long long pv (deleted (pre));
+      location_t dl, pl;
+      unsigned long long dv (deleted (dep, &dl));
+      unsigned long long pv (deleted (pre, &pl));
 
       if (pv == 0) // Prerequisite never deleted.
         return;
-
-      location_t pl (pre.template get<location_t> ("deleted-location"));
 
       if (dv == 0) // Dependent never deleted.
       {
@@ -1265,8 +1264,6 @@ namespace
       }
       else if (pv > dv) // Prerequisite deleted before dependent.
       {
-        location_t dl (dep.template get<location_t> ("deleted-location"));
-
         error (dl) << dname << " is deleted after " << pname << endl;
         info (pl) << pname << " deletion version is specified here" << endl;
 

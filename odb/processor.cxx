@@ -1272,68 +1272,59 @@ namespace
       }
 
       // See if this is the inverse side of a bidirectional relationship.
-      // If so, then resolve the member and cache it in the context.
+      // If so, then resolve the member path and cache it in the context.
       //
       if (m.count ("inverse"))
       {
         string name (m.get<string> ("inverse"));
-        location_t loc (m.get<location_t> ("inverse-location"));
+        location_t l (m.get<location_t> ("inverse-location"));
+        data_member_path mp (resolve_data_members (*c, name, l, lex_));
 
-        try
         {
-          data_member& im (
-            c->lookup<data_member> (name, class_::include_hidden));
+          string tl;
+          data_member& m (*mp.back ());
+
+          if (container (m) && lex_.next (tl) != CPP_EOF)
+          {
+            error (l) << "unexpect name after container member " <<
+              m.name () << " in '#pragma db inverse'" << endl;
+            throw operation_failed ();
+          }
+        }
+
+        // Validate each member.
+        //
+        for (data_member_path::iterator i (mp.begin ()); i != mp.end (); ++i)
+        {
+          data_member& im (**i);
+          const string& n (im.name ());
 
           if (im.count ("transient"))
           {
-            error (loc) << "data member '" << name << "' specified with " <<
+            error (l) << "data member '" << n << "' specified with " <<
               "'#pragma db inverse' is transient" << endl;
-            info (im.location ()) << "data member '" << name << "' is " <<
+            info (im.location ()) << "data member '" << n << "' is " <<
               "defined here" << endl;
             throw operation_failed ();
           }
 
           if (im.count ("inverse") || im.count ("value-inverse"))
           {
-            error (loc) << "data member '" << name << "' specified with " <<
-              "'#pragma db inverse' is inverse" << endl;
-            info (im.location ()) << "data member '" << name << "' is " <<
+            error (l) << "data member '" << n << "' specified with " <<
+              "'#pragma db inverse' is itself inverse" << endl;
+            info (im.location ()) << "data member '" << n << "' is " <<
               "defined here" << endl;
             throw operation_failed ();
           }
-
-          // @@ Would be good to check that the other end is actually
-          // an object pointer/points_to and points to the correct
-          // object. But the other class may not have been processed
-          // yet. Need to do in validator, pass 2.
-          //
-          m.remove ("inverse");
-          m.set (kp + (kp.empty () ? "": "-") + "inverse", &im);
         }
-        catch (semantics::unresolved const& e)
-        {
-          if (e.type_mismatch)
-            error (loc) << "name '" << name << "' in '#pragma db " <<
-              "inverse' does not refer to a data member" << endl;
-          else
-            error (loc) << "unable to resolve data member '" << name <<
-              "' specified with '#pragma db inverse'" << endl;
 
-          throw operation_failed ();
-        }
-        catch (semantics::ambiguous const& e)
-        {
-          error (loc) << "data member name '" << name << "' specified " <<
-            "with '#pragma db inverse' is ambiguous" << endl;
-
-          info (e.first.named ().location ()) << "could resolve to this " <<
-            "data member" << endl;
-
-          info (e.second.named ().location ()) << "or could resolve to " <<
-            "this data member" << endl;
-
-          throw operation_failed ();
-        }
+        // @@ Would be good to check that the other end is actually
+        // an object pointer/points_to and points to the correct
+        // object. But the other class may not have been processed
+        // yet. Need to do in validator, pass 2.
+        //
+        m.remove ("inverse");
+        m.set (kp + (kp.empty () ? "": "-") + "inverse", mp);
       }
 
       return c;
@@ -1904,6 +1895,8 @@ namespace
     tree wrapper_traits_;
     tree pointer_traits_;
     tree container_traits_;
+
+    cxx_string_lexer lex_;
   };
 
   struct view_data_member: traversal::data_member, context

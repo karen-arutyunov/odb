@@ -1317,6 +1317,89 @@ type_val_type (semantics::type& t,
   return r;
 }
 
+data_member_path context::
+resolve_data_members (semantics::class_& c,
+                      const string& name,
+                      const location& l,
+                      cxx_string_lexer& lex)
+{
+  using semantics::class_;
+  using semantics::data_member;
+
+  data_member_path r;
+
+  // The name was already verified to be syntactically correct so
+  // we don't need to do any extra error checking in this area.
+  //
+  lex.start (name);
+
+  try
+  {
+    string tl;
+    cpp_ttype tt (lex.next (tl));
+
+    data_member& m (c.lookup<data_member> (tl, class_::include_hidden));
+
+    r.push_back (&m);
+
+    if (container (m))
+      return r;
+
+    // Resolve nested members if any.
+    //
+    for (tt = lex.next (tl); tt == CPP_DOT; tt = lex.next (tl))
+    {
+      lex.next (tl); // Get CPP_NAME.
+
+      data_member& om (*r.back ());
+
+      // Check that the outer member is composite and also unwrap it while
+      // at it.
+      //
+      class_* comp (composite_wrapper (utype (om)));
+      if (comp == 0)
+      {
+        error (l) << "data member '" << om.name () << "' is not composite"
+                  << endl;
+        throw operation_failed ();
+      }
+
+      data_member& nm (
+        comp->lookup<data_member> (tl, class_::include_hidden));
+
+      r.push_back (&nm);
+
+      if (container (nm))
+        return r;
+    }
+  }
+  catch (semantics::unresolved const& e)
+  {
+    if (e.type_mismatch)
+      error (l) << "name '" << e.name << "' does not refer to a data member"
+                << endl;
+    else
+      error (l) << "unable to resolve data member '" << e.name << endl;
+
+    throw operation_failed ();
+  }
+  catch (semantics::ambiguous const& e)
+  {
+    error (l) << "data member name '" << e.first.name () << "' is ambiguous"
+              << endl;
+
+    info (e.first.named ().location ()) << "could resolve to " <<
+      "this data member" << endl;
+
+    info (e.second.named ().location ()) << "or could resolve " <<
+      "to this data member" << endl;
+
+    throw operation_failed ();
+  }
+
+  return r;
+}
+
 bool context::
 composite_ (semantics::class_& c)
 {

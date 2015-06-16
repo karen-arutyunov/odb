@@ -4912,7 +4912,7 @@ traverse_view (type& c)
       using semantics::data_member;
 
       data_member& m (*e.member_path.back ());
-      data_member* im (inverse (m));
+      data_member_path* imp (inverse (m));
 
       // Resolve the pointed-to object to view_object and do
       // some sanity checks while at it.
@@ -4989,11 +4989,10 @@ traverse_view (type& c)
       //   e.vo          - us
       //   e.member_path - in us
       //
-      if (im == 0)
+      if (imp == 0)
         rel_map.insert (make_pair (e.member_path, make_pair (e.vo, vo)));
       else
-        rel_map.insert (
-          make_pair (data_member_path (*im), make_pair (vo, e.vo)));
+        rel_map.insert (make_pair (*imp, make_pair (vo, e.vo)));
 
       // Left and right-hand side table names.
       //
@@ -5042,7 +5041,7 @@ traverse_view (type& c)
 
       // First join the container table if necessary.
       //
-      semantics::type* cont (container (im != 0 ? *im : m));
+      semantics::type* cont (container (imp != 0 ? *imp->back () : m));
 
       string ct; // Container table.
       if (cont != 0)
@@ -5063,10 +5062,10 @@ traverse_view (type& c)
           // In a polymorphic hierarchy the member can be in a base (see
           // above).
           //
-          if (class_* root = polymorphic (im != 0 ? *vo->obj : *e.vo->obj))
+          if (class_* root = polymorphic (imp != 0 ? *vo->obj : *e.vo->obj))
           {
             class_* c;
-            if (im == 0)
+            if (imp == 0)
             {
               c = &static_cast<class_&> (e.member_path.front ()->scope ());
 
@@ -5077,17 +5076,17 @@ traverse_view (type& c)
             }
             else
             {
-              c = &static_cast<class_&> (im->scope ());
+              c = &static_cast<class_&> (imp->front ()->scope ());
 
               if (!polymorphic (*c))
                 c = root;
 
-              t = table_name (*im, table_prefix (*c));
+              t = table_name (*c, *imp);
             }
           }
           else
-            t = im != 0
-              ? table_name (*im, table_prefix (*vo->obj))
+            t = imp != 0
+              ? table_name (*vo->obj, *imp)
               : table_name (*e.vo->obj, e.member_path);
 
           // The tricky part is to figure out which view_object, vo
@@ -5096,7 +5095,7 @@ traverse_view (type& c)
           // might not make intuitive sense, but it has been verified
           // with the truth table.
           //
-          string const& a (im != 0 ? vo->alias : e.vo->alias);
+          string const& a (imp != 0 ? vo->alias : e.vo->alias);
 
           if (a.empty ())
           {
@@ -5124,15 +5123,17 @@ traverse_view (type& c)
 
         qname* ot; // Object table (either lt or rt).
 
-        if (im != 0)
+        if (imp != 0)
         {
+          semantics::data_member& imb (*imp->back ());
+
           if (&o == c)
           {
             // container.value = pointer.id
             //
             semantics::data_member& id (*id_member (*e.vo->obj));
 
-            c_cols->traverse (*im, utype (id), "value", "value");
+            c_cols->traverse (imb, utype (id), "value", "value");
             o_cols->traverse (id);
             ot = &lt;
           }
@@ -5142,8 +5143,7 @@ traverse_view (type& c)
             //
             semantics::data_member& id (*id_member (*vo->obj));
 
-            c_cols->traverse (
-              *im, utype (id), "id", "object_id", vo->obj);
+            c_cols->traverse (imb, utype (id), "id", "object_id", vo->obj);
             o_cols->traverse (id);
             ot = &rt;
           }
@@ -5217,15 +5217,17 @@ traverse_view (type& c)
 
         qname* ot; // Object table (either lt or rt).
 
-        if (im != 0)
+        if (imp != 0)
         {
+          semantics::data_member& imb (*imp->back ());
+
           if (&o == c)
           {
             // container.id = pointed-to.id
             //
             semantics::data_member& id (*id_member (*vo->obj));
 
-            c_cols->traverse (*im, utype (id), "id", "object_id", vo->obj);
+            c_cols->traverse (imb, utype (id), "id", "object_id", vo->obj);
             o_cols->traverse (id);
             ot = &rt;
           }
@@ -5235,7 +5237,7 @@ traverse_view (type& c)
             //
             semantics::data_member& id (*id_member (*e.vo->obj));
 
-            c_cols->traverse (*im, utype (id), "value", "value");
+            c_cols->traverse (imb, utype (id), "value", "value");
             o_cols->traverse (id);
             ot = &lt;
           }
@@ -5285,26 +5287,22 @@ traverse_view (type& c)
       }
       else
       {
-        column_prefix col_prefix;
-
-        if (im == 0)
-          col_prefix = column_prefix (e.member_path);
-
-        instance<object_columns_list> l_cols (col_prefix);
+        instance<object_columns_list> l_cols;
         instance<object_columns_list> r_cols;
 
-        if (im != 0)
+        if (imp != 0)
         {
           // our.id = pointed-to.pointer
           //
           l_cols->traverse (*id_member (*e.vo->obj));
-          r_cols->traverse (*im);
+          r_cols->traverse (*imp->back (), column_prefix (*imp));
         }
         else
         {
           // our.pointer = pointed-to.id
           //
-          l_cols->traverse (*e.member_path.back ());
+          l_cols->traverse (*e.member_path.back (),
+                            column_prefix (e.member_path));
           r_cols->traverse (*id_member (*vo->obj));
         }
 

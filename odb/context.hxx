@@ -41,6 +41,10 @@ typedef cutl::re::format regex_format;
 
 typedef std::vector<regexsub> regex_mapping;
 
+// Forward-declarations.
+//
+class cxx_string_lexer;
+
 // Generic exception thrown to indicate a failure when diagnostics
 // has already been issued (to stderr).
 //
@@ -650,6 +654,18 @@ public:
                  bool make_const,
                  string const& var = "");
 
+public:
+  // Resolve data member name in the form "a.b.c" to the data member path,
+  // issuing diagnostics and throwing operation_filed in case of an error.
+  // This function stops if it encounters a container leaving lex usable
+  // to continue parsing.
+  //
+  data_member_path
+  resolve_data_members (semantics::class_& scope,
+                        const std::string& name,
+                        const location&,
+                        cxx_string_lexer&);
+
   // Predicates.
   //
 public:
@@ -799,19 +815,29 @@ public:
   // Return the deletion version or 0 if not soft-deleted.
   //
   static unsigned long long
-  deleted (semantics::class_& c)
+  deleted (semantics::class_& c, location_t* l = 0)
   {
-    return c.get<unsigned long long> ("deleted", 0);
+    unsigned long long v (c.get<unsigned long long> ("deleted", 0));
+
+    if (v != 0 && l != 0)
+      *l = c.get<location_t> ("deleted-location");
+
+    return v;
   }
 
   static unsigned long long
-  deleted (semantics::data_member& m)
+  deleted (semantics::data_member& m, location_t* l = 0)
   {
-    return m.get<unsigned long long> ("deleted", 0);
+    unsigned long long v (m.get<unsigned long long> ("deleted", 0));
+
+    if (v != 0 && l != 0)
+      *l = m.get<location_t> ("deleted-location");
+
+    return v;
   }
 
   static unsigned long long
-  deleted (data_member_path const& mp)
+  deleted (data_member_path const& mp, location_t* l = 0)
   {
     unsigned long long r (0);
 
@@ -822,7 +848,12 @@ public:
     {
       unsigned long long v ((*i)->get<unsigned long long> ("deleted", 0));
       if (v != 0 && (r == 0 || v < r))
+      {
         r = v;
+
+        if (l != 0)
+          *l = (*i)->get<location_t> ("deleted-location");
+      }
     }
 
     return r;
@@ -1181,6 +1212,9 @@ public:
     //
     column_prefix (data_member_path const&, bool last = false);
 
+    bool
+    empty () const {return prefix.empty ();}
+
     void
     append (semantics::data_member&,
             string const& key_prefix = string (),
@@ -1363,23 +1397,25 @@ public:
     return pointer_kind (p) == pk_weak;
   }
 
-  static semantics::data_member*
+  static data_member_path*
   inverse (semantics::data_member& m)
   {
-    return object_pointer (utype (m))
-      ? m.get<semantics::data_member*> ("inverse", 0)
+    return object_pointer (utype (m)) && m.count ("inverse")
+      ? &m.get<data_member_path> ("inverse")
       : 0;
   }
 
-  semantics::data_member*
+  data_member_path*
   inverse (semantics::data_member& m, string const& key_prefix)
   {
     if (key_prefix.empty ())
       return inverse (m);
 
-    return object_pointer (member_utype (m, key_prefix))
-      ? m.get<semantics::data_member*> (key_prefix + "-inverse", 0)
-      : 0;
+    if (!object_pointer (member_utype (m, key_prefix)))
+      return 0;
+
+    string k (key_prefix + "-inverse");
+    return m.count (k) ? &m.get<data_member_path> (k) : 0;
   }
 
   // Container information.

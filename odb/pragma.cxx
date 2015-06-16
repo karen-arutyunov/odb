@@ -2298,14 +2298,31 @@ handle_pragma (cxx_lexer& l,
       return;
     }
 
-    val = tl;
+    string name (tl);
 
-    if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
+    tt = l.next (tl, &tn);
+
+    // Parse nested members if any.
+    //
+    for (; tt == CPP_DOT; tt = l.next (tl, &tn))
+    {
+      if (l.next (tl, &tn) != CPP_NAME)
+      {
+        error (l) << "name expected after '.' in db pragma " << p << endl;
+        return;
+      }
+
+      name += '.';
+      name += tl;
+    }
+
+    if (tt != CPP_CLOSE_PAREN)
     {
       error (l) << "')' expected at the end of db pragma " << p << endl;
       return;
     }
 
+    val = name;
     tt = l.next (tl, &tn);
   }
   else if (p == "on_delete")

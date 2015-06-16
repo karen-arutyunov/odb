@@ -284,6 +284,15 @@ public:
   }
 
   virtual void
+  traverse (semantics::data_member& m, column_prefix const& cp)
+  {
+    column_prefix op (column_prefix_);
+    column_prefix_ = cp;
+    traverse (m);
+    column_prefix_ = op;
+  }
+
+  virtual void
   traverse (semantics::data_member&,
             semantics::type&,
             string const& key_prefix,

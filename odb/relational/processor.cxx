@@ -1536,9 +1536,9 @@ namespace relational
           // miss it since we don't examine inside poly bases on the
           // backwards scan (see above).
           //
-          if (semantics::data_member* im = inverse (m))
+          if (data_member_path* imp = inverse (m))
           {
-            if (&im->scope () == &c) // Direct member.
+            if (&imp->front ()->scope () == &c) // Direct member.
               return;
           }
 
