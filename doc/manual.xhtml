@@ -5198,7 +5198,9 @@ namespace odb
      for example, means that it doesn't make sense to store an
      iterator that points to some object of interest in the result
      stream with the intent of dereferencing it after the iteration
-     is over. Instead, we would need to store the object itself.</p>
+     is over. Instead, we would need to store the object itself. We
+     also cannot iterate over the same result multiple times without
+     re-executing the query.</p>
 
   <p>The result iterator has the following dereference functions
      that can be used to access the pointed-to object:</p>
