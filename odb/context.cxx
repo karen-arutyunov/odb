@@ -1091,6 +1091,23 @@ class_file (semantics::class_& c)
     return c.file ();
 }
 
+location_t context::
+class_location (semantics::class_& c)
+{
+  if (c.count ("definition"))
+  {
+    return c.get<location_t> ("definition");
+  }
+  else if (c.is_a<semantics::class_instantiation> ())
+  {
+    return c.get<location_t> ("location");
+  }
+  else
+  {
+    return real_source_location (TYPE_NAME (c.tree_node ()));
+  }
+}
+
 string context::
 upcase (string const& s)
 {

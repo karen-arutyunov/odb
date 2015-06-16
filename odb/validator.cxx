@@ -1080,7 +1080,37 @@ namespace
         // Make sure the pointed-to class has object id unless it is in a
         // view where we can load no-id objects.
         //
-        if (id_member (*c) == 0 && !view_member (m))
+        if (semantics::data_member* id = id_member (*c))
+        {
+          semantics::type& idt (utype (*id));
+
+          // Make sure composite id is defined before this pointer. Failed
+          // that we get non-obvious C++ compiler errors in generated code.
+          //
+          using semantics::class_;
+
+          if (class_* comp = composite_wrapper (idt))
+          {
+            class_& s (dynamic_cast<class_&> (m.scope ()));
+
+            location_t idl (class_location (*comp));
+            location_t ml (class_location (s));
+
+            if (ml < idl)
+            {
+              error (m.location ())
+                << "composite object id " << class_fq_name (*comp) << " of "
+                << "pointed-to class " << class_fq_name (*c) << " must be "
+                << "defined before the pointer" << endl;
+
+              info (idl)
+                << "class " << class_name (*comp) << " is define here" << endl;
+
+              valid_ = false;
+            }
+          }
+        }
+        else if (!view_member (m))
         {
           os << m.file () << ":" << m.line () << ":" << m.column () << ": "
              << "error: pointed-to class '" << class_fq_name (*c) << "' "

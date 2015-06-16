@@ -106,6 +106,8 @@ namespace
       path f;
       location_t l;
 
+      // Pretty much the same code as in context::class_location().
+      //
       if (c.count ("definition"))
       {
         l = c.get<location_t> ("definition");

@@ -1150,6 +1150,14 @@ public:
   static semantics::path
   class_file (semantics::class_&);
 
+  // Return the location (as location_t; useful for comparison) of
+  // an "ODB class" (i.e., an object, view, or composite value),
+  // taking into account things like definition point overrides,
+  // etc.
+  //
+  location_t
+  class_location (semantics::class_&);
+
   // Database names and types.
   //
 public:
