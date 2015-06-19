@@ -842,10 +842,10 @@ handle_pragma (cxx_lexer& l,
   }
   else if (qualifier == "map")
   {
-    // type("<regex>")
-    // as("<subst>")
-    // to("<subst>")
-    // from("<subst>")
+    // type("<regex>") | type(<name>)
+    // as("<subst>")   | as(<name>)
+    // to("<subst>")   | to(<expr>)
+    // from("<subst>") | from(<expr>)
     //
 
     if (p != "type" &&
@@ -857,12 +857,9 @@ handle_pragma (cxx_lexer& l,
       return;
     }
 
-    using relational::custom_db_type;
-
     // Make sure we've got the correct declaration type.
     //
     assert (decl == global_namespace);
-    custom_db_type& ct (qualifier_value.value<custom_db_type> ());
 
     if (l.next (tl, &tn) != CPP_OPEN_PAREN)
     {
@@ -872,59 +869,119 @@ handle_pragma (cxx_lexer& l,
 
     tt = l.next (tl, &tn);
 
-    if (p == "type")
+    using relational::custom_db_type;
+    using relational::custom_cxx_type;
+
+    if (qualifier_value.type_info () == typeid (custom_db_type))
     {
-      if (tt != CPP_STRING)
+      // Database type mapping.
+      //
+      custom_db_type& ct (qualifier_value.value<custom_db_type> ());
+
+      if (p == "type")
       {
-        error (l) << "type name regex expected in db pragma " << p << endl;
-        return;
+        if (tt != CPP_STRING)
+        {
+          error (l) << "type name regex expected in db pragma " << p << endl;
+          return;
+        }
+
+        try
+        {
+          // Make it case-insensitive.
+          //
+          ct.type.assign (tl, true);
+        }
+        catch (regex_format const& e)
+        {
+          error (l) << "invalid regex: '" << e.regex () << "' in db pragma "
+                    << p << ": " << e.description () << endl;
+          return;
+        }
+      }
+      else if (p == "as")
+      {
+        if (tt != CPP_STRING)
+        {
+          error (l) << "type name expected in db pragma " << p << endl;
+          return;
+        }
+
+        ct.as = tl;
+      }
+      else if (p == "to")
+      {
+        if (tt != CPP_STRING)
+        {
+          error (l) << "expression expected in db pragma " << p << endl;
+          return;
+        }
+
+        ct.to = tl;
+      }
+      else if (p == "from")
+      {
+        if (tt != CPP_STRING)
+        {
+          error (l) << "expression expected in db pragma " << p << endl;
+          return;
+        }
+
+        ct.from = tl;
       }
 
-      try
+      tt = l.next (tl, &tn);
+    }
+    else
+    {
+      // C++ type mapping.
+      //
+      custom_cxx_type& ct (qualifier_value.value<custom_cxx_type> ());
+
+      if (p == "type" || p == "as")
       {
-        // Make it case-insensitive.
+        // Can be built-in type (e.g., bool).
         //
-        ct.type.assign (tl, true);
+        if (tt == CPP_NAME || tt == CPP_KEYWORD || tt == CPP_SCOPE)
+        {
+          string name;
+          tree type (
+            resolve_scoped_name (
+              l, tt, tl, tn, current_scope (), name, true, p));
+
+          if (type == 0)
+            return; // Diagnostics has already been issued.
+
+          if (TREE_CODE (type) != TYPE_DECL)
+          {
+            error (loc) << "name '" << name << "' in db pragma "
+                        << p << " does not refer to a type" << endl;
+            return;
+          }
+
+          type = TREE_TYPE (type);
+
+          (p == "type" ? ct.type_node : ct.as_node) = type;
+          (p == "type" ? ct.type_name : ct.as_name) = name;
+        }
+        else
+        {
+          error (l) << "type name expected in db pragma " << p << endl;
+          return;
+        }
       }
-      catch (regex_format const& e)
+      else if (p == "to" || p == "from")
       {
-        error (l) << "invalid regex: '" << e.regex () << "' in db pragma "
-                  << p << ": " << e.description () << endl;
-        return;
+        if (tt != CPP_CLOSE_PAREN) // Empty expression is ok.
+        {
+          if (!parse_expression (
+                l, tt, tl, tn, (p == "to" ? ct.to : ct.from), p))
+            return; // Diagnostics has already been issued.
+        }
       }
     }
-    else if (p == "as")
-    {
-      if (tt != CPP_STRING)
-      {
-        error (l) << "type name expected in db pragma " << p << endl;
-        return;
-      }
 
-      ct.as = tl;
-    }
-    else if (p == "to")
-    {
-      if (tt != CPP_STRING)
-      {
-        error (l) << "expression expected in db pragma " << p << endl;
-        return;
-      }
-
-      ct.to = tl;
-    }
-    else if (p == "from")
-    {
-      if (tt != CPP_STRING)
-      {
-        error (l) << "expression expected in db pragma " << p << endl;
-        return;
-      }
-
-      ct.from = tl;
-    }
-
-    if (l.next (tl, &tn) != CPP_CLOSE_PAREN)
+    if (tt != CPP_CLOSE_PAREN)
     {
       error (l) << "')' expected at the end of db pragma " << p << endl;
       return;
@@ -3061,8 +3118,13 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
     }
     else
     {
-      error (loc) << "custom C++ type!" << endl;
-      return;
+      using relational::custom_cxx_type;
+
+      custom_cxx_type ct;
+      ct.loc = loc;
+      val = ct;
+      name = "custom-cxx-types";
+      adder = &accumulate<custom_cxx_type>;
     }
   }
   else if (p == "index")
