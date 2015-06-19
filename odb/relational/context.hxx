@@ -71,26 +71,6 @@ namespace relational
 
   typedef std::vector<custom_db_type> custom_db_types;
 
-  // Custom C++ type mapping.
-  //
-  struct custom_cxx_type
-  {
-    tree type_node;
-    std::string type_name;
-
-    tree as_node;
-    std::string as_name;
-
-    // Empty expression means the values are implicitly convertible.
-    //
-    cxx_tokens to;
-    cxx_tokens from;
-
-    location_t loc;
-  };
-
-  typedef std::vector<custom_cxx_type> custom_cxx_types;
-
   class context: public virtual ::context
   {
   public:

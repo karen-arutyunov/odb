@@ -644,6 +644,7 @@ context (ostream& os_,
       include_regex (data_->include_regex_),
       accessor_regex (data_->accessor_regex_),
       modifier_regex (data_->modifier_regex_),
+      custom_type_map (u.get<custom_cxx_type_map> ("custom-cxx-type-map")),
       embedded_schema (
         ops.generate_schema () &&
         ops.schema_format ()[db].count (schema_format::embedded)),
@@ -761,6 +762,7 @@ context ()
     include_regex (current ().include_regex),
     accessor_regex (current ().accessor_regex),
     modifier_regex (current ().modifier_regex),
+    custom_type_map (current ().custom_type_map),
     embedded_schema (current ().embedded_schema),
     separate_schema (current ().separate_schema),
     multi_static (current ().multi_static),

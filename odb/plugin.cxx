@@ -201,13 +201,17 @@ gate_callback (void*, void*)
 
     features f;
 
+    // Process, pass 1.
+    //
+    process (*options_, f, *u, file_, 1);
+
     // Validate, pass 1.
     //
     validate (*options_, f, *u, file_, 1);
 
-    // Process.
+    // Process, pass 2.
     //
-    process (*options_, f, *u, file_);
+    process (*options_, f, *u, file_, 2);
 
     // Validate, pass 2.
     //

@@ -20,6 +20,26 @@ using namespace std;
 
 namespace
 {
+  // Find name hint for this type decl.
+  //
+  static semantics::names*
+  find_hint (semantics::unit& u, tree decl)
+  {
+    semantics::names* r (0);
+
+    for (tree ot (DECL_ORIGINAL_TYPE (decl));
+         ot != 0;
+         ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
+    {
+      if ((r = u.find_hint (ot)))
+        break;
+
+      decl = TYPE_NAME (ot);
+    }
+
+    return r;
+  }
+
   // Indirect (dynamic) context values.
   //
   static semantics::type*
@@ -218,8 +238,8 @@ namespace
       e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
       e.push_back (cxx_token (0, CPP_DOT));
       e.push_back (cxx_token (0, CPP_NAME, n));
-      e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
-      e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
+      e.push_back (cxx_token (0, CPP_OPEN_PAREN));
+      e.push_back (cxx_token (0, CPP_CLOSE_PAREN));
 
       // See if it returns by value.
       //
@@ -279,8 +299,8 @@ namespace
         e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
         e.push_back (cxx_token (0, CPP_DOT));
         e.push_back (cxx_token (0, CPP_NAME, n));
-        e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
-        e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
+        e.push_back (cxx_token (0, CPP_OPEN_PAREN));
+        e.push_back (cxx_token (0, CPP_CLOSE_PAREN));
 
         return found_best;
       }
@@ -316,9 +336,9 @@ namespace
           e.push_back (cxx_token (0, CPP_KEYWORD, "this"));
           e.push_back (cxx_token (0, CPP_DOT));
           e.push_back (cxx_token (0, CPP_NAME, n));
-          e.push_back (cxx_token (0, CPP_OPEN_PAREN, n));
+          e.push_back (cxx_token (0, CPP_OPEN_PAREN));
           e.push_back (cxx_token (0, CPP_QUERY));
-          e.push_back (cxx_token (0, CPP_CLOSE_PAREN, n));
+          e.push_back (cxx_token (0, CPP_CLOSE_PAREN));
 
           // Continue searching in case there is version that returns a
           // non-const reference which we prefer for efficiency.
@@ -982,17 +1002,7 @@ namespace
 
         // Find the hint.
         //
-        semantics::names* wh (0);
-
-        for (tree ot (DECL_ORIGINAL_TYPE (decl));
-             ot != 0;
-             ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
-        {
-          if ((wh = unit.find_hint (ot)))
-            break;
-
-          decl = TYPE_NAME (ot);
-        }
+        semantics::names* wh (find_hint (unit, decl));
 
         t.set ("wrapper-type", wt);
         t.set ("wrapper-hint", wh);
@@ -1531,15 +1541,7 @@ namespace
 
           // Find the hint.
           //
-          for (tree ot (DECL_ORIGINAL_TYPE (decl));
-               ot != 0;
-               ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
-          {
-            if ((vh = unit.find_hint (ot)))
-              break;
-
-            decl = TYPE_NAME (ot);
-          }
+          vh = find_hint (unit, decl);
         }
         catch (operation_failed const&)
         {
@@ -1598,15 +1600,7 @@ namespace
 
             // Find the hint.
             //
-            for (tree ot (DECL_ORIGINAL_TYPE (decl));
-                 ot != 0;
-                 ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
-            {
-              if ((ih = unit.find_hint (ot)))
-                break;
-
-              decl = TYPE_NAME (ot);
-            }
+            ih = find_hint (unit, decl);
           }
           catch (operation_failed const&)
           {
@@ -1640,15 +1634,7 @@ namespace
 
             // Find the hint.
             //
-            for (tree ot (DECL_ORIGINAL_TYPE (decl));
-                 ot != 0;
-                 ot = decl ? DECL_ORIGINAL_TYPE (decl) : 0)
-            {
-              if ((kh = unit.find_hint (ot)))
-                break;
-
-              decl = TYPE_NAME (ot);
-            }
+            kh = find_hint (unit, decl);
           }
           catch (operation_failed const&)
           {
@@ -3016,59 +3002,188 @@ namespace
 
     tree access_; // odb::access node.
   };
+
+  static void
+  check_to_from (const cxx_tokens& ex, const char* c, location_t l)
+  {
+    // Make sure we have one and only one placeholder (?).
+    //
+    bool r (false);
+
+    for (cxx_tokens::const_iterator i (ex.begin ()), e (ex.end ()); i != e;)
+    {
+      if (i->type == CPP_OPEN_PAREN)
+      {
+        if (++i != e && i->type == CPP_QUERY)
+        {
+          if (++i != e && i->type == CPP_CLOSE_PAREN)
+          {
+            if (r)
+            {
+              error (l) << "multiple '(?)' expressions in the '" << c << "' "
+                        << "clause of db pragma map" << endl;
+              throw operation_failed ();
+            }
+            else
+              r = true;
+          }
+        }
+      }
+      else
+        ++i;
+    }
+
+    if (!r)
+    {
+      error (l) << "no '(?)' expression in the '" << c << "' clause "
+                << "of db pragma map" << endl;
+
+      throw operation_failed ();
+    }
+  }
+}
+
+static void
+process1 (semantics::unit& u)
+{
+  // Process custom C++ type mapping.
+  //
+
+  // Create an empty list if we don't have one. This makes the
+  // rest of the code simpler.
+  //
+  if (!u.count ("custom-cxx-types"))
+    u.set ("custom-cxx-types", custom_cxx_types ());
+
+  custom_cxx_types & cts (u.get<custom_cxx_types> ("custom-cxx-types"));
+  custom_cxx_type_map& ctm (u.set ("custom-cxx-type-map",
+                                   custom_cxx_type_map ()));
+
+  for (custom_cxx_types::iterator i (cts.begin ()); i != cts.end (); ++i)
+  {
+    custom_cxx_type& ct (*i);
+
+    // type
+    //
+    if (ct.type_node == 0)
+    {
+      error (ct.loc) << "'type' clause expected in db pragma map" << endl;
+      throw operation_failed ();
+    }
+
+    ct.type = dynamic_cast<semantics::type*> (
+      u.find (TYPE_MAIN_VARIANT (ct.type_node)));
+    ct.type_hint = u.find_hint (ct.type_node);
+
+    // as
+    //
+    if (ct.as_node == 0)
+    {
+      error (ct.loc) << "'as' clause expected in db pragma map" << endl;
+      throw operation_failed ();
+    }
+
+    ct.as = dynamic_cast<semantics::type*> (
+      u.find (TYPE_MAIN_VARIANT (ct.as_node)));
+    ct.as_hint = u.find_hint (ct.as_node);
+
+    // to
+    //
+    {
+      cxx_tokens& e (ct.to);
+
+      if (e.empty ())
+      {
+        e.push_back (cxx_token (0, CPP_OPEN_PAREN));
+        e.push_back (cxx_token (0, CPP_QUERY));
+        e.push_back (cxx_token (0, CPP_CLOSE_PAREN));
+      }
+      else
+        check_to_from (e, "to", ct.loc);
+    }
+
+    // to
+    //
+    {
+      cxx_tokens& e (ct.from);
+
+      if (e.empty ())
+      {
+        e.push_back (cxx_token (0, CPP_OPEN_PAREN));
+        e.push_back (cxx_token (0, CPP_QUERY));
+        e.push_back (cxx_token (0, CPP_CLOSE_PAREN));
+      }
+      else
+        check_to_from (e, "from", ct.loc);
+    }
+
+    // Enter into the map.
+    //
+    ctm[ct.type] = &ct;
+  }
+}
+
+static void
+process2 (options const& ops, features& f, semantics::unit& u)
+{
+  auto_ptr<context> ctx (create_context (cerr, u, ops, f, 0));
+
+  // Common processing.
+  //
+  {
+    traversal::unit unit;
+    traversal::defines unit_defines;
+    typedefs unit_typedefs (true);
+    traversal::namespace_ ns;
+    class_ c;
+
+    unit >> unit_defines >> ns;
+    unit_defines >> c;
+    unit >> unit_typedefs >> c;
+
+    traversal::defines ns_defines;
+    typedefs ns_typedefs (true);
+
+    ns >> ns_defines >> ns;
+    ns_defines >> c;
+    ns >> ns_typedefs >> c;
+
+    unit.dispatch (ctx->unit);
+  }
+
+  // Database-specific processing.
+  //
+  switch (ops.database ()[0])
+  {
+  case database::common:
+    {
+      break;
+    }
+  case database::mssql:
+  case database::mysql:
+  case database::oracle:
+  case database::pgsql:
+  case database::sqlite:
+    {
+      relational::process ();
+      break;
+    }
+  }
 }
 
 void
 process (options const& ops,
          features& f,
-         semantics::unit& unit,
-         semantics::path const&)
+         semantics::unit& u,
+         semantics::path const&,
+         unsigned short pass)
 {
   try
   {
-    auto_ptr<context> ctx (create_context (cerr, unit, ops, f, 0));
-
-    // Common processing.
-    //
-    {
-      traversal::unit unit;
-      traversal::defines unit_defines;
-      typedefs unit_typedefs (true);
-      traversal::namespace_ ns;
-      class_ c;
-
-      unit >> unit_defines >> ns;
-      unit_defines >> c;
-      unit >> unit_typedefs >> c;
-
-      traversal::defines ns_defines;
-      typedefs ns_typedefs (true);
-
-      ns >> ns_defines >> ns;
-      ns_defines >> c;
-      ns >> ns_typedefs >> c;
-
-      unit.dispatch (ctx->unit);
-    }
-
-    // Database-specific processing.
-    //
-    switch (ops.database ()[0])
-    {
-    case database::common:
-      {
-        break;
-      }
-    case database::mssql:
-    case database::mysql:
-    case database::oracle:
-    case database::pgsql:
-    case database::sqlite:
-      {
-        relational::process ();
-        break;
-      }
-    }
+    if (pass == 1)
+      process1 (u);
+    else if (pass == 2)
+      process2 (ops, f, u);
   }
   catch (operation_failed const&)
   {

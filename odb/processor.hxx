@@ -11,10 +11,14 @@
 
 class processor_failed {};
 
+// Pass one is very early processing before any validation has been
+// done.
+//
 void
 process (options const&,
          features&,
          semantics::unit&,
-         semantics::path const&);
+         semantics::path const&,
+         unsigned short pass);
 
 #endif // ODB_PROCESSOR_HXX

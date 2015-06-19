@@ -869,11 +869,56 @@ handle_pragma (cxx_lexer& l,
 
     tt = l.next (tl, &tn);
 
-    using relational::custom_db_type;
-    using relational::custom_cxx_type;
-
-    if (qualifier_value.type_info () == typeid (custom_db_type))
+    if (qualifier_value.type_info () == typeid (custom_cxx_type))
     {
+      // C++ type mapping.
+      //
+      custom_cxx_type& ct (qualifier_value.value<custom_cxx_type> ());
+
+      if (p == "type" || p == "as")
+      {
+        // Can be built-in type (e.g., bool).
+        //
+        if (tt == CPP_NAME || tt == CPP_KEYWORD || tt == CPP_SCOPE)
+        {
+          string name;
+          tree decl (
+            resolve_scoped_name (
+              l, tt, tl, tn, current_scope (), name, true, p));
+
+          if (decl == 0)
+            return; // Diagnostics has already been issued.
+
+          if (TREE_CODE (decl) != TYPE_DECL)
+          {
+            error (loc) << "name '" << name << "' in db pragma "
+                        << p << " does not refer to a type" << endl;
+            return;
+          }
+
+          (p == "type" ? ct.type_node : ct.as_node) = TREE_TYPE (decl);
+          (p == "type" ? ct.type_name : ct.as_name) = name;
+        }
+        else
+        {
+          error (l) << "type name expected in db pragma " << p << endl;
+          return;
+        }
+      }
+      else if (p == "to" || p == "from")
+      {
+        if (tt != CPP_CLOSE_PAREN) // Empty expression is ok.
+        {
+          if (!parse_expression (
+                l, tt, tl, tn, (p == "to" ? ct.to : ct.from), p))
+            return; // Diagnostics has already been issued.
+        }
+      }
+    }
+    else
+    {
+      using relational::custom_db_type;
+
       // Database type mapping.
       //
       custom_db_type& ct (qualifier_value.value<custom_db_type> ());
@@ -931,54 +976,6 @@ handle_pragma (cxx_lexer& l,
       }
 
       tt = l.next (tl, &tn);
-    }
-    else
-    {
-      // C++ type mapping.
-      //
-      custom_cxx_type& ct (qualifier_value.value<custom_cxx_type> ());
-
-      if (p == "type" || p == "as")
-      {
-        // Can be built-in type (e.g., bool).
-        //
-        if (tt == CPP_NAME || tt == CPP_KEYWORD || tt == CPP_SCOPE)
-        {
-          string name;
-          tree type (
-            resolve_scoped_name (
-              l, tt, tl, tn, current_scope (), name, true, p));
-
-          if (type == 0)
-            return; // Diagnostics has already been issued.
-
-          if (TREE_CODE (type) != TYPE_DECL)
-          {
-            error (loc) << "name '" << name << "' in db pragma "
-                        << p << " does not refer to a type" << endl;
-            return;
-          }
-
-          type = TREE_TYPE (type);
-
-          (p == "type" ? ct.type_node : ct.as_node) = type;
-          (p == "type" ? ct.type_name : ct.as_name) = name;
-        }
-        else
-        {
-          error (l) << "type name expected in db pragma " << p << endl;
-          return;
-        }
-      }
-      else if (p == "to" || p == "from")
-      {
-        if (tt != CPP_CLOSE_PAREN) // Empty expression is ok.
-        {
-          if (!parse_expression (
-                l, tt, tl, tn, (p == "to" ? ct.to : ct.from), p))
-            return; // Diagnostics has already been issued.
-        }
-      }
     }
 
     if (tt != CPP_CLOSE_PAREN)
@@ -3118,8 +3115,6 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
     }
     else
     {
-      using relational::custom_cxx_type;
-
       custom_cxx_type ct;
       ct.loc = loc;
       val = ct;

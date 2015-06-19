@@ -112,6 +112,34 @@ typedef std::vector<class_inheritance_chain> data_member_scope;
 // Semantic graph context types.
 //
 
+// Custom C++ type mapping.
+//
+struct custom_cxx_type
+{
+  custom_cxx_type (): type_node (0), as_node (0) {}
+
+  tree type_node;
+  std::string type_name;
+  semantics::type* type;
+  semantics::names* type_hint;
+
+  tree as_node;
+  std::string as_name;
+  semantics::type* as;
+  semantics::names* as_hint;
+
+  // Empty expression means the values are implicitly convertible.
+  //
+  cxx_tokens to;
+  cxx_tokens from;
+
+  location_t loc;
+};
+
+typedef std::vector<custom_cxx_type> custom_cxx_types;
+typedef std::map<semantics::type*, custom_cxx_type*> custom_cxx_type_map;
+
+
 // Object or view pointer.
 //
 struct class_pointer
@@ -1674,6 +1702,8 @@ public:
   regex_mapping const& include_regex;
   regex_mapping const& accessor_regex;
   regex_mapping const& modifier_regex;
+
+  custom_cxx_type_map const& custom_type_map;
 
   bool embedded_schema;
   bool separate_schema;

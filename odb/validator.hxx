@@ -11,7 +11,8 @@
 
 class validator_failed {};
 
-// The first pass is performed before processing. The second -- after.
+// The first pass is performed after processing pass 1 but before
+// processing pass 2. The second -- after pass 2.
 //
 void
 validate (options const&,
