@@ -2959,7 +2959,7 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
   pragma::add_func adder (0);      // Custom context adder.
   bool ns (false);                 // Namespace location pragma.
 
-  cxx_tokens saved_tokens;         // Saved token seuqnece to be replayed.
+  cxx_tokens saved_tokens;         // Saved token sequence to be replayed.
 
   // Pragma qualifiers.
   //
@@ -2972,17 +2972,98 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
   else if (p == "map")
   {
     // map type("<regex>") as("<subst>") [to("<subst>")] [from("<subst>")]
+    // map type(<c++-type>) as(<c++-type>) [to(<expr>)] [from(<expr>)]
     //
-    using relational::custom_db_type;
 
-    custom_db_type ct;
-    ct.loc = loc;
-    val = ct;
-    name = "custom-db-types";
+    // The thing that determines whether this is a database or C++ type
+    // mapping is what we have inside 'type'. So to handle this we are
+    // going to pre-scan the pragma looking for 'type' and saving the
+    // tokens. Once we determine what this is, we replay the saved
+    // tokens to actually parse them.
+    //
+
+    // Determine what this is by scanning the pragma until we see
+    // the 'type' qualifier or EOF.
+    //
+    bool db (true);
+
+    bool done (false);
+    size_t balance (0);
+    for (tt = l.next (tl, &tn);
+         !(done && balance == 0) && tt != CPP_EOF;
+         tt = l.next (tl, &tn))
+    {
+      saved_tokens.push_back (cxx_token (l.location (), tt, tl, tn));
+
+      switch (tt)
+      {
+      case CPP_OPEN_PAREN:
+        {
+          balance++;
+          continue;
+        }
+      case CPP_CLOSE_PAREN:
+        {
+          if (balance > 0)
+            balance--;
+          else
+          {
+            error (l) << "unbalanced parenthesis in db pragma " << p << endl;
+            return;
+          }
+          continue;
+        }
+      case CPP_NAME:
+        {
+          if (balance == 0 && tl == "type")
+            break;
+
+          continue;
+        }
+      default:
+        continue;
+      }
+
+      tt = l.next (tl, &tn);
+      saved_tokens.push_back (cxx_token (l.location (), tt, tl, tn));
+
+      if (tt == CPP_OPEN_PAREN)
+      {
+        balance++;
+
+        tt = l.next (tl, &tn);
+        saved_tokens.push_back (cxx_token (l.location (), tt, tl, tn));
+
+        db = (tt == CPP_STRING);
+      }
+
+      done = true; // Scan until the closing ')'.
+    }
+
+    if (balance != 0)
+    {
+      error (l) << "unbalanced parenthesis in db pragma " << p << endl;
+      return;
+    }
+
     orig_decl = global_namespace;
     decl = declaration (orig_decl);
-    adder = &accumulate<custom_db_type>;
-    tt = l.next (tl, &tn);
+
+    if (db)
+    {
+      using relational::custom_db_type;
+
+      custom_db_type ct;
+      ct.loc = loc;
+      val = ct;
+      name = "custom-db-types";
+      adder = &accumulate<custom_db_type>;
+    }
+    else
+    {
+      error (loc) << "custom C++ type!" << endl;
+      return;
+    }
   }
   else if (p == "index")
   {
