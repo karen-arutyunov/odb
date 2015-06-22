@@ -946,8 +946,7 @@ null (semantics::data_member& m, string const& kp) const
     return null (m);
 
   semantics::type& c (utype (m));
-  semantics::type& t (member_utype (m, kp));
-  semantics::names* hint (0); // No hint for container elements.
+  semantics::type& t (utype (m, kp));
 
   if (object_pointer (t))
   {
@@ -1005,8 +1004,7 @@ null (semantics::data_member& m, string const& kp) const
             // Otherwise, check the wrapped type.
             //
             pt = t.get<semantics::type*> ("wrapper-type");
-            hint = t.get<semantics::names*> ("wrapper-hint");
-            pt = &utype (*pt, hint);
+            pt = &utype (*pt);
 
             if (pt->count ("null"))
               return true;
@@ -1167,20 +1165,40 @@ utype (semantics::type& t, semantics::names*& hint)
 }
 
 semantics::type& context::
-utype (semantics::data_member& m, semantics::names*& hint)
+utype (semantics::data_member& m, semantics::names*& hint, string const& kp)
 {
-  semantics::type& t (m.type ());
+  semantics::type* t (0);
 
-  if (semantics::qualifier* q = dynamic_cast<semantics::qualifier*> (&t))
+  if (kp.empty ())
   {
-    hint = q->qualifies ().hint ();
-    return q->base_type ();
+    t = &m.type ();
+
+    if (semantics::qualifier* q = dynamic_cast<semantics::qualifier*> (t))
+    {
+      hint = q->qualifies ().hint ();
+      t = &q->base_type ();
+    }
+    else
+      hint = m.belongs ().hint ();
   }
   else
   {
-    hint = m.belongs ().hint ();
-    return t;
+    if (m.count (kp + "-tree-type"))
+      t = indirect_type (m, kp, hint);
+    else
+    {
+      t = &utype (m);
+
+      // "See through" wrappers.
+      //
+      if (semantics::type* wt = wrapper (*t))
+        t = indirect_type (utype (*wt), kp, hint);
+      else
+        t = indirect_type (*t, kp, hint);
+    }
   }
+
+  return *t;
 }
 
 bool context::
@@ -1190,30 +1208,6 @@ const_type (semantics::type& t)
     return q->const_ ();
 
   return false;
-}
-
-semantics::type& context::
-member_type (semantics::data_member& m, string const& key_prefix)
-{
-  // This function returns the potentially-qualified type but for
-  // intermediate types we use unqualified versions.
-  //
-  if (key_prefix.empty ())
-    return m.type ();
-
-  string const key (key_prefix + "-tree-type");
-
-  if (m.count (key))
-    return *indirect_value<semantics::type*> (m, key);
-
-  // "See throught" wrappers.
-  //
-  semantics::type& t (utype (m));
-
-  if (semantics::type* wt = wrapper (t))
-    return *indirect_value<semantics::type*> (utype (*wt), key);
-  else
-    return *indirect_value<semantics::type*> (t, key);
 }
 
 string context::
@@ -1969,7 +1963,7 @@ column_options (semantics::data_member& m, string const& kp)
   // Accumulate options from type, container, and member.
   //
   semantics::type& c (utype (m));
-  semantics::type& t (member_utype (m, kp));
+  semantics::type& t (utype (m, kp));
 
   string r;
 

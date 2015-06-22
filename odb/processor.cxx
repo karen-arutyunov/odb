@@ -43,11 +43,11 @@ namespace
   // Indirect (dynamic) context values.
   //
   static semantics::type*
-  id_tree_type ()
+  id_tree_type (semantics::names*& hint)
   {
     context& c (context::current ());
     semantics::data_member& id (*context::id_member (*c.top_object));
-    return &id.type ();
+    return &c.utype (id, hint);
   }
 
   struct data_member: traversal::data_member, context

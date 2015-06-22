@@ -614,12 +614,20 @@ public:
   static semantics::type&
   utype (semantics::type&, semantics::names*& hint);
 
-  // The same for a member's type.
+  // The same for a member's type but also do custom C++ type translation.
   //
   static semantics::type&
   utype (semantics::data_member& m)
   {
-    return utype (m.type ());
+    semantics::names* hint (0);
+    return  utype (m, hint);
+  }
+
+  static semantics::type&
+  utype (semantics::data_member& m, string const& key_prefix)
+  {
+    semantics::names* hint (0);
+    return utype (m, hint, key_prefix);
   }
 
   // In addition to the unqualified type, this version also returns the
@@ -628,22 +636,15 @@ public:
   // qualifies edge.
   //
   static semantics::type&
-  utype (semantics::data_member&, semantics::names*& hint);
+  utype (semantics::data_member&,
+         semantics::names*& hint,
+         string const& key_prefix = string ());
 
   // For arrays this function returns true if the (innermost) element
   // type is const.
   //
   static bool
   const_type (semantics::type&);
-
-  static semantics::type&
-  member_type (semantics::data_member&, string const& key_prefix);
-
-  static semantics::type&
-  member_utype (semantics::data_member& m, string const& key_prefix)
-  {
-    return utype (member_type (m, key_prefix));
-  }
 
   // Form a reference type for a member type. If make_const is true, then
   // add top-level const qualifier, unless it is already there. If it is
@@ -1448,7 +1449,7 @@ public:
     if (key_prefix.empty ())
       return inverse (m);
 
-    if (!object_pointer (member_utype (m, key_prefix)))
+    if (!object_pointer (utype (m, key_prefix)))
       return 0;
 
     string k (key_prefix + "-inverse");
@@ -1475,7 +1476,7 @@ public:
   static semantics::type&
   container_idt (semantics::data_member& m)
   {
-    return member_utype (m, "id");
+    return utype (m, "id");
   }
 
   static semantics::type&
@@ -1609,6 +1610,25 @@ private:
       return c.get<func> (key) ();
     else
       return c.get<X> (key);
+  }
+
+  static semantics::type*
+  indirect_type (semantics::context const& c,
+                 string const& kp,
+                 semantics::names*& hint)
+  {
+    typedef semantics::type* (*func) (semantics::names*&);
+
+    string const tk (kp + "-tree-type");
+    std::type_info const& ti (c.type_info (tk));
+
+    if (ti == typeid (func))
+      return c.get<func> (tk) (hint);
+    else
+    {
+      hint = c.get<semantics::names*> (kp + "-tree-hint");
+      return c.get<semantics::type*> (tk);
+    }
   }
 
 public:

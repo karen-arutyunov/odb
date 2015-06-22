@@ -2193,7 +2193,7 @@ namespace relational
           // When handling a pointer, mi.t is the id type of the referenced
           // object.
           //
-          semantics::type& pt (member_utype (mi.m, key_prefix_));
+          semantics::type& pt (utype (mi.m, key_prefix_));
 
           type = "obj_traits::id_type";
 
@@ -2704,7 +2704,7 @@ namespace relational
           // When handling a pointer, mi.t is the id type of the referenced
           // object.
           //
-          semantics::type& pt (member_utype (mi.m, key_prefix_));
+          semantics::type& pt (utype (mi.m, key_prefix_));
 
           if (lazy_pointer (pt))
             os << member << " = ptr_traits::pointer_type (" << endl

@@ -61,7 +61,7 @@ namespace relational
 
           // Make sure it is a pointer or a member with points_to pragma.
           //
-          if (!object_pointer (member_utype (m, kp)) && !points_to (m))
+          if (!object_pointer (utype (m, kp)) && !points_to (m))
           {
             error (l) << "on_delete specified for non-object pointer" << endl;
             valid_ = false;
