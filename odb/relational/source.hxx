@@ -5066,7 +5066,7 @@ namespace relational
         // that the user-provided expression handles this.
         //
         bool cast (
-          call_ == load_call && ma.direct () && const_type (m->type ()));
+          call_ == load_call && ma.direct () && const_member (*m));
         if (cast)
           obj_prefix_ = "const_cast< " + member_ref_type (*m, false) +
             " > (\n";
@@ -5090,7 +5090,7 @@ namespace relational
           semantics::names* hint;
           semantics::type& t (utype (*m, hint));
 
-          // Because we cannot have nested containers, m.type () should
+          // Because we cannot have nested containers, member type should
           // be the same as w.
           //
           assert (&t == w);
@@ -5211,7 +5211,7 @@ namespace relational
             // that the user-provided expression handles this.
             //
             bool cast (
-              call_ == load_call && ma.direct () && const_type (m.type ()));
+              call_ == load_call && ma.direct () && const_member (m));
             if (cast)
               os << "const_cast< " << member_ref_type (m, false) <<
                 " > (" << endl;
@@ -6353,7 +6353,7 @@ namespace relational
               // access, then cast away constness. Otherwise, we assume
               // that the user-provided expression handles this.
               //
-              bool cast (ma_set.direct () && const_type (opt->type ()));
+              bool cast (ma_set.direct () && const_member (*opt));
               if (cast)
                 os << "const_cast< version_type& > (" << endl;
 

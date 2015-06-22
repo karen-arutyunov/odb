@@ -1299,7 +1299,7 @@ traverse_object (type& c)
       // then cast away constness. Otherwise, we assume that the user-
       // provided expression handles this.
       //
-      bool cast (ma.direct () && const_type (id->type ()));
+      bool cast (ma.direct () && const_member (*id));
       if (cast)
         os << "const_cast< id_type& > (" << endl;
 
@@ -1334,7 +1334,7 @@ traverse_object (type& c)
       // then cast away constness. Otherwise, we assume that the user-
       // provided expression handles this.
       //
-      bool cast (opt_ma_set->direct () && const_type (opt->type ()));
+      bool cast (opt_ma_set->direct () && const_member (*opt));
       if (cast)
         os << "const_cast< version_type& > (" << endl;
 
@@ -1558,7 +1558,7 @@ traverse_object (type& c)
         // then cast away constness. Otherwise, we assume that the user-
         // provided expression handles this.
         //
-        bool cast (ma.direct () && const_type (id->type ()));
+        bool cast (ma.direct () && const_member (*id));
         if (cast)
           os << "const_cast< id_type& > (" << endl;
 
@@ -1593,7 +1593,7 @@ traverse_object (type& c)
         // then cast away constness. Otherwise, we assume that the user-
         // provided expression handles this.
         //
-        bool cast (opt_ma_set->direct () && const_type (opt->type ()));
+        bool cast (opt_ma_set->direct () && const_member (*opt));
         if (cast)
           os << "const_cast< version_type& > (" << endl;
 
@@ -2140,7 +2140,7 @@ traverse_object (type& c)
           // then cast away constness. Otherwise, we assume that the user-
           // provided expression handles this.
           //
-          bool cast (opt_ma_set->direct () && const_type (opt->type ()));
+          bool cast (opt_ma_set->direct () && const_member (*opt));
           if (cast)
             os << "const_cast< version_type& > (" << endl;
 
@@ -2459,7 +2459,7 @@ traverse_object (type& c)
         // then cast away constness. Otherwise, we assume that the user-
         // provided expression handles this.
         //
-        bool cast (opt_ma_set->direct () && const_type (opt->type ()));
+        bool cast (opt_ma_set->direct () && const_member (*opt));
         if (cast)
           os << "const_cast< version_type& > (" << endl;
 

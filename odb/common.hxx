@@ -33,7 +33,7 @@ struct object_members_base: traversal::class_, virtual context
   // bases and members. The first argument is the data member and can
   // be NULL if we are traversing the root type or a base. The second
   // argument is the actual composite type, which is not necessarily
-  // the same as m.type ().
+  // the same as the member's type.
   //
   virtual void
   traverse_composite (semantics::data_member*, semantics::class_&);
@@ -49,8 +49,8 @@ struct object_members_base: traversal::class_, virtual context
                               semantics::class_& comp,
                               semantics::type* wrapper);
 
-  // The second argument is the actual container type in case m.type ()
-  // is a wrapper.
+  // The second argument is the actual container type in case the
+  // member type is a wrapper.
   //
   virtual void
   traverse_container (semantics::data_member&, semantics::type&);
@@ -196,7 +196,7 @@ struct object_columns_base: traversal::class_, virtual context
   // bases and members. The first argument is the data member and can
   // be NULL if we are traversing the root type or a base. The second
   // argument is the actual composite type, which is not necessarily
-  // the same as m.type ().
+  // the same as the member type.
   //
   virtual void
   traverse_composite (semantics::data_member*, semantics::class_&);

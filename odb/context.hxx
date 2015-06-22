@@ -646,10 +646,14 @@ public:
   static bool
   const_type (semantics::type&);
 
-  // Form a reference type for a member type. If make_const is true, then
-  // add top-level const qualifier, unless it is already there. If it is
-  // false, then strip it if it is already there. If var is not empty,
-  // then embed the variable name into the type (e.g., char (*v)[3]).
+  static bool
+  const_member (semantics::data_member& m) {return const_type (m.type ());}
+
+  // Form a reference type for a not mapped, actual member type. If
+  // make_const is true, then add top-level const qualifier, unless
+  // it is already there. If it is false, then strip it if it is
+  // already there. If var is not empty, then embed the variable
+  // name into the type (e.g., char (*v)[3]).
   //
   static string
   member_ref_type (semantics::data_member& m,
@@ -665,10 +669,10 @@ public:
                  bool make_const,
                  string const& var = "");
 
-  // Form a value type for a member type. If make_const is true, then add
-  // top-level const qualifier, unless it is already there. If it is false,
-  // then strip it if it is already there. If var is not empty, then embed
-  // the variable name into the type (e.g., char v[3]).
+  // Form a value type for a not mapped, actual member type. If make_const
+  // is true, then add top-level const qualifier, unless it is already
+  // there. If it is false, then strip it if it is already there. If var is
+  // not empty, then embed the variable name into the type (e.g., char v[3]).
   //
   static string
   member_val_type (semantics::data_member& m,
@@ -1722,8 +1726,6 @@ public:
   regex_mapping const& include_regex;
   regex_mapping const& accessor_regex;
   regex_mapping const& modifier_regex;
-
-  custom_cxx_type_map const& custom_type_map;
 
   bool embedded_schema;
   bool separate_schema;

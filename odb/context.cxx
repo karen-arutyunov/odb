@@ -644,7 +644,6 @@ context (ostream& os_,
       include_regex (data_->include_regex_),
       accessor_regex (data_->accessor_regex_),
       modifier_regex (data_->modifier_regex_),
-      custom_type_map (u.get<custom_cxx_type_map> ("custom-cxx-type-map")),
       embedded_schema (
         ops.generate_schema () &&
         ops.schema_format ()[db].count (schema_format::embedded)),
@@ -762,7 +761,6 @@ context ()
     include_regex (current ().include_regex),
     accessor_regex (current ().accessor_regex),
     modifier_regex (current ().modifier_regex),
-    custom_type_map (current ().custom_type_map),
     embedded_schema (current ().embedded_schema),
     separate_schema (current ().separate_schema),
     multi_static (current ().multi_static),
@@ -1196,6 +1194,47 @@ utype (semantics::data_member& m, semantics::names*& hint, string const& kp)
       else
         t = indirect_type (*t, kp, hint);
     }
+  }
+
+  // Do we need to map this type?
+  //
+  // @@ Need to cache the result on the member.
+  //
+  for (semantics::scope* s (&m.scope ());; s = &s->scope_ ())
+  {
+    using semantics::namespace_;
+
+    if (namespace_* ns = dynamic_cast<namespace_*> (s))
+    {
+      if (ns->extension ())
+        s = &ns->original ();
+    }
+
+    if (s->count ("custom-cxx-type-map"))
+    {
+      typedef custom_cxx_type_map map;
+
+      map& m (s->get<map> ("custom-cxx-type-map"));
+      map::const_iterator i (m.find (t));
+
+      if (i != m.end ())
+      {
+        cerr << "mapping " << t->fq_name (hint) << " to ";
+
+        hint = i->second->as_hint;
+        t = i->second->as;
+
+        cerr << t->fq_name (hint) << endl;
+
+        // Currently we only support one level of mapping, but I am
+        // sure someone will want multiple levels.
+        //
+        break;
+      }
+    }
+
+    if (s->global_scope ())
+      break;
   }
 
   return *t;

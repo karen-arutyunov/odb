@@ -25,7 +25,7 @@ namespace relational
       var = name + (name[name.size () - 1] == '_' ? "" : "_");
     }
 
-    bool cq (type_override_ != 0 ? false : const_type (m.type ()));
+    bool cq (type_override_ != 0 ? false : const_member (m));
     semantics::type& t (type_override_ != 0 ? *type_override_ : utype (m));
 
     semantics::type* cont;

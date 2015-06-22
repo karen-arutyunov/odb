@@ -143,8 +143,7 @@ namespace
       // auto_ptr<const T> - can modify by setting a new pointer
       // const auto_ptr<T> - can modify by changing the pointed-to value
       //
-      if (const_type (m.type ()) &&
-          !(id (m) || version (m) || m.count ("inverse")))
+      if (const_member (m) && !(id (m) || version (m) || m.count ("inverse")))
       {
         if (qwt == 0 || const_type (*qwt))
           m.set ("readonly", true);
