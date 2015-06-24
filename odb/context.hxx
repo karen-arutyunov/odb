@@ -324,8 +324,8 @@ struct member_access
   //
   std::string
   translate (std::string const& obj,
-              std::string const& val = std::string (),
-              std::string const& db = std::string ()) const;
+             std::string const& val = std::string (),
+             std::string const& db = std::string ()) const;
 
   location loc;
   const char* kind; // accessor/modifier; used for diagnostics.
@@ -687,6 +687,22 @@ public:
                  semantics::names* hint,
                  bool make_const,
                  string const& var = "");
+
+  // Member access helpers. Database can be empty. If type is not empty,
+  // then it should be the non-cvr type of the member (e.g., id_type).
+  //
+  void
+  set_member (semantics::data_member& m,
+              const std::string& obj,
+              const std::string& val,
+              const std::string& db,
+              const std::string& type = "");
+
+  void
+  inc_member (semantics::data_member& m,
+              const std::string& sobj, // Set expression object.
+              const std::string& gobj, // Get expression object.
+              const std::string& type = "");
 
 public:
   // Resolve data member name in the form "a.b.c" to the data member path,

@@ -16,7 +16,7 @@ traverse_object (type& c)
   bool auto_id (id && auto_ (*id));
   bool base_id (id && &id->scope () != &c); // Comes from base.
 
-  data_member* optimistic (context::optimistic (c));
+  data_member* opt (context::optimistic (c));
 
   type* poly_root (polymorphic (c));
   bool poly (poly_root != 0);
@@ -100,8 +100,8 @@ traverse_object (type& c)
 
       discriminator_image_member_->traverse (*discriminator);
 
-      if (optimistic != 0)
-        version_image_member_->traverse (*optimistic);
+      if (opt != 0)
+        version_image_member_->traverse (*opt);
 
       os << "std::size_t version;"
          << "};";
@@ -134,8 +134,8 @@ traverse_object (type& c)
 
       id_image_member_->traverse (*id);
 
-      if (optimistic != 0)
-        version_image_member_->traverse (*optimistic);
+      if (opt != 0)
+        version_image_member_->traverse (*opt);
 
       os << "std::size_t version;"
          << "};";
@@ -206,6 +206,10 @@ traverse_object (type& c)
     os << "using object_traits<object_type>::id;"
        << endl;
 
+  if (opt != 0)
+    os << "using object_traits<object_type>::version;"
+       << endl;
+
   if (!poly_derived && id != 0)
   {
     if (auto_id)
@@ -218,7 +222,7 @@ traverse_object (type& c)
          << "id (const image_type&);"
          << endl;
 
-    if (optimistic != 0)
+    if (opt != 0)
       os << "static version_type" << endl
          << "version (const image_type&);"
          << endl;
@@ -287,7 +291,7 @@ traverse_object (type& c)
   {
     os << "static void" << endl
        << "bind (" << bind_vector << ", id_image_type&" <<
-      (optimistic != 0 ? ", bool bind_version = true" : "") << ");"
+      (opt != 0 ? ", bool bind_version = true" : "") << ");"
        << endl;
   }
 
@@ -329,7 +333,7 @@ traverse_object (type& c)
   {
     os << "static void" << endl
        << "init (id_image_type&, const id_type&" <<
-      (optimistic != 0 ? ", const version_type* = 0" : "") << ");"
+      (opt != 0 ? ", const version_type* = 0" : "") << ");"
        << endl;
   }
 
@@ -465,7 +469,7 @@ traverse_object (type& c)
 
     os << "static const char erase_statement[];";
 
-    if (optimistic != 0 && !poly_derived)
+    if (opt != 0 && !poly_derived)
       os << "static const char optimistic_erase_statement[];";
   }
 
@@ -710,7 +714,7 @@ traverse_object (type& c)
        << "const id_type&," << endl
        << "discriminator_type*";
 
-    if (optimistic != 0)
+    if (opt != 0)
       os << "," << endl
          << "version_type* = 0";
 

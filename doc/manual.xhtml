@@ -6238,7 +6238,13 @@ for (;;)
 
   <p>For the interaction of change-tracking containers with change-updated
      object sections, refer to <a href="#9.4">Section 9.4, "Sections and
-     Change-Tracking Containers"</a>.</p>
+     Change-Tracking Containers"</a>. Note also that change-tracking
+     containers cannot be accessed with by-value accessors
+     (<a href="#14.4.5">Section 14.4.5,
+     "<code>get</code>/<code>set</code>/<code>access</code>"</a>)
+     since in certain situations such access may involve a
+     modification of the container (for example, clearing the change
+     flag after update).</p>
 
   <h3><a name="5.4.1">5.4.1 Change-Tracking <code>vector</code></a></h3>
 

@@ -64,7 +64,7 @@ traverse_object (type& c)
   bool auto_id (id && auto_ (*id));
   bool base_id (id && &id->scope () != &c); // Comes from base.
 
-  data_member* optimistic (context::optimistic (c));
+  data_member* opt (context::optimistic (c));
 
   type* poly_root (polymorphic (c));
   bool poly (poly_root != 0);
@@ -163,7 +163,7 @@ traverse_object (type& c)
 
       os << "typedef object_traits< " << type << " >::id_type id_type;";
 
-      if (optimistic != 0)
+      if (opt != 0)
         os << "typedef object_traits< " << type << " >::version_type " <<
           "version_type;";
 
@@ -183,10 +183,10 @@ traverse_object (type& c)
         os << "typedef " << t.fq_name (hint) << " id_type;";
       }
 
-      if (optimistic != 0)
+      if (opt != 0)
       {
         semantics::names* hint;
-        semantics::type& t (utype (*optimistic, hint));
+        semantics::type& t (utype (*opt, hint));
         os << "typedef " << t.fq_name (hint) << " version_type;";
       }
 
@@ -211,7 +211,7 @@ traverse_object (type& c)
   os << "static const bool abstract = " << abst << ";"
      << endl;
 
-  // id ()
+  // id()
   //
   if (id != 0 || !reuse_abst)
   {
@@ -222,6 +222,15 @@ traverse_object (type& c)
     //
     os << "static id_type" << endl
        << "id (const object_type&);"
+       << endl;
+  }
+
+  // version()
+  //
+  if (opt != 0)
+  {
+    os << "static version_type" << endl
+       << "version (const object_type&);"
        << endl;
   }
 

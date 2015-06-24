@@ -116,6 +116,8 @@ traverse_object (type& c)
   bool auto_id (id && auto_ (*id));
   bool base_id (id && &id->scope () != &c); // Comes from base.
 
+  data_member* opt (context::optimistic (c));
+
   // Base class that contains the object id.
   //
   type* base (id != 0 && base_id ? dynamic_cast<type*> (&id->scope ()) : 0);
@@ -162,6 +164,34 @@ traverse_object (type& c)
         os << "return " << ma.translate ("o") << ";";
       }
     }
+
+    os << "}";
+  }
+
+  if (opt != 0)
+  {
+    os << "inline" << endl
+       << traits << "::version_type" << endl
+       << traits << "::" << endl
+       << "version (const object_type& o)"
+       << "{";
+
+    if (base_id)
+      os << "return object_traits< " << class_fq_name (*base) <<
+        " >::version (o);";
+      else
+      {
+        // Get the id using the accessor expression. If this is not
+        // a synthesized expression, then output its location for
+        // easier error tracking.
+        //
+        member_access& ma (opt->get<member_access> ("get"));
+
+        if (!ma.synthesized)
+          os << "// From " << location_string (ma.loc, true) << endl;
+
+        os << "return " << ma.translate ("o") << ";";
+      }
 
     os << "}";
   }

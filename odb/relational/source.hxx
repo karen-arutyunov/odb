@@ -3206,7 +3206,7 @@ namespace relational
                         : p);
 
               if (poly_derived)
-                // This pointer could have from from cache, so use dynamic
+                // This pointer could have come from cache, so use dynamic
                 // cast.
                 //
                 r = p_tr + "::dynamic_pointer_cast<" + o_tp + "> (\n" +
@@ -3232,15 +3232,7 @@ namespace relational
                  << "// member cannot be initialized from an object pointer.\n"
                  << "//" << endl;
 
-              if (!ma.synthesized)
-                os << "// From " << location_string (ma.loc, true) << endl;
-
-              if (ma.placeholder ())
-                os << ma.translate (
-                  "o", r, "*static_cast<" + db.string () + "::database*> (db)")
-                   << ";";
-              else
-                os << ma.translate ("o") << " = " << r << ";";
+              set_member (mi.m, "o", r, "db");
             }
 
             if (mp_raw && !poly)
@@ -3248,15 +3240,7 @@ namespace relational
               if (!op_raw)
                 os << "else" << endl; // NULL p
 
-              if (!ma.synthesized)
-                os << "// From " << location_string (ma.loc, true) << endl;
-
-              if (ma.placeholder ())
-                os << ma.translate (
-                  "o", o, "*static_cast<" + db.string () + "::database*> (db)")
-                   << ";";
-              else
-                os << ma.translate ("o") << " = " << o << ";";
+              set_member (mi.m, "o", o, "db");
             }
           }
         }
@@ -5002,7 +4986,7 @@ namespace relational
           : object_members_base (true, false, true, false, section),
             call_ (call),
             obj_prefix_ ("obj"),
-            modifier_ (0)
+            by_value_ (0)
       {
       }
 
@@ -5032,7 +5016,9 @@ namespace relational
                                   semantics::class_& c,
                                   semantics::type* w)
       {
-        if (m == 0 || call_ == erase_id_call || modifier_ != 0)
+        if (m == 0 ||
+            call_ == erase_id_call ||
+            (call_ == load_call && by_value_ != 0))
         {
           object_members_base::traverse_composite (m, c);
           return;
@@ -5049,13 +5035,21 @@ namespace relational
         // are just going to set a flag that can be checked in
         // traverse_container() below.
         //
-        if (ma.placeholder ())
+        if (call_ == load_call && ma.placeholder ())
         {
-          modifier_ = &ma;
+          by_value_ = &ma;
           object_members_base::traverse_composite (m, c);
-          modifier_ = 0;
+          by_value_ = 0;
           return;
         }
+
+        // We also don't support by-value accessors is there is a
+        // smart container inside (which, again, we don't know at
+        // this point). So keep track of such first instance.
+        //
+        member_access* old_by_value (by_value_);
+        if (call_ != load_call && ma.by_value && by_value_ == 0)
+          by_value_ = &ma;
 
         string old_op (obj_prefix_);
         string old_f (from_);
@@ -5065,8 +5059,7 @@ namespace relational
         // access, then cast away constness. Otherwise, we assume
         // that the user-provided expression handles this.
         //
-        bool cast (
-          call_ == load_call && ma.direct () && const_member (*m));
+        bool cast (call_ == load_call && ma.direct () && const_member (*m));
         if (cast)
           obj_prefix_ = "const_cast< " + member_ref_type (*m, false) +
             " > (\n";
@@ -5103,6 +5096,7 @@ namespace relational
         object_members_base::traverse_composite (m, c);
         from_ = old_f;
         obj_prefix_ = old_op;
+        by_value_ = old_by_value;
       }
 
       virtual void
@@ -5137,13 +5131,35 @@ namespace relational
         // We don't support by-value modifiers for composite values
         // with containers.
         //
-        if (call_ == load_call && modifier_ != 0)
+        if (call_ == load_call && by_value_ != 0)
         {
-          error (modifier_->loc) << "by-value modification of a composite "
+          error (by_value_->loc) << "by-value modification of a composite "
                                  << "value with container is not supported"
                                  << endl;
           info (m.location ()) << "container member is defined here" << endl;
           throw operation_failed ();
+        }
+
+        // We don't support by-value accessors for smart containers.
+        //
+        if (call_ != load_call && smart)
+        {
+          if (by_value_ != 0)
+          {
+            error (by_value_->loc) << "by-value access to a composite value "
+                                   << "with smart container is not supported"
+                                   << endl;
+            info (m.location ()) << "container member is defined here" << endl;
+            throw operation_failed ();
+          }
+
+          if (ma.by_value)
+          {
+            error (ma.loc) << "by-value access to a smart container is not "
+                           << "supported" << endl;
+            info (m.location ()) << "container member is defined here" << endl;
+            throw operation_failed ();
+          }
         }
 
         // If the member is soft- added or deleted, check the version.
@@ -5179,28 +5195,30 @@ namespace relational
           os << ")" << endl;
         }
 
+        os << "{";
+
         if (call_ != erase_id_call && (call_ != erase_obj_call || smart))
         {
-          os << "{";
-
-          // Output stored locations, if any.
-          //
-          if (!ma.placeholder ())
-            os << from_;
-
-          // If this is not a synthesized expression, then output its
-          // location for easier error tracking.
-          //
-          if (!ma.synthesized)
-            os << "// From " << location_string (ma.loc, true) << endl;
-
           // See if we are modifying via a reference or proper modifier.
           //
-          if (ma.placeholder ())
+          if (call_ == load_call && ma.placeholder ())
             os << member_val_type (m, false, "v") << ";"
                << endl;
           else
           {
+            // Note: this case is for both access and modification.
+            //
+
+            // Output stored locations, if any.
+            //
+            os << from_;
+
+            // If this is not a synthesized expression, then output its
+            // location for easier error tracking.
+            //
+            if (!ma.synthesized)
+              os << "// From " << location_string (ma.loc, true) << endl;
+
             // VC++ cannot grok the constructor syntax.
             //
             os << member_ref_type (m, call_ != load_call, "v") << " =" << endl
@@ -5210,8 +5228,7 @@ namespace relational
             // access, then cast away constness. Otherwise, we assume
             // that the user-provided expression handles this.
             //
-            bool cast (
-              call_ == load_call && ma.direct () && const_member (m));
+            bool cast (call_ == load_call && ma.direct () && const_member (m));
             if (cast)
               os << "const_cast< " << member_ref_type (m, false) <<
                 " > (" << endl;
@@ -5311,7 +5328,7 @@ namespace relational
           }
         }
 
-        if (call_ != erase_id_call && (call_ != erase_obj_call || smart))
+        if (call_ == load_call)
         {
           // Call the modifier if we are using a proper one.
           //
@@ -5330,16 +5347,16 @@ namespace relational
               obj_prefix_, "v", "static_cast<" + db.string () +
               "::database&> (db)") << ";";
           }
-
-          os << "}";
         }
+
+        os << "}";
       }
 
     protected:
       call_type call_;
       string obj_prefix_;
       string from_;
-      member_access* modifier_;
+      member_access* by_value_;
     };
 
     //

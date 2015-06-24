@@ -22,11 +22,8 @@ traverse_object (type& c)
   data_member* id (id_member (c));
   bool auto_id (id && auto_ (*id));
   bool base_id (id && &id->scope () != &c); // Comes from base.
-  member_access* id_ma (id ? &id->get<member_access> ("get") : 0);
 
   data_member* opt (optimistic (c));
-  member_access* opt_ma_get (opt ? &opt->get<member_access> ("get") : 0);
-  member_access* opt_ma_set (opt ? &opt->get<member_access> ("set") : 0);
 
   type* poly_root (polymorphic (c));
   bool poly (poly_root != 0);
@@ -1283,34 +1280,8 @@ traverse_object (type& c)
 
   if (!poly_derived && auto_id)
   {
-    member_access& ma (id->get<member_access> ("set"));
-
-    if (!ma.synthesized)
-      os << "// From " << location_string (ma.loc, true) << endl;
-
-    if (ma.placeholder ())
-      os << ma.translate (
-        "obj", "id (sts.id_image ())",
-        "static_cast<" + db.string () + "::database&> (db)") << ";"
-         << endl;
-    else
-    {
-      // If this member is const and we have a synthesized direct access,
-      // then cast away constness. Otherwise, we assume that the user-
-      // provided expression handles this.
-      //
-      bool cast (ma.direct () && const_member (*id));
-      if (cast)
-        os << "const_cast< id_type& > (" << endl;
-
-      os << ma.translate ("obj");
-
-      if (cast)
-        os << ")";
-
-      os << " = id (sts.id_image ());"
-         << endl;
-    }
+    set_member (*id, "obj", "id (sts.id_image ())", "db", "id_type");
+    os << endl;
   }
 
   // Set the optimistic concurrency version in the object member.
@@ -1319,33 +1290,12 @@ traverse_object (type& c)
   {
     // If we don't have auto id, then obj is a const reference.
     //
-    string obj (auto_id ? "obj" : "const_cast< object_type& > (obj)");
-    string init (optimistic_version_init (*opt));
-
-    if (!opt_ma_set->synthesized)
-      os << "// From " << location_string (opt_ma_set->loc, true) << endl;
-
-    if (opt_ma_set->placeholder ())
-      os << opt_ma_set->translate (obj, init) << ";"
-         << endl;
-    else
-    {
-      // If this member is const and we have a synthesized direct access,
-      // then cast away constness. Otherwise, we assume that the user-
-      // provided expression handles this.
-      //
-      bool cast (opt_ma_set->direct () && const_member (*opt));
-      if (cast)
-        os << "const_cast< version_type& > (" << endl;
-
-      os << opt_ma_set->translate (obj);
-
-      if (cast)
-        os << ")";
-
-      os << " = " << init << ";"
-         << endl;
-    }
+    set_member (*opt,
+                (auto_id ? "obj" : "const_cast<object_type&> (obj)"),
+                optimistic_version_init (*opt),
+                "", // No database.
+                "version_type");
+    os << endl;
   }
 
   // Initialize id_image and binding if we are a root of a polymorphic
@@ -1361,12 +1311,8 @@ traverse_object (type& c)
       os << "if (!top)"
          << "{";
 
-    os << "id_image_type& i (sts.id_image ());";
-
-    if (!id_ma->synthesized)
-      os << "// From " << location_string (id_ma->loc, true) << endl;
-
-    os << "init (i, " <<  id_ma->translate ("obj") << ");"
+    os << "id_image_type& i (sts.id_image ());"
+       << "init (i, id (obj));"
        << endl
        << "binding& idb (sts.id_image_binding ());"
        << "if (i.version != sts.id_image_version () || idb.version == 0)"
@@ -1542,34 +1488,8 @@ traverse_object (type& c)
     //
     if (auto_id)
     {
-      member_access& ma (id->get<member_access> ("set"));
-
-      if (!ma.synthesized)
-        os << "// From " << location_string (ma.loc, true) << endl;
-
-      if (ma.placeholder ())
-        os << ma.translate (
-          "obj", "id (sts.id_image (i))",
-          "static_cast<" + db.string () + "::database&> (db)") << ";"
-           << endl;
-      else
-      {
-        // If this member is const and we have a synthesized direct access,
-        // then cast away constness. Otherwise, we assume that the user-
-        // provided expression handles this.
-        //
-        bool cast (ma.direct () && const_member (*id));
-        if (cast)
-          os << "const_cast< id_type& > (" << endl;
-
-        os << ma.translate ("obj");
-
-        if (cast)
-          os << ")";
-
-        os << " = id (sts.id_image (i));"
-           << endl;
-      }
+      set_member (*id, "obj", "id (sts.id_image (i))", "db", "id_type");
+      os << endl;
     }
 
     // Set the optimistic concurrency version.
@@ -1578,33 +1498,12 @@ traverse_object (type& c)
     {
       // If we don't have auto id, then obj is a const reference.
       //
-      string obj (auto_id ? "obj" : "const_cast< object_type& > (obj)");
-      string init (optimistic_version_init (*opt, true));
-
-      if (!opt_ma_set->synthesized)
-        os << "// From " << location_string (opt_ma_set->loc, true) << endl;
-
-      if (opt_ma_set->placeholder ())
-        os << opt_ma_set->translate (obj, init) << ";"
-           << endl;
-      else
-      {
-        // If this member is const and we have a synthesized direct access,
-        // then cast away constness. Otherwise, we assume that the user-
-        // provided expression handles this.
-        //
-        bool cast (opt_ma_set->direct () && const_member (*opt));
-        if (cast)
-          os << "const_cast< version_type& > (" << endl;
-
-        os << opt_ma_set->translate (obj);
-
-        if (cast)
-          os << ")";
-
-        os << " = " << init << ";"
-           << endl;
-      }
+      set_member (*opt,
+                  (auto_id ? "obj" : "const_cast<object_type&> (obj)"),
+                  optimistic_version_init (*opt, true),
+                  "", // No database.
+                  "version_type");
+      os << endl;
     }
 
     // Reset sections: loaded, unchanged.
@@ -1878,12 +1777,8 @@ traverse_object (type& c)
             os << "if (!top)";
 
           os << "{"
-             << "id_image_type& i (sts.id_image ());";
-
-          if (!id_ma->synthesized)
-            os << "// From " << location_string (id_ma->loc, true) << endl;
-
-          os << "init (i, " << id_ma->translate ("obj") << ");"
+             << "id_image_type& i (sts.id_image ());"
+             << "init (i, id (obj));"
              << endl;
 
           os << "binding& idb (sts.id_image_binding ());"
@@ -1955,28 +1850,11 @@ traverse_object (type& c)
 
         // Initialize id image.
         //
-        if (!id_ma->synthesized)
-          os << "// From " << location_string (id_ma->loc, true) << endl;
-
-        os << "const id_type& id (" << endl
-           << id_ma->translate ("obj") << ");";
-
         if (opt != 0)
-        {
-          if (!opt_ma_get->synthesized)
-            os << "// From " << location_string (opt_ma_get->loc, true) << endl;
-
-          os << "const version_type& v (" << endl
-             << opt_ma_get->translate ("obj") << ");";
-        }
+          os << "const version_type& v (version (obj));";
 
         os << "id_image_type& idi (sts.id_image ());"
-           << "init (idi, id";
-
-        if (opt != 0)
-          os << ", &v";
-
-        os << ");"
+           << "init (idi, id (obj)" << (opt != 0 ? ", &v" : "") << ");"
            << endl;
 
         // Initialize object image.
@@ -2075,12 +1953,8 @@ traverse_object (type& c)
           os << "if (!top)";
 
         os << "{"
-           << "id_image_type& i (sts.id_image ());";
-
-        if (!id_ma->synthesized)
-          os << "// From " << location_string (id_ma->loc, true) << endl;
-
-        os << "init (i, " << id_ma->translate ("obj") << ");"
+           << "id_image_type& i (sts.id_image ());"
+           << "init (i, id (obj));"
            << endl;
 
         os << "binding& idb (sts.id_image_binding ());"
@@ -2114,48 +1988,15 @@ traverse_object (type& c)
         // Object is passed as const reference so we need to cast away
         // constness.
         //
-        string obj ("const_cast< object_type& > (obj)");
+        const char* obj ("const_cast<object_type&> (obj)");
         string inc (optimistic_version_increment (*opt));
 
-        if (!opt_ma_set->synthesized)
-          os << "// From " << location_string (opt_ma_set->loc, true) << endl;
-
-        if (opt_ma_set->placeholder ())
-        {
-          if (!opt_ma_get->synthesized)
-            os << "// From " << location_string (opt_ma_get->loc, true) <<
-              endl;
-
-          if (inc == "1")
-            os << opt_ma_set->translate (
-              obj, opt_ma_get->translate ("obj") + " + 1") << ";";
-          else
-            os << opt_ma_set->translate (obj, inc) << ";";
-
-          os << endl;
-        }
+        if (inc == "1")
+          inc_member (*opt, obj, "obj", "version_type");
         else
-        {
-          // If this member is const and we have a synthesized direct access,
-          // then cast away constness. Otherwise, we assume that the user-
-          // provided expression handles this.
-          //
-          bool cast (opt_ma_set->direct () && const_member (*opt));
-          if (cast)
-            os << "const_cast< version_type& > (" << endl;
+          set_member (*opt, obj, inc, "", "version_type");
 
-          os << opt_ma_set->translate (obj);
-
-          if (cast)
-            os << ")";
-
-          if (inc == "1")
-            os << "++;";
-          else
-            os << " = " << inc << ";";
-
-          os << endl;
-        }
+        os << endl;
       }
 
       // Update sections that are loaded and need updating.
@@ -2240,17 +2081,8 @@ traverse_object (type& c)
         //
         if (opt != 0)
         {
-          if (!opt_ma_get->synthesized)
-            os << "// From " << location_string (opt_ma_get->loc, true) << endl;
-
-          os << "const version_type& v (" << endl
-             << opt_ma_get->translate ("obj") << ");";
-
-          if (!id_ma->synthesized)
-          os << "// From " << location_string (id_ma->loc, true) << endl;
-
-          os << "init (sts.id_image (), " << id_ma->translate ("obj") <<
-            ", &v);"
+          os << "const version_type& v (version (obj));"
+             << "init (sts.id_image (), id (obj), &v);"
              << endl;
         }
 
@@ -2348,22 +2180,10 @@ traverse_object (type& c)
        << "const object_type& obj (*objs[i]);"
        << "callback (db, obj, callback_event::pre_update);";
 
-    if (!id_ma->synthesized)
-      os << "// From " << location_string (id_ma->loc, true) << endl;
-
-    os << "const id_type& id (" << endl
-       << id_ma->translate ("obj") << ");";
-
     if (opt != 0)
-    {
-      if (!opt_ma_get->synthesized)
-        os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+      os << "const version_type& v (version (obj));";
 
-      os << "const version_type& v (" << endl
-         << opt_ma_get->translate ("obj") << ");";
-    }
-
-    os << "init (sts.id_image (i), id" << (opt != 0 ? ", &v" : "") << ");"
+    os << "init (sts.id_image (i), id (obj)" << (opt != 0 ? ", &v" : "") << ");"
       //@@ assumption: generate_grow false
        << "init (sts.image (i), obj, statement_update);"
        << "}";
@@ -2433,48 +2253,15 @@ traverse_object (type& c)
       // Object is passed as const reference so we need to cast away
       // constness.
       //
-      string obj ("const_cast< object_type& > (obj)");
-      string inc (optimistic_version_increment (*opt, true));
+      const char* obj ("const_cast<object_type&> (obj)");
+      string inc (optimistic_version_increment (*opt));
 
-      if (!opt_ma_set->synthesized)
-        os << "// From " << location_string (opt_ma_set->loc, true) << endl;
-
-      if (opt_ma_set->placeholder ())
-      {
-        if (!opt_ma_get->synthesized)
-          os << "// From " << location_string (opt_ma_get->loc, true) <<
-            endl;
-
-        if (inc == "1")
-          os << opt_ma_set->translate (
-            obj, opt_ma_get->translate ("obj") + " + 1") << ";";
-        else
-          os << opt_ma_set->translate (obj, inc) << ";";
-
-        os << endl;
-      }
+      if (inc == "1")
+        inc_member (*opt, obj, "obj", "version_type");
       else
-      {
-        // If this member is const and we have a synthesized direct access,
-        // then cast away constness. Otherwise, we assume that the user-
-        // provided expression handles this.
-        //
-        bool cast (opt_ma_set->direct () && const_member (*opt));
-        if (cast)
-          os << "const_cast< version_type& > (" << endl;
+        set_member (*opt, obj, inc, "", "version_type");
 
-        os << opt_ma_set->translate (obj);
-
-        if (cast)
-          os << ")";
-
-        if (inc == "1")
-          os << "++;";
-        else
-          os << " = " << inc << ";";
-
-        os << endl;
-      }
+      os << endl;
     }
 
     os << "callback (db, obj, callback_event::post_update);"
@@ -2745,11 +2532,7 @@ traverse_object (type& c)
 
       if (!abst || erase_containers)
       {
-        if (!id_ma->synthesized)
-          os << "// From " << location_string (id_ma->loc, true) << endl;
-
-        os << "const id_type& id  (" << endl
-           << id_ma->translate ("obj") << ");"
+        os << "const id_type& id (object_traits_impl::id (obj));"
            << endl;
       }
 
@@ -2820,11 +2603,7 @@ traverse_object (type& c)
             os << "if (top)"
                << "{";
 
-          if (!opt_ma_get->synthesized)
-            os << "// From " << location_string (opt_ma_get->loc, true) << endl;
-
-          os << "const version_type& v (" << endl
-             << opt_ma_get->translate ("obj") << ");"
+          os << "const version_type& v (version (obj));"
              << "id_image_type& i (" << rsts << ".id_image ());"
              << "init (i, id, &v);"
              << endl;
@@ -2862,10 +2641,7 @@ traverse_object (type& c)
                << "root_traits::discriminator_ (" << rsts << ", id, 0, &v);"
                << endl;
 
-            if (!opt_ma_get->synthesized)
-              os << "// From " << location_string (opt_ma_get->loc, true) << endl;
-
-            os << "if (v != " << opt_ma_get->translate ("obj") << ")" << endl
+            os << "if (v != version (obj))" << endl
                << "throw object_changed ();"
                << "}";
           }
@@ -2906,11 +2682,7 @@ traverse_object (type& c)
             os << "sts.find_statement ().free_result ();"
                << endl;
 
-          if (!opt_ma_get->synthesized)
-            os << "// From " << location_string (opt_ma_get->loc, true) << endl;
-
-          os << "if (version (sts.image ()) != " <<
-            opt_ma_get->translate ("obj") << ")" << endl
+          os << "if (version (sts.image ()) != version (obj))" << endl
              << "throw object_changed ();"
              << endl;
         }
@@ -3034,21 +2806,9 @@ traverse_object (type& c)
          << "for (std::size_t i (0); i != n; ++i)"
          << "{"
          << "const object_type& obj (*objs[i]);"
-         << "callback (db, obj, callback_event::pre_erase);";
-
-      if (!id_ma->synthesized)
-        os << "// From " << location_string (id_ma->loc, true) << endl;
-
-      os << "const id_type& id (" << endl
-         << id_ma->translate ("obj") << ");";
-
-      if (!opt_ma_get->synthesized)
-        os << "// From " << location_string (opt_ma_get->loc, true) << endl;
-
-      os << "const version_type& v (" << endl
-         << opt_ma_get->translate ("obj") << ");";
-
-      os << "init (sts.id_image (i), id, &v);"
+         << "callback (db, obj, callback_event::pre_erase);"
+         << "const version_type& v (version (obj));"
+         << "init (sts.id_image (i), id (obj), &v);"
          << "}";
 
       os << "binding& idb (sts.id_image_binding ());"
@@ -3080,14 +2840,8 @@ traverse_object (type& c)
          << "if (mex.fatal ())" << endl // Don't do any extra work.
          << "continue;"
          << endl
-         << "const object_type& obj (*objs[i]);";
-
-      if (!id_ma->synthesized)
-        os << "// From " << location_string (id_ma->loc, true) << endl;
-
-      os << "const id_type& id (" << endl
-         << id_ma->translate ("obj") << ");"
-         << "pointer_cache_traits::erase (db, id);"
+         << "const object_type& obj (*objs[i]);"
+         << "pointer_cache_traits::erase (db, id (obj));"
          << "callback (db, obj, callback_event::post_erase);"
          << "}"; // for
     }
@@ -3445,14 +3199,8 @@ traverse_object (type& c)
          << "statements_type::auto_lock l (" << rsts << ");"
          << endl;
 
-      if (!id_ma->synthesized)
-        os << "// From " << location_string (id_ma->loc, true) << endl;
-
-      os << "const id_type& id  (" << endl
-         << id_ma->translate ("obj") << ");"
-         << endl;
-
-      os << "if (!find_ (sts, &id" <<
+      os << "const id_type& id (object_traits_impl::id (obj));"
+         << "if (!find_ (sts, &id" <<
         (versioned ? ", svm" : "") << "))" << endl
          << "return false;"
          << endl;
@@ -3468,12 +3216,10 @@ traverse_object (type& c)
 
       if (opt != 0)
       {
-        if (!opt_ma_get->synthesized)
-          os << "// From " << location_string (opt_ma_get->loc, true) << endl;
+        const char* tr (poly_derived ? "root_traits::" : "");
 
-        os << "if (" << (poly_derived ? "root_traits::" : "") << "version (" <<
-          rsts << ".image ()) == " << opt_ma_get->translate ("obj") <<
-          ")" << endl
+        os << "if (" << tr << "version (" << rsts << ".image ()) == " <<
+          tr << "version (obj))" << endl
            << "return true;"
            << endl;
       }
@@ -3558,12 +3304,8 @@ traverse_object (type& c)
       // Initialize id image. This is not necessarily the root of the
       // polymorphic hierarchy.
       //
-      os << "id_image_type& i (sts.id_image ());";
-
-      if (!id_ma->synthesized)
-        os << "// From " << location_string (id_ma->loc, true) << endl;
-
-      os << "init (i, " <<  id_ma->translate ("obj") << ");"
+      os << "id_image_type& i (sts.id_image ());"
+         << "init (i, id (obj));"
          << endl;
 
       os << "binding& idb (sts.id_image_binding ());"
@@ -3698,21 +3440,11 @@ traverse_object (type& c)
       // polymorphic hierarchy.
       //
       if (opt != 0)
-      {
-        if (!opt_ma_get->synthesized)
-          os << "// From " << location_string (opt_ma_get->loc, true) << endl;
-
-        os << "const version_type& v (" << endl
-           << opt_ma_get->translate ("obj") << ");";
-      }
+        os << "const version_type& v (version (obj));";
 
       os << "id_image_type& i (sts.id_image ());";
 
-      if (!id_ma->synthesized)
-        os << "// From " << location_string (id_ma->loc, true) << endl;
-
-      os << "init (i, " <<  id_ma->translate ("obj") <<
-        (opt != 0 ? ", &v" : "") << ");"
+      os << "init (i, id (obj)" << (opt != 0 ? ", &v" : "") << ");"
          << endl;
 
       os << "binding& idb (sts.id_image_binding ());"

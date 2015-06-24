@@ -1376,6 +1376,94 @@ type_val_type (semantics::type& t,
   return r;
 }
 
+void context::
+set_member (semantics::data_member& m,
+            const string& obj,
+            const string& val,
+            const string& db,
+            const string& type)
+{
+  member_access& ma (m.get<member_access> ("set"));
+
+  // If this is a custom expression, output the location of where
+  // it came from.
+  //
+  if (!ma.synthesized)
+    os << "// From " << location_string (ma.loc, true) << endl;
+
+  if (ma.placeholder ())
+  {
+    // Cast the database to the concrete type this code is generated
+    // for. This way the user is free to use either the concrete or
+    // the common.
+    //
+    string d;
+    if (!db.empty ())
+      d = "static_cast<" + context::db.string () + "::database&> (" + db + ")";
+
+    os << ma.translate (obj, val, d) << ";";
+  }
+  else
+  {
+    // If this member is const and we have a synthesized direct access,
+    // then cast away constness. Otherwise, we assume that the user-
+    // provided expression handles this.
+    //
+    bool cast (!type.empty () && ma.direct () && const_member (m));
+    if (cast)
+      os << "const_cast< " << type << "& > (" << endl;
+
+    os << ma.translate (obj);
+
+    if (cast)
+      os << ")";
+
+    os << " = " << val << ";";
+  }
+}
+
+void context::
+inc_member (semantics::data_member& m,
+            const string& obj,
+            const string& gobj,
+            const string& type)
+{
+  member_access& ma (m.get<member_access> ("set"));
+
+  // If this is a custom expression, output the location of where
+  // it came from.
+  //
+  if (!ma.synthesized)
+    os << "// From " << location_string (ma.loc, true) << endl;
+
+  if (ma.placeholder ())
+  {
+    member_access& gma (m.get<member_access> ("get"));
+
+    if (!gma.synthesized)
+      os << "// From " << location_string (gma.loc, true) << endl;
+
+    os << ma.translate (obj, gma.translate (gobj) + " + 1") << ";";
+  }
+  else
+  {
+    // If this member is const and we have a synthesized direct access,
+    // then cast away constness. Otherwise, we assume that the user-
+    // provided expression handles this.
+    //
+    bool cast (ma.direct () && const_member (m));
+    if (cast)
+      os << "const_cast< " << type << "& > (" << endl;
+
+    os << ma.translate (obj);
+
+    if (cast)
+      os << ")";
+
+    os << "++;";
+  }
+}
+
 data_member_path context::
 resolve_data_members (semantics::class_& c,
                       const string& name,
