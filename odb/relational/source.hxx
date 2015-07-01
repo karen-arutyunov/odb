@@ -2154,6 +2154,19 @@ namespace relational
           }
         }
 
+        // Translate.
+        //
+        if (mi.ct != 0)
+        {
+          os << "// From " << location_string (mi.ct->loc, true) << endl
+             << type_ref_type (*mi.ct->as, mi.ct->as_hint, true, "vt") <<
+            " =" << endl
+             << "  " << mi.ct->translate_to (member) << ";"
+             << endl;
+
+          member = "vt";
+        }
+
         // If this is a wrapped composite value, then we need to "unwrap"
         // it. If this is a NULL wrapper, then we also need to handle that.
         // For simple values this is taken care of by the value_traits
@@ -2181,7 +2194,11 @@ namespace relational
                << "{";
           }
 
-          member = "wrapper_traits< " + wt + " >::get_ref (" + member + ")";
+          os << "const" << mi.fq_type () << "& vw = " << endl
+             << "  wrapper_traits< " + wt + " >::get_ref (" + member + ");"
+             << endl;
+
+          member = "vw";
         }
 
         if (discriminator (mi.m))
@@ -2553,7 +2570,7 @@ namespace relational
           if (mi.ptr != 0 && view_member (mi.m))
             return true; // That's enough for the object pointer in view.
 
-          // Get the member using the accessor expression.
+          // Set the member using the modifier expression.
           //
           member_access& ma (mi.m.template get<member_access> ("set"));
 
@@ -2603,6 +2620,17 @@ namespace relational
           member = "v";
         }
 
+        // Translate.
+        //
+        if (mi.ct != 0)
+        {
+          os << type_val_type (*mi.ct->as, mi.ct->as_hint, false, "vt") << ";"
+             << endl;
+
+          translate_member = member;
+          member = "vt";
+        }
+
         // If this is a wrapped composite value, then we need to "unwrap" it.
         // If this is a NULL wrapper, then we also need to handle that. For
         // simple values this is taken care of by the value_traits
@@ -2625,10 +2653,16 @@ namespace relational
                << "i." << mi.var << "value" <<
               (versioned (*comp) ? ", svm" : "") << "))" << endl
                << "wrapper_traits< " << wt << " >::set_null (" << member + ");"
-               << "else" << endl;
+               << "else"
+               << "{";
           }
 
-          member = "wrapper_traits< " + wt + " >::set_ref (" + member + ")";
+          os << mi.fq_type () << "& vw =" << endl
+             << "  wrapper_traits< " + wt + " >::set_ref (" + member + ");"
+             << endl;
+
+          wrap_member = member;
+          member = "vw";
         }
 
         if (mi.ptr != 0)
@@ -2737,6 +2771,30 @@ namespace relational
           }
 
           os << "}";
+        }
+
+        // Wrap back (so to speak).
+        //
+        if (mi.wrapper != 0 && composite (mi.t) != 0)
+        {
+          if (null (mi.m, key_prefix_) &&
+              mi.wrapper->template get<bool> ("wrapper-null-handler"))
+            os << "}";
+
+          member = wrap_member;
+        }
+
+        // Untranslate.
+        //
+        if (mi.ct != 0)
+        {
+          //@@ Use move() in C++11? Or not.
+          //
+          os << "// From " << location_string (mi.ct->loc, true) << endl
+             << translate_member << " = " <<
+            mi.ct->translate_from (member) << ";";
+
+          member = translate_member;
         }
 
         // Call the modifier if we are using a proper one.
@@ -2893,6 +2951,8 @@ namespace relational
       string db_type_id;
       string traits;
       string member;
+      string translate_member; // Untranslated member.
+      string wrap_member;      // Wrapped member.
 
       instance<member_database_type_id> member_database_type_id_;
     };
@@ -6118,11 +6178,6 @@ namespace relational
 
             if (opt != 0) // Not load_opt, we do it in poly-derived as well.
             {
-              member_access& ma (opt->get<member_access> ("get"));
-
-              if (!ma.synthesized)
-                os << "// From " << location_string (ma.loc, true) << endl;
-
               os << "if (";
 
               if (poly_derived)
@@ -6137,7 +6192,8 @@ namespace relational
               else
                 os << "version (im)";
 
-              os << " != " << ma.translate ("obj") << ")" << endl
+              os << " != " << (poly_derived ? "root_traits::" : "") <<
+                "version (obj))" << endl
                  << "throw object_changed ();"
                  << endl;
             }
@@ -6341,49 +6397,16 @@ namespace relational
           //
           if (s.optimistic ()) // Note: not update_opt.
           {
-            member_access& ma_get (opt->get<member_access> ("get"));
-            member_access& ma_set (opt->get<member_access> ("set"));
-
             // Object is passed as const reference so we need to cast away
             // constness.
             //
-            string obj ("const_cast< object_type& > (obj)");
+            const char* obj ("const_cast<object_type&> (obj)");
             string inc (optimistic_version_increment (*opt));
 
-            if (!ma_set.synthesized)
-              os << "// From " << location_string (ma_set.loc, true) << endl;
-
-            if (ma_set.placeholder ())
-            {
-              if (!ma_get.synthesized)
-                os << "// From " << location_string (ma_get.loc, true) << endl;
-
-              if (inc == "1")
-                os << ma_set.translate (
-                  obj, ma_get.translate ("obj") + " + 1") << ";";
-              else
-                os << ma_set.translate (obj, inc) << ";";
-            }
+            if (inc == "1")
+              inc_member (*opt, obj, "obj", "version_type");
             else
-            {
-              // If this member is const and we have a synthesized direct
-              // access, then cast away constness. Otherwise, we assume
-              // that the user-provided expression handles this.
-              //
-              bool cast (ma_set.direct () && const_member (*opt));
-              if (cast)
-                os << "const_cast< version_type& > (" << endl;
-
-              os << ma_set.translate (obj);
-
-              if (cast)
-                os << ")";
-
-              if (inc == "1")
-                os << "++;";
-              else
-                os << " = " << inc << ";";
-            }
+              set_member (*opt, obj, inc, "", "version_type");
           }
 
           os << "}";

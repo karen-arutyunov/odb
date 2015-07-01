@@ -3117,6 +3117,7 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
     {
       custom_cxx_type ct;
       ct.loc = loc;
+      ct.scope = current_scope ();
       val = ct;
       name = "custom-cxx-types";
       adder = &accumulate<custom_cxx_type>;

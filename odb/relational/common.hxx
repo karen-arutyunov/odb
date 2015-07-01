@@ -78,6 +78,7 @@ namespace relational
       semantics::data_member& m; // Member.
       semantics::type& t;        // Cvr-unqualified member C++ type, note
                                  // that m.type () may not be the same as t.
+      const custom_cxx_type* ct; // Translation used for t, if any.
       semantics::class_* ptr;    // Pointed-to object if m is an object
                                  // pointer. In this case t is the id type
                                  // while fq_type_ is the pointer fq-type.
@@ -146,12 +147,14 @@ namespace relational
 
       member_info (semantics::data_member& m_,
                    semantics::type& t_,
+                   const custom_cxx_type* ct_,
                    semantics::type* wrapper_,
                    bool cq_,
                    string& var_,
                    string const& fq_type)
           : m (m_),
             t (t_),
+            ct (ct_),
             ptr (0),
             wrapper (wrapper_),
             cq (cq_),

@@ -26,7 +26,10 @@ namespace relational
     }
 
     bool cq (type_override_ != 0 ? false : const_member (m));
-    semantics::type& t (type_override_ != 0 ? *type_override_ : utype (m));
+    const custom_cxx_type* ct (0);
+    semantics::type& t (type_override_ != 0
+                        ? *type_override_
+                        : utype (m, &ct));
 
     semantics::type* cont;
     if (semantics::class_* c = object_pointer (t))
@@ -34,11 +37,12 @@ namespace relational
       // A pointer in view might point to an object without id.
       //
       semantics::data_member* idm (id_member (*c));
-      semantics::type& t (utype (idm != 0 ? *idm : m));
+      semantics::type& t (utype (idm != 0 ? *idm : m, &ct));
       semantics::class_* comp (idm != 0 ? composite_wrapper (t) : 0);
 
       member_info mi (m,
                       (comp != 0 ? *comp : t),
+                      ct,
                       (comp != 0 && wrapper (t) ? &t : 0),
                       cq,
                       var,
@@ -64,6 +68,7 @@ namespace relational
       //
       member_info mi (m,
                       *c,
+                      ct,
                       (wrapper (t) ? &t : 0),
                       cq,
                       var,
@@ -82,6 +87,7 @@ namespace relational
       //
       member_info mi (m,
                       *cont,
+                      0, // Cannot be mapped.
                       (wrapper (t) ? &t : 0),
                       cq,
                       var,
@@ -94,7 +100,7 @@ namespace relational
     }
     else
     {
-      member_info mi (m, t, 0, cq, var, fq_type_override_);
+      member_info mi (m, t, ct, 0, cq, var, fq_type_override_);
       mi.st = &member_sql_type (m);
 
       if (pre (mi))

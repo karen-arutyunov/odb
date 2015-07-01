@@ -3002,12 +3002,12 @@ namespace
     tree access_; // odb::access node.
   };
 
-  static void
+  static bool
   check_to_from (const cxx_tokens& ex, const char* c, location_t l)
   {
     // Make sure we have one and only one placeholder (?).
     //
-    bool r (false);
+    bool r (false), m (true);
 
     for (cxx_tokens::const_iterator i (ex.begin ()), e (ex.end ()); i != e;)
     {
@@ -3018,11 +3018,7 @@ namespace
           if (++i != e && i->type == CPP_CLOSE_PAREN)
           {
             if (r)
-            {
-              error (l) << "multiple '(?)' expressions in the '" << c << "' "
-                        << "clause of db pragma map" << endl;
-              throw operation_failed ();
-            }
+              m = false; // Multiple (?), can't move.
             else
               r = true;
           }
@@ -3039,6 +3035,8 @@ namespace
 
       throw operation_failed ();
     }
+
+    return m;
   }
 }
 
@@ -3055,8 +3053,6 @@ process1 (semantics::unit& u)
     u.set ("custom-cxx-types", custom_cxx_types ());
 
   custom_cxx_types & cts (u.get<custom_cxx_types> ("custom-cxx-types"));
-  custom_cxx_type_map& ctm (u.set ("custom-cxx-type-map",
-                                   custom_cxx_type_map ()));
 
   for (custom_cxx_types::iterator i (cts.begin ()); i != cts.end (); ++i)
   {
@@ -3096,12 +3092,13 @@ process1 (semantics::unit& u)
         e.push_back (cxx_token (0, CPP_OPEN_PAREN));
         e.push_back (cxx_token (0, CPP_QUERY));
         e.push_back (cxx_token (0, CPP_CLOSE_PAREN));
+        ct.to_move = true;
       }
       else
-        check_to_from (e, "to", ct.loc);
+        ct.to_move = check_to_from (e, "to", ct.loc);
     }
 
-    // to
+    // from
     //
     {
       cxx_tokens& e (ct.from);
@@ -3111,14 +3108,33 @@ process1 (semantics::unit& u)
         e.push_back (cxx_token (0, CPP_OPEN_PAREN));
         e.push_back (cxx_token (0, CPP_QUERY));
         e.push_back (cxx_token (0, CPP_CLOSE_PAREN));
+        ct.from_move = true;
       }
       else
-        check_to_from (e, "from", ct.loc);
+        ct.from_move = check_to_from (e, "from", ct.loc);
+    }
+
+    // Resolve mapping scope.
+    //
+    semantics::scope* s (dynamic_cast<semantics::scope*> (u.find (ct.scope)));
+    if (s == 0)
+    {
+      error (ct.loc) << "unable to resolve db pragma map scope" << endl;
+      throw operation_failed ();
+    }
+
+    if (semantics::namespace_* ns = dynamic_cast<semantics::namespace_*> (s))
+    {
+      if (ns->extension ())
+        s = &ns->original ();
     }
 
     // Enter into the map.
     //
-    ctm[ct.type] = &ct;
+    if (!s->count ("custom-cxx-type-map"))
+      s->set ("custom-cxx-type-map", custom_cxx_type_map ());
+
+    s->get<custom_cxx_type_map> ("custom-cxx-type-map")[ct.type] = &ct;
   }
 }
 

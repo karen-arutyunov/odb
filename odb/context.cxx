@@ -22,6 +22,239 @@
 
 using namespace std;
 
+static inline void
+add_space (string& s)
+{
+  string::size_type n (s.size ());
+  if (n != 0 && s[n - 1] != ' ')
+    s += ' ';
+}
+
+//
+// custom_cxx_type
+//
+string custom_cxx_type::
+translate (string const& val, const cxx_tokens& expr)
+{
+  // Similar to member_access::translate() and a few other places.
+  //
+  string r;
+
+  cxx_tokens_lexer l;
+  l.start (expr);
+
+  string tl;
+  for (cpp_ttype tt (l.next (tl)), ptt (CPP_EOF); tt != CPP_EOF;)
+  {
+    // Try to format the expression to resemble the style of the
+    // generated code.
+    //
+    switch (tt)
+    {
+    case CPP_NOT:
+      {
+        add_space (r);
+        r += '!';
+        break;
+      }
+    case CPP_COMMA:
+      {
+        r += ", ";
+        break;
+      }
+    case CPP_OPEN_PAREN:
+      {
+        if (ptt == CPP_NAME ||
+            ptt == CPP_KEYWORD)
+          add_space (r);
+
+        r += '(';
+        break;
+      }
+    case CPP_CLOSE_PAREN:
+      {
+        r += ')';
+        break;
+      }
+    case CPP_OPEN_SQUARE:
+      {
+        r += '[';
+        break;
+      }
+    case CPP_CLOSE_SQUARE:
+      {
+        r += ']';
+        break;
+      }
+    case CPP_OPEN_BRACE:
+      {
+        add_space (r);
+        r += "{ ";
+        break;
+      }
+    case CPP_CLOSE_BRACE:
+      {
+        add_space (r);
+        r += '}';
+        break;
+      }
+    case CPP_SEMICOLON:
+      {
+        r += ';';
+        break;
+      }
+    case CPP_ELLIPSIS:
+      {
+        add_space (r);
+        r += "...";
+        break;
+      }
+    case CPP_PLUS:
+    case CPP_MINUS:
+      {
+        bool unary (ptt != CPP_NAME &&
+                    ptt != CPP_SCOPE &&
+                    ptt != CPP_NUMBER &&
+                    ptt != CPP_STRING &&
+                    ptt != CPP_CLOSE_PAREN &&
+                    ptt != CPP_PLUS_PLUS &&
+                    ptt != CPP_MINUS_MINUS);
+
+        if (!unary)
+          add_space (r);
+
+        r += cxx_lexer::token_spelling[tt];
+
+        if (!unary)
+          r += ' ';
+        break;
+      }
+    case CPP_PLUS_PLUS:
+    case CPP_MINUS_MINUS:
+      {
+        if (ptt != CPP_NAME &&
+            ptt != CPP_CLOSE_PAREN &&
+            ptt != CPP_CLOSE_SQUARE)
+          add_space (r);
+
+        r += cxx_lexer::token_spelling[tt];
+        break;
+      }
+    case CPP_DEREF:
+    case CPP_DEREF_STAR:
+    case CPP_DOT:
+    case CPP_DOT_STAR:
+      {
+        r += cxx_lexer::token_spelling[tt];
+        break;
+      }
+    case CPP_STRING:
+      {
+        if (ptt == CPP_NAME ||
+            ptt == CPP_KEYWORD ||
+            ptt == CPP_STRING ||
+            ptt == CPP_NUMBER)
+          add_space (r);
+
+        r += context::strlit (tl);
+        break;
+      }
+    case CPP_NUMBER:
+      {
+        if (ptt == CPP_NAME ||
+            ptt == CPP_KEYWORD ||
+            ptt == CPP_STRING ||
+            ptt == CPP_NUMBER)
+          add_space (r);
+
+        r += tl;
+        break;
+      }
+    case CPP_SCOPE:
+      {
+        // Add space except for a few common cases.
+        //
+        if (ptt != CPP_NAME &&
+            ptt != CPP_OPEN_PAREN &&
+            ptt != CPP_OPEN_SQUARE)
+          add_space (r);
+
+        r += cxx_lexer::token_spelling[tt];
+        break;
+      }
+    case CPP_NAME:
+      {
+        // Start of a name.
+        //
+        if (ptt == CPP_NAME ||
+            ptt == CPP_KEYWORD ||
+            ptt == CPP_STRING ||
+            ptt == CPP_NUMBER)
+          add_space (r);
+
+        r += tl;
+        break;
+      }
+    case CPP_QUERY:
+      {
+        if (ptt == CPP_OPEN_PAREN)
+        {
+          // Get the next token and see if it is ')'.
+          //
+          ptt = tt;
+          tt = l.next (tl);
+
+          if (tt == CPP_CLOSE_PAREN)
+            r += val;
+          else
+          {
+            add_space (r);
+            r += "? ";
+          }
+          continue; // We have already gotten the next token.
+        }
+        // Fall through.
+      }
+    default:
+      {
+        // Handle CPP_KEYWORD here to avoid a warning (it is not
+        // part of the cpp_ttype enumeration).
+        //
+        if (tt == CPP_KEYWORD)
+        {
+          if (ptt == CPP_NAME ||
+              ptt == CPP_KEYWORD ||
+              ptt == CPP_STRING ||
+              ptt == CPP_NUMBER)
+            add_space (r);
+
+          r += tl;
+        }
+        else
+        {
+          // All the other operators.
+          //
+          add_space (r);
+          r += cxx_lexer::token_spelling[tt];
+          r += ' ';
+        }
+        break;
+      }
+    }
+
+    //
+    // Watch out for the continue statements above if you add any
+    // logic here.
+    //
+
+    ptt = tt;
+    tt = l.next (tl);
+  }
+
+  return r;
+}
+
+
 //
 // view_object
 //
@@ -57,14 +290,6 @@ placeholder () const
   }
 
   return false;
-}
-
-static inline void
-add_space (string& s)
-{
-  string::size_type n (s.size ());
-  if (n != 0 && s[n - 1] != ' ')
-    s += ' ';
 }
 
 string member_access::
@@ -1163,7 +1388,10 @@ utype (semantics::type& t, semantics::names*& hint)
 }
 
 semantics::type& context::
-utype (semantics::data_member& m, semantics::names*& hint, string const& kp)
+utype (semantics::data_member& m,
+       semantics::names*& hint,
+       string const& kp,
+       const custom_cxx_type** translation)
 {
   semantics::type* t (0);
 
@@ -1200,6 +1428,9 @@ utype (semantics::data_member& m, semantics::names*& hint, string const& kp)
   //
   // @@ Need to cache the result on the member.
   //
+  if (translation != 0)
+    *translation = 0;
+
   for (semantics::scope* s (&m.scope ());; s = &s->scope_ ())
   {
     using semantics::namespace_;
@@ -1219,12 +1450,11 @@ utype (semantics::data_member& m, semantics::names*& hint, string const& kp)
 
       if (i != m.end ())
       {
-        cerr << "mapping " << t->fq_name (hint) << " to ";
-
         hint = i->second->as_hint;
         t = i->second->as;
 
-        cerr << t->fq_name (hint) << endl;
+        if (translation != 0)
+          *translation = i->second;
 
         // Currently we only support one level of mapping, but I am
         // sure someone will want multiple levels.

@@ -118,6 +118,12 @@ struct custom_cxx_type
 {
   custom_cxx_type (): type_node (0), as_node (0) {}
 
+  std::string
+  translate_to (std::string const& v) const {return translate (v, to);}
+
+  std::string
+  translate_from (std::string const& v) const {return translate (v, from);}
+
   tree type_node;
   std::string type_name;
   semantics::type* type;
@@ -128,12 +134,18 @@ struct custom_cxx_type
   semantics::type* as;
   semantics::names* as_hint;
 
-  // Empty expression means the values are implicitly convertible.
-  //
   cxx_tokens to;
+  bool to_move; // Single (?), so can move.
+
   cxx_tokens from;
+  bool from_move; // Single (?), so can move.
 
   location_t loc;
+  tree scope; // Scope for which this mapping is defined.
+
+private:
+  static std::string
+  translate (std::string const&, const cxx_tokens&);
 };
 
 typedef std::vector<custom_cxx_type> custom_cxx_types;
@@ -617,17 +629,19 @@ public:
   // The same for a member's type but also do custom C++ type translation.
   //
   static semantics::type&
-  utype (semantics::data_member& m)
+  utype (semantics::data_member& m, const custom_cxx_type** translation = 0)
   {
     semantics::names* hint (0);
-    return  utype (m, hint);
+    return utype (m, hint, string (), translation);
   }
 
   static semantics::type&
-  utype (semantics::data_member& m, string const& key_prefix)
+  utype (semantics::data_member& m,
+         string const& key_prefix,
+         const custom_cxx_type** translation = 0)
   {
     semantics::names* hint (0);
-    return utype (m, hint, key_prefix);
+    return utype (m, hint, key_prefix, translation);
   }
 
   // In addition to the unqualified type, this version also returns the
@@ -638,7 +652,8 @@ public:
   static semantics::type&
   utype (semantics::data_member&,
          semantics::names*& hint,
-         string const& key_prefix = string ());
+         string const& key_prefix = string (),
+         const custom_cxx_type** translation = 0);
 
   // For arrays this function returns true if the (innermost) element
   // type is const.
