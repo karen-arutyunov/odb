@@ -1681,6 +1681,8 @@ inc_member (semantics::data_member& m,
     // then cast away constness. Otherwise, we assume that the user-
     // provided expression handles this.
     //
+    os << "++";
+
     bool cast (ma.direct () && const_member (m));
     if (cast)
       os << "const_cast< " << type << "& > (" << endl;
@@ -1690,7 +1692,7 @@ inc_member (semantics::data_member& m,
     if (cast)
       os << ")";
 
-    os << "++;";
+    os << ";";
   }
 }
 
