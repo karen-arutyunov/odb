@@ -702,7 +702,7 @@ namespace relational
           {
             bool f (false); //@@ (im)persfect forwarding.
             instance<object_columns> oc (model_, t, f);
-            oc->traverse (m, container_it (ct), "index", "index");
+            oc->traverse (m, container_it (m), "index", "index");
           }
 
           // This is a simple value so the name cannot be empty. It is
@@ -751,7 +751,7 @@ namespace relational
         {
           bool f (false); //@@ (im)persfect forwarding.
           instance<object_columns> oc (model_, t, f);
-          oc->traverse (m, container_kt (ct), "key", "key");
+          oc->traverse (m, container_kt (m), "key", "key");
         }
 
         // value
@@ -759,7 +759,7 @@ namespace relational
         {
           bool f (false); //@@ (im)persfect forwarding.
           instance<object_columns> oc (model_, t, f);
-          oc->traverse (m, container_vt (ct), "value", "value");
+          oc->traverse (m, container_vt (m), "value", "value");
         }
       }
 

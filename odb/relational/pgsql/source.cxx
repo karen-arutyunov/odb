@@ -911,7 +911,7 @@ namespace relational
           // Statement types.
           //
 
-          semantics::type& vt (container_vt (t));
+          semantics::type& vt (container_vt (m));
           semantics::type& idt (container_idt (m));
 
           // insert statement types.
@@ -932,13 +932,13 @@ namespace relational
               case ck_ordered:
                 {
                   if (!unordered (m))
-                    so.traverse (m, container_it (t), "index", "index");
+                    so.traverse (m, container_it (m), "index", "index");
                   break;
                 }
               case ck_map:
               case ck_multimap:
                 {
-                  so.traverse (m, container_kt (t), "key", "key");
+                  so.traverse (m, container_kt (m), "key", "key");
                   break;
                 }
               case ck_set:
@@ -982,7 +982,7 @@ namespace relational
             case ck_ordered:
               {
                 if (!unordered (m))
-                  so.traverse (m, container_it (t), "index", "index");
+                  so.traverse (m, container_it (m), "index", "index");
                 break;
               }
             case ck_map:
@@ -1018,7 +1018,7 @@ namespace relational
             case ck_ordered:
               {
                 if (!unordered (m))
-                  so.traverse (m, container_it (t), "index", "index");
+                  so.traverse (m, container_it (m), "index", "index");
                 break;
               }
             case ck_map:

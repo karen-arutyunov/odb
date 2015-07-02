@@ -88,7 +88,10 @@ namespace relational
     grow (semantics::data_member&);
 
     bool
-    grow (semantics::data_member&, semantics::type&, string const& key_prefix);
+    grow (semantics::data_member&,
+          semantics::type&,
+          const custom_cxx_type*,
+          string const& key_prefix);
 
   public:
     // Quote SQL string.
@@ -216,6 +219,7 @@ namespace relational
     virtual bool
     grow_impl (semantics::data_member&,
                semantics::type&,
+               const custom_cxx_type*,
                string const&);
 
     // The default implementation uses the ISO quoting ('') and

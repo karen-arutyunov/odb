@@ -1227,11 +1227,11 @@ namespace
     }
 
     virtual void
-    traverse_container (semantics::data_member& m, semantics::type& t)
+    traverse_container (semantics::data_member& m, semantics::type&)
     {
       traverse_simple (m); // Do simple value tests.
 
-      if (semantics::class_* c = object_pointer (container_vt (t)))
+      if (semantics::class_* c = object_pointer (container_vt (m)))
       {
         // Pointer must be deleted before the pointed-to object.
         //

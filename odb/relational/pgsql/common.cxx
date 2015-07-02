@@ -133,12 +133,15 @@ namespace relational
     }
 
     member_image_type::
+    member_image_type ()
+        : relational::member_base (0, 0, string (), string ()) {}
+
+    member_image_type::
     member_image_type (semantics::type* type,
+                       const custom_cxx_type* ct,
                        string const& fq_type,
                        string const& key_prefix)
-        : relational::member_base (type, fq_type, key_prefix)
-    {
-    }
+        : relational::member_base (type, ct, fq_type, key_prefix) {}
 
     string member_image_type::
     image_type (semantics::data_member& m)
@@ -244,18 +247,20 @@ namespace relational
     member_database_type_id::
     member_database_type_id (base const& x)
         : member_base::base (x), // virtual base
-          base (x)
-    {
-    }
+          base (x) {}
+
+    member_database_type_id::
+    member_database_type_id ()
+        : member_base::base (0, 0, string (), string ()), // virtual base
+          base (0, 0, string (), string ()) {}
 
     member_database_type_id::
     member_database_type_id (semantics::type* type,
+                             const custom_cxx_type* ct,
                              string const& fq_type,
                              string const& key_prefix)
-        : member_base::base (type, fq_type, key_prefix), // virtual base
-          base (type, fq_type, key_prefix)
-    {
-    }
+        : member_base::base (type, ct, fq_type, key_prefix), // virtual base
+          base (type, ct, fq_type, key_prefix) {}
 
     string member_database_type_id::
     database_type_id (type& m)

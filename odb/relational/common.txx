@@ -26,7 +26,7 @@ namespace relational
     }
 
     bool cq (type_override_ != 0 ? false : const_member (m));
-    const custom_cxx_type* ct (0);
+    const custom_cxx_type* ct (type_override_ != 0 ? custom_override_ : 0);
     semantics::type& t (type_override_ != 0
                         ? *type_override_
                         : utype (m, &ct));

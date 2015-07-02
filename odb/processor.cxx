@@ -1410,20 +1410,14 @@ namespace
       {
         ck = t.get<container_kind_type> ("container-kind");
         smart = t.get<bool> ("container-smart");
-        vt = t.get<semantics::type*> ("value-tree-type");
-        vh = t.get<semantics::names*> ("value-tree-hint");
+
+        vt = &utype (m, vh, "value");
 
         if (ck == ck_ordered)
-        {
-          it = t.get<semantics::type*> ("index-tree-type");
-          ih = t.get<semantics::names*> ("index-tree-hint");
-        }
+          it = &utype (m, ih, "index");
 
         if (ck == ck_map || ck == ck_multimap)
-        {
-          kt = t.get<semantics::type*> ("key-tree-type");
-          kh = t.get<semantics::names*> ("key-tree-hint");
-        }
+          kt = &utype (m, kh, "key");
       }
       else
       {
@@ -1553,6 +1547,7 @@ namespace
 
         t.set ("value-tree-type", vt);
         t.set ("value-tree-hint", vh);
+        vt = &utype (m, vh, "value"); // Map.
 
         // If we have a set container, automatically mark the value
         // column as not null. If we already have an explicit null for
@@ -1610,9 +1605,10 @@ namespace
             throw;
           }
 
+          t.set ("index-not-null", true);
           t.set ("index-tree-type", it);
           t.set ("index-tree-hint", ih);
-          t.set ("index-not-null", true);
+          it = &utype (m, ih, "index"); // Map.
         }
 
         // Get the key type for maps.
@@ -1644,9 +1640,10 @@ namespace
             throw;
           }
 
+          t.set ("key-not-null", true);
           t.set ("key-tree-type", kt);
           t.set ("key-tree-hint", kh);
-          t.set ("key-not-null", true);
+          kt = &utype (m, kh, "key"); // Map.
         }
 
         // Check if we are versioned. For now we are not allowing for

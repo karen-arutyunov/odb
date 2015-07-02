@@ -4655,8 +4655,8 @@ traverse_view (type& c)
       //
       semantics::class_* c (0);
 
-      if (semantics::type* cont = container (m))
-        c = object_pointer (container_vt (*cont));
+      if (container (m))
+        c = object_pointer (container_vt (m));
       else
         c = object_pointer (utype (m));
 
@@ -5899,8 +5899,8 @@ namespace relational
 
           type* t;
 
-          if (type* c = context::container (*m))
-            t = &context::container_vt (*c);
+          if (context::container (*m))
+            t = &context::container_vt (*m);
           else
             t = &context::utype (*m);
 

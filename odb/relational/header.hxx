@@ -21,17 +21,14 @@ namespace relational
       typedef image_member base;
 
       image_member (string const& var = string ())
-          : member_base (var, 0, string (), string ())
-      {
-      }
+          : member_base (var, 0, 0, string (), string ()) {}
 
       image_member (string const& var,
                     semantics::type& t,
+                    const custom_cxx_type* ct,
                     string const& fq_type,
                     string const& key_prefix)
-          : member_base (var, &t, fq_type, key_prefix)
-      {
-      }
+          : member_base (var, &t, ct, fq_type, key_prefix) {}
     };
 
     template <typename T>
@@ -43,6 +40,7 @@ namespace relational
           : member_base::base (x), // virtual base
             base (x),
             member_image_type_ (base::type_override_,
+                                base::custom_override_,
                                 base::fq_type_override_,
                                 base::key_prefix_)
       {
@@ -283,7 +281,11 @@ namespace relational
 
         container_kind_type ck (container_kind (c));
 
-        type& vt (container_vt (c));
+        const custom_cxx_type* vct (0);
+        const custom_cxx_type* ict (0);
+        const custom_cxx_type* kct (0);
+
+        type& vt (container_vt (m, &vct));
         type* it (0);
         type* kt (0);
 
@@ -296,7 +298,7 @@ namespace relational
           {
             if (!unordered (m))
             {
-              it = &container_it (c);
+              it = &container_it (m, &ict);
               ordered = true;
             }
             break;
@@ -304,7 +306,7 @@ namespace relational
         case ck_map:
         case ck_multimap:
           {
-            kt = &container_kt (c);
+            kt = &container_kt (m, &kct);
             break;
           }
         case ck_set:
@@ -578,7 +580,7 @@ namespace relational
                 os << "// index" << endl
                    << "//" << endl;
                 instance<image_member> im (
-                  "index_", *it, "index_type", "index");
+                  "index_", *it, ict, "index_type", "index");
                 im->traverse (m);
               }
               break;
@@ -588,7 +590,7 @@ namespace relational
             {
               os << "// key" << endl
                  << "//" << endl;
-              instance<image_member> im ("key_", *kt, "key_type", "key");
+              instance<image_member> im ("key_", *kt, kct, "key_type", "key");
               im->traverse (m);
               break;
             }
@@ -597,7 +599,8 @@ namespace relational
             {
               os << "// value" << endl
                  << "//" << endl;
-              instance<image_member> im ("value_", vt, "value_type", "value");
+              instance<image_member> im (
+                "value_", vt, vct, "value_type", "value");
               im->traverse (m);
               break;
             }
@@ -620,7 +623,8 @@ namespace relational
             {
               os << "// index" << endl
                  << "//" << endl;
-              instance<image_member> im ("index_", *it, "index_type", "index");
+              instance<image_member> im (
+                "index_", *it, ict, "index_type", "index");
               im->traverse (m);
             }
             break;
@@ -630,7 +634,7 @@ namespace relational
           {
             os << "// key" << endl
                << "//" << endl;
-            instance<image_member> im ("key_", *kt, "key_type", "key");
+            instance<image_member> im ("key_", *kt, kct, "key_type", "key");
             im->traverse (m);
             break;
           }
@@ -643,7 +647,7 @@ namespace relational
 
         os << "// value" << endl
            << "//" << endl;
-        instance<image_member> im ("value_", vt, "value_type", "value");
+        instance<image_member> im ("value_", vt, vct, "value_type", "value");
         im->traverse (m);
 
         os << "std::size_t version;"

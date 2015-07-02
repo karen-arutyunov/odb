@@ -155,14 +155,17 @@ namespace relational
 
       struct has_grow_member: member_base
       {
+        has_grow_member (bool& r, user_section* section = 0)
+            : relational::member_base (0, 0, string (), string (), section),
+              r_ (r) {}
+
         has_grow_member (bool& r,
-                         user_section* section = 0,
-                         semantics::type* type = 0,
+                         user_section* section,
+                         semantics::type* t,
+                         const custom_cxx_type* ct,
                          string const& key_prefix = string ())
-            : relational::member_base (type, string (), key_prefix, section),
-              r_ (r)
-        {
-        }
+            : relational::member_base (t, ct, string (), key_prefix, section),
+              r_ (r) {}
 
         virtual bool
         pre (member_info& mi)
@@ -229,10 +232,13 @@ namespace relational
     }
 
     bool context::
-    grow_impl (semantics::data_member& m, semantics::type& t, string const& kp)
+    grow_impl (semantics::data_member& m,
+               semantics::type& t,
+               const custom_cxx_type* ct,
+               string const& kp)
     {
       bool r (false);
-      has_grow_member mt  (r, 0, &t, kp);
+      has_grow_member mt  (r, 0, &t, ct, kp);
       mt.traverse (m);
       return r;
     }

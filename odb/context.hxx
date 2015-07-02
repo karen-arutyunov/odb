@@ -1509,27 +1509,27 @@ public:
   }
 
   static semantics::type&
-  container_idt (semantics::data_member& m)
+  container_idt (semantics::data_member& m, const custom_cxx_type** trans = 0)
   {
-    return utype (m, "id");
+    return utype (m, "id", trans);
   }
 
   static semantics::type&
-  container_vt (semantics::type& c)
+  container_vt (semantics::data_member& m, const custom_cxx_type** trans = 0)
   {
-    return *c.get<semantics::type*> ("value-tree-type");
+    return utype (m, "value", trans);
   }
 
   static semantics::type&
-  container_it (semantics::type& c)
+  container_it (semantics::data_member& m, const custom_cxx_type** trans = 0)
   {
-    return *c.get<semantics::type*> ("index-tree-type");
+    return utype (m, "index", trans);
   }
 
   static semantics::type&
-  container_kt (semantics::type& c)
+  container_kt (semantics::data_member& m, const custom_cxx_type** trans = 0)
   {
-    return *c.get<semantics::type*> ("key-tree-type");
+    return utype (m, "key", trans);
   }
 
   static bool

@@ -120,7 +120,10 @@ namespace relational
       grow_impl (semantics::data_member&);
 
       virtual bool
-      grow_impl (semantics::data_member&, semantics::type&, string const&);
+      grow_impl (semantics::data_member&,
+                 semantics::type&,
+                 const custom_cxx_type*,
+                 string const&);
 
     protected:
       virtual string

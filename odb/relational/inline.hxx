@@ -22,9 +22,7 @@ namespace relational
       typedef null_member base;
 
       null_member (bool get)
-          : member_base (string (), 0, string (), string ()), get_ (get)
-      {
-      }
+          : member_base (0, 0, string (), string ()), get_ (get) {}
 
     protected:
       bool get_;

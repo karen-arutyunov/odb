@@ -17,9 +17,12 @@ namespace relational
   }
 
   inline bool context::
-  grow (semantics::data_member& m, semantics::type& t, string const& kp)
+  grow (semantics::data_member& m,
+        semantics::type& t,
+        const custom_cxx_type* ct,
+        string const& kp)
   {
-    return current ().grow_impl (m, t, kp);
+    return current ().grow_impl (m, t, ct, kp);
   }
 
   inline context::string context::

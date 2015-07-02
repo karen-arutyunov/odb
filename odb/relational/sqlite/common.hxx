@@ -62,7 +62,9 @@ namespace relational
                               member_base
     {
       member_image_type (base const&);
-      member_image_type (semantics::type* type = 0,
+      member_image_type ();
+      member_image_type (semantics::type* type,
+                         const custom_cxx_type*,
                          string const& fq_type = string (),
                          string const& key_prefix = string ());
       virtual string
@@ -88,7 +90,9 @@ namespace relational
                                     member_base
     {
       member_database_type_id (base const&);
-      member_database_type_id (semantics::type* type = 0,
+      member_database_type_id ();
+      member_database_type_id (semantics::type* type,
+                               const custom_cxx_type*,
                                string const& fq_type = string (),
                                string const& key_prefix = string ());
 

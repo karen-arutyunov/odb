@@ -3067,7 +3067,7 @@ namespace
     }
 
     virtual void
-    traverse_container (semantics::data_member& m, semantics::type& c)
+    traverse_container (semantics::data_member& m, semantics::type&)
     {
       // Ignore added/deleted members if so requested.
       //
@@ -3091,7 +3091,7 @@ namespace
       if (context::is_a (member_path_,
                          member_scope_,
                          f,
-                         context::container_vt (c),
+                         context::container_vt (m),
                          "value"))
         r_++;
     }

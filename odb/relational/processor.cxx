@@ -400,25 +400,16 @@ namespace relational
       process_container (semantics::data_member& m, semantics::type& t)
       {
         container_kind_type ck (t.get<container_kind_type> ("container-kind"));
-        semantics::type* vt (t.get<semantics::type*> ("value-tree-type"));
-        semantics::type* it (0);
-        semantics::type* kt (0);
 
-        semantics::names* vh (t.get<semantics::names*> ("value-tree-hint"));
+        semantics::names* vh (0);
         semantics::names* ih (0);
         semantics::names* kh (0);
 
-        if (ck == ck_ordered)
-        {
-          it = t.get<semantics::type*> ("index-tree-type");
-          ih = t.get<semantics::names*> ("index-tree-hint");
-        }
-
-        if (ck == ck_map || ck == ck_multimap)
-        {
-          kt = t.get<semantics::type*> ("key-tree-type");
-          kh = t.get<semantics::names*> ("key-tree-hint");
-        }
+        semantics::type* vt (&utype (m, vh, "value"));
+        semantics::type* it (ck == ck_ordered ? &utype (m, ih, "index") : 0);
+        semantics::type* kt (ck == ck_map || ck == ck_multimap
+                             ? &utype (m, kh, "key")
+                             : 0);
 
         // Process member data.
         //
@@ -1483,10 +1474,10 @@ namespace relational
         }
 
         virtual void
-        traverse_container (semantics::data_member& m, semantics::type& t)
+        traverse_container (semantics::data_member& m, semantics::type&)
         {
           if (semantics::class_* c =
-              object_pointer (context::container_vt (t)))
+              object_pointer (context::container_vt (m)))
           {
             if (inverse (m, "value"))
               return;

@@ -1208,9 +1208,9 @@ namespace relational
       }
 
       virtual void
-      traverse_container (semantics::data_member& m, semantics::type& t)
+      traverse_container (semantics::data_member& m, semantics::type&)
       {
-        semantics::type& vt (container_vt (t));
+        semantics::type& vt (container_vt (m));
 
         if (semantics::class_* cvt = composite_wrapper (vt))
         {
@@ -1328,20 +1328,17 @@ namespace relational
       bind_member (string const& var = string (),
                    string const& arg = string (),
                    object_section* section = 0)
-          : member_base (var, 0, string (), string (), section),
-            arg_override_ (arg)
-      {
-      }
+          : member_base (var, 0, 0, string (), string (), section),
+            arg_override_ (arg) {}
 
       bind_member (string const& var,
                    string const& arg,
                    semantics::type& t,
+                   const custom_cxx_type* ct,
                    string const& fq_type,
                    string const& key_prefix)
-          : member_base (var, &t, fq_type, key_prefix),
-            arg_override_ (arg)
-      {
-      }
+          : member_base (var, &t, ct, fq_type, key_prefix),
+            arg_override_ (arg) {}
 
     protected:
       string arg_override_;
@@ -1352,10 +1349,7 @@ namespace relational
     {
       typedef bind_member_impl base_impl;
 
-      bind_member_impl (base const& x)
-          : base (x)
-      {
-      }
+      bind_member_impl (base const& x): base (x) {}
 
       typedef typename member_base_impl<T>::member_info member_info;
 
@@ -1714,19 +1708,16 @@ namespace relational
       grow_member (size_t& index,
                    string const& var = string (),
                    user_section* section = 0)
-          : member_base (var, 0, string (), string (), section),
-            index_ (index)
-      {
-      }
+          : member_base (var, 0, 0, string (), string (), section),
+            index_ (index) {}
 
       grow_member (size_t& index,
                    string const& var,
                    semantics::type& t,
+                   const custom_cxx_type* ct,
                    string const& fq_type,
                    string const& key_prefix)
-          : member_base (var, &t, fq_type, key_prefix), index_ (index)
-      {
-      }
+          : member_base (var, &t, ct, fq_type, key_prefix), index_ (index) {}
 
     protected:
       size_t& index_;
@@ -1971,7 +1962,7 @@ namespace relational
       init_image_member (string const& var = string (),
                          string const& member = string (),
                          user_section* section = 0)
-          : member_base (var, 0, string (), string (), section),
+          : member_base (var, 0, 0, string (), string (), section),
             member_override_ (member)
       {
       }
@@ -1979,9 +1970,10 @@ namespace relational
       init_image_member (string const& var,
                          string const& member,
                          semantics::type& t,
+                         const custom_cxx_type* ct,
                          string const& fq_type,
                          string const& key_prefix)
-          : member_base (var, &t, fq_type, key_prefix),
+          : member_base (var, &t, ct, fq_type, key_prefix),
             member_override_ (member)
       {
       }
@@ -1999,6 +1991,7 @@ namespace relational
       init_image_member_impl (base const& x)
           : base (x),
             member_database_type_id_ (base::type_override_,
+                                      base::custom_override_,
                                       base::fq_type_override_,
                                       base::key_prefix_)
       {
@@ -2339,7 +2332,8 @@ namespace relational
       virtual void
       traverse_composite (member_info& mi)
       {
-        bool grow (generate_grow && context::grow (mi.m, mi.t, key_prefix_));
+        bool grow (generate_grow &&
+                   context::grow (mi.m, mi.t, mi.ct, key_prefix_));
 
         if (grow)
           os << "if (";
@@ -2433,7 +2427,7 @@ namespace relational
                          string const& var = string (),
                          bool ignore_implicit_discriminator = true,
                          user_section* section = 0)
-          : member_base (var, 0, string (), string (), section),
+          : member_base (var, 0, 0, string (), string (), section),
             member_override_ (member),
             ignore_implicit_discriminator_ (ignore_implicit_discriminator)
       {
@@ -2442,9 +2436,10 @@ namespace relational
       init_value_member (string const& var,
                          string const& member,
                          semantics::type& t,
+                         const custom_cxx_type* ct,
                          string const& fq_type,
                          string const& key_prefix)
-          : member_base (var, &t, fq_type, key_prefix),
+          : member_base (var, &t, ct, fq_type, key_prefix),
             member_override_ (member),
             ignore_implicit_discriminator_ (true)
       {
@@ -2467,6 +2462,7 @@ namespace relational
       init_value_member_impl (base const& x)
           : base (x),
             member_database_type_id_ (base::type_override_,
+                                      base::custom_override_,
                                       base::fq_type_override_,
                                       base::key_prefix_)
       {
@@ -2966,7 +2962,7 @@ namespace relational
       typedef init_view_pointer_member base;
 
       init_view_pointer_member (bool pre, init_value_member const& ivm)
-          : member_base ("", 0, "", "", 0),
+          : member_base (0, 0, string (), string (), 0),
             pre_ (pre), init_value_member_ (ivm) {}
 
       virtual bool
@@ -3438,7 +3434,11 @@ namespace relational
 
         container_kind_type ck (container_kind (t));
 
-        type& vt (container_vt (t));
+        const custom_cxx_type* vct (0);
+        const custom_cxx_type* ict (0);
+        const custom_cxx_type* kct (0);
+
+        type& vt (container_vt (m, &vct));
         type* it (0);
         type* kt (0);
 
@@ -3454,11 +3454,11 @@ namespace relational
           {
             if (!unordered (m))
             {
-              it = &container_it (t);
+              it = &container_it (m, &ict);
               ordered = true;
 
               if (generate_grow)
-                grow = grow || context::grow (m, *it, "index");
+                grow = grow || context::grow (m, *it, ict, "index");
             }
 
             break;
@@ -3466,10 +3466,10 @@ namespace relational
         case ck_map:
         case ck_multimap:
           {
-            kt = &container_kt (t);
+            kt = &container_kt (m, &kct);
 
             if (generate_grow)
-              grow = grow || context::grow (m, *kt, "key");
+              grow = grow || context::grow (m, *kt, kct, "key");
 
             break;
           }
@@ -3485,7 +3485,7 @@ namespace relational
                     container_smart (t));
 
         if (generate_grow)
-          grow = grow || context::grow (m, vt, "value");
+          grow = grow || context::grow (m, vt, vct, "value");
 
         bool eager_ptr (is_a (member_path_,
                               member_scope_,
@@ -3933,7 +3933,7 @@ namespace relational
                 os << "// index" << endl
                    << "//" << endl;
                 instance<bind_member> bm (
-                  "index_", "c", *it, "index_type", "index");
+                  "index_", "c", *it, ict, "index_type", "index");
                 bm->traverse (m);
               }
               break;
@@ -3943,7 +3943,8 @@ namespace relational
             {
               os << "// key" << endl
                  << "//" << endl;
-              instance<bind_member> bm ("key_", "c", *kt, "key_type", "key");
+              instance<bind_member> bm (
+                "key_", "c", *kt, kct, "key_type", "key");
               bm->traverse (m);
               break;
             }
@@ -3953,7 +3954,7 @@ namespace relational
               os << "// value" << endl
                  << "//" << endl;
               instance<bind_member> bm (
-                "value_", "c", vt, "value_type", "value");
+                "value_", "c", vt, vct, "value_type", "value");
               bm->traverse (m);
               break;
             }
@@ -4004,7 +4005,7 @@ namespace relational
                 os << "// index" << endl
                    << "//" << endl;
                 instance<bind_member> bm (
-                  "index_", "d", *it, "index_type", "index");
+                  "index_", "d", *it, ict, "index_type", "index");
                 bm->traverse (m);
                 os << "n++;" // Simple value.
                    << endl;
@@ -4016,7 +4017,8 @@ namespace relational
             {
               os << "// key" << endl
                  << "//" << endl;
-              instance<bind_member> bm ("key_", "d", *kt, "key_type", "key");
+              instance<bind_member> bm (
+                "key_", "d", *kt, kct, "key_type", "key");
               bm->traverse (m);
 
               if (semantics::class_* c = composite_wrapper (*kt))
@@ -4039,7 +4041,8 @@ namespace relational
           //
           os << "// value" << endl
              << "//" << endl;
-          instance<bind_member> bm ("value_", "d", vt, "value_type", "value");
+          instance<bind_member> bm (
+            "value_", "d", vt, vct, "value_type", "value");
           bm->traverse (m);
 
           os << "}";
@@ -4074,7 +4077,8 @@ namespace relational
 
           os << "// value" << endl
              << "//" << endl;
-          instance<bind_member> bm ("value_", "d", vt, "value_type", "value");
+          instance<bind_member> bm (
+            "value_", "d", vt, vct, "value_type", "value");
           bm->traverse (m);
 
           if (semantics::class_* c = composite_wrapper (vt))
@@ -4103,7 +4107,7 @@ namespace relational
                 os << "// index" << endl
                    << "//" << endl;
                 instance<bind_member> bm (
-                  "index_", "c", *it, "index_type", "index");
+                  "index_", "c", *it, ict, "index_type", "index");
                 bm->traverse (m);
               }
               break;
@@ -4113,7 +4117,8 @@ namespace relational
             {
               os << "// key" << endl
                  << "//" << endl;
-              instance<bind_member> bm ("key_", "c", *kt, "key_type", "key");
+              instance<bind_member> bm (
+                "key_", "c", *kt, kct, "key_type", "key");
               bm->traverse (m);
               break;
             }
@@ -4123,7 +4128,7 @@ namespace relational
               os << "// value" << endl
                  << "//" << endl;
               instance<bind_member> bm (
-                "value_", "c", vt, "value_type", "value");
+                "value_", "c", vt, vct, "value_type", "value");
               bm->traverse (m);
               break;
             }
@@ -4159,7 +4164,7 @@ namespace relational
                 os << "// index" << endl
                    << "//" << endl;
                 instance<grow_member> gm (
-                  index, "index_", *it, "index_type", "index");
+                  index, "index_", *it, ict, "index_type", "index");
                 gm->traverse (m);
               }
               break;
@@ -4169,7 +4174,8 @@ namespace relational
             {
               os << "// key" << endl
                  << "//" << endl;
-              instance<grow_member> gm (index, "key_", *kt, "key_type", "key");
+              instance<grow_member> gm (
+                index, "key_", *kt, kct, "key_type", "key");
               gm->traverse (m);
               break;
             }
@@ -4183,7 +4189,7 @@ namespace relational
           os << "// value" << endl
              << "//" << endl;
           instance<grow_member> gm (
-            index, "value_", vt, "value_type", "value");
+            index, "value_", vt, vct, "value_type", "value");
           gm->traverse (m);
 
           os << "if (grew)" << endl
@@ -4246,7 +4252,7 @@ namespace relational
                    << "if (j != 0)";
 
                 instance<init_image_member> im (
-                  "index_", "*j", *it, "index_type", "index");
+                  "index_", "*j", *it, ict, "index_type", "index");
                 im->traverse (m);
               }
               break;
@@ -4259,7 +4265,7 @@ namespace relational
                  << "if (k != 0)";
 
               instance<init_image_member> im (
-                "key_", "*k", *kt, "key_type", "key");
+                "key_", "*k", *kt, kct, "key_type", "key");
               im->traverse (m);
 
               break;
@@ -4275,7 +4281,7 @@ namespace relational
              << "//" << endl;
           {
             instance<init_image_member> im (
-              "value_", "v", vt, "value_type", "value");
+              "value_", "v", vt, vct, "value_type", "value");
             im->traverse (m);
           }
 
@@ -4305,7 +4311,7 @@ namespace relational
                  << endl;
 
               instance<init_image_member> im (
-                "index_", "j", *it, "index_type", "index");
+                "index_", "j", *it, ict, "index_type", "index");
               im->traverse (m);
 
               os << "}";
@@ -4379,7 +4385,7 @@ namespace relational
                  << "//" << endl;
 
               instance<init_value_member> im (
-                "index_", "j", *it, "index_type", "index");
+                "index_", "j", *it, ict, "index_type", "index");
               im->traverse (m);
             }
 
@@ -4392,7 +4398,7 @@ namespace relational
                << "//" << endl;
 
             instance<init_value_member> im (
-              "key_", "k", *kt, "key_type", "key");
+              "key_", "k", *kt, kct, "key_type", "key");
             im->traverse (m);
 
             break;
@@ -4409,7 +4415,7 @@ namespace relational
           // type override.
           //
           instance<init_value_member> im (
-            "value_", "v", vt, "value_type", "value");
+            "value_", "v", vt, vct, "value_type", "value");
           im->traverse (m);
         }
         os << "}";

@@ -18,10 +18,12 @@ namespace relational
     typedef member_base base;
 
     member_base (semantics::type* type,
+                 const custom_cxx_type* ct,
                  string const& fq_type,
                  string const& key_prefix,
                  object_section* section = 0)
         : type_override_ (type),
+          custom_override_ (ct),
           fq_type_override_ (fq_type),
           key_prefix_ (key_prefix),
           section_ (section)
@@ -30,11 +32,13 @@ namespace relational
 
     member_base (string const& var,
                  semantics::type* type,
+                 const custom_cxx_type* ct,
                  string const& fq_type,
                  string const& key_prefix,
                  object_section* section = 0)
         : var_override_ (var),
           type_override_ (type),
+          custom_override_ (ct),
           fq_type_override_ (fq_type),
           key_prefix_ (key_prefix),
           section_ (section)
@@ -49,6 +53,7 @@ namespace relational
   protected:
     string var_override_;
     semantics::type* type_override_;
+    const custom_cxx_type* custom_override_;
     string fq_type_override_;
     string key_prefix_;
     object_section* section_;
@@ -122,7 +127,9 @@ namespace relational
           return t.fq_name (hint);
         }
         else
-          return fq_type_;
+          // If we are translated, then fq_type_ contains the original type.
+          //
+          return ct == 0 ? fq_type_ : t.fq_name (ct->as_hint);
       }
 
       string
@@ -204,12 +211,13 @@ namespace relational
   {
     typedef member_image_type base;
 
-    member_image_type (semantics::type* type = 0,
+    member_image_type (): member_base (0, 0, string (), string ()) {}
+
+    member_image_type (semantics::type* type,
+                       const custom_cxx_type* ct,
                        string const& fq_type = string (),
                        string const& key_prefix = string ())
-        : member_base (type, fq_type, key_prefix)
-    {
-    }
+        : member_base (type, ct, fq_type, key_prefix) {}
 
     // Has to be overriden.
     //
@@ -223,12 +231,12 @@ namespace relational
   {
     typedef member_database_type_id base;
 
-    member_database_type_id (semantics::type* type = 0,
+    member_database_type_id (): member_base (0, 0, string (), string ()) {}
+    member_database_type_id (semantics::type* type,
+                             const custom_cxx_type* ct,
                              string const& fq_type = string (),
                              string const& key_prefix = string ())
-        : member_base (type, fq_type, key_prefix)
-    {
-    }
+        : member_base (type, ct, fq_type, key_prefix) {}
 
     // Has to be overriden.
     //

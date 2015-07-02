@@ -118,6 +118,7 @@ namespace relational
   bool context::
   grow_impl (semantics::data_member&,
              semantics::type&,
+             const custom_cxx_type*,
              string const&)
   {
     return false;
