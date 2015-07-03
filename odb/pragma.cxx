@@ -4335,8 +4335,8 @@ register_odb_pragmas (void*, void*)
 void
 post_process_pragmas ()
 {
-  // Make sure object and composite class template instantiations are fully
-  // instantiated.
+  // Make sure object, view, and composite class template instantiations
+  // are fully instantiated.
   //
   for (decl_pragmas::iterator i (decl_pragmas_.begin ()),
          e (decl_pragmas_.end ()); i != e; ++i)
@@ -4349,7 +4349,7 @@ post_process_pragmas ()
     if (!(CLASS_TYPE_P (type) && CLASSTYPE_TEMPLATE_INSTANTIATION (type)))
       continue;
 
-    // Check whether this is an object or composite value type.
+    // Check whether this is an object, view, or composite value type.
     //
     pragma const* p (0);
     string diag_name;
@@ -4365,10 +4365,17 @@ post_process_pragmas ()
         diag_name = "persistent object";
         break;
       }
+      else if (name == "view")
+      {
+        p = &*j;
+        diag_name = "view";
+        break;
+      }
       else if (name == "value")
       {
         p = &*j;
         diag_name = "composite value";
+        break;
       }
       // We don't want to instantiate simple values since they may be
       // incomplete.

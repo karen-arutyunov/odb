@@ -551,9 +551,9 @@ check (semantics::typedefs& t)
   if (ci == 0)
     return false;
 
-  // It must be an object or composite value.
+  // It must be an object, view, or composite value.
   //
-  if (!object (*ci) && !composite (*ci))
+  if (class_kind (*ci) == class_other)
     return false;
 
   // This typedef name should be the one that was used in the pragma.

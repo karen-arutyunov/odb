@@ -440,7 +440,7 @@ private:
   columns columns_;
 };
 
-// Traverse objects and composite values that are class template
+// Traverse objects, views, and composite values that are class template
 // instantiations.
 //
 struct typedefs: traversal::typedefs, context
