@@ -342,10 +342,10 @@ namespace relational
         // Get referenced columns.
         //
         {
-          semantics::data_member& idm (*id_member (c));
+          data_member_path& id (*id_member (c));
 
           instance<object_columns_list> ocl;
-          ocl->traverse (idm);
+          ocl->traverse (id);
 
           for (object_columns_list::iterator i (ocl->begin ());
                i != ocl->end (); ++i)
@@ -634,10 +634,10 @@ namespace relational
           // Get referenced columns.
           //
           {
-            data_member& idm (*id_member (*context::top_object));
+            data_member_path& id (*id_member (*context::top_object));
 
             instance<object_columns_list> ocl;
-            ocl->traverse (idm);
+            ocl->traverse (id);
 
             for (object_columns_list::iterator i (ocl->begin ());
                  i != ocl->end (); ++i)

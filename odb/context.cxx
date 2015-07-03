@@ -1001,14 +1001,25 @@ context* context::current_;
 semantics::data_member* context::
 id (data_member_path const& mp)
 {
-  for (data_member_path::const_reverse_iterator i (mp.rbegin ());
-       i != mp.rend (); ++i)
-  {
-    if (id (**i))
-      return *i;
-  }
+  semantics::data_member* idf (mp.front ());
 
-  return 0;
+  if (!id (*idf))
+    return 0;
+
+  // This is for special ids, such as polymorphic-ref, which
+  // don't have "id-member" set (and we want to keep it that
+  // way since it is not really a full-fledged id).
+  //
+  if (idf->get<string> ("id").empty ()) // Not a nested id.
+    return idf;
+
+  const data_member_path& id (
+    *id_member (
+      dynamic_cast<semantics::class_&> (idf->scope ())));
+
+  // Now we need to make sure id is a prefix of mp;
+  //
+  return mp.sub (id) ? idf : 0;
 }
 
 semantics::data_member* context::
@@ -1696,16 +1707,15 @@ inc_member (semantics::data_member& m,
   }
 }
 
-data_member_path context::
-resolve_data_members (semantics::class_& c,
+void context::
+resolve_data_members (data_member_path& r,
+                      semantics::class_& c,
                       const string& name,
                       const location& l,
                       cxx_string_lexer& lex)
 {
   using semantics::class_;
   using semantics::data_member;
-
-  data_member_path r;
 
   // The name was already verified to be syntactically correct so
   // we don't need to do any extra error checking in this area.
@@ -1722,7 +1732,7 @@ resolve_data_members (semantics::class_& c,
     r.push_back (&m);
 
     if (container (m))
-      return r;
+      return;
 
     // Resolve nested members if any.
     //
@@ -1749,7 +1759,7 @@ resolve_data_members (semantics::class_& c,
       r.push_back (&nm);
 
       if (container (nm))
-        return r;
+        return;
     }
   }
   catch (semantics::unresolved const& e)
@@ -1775,8 +1785,6 @@ resolve_data_members (semantics::class_& c,
 
     throw operation_failed ();
   }
-
-  return r;
 }
 
 bool context::
@@ -2177,7 +2185,7 @@ column_name (semantics::data_member& m, column_prefix const& cp) const
   string n (column_name (m, d));
   n = compose_name (cp.prefix, n);
 
-  // If any component is derived, the run it through the SQL name regex.
+  // If any component is derived, then run it through the SQL name regex.
   //
   if (d || cp.derived)
     n = transform_name (n, sql_name_column);

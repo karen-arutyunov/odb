@@ -27,8 +27,8 @@ namespace relational
     id_column_type ()
     {
       context& c (context::current ());
-      semantics::data_member& id (*context::id_member (*c.top_object));
-      return id.get<string> ("column-type");
+      data_member_path& id (*context::id_member (*c.top_object));
+      return id.back ()->get<string> ("column-id-type");
     }
 
     struct data_member: traversal::data_member, context
@@ -85,7 +85,7 @@ namespace relational
               // This is an object pointer. The column type is the pointed-to
               // object id type.
               //
-              semantics::data_member& id (*id_member (*c));
+              semantics::data_member& id (*id_member (*c)->back ());
 
               semantics::names* idhint;
               semantics::type& idt (utype (id, idhint));
@@ -220,7 +220,7 @@ namespace relational
           //
           {
             semantics::class_& r (*object_pointer (t));
-            semantics::data_member& id (*id_member (r));
+            semantics::data_member& id (*id_member (r)->front ());
 
             if (id.count ("column"))
               m.set ("column", id.get<table_column> ("column"));
@@ -306,7 +306,7 @@ namespace relational
           // This is an object pointer. The column type is the pointed-to
           // object id type.
           //
-          semantics::data_member& id (*id_member (*c));
+          semantics::data_member& id (*id_member (*c)->back ());
 
           semantics::names* idhint;
           semantics::type& idt (utype (id, idhint));
@@ -824,7 +824,7 @@ namespace relational
             m.set ("column-type", src_m->get<string> ("column-type"));
           else if (semantics::class_* c = object_pointer (utype (*src_m)))
           {
-            semantics::data_member& id (*id_member (*c));
+            semantics::data_member& id (*id_member (*c)->back ());
 
             if (id.count ("type"))
               m.set ("column-type", id.get<string> ("column-type"));

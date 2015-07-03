@@ -114,11 +114,12 @@ namespace semantics
 
   public:
     template <typename X>
-    bool
-    is_a () const
-    {
-      return dynamic_cast<X const*> (this) != 0;
-    }
+    X*
+    is_a () {return dynamic_cast<X*> (this);}
+
+    template <typename X>
+    const X*
+    is_a () const {return dynamic_cast<const X*> (this);}
   };
 
   //
@@ -165,11 +166,12 @@ namespace semantics
 
   public:
     template <typename X>
-    bool
-    is_a () const
-    {
-      return dynamic_cast<X const*> (this) != 0;
-    }
+    X*
+    is_a () {return dynamic_cast<X*> (this);}
+
+    template <typename X>
+    const X*
+    is_a () const {return dynamic_cast<const X*> (this);}
 
   public:
     node (path const& file, size_t line, size_t column, tree);

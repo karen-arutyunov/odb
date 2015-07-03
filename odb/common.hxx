@@ -278,10 +278,7 @@ public:
   // value type, or an object pointer (with a simple or composite id).
   //
   virtual void
-  traverse (semantics::data_member& m)
-  {
-    traverse (m, utype (m), string (), string ());
-  }
+  traverse (semantics::data_member&);
 
   virtual void
   traverse (semantics::data_member& m, column_prefix const& cp)
@@ -292,6 +289,17 @@ public:
     column_prefix_ = op;
   }
 
+  virtual void
+  traverse (data_member_path& mp)
+  {
+    data_member_path op (member_path_);
+    member_path_ = mp;
+    traverse (*mp.back (), column_prefix (mp));
+    member_path_ = op;
+  }
+
+  // Should only be used for containers.
+  //
   virtual void
   traverse (semantics::data_member&,
             semantics::type&,
@@ -333,7 +341,7 @@ protected:
     }
     else
       return context::column_type (
-        member_path_, key_prefix_, (root_ != 0 && (root_id_ || root_op_)));
+        member_path_, key_prefix_, root_ != 0 && (root_id_ || root_op_));
   }
 
   bool

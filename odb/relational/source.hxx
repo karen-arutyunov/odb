@@ -211,7 +211,7 @@ namespace relational
           semantics::class_& imc (
             poly ? dynamic_cast<semantics::class_&> (imf.scope ()) : c);
 
-          semantics::data_member& id (*id_member (imc));
+          data_member_path& id (*id_member (imc));
           semantics::type& idt (utype (id));
 
           if (container (imb))
@@ -484,7 +484,7 @@ namespace relational
         instance<object_columns_list> l_cols; // Our id columns.
         instance<object_columns_list> r_cols; // Other side id columns.
 
-        semantics::data_member& id (*id_member (*us.obj));
+        data_member_path& id (*id_member (*us.obj));
 
         l_cols->traverse (id);
 
@@ -1018,7 +1018,7 @@ namespace relational
               dt = quote_id (table);
               da = quote_id (poly ? alias + "_" + table.uname () : alias);
 
-              semantics::data_member& id (*id_member (c));
+              data_member_path& id (*id_member (c));
 
               instance<object_columns_list> oid_cols, cid_cols;
               oid_cols->traverse (id);
@@ -1171,7 +1171,7 @@ namespace relational
       bool query_;
       size_t depth_;
       string table_;
-      semantics::data_member& id_;
+      data_member_path& id_;
       instance<object_columns_list> id_cols_;
     };
 
@@ -1391,7 +1391,7 @@ namespace relational
 
           // Order of these tests is important.
           //
-          if (!insert_send_auto_id && id (mi.m) && auto_ (mi.m))
+          if (!insert_send_auto_id && auto_ (mi.m))
             os << "if (sk != statement_insert && sk != statement_update)"
                << "{";
           else if (section_ == 0 && separate_load (mi.m))
@@ -1567,7 +1567,7 @@ namespace relational
 
           // The same logic as in pre().
           //
-          if (!insert_send_auto_id && id (mi.m) && auto_ (mi.m))
+          if (!insert_send_auto_id && auto_ (mi.m))
             block = true;
           else if (section_ == 0 && separate_load (mi.m))
             block = true;
@@ -1673,7 +1673,7 @@ namespace relational
         size_t insert (cc.total - cc.inverse - cc.optimistic_managed);
         size_t update (insert - cc.id - cc.readonly - cc.separate_update);
 
-        semantics::data_member* id;
+        data_member_path* id;
         if (!insert_send_auto_id && (id = id_member (c)) != 0 && auto_ (*id))
           insert -= cc.id;
 
@@ -2041,7 +2041,7 @@ namespace relational
           // If we don't send auto id in INSERT statement, ignore this
           // member altogether (we never send auto id in UPDATE).
           //
-          if (!insert_send_auto_id && id (mi.m) && auto_ (mi.m))
+          if (!insert_send_auto_id && auto_ (mi.m))
             return false;
 
           os << "// " << mi.m.name () << endl
@@ -2985,7 +2985,7 @@ namespace relational
         bool poly_derived (poly && poly_root != &c);
         size_t poly_depth (poly_derived ? polymorphic_depth (c) : 1);
 
-        semantics::data_member* idm (id_member (poly ? *poly_root : c));
+        data_member_path* idm (id_member (poly ? *poly_root : c));
 
         os << "// " << mi.m.name () << (pre_ ? " pre" : " post") << endl
            << "//" << endl;
@@ -3084,7 +3084,7 @@ namespace relational
               for (size_t i (0); i < poly_depth - 1; ++i)
                 id_im += (i == 0 ? ".base" : "->base");
 
-              string const& n (idm->name ());
+              string const& n (idm->front ()->name ());
               id_var = id_im + (poly_derived ? "->" : ".") + n +
                 (n[n.size () - 1] == '_' ? "" : "_");
 
@@ -3563,7 +3563,7 @@ namespace relational
             if (polymorphic (*c))
               c = &dynamic_cast<semantics::class_&> (imf.scope ());
 
-            semantics::data_member& inv_id (*id_member (*c));
+            data_member_path& inv_id (*id_member (*c));
 
             qname inv_table;                            // Other table name.
             string inv_qtable;
@@ -6456,7 +6456,7 @@ namespace relational
 
         if (version (m))
           p = version_value (m);
-        else if (context::id (m) && auto_ (m)) // Only simple id can be auto.
+        else if (auto_ (m)) // Only simple, direct id can be auto.
           p = qp_.auto_id ();
         else
           p = qp_.next ();

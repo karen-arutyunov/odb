@@ -95,6 +95,24 @@ struct data_member_path: std::vector<semantics::data_member*>
 
   explicit
   data_member_path (semantics::data_member& m) {push_back (&m);}
+
+  // Return true if this is a sub-path of (or equal to) the
+  // specified path.
+  //
+  bool
+  sub (const data_member_path& p) const
+  {
+    size_t n (p.size ());
+
+    if (n > size ())
+      return false;
+
+    for (size_t i (0); i != n; ++i)
+      if ((*this)[i] != p[i])
+        return false;
+
+    return true;
+  }
 };
 
 // Class inheritance chain, from the most derived to base.
@@ -276,6 +294,11 @@ struct table_column
   std::string column;
   bool expr; // True if column is an expression, and therefore should not
              // be quoted.
+
+  table_column () {}
+
+  explicit
+  table_column (const std::string& c): column (c), expr (false) {}
 };
 
 //
@@ -655,6 +678,29 @@ public:
          string const& key_prefix = string (),
          const custom_cxx_type** translation = 0);
 
+  static semantics::type&
+  utype (const data_member_path& mp, const custom_cxx_type** translation = 0)
+  {
+    return utype (*mp.back (), translation);
+  }
+
+  static semantics::type&
+  utype (const data_member_path& mp,
+         string const& key_prefix,
+         const custom_cxx_type** translation = 0)
+  {
+    return utype (*mp.back (), key_prefix, translation);
+  }
+
+  static semantics::type&
+  utype (const data_member_path& mp,
+         semantics::names*& hint,
+         string const& key_prefix = string (),
+         const custom_cxx_type** translation = 0)
+  {
+    return utype (*mp.back (), hint, key_prefix, translation);
+  }
+
   // For arrays this function returns true if the (innermost) element
   // type is const.
   //
@@ -725,11 +771,23 @@ public:
   // This function stops if it encounters a container leaving lex usable
   // to continue parsing.
   //
-  data_member_path
-  resolve_data_members (semantics::class_& scope,
+  void
+  resolve_data_members (data_member_path& append,
+                        semantics::class_& scope,
                         const std::string& name,
                         const location&,
                         cxx_string_lexer&);
+
+  data_member_path
+  resolve_data_members (semantics::class_& scope,
+                        const std::string& name,
+                        const location& l,
+                        cxx_string_lexer& lex)
+  {
+    data_member_path r;
+    resolve_data_members (r, scope, name, l, lex);
+    return r;
+  }
 
   // Predicates.
   //
@@ -1015,7 +1073,16 @@ public:
   static bool
   auto_ (semantics::data_member& m)
   {
-    return m.count ("auto");
+    return id (m) && m.count ("auto");
+  }
+
+  // Must be a path returned by id(). In other words, it assumes
+  // the path is to the id member.
+  //
+  static bool
+  auto_ (data_member_path& mp)
+  {
+    return mp.front ()->count ("auto");
   }
 
   // The member scope is used to override readonly status when a readonly
@@ -1438,13 +1505,13 @@ public:
   static column_count_type
   column_count (semantics::class_&, object_section* = 0);
 
-  static semantics::data_member*
+  static data_member_path*
   id_member (semantics::class_& c)
   {
-    // Set by the validator. May not be there for reuse-abstract
+    // Set by the processor. May not be there for reuse-abstract
     // classes or classes without object id.
     //
-    return c.get<semantics::data_member*> ("id-member", 0);
+    return c.count ("id-member") ? &c.get<data_member_path> ("id-member") : 0;
   }
 
   // Object pointer information.

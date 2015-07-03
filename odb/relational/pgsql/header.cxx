@@ -31,7 +31,7 @@ namespace relational
           if (abst && !poly)
             return;
 
-          semantics::data_member* id (id_member (c));
+          data_member_path* id (id_member (c));
           semantics::data_member* optimistic (context::optimistic (c));
 
           column_count_type const& cc (column_count (c));

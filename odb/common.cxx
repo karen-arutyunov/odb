@@ -288,6 +288,42 @@ traverse_post (semantics::nameable&)
 }
 
 void object_columns_base::
+traverse (semantics::data_member& m)
+{
+  traverse_pre (m);
+
+  semantics::type& t (utype (m));
+  semantics::class_* c (object_pointer (t));
+  semantics::type* rt (c == 0 ? &t : &utype (*id_member (*c)));
+
+  root_ = &m;
+
+  // It would seem natural to add m to member_path_ so that we don't
+  // have these two cases. However, for member path to work correctly
+  // with readonly() we also have to have corresponding member_scope,
+  // which is a whole different level of complexity.
+  //
+  root_id_ = member_path_.empty ()
+    ? context::id (m)
+    : context::id (member_path_) != 0;
+  root_op_ = (c != 0);
+  root_null_ = context::null (m);
+
+
+  if (root_op_)
+    traverse_pointer (m, *c);
+  else
+    traverse_member (m, *rt);
+
+  if (!first_ && composite_wrapper (*rt))
+    flush ();
+
+  root_ = 0;
+
+  traverse_post (m);
+}
+
+void object_columns_base::
 traverse (semantics::data_member& m,
           semantics::type& t,
           std::string const& kp,
@@ -305,7 +341,7 @@ traverse (semantics::data_member& m,
   semantics::type* rt (c == 0 ? &t : &utype (*id_member (*c)));
 
   root_ = &m;
-  root_id_ = (kp.empty () ? context::id (m) : kp == "id");
+  root_id_ = (kp == "id");
   root_op_ = (c != 0);
   root_null_ = context::null (m, kp);
 

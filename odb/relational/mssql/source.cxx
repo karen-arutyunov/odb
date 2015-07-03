@@ -44,10 +44,9 @@ namespace relational
                 string const& column)
         {
           // Don't add a column for auto id in the INSERT statement.
+          // Only simple, direct id can be auto.
           //
-          if (sk_ == statement_insert &&
-              key_prefix_.empty () &&
-              context::id (m) && auto_(m)) // Only simple id can be auto.
+          if (sk_ == statement_insert && key_prefix_.empty () && auto_ (m))
             return false;
 
           // Don't update the ROWVERSION column explicitly.
@@ -987,7 +986,7 @@ namespace relational
 
           // See if we have auto id or ROWVERSION version.
           //
-          semantics::data_member* id (id_member (c));
+          data_member_path* id (id_member (c));
           semantics::data_member* ver (optimistic (c));
 
           if (id != 0 && !auto_ (*id))
@@ -1047,7 +1046,8 @@ namespace relational
                   throw operation_failed ();
                 }
 
-                r = "; SELECT " + convert_from ("SCOPE_IDENTITY()", *id);
+                r = "; SELECT " +
+                  convert_from ("SCOPE_IDENTITY()", *id->back ());
               }
 
               return r;
@@ -1061,8 +1061,8 @@ namespace relational
             // Top-level auto id column.
             //
             if (id != 0)
-              r += "INSERTED." + convert_from (
-                column_qname (*id, column_prefix ()), *id);
+              r += "INSERTED." +
+                convert_from (column_qname (*id), *id->back ());
 
             // Top-level version column.
             //

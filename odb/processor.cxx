@@ -46,7 +46,7 @@ namespace
   id_tree_type (semantics::names*& hint)
   {
     context& c (context::current ());
-    semantics::data_member& id (*context::id_member (*c.top_object));
+    data_member_path& id (*context::id_member (*c.top_object));
     return &c.utype (id, hint);
   }
 
@@ -2109,7 +2109,10 @@ namespace
     virtual void
     traverse_object_pre (type& c)
     {
-      semantics::class_* poly_root (polymorphic (c));
+      using semantics::class_;
+      using semantics::data_member;
+
+      class_* poly_root (polymorphic (c));
 
       // Sections.
       //
@@ -2199,7 +2202,8 @@ namespace
         using namespace semantics;
         using semantics::data_member;
 
-        data_member* idm (id_member (*poly_root));
+        data_member_path& id (*id_member (*poly_root));
+        data_member* idm (id.front ());
 
         if (poly_root != &c)
         {
@@ -2248,8 +2252,12 @@ namespace
 
           // Mark it as a special kind of id.
           //
-          m.set ("id", true);
+          m.set ("id", string ());
           m.set ("polymorphic-ref", true);
+
+          // Make sure we also use the same column name as the root.
+          //
+          m.set ("column", table_column (column_name (id)));
         }
         else
         {

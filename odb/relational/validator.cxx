@@ -325,20 +325,20 @@ namespace relational
       virtual void
       traverse_object (type& c)
       {
-        semantics::data_member* id (id_member (c));
+        data_member_path* id (id_member (c));
 
         if (id != 0)
         {
           if (semantics::class_* cm = composite_wrapper (utype (*id)))
           {
+            location idl (id->front ()->location ());
+
             // Composite id cannot be auto.
             //
             if (auto_ (*id))
             {
-              os << id->file () << ":" << id->line () << ":" << id->column ()
-                 << ": error: composite id cannot be automatically assigned"
-                 << endl;
-
+              error (idl) << "composite id cannot be automatically assigned"
+                          << endl;
               valid_ = false;
             }
 
@@ -350,8 +350,7 @@ namespace relational
               composite_id_members_.traverse (*cm);
 
               if (!valid_)
-                os << id->file () << ":" << id->line () << ":" << id->column ()
-                   << ": info: composite id is defined here" << endl;
+                info (idl) << "composite id is defined here" << endl;
             }
 
             // Check that the composite value type is default-constructible.
@@ -366,8 +365,7 @@ namespace relational
                  << ": info: provide default constructor for this value type"
                  << endl;
 
-              os << id->file () << ":" << id->line () << ":" << id->column ()
-                 << ": info: composite id is defined here" << endl;
+              info (idl) << "composite id is defined here" << endl;
 
               valid_ = false;
             }

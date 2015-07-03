@@ -583,16 +583,16 @@ namespace relational
 
           if (p == persist_after_values)
           {
-            semantics::data_member* id (id_member (c));
+            data_member_path* id (id_member (c));
 
             type* poly_root (polymorphic (c));
             bool poly_derived (poly_root != 0 && poly_root != &c);
 
             // Top-level auto id.
             //
-            if (id != 0 && !poly_derived && id->count ("auto"))
+            if (id != 0 && !poly_derived && auto_ (*id))
               r = "RETURNING " +
-                convert_from (column_qname (*id, column_prefix ()), *id);
+                convert_from (column_qname (*id), *id->back ());
           }
 
           return r;
@@ -610,7 +610,7 @@ namespace relational
           if (abst && !poly)
             return;
 
-          semantics::data_member* id (id_member (c));
+          data_member_path* id (id_member (c));
           semantics::data_member* optimistic (context::optimistic (c));
 
           column_count_type const& cc (column_count (c));
@@ -706,7 +706,7 @@ namespace relational
             statement_oids st (statement_insert);
             st.traverse (c);
 
-            // Empty array are not portable. So add a dummy member if we
+            // Empty array is not portable. So add a dummy member if we
             // are not sending anything with the insert statement.
             //
             if (cc.total == cc.inverse + cc.optimistic_managed +

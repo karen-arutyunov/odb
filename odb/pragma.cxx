@@ -1893,12 +1893,50 @@ handle_pragma (cxx_lexer& l,
   }
   else if (p == "id")
   {
+    // id[(member-path)]
+    //
+
     // Make sure we've got the correct declaration type.
     //
     if (decl && !check_spec_decl_type (decl, decl_name, p, loc))
       return;
 
+    string name;
+
     tt = l.next (tl, &tn);
+    if (tt == CPP_OPEN_PAREN)
+    {
+      if (l.next (tl, &tn) != CPP_NAME)
+      {
+        error (l) << "data member name expected in db pragma " << p
+                  << endl;
+        return;
+      }
+
+      name = tl;
+
+      for (tt = l.next (tl, &tn); tt == CPP_DOT; tt = l.next (tl, &tn))
+      {
+        if (l.next (tl, &tn) != CPP_NAME)
+        {
+          error (l) << "name expected after '.' in db pragma " << p << endl;
+          return;
+        }
+
+        name += '.';
+        name += tl;
+      }
+
+      if (tt != CPP_CLOSE_PAREN)
+      {
+        error (l) << "')' expected at the end of db pragma " << p << endl;
+        return;
+      }
+
+      tt = l.next (tl, &tn);
+    }
+
+    val = name;
   }
   else if (p == "no_id")
   {

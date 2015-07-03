@@ -19,9 +19,11 @@ traverse_object (type& c)
 {
   using semantics::data_member;
 
-  data_member* id (id_member (c));
+  data_member_path* id (id_member (c));
+  data_member* idf (id ? id->front () : 0);
+  data_member* idb (id ? id->back () : 0);
   bool auto_id (id && auto_ (*id));
-  bool base_id (id && &id->scope () != &c); // Comes from base.
+  bool base_id (id && &idf->scope () != &c); // Comes from base.
 
   data_member* opt (optimistic (c));
 
@@ -42,7 +44,7 @@ traverse_object (type& c)
   if (generate_grow)
   {
     grow = context::grow (c);
-    grow_id = (id ? context::grow (*id) : false) ||
+    grow_id = (id ? context::grow (*idb) : false) ||
       (opt ? context::grow (*opt) : false);
   }
 
@@ -188,7 +190,7 @@ traverse_object (type& c)
          << "ODB_POTENTIALLY_UNUSED (db);"
          << endl
          << "id_type id;";
-      init_id_value_member_id_image_->traverse (*id);
+      init_id_value_member_id_image_->traverse (*idb);
       os << "return id;"
          << "}";
     }
@@ -205,7 +207,35 @@ traverse_object (type& c)
          << "ODB_POTENTIALLY_UNUSED (db);"
          << endl
          << "id_type id;";
-      init_id_value_member_->traverse (*id);
+
+      // Handle nested id.
+      //
+      if (id->size () > 1)
+      {
+        string var;
+
+        for (data_member_path::const_iterator i (id->begin ());
+             i != id->end ();
+             ++i)
+        {
+          // The same logic as in member_base.
+          //
+          if (!var.empty ())
+            var += "value."; // Composite.
+
+          string const& name ((*i)->name ());
+          var += name;
+
+          if (name[name.size () - 1] != '_')
+            var += '_';
+        }
+
+        instance<init_value_member> t ("id", var);
+        t->traverse (*idb);
+      }
+      else
+        init_id_value_member_->traverse (*idb);
+
       os << "return id;"
          << "}";
     }
@@ -339,7 +369,7 @@ traverse_object (type& c)
   {
     // The id reference comes first in the insert statement.
     //
-    os << "// " << id->name () << endl
+    os << "// " << idf->name () << endl
        << "//" << endl
        << "if (sk == statement_insert)"
        << "{"
@@ -358,7 +388,7 @@ traverse_object (type& c)
     // The id reference comes last in the update statement.
     //
     if (!readonly)
-      os << "// " << id->name () << endl
+      os << "// " << idf->name () << endl
          << "//" << endl
          << "if (sk == statement_update)"
          << "{"
@@ -398,7 +428,7 @@ traverse_object (type& c)
     if (composite_wrapper (utype (*id)))
       os << db << "::statement_kind sk (" << db << "::statement_select);";
 
-    bind_id_member_->traverse (*id);
+    bind_id_member_->traverse (*idb);
 
     if (opt != 0)
     {
@@ -516,7 +546,7 @@ traverse_object (type& c)
     if (composite_wrapper (utype (*id)))
       os << db << "::statement_kind sk (" << db << "::statement_select);";
 
-    init_id_image_member_->traverse (*id);
+    init_id_image_member_->traverse (*idb);
 
     if (opt != 0)
     {
@@ -1222,9 +1252,9 @@ traverse_object (type& c)
 
   if (!poly_derived && auto_id && insert_send_auto_id)
   {
-    string const& n (id->name ());
+    string const& n (idf->name ());
     string var ("im." + n + (n[n.size () - 1] == '_' ? "" : "_"));
-    init_auto_id (*id, var);
+    init_auto_id (*idf, var); // idf == idb, since auto
     os << endl;
   }
 
@@ -1278,9 +1308,9 @@ traverse_object (type& c)
      << "throw object_already_persistent ();"
      << endl;
 
-  if (!poly_derived && auto_id)
+  if (!poly_derived && auto_id) // idf == idb since auto
   {
-    set_member (*id, "obj", "id (sts.id_image ())", "db", "id_type");
+    set_member (*idf, "obj", "id (sts.id_image ())", "db", "id_type");
     os << endl;
   }
 
@@ -1486,9 +1516,9 @@ traverse_object (type& c)
 
     // Extract auto id.
     //
-    if (auto_id)
+    if (auto_id) // idb == idf, since auto
     {
-      set_member (*id, "obj", "id (sts.id_image (i))", "db", "id_type");
+      set_member (*idf, "obj", "id (sts.id_image (i))", "db", "id_type");
       os << endl;
     }
 
@@ -4867,7 +4897,7 @@ traverse_view (type& c)
           {
             // container.value = pointer.id
             //
-            semantics::data_member& id (*id_member (*e.vo->obj));
+            data_member_path& id (*id_member (*e.vo->obj));
 
             c_cols->traverse (imb, utype (id), "value", "value");
             o_cols->traverse (id);
@@ -4877,7 +4907,7 @@ traverse_view (type& c)
           {
             // container.id = pointed-to.id
             //
-            semantics::data_member& id (*id_member (*vo->obj));
+            data_member_path& id (*id_member (*vo->obj));
 
             c_cols->traverse (imb, utype (id), "id", "object_id", vo->obj);
             o_cols->traverse (id);
@@ -4890,7 +4920,7 @@ traverse_view (type& c)
           {
             // container.id = pointer.id
             //
-            semantics::data_member& id (*id_member (*e.vo->obj));
+            data_member_path& id (*id_member (*e.vo->obj));
 
             c_cols->traverse (
               m, utype (id), "id", "object_id", e.vo->obj);
@@ -4901,7 +4931,7 @@ traverse_view (type& c)
           {
             // container.value = pointed-to.id
             //
-            semantics::data_member& id (*id_member (*vo->obj));
+            data_member_path& id (*id_member (*vo->obj));
 
             c_cols->traverse (m, utype (id), "value", "value");
             o_cols->traverse (id);
@@ -4961,7 +4991,7 @@ traverse_view (type& c)
           {
             // container.id = pointed-to.id
             //
-            semantics::data_member& id (*id_member (*vo->obj));
+            data_member_path& id (*id_member (*vo->obj));
 
             c_cols->traverse (imb, utype (id), "id", "object_id", vo->obj);
             o_cols->traverse (id);
@@ -4971,7 +5001,7 @@ traverse_view (type& c)
           {
             // container.value = pointer.id
             //
-            semantics::data_member& id (*id_member (*e.vo->obj));
+            data_member_path& id (*id_member (*e.vo->obj));
 
             c_cols->traverse (imb, utype (id), "value", "value");
             o_cols->traverse (id);
@@ -4984,7 +5014,7 @@ traverse_view (type& c)
           {
             // container.value = pointed-to.id
             //
-            semantics::data_member& id (*id_member (*vo->obj));
+            data_member_path& id (*id_member (*vo->obj));
 
             c_cols->traverse (m, utype (id), "value", "value");
             o_cols->traverse (id);
@@ -4994,7 +5024,7 @@ traverse_view (type& c)
           {
             // container.id = pointer.id
             //
-            semantics::data_member& id (*id_member (*e.vo->obj));
+            data_member_path& id (*id_member (*e.vo->obj));
 
             c_cols->traverse (m, utype (id), "id", "object_id", e.vo->obj);
             o_cols->traverse (id);

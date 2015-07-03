@@ -678,7 +678,7 @@ traverse_pointer (semantics::data_member& m, semantics::class_& c)
 
   string name (public_name (m));
 
-  semantics::data_member& id (*id_member (c));
+  data_member_path& id (*id_member (c));
   semantics::names* hint;
   semantics::type& t (utype (id, hint));
 

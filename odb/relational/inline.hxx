@@ -214,16 +214,16 @@ namespace relational
       {
         using semantics::data_member;
 
-        data_member* id (id_member (c));
+        data_member_path* id (id_member (c));
+        data_member* idf (id ? id->front () : 0);
         bool auto_id (id && auto_ (*id));
-        bool base_id (id && &id->scope () != &c); // Comes from base.
+        bool base_id (id && &idf->scope () != &c); // Comes from base.
         data_member* optimistic (context::optimistic (c));
 
         // Base class that contains the object id and version for optimistic
         // concurrency.
         //
-        type* base (
-          id != 0 && base_id ? dynamic_cast<type*> (&id->scope ()) : 0);
+        type* base (base_id ? dynamic_cast<type*> (&idf->scope ()) : 0);
 
         type* poly_root (context::polymorphic (c));
         bool poly (poly_root != 0);

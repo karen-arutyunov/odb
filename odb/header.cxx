@@ -60,9 +60,10 @@ traverse_object (type& c)
 {
   using semantics::data_member;
 
-  data_member* id (id_member (c));
+  data_member_path* id (id_member (c));
+  data_member* idf (id ? id->front () : 0);
   bool auto_id (id && auto_ (*id));
-  bool base_id (id && &id->scope () != &c); // Comes from base.
+  bool base_id (id && &idf->scope () != &c); // Comes from base.
 
   data_member* opt (context::optimistic (c));
 
@@ -157,8 +158,7 @@ traverse_object (type& c)
   {
     if (base_id)
     {
-      semantics::class_& b (
-        dynamic_cast<semantics::class_&> (id->scope ()));
+      semantics::class_& b (dynamic_cast<semantics::class_&> (idf->scope ()));
       string const& type (class_fq_name (b));
 
       os << "typedef object_traits< " << type << " >::id_type id_type;";

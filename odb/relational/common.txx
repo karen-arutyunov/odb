@@ -36,9 +36,9 @@ namespace relational
     {
       // A pointer in view might point to an object without id.
       //
-      semantics::data_member* idm (id_member (*c));
-      semantics::type& t (utype (idm != 0 ? *idm : m, &ct));
-      semantics::class_* comp (idm != 0 ? composite_wrapper (t) : 0);
+      data_member_path* id (id_member (*c));
+      semantics::type& t (id != 0 ? utype (*id, &ct) : utype (m, &ct));
+      semantics::class_* comp (id != 0 ? composite_wrapper (t) : 0);
 
       member_info mi (m,
                       (comp != 0 ? *comp : t),

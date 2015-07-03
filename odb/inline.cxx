@@ -112,15 +112,16 @@ traverse_object (type& c)
 {
   using semantics::data_member;
 
-  data_member* id (id_member (c));
+  data_member_path* id (id_member (c));
+  data_member* idf (id ? id->front () : 0);
   bool auto_id (id && auto_ (*id));
-  bool base_id (id && &id->scope () != &c); // Comes from base.
+  bool base_id (id && &idf->scope () != &c); // Comes from base.
 
   data_member* opt (context::optimistic (c));
 
   // Base class that contains the object id.
   //
-  type* base (id != 0 && base_id ? dynamic_cast<type*> (&id->scope ()) : 0);
+  type* base (base_id ? dynamic_cast<type*> (&idf->scope ()) : 0);
 
   bool poly (polymorphic (c));
   bool abst (abstract (c));
@@ -152,16 +153,26 @@ traverse_object (type& c)
           " >::id (o);";
       else
       {
-        // Get the id using the accessor expression. If this is not
-        // a synthesized expression, then output its location for
-        // easier error tracking.
+        // Get the id using the accessor expressions.
         //
-        member_access& ma (id->get<member_access> ("get"));
+        string r ("o");
 
-        if (!ma.synthesized)
-          os << "// From " << location_string (ma.loc, true) << endl;
+        for (data_member_path::const_iterator b (id->begin ()), i (b);
+             i != id->end ();
+             ++i)
+        {
+          member_access& ma ((*i)->get<member_access> ("get"));
 
-        os << "return " << ma.translate ("o") << ";";
+          // If this is not a synthesized expression, then output its
+          // location for easier error tracking.
+          //
+          if (!ma.synthesized)
+            os << "// From " << location_string (ma.loc, true) << endl;
+
+          r = ma.translate (r);
+        }
+
+        os << "return " << r << ";";
       }
     }
 

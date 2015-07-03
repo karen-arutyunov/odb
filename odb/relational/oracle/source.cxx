@@ -604,16 +604,16 @@ namespace relational
 
           if (p == persist_after_values)
           {
-            semantics::data_member* id (id_member (c));
+            data_member_path* id (id_member (c));
 
             type* poly_root (polymorphic (c));
             bool poly_derived (poly_root != 0 && poly_root != &c);
 
             // Top-level auto id.
             //
-            if (id != 0 && !poly_derived && id->count ("auto"))
+            if (id != 0 && !poly_derived && auto_ (*id))
               r = "RETURNING " +
-                convert_from (column_qname (*id, column_prefix ()), *id) +
+                convert_from (column_qname (*id), *id->back ()) +
                 " INTO " + qp.next ();
           }
 

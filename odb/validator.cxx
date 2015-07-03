@@ -12,6 +12,7 @@
 #include <odb/context.hxx>
 #include <odb/diagnostics.hxx>
 #include <odb/validator.hxx>
+#include <odb/cxx-lexer.hxx>
 
 #include <odb/relational/validator.hxx>
 
@@ -346,7 +347,7 @@ namespace
       virtual void
       traverse (semantics::data_member& m)
       {
-        if (id (m))
+        if (m.count ("id"))
         {
           if (id_ == 0)
             id_ = &m;
@@ -605,8 +606,10 @@ namespace
 
       // Check special members.
       //
-      semantics::data_member* id (0);
-      semantics::data_member* optimistic (0);
+      using semantics::data_member;
+
+      data_member* id (0);
+      data_member* optimistic (0);
       {
         special_members t (class_object, valid_, id, optimistic);
         t.traverse (c);
@@ -636,39 +639,75 @@ namespace
       }
       else
       {
-        c.set ("id-member", id);
+        // Convert id to a member path. This has to happen early since
+        // a lot of code that runs next (e.g., processor, pass 1) depends
+        // on this information being available.
+        //
+        data_member_path& idp (c.set ("id-member", data_member_path ()));
+        idp.push_back (id);
+
+        // See if we have a member path that we need to resolve.
+        //
+        const string& name (id->get<string> ("id"));
+        location_t l (id->get<location_t> ("id-location"));
+
+        if (!name.empty ())
+        {
+          if (id->count ("auto"))
+          {
+            error (l) << "nested id cannot be automatically assigned" << endl;
+            valid_ = false;
+          }
+
+          if (semantics::class_* comp = utype (*id).is_a<semantics::class_> ())
+          {
+            try
+            {
+              resolve_data_members (idp, *comp, name, l, lex_);
+            }
+            catch (const operation_failed&) {valid_ = false;}
+          }
+          else
+          {
+            error (l) << "nested id requires composite member" << endl;
+            valid_ = false;
+          }
+
+          // Mark the whole member as readonly.
+          //
+          id->set ("readonly", true);
+        }
+
+        data_member* idf (idp.front ());
+        data_member* idb (idp.back ());
 
         // Complain if an id member has a default value (default value
         // for the id's type is ok -- we will ignore it).
         //
-        if (id->count ("default"))
+        if (idb->count ("default"))
         {
-          os << id->file () << ":" << id->line () << ":" << id->column ()
-             << ": error: object id member cannot have default value" << endl;
+          error (l) << "object id member cannot have default value" << endl;
           valid_ = false;
         }
 
         // Complain if an id member is in a section.
         //
-        if (id->count ("section-member"))
+        if (idf->count ("section-member"))
         {
-          os << id->file () << ":" << id->line () << ":" << id->column ()
-             << ": error: object id member cannot be in a section" << endl;
+          error (l) << "object id member cannot be in a section" << endl;
           valid_ = false;
         }
 
         // Automatically mark the id member as not null. If we already have
         // an explicit null pragma for this member, issue an error.
         //
-        if (id->count ("null"))
+        if (idb->count ("null"))
         {
-          os << id->file () << ":" << id->line () << ":" << id->column ()
-             << ": error: object id member cannot be null" << endl;
-
+          error (l) << "object id member cannot be null" << endl;
           valid_ = false;
         }
         else
-          id->set ("not-null", true);
+          idf->set ("not-null", true);
       }
 
       if (optimistic != 0)
@@ -1021,6 +1060,8 @@ namespace
     value_type vt_;
     data_member1 member_;
     traversal::names names_member_;
+
+    cxx_string_lexer lex_;
   };
 
   //
@@ -1080,7 +1121,7 @@ namespace
         // Make sure the pointed-to class has object id unless it is in a
         // view where we can load no-id objects.
         //
-        if (semantics::data_member* id = id_member (*c))
+        if (data_member_path* id = id_member (*c))
         {
           semantics::type& idt (utype (*id));
 
@@ -1437,7 +1478,7 @@ namespace
         }
       }
 
-      if (semantics::data_member* id = id_member (c))
+      if (data_member_path* id = id_member (c))
       {
         semantics::type& t (utype (*id));
 
@@ -1478,6 +1519,8 @@ namespace
 
           if (!v)
           {
+            semantics::data_member& idm (*id->front ());
+
             os << t.file () << ":" << t.line () << ":" << t.column ()
                << ": error: value type that is used as object id in "
                << "persistent class with session support does not define "
@@ -1486,7 +1529,7 @@ namespace
             os << t.file () << ":" << t.line () << ":" << t.column ()
                << ": info: provide operator< for this value type" << endl;
 
-            os << id->file () << ":" << id->line () << ":" << id->column ()
+            os << idm.file () << ":" << idm.line () << ":" << idm.column ()
                << ": info: id member is defined here" << endl;
 
             os << c.file () << ":" << c.line () << ":" << c.column ()
