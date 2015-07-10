@@ -163,9 +163,9 @@ parse_expression (cxx_lexer& l,
                   string const& prag)
 {
   // Keep reading tokens until we see a mis-matching ')' or ',' while
-  // keeping track of the '()' balance.
+  // keeping track of the '()' and '{}' balance.
   //
-  size_t balance (0);
+  size_t p_balance (0), b_balance (0);
 
   for (; tt != CPP_EOF; tt = l.next (tl, &tn))
   {
@@ -174,22 +174,32 @@ parse_expression (cxx_lexer& l,
 
     switch (tt)
     {
+    case CPP_OPEN_BRACE:
+      {
+        b_balance++;
+        break;
+      }
+    case CPP_CLOSE_BRACE:
+      {
+        b_balance--;
+        break;
+      }
     case CPP_OPEN_PAREN:
       {
-        balance++;
+        p_balance++;
         break;
       }
     case CPP_CLOSE_PAREN:
       {
-        if (balance == 0)
+        if (p_balance == 0 && b_balance == 0)
           done = true;
         else
-          balance--;
+          p_balance--;
         break;
       }
     case CPP_COMMA:
       {
-        if (balance == 0)
+        if (p_balance == 0 && b_balance == 0)
           done = true;
         else
           break;
