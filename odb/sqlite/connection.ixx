@@ -6,6 +6,32 @@ namespace odb
 {
   namespace sqlite
   {
+    // active_objects
+    //
+    inline void active_object::
+    list_add ()
+    {
+      next_ = conn_.active_objects_;
+      conn_.active_objects_ = this;
+
+      if (next_ != 0)
+        next_->prev_ = this;
+    }
+
+    inline void active_object::
+    list_remove ()
+    {
+      (prev_ == 0 ? conn_.active_objects_ : prev_->next_) = next_;
+
+      if (next_ != 0)
+        next_->prev_ = prev_;
+
+      prev_ = 0;
+      next_ = this;
+    }
+
+    // connection
+    //
     template <typename T>
     inline prepared_query<T> connection::
     prepare_query (const char* n, const char* q)

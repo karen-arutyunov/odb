@@ -34,6 +34,39 @@ namespace odb
     class connection;
     typedef details::shared_ptr<connection> connection_ptr;
 
+    // SQLite "active object", i.e., an object that needs to be
+    // "cleared" before the transaction can be committed and the
+    // connection release. These form a doubly-linked list.
+    //
+    class active_object
+    {
+    public:
+      // This function should remove the object from the list, since
+      // it shall no longer be "active".
+      //
+      virtual void
+      clear () = 0;
+
+    protected:
+      active_object (connection& c): prev_ (0), next_ (this), conn_ (c) {}
+
+      void
+      list_add ();
+
+      void
+      list_remove ();
+
+    protected:
+      // prev_ == 0 means we are the first element.
+      // next_ == 0 means we are the last element.
+      // next_ == this means we are not on the list (prev_ should be 0).
+      //
+      active_object* prev_;
+      active_object* next_;
+
+      connection& conn_;
+    };
+
     class LIBODB_SQLITE_EXPORT connection: public odb::connection
     {
     public:
@@ -165,12 +198,12 @@ namespace odb
     private:
       friend class transaction_impl; // invalidate_results()
 
-      // Linked list of active statements currently associated
+      // Linked list of active objects currently associated
       // with this connection.
       //
     private:
-      friend class statement;
-      statement* statements_;
+      friend class active_object;
+      active_object* active_objects_;
     };
   }
 }

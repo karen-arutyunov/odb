@@ -33,7 +33,7 @@ namespace odb
         : odb::connection (db),
           db_ (db),
           unlock_cond_ (unlock_mutex_),
-          statements_ (0)
+          active_objects_ (0)
     {
       int f (db.flags () | extra_flags);
       const string& n (db.name ());
@@ -86,7 +86,7 @@ namespace odb
           db_ (db),
           handle_ (handle),
           unlock_cond_ (unlock_mutex_),
-          statements_ (0)
+          active_objects_ (0)
     {
       init ();
     }
@@ -184,11 +184,11 @@ namespace odb
     void connection::
     clear ()
     {
-      // The current first statement will remove itself from the list
-      // and make the second statement (if any) the new first.
+      // The current first active_object will remove itself from the list
+      // and make the second object (if any) the new first.
       //
-      while (statements_ != 0)
-        statements_->reset ();
+      while (active_objects_ != 0)
+        active_objects_->clear ();
     }
   }
 }

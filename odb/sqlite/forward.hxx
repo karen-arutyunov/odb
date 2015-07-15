@@ -39,6 +39,19 @@ namespace odb
 
     // Implementation details.
     //
+    enum database_type_id
+    {
+      id_integer,
+      id_real,
+      id_text,
+      id_blob,
+      id_text_stream,
+      id_blob_stream
+    };
+
+    template <typename T, database_type_id>
+    struct default_value_traits;
+
     enum statement_kind
     {
       statement_select,

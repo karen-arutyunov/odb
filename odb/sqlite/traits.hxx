@@ -25,22 +25,18 @@
 #include <odb/details/buffer.hxx>
 #include <odb/details/wrapper-p.hxx>
 
+#include <odb/sqlite/forward.hxx>
 #include <odb/sqlite/version.hxx>
 #include <odb/sqlite/sqlite-types.hxx>
 #include <odb/sqlite/details/export.hxx>
+
+#include <odb/sqlite/text.hxx>
+#include <odb/sqlite/blob.hxx>
 
 namespace odb
 {
   namespace sqlite
   {
-    enum database_type_id
-    {
-      id_integer,
-      id_real,
-      id_text,
-      id_blob
-    };
-
     //
     // image_traits
     //
@@ -66,6 +62,18 @@ namespace odb
 
     template <typename T>
     struct image_traits<T, id_blob> {typedef details::buffer image_type;};
+
+    template <typename T>
+    struct image_traits<T, id_text_stream>
+    {
+      typedef stream_buffers image_type;
+    };
+
+    template <typename T>
+    struct image_traits<T, id_blob_stream>
+    {
+      typedef stream_buffers image_type;
+    };
 
     //
     // value_traits
@@ -140,6 +148,20 @@ namespace odb
       {
         vtraits::set_image (b, n, is_null, wtraits::get_ref (v));
       }
+
+      // TEXT and BLOB STREAM.
+      //
+      static void
+      set_value (W& v, const stream_buffers& b, std::size_t n, bool is_null)
+      {
+        vtraits::set_value (wtraits::set_ref (v), b, n, is_null);
+      }
+
+      static void
+      set_image (stream_buffers& b, std::size_t& n, bool& is_null, const W& v)
+      {
+        vtraits::set_image (b, n, is_null, wtraits::get_ref (v));
+      }
     };
 
     template <typename W, database_type_id ID>
@@ -185,6 +207,26 @@ namespace odb
 
       static void
       set_image (details::buffer& b, std::size_t& n, bool& is_null, const W& v)
+      {
+        is_null = wtraits::get_null (v);
+
+        if (!is_null)
+          vtraits::set_image (b, n, is_null, wtraits::get_ref (v));
+      }
+
+      // TEXT and BLOB STREAM.
+      //
+      static void
+      set_value (W& v, const stream_buffers& b, std::size_t n, bool is_null)
+      {
+        if (is_null)
+          wtraits::set_null (v);
+        else
+          vtraits::set_value (wtraits::set_ref (v), b, n, is_null);
+      }
+
+      static void
+      set_image (stream_buffers& b, std::size_t& n, bool& is_null, const W& v)
       {
         is_null = wtraits::get_null (v);
 
@@ -811,6 +853,82 @@ namespace odb
     };
 #endif
 
+    // text (stream) specialization.
+    //
+    template <>
+    struct LIBODB_SQLITE_EXPORT default_value_traits<text, id_text_stream>
+    {
+    public:
+      typedef text value_type;
+      typedef std::string query_type;
+      typedef stream_buffers image_type;
+
+      static void
+      set_value (text& v, const stream_buffers& b, std::size_t, bool is_null)
+      {
+        if (!is_null)
+        {
+          v.db_ = b.db.in;
+          v.table_ = b.table.in;
+          v.column_ = b.column.in;
+          v.rowid_ = b.rowid.in;
+        }
+      }
+
+      static void
+      set_image (stream_buffers& b,
+                 std::size_t& n,
+                 bool& is_null,
+                 const text& v)
+      {
+        is_null = false;
+        n = v.size_;
+
+        b.db.out = &v.db_;
+        b.table.out = &v.table_;
+        b.column.out = &v.column_;
+        b.rowid.out = &v.rowid_;
+      }
+    };
+
+    // blob (stream) specialization.
+    //
+    template <>
+    struct LIBODB_SQLITE_EXPORT default_value_traits<blob, id_blob_stream>
+    {
+    public:
+      typedef blob value_type;
+      typedef std::vector<char> query_type;
+      typedef stream_buffers image_type;
+
+      static void
+      set_value (blob& v, const stream_buffers& b, std::size_t, bool is_null)
+      {
+        if (!is_null)
+        {
+          v.db_ = b.db.in;
+          v.table_ = b.table.in;
+          v.column_ = b.column.in;
+          v.rowid_ = b.rowid.in;
+        }
+      }
+
+      static void
+      set_image (stream_buffers& b,
+                 std::size_t& n,
+                 bool& is_null,
+                 const blob& v)
+      {
+        is_null = false;
+        n = v.size_;
+
+        b.db.out = &v.db_;
+        b.table.out = &v.table_;
+        b.column.out = &v.column_;
+        b.rowid.out = &v.rowid_;
+      }
+    };
+
     //
     // type_traits
     //
@@ -970,6 +1088,18 @@ namespace odb
       static const database_type_id db_type_id = id_blob;
     };
 #endif
+
+    template <>
+    struct default_type_traits<text>
+    {
+      static const database_type_id db_type_id = id_text_stream;
+    };
+
+    template <>
+    struct default_type_traits<blob>
+    {
+      static const database_type_id db_type_id = id_blob_stream;
+    };
   }
 }
 

@@ -1565,6 +1565,24 @@ namespace odb
       details::buffer buffer_;
       std::size_t size_;
     };
+
+    // TEXT STREAM (reduce to id_text).
+    //
+    template <typename T>
+    struct query_param_impl<T, id_text_stream>: query_param_impl<T, id_text>
+    {
+      query_param_impl (ref_bind<T> r) : query_param_impl<T, id_text> (r) {}
+      query_param_impl (val_bind<T> v) : query_param_impl<T, id_text> (v) {}
+    };
+
+    // BLOB STREAM (reduce to id_blob).
+    //
+    template <typename T>
+    struct query_param_impl<T, id_blob_stream>: query_param_impl<T, id_blob>
+    {
+      query_param_impl (ref_bind<T> r) : query_param_impl<T, id_blob> (r) {}
+      query_param_impl (val_bind<T> v) : query_param_impl<T, id_blob> (v) {}
+    };
   }
 }
 
