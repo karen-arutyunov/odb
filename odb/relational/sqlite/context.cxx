@@ -339,10 +339,23 @@ namespace relational
           if (ids_.empty ())
             return error ("expected SQLite type name");
 
+          // First check our own types.
+          //
+          if (ids_.size () == 2 && ids_[0] == "TEXT" && ids_[1] == "STREAM")
+          {
+            r.type = sql_type::TEXT;
+            r.stream = true;
+          }
+          if (ids_.size () == 2 && ids_[0] == "BLOB" && ids_[1] == "STREAM")
+          {
+            r.type = sql_type::BLOB;
+            r.stream = true;
+          }
+          //
           // Apply the first four rules of the SQLite type to affinity
           // conversion algorithm.
           //
-          if (find ("INT"))
+          else if (find ("INT"))
             r.type = sql_type::INTEGER;
           else if (find ("TEXT") || find ("CHAR") || find ("CLOB"))
             r.type = sql_type::TEXT;

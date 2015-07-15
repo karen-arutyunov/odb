@@ -115,8 +115,7 @@ namespace relational
                        (key_prefix_.empty () ? m.name () : key_prefix_));
 
         sema_rel::column& c (
-          model_.new_node<sema_rel::column> (
-            col_id, column_type (), null (m)));
+          model_.new_node<sema_rel::column> (col_id, type (m), null (m)));
         c.set ("cxx-location", m.location ());
         c.set ("member-path", member_path_);
         model_.new_edge<sema_rel::unames> (table_, c, name);
@@ -140,6 +139,12 @@ namespace relational
 
         constraints (m, name, col_id, c);
         return true;
+      }
+
+      virtual string
+      type (semantics::data_member&)
+      {
+        return object_columns_base::column_type ();
       }
 
       virtual bool

@@ -39,12 +39,18 @@ namespace relational
         }
       case sql_type::TEXT:
         {
-          traverse_text (mi);
+          if (mi.st->stream)
+            traverse_text_stream (mi);
+          else
+            traverse_text (mi);
           break;
         }
       case sql_type::BLOB:
         {
-          traverse_blob (mi);
+          if (mi.st->stream)
+            traverse_blob_stream (mi);
+          else
+            traverse_blob (mi);
           break;
         }
       case sql_type::invalid:
@@ -108,6 +114,12 @@ namespace relational
       type_ = "details::buffer";
     }
 
+    void member_image_type::
+    traverse_stream (member_info&)
+    {
+      type_ = "sqlite::stream_buffers";
+    }
+
     entry<member_image_type> member_image_type_;
 
     //
@@ -168,6 +180,18 @@ namespace relational
     traverse_blob (member_info&)
     {
       type_id_ = "sqlite::id_blob";
+    }
+
+    void member_database_type_id::
+    traverse_text_stream (member_info&)
+    {
+      type_id_ = "sqlite::id_text_stream";
+    }
+
+    void member_database_type_id::
+    traverse_blob_stream (member_info&)
+    {
+      type_id_ = "sqlite::id_blob_stream";
     }
 
     entry<member_database_type_id> member_database_type_id_;

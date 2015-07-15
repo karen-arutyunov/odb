@@ -55,21 +55,39 @@ namespace relational
     {
       typedef query_parameters base;
 
-      query_parameters (qname const& table): table_ (table) {}
+      query_parameters (statement_kind sk, qname const& table)
+          : sk_ (sk), table_ (table) {}
 
       virtual string
-      next ()
+      next (semantics::data_member&,
+            const std::string& /*column*/, // Table qualified and quoted.
+            const std::string& /*sqlt*/)
       {
         return "?";
       }
 
       virtual string
-      auto_id ()
+      auto_id (semantics::data_member& m,
+               const std::string& column,
+               const std::string& sqlt)
       {
-        return next ();
+        return next (m, column, sqlt);
+      }
+
+      string
+      next (const object_columns_list::column& c)
+      {
+        return next (*c.member, quote_id (c.name), c.type);
+      }
+
+      string
+      next (const statement_column& c)
+      {
+        return next (*c.member, c.column, c.type);
       }
 
     protected:
+      statement_kind sk_;
       qname table_;
     };
 
@@ -338,7 +356,7 @@ namespace relational
         else if (param_ != 0)
         {
           r += '=';
-          r += convert_to (param_->next (), sqlt, m);
+          r += convert_to (param_->next (m, column, sqlt), sqlt, m);
         }
         else if (sk_ == statement_select)
           r = convert_from (r, sqlt, m);
@@ -3634,7 +3652,7 @@ namespace relational
               os << strlit (c + (++i != e ? "," : "") + sep) << endl;
             }
 
-            instance<query_parameters> qp (inv_table);
+            instance<query_parameters> qp (statement_select, inv_table);
             os << strlit ("FROM " + inv_qtable + sep) << endl;
 
             string where ("WHERE ");
@@ -3645,7 +3663,7 @@ namespace relational
                 where += " AND ";
 
               where += inv_qtable + "." + quote_id (i->name) + "=" +
-                convert_to (qp->next (), i->type, *i->member);
+                convert_to (qp->next (*i), i->type, *i->member);
             }
             os << strlit (where);
           }
@@ -3691,7 +3709,7 @@ namespace relational
               os << strlit (c + (++i != e ? "," : "") + sep) << endl;
             }
 
-            instance<query_parameters> qp (table);
+            instance<query_parameters> qp (statement_select, table);
             os << strlit ("FROM " + qtable + sep) << endl;
 
             string where ("WHERE ");
@@ -3702,7 +3720,7 @@ namespace relational
                 where += " AND ";
 
               where += qtable + "." + quote_id (i->name) + "=" +
-                convert_to (qp->next (), i->type, *i->member);
+                convert_to (qp->next (*i), i->type, *i->member);
             }
 
             if (ordered)
@@ -3781,7 +3799,7 @@ namespace relational
             os << strlit ("VALUES" + sep) << endl;
 
             string values ("(");
-            instance<query_parameters> qp (table);
+            instance<query_parameters> qp (statement_insert, table);
             for (statement_columns::const_iterator b (sc.begin ()), i (b),
                    e (sc.end ()); i != e; ++i)
             {
@@ -3791,7 +3809,7 @@ namespace relational
                 values += sep;
               }
 
-              values += convert_to (qp->next (), i->type, *i->member);
+              values += convert_to (qp->next (*i), i->type, *i->member);
             }
             values += ')';
 
@@ -3808,7 +3826,7 @@ namespace relational
                << strlit ("UPDATE " + qtable + sep) << endl
                << strlit ("SET" + sep) << endl;
 
-            instance<query_parameters> qp (table);
+            instance<query_parameters> qp (statement_update, table);
             statement_columns sc;
             {
               bool f (false);                       // Imperfect forwarding.
@@ -3834,14 +3852,14 @@ namespace relational
                 where += " AND ";
 
               where += quote_id (i->name) + "=" +
-                convert_to (qp->next (), i->type, *i->member);
+                convert_to (qp->next (*i), i->type, *i->member);
             }
 
             for (object_columns_list::iterator b (ik_cols->begin ()), i (b);
                  i != ik_cols->end (); ++i)
             {
               where += " AND " + quote_id (i->name) + "=" +
-                convert_to (qp->next (), i->type, *i->member);
+                convert_to (qp->next (*i), i->type, *i->member);
             }
 
             os << strlit (where) << ";"
@@ -3858,7 +3876,7 @@ namespace relational
                << endl;
           else
           {
-            instance<query_parameters> qp (table);
+            instance<query_parameters> qp (statement_delete, table);
 
             os << strlit ("DELETE FROM " + qtable + " ") << endl;
 
@@ -3870,7 +3888,7 @@ namespace relational
                 where += " AND ";
 
               where += quote_id (i->name) + "=" +
-                convert_to (qp->next (), i->type, *i->member);
+                convert_to (qp->next (*i), i->type, *i->member);
             }
 
             if (smart)
@@ -3880,7 +3898,7 @@ namespace relational
               {
                 where += " AND " + quote_id (i->name) +
                   (ck == ck_ordered ? ">=" : "=") +
-                  convert_to (qp->next (), i->type, *i->member);
+                  convert_to (qp->next (*i), i->type, *i->member);
               }
             }
 
@@ -5961,7 +5979,7 @@ namespace relational
           }
 
           string where ("WHERE ");
-          instance<query_parameters> qp (table);
+          instance<query_parameters> qp (statement_select, table);
           for (object_columns_list::iterator b (id_cols->begin ()), i (b);
                i != id_cols->end (); ++i)
           {
@@ -5969,7 +5987,7 @@ namespace relational
               where += " AND ";
 
             where += qtable + "." + quote_id (i->name) + "=" +
-              convert_to (qp->next (), i->type, *i->member);
+              convert_to (qp->next (*i), i->type, *i->member);
           }
 
           os << strlit (where) << ";"
@@ -5980,7 +5998,7 @@ namespace relational
         //
         if (update || update_opt)
         {
-          instance<query_parameters> qp (table);
+          instance<query_parameters> qp (statement_update, table);
 
           statement_columns sc;
           {
@@ -6029,13 +6047,16 @@ namespace relational
               where += " AND ";
 
             where += quote_id (i->name) + "=" +
-              convert_to (qp->next (), i->type, *i->member);
+              convert_to (qp->next (*i), i->type, *i->member);
           }
 
           if (s.optimistic ()) // Note: not update_opt.
           {
-            where += " AND " + column_qname (*opt, column_prefix ()) + "=" +
-              convert_to (qp->next (), *opt);
+            string name (column_qname (*opt, column_prefix ()));
+            string type (column_type (*opt));
+
+            where += " AND " + name + "=" +
+              convert_to (qp->next (*opt, name, type), type, *opt);
           }
 
           os << strlit (where) << ";"
@@ -6450,16 +6471,23 @@ namespace relational
       }
 
       virtual bool
-      traverse_column (semantics::data_member& m, string const&, bool first)
+      traverse_column (semantics::data_member& m,
+                       string const& name,
+                       bool first)
       {
         string p;
 
         if (version (m))
           p = version_value (m);
-        else if (auto_ (m)) // Only simple, direct id can be auto.
-          p = qp_.auto_id ();
         else
-          p = qp_.next ();
+        {
+          const string& qname (quote_id (name));
+          const string& type (column_type ());
+
+          p = auto_ (m) // Only simple, direct id can be auto.
+            ? qp_.auto_id (m, qname, type)
+            : qp_.next (m, qname, type);
+        }
 
         if (!p.empty ())
         {

@@ -48,6 +48,15 @@ namespace relational
              << "bool " << mi.var << "null;"
              << endl;
         }
+
+        virtual void
+        traverse_stream (member_info& mi)
+        {
+          os << image_type << " " << mi.var << "value;"
+             << "std::size_t " << mi.var << "size;"
+             << "bool " << mi.var << "null;"
+             << endl;
+        }
       };
       entry<image_member> image_member_;
     }

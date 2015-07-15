@@ -24,7 +24,7 @@ namespace relational
         query_parameters (base const& x): base (x), i_ (0) {}
 
         virtual string
-        next ()
+        next (semantics::data_member&, const string&, const string&)
         {
           ostringstream ss;
           ss << "$" << ++i_;
@@ -33,7 +33,7 @@ namespace relational
         }
 
         virtual string
-        auto_id ()
+        auto_id (semantics::data_member&, const string&, const string&)
         {
           return "DEFAULT";
         }

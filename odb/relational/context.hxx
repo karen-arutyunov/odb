@@ -20,6 +20,7 @@ namespace relational
     statement_select,
     statement_insert,
     statement_update,
+    statement_delete,
     statement_where   // WHERE clause.
   };
 

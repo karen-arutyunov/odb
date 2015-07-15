@@ -26,9 +26,10 @@ namespace relational
         invalid
       };
 
-      sql_type (): type (invalid) {}
+      sql_type (): type (invalid), stream (false) {}
 
       core_type type;
+      bool stream; // TEXT or BLOB via sqlite3_blob_open().
 
       // Conversion expressions for custom database types.
       //

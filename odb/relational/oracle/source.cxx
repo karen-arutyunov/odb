@@ -22,7 +22,7 @@ namespace relational
         query_parameters (base const& x): base (x), i_ (0) {}
 
         virtual string
-        next ()
+        next (semantics::data_member&, const string&, const string&)
         {
           ostringstream ss;
           ss << ":" << ++i_;
@@ -31,7 +31,7 @@ namespace relational
         }
 
         virtual string
-        auto_id ()
+        auto_id (semantics::data_member&, const string&, const string&)
         {
           return quote_id (sequence_name (table_)) + ".nextval";
         }
@@ -612,9 +612,15 @@ namespace relational
             // Top-level auto id.
             //
             if (id != 0 && !poly_derived && auto_ (*id))
-              r = "RETURNING " +
-                convert_from (column_qname (*id), *id->back ()) +
-                " INTO " + qp.next ();
+            {
+              semantics::data_member& idb (*id->back ());
+
+              const string& name (column_qname (*id));
+              const string& type (column_type (idb));
+
+              r = "RETURNING " + convert_from (name, type, idb) +
+                " INTO " + qp.next (idb, name, type);
+            }
           }
 
           return r;

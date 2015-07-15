@@ -746,7 +746,7 @@ traverse_object (type& c)
       os << strlit (s) << endl;
     }
 
-    instance<query_parameters> qp (table);
+    instance<query_parameters> qp (statement_insert, table);
 
     string extra (persist_statement_extra (c, *qp, persist_after_columns));
 
@@ -854,7 +854,7 @@ traverse_object (type& c)
         }
 
         string where ("WHERE ");
-        instance<query_parameters> qp (table);
+        instance<query_parameters> qp (statement_select, table);
         for (object_columns_list::iterator b (id_cols->begin ()), i (b);
              i != id_cols->end (); ++i)
         {
@@ -862,7 +862,7 @@ traverse_object (type& c)
             where += " AND ";
 
           where += qtable + "." + quote_id (i->name) + "=" +
-            convert_to (qp->next (), i->type, *i->member);
+            convert_to (qp->next (*i), i->type, *i->member);
         }
 
         os << strlit (where);
@@ -936,7 +936,7 @@ traverse_object (type& c)
       os << strlit ("FROM " + qtable + " ") << endl;
 
       string where ("WHERE ");
-      instance<query_parameters> qp (table);
+      instance<query_parameters> qp (statement_select, table);
       for (object_columns_list::iterator b (id_cols->begin ()), i (b);
            i != id_cols->end (); ++i)
       {
@@ -944,7 +944,7 @@ traverse_object (type& c)
           where += " AND ";
 
         where += qtable + "." + quote_id (i->name) + "=" +
-          convert_to (qp->next (), i->type, *i->member);
+          convert_to (qp->next (*i), i->type, *i->member);
       }
 
       os << strlit (where) << ";"
@@ -957,7 +957,7 @@ traverse_object (type& c)
     {
       string sep (versioned ? "\n" : " ");
 
-      instance<query_parameters> qp (table);
+      instance<query_parameters> qp (statement_update, table);
 
       statement_columns sc;
       {
@@ -1005,15 +1005,18 @@ traverse_object (type& c)
           where += " AND ";
 
         where += quote_id (i->name) + "=" +
-          convert_to (qp->next (), i->type, *i->member);
+          convert_to (qp->next (*i), i->type, *i->member);
       }
 
       // Top-level version column.
       //
       if (opt != 0 && !poly_derived)
       {
-        where += " AND " + column_qname (*opt, column_prefix ()) + "=" +
-          convert_to (qp->next (), *opt);
+        string name (column_qname (*opt, column_prefix ()));
+        string type (column_type (*opt));
+
+        where += " AND " + name + "=" +
+          convert_to (qp->next (*opt, name, type), type, *opt);
       }
 
       os << strlit (where) << ";"
@@ -1023,7 +1026,7 @@ traverse_object (type& c)
     // erase_statement
     //
     {
-      instance<query_parameters> qp (table);
+      instance<query_parameters> qp (statement_delete, table);
       os << "const char " << traits << "::erase_statement[] =" << endl
          << strlit ("DELETE FROM " + qtable + " ") << endl;
 
@@ -1035,7 +1038,7 @@ traverse_object (type& c)
           where += " AND ";
 
         where += quote_id (i->name) + "=" +
-          convert_to (qp->next (), i->type, *i->member);
+          convert_to (qp->next (*i), i->type, *i->member);
       }
 
       os << strlit (where) << ";"
@@ -1044,7 +1047,7 @@ traverse_object (type& c)
 
     if (opt != 0 && !poly_derived)
     {
-      instance<query_parameters> qp (table);
+      instance<query_parameters> qp (statement_delete, table);
 
       os << "const char " << traits << "::optimistic_erase_statement[] " <<
         "=" << endl
@@ -1058,13 +1061,16 @@ traverse_object (type& c)
           where += " AND ";
 
         where += quote_id (i->name) + "=" +
-          convert_to (qp->next (), i->type, *i->member);
+          convert_to (qp->next (*i), i->type, *i->member);
       }
 
       // Top-level version column.
       //
-      where += " AND " + column_qname (*opt, column_prefix ()) + "=" +
-        convert_to (qp->next (), *opt);
+      string name (column_qname (*opt, column_prefix ()));
+      string type (column_type (*opt));
+
+      where += " AND " + name + "=" +
+        convert_to (qp->next (*opt, name, type), type, *opt);
 
       os << strlit (where) << ";"
          << endl;

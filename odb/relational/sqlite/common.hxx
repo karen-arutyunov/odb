@@ -56,6 +56,23 @@ namespace relational
       traverse_string (member_info&)
       {
       }
+
+      virtual void
+      traverse_text_stream (member_info& m)
+      {
+        traverse_stream (m);
+      }
+
+      virtual void
+      traverse_blob_stream (member_info& m)
+      {
+        traverse_stream (m);
+      }
+
+      virtual void
+      traverse_stream (member_info&)
+      {
+      }
     };
 
     struct member_image_type: relational::member_image_type,
@@ -81,6 +98,9 @@ namespace relational
 
       virtual void
       traverse_string (member_info&);
+
+      virtual void
+      traverse_stream (member_info&);
 
     private:
       string type_;
@@ -113,6 +133,12 @@ namespace relational
 
       virtual void
       traverse_blob (member_info&);
+
+      virtual void
+      traverse_text_stream (member_info&);
+
+      virtual void
+      traverse_blob_stream (member_info&);
 
     private:
       string type_id_;

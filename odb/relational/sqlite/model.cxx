@@ -23,6 +23,27 @@ namespace relational
       {
         object_columns (base const& x): base (x) {}
 
+        virtual string
+        type (semantics::data_member& m)
+        {
+          // Translate BLOB|TEXT STREAM to just BLOB|TEXT.
+          //
+          string r (relational::object_columns::type (m));
+
+          sql_type const& t (parse_sql_type (r, m, false));
+          if (t.stream)
+          {
+            switch (t.type)
+            {
+            case sql_type::BLOB: r = "BLOB"; break;
+            case sql_type::TEXT: r = "TEXT"; break;
+            default: break;
+            }
+          }
+
+          return r;
+        }
+
         virtual bool
         null (semantics::data_member& m)
         {

@@ -726,6 +726,7 @@ for consistency.
               <table class="toc">
                 <tr><th>18.1.1</th><td><a href="#18.1.1">String Type Mapping</a></td></tr>
                 <tr><th>18.1.2</th><td><a href="#18.1.2">Binary Type Mapping</a></td></tr>
+		<tr><th>18.1.3</th><td><a href="#18.1.3">Incremental <code>BLOB</code>/<code>TEXT</code> I/O</a></td></tr>
               </table>
             </td>
           </tr>
@@ -20829,6 +20830,18 @@ t.commit ();
       <td><code>TEXT</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
+
+    <tr>
+      <td><code>odb::sqlite::text</code></td>
+      <td><code>TEXT (STREAM)</code></td>
+      <td><code>NOT NULL</code></td>
+    </tr>
+
+    <tr>
+      <td><code>odb::sqlite::blob</code></td>
+      <td><code>BLOB (STREAM)</code></td>
+      <td><code>NOT NULL</code></td>
+    </tr>
   </table>
 
   <p>It is possible to map the <code>char</code> C++ type to the
@@ -20982,6 +20995,351 @@ char u[16] = {...};
 db.query&lt;object> ("uuid = " + query::_val&lt;odb::sqlite::id_blob> (u));
 db.query&lt;object> (query::uuid == query::_ref (u));
   </pre>
+
+  <h3><a name="18.1.3">18.1.3 Incremental <code>BLOB</code>/<code>TEXT</code> I/O</a></h3>
+
+  <p>This section describes the SQLite ODB runtime library support for
+     incremental reading and writing of <code>BLOB</code> and
+     <code>TEXT</code> values. The provided API is a thin wrapper
+     around the native SQLite <code>sqlite3_blob_*()</code> function
+     family. As a result, it is highly recommended that you familiarize
+     yourself with the semantics of this SQLite functionality before
+     continuing with this section.</p>
+
+  <p>The SQLite runtime provides the <code>blob</code> and
+     <code>text</code> types that can be used to represent
+     <code>BLOB</code> and <code>TEXT</code> data members
+     that will be read/written using the incremental I/O.
+     For example:</p>
+
+  <pre class="cxx">
+#include &lt;odb/sqlite/blob.hxx>
+#include &lt;odb/sqlite/text.hxx>
+
+#pragma db object
+class object
+{
+public
+  #pragma db id auto
+  unsigned long id;
+
+  odb::sqlite::blob b; // Mapped to BLOB.
+  odb::sqlite::text t; // Mapped to TEXT.
+};
+  </pre>
+
+  <p>The <code>blob</code> and <code>text</code> types should be
+     viewed as <em>descriptors</em> of the <code>BLOB</code> and
+     <code>TEXT</code> values (rather than the values themselves)
+     that can be used to <em>open</em> the values for reading or
+     writing. These two types have an identical interface that
+     is presented below. Notice that it is essentially the list
+     of arguments (except for <code>size</code> which is discussed
+     below) to the <code>sqlite3_blob_open()</code> function:</p>
+
+  <pre class="cxx">
+namespace odb
+{
+  namespace sqlite
+  {
+    class blob|text
+    {
+    public:
+      explicit
+      blob|text (std::size_t = 0);
+
+      std::size_t size ()
+      void        size (std::size_t);
+
+      const std::string&amp; db () const;
+      const std::string&amp; table () const;
+      const std::string&amp; column () const;
+      long long          rowid () const;
+
+      void
+      clear ();
+    };
+  }
+}
+  </pre>
+
+  <p>To read/write data from/to a incremental <code>BLOB</code> or
+     <code>TEXT</code> value we use the corresponding
+     <code>blob_stream</code> and <code>text_stream</code>
+     stream types. Their interfaces closely mimic the
+     underlying <code>sqlite3_blob_*()</code> functions
+     and are presented below. Note that in order to create
+     a stream we have to pass the corresponding descriptor:</p>
+
+  <pre class="cxx">
+#include &lt;odb/sqlite/stream.hxx>
+
+namespace odb
+{
+  namespace sqlite
+  {
+    class stream
+    {
+    public:
+      stream (const char* db,
+              const char* table,
+              const char* column,
+              long long rowid,
+              bool rw);
+
+      std::size_t
+      size () const;
+
+      // The following two functions throw std::invalid_argument if
+      // offset + n is past size().
+      //
+      void
+      read (void* buf, std::size_t n, std::size_t offset = 0);
+
+      void
+      write (const void* buf, std::size_t n, std::size_t offset = 0);
+
+      sqlite3_blob*
+      handle () const;
+
+      // Close without reporting errors, if any.
+      //
+      ~stream ();
+
+      // Close with reporting errors, if any.
+      //
+      void
+      close ();
+
+      // Open the same BLOB but in a different row. Can be faster
+      // than creating a new stream instance. Note that the stream
+      // must be in the open state prior to calling this function.
+      //
+      void
+      reopen (long long rowid);
+    };
+  }
+}
+
+#include &lt;odb/sqlite/blob-stream.hxx>
+
+namespace odb
+{
+  namespace sqlite
+  {
+    class blob_stream: public stream
+    {
+    public:
+      blob_stream (const blob&amp;, bool rw);
+    };
+  }
+}
+
+#include &lt;odb/sqlite/text-stream.hxx>
+
+namespace odb
+{
+  namespace sqlite
+  {
+    class text_stream: public stream
+    {
+    public:
+      text_stream (const text&amp;, bool rw);
+    };
+  }
+}
+  </pre>
+
+  <p>The <code>rw</code> argument to the constructors above
+     specifies whether to open the value for reading only
+     (<code>false</code>) or to read and write
+     (<code>true</code>).</p>
+
+  <p>In SQLite the incremental <code>BLOB</code> and
+     <code>TEXT</code> sizes are fixed in the sense that
+     they must be specified before the object is persisted
+     or updated and the following write operations can
+     only write that much data. This is what the <code>size</code>
+     data member in the descriptors is for. You can also determine
+     the size of the opened value, for both reading and writing,
+     using the <code>size()</code> stream function. The
+     following example puts all of this together:</p>
+
+  <pre class="cxx">
+#include &lt;odb/sqlite/blob-stream.hxx>
+#include &lt;odb/sqlite/text-stream.hxx>
+
+string txt (1024 * 1024, 't');
+vector&lt;char> blb (1024 * 1024, 'b');
+
+object o;
+
+// Persist.
+//
+{
+  transaction tx (db.begin ());
+
+  // Specify the sizes of the values before calling persist().
+  //
+  o.t.size (txt.size ());
+  o.b.size (blb.size ());
+
+  db.persist (o);
+
+  // Write the data.
+  //
+  blob_stream bs (o.b, true); // Open for read/write.
+  assert (bs.size () == blb.size ());
+  bs.write (blb.data (), blb.size ());
+
+  text_stream ts (o.t, true); // Open for read/write.
+  assert (ts.size () == txt.size ());
+  ts.write (txt.data (), txt.size ());
+
+  tx.commit ();
+}
+
+// Load.
+//
+{
+  transaction tx (db.begin ());
+  auto_ptr&lt;object> p (db.load&lt;object> (o.id));
+
+  text_stream ts (p->t, false); // Open for reading.
+  vector&lt;char> t (ts.size () + 1, '\0');
+  ts.read (t.data (), t.size () - 1);
+  assert (string (t.data ()) == txt);
+
+  blob_stream bs (p->b, false); // Open for reading.
+  vector&lt;char> b (bs.size (), '\0');
+  bs.read (b.data (), b.size ());
+  assert (b == blb);
+
+  tx.commit ();
+}
+
+// Update
+//
+txt.resize (txt.size () + 1, 't');
+txt[0] = 'A';
+txt[txt.size () - 1] = 'Z';
+
+blb.resize (blb.size () - 1);
+blb.front () = 'A';
+blb.back () = 'Z';
+
+{
+  transaction tx (db.begin ());
+
+  // Specify the new sizes of the values before calling update().
+  //
+  o.t.size (txt.size ());
+  o.b.size (blb.size ());
+
+  db.update (o);
+
+  // Write the data.
+  //
+  blob_stream bs (o.b, true);
+  bs.write (blb.data (), blb.size ());
+
+  text_stream ts (o.t, true);
+  ts.write (txt.data (), txt.size ());
+
+  tx.commit ();
+}
+  </pre>
+
+  <p>For the most part, the incremental <code>BLOB</code> and
+     <code>TEXT</code> descriptors can be used as any other
+     simple values. Specifically, they can be used as container
+     elements (<a href="#5">Chapter 5, "Containers"</a>), as
+     <code>NULL</code>-able values (<a href="#7.3">Section 7.3,
+     "Pointers and NULL Value Semantics"</a>), and in views
+     (<a href="#10">Chapter 10, "Views"</a>). The following
+     example illustrates the use within a view:</p>
+
+  <pre class="cxx">
+#pragma db view object(object)
+struct load_b
+{
+  odb::sqlite::blob b;
+};
+
+typedef odb::query&lt;load_b> query;
+
+transaction tx (db.begin ());
+
+for (load_b&amp; lb: db.query&lt;load_b> (query::t == "test"))
+{
+  blob_stream bs (lb.b, false);
+  vector&lt;char> b (bs.size (), '\0');
+  bs.read (b.data (), b.size ());
+}
+
+tx.commit ();
+  </pre>
+
+  <p>However, being a low-level, SQLite-specific mechanism, the
+     incremental I/O has a number of nuances that should be kept in
+     mind. Firstly, the streams should be opened within a transaction
+     and, unless already closed, they will be automatically closed
+     when the transaction is committed or rolled back. The following
+     modification of the previous example helps to illustrate this
+     point:</p>
+
+  <pre class="cxx">
+{
+  transaction tx (db.begin ());
+
+  // ...
+
+  db.persist (o);
+
+  blob_stream bs (o.b, true);
+
+  tx.commit ();
+
+  // ERROR: stream is closed.
+  //
+  bs.write (blb.data (), blb.size ());
+}
+
+// ERROR: not in transaction.
+//
+text_stream ts (o.t, true);
+  </pre>
+
+  <p>Because loading an object with an incremental <code>BLOB</code> or
+     <code>TEXT</code> value involves additional actions after the
+     database function returns (that is, reading the actual data),
+     certain commonly-expected "round-trip" assumptions will no
+     longer hold unless special steps are taken, for instance
+     (again, continuing with our example):</p>
+
+  <pre class="cxx">
+transaction tx (db.begin ());
+
+auto_ptr&lt;object> p (db.load&lt;object> (o.id));
+p->name = "foo"; // Update some other member.
+db.update (*p);  // Bad behavior: incremental BLOB/TEXT invalidated.
+
+tx.commit ();
+  </pre>
+
+  <p>One way to restore the expected behavior is to place the
+     incremental <code>BLOB</code> and <code>TEXT</code> values
+     into their own, separately loaded/updated sections
+     (<a href="#9">Chapter 9, "Sections"</a>). The alternative
+     approach would be to perform the incremental I/O as part
+     of the database operation <code>post_*</code> callbacks
+     (<a href="#14.1.7">Section 14.1.7, "<code>callback</code>"</a>).</p>
+
+  <p>Finally, note that when using incremental <code>TEXT</code>
+     values, the data that we read/write is the raw bytes in
+     the encoding used by the database (<code>UTF-8</code> by
+     default; see SQLite <code>PRAGMA encoding</code> documentation
+     for details).</p>
 
   <h2><a name="18.2">18.2 SQLite Database Class</a></h2>
 
