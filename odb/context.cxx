@@ -1335,18 +1335,17 @@ class_file (semantics::class_& c)
 location_t context::
 class_location (semantics::class_& c)
 {
-  if (c.count ("definition"))
-  {
-    return c.get<location_t> ("definition");
-  }
-  else if (c.is_a<semantics::class_instantiation> ())
-  {
-    return c.get<location_t> ("location");
-  }
-  else
-  {
-    return real_source_location (TYPE_NAME (c.tree_node ()));
-  }
+  return c.count ("definition")
+    ? c.get<location_t> ("definition")
+    : class_real_location (c);
+}
+
+location_t context::
+class_real_location (semantics::class_& c)
+{
+  return c.is_a<semantics::class_instantiation> ()
+    ? c.get<location_t> ("location")
+    : real_source_location (TYPE_NAME (c.tree_node ()));
 }
 
 string context::

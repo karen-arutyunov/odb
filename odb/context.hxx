@@ -1290,6 +1290,12 @@ public:
   location_t
   class_location (semantics::class_&);
 
+  // Same as above, but returns "real" location, that is, ignoring
+  // the definition point overrides.
+  //
+  location_t
+  class_real_location (semantics::class_&);
+
   // Database names and types.
   //
 public:

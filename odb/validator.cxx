@@ -1072,13 +1072,66 @@ namespace
   {
     data_member2 (bool& valid): valid_ (valid) {}
 
+    // Verify that composite value 'c' that is used by data member
+    // 'm' is defined before (or inside) class 's'.
+    //
+    void
+    verify_composite_location (semantics::class_& c,
+                               semantics::class_& s,
+                               semantics::data_member& m)
+    {
+      if (c.in_scope (s))
+        return;
+
+      location_t cl;
+      location_t sl;
+
+      // If we are in the same file, then use real locations (as
+      // opposed to definition locations) since that's the order
+      // in which we will be generating the code.
+      //
+      if (class_file (c) == class_file (s))
+      {
+        cl = class_real_location (c);
+        sl = class_real_location (s);
+      }
+      else
+      {
+        cl = class_location (c);
+        sl = class_location (s);
+      }
+
+      if (sl < cl)
+      {
+        const string& cn (class_name (c));
+
+        error (sl)
+          << "composite value type " << class_fq_name (c)  << " must "
+          << "be defined before being used in class " << class_fq_name (s)
+          << endl;
+
+        info (m.location ())
+          << "data member " << m.name () << " uses " << cn << endl;
+
+        info (cl) << "class " << cn << " is define here" << endl;
+
+        valid_ = false;
+      }
+    }
+
+
     virtual void
     traverse (type& m)
     {
+      using semantics::class_;
+
+      semantics::type& t (utype (m));
+      class_& s (dynamic_cast<class_&> (m.scope ()));
+
       // Validate pointed-to objects.
       //
-      semantics::class_* c;
-      if ((c = object_pointer (utype (m))) || (c = points_to (m)))
+      class_* c;
+      if ((c = object_pointer (t)) || (c = points_to (m)))
       {
         bool poly (polymorphic (*c));
         bool abst (abstract (*c));
@@ -1128,28 +1181,8 @@ namespace
           // Make sure composite id is defined before this pointer. Failed
           // that we get non-obvious C++ compiler errors in generated code.
           //
-          using semantics::class_;
-
           if (class_* comp = composite_wrapper (idt))
-          {
-            class_& s (dynamic_cast<class_&> (m.scope ()));
-
-            location_t idl (class_location (*comp));
-            location_t ml (class_location (s));
-
-            if (ml < idl)
-            {
-              error (m.location ())
-                << "composite object id " << class_fq_name (*comp) << " of "
-                << "pointed-to class " << class_fq_name (*c) << " must be "
-                << "defined before the pointer" << endl;
-
-              info (idl)
-                << "class " << class_name (*comp) << " is define here" << endl;
-
-              valid_ = false;
-            }
-          }
+            verify_composite_location (*comp, s, m);
         }
         else if (!view_member (m))
         {
@@ -1183,6 +1216,13 @@ namespace
           return;
         }
       }
+
+      // Make sure composite type is defined before (or inside)
+      // this class. Failed that we get non-obvious C++ compiler
+      // errors in generated code.
+      //
+      if (class_* comp = composite_wrapper (t))
+        verify_composite_location (*comp, s, m);
     }
 
     bool& valid_;

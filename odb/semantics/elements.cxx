@@ -48,6 +48,23 @@ namespace semantics
   //
 
   bool nameable::
+  in_scope (scope_type& s)
+  {
+    for (scope_type* p (&scope ());; p = &p->scope_ ())
+    {
+      //@@ Need to handle namespace extensions.
+      //
+      if (p == &s)
+        return true;
+
+      if (p->global_scope ())
+        break;
+    }
+
+    return false;
+  }
+
+  bool nameable::
   anonymous_ () const
   {
     tree n (tree_node ());

@@ -433,6 +433,9 @@ namespace semantics
       return defined_ != 0 ? *defined_ : *named_[0];
     }
 
+    bool
+    in_scope (scope_type&);
+
   public:
     nameable ()
         : defined_ (0)
