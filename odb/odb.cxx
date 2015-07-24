@@ -114,6 +114,9 @@ wait_process (process_info, char const* name);
 //
 //
 static string
+encode_plugin_flag (string const& k);
+
+static string
 encode_plugin_option (string const& k, string const& v);
 
 // Extract header search paths from GCC's -v output. May throw the
@@ -695,8 +698,7 @@ main (int argc, char* argv[])
       cli::options const& desc (options::description ());
       for (size_t i (0); i < end; ++i)
       {
-        string k, v;
-        string a (plugin_args[i]);
+        string k, a (plugin_args[i]);
 
         // Ignore certain options.
         //
@@ -727,10 +729,12 @@ main (int argc, char* argv[])
         else
           k = string (a, 1); // short format
 
-        // If there are more arguments then we may have a value.
-        //
-        if (!it->flag ())
+        if (it->flag ())
+          db_args.push_back (encode_plugin_flag (k));
+        else
         {
+          // If there are more arguments then we may have a value.
+          //
           if (i + 1 == end)
           {
             e << argv[0] << ": ice: expected argument for '" << a << "'"
@@ -738,10 +742,8 @@ main (int argc, char* argv[])
             return 1;
           }
 
-          v = plugin_args[++i];
+          db_args.push_back (encode_plugin_option (k, plugin_args[++i]));
         }
-
-        db_args.push_back (encode_plugin_option (k, v));
       }
 
       // Reserve space for and remember the position of the svc-file
@@ -1143,19 +1145,25 @@ main (int argc, char* argv[])
   }
 }
 
+static inline string
+encode_plugin_flag (string const& k)
+{
+  return "-fplugin-arg-odb-" + k;
+}
+
 static string
 encode_plugin_option (string const& k, string const& cv)
 {
-  string o ("-fplugin-arg-odb-"), v (cv);
+  string o ("-fplugin-arg-odb-");
   o += k;
+  o += '=';
 
-  if (!v.empty ())
+  if (!cv.empty ())
   {
-    o += '=';
-
     // A value cannot contain '='. Encode it as the backspace
     // character.
     //
+    string v (cv);
     for (size_t i (0); i < v.size (); ++i)
       if (v[i] == '=')
         v[i] = '\b';

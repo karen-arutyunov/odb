@@ -317,7 +317,7 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
 
         argv_str.push_back (opt);
 
-        if (!v.empty ())
+        if (a.value != 0)
           argv_str.push_back (v);
       }
 
