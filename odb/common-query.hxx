@@ -20,6 +20,9 @@ struct query_utils: virtual context
                       string const& type,    // Object fq-type.
                       string const& alias,   // Table alias.
                       semantics::class_&);   // Traverse for nested structs.
+
+  static string
+  depth_suffix (size_t);
 };
 
 // Generate query tags for pointers in this object.
@@ -28,7 +31,7 @@ struct query_tags: object_columns_base, virtual context
 {
   typedef query_tags base;
 
-  query_tags (): nl_ (false) {}
+  query_tags (): nl_ (false), depth_ (0) {}
 
   virtual void
   traverse (semantics::class_&);
@@ -47,6 +50,7 @@ struct query_tags: object_columns_base, virtual context
 
 private:
   bool nl_;
+  size_t depth_;
 };
 
 // Generate alias_traits specializations for pointers in this objects.
@@ -81,6 +85,7 @@ struct query_alias_traits: object_columns_base, virtual context
 protected:
   bool decl_;
   string scope_;
+  size_t depth_;
 };
 
 // Generate query columns in the query_columns_base class.
@@ -111,6 +116,7 @@ protected:
   bool inst_;
   string const_; // Const prefix or empty.
   string scope_;
+  size_t depth_;
 };
 
 // Generate query columns in the query_columns or pointer_query_columns
@@ -142,9 +148,6 @@ struct query_columns: object_columns_base, virtual context
 
   virtual void
   traverse_pointer (semantics::data_member&, semantics::class_&);
-
-  static string
-  depth_suffix (size_t);
 
 protected:
   bool decl_;
