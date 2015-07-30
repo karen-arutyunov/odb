@@ -417,7 +417,7 @@ namespace relational
 
         os << "// " << m.name () << endl
            << "//" << endl
-           << "struct " << name;
+           << "struct " << exp << name;
 
         if (base)
         {
@@ -1069,7 +1069,7 @@ namespace relational
 
         os << "// " << s.member->name () << endl
            << "//" << endl
-           << "struct " << name
+           << "struct " << exp << name
            << "{";
 
         os << "typedef object_traits_impl<object_type, id_" << db <<
