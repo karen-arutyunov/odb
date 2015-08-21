@@ -951,7 +951,11 @@ emit ()
 
     for (pfx = scope_->fq_name (); !pfx.empty (); pfx = scope_->fq_name ())
     {
-      if (ns.compare (0, pfx.size (), pfx) == 0)
+      size_t n (pfx.size ());
+
+      // Make sure we handle cases like ns="::foobar", pfx="::foo".
+      //
+      if (ns.compare (0, n, pfx) == 0 && (ns.size () == n || ns[n - 1] == ':'))
         break;
 
       if (trace)
