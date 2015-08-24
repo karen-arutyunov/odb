@@ -2133,7 +2133,7 @@ table_name (semantics::data_member& m, table_prefix const& p) const
 //
 context::column_prefix::
 column_prefix (data_member_path const& mp, bool l)
-    : derived (false)
+    : derived (false), underscore (false)
 {
   if (mp.size () < (l ? 1 : 2))
     return;
@@ -2157,12 +2157,16 @@ append (semantics::data_member& m, string const& kp, string const& dn)
   // If the user provided the column prefix, then use it verbatime.
   // Otherwise, append the underscore, unless it is already there.
   //
+  underscore = false;
   if (d)
   {
     size_t n (prefix.size ());
 
     if (n != 0 && prefix[n - 1] != '_')
+    {
       prefix += '_';
+      underscore = true;
+    }
   }
 
   derived = derived || d;
@@ -2181,8 +2185,13 @@ string context::
 column_name (semantics::data_member& m, column_prefix const& cp) const
 {
   bool d;
-  string n (column_name (m, d));
-  n = compose_name (cp.prefix, n);
+  const string& cn (column_name (m, d));
+  string n (cp.prefix);
+
+  if (cn.empty () && cp.underscore)
+    n.resize (n.size () - 1); // Strip underscore that was auto added.
+
+  n += cn;
 
   // If any component is derived, then run it through the SQL name regex.
   //
@@ -2228,8 +2237,13 @@ column_name (semantics::data_member& m,
              column_prefix const& cp) const
 {
   bool d;
-  string n (column_name (m, kp, dn, d));
-  n = compose_name (cp.prefix, n);
+  const string& cn (column_name (m, kp, dn, d));
+  string n (cp.prefix);
+
+  if (cn.empty () && cp.underscore)
+    n.resize (n.size () - 1); // Strip underscore that was auto-added.
+
+  n += cn;
 
   // If any component is derived, the run it through the SQL name regex.
   //

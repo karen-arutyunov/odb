@@ -47,7 +47,7 @@ namespace relational
         n = column_name (m, key_prefix_, default_name_, dummy);
       }
 
-      alias = compose_name (column_prefix_.prefix, n);
+      alias = column_prefix_.prefix + n;
     }
 
     generate_def (public_name (m), c, alias);

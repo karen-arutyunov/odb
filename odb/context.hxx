@@ -1343,12 +1343,12 @@ public:
   //
   struct column_prefix
   {
-    column_prefix (): derived (false) {}
+    column_prefix (): derived (false), underscore (false) {}
 
     column_prefix (semantics::data_member& m,
                    string const& key_prefix = string (),
                    string const& default_name = string ())
-        : derived (false)
+        : derived (false), underscore (false)
     {
       append (m, key_prefix, default_name);
     }
@@ -1368,6 +1368,7 @@ public:
 
     string prefix;
     bool derived;     // One of the components in the prefix was derived.
+    bool underscore;  // Trailing underscore was automatically added.
   };
 
   string

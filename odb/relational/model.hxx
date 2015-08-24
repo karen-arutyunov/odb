@@ -390,7 +390,7 @@ namespace relational
           else if (p[p.size () - 1] == '_')
             p.resize (p.size () - 1); // Remove trailing underscore.
 
-          name = compose_name (column_prefix_.prefix, p);
+          name = column_prefix_.prefix + p;
         }
 
         model_.new_edge<sema_rel::unames> (

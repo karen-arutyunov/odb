@@ -2257,7 +2257,10 @@ namespace
 
           // Make sure we also use the same column name as the root.
           //
-          m.set ("column", table_column (column_name (id)));
+          if (composite_wrapper (utype (id)))
+            m.set ("column", table_column (column_prefix (id, true).prefix));
+          else
+            m.set ("column", table_column (column_name (id)));
         }
         else
         {
