@@ -38,7 +38,7 @@ namespace odb
     // "cleared" before the transaction can be committed and the
     // connection release. These form a doubly-linked list.
     //
-    class active_object
+    class LIBODB_SQLITE_EXPORT active_object
     {
     public:
       // This function should remove the object from the list, since
