@@ -444,7 +444,54 @@ namespace
     virtual void
     traverse (type& c)
     {
-      switch (class_kind (c))
+      class_kind_type ck (class_kind (c));
+
+      if (ck != class_other)
+      {
+        for (type::inherits_iterator i (c.inherits_begin ());
+             i != c.inherits_end (); ++i)
+        {
+          type& b (i->base ());
+
+          if (class_kind (b) == class_other)
+            continue;
+
+          location_t cl;
+          location_t bl;
+
+          // If we are in the same file, then use real locations (as
+          // opposed to definition locations) since that's the order
+          // in which we will be generating the code.
+          //
+          if (class_file (c) == class_file (b))
+          {
+            cl = class_real_location (c);
+            bl = class_real_location (b);
+          }
+          else
+          {
+            cl = class_location (c);
+            bl = class_location (b);
+          }
+
+          if (cl < bl)
+          {
+            // We cannot use class_name() for b since it might not have
+            // yet been processed (tree-hint).
+            //
+            error (cl) << "base class " << b.name ()  << " must "
+                       << "be defined before derived class " << class_name (c)
+                       << endl;
+
+            info (bl) << "class " << b.name () << " is define here"
+                      << endl;
+
+            valid_ = false;
+          }
+        }
+      }
+
+      switch (ck)
       {
       case class_object:
         names (c);
@@ -1120,7 +1167,6 @@ namespace
         valid_ = false;
       }
     }
-
 
     virtual void
     traverse (type& m)
