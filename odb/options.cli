@@ -943,7 +943,7 @@ class options
     "Read additional options from <file> with each option appearing on a
      separate line optionally followed by space and an option value. Empty
      lines and lines starting with \cb{#} are ignored. Option values can
-     be enclosed in double (\cb{\"}) or single (\cb{'}) quotes  to preserve
+     be enclosed in double (\cb{\"}) or single (\cb{'}) quotes to preserve
      leading and trailing whitespaces as well as to specify empty values.
      If the value itself contains trailing or leading quotes, enclose it
      with an extra pair of quotes, for example \cb{'\"x\"'}. Non-leading
