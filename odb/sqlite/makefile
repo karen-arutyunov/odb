@@ -5,6 +5,7 @@
 include $(dir $(lastword $(MAKEFILE_LIST)))../../build/bootstrap.make
 
 cxx :=                       \
+blob-stream.cxx              \
 connection.cxx               \
 connection-factory.cxx       \
 database.cxx                 \
@@ -19,6 +20,7 @@ statement.cxx                \
 statements-base.cxx          \
 statement-cache.cxx          \
 stream.cxx                   \
+text-stream.cxx              \
 tracer.cxx                   \
 traits.cxx                   \
 transaction.cxx              \
