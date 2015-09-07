@@ -199,7 +199,8 @@ namespace relational
     bool context::
     unsigned_integer (semantics::type& t)
     {
-      const string& s (t.name ());
+      semantics::type* wt (wrapper (t));
+      const string& s ((wt == 0 ? t : utype (*wt)).name ());
 
       return s == "bool" ||
         s == "unsigned char" ||

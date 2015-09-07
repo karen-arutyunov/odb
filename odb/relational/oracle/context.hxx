@@ -103,6 +103,8 @@ namespace relational
       parse_sql_type (string, custom_db_types const* = 0);
 
     public:
+      // If necessary, unwraps.
+      //
       static bool
       unsigned_integer (semantics::type&);
 
