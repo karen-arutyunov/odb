@@ -3102,10 +3102,24 @@ namespace relational
               for (size_t i (0); i < poly_depth - 1; ++i)
                 id_im += (i == 0 ? ".base" : "->base");
 
-              string const& n (idm->front ()->name ());
-              id_var = id_im + (poly_derived ? "->" : ".") + n +
-                (n[n.size () - 1] == '_' ? "" : "_");
+              string n;
+              for (data_member_path::const_iterator i (idm->begin ());
+                   i != idm->end ();
+                   ++i)
+              {
+                // The same logic as in member_base.
+                //
+                if (!n.empty ())
+                  n += "value."; // Composite.
 
+                string const& name ((*i)->name ());
+                n += name;
+
+                if (n[n.size () - 1] != '_')
+                  n += '_';
+              }
+
+              id_var = id_im + (poly_derived ? "->" : ".") + n;
               id_im = (poly_derived ? "*i." : "i.") + id_im;
             }
 
