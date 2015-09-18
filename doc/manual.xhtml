@@ -21609,8 +21609,8 @@ namespace odb
       class single_connection: public connection
       {
       public:
-        single_connection (database_type&amp;);
-        single_connection (database_type&amp;, MYSQL*);
+        single_connection (database&amp;, int extra_flags = 0);
+        single_connection (database&amp;, sqlite3*);
       };
 
       typedef details::shared_ptr&lt;single_connection> single_connection_ptr;
