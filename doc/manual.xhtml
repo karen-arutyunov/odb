@@ -7116,7 +7116,7 @@ CREATE TABLE employer (
   name VARCHAR (255) NOT NULL PRIMARY KEY);
 
 CREATE TABLE employer_employees (
-  object_id VARCHAR (255) NOT NULL,
+  object_id VARCHAR (255) NOT NULL REFERENCES employer (name),
   value BIGINT UNSIGNED NOT NULL REFERENCES employee (id));
 
 CREATE TABLE employee (
@@ -7168,7 +7168,7 @@ CREATE TABLE employee (
   id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
 
 CREATE TABLE employee_projects (
-  object_id BIGINT UNSIGNED NOT NULL,
+  object_id BIGINT UNSIGNED NOT NULL REFERENCES employee (id),
   value VARCHAR (255) NOT NULL REFERENCES project (name));
   </pre>
 
@@ -7180,7 +7180,7 @@ CREATE TABLE project (
   name VARCHAR (255) NOT NULL PRIMARY KEY);
 
 CREATE TABLE project_employees (
-  object_id VARCHAR (255) NOT NULL,
+  object_id VARCHAR (255) NOT NULL REFERENCES project (name),
   value BIGINT UNSIGNED NOT NULL REFERENCES employee (id));
 
 CREATE TABLE employee (
