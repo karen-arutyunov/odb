@@ -624,6 +624,8 @@ check_spec_decl_type (declaration const& d,
   }
   else if (p == "null" ||
            p == "not_null" ||
+           p == "key_null" ||
+           p == "key_not_null" ||
            p == "value_null" ||
            p == "value_not_null")
   {
@@ -2252,11 +2254,15 @@ handle_pragma (cxx_lexer& l,
   }
   else if (p == "null" ||
            p == "not_null" ||
+           p == "key_null" ||
+           p == "key_not_null" ||
            p == "value_null" ||
            p == "value_not_null")
   {
     // null
     // not_null
+    // key_null
+    // key_not_null
     // value_null
     // value_not_null
     //
@@ -2851,7 +2857,9 @@ handle_pragma (cxx_lexer& l,
              name == "index-type" ||
              name == "key-type"   ||
 
-             name == "value-null" ||
+             name == "key-null"       ||
+             name == "key-not-null"   ||
+             name == "value-null"     ||
              name == "value-not-null" ||
 
              name == "value-column" ||
@@ -3826,6 +3834,8 @@ handle_pragma_qualifier (cxx_lexer& l, string p)
            p == "table" ||
            p == "null" ||
            p == "not_null" ||
+           p == "key_null" ||
+           p == "key_not_null" ||
            p == "value_null" ||
            p == "value_not_null" ||
            p == "default" ||
@@ -4175,6 +4185,18 @@ handle_pragma_db_value_not_null (cpp_reader* r)
 }
 
 extern "C" void
+handle_pragma_db_key_null (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "key_null");
+}
+
+extern "C" void
+handle_pragma_db_key_not_null (cpp_reader* r)
+{
+  handle_pragma_qualifier (r, "key_not_null");
+}
+
+extern "C" void
 handle_pragma_db_default (cpp_reader* r)
 {
   handle_pragma_qualifier (r, "default");
@@ -4323,6 +4345,8 @@ register_odb_pragmas (void*, void*)
   c_register_pragma_with_expansion ("db", "table", handle_pragma_db_table);
   c_register_pragma_with_expansion ("db", "null", handle_pragma_db_null);
   c_register_pragma_with_expansion ("db", "not_null", handle_pragma_db_not_null);
+  c_register_pragma_with_expansion ("db", "key_null", handle_pragma_db_key_null);
+  c_register_pragma_with_expansion ("db", "key_not_null", handle_pragma_db_key_not_null);
   c_register_pragma_with_expansion ("db", "value_null", handle_pragma_db_value_null);
   c_register_pragma_with_expansion ("db", "value_not_null", handle_pragma_db_value_not_null);
   c_register_pragma_with_expansion ("db", "default", handle_pragma_db_default);

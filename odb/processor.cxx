@@ -1549,25 +1549,8 @@ namespace
         t.set ("value-tree-hint", vh);
         vt = &utype (m, vh, "value"); // Map.
 
-        // If we have a set container, automatically mark the value
-        // column as not null. If we already have an explicit null for
-        // this column, issue an error.
-        //
-        if (ck == ck_set)
-        {
-          if (t.count ("value-null"))
-          {
-            os << t.file () << ":" << t.line () << ":" << t.column () << ":"
-               << " error: set container cannot contain null values" << endl;
-
-            throw operation_failed ();
-          }
-          else
-            t.set ("value-not-null", true);
-        }
-
-        // Issue a warning if we are relaxing null-ness in the
-        // container type.
+        // Issue a warning if we are relaxing null-ness in the container
+        // type.
         //
         if (t.count ("value-null") && vt->count ("not-null"))
         {
@@ -1640,10 +1623,19 @@ namespace
             throw;
           }
 
-          t.set ("key-not-null", true);
           t.set ("key-tree-type", kt);
           t.set ("key-tree-hint", kh);
           kt = &utype (m, kh, "key"); // Map.
+
+          // Issue a warning if we are relaxing null-ness in the container
+          // type.
+          //
+          if (t.count ("key-null") && kt->count ("not-null"))
+          {
+            os << t.file () << ":" << t.line () << ":" << t.column () << ":"
+               << " warning: container key declared null while its type "
+               << "is declared not null" << endl;
+          }
         }
 
         // Check if we are versioned. For now we are not allowing for
@@ -1708,7 +1700,7 @@ namespace
         process_container_value (*it, m, "index", false);
 
       if (kt != 0)
-        process_container_value (*kt, m, "key", false);
+        process_container_value (*kt, m, "key", true);
 
       // A map cannot be an inverse container.
       //
@@ -1736,17 +1728,6 @@ namespace
         throw operation_failed ();
       }
 
-      // Issue an error if we have a null column in a set container.
-      // This can only happen if the value is declared as null in
-      // the member.
-      //
-      if (ck == ck_set && m.count ("value-null"))
-      {
-        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
-           << " error: set container cannot contain null values" << endl;
-        throw operation_failed ();
-      }
-
       // Issue a warning if we are relaxing null-ness in the member.
       //
       if (m.count ("value-null") &&
@@ -1755,6 +1736,17 @@ namespace
         os << m.file () << ":" << m.line () << ":" << m.column () << ":"
            << " warning: container value declared null while the container "
            << "type or value type declares it as not null" << endl;
+      }
+
+      if (ck == ck_map || ck == ck_multimap)
+      {
+        if (m.count ("key-null") &&
+            (t.count ("key-not-null") || kt->count ("not-null")))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ":"
+             << " warning: container key declared null while the container "
+             << "type or key type declares it as not null" << endl;
+        }
       }
 
       return true;

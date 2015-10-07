@@ -421,7 +421,7 @@ namespace relational
           process_container_value (*it, ih, m, "index", false);
 
         if (kt != 0)
-          process_container_value (*kt, kh, m, "key", false);
+          process_container_value (*kt, kh, m, "key", true);
       }
     };
 
