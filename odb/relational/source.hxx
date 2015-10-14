@@ -1758,6 +1758,9 @@ namespace relational
         if (container (mi))
           return false;
 
+        if (section_ != 0 && *section_ != section (mi.m))
+          return false;
+
         // Ignore polymorphic id references; they are not returned by
         // the select statement.
         //
