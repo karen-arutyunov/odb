@@ -1187,6 +1187,15 @@ namespace relational
                      q.compare (0, 5, "CALL ") == 0 ||
                      q.compare (0, 8, "EXECUTE ") == 0)
               vq.kind = view_query::complete_execute;
+            //
+            // Hint for databases that use SELECT for stored procedure
+            // calls (e.g., PostgreSQL).
+            //
+            else if (q.compare (0, 8, "/*CALL*/") == 0)
+            {
+              vq.literal = string (vq.literal, q[8] == ' ' ? 9 : 8);
+              vq.kind = view_query::complete_execute;
+            }
             else
               vq.kind = view_query::condition;
           }
@@ -1207,6 +1216,12 @@ namespace relational
                        q.compare (0, 5, "CALL ") == 0 || q == "CALL" ||
                        q.compare (0, 8, "EXECUTE ") == 0 || q == "EXECUTE")
                 vq.kind = view_query::complete_execute;
+              else if (q.compare (0, 8, "/*CALL*/") == 0)
+              {
+                vq.expr.front ().literal =
+                  string (vq.expr.front ().literal, q[8] == ' ' ? 9 : 8);
+                vq.kind = view_query::complete_execute;
+              }
               else
                 vq.kind = view_query::condition;
             }
