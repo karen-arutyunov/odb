@@ -29,12 +29,13 @@ namespace odb
   namespace sqlite
   {
     connection::
-    connection (database_type& db, int extra_flags)
-        : odb::connection (db),
-          db_ (db),
+    connection (connection_factory& cf, int extra_flags)
+        : odb::connection (cf),
           unlock_cond_ (unlock_mutex_),
           active_objects_ (0)
     {
+      database_type& db (database ());
+
       int f (db.flags () | extra_flags);
       const string& n (db.name ());
 
@@ -81,9 +82,8 @@ namespace odb
     }
 
     connection::
-    connection (database_type& db, sqlite3* handle)
-        : odb::connection (db),
-          db_ (db),
+    connection (connection_factory& cf, sqlite3* handle)
+        : odb::connection (cf),
           handle_ (handle),
           unlock_cond_ (unlock_mutex_),
           active_objects_ (0)
@@ -94,14 +94,16 @@ namespace odb
     void connection::
     init ()
     {
+      database_type& db (database ());
+
       // Enable/disable foreign key constraints.
       //
       generic_statement st (
         *this,
-        db_.foreign_keys ()
+        db.foreign_keys ()
         ? "PRAGMA foreign_keys=ON"
         : "PRAGMA foreign_keys=OFF",
-        db_.foreign_keys () ? 22 : 23);
+        db.foreign_keys () ? 22 : 23);
       st.execute ();
 
       // Create statement cache.
@@ -189,6 +191,20 @@ namespace odb
       //
       while (active_objects_ != 0)
         active_objects_->clear ();
+    }
+
+    // connection_factory
+    //
+    connection_factory::
+    ~connection_factory ()
+    {
+    }
+
+    void connection_factory::
+    database (database_type& db)
+    {
+      odb::connection_factory::db_ = &db;
+      db_ = &db;
     }
   }
 }

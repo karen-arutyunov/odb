@@ -32,6 +32,12 @@ namespace odb
 
     // connection
     //
+    inline database& connection::
+    database ()
+    {
+      return static_cast<connection_factory&> (factory_).database ();
+    }
+
     template <typename T>
     inline prepared_query<T> connection::
     prepare_query (const char* n, const char* q)

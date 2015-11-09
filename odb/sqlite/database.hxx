@@ -14,6 +14,7 @@
 #include <iosfwd> // std::ostream
 
 #include <odb/database.hxx>
+#include <odb/details/config.hxx> // ODB_CXX11
 #include <odb/details/unique-ptr.hxx>
 #include <odb/details/transfer-ptr.hxx>
 
@@ -83,6 +84,12 @@ namespace odb
                 const std::string& vfs = "",
                 details::transfer_ptr<connection_factory> =
                   details::transfer_ptr<connection_factory> ());
+
+      // Move-constructible but not move-assignable.
+      //
+#ifdef ODB_CXX11
+      database (database&&);
+#endif
 
       static void
       print_usage (std::ostream&);
@@ -458,6 +465,8 @@ namespace odb
       connection_ ();
 
     private:
+      // Note: remember to update move ctor if adding any new members.
+      //
       std::string name_;
       int flags_;
       bool foreign_keys_;

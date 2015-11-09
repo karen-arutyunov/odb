@@ -2,12 +2,28 @@
 // copyright : Copyright (c) 2009-2015 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
+#include <utility> // move()
+
 #include <odb/sqlite/transaction.hxx>
 
 namespace odb
 {
   namespace sqlite
   {
+#ifdef ODB_CXX11
+    inline database::
+    database (database&& db) // Has to be inline.
+        : odb::database (std::move (db)),
+          name_ (std::move (db.name_)),
+          flags_ (db.flags_),
+          foreign_keys_ (db.foreign_keys_),
+          vfs_ (std::move (db.vfs_)),
+          factory_ (std::move (db.factory_))
+    {
+      factory_->database (*this); // New database instance.
+    }
+#endif
+
     inline connection_ptr database::
     connection ()
     {

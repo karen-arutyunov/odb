@@ -18,15 +18,6 @@ namespace odb
   namespace sqlite
   {
     //
-    // connection_factory
-    //
-
-    connection_factory::
-    ~connection_factory ()
-    {
-    }
-
-    //
     // single_connection_factory
     //
 
@@ -43,14 +34,14 @@ namespace odb
     single_connection_factory::
     create ()
     {
-      return single_connection_ptr (new (shared) single_connection (*db_));
+      return single_connection_ptr (new (shared) single_connection (*this));
     }
 
     connection_ptr single_connection_factory::
     connect ()
     {
       mutex_.lock ();
-      connection_->factory_ = this;
+      connection_->callback_ = &connection_->cb_;
       connection_ptr r (connection_);
       connection_.reset ();
       return r;
@@ -59,14 +50,16 @@ namespace odb
     void single_connection_factory::
     database (database_type& db)
     {
-      db_ = &db;
-      connection_ = create ();
+      connection_factory::database (db);
+
+      if (!connection_)
+        connection_ = create ();
     }
 
     bool single_connection_factory::
     release (single_connection* c)
     {
-      c->factory_ = 0;
+      c->callback_ = 0;
       connection_.reset (inc_ref (c));
       connection_->recycle ();
       mutex_.unlock ();
@@ -78,28 +71,26 @@ namespace odb
     //
 
     single_connection_factory::single_connection::
-    single_connection (database_type& db, int extra_flags)
-        : connection (db, extra_flags), factory_ (0)
+    single_connection (single_connection_factory& f, int extra_flags)
+        : connection (f, extra_flags)
     {
-      callback_.arg = this;
-      callback_.zero_counter = &zero_counter;
-      shared_base::callback_ = &callback_;
+      cb_.arg = this;
+      cb_.zero_counter = &zero_counter;
     }
 
     single_connection_factory::single_connection::
-    single_connection (database_type& db, sqlite3* handle)
-        : connection (db, handle), factory_ (0)
+    single_connection (single_connection_factory& f, sqlite3* handle)
+        : connection (f, handle)
     {
-      callback_.arg = this;
-      callback_.zero_counter = &zero_counter;
-      shared_base::callback_ = &callback_;
+      cb_.arg = this;
+      cb_.zero_counter = &zero_counter;
     }
 
     bool single_connection_factory::single_connection::
     zero_counter (void* arg)
     {
       single_connection* c (static_cast<single_connection*> (arg));
-      return c->factory_ ? c->factory_->release (c) : true;
+      return static_cast<single_connection_factory&> (c->factory_).release (c);
     }
 
     //
@@ -109,14 +100,18 @@ namespace odb
     connection_ptr new_connection_factory::
     connect ()
     {
-      return connection_ptr (
-        new (shared) connection (*db_, extra_flags_));
+      return connection_ptr (new (shared) connection (*this, extra_flags_));
     }
 
     void new_connection_factory::
     database (database_type& db)
     {
-      db_ = &db;
+      bool first (db_ == 0);
+
+      connection_factory::database (db);
+
+      if (!first)
+        return;
 
       // Unless explicitly disabled, enable shared cache.
       //
@@ -134,7 +129,7 @@ namespace odb
     create ()
     {
       return pooled_connection_ptr (
-        new (shared) pooled_connection (*db_, extra_flags_));
+        new (shared) pooled_connection (*this, extra_flags_));
     }
 
     connection_pool_factory::
@@ -165,7 +160,7 @@ namespace odb
           shared_ptr<pooled_connection> c (connections_.back ());
           connections_.pop_back ();
 
-          c->pool_ = this;
+          c->callback_ = &c->cb_;
           in_use_++;
           return c;
         }
@@ -175,7 +170,7 @@ namespace odb
         if(max_ == 0 || in_use_ < max_)
         {
           shared_ptr<pooled_connection> c (create ());
-          c->pool_ = this;
+          c->callback_ = &c->cb_;
           in_use_++;
           return c;
         }
@@ -191,7 +186,12 @@ namespace odb
     void connection_pool_factory::
     database (database_type& db)
     {
-      db_ = &db;
+      bool first (db_ == 0);
+
+      connection_factory::database (db);
+
+      if (!first)
+        return;
 
       // Unless explicitly disabled, enable shared cache.
       //
@@ -212,7 +212,7 @@ namespace odb
     bool connection_pool_factory::
     release (pooled_connection* c)
     {
-      c->pool_ = 0;
+      c->callback_ = 0;
 
       lock l (mutex_);
 
@@ -241,28 +241,26 @@ namespace odb
     //
 
     connection_pool_factory::pooled_connection::
-    pooled_connection (database_type& db, int extra_flags)
-        : connection (db, extra_flags), pool_ (0)
+    pooled_connection (connection_pool_factory& f, int extra_flags)
+        : connection (f, extra_flags)
     {
-      callback_.arg = this;
-      callback_.zero_counter = &zero_counter;
-      shared_base::callback_ = &callback_;
+      cb_.arg = this;
+      cb_.zero_counter = &zero_counter;
     }
 
     connection_pool_factory::pooled_connection::
-    pooled_connection (database_type& db, sqlite3* handle)
-        : connection (db, handle), pool_ (0)
+    pooled_connection (connection_pool_factory& f, sqlite3* handle)
+        : connection (f, handle)
     {
-      callback_.arg = this;
-      callback_.zero_counter = &zero_counter;
-      shared_base::callback_ = &callback_;
+      cb_.arg = this;
+      cb_.zero_counter = &zero_counter;
     }
 
     bool connection_pool_factory::pooled_connection::
     zero_counter (void* arg)
     {
       pooled_connection* c (static_cast<pooled_connection*> (arg));
-      return c->pool_ ? c->pool_->release (c) : true;
+      return static_cast<connection_pool_factory&> (c->factory_).release (c);
     }
   }
 }

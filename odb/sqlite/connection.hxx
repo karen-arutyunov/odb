@@ -30,6 +30,7 @@ namespace odb
   namespace sqlite
   {
     class statement_cache;
+    class connection_factory;
 
     class connection;
     typedef details::shared_ptr<connection> connection_ptr;
@@ -76,14 +77,11 @@ namespace odb
       virtual
       ~connection ();
 
-      connection (database_type&, int extra_flags = 0);
-      connection (database_type&, sqlite3* handle);
+      connection (connection_factory&, int extra_flags = 0);
+      connection (connection_factory&, sqlite3* handle);
 
       database_type&
-      database ()
-      {
-        return db_;
-      }
+      database ();
 
     public:
       virtual transaction_impl*
@@ -173,11 +171,6 @@ namespace odb
       init ();
 
     private:
-      // Needed to break the circular connection-database dependency
-      // (odb::connection has the odb::database member).
-      //
-      database_type& db_;
-
       auto_handle<sqlite3> handle_;
 
       // Keep statement_cache_ after handle_ so that it is destroyed before
@@ -204,6 +197,33 @@ namespace odb
     private:
       friend class active_object;
       active_object* active_objects_;
+    };
+
+    class LIBODB_SQLITE_EXPORT connection_factory:
+      public odb::connection_factory
+    {
+    public:
+      typedef sqlite::database database_type;
+
+      virtual void
+      database (database_type&);
+
+      database_type&
+      database () {return *db_;}
+
+      virtual connection_ptr
+      connect () = 0;
+
+      virtual
+      ~connection_factory ();
+
+      connection_factory (): db_ (0) {}
+
+      // Needed to break the circular connection_factory-database dependency
+      // (odb::connection_factory has the odb::database member).
+      //
+    protected:
+      database_type* db_;
     };
   }
 }

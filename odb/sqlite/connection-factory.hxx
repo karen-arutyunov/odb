@@ -24,29 +24,13 @@ namespace odb
 {
   namespace sqlite
   {
-    class LIBODB_SQLITE_EXPORT connection_factory
-    {
-    public:
-      virtual connection_ptr
-      connect () = 0;
-
-    public:
-      typedef sqlite::database database_type;
-
-      virtual void
-      database (database_type&) = 0;
-
-      virtual
-      ~connection_factory ();
-    };
-
     // Share a single connection.
     //
     class LIBODB_SQLITE_EXPORT single_connection_factory:
       public connection_factory
     {
     public:
-      single_connection_factory (): db_ (0) {}
+      single_connection_factory () {}
 
       virtual connection_ptr
       connect ();
@@ -65,8 +49,8 @@ namespace odb
       class LIBODB_SQLITE_EXPORT single_connection: public connection
       {
       public:
-        single_connection (database_type&, int extra_flags = 0);
-        single_connection (database_type&, sqlite3*);
+        single_connection (single_connection_factory&, int extra_flags = 0);
+        single_connection (single_connection_factory&, sqlite3*);
 
       private:
         static bool
@@ -74,12 +58,7 @@ namespace odb
 
       private:
         friend class single_connection_factory;
-
-        shared_base::refcount_callback callback_;
-
-        // NULL factory value indicates that the connection is not in use.
-        //
-        single_connection_factory* factory_;
+        shared_base::refcount_callback cb_;
       };
 
       friend class single_connection;
@@ -99,7 +78,6 @@ namespace odb
       release (single_connection*);
 
     protected:
-      database_type* db_;
       details::mutex mutex_;
       single_connection_ptr connection_;
     };
@@ -110,7 +88,7 @@ namespace odb
       public connection_factory
     {
     public:
-      new_connection_factory (): db_ (0), extra_flags_ (0) {}
+      new_connection_factory (): extra_flags_ (0) {}
 
       virtual connection_ptr
       connect ();
@@ -123,7 +101,6 @@ namespace odb
       new_connection_factory& operator= (const new_connection_factory&);
 
     private:
-      database_type* db_;
       int extra_flags_;
     };
 
@@ -156,7 +133,6 @@ namespace odb
             extra_flags_ (0),
             in_use_ (0),
             waiters_ (0),
-            db_ (0),
             cond_ (mutex_)
       {
         // max_connections == 0 means unlimited.
@@ -181,8 +157,8 @@ namespace odb
       class LIBODB_SQLITE_EXPORT pooled_connection: public connection
       {
       public:
-        pooled_connection (database_type&, int extra_flags = 0);
-        pooled_connection (database_type&, sqlite3*);
+        pooled_connection (connection_pool_factory&, int extra_flags = 0);
+        pooled_connection (connection_pool_factory&, sqlite3*);
 
       private:
         static bool
@@ -190,12 +166,7 @@ namespace odb
 
       private:
         friend class connection_pool_factory;
-
-        shared_base::refcount_callback callback_;
-
-        // NULL pool value indicates that the connection is not in use.
-        //
-        connection_pool_factory* pool_;
+        shared_base::refcount_callback cb_;
       };
 
       friend class pooled_connection;
@@ -223,7 +194,6 @@ namespace odb
       std::size_t in_use_;  // Number of connections currently in use.
       std::size_t waiters_; // Number of threads waiting for a connection.
 
-      database_type* db_;
       connections connections_;
 
       details::mutex mutex_;
