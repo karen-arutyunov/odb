@@ -204,7 +204,12 @@ $(cutl.l.cpp-options)
 genf := $(cli_tun:.cli=.hxx) $(cli_tun:.cli=.ixx) $(cli_tun:.cli=.cxx)
 gen  := $(addprefix $(out_base)/,$(genf))
 
+# Don't try to depend on the installed executable.
+#
+ifneq ($(cli),cli)
 $(gen): $(cli)
+endif
+
 $(gen): cli := $(cli)
 $(gen): cli_options +=  \
 --generate-modifier     \
