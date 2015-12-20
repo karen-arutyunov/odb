@@ -27,7 +27,9 @@
 #  include <odb/details/config.h>
 #  if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
 #    define ODB_CXX11
-#    ifdef __GNUC__
+#    ifdef __clang__ // Pretends to be a really old __GNUC__ on some platforms.
+#      define ODB_CXX11_NULLPTR
+#    elif defined(__GNUC__)
 #      if (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || __GNUC__ > 4
 #        define ODB_CXX11_NULLPTR
 #      endif
