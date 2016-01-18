@@ -209,7 +209,7 @@ class options
     "Use <ptr> as the default pointer for persistent objects and views.
      Objects and views that do not have a pointer assigned with the
      \cb{db pointer} pragma will use this pointer by default. The value
-     of this option can be \cb{*} which denotes the raw pointer and is
+     of this option can be '\cb{*}' which denotes the raw pointer and is
      the default, or qualified name of a smart pointer class template,
      for example, \cb{std::auto_ptr}. In the latter case, the ODB compiler
      constructs the object or view pointer by adding a single template
@@ -802,7 +802,7 @@ class options
      data member names to function names when searching for a suitable
      accessor function. The argument to this option is a Perl-like regular
      expression in the form \c{\b{/}\i{pattern}\b{/}\i{replacement}\b{/}}.
-     Any character can be used as a delimiter instead of \cb{/} and the
+     Any character can be used as a delimiter instead of '\cb{/}' and the
      delimiter can be escaped inside \ci{pattern} and \ci{replacement}
      with a backslash (\cb{\\}). You can specify multiple regular
      expressions by repeating this option.
@@ -840,7 +840,7 @@ class options
      data member names to function names when searching for a suitable
      modifier function. The argument to this option is a Perl-like regular
      expression in the form \c{\b{/}\i{pattern}\b{/}\i{replacement}\b{/}}.
-     Any character can be used as a delimiter instead of \cb{/} and the
+     Any character can be used as a delimiter instead of '\cb{/}' and the
      delimiter can be escaped inside \ci{pattern} and \ci{replacement}
      with a backslash (\cb{\\}). You can specify multiple regular
      expressions by repeating this option.
@@ -892,7 +892,7 @@ class options
      generated \cb{#include} directive paths. The argument to this option
      is a Perl-like regular expression in the form
      \c{\b{/}\i{pattern}\b{/}\i{replacement}\b{/}}. Any character can be
-     used as a delimiter instead of \cb{/} and the delimiter can be escaped
+     used as a delimiter instead of '\cb{/}' and the delimiter can be escaped
      inside \ci{pattern} and \ci{replacement} with a backslash (\cb{\\}).
      You can specify multiple regular expressions by repeating this option.
      All the regular expressions are tried in the order specified and the
@@ -961,7 +961,7 @@ class options
   {
     "<option>",
     "Pass <option> to the underlying C++ compiler (\cb{g++}). The <option>
-     value that doesn't start with \cb{-} is considered the \cb{g++}
+     value that doesn't start with '\cb{-}' is considered the \cb{g++}
      executable name."
   };
 
