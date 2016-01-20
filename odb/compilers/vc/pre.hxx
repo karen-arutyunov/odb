@@ -14,6 +14,9 @@
 #pragma warning (disable:4355) // passing 'this' to a member
 #pragma warning (disable:4800) // forcing value to bool
 #pragma warning (disable:4231) // non-standard extension (extern template)
+#pragma warning (disable:4275) // "C4251 is essentially noise and can be
+                               //  silenced" - Stephan T. Lavavej [And C4275
+                               //  is essentially the same thing.]
 
 // Elevated warnings.
 //
