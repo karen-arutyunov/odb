@@ -5328,7 +5328,7 @@ namespace odb
      <code>persist()</code>, <code>load()</code>, <code>update()</code>,
      etc., are implemented in terms of prepared statements that are cached
      and reused. While the <code>query()</code>, <code>query_one()</code>,
-     and <code>query_one()</code> database operations also use prepared
+     and <code>query_value()</code> database operations also use prepared
      statements, these statements are not cached or reused by default since
      ODB has no knowledge of whether a query will be executed multiple times
      or only once. Instead, ODB provides a mechanism, called prepared queries,
@@ -10769,7 +10769,7 @@ struct employee_max_vacation
 };
   </pre>
 
-  <p>Both the asociated table names and the column names can be qualified
+  <p>Both the associated table names and the column names can be qualified
      with a database schema, for example:</p>
 
   <pre class="cxx">
