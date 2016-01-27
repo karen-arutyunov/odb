@@ -89,6 +89,7 @@ $(out_base)/details/config.h: | $(out_base)/details/.
 	@echo '#if SQLITE_VERSION_NUMBER >= 3006012'                    >>$@
 	@echo '  #define LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY 1'            >>$@
 	@echo '#endif'                                                  >>$@
+	@echo '#define LIBODB_SQLITE_HAVE_COLUMN_METADATA 1'            >>$@
 	@echo ''                                                        >>$@
 	@echo '#endif /* ODB_SQLITE_DETAILS_CONFIG_H */'                >>$@
 

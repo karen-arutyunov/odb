@@ -11,7 +11,7 @@
 #include <odb/sqlite/error.hxx>
 
 #include <odb/sqlite/details/config.hxx> // LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY
-
+                                         // LIBODB_SQLITE_HAVE_COLUMN_METADATA
 using namespace std;
 
 namespace odb
@@ -355,9 +355,13 @@ namespace odb
             // we do while executing the statement (i.e., we don't copy
             // images for later processing).
             //
+#ifdef LIBODB_SQLITE_HAVE_COLUMN_METADATA
             sb.db.in = sqlite3_column_database_name (stmt_, c);
             sb.table.in = sqlite3_column_table_name (stmt_, c);
             sb.column.in = sqlite3_column_origin_name (stmt_, c);
+#else
+            assert (false);
+#endif
 
             // The ROWID comes in the following column.
             //

@@ -37,6 +37,9 @@ LIBSQLITE(
 AS_IF([test x$libsqlite_unlock_notify = xyes],
 AC_DEFINE([LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY], [1], [Have sqlite3_unlock_notify.]))
 
+AS_IF([test x$libsqlite_column_metadata = xyes],
+AC_DEFINE([LIBODB_SQLITE_HAVE_COLUMN_METADATA], [1], [Have column metadata functions.]))
+
 AS_IF([test x$threads != xnone -a x$libsqlite_unlock_notify = xno],
 AC_MSG_WARN([libsqlite3 is built without sqlite3_unlock_notify support; multi-threaded support will be limited]))
 

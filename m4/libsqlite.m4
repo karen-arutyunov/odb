@@ -7,9 +7,13 @@ dnl
 dnl Also sets libsqlite_unlock_notify to yes if sqlite3_unlock_notify()
 dnl functionality is available.
 dnl
+dnl Also sets libsqlite_column_metadata to yes if sqlite3_column_*()
+dnl functions are available.
+dnl
 AC_DEFUN([LIBSQLITE], [
 libsqlite_found=no
 libsqlite_unlock_notify=no
+libsqlite_column_metadata=no
 
 AC_MSG_CHECKING([for libsqlite3])
 
@@ -55,6 +59,27 @@ main ()
 ])],
 [
 libsqlite_unlock_notify=yes
+])
+fi
+
+# Check for column_metadata.
+#
+if test x"$libsqlite_found" = xyes; then
+CXX_LIBTOOL_LINK_IFELSE([
+AC_LANG_SOURCE([
+#include <sqlite3.h>
+
+int
+main ()
+{
+  sqlite3_stmt* stmt (0);
+  sqlite3_column_database_name (stmt, 0);
+  sqlite3_column_table_name (stmt, 0);
+  sqlite3_column_origin_name (stmt, 0);
+}
+])],
+[
+libsqlite_column_metadata=yes
 ])
 fi
 

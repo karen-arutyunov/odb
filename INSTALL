@@ -4,9 +4,13 @@ Prerequisites
   - libodb           http://www.codesynthesis.com/products/odb/
   - libsqlite3       http://www.sqlite.org
 
-If you plan to access an SQLite database from multiple threads, then
-you will need SQLite version 3.5.0 or later built with the unlock
-notify feature (SQLITE_ENABLE_UNLOCK_NOTIFY) enabled.
+If you plan to access an SQLite database from multiple threads, then you will
+need SQLite version 3.5.0 or later built with the unlock notify feature
+(SQLITE_ENABLE_UNLOCK_NOTIFY) enabled.
+
+If you plant to use SQLite incremental BLOB/TEXT I/O support, then you will
+need SQLite version 3.4.0 or later built with the column metadata functions
+(SQLITE_ENABLE_COLUMN_METADATA) enabled.
 
 
 Building on UNIX

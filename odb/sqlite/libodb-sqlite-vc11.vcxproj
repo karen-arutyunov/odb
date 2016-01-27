@@ -92,7 +92,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBODB_SQLITE_DYNAMIC_LIB;LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBODB_SQLITE_DYNAMIC_LIB;LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY;LIBODB_SQLITE_HAVE_COLUMN_METADATA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4355;4800;4290;4251;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -110,7 +110,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBODB_SQLITE_DYNAMIC_LIB;LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBODB_SQLITE_DYNAMIC_LIB;LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY;LIBODB_SQLITE_HAVE_COLUMN_METADATA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4355;4800;4290;4251;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -130,7 +130,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBODB_SQLITE_DYNAMIC_LIB;LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBODB_SQLITE_DYNAMIC_LIB;LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY;LIBODB_SQLITE_HAVE_COLUMN_METADATA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4355;4800;4290;4251;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -152,7 +152,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBODB_SQLITE_DYNAMIC_LIB;LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;LIBODB_SQLITE_DYNAMIC_LIB;LIBODB_SQLITE_HAVE_UNLOCK_NOTIFY;LIBODB_SQLITE_HAVE_COLUMN_METADATA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4355;4800;4290;4251;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
