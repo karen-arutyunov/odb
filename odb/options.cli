@@ -554,42 +554,42 @@ class options
 
   // Prologue files.
   //
-  database_map<std::string> --hxx-prologue-file
+  database_map<std::vector<std::string> > --hxx-prologue-file
   {
     "<file>",
     "Insert the content of <file> at the beginning of the generated C++
      header file."
   };
 
-  database_map<std::string> --ixx-prologue-file
+  database_map<std::vector<std::string> > --ixx-prologue-file
   {
     "<file>",
     "Insert the content of <file> at the beginning of the generated C++
      inline file."
   };
 
-  database_map<std::string> --cxx-prologue-file
+  database_map<std::vector<std::string> > --cxx-prologue-file
   {
     "<file>",
     "Insert the content of <file> at the beginning of the generated C++
      source file."
   };
 
-  database_map<std::string> --schema-prologue-file
+  database_map<std::vector<std::string> > --schema-prologue-file
   {
     "<file>",
     "Insert the content of <file> at the beginning of the generated schema
      C++ source file."
   };
 
-  database_map<std::string> --sql-prologue-file
+  database_map<std::vector<std::string> > --sql-prologue-file
   {
     "<file>",
     "Insert the content of <file> at the beginning of the generated
      database schema file."
   };
 
-  database_map<std::string> --migration-prologue-file
+  database_map<std::vector<std::string> > --migration-prologue-file
   {
     "<f>",
     "Insert the content of file <f> at the beginning of the generated database
@@ -598,7 +598,7 @@ class options
 
   // Interlude files.
   //
-  database_map<std::string> --sql-interlude-file
+  database_map<std::vector<std::string> > --sql-interlude-file
   {
     "<file>",
     "Insert the content of <file> after all the \cb{DROP} and before any
@@ -607,42 +607,42 @@ class options
 
   // Epilogue files.
   //
-  database_map<std::string> --hxx-epilogue-file
+  database_map<std::vector<std::string> > --hxx-epilogue-file
   {
     "<file>",
     "Insert the content of <file> at the end of the generated C++ header
      file."
   };
 
-  database_map<std::string> --ixx-epilogue-file
+  database_map<std::vector<std::string> > --ixx-epilogue-file
   {
     "<file>",
     "Insert the content of <file> at the end of the generated C++ inline
      file."
   };
 
-  database_map<std::string> --cxx-epilogue-file
+  database_map<std::vector<std::string> > --cxx-epilogue-file
   {
     "<file>",
     "Insert the content of <file> at the end of the generated C++ source
      file."
   };
 
-  database_map<std::string> --schema-epilogue-file
+  database_map<std::vector<std::string> > --schema-epilogue-file
   {
     "<file>",
     "Insert the content of <file> at the end of the generated schema C++
      source file."
   };
 
-  database_map<std::string> --sql-epilogue-file
+  database_map<std::vector<std::string> > --sql-epilogue-file
   {
     "<file>",
     "Insert the content of <file> at the end of the generated database
      schema file."
   };
 
-  database_map<std::string> --migration-epilogue-file
+  database_map<std::vector<std::string> > --migration-epilogue-file
   {
     "<f>",
     "Insert the content of file <f> at the end of the generated database

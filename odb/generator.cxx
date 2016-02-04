@@ -91,7 +91,21 @@ namespace
   {
     ifstream ifs;
     open (ifs, file);
-    os << ifs.rdbuf ();
+
+    // getline() will set the failbit if it failed to extract anything,
+    // not even the delimiter and eofbit if it reached eof before seeing
+    // the delimiter.
+    //
+    // We used to just do:
+    //
+    // os << ifs.rdbuf ();
+    //
+    // But that has some drawbacks: it won't end with a newline if the file
+    // doesn't end with one. There were also some issues with Windows newlines
+    // (we ended up doubling them).
+    //
+    for (string s; getline (ifs, s); )
+      os << s << endl;
   }
 
   // Append prologue/interlude/epilogue.
@@ -100,7 +114,7 @@ namespace
   append_logue (ostream& os,
                 database db,
                 database_map<vector<string> > const& text,
-                database_map<string> const& file,
+                database_map<vector<string> > const& file,
                 char const* begin_comment,
                 char const* end_comment)
   {
@@ -110,10 +124,19 @@ namespace
     if (t || f)
     {
       os << begin_comment << endl;
+
       if (t)
         append (os, text[db]);
+
       if (f)
-        append (os, path (file[db]));
+      {
+        strings const& fs (file[db]);
+
+        for (strings::const_iterator i (fs.begin ());
+             i != fs.end (); ++i)
+          append (os, path (*i));
+      }
+
       os << end_comment << endl
          << endl;
     }
