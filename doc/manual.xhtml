@@ -19991,6 +19991,24 @@ class object
 };
   </pre>
 
+  <p>The only built-in mapping provided for the MySQL <code>DECIMAL</code>
+     type is to <code>std::string/char[N]</code>, for example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class object
+{
+  ...
+
+  #pragma db type ("DECIMAL(6,3)")
+  std::string value_;
+};
+  </pre>
+
+  <p>You can, however, map <code>DECIMAL</code> to a custom C++ type by
+  providing a suitable <code>odb::mysql::value_traits</code>
+  specialization.</p>
+
   <p>It is also possible to add support for additional MySQL types,
      such as geospatial types. For more information, refer to
      <a href="#14.8">Section 14.8, "Database Type Mapping
