@@ -7,6 +7,10 @@
 
 #include <odb/gcc-fwd.hxx>
 
+#if BUILDING_GCC_MAJOR >= 6
+#  include <safe-ctype.h> // See gcc-fwd.hxx.
+#endif
+
 // GCC header includes to get the plugin and parse tree declarations.
 // The order is important and doesn't follow any kind of logic.
 //
@@ -143,6 +147,12 @@ gcc_tree_code_name (gcc_tree_code_type tc) {return tree_code_name[tc];}
 //
 #ifndef DECL_CHAIN
 #define DECL_CHAIN(x) TREE_CHAIN(x)
+#endif
+
+// In GCC 6, ANON_AGGRNAME_P became anon_aggrname_p().
+//
+#if BUILDING_GCC_MAJOR < 6
+#  define anon_aggrname_p(X) ANON_AGGRNAME_P(X)
 #endif
 
 #endif // ODB_GCC_HXX

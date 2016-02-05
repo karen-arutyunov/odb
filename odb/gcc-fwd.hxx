@@ -7,6 +7,24 @@
 
 #include <bversion.h>
 
+#if BUILDING_GCC_MAJOR >= 6
+
+// If we include <system.h> here, it pulls in all kinds of GCC trouble that
+// "poisons" standard C/C++ declarations; see safe-ctype.h. So instead we
+// are going to "exclude" safe-ctype.h. To compensate, however, we will
+// include it first thing in gcc.hxx.
+//
+#  include <config.h>
+#  define SAFE_CTYPE_H
+#  include <system.h>
+#  undef SAFE_CTYPE_H
+#  include <coretypes.h>
+
+typedef unsigned int source_location; // <line-map.h>
+typedef source_location location_t;   // <input.h>
+
+#else // GCC < 6
+
 #if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 8
 #  include <limits.h> // CHAR_BIT
 #  include <config.h>
@@ -33,6 +51,9 @@ extern "C"
 
 typedef unsigned int source_location; // <line-map.h>
 typedef source_location location_t;   // <input.h>
-}
+
+} // extern "C"
+
+#endif
 
 #endif // ODB_GCC_FWD_HXX

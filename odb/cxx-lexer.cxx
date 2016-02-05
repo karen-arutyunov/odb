@@ -135,8 +135,12 @@ cpp_error_callback (
 #if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 5
   int /*reason*/, // Added in GCC 4.6.0.
 #endif
+#if BUILDING_GCC_MAJOR <= 5
   location_t,
   unsigned int,
+#else
+  rich_location*,
+#endif
   char const* msg,
   va_list *ap)
 {

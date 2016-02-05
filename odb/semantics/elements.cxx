@@ -76,7 +76,7 @@ namespace semantics
       if (tree decl = TYPE_NAME (n))
         name = DECL_NAME (decl);
 
-      return name != 0 && ANON_AGGRNAME_P (name);
+      return name != 0 && anon_aggrname_p (name);
     }
 
     return true;
@@ -125,7 +125,7 @@ namespace semantics
       if (tree decl = TYPE_NAME (type))
       {
         name = DECL_NAME (decl);
-        if (name != 0 && ANON_AGGRNAME_P (name))
+        if (name != 0 && anon_aggrname_p (name))
           return true;
 
         tree s (CP_DECL_CONTEXT (decl));

@@ -30,9 +30,18 @@ namespace
     path path_;
   };
 
+#if BUILDING_GCC_MAJOR >= 6
+  typedef line_map_ordinary line_map_type;
+#else
+  typedef line_map line_map_type;
+# ifndef linemap_check_ordinary
+#   define linemap_check_ordinary(X) (X)
+# endif
+#endif
+
   struct includes
   {
-    typedef std::map<line_map const*, include_directive> map_type;
+    typedef std::map<line_map_type const*, include_directive> map_type;
     bool trailing; // Included at the beginning or at the end of the main file.
     map_type map;
   };
@@ -146,7 +155,9 @@ namespace
       //
       if (l > BUILTINS_LOCATION)
       {
-        line_map const* lm (linemap_lookup (line_table, l));
+        line_map_type const* lm (
+          linemap_check_ordinary (
+            linemap_lookup (line_table, l)));
 
         if (lm != 0 && !MAIN_FILE_P (lm))
         {
@@ -539,20 +550,20 @@ namespace
     //
 #if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
     size_t used (line_table->used);
-    line_map const* maps (line_table->maps);
+    line_map_type const* maps (line_table->maps);
 #else
     size_t used (line_table->info_ordinary.used);
-    line_map const* maps (line_table->info_ordinary.maps);
+    line_map_type const* maps (line_table->info_ordinary.maps);
 #endif
 
     for (size_t i (0); i < used; ++i)
     {
-      line_map const* m (maps + i);
+      line_map_type const* m (maps + i);
 
       if (MAIN_FILE_P (m) || m->reason != LC_ENTER)
         continue;
 
-      line_map const* ifm (INCLUDED_FROM (line_table, m));
+      line_map_type const* ifm (INCLUDED_FROM (line_table, m));
 
 #if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
       path f (m->to_file);
@@ -582,7 +593,7 @@ namespace
       for (includes::iterator j (i->second.begin ());
            j != i->second.end (); ++j)
       {
-        line_map const* lm (j->first);
+        line_map_type const* lm (j->first);
         cerr << '\t' << lm->to_file << ":" << LAST_SOURCE_LINE (lm) << endl;
       }
       */
@@ -591,13 +602,13 @@ namespace
       // it is preferred over all others. Use the first one if there are
       // several.
       //
-      line_map const* main_lm (0);
+      line_map_type const* main_lm (0);
       include_directive* main_inc (0);
 
       for (includes::map_type::iterator j (i->second.map.begin ());
            j != i->second.map.end (); ++j)
       {
-        line_map const* lm (j->first);
+        line_map_type const* lm (j->first);
 
         if (MAIN_FILE_P (lm))
         {
@@ -638,7 +649,7 @@ namespace
       for (includes::map_type::iterator j (i->second.map.begin ());
            j != i->second.map.end (); ++j)
       {
-        line_map const* lm (j->first);
+        line_map_type const* lm (j->first);
 
 #if BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR <= 6
         string f (lm->to_file);

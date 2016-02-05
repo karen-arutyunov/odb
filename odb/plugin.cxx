@@ -45,14 +45,28 @@ path file_;    // File being compiled.
 paths inputs_; // List of input files in at-once mode or just file_.
 
 bool (*cpp_error_prev) (
-  cpp_reader*, int, int, location_t, unsigned int, const char*, va_list*);
+  cpp_reader*,
+  int,
+  int,
+#if BUILDING_GCC_MAJOR >= 6
+  rich_location*,
+#else
+  location_t,
+  unsigned int,
+#endif
+  const char*,
+  va_list*);
 
 static bool
 cpp_error_filter (cpp_reader* r,
                   int level,
                   int reason,
+#if BUILDING_GCC_MAJOR >= 6
+                  rich_location* l,
+#else
                   location_t l,
                   unsigned int column_override,
+#endif
                   const char* msg,
                   va_list* ap)
 {
@@ -66,7 +80,18 @@ cpp_error_filter (cpp_reader* r,
   if (strstr (msg, "#pragma once") != 0)
     return true;
 
-  return cpp_error_prev (r, level, reason, l, column_override, msg, ap);
+  return cpp_error_prev (
+    r,
+    level,
+    reason,
+#if BUILDING_GCC_MAJOR >= 6
+    l,
+#else
+    l,
+    column_override,
+#endif
+    msg,
+    ap);
 }
 
 // A prefix of the _cpp_file struct. This struct is not part of the
