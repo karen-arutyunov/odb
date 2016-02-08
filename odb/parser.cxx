@@ -1857,6 +1857,8 @@ create_type (tree t,
       // the array type. In other words, we view it as "constant array"
       // rather than "array of constant elements".
       //
+      using semantics::array; // vs std::array.
+
       tree bt (TREE_TYPE (t));
       tree bt_mv (TYPE_MAIN_VARIANT (bt));
       type& bt_node (emit_type (bt_mv, access::public_, file, line, clmn));

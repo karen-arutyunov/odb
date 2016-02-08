@@ -7,9 +7,12 @@
 
 #include <odb/gcc-fwd.hxx>
 
-#if BUILDING_GCC_MAJOR >= 6
-#  include <safe-ctype.h> // See gcc-fwd.hxx.
-#endif
+// Actually, let's keep it out. With it included we can compile in C++98
+// but not in C++14 (GCC 6 default).
+//
+// #if BUILDING_GCC_MAJOR >= 6
+// #  include <safe-ctype.h> // See gcc-fwd.hxx.
+// #endif
 
 // GCC header includes to get the plugin and parse tree declarations.
 // The order is important and doesn't follow any kind of logic.
