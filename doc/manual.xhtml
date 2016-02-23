@@ -11487,8 +11487,9 @@ namespace odb
   <p>A session is an object cache. Every time a session-enabled object is
      made persistent by calling the <code>database::persist()</code> function
      (<a href="#3.8">Section 3.8, "Making Objects Persistent"</a>), loaded
-     by calling the <code>database::load()</code> or <code>database::find()</code>
-     function (<a href="#3.9">Section 3.9, "Loading Persistent Objects"</a>),
+     by calling the <code>database::load()</code> or
+     <code>database::find()</code> function (the pointer-returning overloads
+     only; <a href="#3.9">Section 3.9, "Loading Persistent Objects"</a>),
      or loaded by iterating over a query result (<a href="#4.4">Section 4.4,
      "Query Result"</a>), the pointer to the persistent object, in the form
      of the canonical object pointer (<a href="#3.3">Section 3.3, "Object
