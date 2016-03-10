@@ -1,11 +1,49 @@
 Version 2.5.0
 
+ * Support for mapping C++ types as other C++ types. For example:
+
+   #pragma db map type(bool) as(std::string) \
+     to((?) ? "true" : "false") from((?) == "true")
+
+   @@ Ref to the manual.
+
+ * Support for nested object ids. Now the 'id' pragma specifier can optionally
+   include the data member path to the id inside a composite value. For
+   example:
+
+   #pragma db id(first)
+   std::pair<int, int> p;
+
+   Note that one somewhat counter-intuitive aspect of this new feature is
+   that the whole member marked with id ('p' in the above example) and not
+   just the actual id member ('p.first' in the above example) is treated as
+   readonly.
+
+   Such nested id also cannot be automatically assigned ('auto' specifier).
+
  * Support for defining views as instantiations of C++ class templates,
    similar to objects and composite value types.
+
+ * Allow the use of object pointers as map keys. Also remove the restriction
+   for map keys and set values to be NOT NULL.
+
+ * New 'points_to' pragma allows the establishment of relationship without
+   using object pointers.
+
+ * The 'inverse' pragma now supports nested data members.
+
+ * Helper header (<odb/nested-container.hxx>) for nested container emulation.
+   It is still fairly experimental and only supports vector<vector<T>>.
+
+ * Database classes are now move-constructible. This means they can be
+   returned by value from a function in C++11.
 
  * Support for SQLite incremental BLOB/TEXT I/O (the sqlite3_blob_open()
    functionality). For details, refer to Section 18.1.3, "Incremental
    BLOB/TEXT I/O" in the ODB manual.
+
+ * In PostgreSQL a SELECT statement in a view that is prefixed with the
+   /*CALL*/ comment is recognized and handled as a stored procedure call.
 
 Version 2.4.0
 
