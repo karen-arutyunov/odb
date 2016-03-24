@@ -2576,7 +2576,8 @@ psql --user=odb_test --dbname=odb_test -f person-pgsql.sql
      containers of values or pointers to other objects (<a href="#5">Chapter
      5, "Containers")</a>. Pointers to other objects and containers can
      be viewed as special kinds of values since they also can only
-     be stored in the database as part of an object.</p>
+     be stored in the database as part of an object. Static data members
+     are not stored in the database.</p>
 
   <p>An object type is a C++ class. Because of this one-to-one
      relationship, we will use terms <em>object type</em>
