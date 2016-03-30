@@ -1395,6 +1395,7 @@ namespace
       // container type and we can extract the various information from
       // the instantiation. Otherwise, this is not a container.
       //
+      location ml (m.location ());
 
       container_kind_type ck;
       bool smart;
@@ -1520,30 +1521,35 @@ namespace
 
         // Get the value type.
         //
-        try
         {
-          tree decl (
-            lookup_qualified_name (
-              inst, get_identifier ("value_type"), true, false));
+          tree decl (lookup_qualified_name (
+                       inst, get_identifier ("value_type"), true, false));
 
           if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
+          {
+            os << f << ":" << l << ":" << c << ": error: "
+               << "container_traits specialization does not define the "
+               << "value_type type" << endl;
+
             throw operation_failed ();
+          }
 
           tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
-          vt = &dynamic_cast<semantics::type&> (*unit.find (type));
+
+          if (semantics::node* n = unit.find (type))
+            vt = &dynamic_cast<semantics::type&> (*n);
+          else
+          {
+            error (ml) << "container value type is not instantiated" << endl;
+            info (ml) << "use typedef/using to instantiate" << endl;
+            throw operation_failed ();
+          }
 
           // Find the hint.
           //
           vh = find_hint (unit, decl);
         }
-        catch (operation_failed const&)
-        {
-          os << f << ":" << l << ":" << c << ": error: "
-             << "container_traits specialization does not define the "
-             << "value_type type" << endl;
 
-          throw;
-        }
 
         t.set ("value-tree-type", vt);
         t.set ("value-tree-hint", vh);
@@ -1563,30 +1569,32 @@ namespace
         //
         if (ck == ck_ordered)
         {
-          try
-          {
-            tree decl (
-              lookup_qualified_name (
-                inst, get_identifier ("index_type"), true, false));
+          tree decl (
+            lookup_qualified_name (
+              inst, get_identifier ("index_type"), true, false));
 
-            if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
-              throw operation_failed ();
-
-            tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
-            it = &dynamic_cast<semantics::type&> (*unit.find (type));
-
-            // Find the hint.
-            //
-            ih = find_hint (unit, decl);
-          }
-          catch (operation_failed const&)
+          if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
           {
             os << f << ":" << l << ":" << c << ": error: "
                << "container_traits specialization does not define the "
                << "index_type type" << endl;
-
-            throw;
+            throw operation_failed ();
           }
+
+          tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
+
+          if (semantics::node* n = unit.find (type))
+            it = &dynamic_cast<semantics::type&> (*n);
+          else
+          {
+            error (ml) << "container index type is not instantiated" << endl;
+            info (ml) << "use typedef/using to instantiate" << endl;
+            throw operation_failed ();
+          }
+
+          // Find the hint.
+          //
+          ih = find_hint (unit, decl);
 
           t.set ("index-not-null", true);
           t.set ("index-tree-type", it);
@@ -1598,30 +1606,32 @@ namespace
         //
         if (ck == ck_map || ck == ck_multimap)
         {
-          try
-          {
-            tree decl (
-              lookup_qualified_name (
-                inst, get_identifier ("key_type"), true, false));
+          tree decl (
+            lookup_qualified_name (
+              inst, get_identifier ("key_type"), true, false));
 
-            if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
-              throw operation_failed ();
-
-            tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
-            kt = &dynamic_cast<semantics::type&> (*unit.find (type));
-
-            // Find the hint.
-            //
-            kh = find_hint (unit, decl);
-          }
-          catch (operation_failed const&)
+          if (decl == error_mark_node || TREE_CODE (decl) != TYPE_DECL)
           {
             os << f << ":" << l << ":" << c << ": error: "
                << "container_traits specialization does not define the "
                << "key_type type" << endl;
-
-            throw;
+            throw operation_failed ();
           }
+
+          tree type (TYPE_MAIN_VARIANT (TREE_TYPE (decl)));
+
+          if (semantics::node* n = unit.find (type))
+            kt = &dynamic_cast<semantics::type&> (*n);
+          else
+          {
+            error (ml) << "container key type is not instantiated" << endl;
+            info (ml) << "use typedef/using to instantiate" << endl;
+            throw operation_failed ();
+          }
+
+          // Find the hint.
+          //
+          kh = find_hint (unit, decl);
 
           t.set ("key-tree-type", kt);
           t.set ("key-tree-hint", kh);
@@ -1661,8 +1671,8 @@ namespace
                 break;
               }
 
-              error (m.location ()) << "map key type cannot have soft-" <<
-                "added/deleted data members" << endl;
+              error (ml) << "map key type cannot have soft-added/deleted " <<
+                "data members" << endl;
               info (kt->location ()) << "key type is defined here" << endl;
               throw operation_failed ();
             }
@@ -1676,8 +1686,8 @@ namespace
                 break;
               }
 
-              error (m.location ()) << "set value type cannot have soft-" <<
-                "added/deleted data members" << endl;
+              error (ml) << "set value type cannot have soft-added/deleted " <<
+                "data members" << endl;
               info (vt->location ()) << "value type is defined here" << endl;
               throw operation_failed ();
             }
@@ -1723,8 +1733,7 @@ namespace
       if (smart && ck == ck_ordered && unordered (m) &&
           !m.count ("value-inverse"))
       {
-        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
-           << " error: smart ordered container cannot be unordered" << endl;
+        error (ml) << "smart ordered container cannot be unordered" << endl;
         throw operation_failed ();
       }
 
@@ -1733,9 +1742,8 @@ namespace
       if (m.count ("value-null") &&
           (t.count ("value-not-null") || vt->count ("not-null")))
       {
-        os << m.file () << ":" << m.line () << ":" << m.column () << ":"
-           << " warning: container value declared null while the container "
-           << "type or value type declares it as not null" << endl;
+        warn (ml) << "container value declared null while the container "
+                  << "type or value type declares it as not null" << endl;
       }
 
       if (ck == ck_map || ck == ck_multimap)
@@ -1743,9 +1751,8 @@ namespace
         if (m.count ("key-null") &&
             (t.count ("key-not-null") || kt->count ("not-null")))
         {
-          os << m.file () << ":" << m.line () << ":" << m.column () << ":"
-             << " warning: container key declared null while the container "
-             << "type or key type declares it as not null" << endl;
+          warn (ml) << "container key declared null while the container "
+                    << "type or key type declares it as not null" << endl;
         }
       }
 
