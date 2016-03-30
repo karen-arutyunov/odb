@@ -3127,6 +3127,7 @@ traverse_object (type& c)
       //
       os << endl
          << "statements_type::auto_lock l (" << rsts << ");"
+         << "assert (l.locked ()) /* Must be a top-level call. */;"
          << endl;
 
       os << "if (!find_ (sts, &id" <<
@@ -3233,6 +3234,7 @@ traverse_object (type& c)
       //
       os << endl
          << "statements_type::auto_lock l (" << rsts << ");"
+         << "assert (l.locked ()) /* Must be a top-level call. */;"
          << endl;
 
       os << "const id_type& id (object_traits_impl::id (obj));"

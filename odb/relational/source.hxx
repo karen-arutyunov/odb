@@ -2906,6 +2906,7 @@ namespace relational
               // This can only be top-level call so lock must succeed.
               //
               os << r_tr << "::statements_type::auto_lock l (sts);"
+                 << "assert (l.locked ()) /* Must be a top-level call. */;"
                  << endl
                  << r_tr << "::id_image_type& i (sts.id_image ());"
                  << r_tr << "::init (i, " << id << ");"
