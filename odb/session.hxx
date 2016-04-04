@@ -132,6 +132,9 @@ namespace odb
     // Static cache API as expected by the rest of ODB.
     //
   public:
+    static bool
+    _has_cache () {return has_current ();}
+
     // Position in the cache of the inserted element. The requirements
     // for this class template are: default and copy-constructible as
     // well as copy-assignable. The default constructor creates an
