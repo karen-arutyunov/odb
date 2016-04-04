@@ -5235,7 +5235,7 @@ traverse_view (type& c)
     os << endl;
 
     if (need_session)
-      os << "if (!session::has_current ())" << endl
+      os << "if (!" << options.session_type () << "::_has_cache ())" << endl
          << "throw session_required ();"
          << endl;
 

@@ -11605,14 +11605,17 @@ odb --hxx-prologue "#include \"app/session.hxx\"" \
 class custom_session
 {
 public:
+  static bool
+  _has_cache ();
+
+  // Cache management functions.
+  //
   template &lt;typename T>
   struct cache_position
   {
     ...
   };
 
-  // Cache management functions.
-  //
   template &lt;typename T>
   static cache_position&lt;T>
   _cache_insert (odb::database&amp;,
@@ -11648,6 +11651,9 @@ public:
                 const typename odb::object_traits&lt;T>::id_type&amp;);
 };
   </pre>
+
+  <p>The <code>_has_cache()</code> function shall return <code>true</code>
+     if the object cache is in effect in the current thread.</p>
 
   <p>The <code>cache_position</code> class template represents a position
      in the cache of the inserted object. It should be default and
