@@ -1666,7 +1666,9 @@ namespace
       // in relational::validation.
 
       // See if any of the associated objects are polymorphic. If so,
-      // we need to include polymorphism-specific headers.
+      // we need to include polymorphism-specific headers. Also, if the
+      // view is loading the object, then we will need the corresponding
+      // statements.
       //
       if (c.count ("objects"))
       {
@@ -1676,6 +1678,12 @@ namespace
         {
           if (i->kind == view_object::object && polymorphic (*i->obj))
             features.polymorphic_object = true;
+          else if (i->ptr != 0)
+          {
+            (id_member (*i->obj) != 0
+             ? features.simple_object
+             : features.no_id_object) = true;
+          }
         }
       }
     }
