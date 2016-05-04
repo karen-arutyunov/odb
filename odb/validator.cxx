@@ -1676,13 +1676,16 @@ namespace
 
         for (view_objects::iterator i (objs.begin ()); i != objs.end (); ++i)
         {
-          if (i->kind == view_object::object && polymorphic (*i->obj))
-            features.polymorphic_object = true;
-          else if (i->ptr != 0)
+          if (i->kind == view_object::object)
           {
-            (id_member (*i->obj) != 0
-             ? features.simple_object
-             : features.no_id_object) = true;
+            if (polymorphic (*i->obj))
+              features.polymorphic_object = true;
+            else if (i->ptr != 0)
+            {
+              (id_member (*i->obj) != 0
+               ? features.simple_object
+               : features.no_id_object) = true;
+            }
           }
         }
       }
