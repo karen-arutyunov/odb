@@ -177,7 +177,11 @@ namespace relational
         virtual bool
         pre (member_info& mi)
         {
-          return (section_ == 0 && !separate_load (mi.m)) ||
+          // If we have a key prefix (container), then it can't be in a
+          // section (while mi.m can).
+          //
+          return !key_prefix_.empty () ||
+            (section_ == 0 && !separate_load (mi.m)) ||
             (section_ != 0 && *section_ == section (mi.m));
         }
 
