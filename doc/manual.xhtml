@@ -7496,7 +7496,8 @@ public:
   // The eager pointer interface.
   //
 
-  // Initialization/assignment from an eager pointer.
+  // Initialization/assignment from an eager pointer to a
+  // transient object.
   //
 public:
   template &lt;class Y> lazy_ptr (const eager_ptr&lt;Y>&amp;);
@@ -7549,6 +7550,12 @@ public:
   odb::database&amp; database () const;
 };
   </pre>
+
+  <p>Note that to initialize a lazy pointer to a persistent object from
+     its eager pointer one must use the constructor or <code>reset()</code>
+     function with the database as its first argument. The database is
+     required to support comparison of unloaded lazy pointers to persistent
+     objects.</p>
 
   <p>In a lazy weak pointer interface, the <code>load()</code> function
      returns the <em>strong</em> (shared) eager pointer. The following
