@@ -47,7 +47,18 @@ namespace odb
     ~database ();
 
 #ifdef ODB_CXX11
-    database (database&&) = default;
+    //database (database&&) = default; // VC 2013
+
+    database (database&& d)
+        : id_ (d.id_),
+          tracer_ (d.tracer_),
+          query_factory_map_ (std::move (d.query_factory_map_)),
+          mutex_ (std::move (d.mutex_)),
+          schema_version_map_ (std::move (d.schema_version_map_)),
+          schema_version_table_ (std::move (d.schema_version_table_)),
+          schema_version_seq_ (d.schema_version_seq_)
+    {
+    }
 #endif
 
   private:
