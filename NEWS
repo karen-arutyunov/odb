@@ -45,6 +45,10 @@ Version 2.5.0
  * In PostgreSQL a SELECT statement in a view that is prefixed with the
    /*CALL*/ comment is recognized and handled as a stored procedure call.
 
+ * Due to warnings issued by some compiler, std::auto_ptr is no longer mapped
+   as an object pointer or wrapper in the C++11 mode. Use std::unique_ptr
+   instead.
+
 Version 2.4.0
 
  * Support for object loading views. Object loading views allow loading of
