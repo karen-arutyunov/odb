@@ -17,7 +17,7 @@ namespace odb
     //
 
     const char* forced_rollback::
-    what () const throw ()
+    what () const ODB_NOTHROW_NOEXCEPT
     {
       return "transaction is forced to rollback";
     }
@@ -33,7 +33,7 @@ namespace odb
     //
 
     database_exception::
-    ~database_exception () throw ()
+    ~database_exception () ODB_NOTHROW_NOEXCEPT
     {
     }
 
@@ -52,7 +52,7 @@ namespace odb
     }
 
     const char* database_exception::
-    what () const throw ()
+    what () const ODB_NOTHROW_NOEXCEPT
     {
       return what_.c_str ();
     }
@@ -74,12 +74,12 @@ namespace odb
     }
 
     cli_exception::
-    ~cli_exception () throw ()
+    ~cli_exception () ODB_NOTHROW_NOEXCEPT
     {
     }
 
     const char* cli_exception::
-    what () const throw ()
+    what () const ODB_NOTHROW_NOEXCEPT
     {
       return what_.c_str ();
     }
