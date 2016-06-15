@@ -63,6 +63,19 @@ namespace odb
       return counter_;
     }
 
+#ifdef ODB_CXX11
+    inline void* shared_base::
+    operator new (std::size_t n)
+    {
+      return ::operator new (n);
+    }
+
+    inline void* shared_base::
+    operator new (std::size_t n, share)
+    {
+      return ::operator new (n);
+    }
+#else
     inline void* shared_base::
     operator new (std::size_t n) throw (std::bad_alloc)
     {
@@ -74,15 +87,16 @@ namespace odb
     {
       return ::operator new (n);
     }
+#endif
 
     inline void shared_base::
-    operator delete (void* p, share) throw ()
+    operator delete (void* p, share) ODB_NOTHROW_NOEXCEPT
     {
       ::operator delete (p);
     }
 
     inline void shared_base::
-    operator delete (void* p) throw ()
+    operator delete (void* p) ODB_NOTHROW_NOEXCEPT
     {
       ::operator delete (p);
     }

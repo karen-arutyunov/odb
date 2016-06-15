@@ -78,14 +78,14 @@ namespace odb
     void
     cache_query (const prepared_query<T>&);
 
-    template <typename T, typename P>
-    void
-    cache_query (const prepared_query<T>&, std::auto_ptr<P> params);
-
 #ifdef ODB_CXX11
     template <typename T, typename P>
     void
     cache_query (const prepared_query<T>&, std::unique_ptr<P> params);
+#else
+    template <typename T, typename P>
+    void
+    cache_query (const prepared_query<T>&, std::auto_ptr<P> params);
 #endif
 
     template <typename T>

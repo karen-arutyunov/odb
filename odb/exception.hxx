@@ -11,6 +11,7 @@
 
 #include <odb/forward.hxx>        // odb::core
 
+#include <odb/details/config.hxx> // ODB_NOTHROW_NOEXCEPT
 #include <odb/details/export.hxx>
 #include <odb/details/shared-ptr/base.hxx>
 
@@ -19,7 +20,7 @@ namespace odb
   struct LIBODB_EXPORT exception: std::exception, details::shared_base
   {
     virtual const char*
-    what () const throw () = 0;
+    what () const ODB_NOTHROW_NOEXCEPT = 0;
 
     virtual exception*
     clone () const = 0;

@@ -64,17 +64,6 @@ namespace odb
     cache_query_ (pq.impl_, typeid (T), 0, 0, 0);
   }
 
-  template <typename T, typename P>
-  inline void connection::
-  cache_query (const prepared_query<T>& pq, std::auto_ptr<P> params)
-  {
-    assert (pq);
-    assert (params.get () != 0);
-    cache_query_ (
-      pq.impl_, typeid (T), params.get (), &typeid (P), &params_deleter<P>);
-    params.release ();
-  }
-
 #ifdef ODB_CXX11
   template <typename T, typename P>
   inline void connection::
@@ -82,6 +71,17 @@ namespace odb
   {
     assert (pq);
     assert (params);
+    cache_query_ (
+      pq.impl_, typeid (T), params.get (), &typeid (P), &params_deleter<P>);
+    params.release ();
+  }
+#else
+  template <typename T, typename P>
+  inline void connection::
+  cache_query (const prepared_query<T>& pq, std::auto_ptr<P> params)
+  {
+    assert (pq);
+    assert (params.get () != 0);
     cache_query_ (
       pq.impl_, typeid (T), params.get (), &typeid (P), &params_deleter<P>);
     params.release ();

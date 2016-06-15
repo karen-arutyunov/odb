@@ -161,6 +161,7 @@ namespace odb
 
   // Specialization for std::auto_ptr.
   //
+#ifndef ODB_CXX11
   template <typename T>
   class pointer_traits< std::auto_ptr<T> >
   {
@@ -230,6 +231,7 @@ namespace odb
       operator delete (p);
     }
   };
+#endif
 
 #ifdef ODB_CXX11
 

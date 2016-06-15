@@ -116,6 +116,7 @@ namespace odb
 
   // std::auto_ptr lazy version.
   //
+#ifndef ODB_CXX11
   template <class T>
   struct lazy_auto_ptr_ref
   {
@@ -203,11 +204,7 @@ namespace odb
     template <class DB> void reset (DB&, T*);
     template <class DB, class Y> void reset (DB&, std::auto_ptr<Y>&);
 
-#ifdef ODB_CXX11_FUNCTION_TEMPLATE_DEFAULT_ARGUMENT
-    template <class O = T>
-#else
     template <class O /* = T */>
-#endif
     typename object_traits<O>::id_type object_id () const;
 
     database_type& database () const;
@@ -223,6 +220,7 @@ namespace odb
     mutable std::auto_ptr<T> p_;
     mutable lazy_ptr_impl<T> i_;
   };
+#endif
 
 #ifdef ODB_CXX11
 
@@ -251,7 +249,7 @@ namespace odb
 
     lazy_unique_ptr (lazy_unique_ptr&&) /*noexcept*/;
     template <class T1, class D1> lazy_unique_ptr (lazy_unique_ptr<T1, D1>&&) /*noexcept*/;
-    template <class T1> lazy_unique_ptr (std::auto_ptr<T1>&&) /*noexcept*/;
+    //template <class T1> lazy_unique_ptr (std::auto_ptr<T1>&&) /*noexcept*/;
 
 #ifdef ODB_CXX11_NULLPTR
     lazy_unique_ptr& operator= (std::nullptr_t) /*noexcept*/;
@@ -325,12 +323,12 @@ namespace odb
     template <class DB> lazy_unique_ptr (DB&, pointer, const deleter_type&);
     template <class DB> lazy_unique_ptr (DB&, pointer, deleter_type&&);
     template <class DB, class T1, class D1> lazy_unique_ptr (DB&, std::unique_ptr<T1, D1>&&);
-    template <class DB, class T1> lazy_unique_ptr (DB&, std::auto_ptr<T1>&&);
+    //template <class DB, class T1> lazy_unique_ptr (DB&, std::auto_ptr<T1>&&);
 
     template <class DB, class ID> void reset (DB&, const ID&);
     template <class DB> void reset (DB&, pointer);
     template <class DB, class T1, class D1> void reset (DB&, std::unique_ptr<T1, D1>&&);
-    template <class DB, class T1> void reset (DB&, std::auto_ptr<T1>&&);
+    //template <class DB, class T1> void reset (DB&, std::auto_ptr<T1>&&);
 
 #ifdef ODB_CXX11_FUNCTION_TEMPLATE_DEFAULT_ARGUMENT
     template <class O = T>
@@ -413,7 +411,7 @@ namespace odb
     lazy_shared_ptr (lazy_shared_ptr&&) /*noexcept*/;
     template <class Y> lazy_shared_ptr (lazy_shared_ptr<Y>&&) /*noexcept*/;
     template <class Y> explicit lazy_shared_ptr (const lazy_weak_ptr<Y>&);
-    template <class Y> explicit lazy_shared_ptr (std::auto_ptr<Y>&&);
+    //template <class Y> explicit lazy_shared_ptr (std::auto_ptr<Y>&&);
     template <class Y, class D> lazy_shared_ptr (std::unique_ptr<Y, D>&&);
 
     ~lazy_shared_ptr ();
@@ -422,7 +420,7 @@ namespace odb
     template <class Y> lazy_shared_ptr& operator= (const lazy_shared_ptr<Y>&) /*noexcept*/;
     lazy_shared_ptr& operator= (lazy_shared_ptr&&) /*noexcept*/;
     template <class Y> lazy_shared_ptr& operator= (lazy_shared_ptr<Y>&&) /*noexcept*/;
-    template <class Y> lazy_shared_ptr& operator= (std::auto_ptr<Y>&&);
+    //template <class Y> lazy_shared_ptr& operator= (std::auto_ptr<Y>&&);
     template <class Y, class D> lazy_shared_ptr& operator= (std::unique_ptr<Y, D>&&);
 
     void swap (lazy_shared_ptr&) /*noexcept*/;
@@ -488,7 +486,7 @@ namespace odb
     template <class DB, class Y> lazy_shared_ptr (DB&, Y*);
     template <class DB, class Y, class D> lazy_shared_ptr (DB&, Y*, D);
     template <class DB, class Y, class D, class A> lazy_shared_ptr (DB&, Y*, D, A);
-    template <class DB, class Y> lazy_shared_ptr (DB&, std::auto_ptr<Y>&&);
+    //template <class DB, class Y> lazy_shared_ptr (DB&, std::auto_ptr<Y>&&);
     template <class DB, class Y> lazy_shared_ptr (DB&, const std::shared_ptr<Y>&);
     template <class DB, class Y> lazy_shared_ptr (DB&, std::shared_ptr<Y>&&);
     template <class DB, class Y> lazy_shared_ptr (DB&, const std::weak_ptr<Y>&);
@@ -497,7 +495,7 @@ namespace odb
     template <class DB, class Y> void reset (DB&, Y*);
     template <class DB, class Y, class D> void reset (DB&, Y*, D);
     template <class DB, class Y, class D, class A> void reset (DB&, Y*, D, A);
-    template <class DB, class Y> void reset (DB&, std::auto_ptr<Y>&&);
+    //template <class DB, class Y> void reset (DB&, std::auto_ptr<Y>&&);
     template <class DB, class Y> void reset (DB&, const std::shared_ptr<Y>&);
     template <class DB, class Y> void reset (DB&, std::shared_ptr<Y>&&);
 
@@ -661,7 +659,10 @@ namespace odb
   namespace common
   {
     using odb::lazy_ptr;
+
+#ifndef ODB_CXX11
     using odb::lazy_auto_ptr;
+#endif
 
 #ifdef ODB_CXX11
     using odb::lazy_unique_ptr;

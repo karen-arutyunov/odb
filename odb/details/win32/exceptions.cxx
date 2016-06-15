@@ -9,7 +9,7 @@ namespace odb
   namespace details
   {
     const char* win32_exception::
-    what () const throw ()
+    what () const ODB_NOTHROW_NOEXCEPT
     {
       return "Win32 API error";
     }

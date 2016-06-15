@@ -15,6 +15,7 @@
 #include <odb/forward.hxx>    // schema_version, odb::core
 #include <odb/exception.hxx>
 
+#include <odb/details/config.hxx> // ODB_NOTHROW_NOEXCEPT
 #include <odb/details/export.hxx>
 #include <odb/details/shared-ptr.hxx>
 
@@ -23,7 +24,7 @@ namespace odb
   struct LIBODB_EXPORT null_pointer: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual null_pointer*
     clone () const;
@@ -34,7 +35,7 @@ namespace odb
   struct LIBODB_EXPORT already_in_transaction: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual already_in_transaction*
     clone () const;
@@ -43,7 +44,7 @@ namespace odb
   struct LIBODB_EXPORT not_in_transaction: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual not_in_transaction*
     clone () const;
@@ -52,7 +53,7 @@ namespace odb
   struct LIBODB_EXPORT transaction_already_finalized: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual transaction_already_finalized*
     clone () const;
@@ -63,7 +64,7 @@ namespace odb
   struct LIBODB_EXPORT already_in_session: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual already_in_session*
     clone () const;
@@ -72,7 +73,7 @@ namespace odb
   struct LIBODB_EXPORT not_in_session: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual not_in_session*
     clone () const;
@@ -81,7 +82,7 @@ namespace odb
   struct LIBODB_EXPORT session_required: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual session_required*
     clone () const;
@@ -97,7 +98,7 @@ namespace odb
   struct LIBODB_EXPORT connection_lost: recoverable
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual connection_lost*
     clone () const;
@@ -106,7 +107,7 @@ namespace odb
   struct LIBODB_EXPORT timeout: recoverable
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual timeout*
     clone () const;
@@ -115,7 +116,7 @@ namespace odb
   struct LIBODB_EXPORT deadlock: recoverable
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual deadlock*
     clone () const;
@@ -124,7 +125,7 @@ namespace odb
   struct LIBODB_EXPORT object_not_persistent: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual object_not_persistent*
     clone () const;
@@ -133,7 +134,7 @@ namespace odb
   struct LIBODB_EXPORT object_already_persistent: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual object_already_persistent*
     clone () const;
@@ -142,7 +143,7 @@ namespace odb
   struct LIBODB_EXPORT object_changed: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual object_changed*
     clone () const;
@@ -151,7 +152,7 @@ namespace odb
   struct LIBODB_EXPORT result_not_cached: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual result_not_cached*
     clone () const;
@@ -167,7 +168,7 @@ namespace odb
   struct LIBODB_EXPORT abstract_class: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual abstract_class*
     clone () const;
@@ -176,7 +177,7 @@ namespace odb
   struct LIBODB_EXPORT no_type_info: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual no_type_info*
     clone () const;
@@ -187,7 +188,7 @@ namespace odb
   struct LIBODB_EXPORT prepared_already_cached: odb::exception
   {
     prepared_already_cached (const char* name);
-    ~prepared_already_cached () throw ();
+    ~prepared_already_cached () ODB_NOTHROW_NOEXCEPT;
 
     const char*
     name () const
@@ -196,7 +197,7 @@ namespace odb
     }
 
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual prepared_already_cached*
     clone () const;
@@ -209,13 +210,13 @@ namespace odb
   struct LIBODB_EXPORT prepared_type_mismatch: odb::exception
   {
     prepared_type_mismatch (const char* name);
-    ~prepared_type_mismatch () throw ();
+    ~prepared_type_mismatch () ODB_NOTHROW_NOEXCEPT;
 
     const char*
     name () const {return name_;}
 
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual prepared_type_mismatch*
     clone () const;
@@ -230,13 +231,13 @@ namespace odb
   struct LIBODB_EXPORT unknown_schema: odb::exception
   {
     unknown_schema (const std::string& name);
-    ~unknown_schema () throw ();
+    ~unknown_schema () ODB_NOTHROW_NOEXCEPT;
 
     const std::string&
     name () const {return name_;}
 
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual unknown_schema*
     clone () const;
@@ -249,13 +250,13 @@ namespace odb
   struct LIBODB_EXPORT unknown_schema_version: odb::exception
   {
     unknown_schema_version (schema_version);
-    ~unknown_schema_version () throw ();
+    ~unknown_schema_version () ODB_NOTHROW_NOEXCEPT;
 
     schema_version
     version () const {return version_;}
 
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual unknown_schema_version*
     clone () const;
@@ -270,7 +271,7 @@ namespace odb
   struct LIBODB_EXPORT section_not_loaded: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual section_not_loaded*
     clone () const;
@@ -279,7 +280,7 @@ namespace odb
   struct LIBODB_EXPORT section_not_in_object: odb::exception
   {
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual section_not_in_object*
     clone () const;
@@ -399,7 +400,7 @@ namespace odb
     //
   public:
     virtual const char*
-    what () const throw ();
+    what () const ODB_NOTHROW_NOEXCEPT;
 
     virtual multiple_exceptions*
     clone () const;
@@ -413,7 +414,7 @@ namespace odb
     // Implementation details.
     //
   public:
-    ~multiple_exceptions () throw ();
+    ~multiple_exceptions () ODB_NOTHROW_NOEXCEPT;
 
     // All instances of the common exception must be equal since we are
     // going to create and share just one.

@@ -23,10 +23,22 @@ namespace odb
 
       transfer_ptr (): p_ (0) {}
 
+#ifndef ODB_CXX11
       template <typename T1>
       transfer_ptr (std::auto_ptr<T1> p): p_ (p.release ()) {}
 
-#ifdef ODB_CXX11
+    private:
+      transfer_ptr& operator= (const transfer_ptr&);
+
+    public:
+      // In our usage transfer_ptr is always created implicitly and
+      // never const. So while this is not very clean, it is legal.
+      // Plus it will all go away once we drop C++98 (I can hardly
+      // wait).
+      //
+      transfer_ptr (const transfer_ptr& p)
+          : p_ (const_cast<transfer_ptr&> (p).transfer ()) {}
+#else
 #ifdef ODB_CXX11_NULLPTR
       transfer_ptr (std::nullptr_t): p_ (0) {}
 #endif
@@ -39,18 +51,6 @@ namespace odb
 
     public:
       transfer_ptr (transfer_ptr&& p): p_ (p.transfer ()) {}
-#else
-    private:
-      transfer_ptr& operator= (const transfer_ptr&);
-
-    public:
-      // In our usage transfer_ptr is always created implicitly and
-      // never const. So while this is not very clean, it is legal.
-      // Plus it will all go away once we drop C++98 (I can hardly
-      // wait).
-      //
-      transfer_ptr (const transfer_ptr& p)
-          : p_ (const_cast<transfer_ptr&> (p).transfer ()) {}
 #endif
 
       ~transfer_ptr () {delete p_;}

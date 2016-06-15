@@ -10,6 +10,7 @@
 #include <new>
 #include <cstddef>   // std::size_t
 
+#include <odb/details/config.hxx> // ODB_CXX11, ODB_NOTHROW_NOEXCEPT
 #include <odb/details/export.hxx>
 #include <odb/details/shared-ptr/counter-type.hxx>
 
@@ -34,11 +35,16 @@ namespace odb
   }
 }
 
+#ifdef ODB_CXX11
+LIBODB_EXPORT void*
+operator new (std::size_t, odb::details::share);
+#else
 LIBODB_EXPORT void*
 operator new (std::size_t, odb::details::share) throw (std::bad_alloc);
+#endif
 
 LIBODB_EXPORT void
-operator delete (void*, odb::details::share) throw ();
+operator delete (void*, odb::details::share) ODB_NOTHROW_NOEXCEPT;
 
 namespace odb
 {
@@ -61,17 +67,25 @@ namespace odb
       std::size_t
       _ref_count () const;
 
+#ifdef ODB_CXX11
+      void*
+      operator new (std::size_t);
+
+      void*
+      operator new (std::size_t, share);
+#else
       void*
       operator new (std::size_t) throw (std::bad_alloc);
 
       void*
       operator new (std::size_t, share) throw (std::bad_alloc);
+#endif
 
       void
-      operator delete (void*, share) throw ();
+      operator delete (void*, share) ODB_NOTHROW_NOEXCEPT;
 
       void
-      operator delete (void*) throw ();
+      operator delete (void*) ODB_NOTHROW_NOEXCEPT;
 
       struct refcount_callback
       {

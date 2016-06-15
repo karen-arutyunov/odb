@@ -38,6 +38,7 @@ namespace odb
     }
   };
 
+#ifndef ODB_CXX11
   template <typename T>
   class pointer_traits< lazy_auto_ptr<T> >
   {
@@ -62,6 +63,7 @@ namespace odb
       return p.template object_id<O> ();
     }
   };
+#endif
 
 #ifdef ODB_CXX11
   template <typename T, typename D>

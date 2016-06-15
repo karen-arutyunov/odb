@@ -16,6 +16,7 @@
 #    define ODB_CXX11
 #    if (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || __GNUC__ > 4
 #      define ODB_CXX11_NULLPTR
+#      define ODB_CXX11_NOEXCEPT
 #    endif
 #    define ODB_CXX11_DELETED_FUNCTION
 #    define ODB_CXX11_EXPLICIT_CONVERSION_OPERATOR
@@ -29,12 +30,15 @@
 #    define ODB_CXX11
 #    ifdef __clang__ // Pretends to be a really old __GNUC__ on some platforms.
 #      define ODB_CXX11_NULLPTR
+#      define ODB_CXX11_NOEXCEPT
 #    elif defined(__GNUC__)
 #      if (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || __GNUC__ > 4
 #        define ODB_CXX11_NULLPTR
+#        define ODB_CXX11_NOEXCEPT
 #      endif
 #    else
 #      define ODB_CXX11_NULLPTR
+#      define ODB_CXX11_NOEXCEPT
 #    endif
 #    define ODB_CXX11_DELETED_FUNCTION
 #    define ODB_CXX11_EXPLICIT_CONVERSION_OPERATOR
@@ -46,6 +50,12 @@
 //
 #    define ODB_CXX11_ENUM
 #  endif
+#endif
+
+#ifdef ODB_CXX11_NOEXCEPT
+#  define ODB_NOTHROW_NOEXCEPT noexcept
+#else
+#  define ODB_NOTHROW_NOEXCEPT throw()
 #endif
 
 // no post

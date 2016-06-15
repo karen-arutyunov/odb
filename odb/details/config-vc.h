@@ -24,6 +24,9 @@
 #      define ODB_CXX11_FUNCTION_TEMPLATE_DEFAULT_ARGUMENT
 #      define ODB_CXX11_VARIADIC_TEMPLATE
 #      define ODB_CXX11_INITIALIZER_LIST
+#      if _MSC_VER >= 1900
+#        define ODB_CXX11_NOEXCEPT
+#      endif
 #    endif
 #  endif
 #endif
