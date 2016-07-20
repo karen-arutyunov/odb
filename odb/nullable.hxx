@@ -60,6 +60,39 @@ namespace odb
   }
 
   template <typename T>
+  inline bool
+  operator== (const nullable<T>& x, const nullable<T>& y)
+  {
+    return x.null () == y.null () && (x.null () || *x == *y);
+  }
+
+  template <typename T>
+  inline bool
+  operator!= (const nullable<T>& x, const nullable<T>& y) {return !(x == y);}
+
+  template <typename T>
+  inline bool
+  operator< (const nullable<T>& x, const nullable<T>& y)
+  {
+    return x.null () > y.null () || (!x.null () && !y.null () && *x < *y);
+  }
+
+  template <typename T>
+  inline bool
+  operator> (const nullable<T>& x, const nullable<T>& y)
+  {
+    return x.null () < y.null () || (!x.null () && !y.null () && *x > *y);
+  }
+
+  template <typename T>
+  inline bool
+  operator<= (const nullable<T>& x, const nullable<T>& y) {return !(x > y);}
+
+  template <typename T>
+  inline bool
+  operator>= (const nullable<T>& x, const nullable<T>& y) {return !(x < y);}
+
+  template <typename T>
   inline nullable<T>::
   nullable ()
       : null_ (true)
