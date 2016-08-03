@@ -3,5 +3,5 @@
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #ifdef _MSC_VER
-#  include <odb/compilers/vc/post.hxx>
+#  pragma warning (pop)
 #endif
