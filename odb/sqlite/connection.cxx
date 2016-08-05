@@ -177,7 +177,7 @@ namespace odb
       details::lock l (unlock_mutex_);
 
       while (!unlocked_)
-        unlock_cond_.wait ();
+        unlock_cond_.wait (l);
 #else
       translate_error (SQLITE_LOCKED, *this);
 #endif
