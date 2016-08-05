@@ -30,7 +30,45 @@ namespace odb
     //
     template <typename T>
     inline void
-    tls_free (T& x)
+    tls_free (T&)
+    {
+    }
+
+    template <typename T>
+    inline T*
+    tls_get (T* p)
+    {
+      return p;
+    }
+
+    template <typename T, typename T1>
+    inline void
+    tls_set (T*& rp, T1* p)
+    {
+      rp = p;
+    }
+  }
+}
+
+#elif defined(ODB_THREADS_CXX11)
+
+#  define ODB_TLS_POINTER(type) thread_local type*
+#  define ODB_TLS_OBJECT(type) thread_local type
+
+namespace odb
+{
+  namespace details
+  {
+    template <typename T>
+    inline T&
+    tls_get (T& x)
+    {
+      return x;
+    }
+
+    template <typename T>
+    inline void
+    tls_free (T&)
     {
     }
 

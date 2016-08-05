@@ -17,6 +17,8 @@ namespace odb
   namespace details
   {
     class mutex;
+    class lock;
+
     class LIBODB_EXPORT condition
     {
     public:
@@ -26,11 +28,32 @@ namespace odb
       signal () {}
 
       void
-      wait () {}
+      wait (lock&) {}
 
     private:
       condition (const condition&);
       condition& operator= (const condition&);
+    };
+  }
+}
+
+#elif defined(ODB_THREADS_CXX11)
+#  include <condition_variable>
+#  include <odb/details/lock.hxx>
+
+namespace odb
+{
+  namespace details
+  {
+    class mutex;
+
+    class condition: public std::condition_variable
+    {
+    public:
+      condition (mutex&) {}
+
+      void
+      signal () {notify_one ();}
     };
   }
 }

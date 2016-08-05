@@ -16,6 +16,8 @@ namespace odb
 {
   namespace details
   {
+    class lock;
+
     class LIBODB_EXPORT condition
     {
     public:
@@ -26,7 +28,7 @@ namespace odb
       signal ();
 
       void
-      wait ();
+      wait (lock&);
 
     private:
       condition (const condition&);

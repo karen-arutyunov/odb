@@ -65,7 +65,11 @@
 #  define ODB_THREADS_NONE
 #  define LIBODB_STATIC_LIB
 #elif defined(LIBODB_BUILD2)
-#  include <odb/details/build2/config.h>
+#  if defined(_MSC_VER)
+#    include <odb/details/build2/config-vc.h>
+#  else
+#    include <odb/details/build2/config.h>
+#  endif
 #elif defined(_MSC_VER)
 #  include <odb/details/config-vc.h>
 #else

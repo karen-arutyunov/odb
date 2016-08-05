@@ -33,7 +33,15 @@ namespace odb
     };
   }
 }
-
+#elif defined(ODB_THREADS_CXX11)
+#  include <mutex>
+namespace odb
+{
+  namespace details
+  {
+    using std::mutex;
+  }
+}
 #elif defined(ODB_THREADS_POSIX)
 #include <odb/details/posix/mutex.hxx>
 #elif defined(ODB_THREADS_WIN32)

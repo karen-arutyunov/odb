@@ -1,9 +1,13 @@
 # Compiler/linker output.
 #
+*.d
 *.o
-*.o.d
+*.obj
 *.so
+*.dll
 *.a
+*.lib
+
 *.l
 *.l.cpp-options
 

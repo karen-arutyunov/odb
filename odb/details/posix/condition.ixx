@@ -30,7 +30,7 @@ namespace odb
     }
 
     inline void condition::
-    wait ()
+    wait (lock&)
     {
       if (int e = pthread_cond_wait (&cond_, &mutex_.mutex_))
         throw posix_exception (e);

@@ -28,7 +28,7 @@ namespace odb
     }
 
     void condition::
-    wait ()
+    wait (lock&)
     {
       // When we enter this functions the mutex is locked. When we
       // return from this function the mutex must be locked.
