@@ -1181,6 +1181,11 @@ namespace relational
           {
             string q (upcase (vq.literal));
 
+            //@@ We need to recognize database-specific list of prefixes. For
+            //   example, PG has WITH. Alternatively (or in addition) we could
+            //   do the same comment trick (e.g., /*SELECT*/ to treat it as a
+            //   SELECT-like queiry).
+            //
             if (q.compare (0, 7, "SELECT ") == 0)
               vq.kind = view_query::complete_select;
             else if (q.compare (0, 5, "EXEC ") == 0 ||
