@@ -6,6 +6,7 @@
 // is done in the odb-tests package.
 
 #include <cassert>
+#include <sstream>
 
 #include <odb/sqlite/database.hxx>
 #include <odb/sqlite/exceptions.hxx>
@@ -16,6 +17,12 @@ using namespace odb::sqlite;
 int
 main ()
 {
+  {
+    std::ostringstream os;
+    database::print_usage (os);
+    assert (!os.str ().empty ());
+  }
+
   database db (":memory:");
 
   {

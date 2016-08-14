@@ -11,9 +11,9 @@
 #  error libodb-sqlite header included in odb-compiled header
 #elif !defined(LIBODB_SQLITE_BUILD2)
 #  ifdef _MSC_VER
-#    include <odb/details/config-vc.h>
+#    include <odb/sqlite/details/config-vc.h>
 #  else
-#    include <odb/details/config.h>
+#    include <odb/sqlite/details/config.h>
 #  endif
 #endif
 

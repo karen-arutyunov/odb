@@ -1,4 +1,4 @@
-/* file      : odb/details/build2/config-vc.h
+/* file      : odb/sqlite/details/build2/config-vc.h
  * copyright : Copyright (c) 2009-2015 Code Synthesis Tools CC
  * license   : GNU GPL v2; see accompanying LICENSE file
  */
