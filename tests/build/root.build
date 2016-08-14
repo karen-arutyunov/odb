@@ -4,9 +4,6 @@
 
 using cxx
 
-hxx{*}: extension = hxx
-cxx{*}: extension = cxx
-
 cxx.std = 11
 
 # Every exe{} in this subproject is by default a test.

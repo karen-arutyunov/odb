@@ -4,11 +4,6 @@
 
 using cxx
 
-hxx{*}: extension = hxx
-ixx{*}: extension = ixx
-txx{*}: extension = txx
-cxx{*}: extension = cxx
-
 cxx.std = 11
 
 tests/: install = false # Don't install tests.
