@@ -3287,6 +3287,8 @@ traverse_object (type& c)
                  user_sections::count_load  |
                  (poly ? user_sections::count_load_empty : 0)) != 0)
   {
+    string rsts (poly_derived ? "rsts" : "sts");
+
     os << "bool " << traits << "::" << endl
        << "load (connection& conn, object_type& obj, section& s" <<
       (poly ? ", const info_type* pi" : "") << ")"
@@ -3298,7 +3300,8 @@ traverse_object (type& c)
     {
       // Resolve type information if we are doing indirect calls.
       //
-      os << "if (pi == 0)" // Top-level call.
+      os << "bool top (pi == 0);" // Top-level call.
+         << "if (top)"
          << "{"
          << "const std::type_info& t (typeid (obj));";
 
@@ -3312,6 +3315,35 @@ traverse_object (type& c)
          << "}";
     }
 
+    // Lock the statements for the object itself. We need to do this since we
+    // are using the id image and loading of object pointers can overwrite it.
+    //
+    os << db << "::connection& c (static_cast<" << db <<
+      "::connection&> (conn));"
+       << "statements_type& sts (c.statement_cache ()." <<
+      "find_object<object_type> ());";
+
+    if (versioned)
+      os << "const schema_version_migration& svm (" <<
+        "sts.version_migration (" << schema_name << "));";
+
+    if (poly_derived)
+      os << "root_statements_type& rsts (sts.root_statements ());";
+
+    os << endl
+       << "statements_type::auto_lock l (" << rsts << ");";
+
+    // It this is a top-level call, then auto_lock must succeed.
+    //
+    if (poly)
+      os << "if (top)" << endl;
+
+    os << "assert (l.locked ()) /* Must be a top-level call. */;"
+       << endl;
+
+    os << "bool r (false);"
+       << endl;
+
     // If our poly-base has load sections, then call the base version
     // first. Besides checking for sections, it will also initialize
     // the id image.
@@ -3322,25 +3354,12 @@ traverse_object (type& c)
                      user_sections::count_load_empty) != 0)
     {
       os << "if (base_traits::load (conn, obj, s, pi))" << endl
-         << "return true;"
+         << "r = true;"
          << endl;
     }
     else
     {
-      // Resolve extra statements if we are doing direct calls.
-      //
-      os << db << "::connection& c (static_cast<" << db <<
-        "::connection&> (conn));"
-         << "statements_type& sts (c.statement_cache ()." <<
-        "find_object<object_type> ());";
-
-      if (!poly)
-        os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());";
-
-      os << endl;
-
-      // Initialize id image. This is not necessarily the root of the
-      // polymorphic hierarchy.
+      // Initialize id image (all this is equivalent to using rsts).
       //
       os << "id_image_type& i (sts.id_image ());"
          << "init (i, id (obj));"
@@ -3357,9 +3376,14 @@ traverse_object (type& c)
       os << "}";
     }
 
+    // Resolve extra statements if we are doing direct calls.
+    //
+    if (!poly)
+      os << "extra_statement_cache_type& esc (sts.extra_statement_cache ());"
+         << endl;
+
     // Dispatch.
     //
-    bool e (false);
     for (user_sections::iterator i (uss.begin ()); i != uss.end (); ++i)
     {
       // Skip special sections.
@@ -3383,12 +3407,8 @@ traverse_object (type& c)
       if (!ma.synthesized)
         os << "// From " << location_string (ma.loc, true) << endl;
 
-      if (e)
-        os << "else ";
-      else
-        e = true;
-
-      os << "if (&s == &" << ma.translate ("obj") << ")" << endl;
+      os << "if (!r && &s == &" << ma.translate ("obj") << ")"
+         << "{";
 
       if (!poly)
         os << public_name (m) << "_traits::load (esc, obj);";
@@ -3397,22 +3417,30 @@ traverse_object (type& c)
         // If this is an empty section, then there may not be any
         // overrides.
         //
-        os << "{"
-           << "info_type::section_load sl (" <<
+        os << "info_type::section_load sl (" <<
           "pi->find_section_load (" << i->index << "UL));";
 
         if (i->load_empty ())
           os << "if (sl != 0)" << endl;
 
-        os << "sl (conn, obj, true);"
-           << "}";
+        os << "sl (conn, obj, true);";
       }
+
+      os << "r = true;"
+         << "}";
     }
 
-    os << "else" << endl
-       << "return false;"
-       << endl
-       << "return true;"
+    if (poly)
+      os << "if (top)"
+         << "{";
+
+    os << rsts << ".load_delayed (" << (versioned ? "&svm" : "0") << ");"
+       << "l.unlock ();";
+
+    if (poly)
+      os << "}";
+
+    os << "return r;"
        << "}";
   }
 
