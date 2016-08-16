@@ -287,16 +287,10 @@ namespace odb
     };
 
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<float, id_real>:
-      real_value_traits<float>
-    {
-    };
+    struct default_value_traits<float, id_real>: real_value_traits<float> {};
 
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<double, id_real>:
-      real_value_traits<double>
-    {
-    };
+    struct default_value_traits<double, id_real>: real_value_traits<double> {};
 
     // std::string specialization.
     //
@@ -345,11 +339,10 @@ namespace odb
     };
 
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<char*, id_text>:
-      c_string_value_traits {};
+    struct default_value_traits<char*, id_text>: c_string_value_traits {};
 
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<const char*, id_text>:
+    struct default_value_traits<const char*, id_text>:
       c_string_value_traits {};
 
     // char[N] specialization.
@@ -430,7 +423,7 @@ namespace odb
     // char specialization.
     //
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<char, id_text>
+    struct default_value_traits<char, id_text>
     {
       typedef char value_type;
       typedef char query_type;
@@ -511,14 +504,13 @@ namespace odb
     struct image_traits<wchar_t*, id_text>: wstring_image_traits {};
 
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<wchar_t*, id_text>:
-      c_wstring_value_traits {};
+    struct default_value_traits<wchar_t*, id_text>: c_wstring_value_traits {};
 
     template <>
     struct image_traits<const wchar_t*, id_text>: wstring_image_traits {};
 
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<const wchar_t*, id_text>:
+    struct default_value_traits<const wchar_t*, id_text>:
       c_wstring_value_traits {};
 
     // wchar_t[N] specialization.
@@ -609,7 +601,7 @@ namespace odb
     struct image_traits<wchar_t, id_text>: wstring_image_traits {};
 
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<wchar_t, id_text>
+    struct default_value_traits<wchar_t, id_text>
     {
       typedef wchar_t value_type;
       typedef wchar_t query_type;
@@ -856,7 +848,7 @@ namespace odb
     // text (stream) specialization.
     //
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<text, id_text_stream>
+    struct default_value_traits<text, id_text_stream>
     {
     public:
       typedef text value_type;
@@ -894,7 +886,7 @@ namespace odb
     // blob (stream) specialization.
     //
     template <>
-    struct LIBODB_SQLITE_EXPORT default_value_traits<blob, id_blob_stream>
+    struct default_value_traits<blob, id_blob_stream>
     {
     public:
       typedef blob value_type;

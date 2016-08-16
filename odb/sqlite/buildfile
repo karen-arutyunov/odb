@@ -9,7 +9,7 @@ lib{odb-sqlite}:                                                  \
                {hxx            }{ auto-handle                   } \
                {hxx            }{ binding                       } \
                {hxx            }{ blob                          } \
-               {hxx         cxx}{ blob-stream                   } \
+               {hxx            }{ blob-stream                   } \
                {hxx ixx     cxx}{ connection                    } \
                {hxx         cxx}{ connection-factory            } \
                {hxx     txx    }{ container-statements          } \
@@ -34,7 +34,7 @@ lib{odb-sqlite}:                                                  \
                {hxx         cxx}{ statements-base               } \
                {hxx         cxx}{ stream                        } \
                {hxx            }{ text                          } \
-               {hxx         cxx}{ text-stream                   } \
+               {hxx            }{ text-stream                   } \
                {hxx         cxx}{ tracer                        } \
                {hxx         cxx}{ traits                        } \
                {hxx            }{ traits-calls                  } \

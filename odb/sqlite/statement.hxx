@@ -297,7 +297,7 @@ namespace odb
       binding& result_;
     };
 
-    struct LIBODB_SQLITE_EXPORT auto_result
+    struct auto_result
     {
       explicit auto_result (select_statement& s): s_ (s) {}
       ~auto_result () {s_.free_result ();}

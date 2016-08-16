@@ -25,7 +25,7 @@ namespace odb
     #pragma db sqlite:type("TEXT STREAM")
     class text
 #else
-    class LIBODB_SQLITE_EXPORT text
+    class text
 #endif
     {
     public:

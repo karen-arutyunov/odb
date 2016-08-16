@@ -12,13 +12,12 @@
 #include <odb/forward.hxx>
 
 #include <odb/sqlite/sqlite-types.hxx>
-#include <odb/sqlite/details/export.hxx>
 
 namespace odb
 {
   namespace sqlite
   {
-    class LIBODB_SQLITE_EXPORT binding
+    class binding
     {
     public:
       typedef sqlite::bind bind_type;

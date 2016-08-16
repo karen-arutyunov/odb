@@ -14,7 +14,6 @@
 //
 #ifndef ODB_COMPILER
 #  include <odb/sqlite/forward.hxx>
-#  include <odb/sqlite/details/export.hxx>
 #endif
 
 namespace odb
@@ -25,7 +24,7 @@ namespace odb
     #pragma db sqlite:type("BLOB STREAM")
     class blob
 #else
-    class LIBODB_SQLITE_EXPORT blob
+    class blob
 #endif
     {
     public:

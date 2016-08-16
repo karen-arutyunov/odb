@@ -9,13 +9,12 @@
 
 #include <odb/sqlite/blob.hxx>
 #include <odb/sqlite/stream.hxx>
-#include <odb/sqlite/details/export.hxx>
 
 namespace odb
 {
   namespace sqlite
   {
-    class LIBODB_SQLITE_EXPORT blob_stream: public stream
+    class blob_stream: public stream
     {
     public:
       blob_stream (const blob& b, bool rw)
