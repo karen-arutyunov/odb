@@ -7,7 +7,6 @@
 
 #include <odb/pre.hxx>
 
-#include <odb/details/export.hxx>
 #include <odb/details/mutex.hxx>
 
 #ifdef ODB_THREADS_CXX11
@@ -24,7 +23,7 @@ namespace odb
 {
   namespace details
   {
-    class LIBODB_EXPORT lock
+    class lock
     {
     public:
       lock (mutex& m)

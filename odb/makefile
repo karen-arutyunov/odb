@@ -5,12 +5,10 @@
 include $(dir $(lastword $(MAKEFILE_LIST)))../build/bootstrap.make
 
 cxx :=                   \
-callback.cxx             \
 exceptions.cxx           \
 database.cxx             \
 vector-impl.cxx          \
 connection.cxx           \
-lazy-ptr-impl.cxx        \
 prepared-query.cxx       \
 query-dynamic.cxx        \
 result.cxx               \

@@ -9,15 +9,11 @@
 
 #include <odb/exception.hxx>
 
-#include <odb/details/export.hxx>
-
 namespace odb
 {
   namespace details
   {
-    struct LIBODB_EXPORT exception: odb::exception
-    {
-    };
+    struct exception: odb::exception {};
   }
 }
 

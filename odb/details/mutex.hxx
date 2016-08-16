@@ -8,7 +8,6 @@
 #include <odb/pre.hxx>
 
 #include <odb/details/config.hxx>
-#include <odb/details/export.hxx>
 
 #ifdef ODB_THREADS_NONE
 
@@ -16,7 +15,7 @@ namespace odb
 {
   namespace details
   {
-    class LIBODB_EXPORT mutex
+    class mutex
     {
     public:
       mutex () {}

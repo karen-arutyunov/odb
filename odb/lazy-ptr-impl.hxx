@@ -13,11 +13,10 @@
 #include <odb/traits.hxx>
 
 #include <odb/details/config.hxx> // ODB_CXX11
-#include <odb/details/export.hxx>
 
 namespace odb
 {
-  struct LIBODB_EXPORT lazy_ptr_impl_ref
+  struct lazy_ptr_impl_ref
   {
     void* id_;
     database* db_;
@@ -26,7 +25,7 @@ namespace odb
     void* (*copy_) (const void*);
   };
 
-  class LIBODB_EXPORT lazy_ptr_base
+  class lazy_ptr_base
   {
   public:
     typedef odb::database database_type;

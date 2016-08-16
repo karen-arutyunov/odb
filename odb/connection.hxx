@@ -205,7 +205,7 @@ namespace odb
     tracer_type* transaction_tracer_;
   };
 
-  class LIBODB_EXPORT connection_factory
+  class connection_factory
   {
   public:
     typedef odb::database database_type;

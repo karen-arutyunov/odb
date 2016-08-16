@@ -8,11 +8,10 @@
 #include <odb/pre.hxx>
 
 #include <odb/forward.hxx>        // odb::core
-#include <odb/details/export.hxx>
 
 namespace odb
 {
-  struct LIBODB_EXPORT callback_event
+  struct callback_event
   {
     enum value
     {

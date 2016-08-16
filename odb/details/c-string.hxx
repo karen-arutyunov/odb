@@ -9,13 +9,11 @@
 
 #include <cstring>
 
-#include <odb/details/export.hxx>
-
 namespace odb
 {
   namespace details
   {
-    struct LIBODB_EXPORT c_string_comparator
+    struct c_string_comparator
     {
       bool
       operator() (const char* x, const char* y) const

@@ -18,7 +18,7 @@ namespace odb
 {
   namespace details
   {
-    struct LIBODB_EXPORT share
+    struct share
     {
       explicit
       share (char id);

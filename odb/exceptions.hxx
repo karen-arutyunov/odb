@@ -290,7 +290,7 @@ namespace odb
   //
   struct LIBODB_EXPORT multiple_exceptions: odb::exception
   {
-    struct LIBODB_EXPORT value_type
+    struct value_type
     {
       std::size_t
       position () const {return p_;}
@@ -323,7 +323,7 @@ namespace odb
       details::shared_ptr<odb::exception> e_;
     };
 
-    struct LIBODB_EXPORT comparator_type
+    struct comparator_type
     {
       bool
       operator() (const value_type& x, const value_type& y) const

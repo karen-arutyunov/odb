@@ -4,7 +4,7 @@
 
 lib{odb}:                                                           \
                    {hxx            }{ cache-traits                } \
-                   {hxx         cxx}{ callback                    } \
+                   {hxx            }{ callback                    } \
                    {hxx ixx txx cxx}{ connection                  } \
                    {hxx            }{ container-traits            } \
                    {hxx            }{ core                        } \
@@ -15,7 +15,7 @@ lib{odb}:                                                           \
                    {hxx            }{ function-table              } \
                    {hxx            }{ lazy-pointer-traits         } \
                    {hxx ixx txx    }{ lazy-ptr                    } \
-                   {hxx ixx txx cxx}{ lazy-ptr-impl               } \
+                   {hxx ixx txx    }{ lazy-ptr-impl               } \
                    {hxx            }{ nested-container            } \
                    {hxx     txx    }{ no-id-object-result         } \
                    {hxx            }{ no-op-cache-traits          } \
