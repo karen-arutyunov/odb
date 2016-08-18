@@ -1271,6 +1271,53 @@ namespace
       //
       if (class_* comp = composite_wrapper (t))
         verify_composite_location (*comp, s, m);
+
+      // Check that containers with composite value element types don't have
+      // any nested containers.
+      //
+      if (semantics::type* c = container (m))
+      {
+        class_* vt (0);
+        class_* kt (0);
+
+        switch (container_kind (*c))
+        {
+        case ck_map:
+        case ck_multimap:
+          {
+            kt = composite_wrapper (container_kt (m));
+            // Fall through.
+          }
+        default:
+          {
+            vt = composite_wrapper (container_vt (m));
+          }
+        }
+
+        if (vt != 0 && has_a (*vt, test_container))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "error: containers of containers not supported" << endl;
+
+          os << vt->file () << ":" << vt->line () << ":" << vt->column ()
+             << ": info: composite element value " << class_fq_name (*vt)
+             << " contains container(s)" << endl;
+
+          valid_ = false;
+        }
+
+        if (kt != 0 && has_a (*kt, test_container))
+        {
+          os << m.file () << ":" << m.line () << ":" << m.column () << ": "
+             << "error: containers of containers not supported" << endl;
+
+          os << kt->file () << ":" << kt->line () << ":" << kt->column ()
+             << ": info: composite element key " << class_fq_name (*kt)
+             << " contains container(s)" << endl;
+
+          valid_ = false;
+        }
+      }
     }
 
     bool& valid_;
