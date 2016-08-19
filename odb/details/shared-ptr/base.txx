@@ -13,7 +13,7 @@ namespace odb
     {
       // Support for locating the counter in the memory block.
       //
-      struct locator_common
+      struct LIBODB_EXPORT locator_common
       {
         static std::size_t*
         counter (void*);
