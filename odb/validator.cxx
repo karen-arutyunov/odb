@@ -1452,7 +1452,7 @@ namespace
     void
     check_strict (D& dep, P& pre, char const* dname, char const* pname)
     {
-      location_t dl, pl;
+      location_t dl (0), pl (0);
       unsigned long long dv (deleted (dep, &dl));
       unsigned long long pv (deleted (pre, &pl));
 
