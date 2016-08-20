@@ -38,14 +38,13 @@ namespace odb
 
 #elif defined(ODB_THREADS_CXX11)
 #  include <condition_variable>
+#  include <odb/details/mutex.hxx>
 #  include <odb/details/lock.hxx>
 
 namespace odb
 {
   namespace details
   {
-    class mutex;
-
     class condition: public std::condition_variable
     {
     public:
