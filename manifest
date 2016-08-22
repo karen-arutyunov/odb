@@ -1,6 +1,6 @@
 : 1
 name: libodb-sqlite
-version: 2.5.0-a9
+version: 2.5.0-a10
 summary: SQLite ODB runtime library
 license: GPLv2
 license: proprietary
@@ -12,4 +12,4 @@ email: odb-users@codesynthesis.com
 requires: c++11
 requires: build2 >= 0.4.0-a1
 depends: libsqlite3 >= 3.6.18
-depends: libodb == 2.5.0-a9
+depends: libodb == 2.5.0-a10
