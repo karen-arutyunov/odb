@@ -102,7 +102,7 @@ libs{odb}: cxx.export.poptions += -DLIBODB_SHARED
 
 # Install into the odb/ subdirectory of, say, /usr/include/.
 #
-install.include = $install.include/odb
+install.include = $install.include/odb/
 install.include.subdirs = true # Recreate subdirectories.
 
 if ($cxx.target.class != "windows")
@@ -115,11 +115,11 @@ details/build2/:
   if ($cxx.id == "msvc")
   {
     h{config}@./:    install = false
-    h{config-vc}@./: install = $install.include/details
+    h{config-vc}@./: install = $install.include/details/
   }
   else
   {
-    h{config}@./:    install = $install.include/details
+    h{config}@./:    install = $install.include/details/
     h{config-vc}@./: install = false
   }
 }
