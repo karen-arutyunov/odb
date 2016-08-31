@@ -6,4 +6,7 @@ d = odb/ tests/
 ./: $d doc{GPLv2 INSTALL LICENSE NEWS README version} file{manifest}
 include $d
 
+# Don't install tests or the INSTALL file.
+#
+dir{tests/}: install = false
 doc{INSTALL}@./: install = false

@@ -106,7 +106,7 @@ install.include = $install.include/odb/
 install.include.subdirs = true # Recreate subdirectories.
 
 if ($cxx.target.class != "windows")
-  details/win32/: install = false
+  details/win32/*: install = false
 
 # We want these to be picked up even when LIBODB_BUILD2 is not defined.
 #
