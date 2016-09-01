@@ -59,7 +59,7 @@ if $abi_prerelease
 else
   lib{odb-sqlite}: bin.lib.version = @-$abi_major.$abi_minor
 
-cxx.poptions =+ -DLIBODB_SQLITE_BUILD2
+cxx.poptions =+ -I$out_root -I$src_root -DLIBODB_SQLITE_BUILD2
 obja{*}: cxx.poptions += -DLIBODB_SQLITE_STATIC_BUILD
 objs{*}: cxx.poptions += -DLIBODB_SQLITE_SHARED_BUILD
 
