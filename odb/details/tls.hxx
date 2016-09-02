@@ -52,8 +52,17 @@ namespace odb
 
 #elif defined(ODB_THREADS_CXX11)
 
-#  define ODB_TLS_POINTER(type) thread_local type*
-#  define ODB_TLS_OBJECT(type) thread_local type
+// Apparently Apple's Clang "temporarily disabled" C++11 thread_local until
+// they can implement a "fast" version, which reportedly happened in XCode 8.
+// So for now we will continue using __thread for this target.
+//
+#  if defined(__apple_build_version__) && __apple_build_version__ < 8000000
+#    define ODB_TLS_POINTER(type) __thread type*
+#    define ODB_TLS_OBJECT(type) thread_local type
+#  else
+#    define ODB_TLS_POINTER(type) thread_local type*
+#    define ODB_TLS_OBJECT(type) thread_local type
+#  endif
 
 namespace odb
 {
