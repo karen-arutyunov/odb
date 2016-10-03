@@ -12,10 +12,7 @@ namespace odb
     ~thread ()
     {
       if (!detached_)
-      {
-        if (int e = pthread_detach (id_))
-          throw posix_exception (e);
-      }
+        pthread_detach (id_)
     }
 
     inline void* thread::
