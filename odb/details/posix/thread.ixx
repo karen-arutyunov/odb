@@ -12,7 +12,7 @@ namespace odb
     ~thread ()
     {
       if (!detached_)
-        pthread_detach (id_)
+        pthread_detach (id_);
     }
 
     inline void* thread::
