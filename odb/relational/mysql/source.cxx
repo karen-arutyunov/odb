@@ -679,7 +679,8 @@ namespace relational
         virtual void
         init_auto_id (semantics::data_member&, string const& im)
         {
-          os << im << "value = 0;";
+          os << im << "value = 0;"
+             << endl;
         }
 
         virtual string

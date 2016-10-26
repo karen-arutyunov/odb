@@ -1261,7 +1261,6 @@ traverse_object (type& c)
     string const& n (idf->name ());
     string var ("im." + n + (n[n.size () - 1] == '_' ? "" : "_"));
     init_auto_id (*idf, var); // idf == idb, since auto
-    os << endl;
   }
 
   os << "if (";

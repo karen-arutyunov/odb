@@ -412,9 +412,21 @@ namespace relational
         class_ (base const& x): base (x) {}
 
         virtual void
-        init_auto_id (semantics::data_member&, string const& im)
+        init_auto_id (semantics::data_member& m, string const& im)
         {
-          os << im << "null = true;";
+          // Don't set the id value to NULL if this is a nullable wrapper.
+          // This will allow the user to control whether the value is auto or
+          // manually assigned by using something like this:
+          //
+          // #pragma db auto
+          // odb::nullable<int64_t> id;
+          //
+          semantics::type& t (utype (m));
+          if (wrapper (t) && t.template get<bool> ("wrapper-null-handler"))
+            return;
+
+          os << im << "null = true;"
+             << endl;
         }
 
         virtual string
