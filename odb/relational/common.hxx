@@ -26,7 +26,8 @@ namespace relational
           custom_override_ (ct),
           fq_type_override_ (fq_type),
           key_prefix_ (key_prefix),
-          section_ (section)
+          section_ (section),
+          top_level_ (false)
     {
     }
 
@@ -41,7 +42,8 @@ namespace relational
           custom_override_ (ct),
           fq_type_override_ (fq_type),
           key_prefix_ (key_prefix),
-          section_ (section)
+          section_ (section),
+          top_level_ (false)
     {
     }
 
@@ -57,6 +59,12 @@ namespace relational
     string fq_type_override_;
     string key_prefix_;
     object_section* section_;
+
+    // True during the top-level call of pre() and post() below. Note that
+    // call via another tarverser (e.g., for a class) is not considered top-
+    // level.
+    //
+    bool top_level_;
   };
 
   // Template argument is the database SQL type (sql_type).
@@ -75,8 +83,13 @@ namespace relational
     virtual T const&
     member_sql_type (semantics::data_member&) = 0;
 
-    virtual void
-    traverse (semantics::data_member&);
+    void
+    traverse (semantics::data_member& m, bool top_level)
+    {
+      top_level_ = top_level;
+      traverse (m);
+      top_level_ = false;
+    }
 
     struct member_info
     {
@@ -180,8 +193,8 @@ namespace relational
       return type_override_ == 0 && context::container (mi.m);
     }
 
-    // The false return value indicates that no further callbacks
-    // should be called for this member.
+    // The false return value indicates that no further callbacks should be
+    // called for this member.
     //
     virtual bool
     pre (member_info&) {return true;}
@@ -189,6 +202,9 @@ namespace relational
     virtual void
     post (member_info&) {}
 
+    // Note: calling these directly will mess up the top_level logic.
+    //
+  protected:
     virtual void
     traverse_composite (member_info&) {}
 
@@ -203,6 +219,10 @@ namespace relational
 
     virtual void
     traverse_simple (member_info&) {}
+
+  private:
+    virtual void
+    traverse (semantics::data_member&);
   };
 
   //

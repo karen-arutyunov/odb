@@ -215,9 +215,10 @@ namespace relational
         pre (member_info& mi)
         {
           // If we have a key prefix (container), then it can't be in a
-          // section (while mi.m can).
+          // section (while mi.m can). The same for top-level -- if we got
+          // called, then we shouldn't ignore it.
           //
-          return !key_prefix_.empty () ||
+          return !key_prefix_.empty () || top_level_ ||
             (section_ == 0 && !separate_load (mi.m)) ||
             (section_ != 0 && *section_ == section (mi.m));
         }
@@ -287,7 +288,7 @@ namespace relational
     {
       bool r (false);
       has_grow_member mt (r);
-      mt.traverse (m);
+      mt.traverse (m, true);
       return r;
     }
 
@@ -299,7 +300,7 @@ namespace relational
     {
       bool r (false);
       has_grow_member mt (r, 0, &t, ct, kp);
-      mt.traverse (m);
+      mt.traverse (m, true);
       return r;
     }
 

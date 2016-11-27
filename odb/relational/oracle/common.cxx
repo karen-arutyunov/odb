@@ -189,7 +189,7 @@ namespace relational
     image_type (semantics::data_member& m)
     {
       type_.clear ();
-      member_base::traverse (m);
+      member_base::traverse (m, true);
       return type_;
     }
 
@@ -325,7 +325,7 @@ namespace relational
     database_type_id (type& m)
     {
       type_id_.clear ();
-      member_base::traverse (m);
+      member_base::traverse (m, true);
       return type_id_;
     }
 
