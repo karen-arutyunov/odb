@@ -106,7 +106,15 @@ next (string& token, tree* node)
 location_t cxx_pragma_lexer::
 location () const
 {
+  // Starting from GCC 6 the input location seem to require the same
+  // translation as what we do in real_source_location().
+  //
+#if BUILDING_GCC_MAJOR >= 6
+  return linemap_resolve_location (
+    line_table, input_location, LRK_MACRO_EXPANSION_POINT, 0);
+#else
   return input_location;
+#endif
 }
 
 string cxx_pragma_lexer::
