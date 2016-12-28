@@ -181,16 +181,6 @@ struct pragma
   {
   }
 
-  bool
-  operator< (pragma const& y) const
-  {
-    if (add == 0)
-      return context_name < y.context_name;
-    else
-      return context_name < y.context_name ||
-        (context_name == y.context_name && loc < y.loc);
-  }
-
   std::string pragma_name;  // Actual pragma name for diagnostics.
   std::string context_name; // Context entry name.
   cutl::container::any value;
@@ -204,29 +194,51 @@ typedef std::vector<pragma> pragma_list;
 // A set of pragmas. Insertion of a pragma with the same name and no
 // custom add function overrides the old value.
 //
-struct pragma_set: std::set<pragma>
+struct pragma_set: std::multimap<std::string, pragma>
 {
-  typedef std::set<pragma> base;
+  typedef std::multimap<std::string, pragma> base;
 
   pragma&
   insert (pragma const& p)
   {
-    std::pair<iterator, bool> r (base::insert (p));
+    std::string const& n (p.context_name);
+    std::pair<iterator, iterator> r (equal_range (n));
 
-    pragma& x (const_cast<pragma&> (*r.first));
+    iterator i (end ());
 
-    if (!r.second)
-      x = p;
+    if (p.add == 0)
+    {
+      if (r.first != r.second)
+      {
+        i = r.first;
+        assert (++r.first == r.second);
 
-    return x;
+        i->second = p;
+      }
+    }
+    else if (r.first != r.second)
+      assert ((--r.second)->second.loc <= p.loc);
+
+    if (i == end ())
+      i = base::insert (base::value_type (n, p));
+
+    return i->second;
   }
 
-  template <typename I>
   void
-  insert (I begin, I end)
+  insert (const_iterator begin, const_iterator end)
   {
     for (; begin != end; ++begin)
-      insert (*begin);
+      insert (begin->second);
+  }
+
+  // Return the last pragma in the equal range which (by construction) has the
+  // location greater or equal to all the other pragmas in this range.
+  //
+  iterator
+  find (std::string const& n)
+  {
+    return equal_range (n).second;
   }
 };
 

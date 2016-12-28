@@ -852,12 +852,12 @@ parse (tree global_scope, path const& main_file)
     }
 
     pragma_set& s (decl_pragmas_[ns]);
-    pragma_set::iterator it (s.find (p));
+    pragma_set::iterator it (s.find (p.context_name));
 
     // Make sure we override only if this pragma came after the one
     // already in the set.
     //
-    if (it == s.end () || it->loc < p.loc)
+    if (it == s.end () || it->second.loc <= p.loc)
       s.insert (p);
   }
 
@@ -2179,7 +2179,7 @@ process_pragmas (declaration const& decl,
   // Finally, copy the resulting pragma set to context.
   //
   for (pragma_set::iterator i (prags.begin ()); i != prags.end (); ++i)
-    add_pragma (node, *i);
+    add_pragma (node, i->second);
 }
 
 void parser::impl::
@@ -2195,7 +2195,7 @@ process_named_pragmas (declaration const& decl, node& node)
   // Copy the resulting pragma set to context.
   //
   for (pragma_set::iterator i (prags.begin ()); i != prags.end (); ++i)
-    add_pragma (node, *i);
+    add_pragma (node, i->second);
 }
 
 void parser::impl::

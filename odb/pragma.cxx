@@ -4391,23 +4391,23 @@ post_process_pragmas ()
     for (pragma_set::iterator j (i->second.begin ()), e (i->second.end ());
          j != e; ++j)
     {
-      string const& name (j->context_name);
+      string const& name (j->second.context_name);
 
       if (name == "object")
       {
-        p = &*j;
+        p = &j->second;
         diag_name = "persistent object";
         break;
       }
       else if (name == "view")
       {
-        p = &*j;
+        p = &j->second;
         diag_name = "view";
         break;
       }
       else if (name == "value")
       {
-        p = &*j;
+        p = &j->second;
         diag_name = "composite value";
         break;
       }
