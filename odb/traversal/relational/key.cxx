@@ -1,5 +1,5 @@
 // file      : odb/traversal/relational/key.cxx
-// copyright : Copyright (c) 2009-2015 Code Synthesis Tools CC
+// copyright : Copyright (c) 2009-2017 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #include <odb/traversal/relational/key.hxx>

@@ -1,5 +1,5 @@
 # file      : makefile
-# copyright : Copyright (c) 2005-2015 Code Synthesis Tools CC
+# copyright : Copyright (c) 2005-2017 Code Synthesis Tools CC
 # license   : GNU GPL v3; see accompanying LICENSE file
 
 include $(dir $(lastword $(MAKEFILE_LIST)))build/bootstrap.make
