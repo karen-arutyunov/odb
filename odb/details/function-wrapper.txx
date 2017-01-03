@@ -1,5 +1,5 @@
 // file      : odb/details/function-wrapper.txx
-// copyright : Copyright (c) 2009-2014 Code Synthesis Tools CC
+// copyright : Copyright (c) 2009-2017 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #include <utility> // std::swap, std::move
