@@ -199,18 +199,20 @@ namespace odb
       // rather than getting involved with the portable case-
       // insensitive string comparison mess.
       //
-      if (s.compare (0, (n = 5), "WHERE") == 0 ||
-          s.compare (0, (n = 5), "where") == 0 ||
-          s.compare (0, (n = 6), "SELECT") == 0 ||
-          s.compare (0, (n = 6), "select") == 0 ||
+      if (s.compare (0, (n = 5), "WHERE") == 0    ||
+          s.compare (0, (n = 5), "where") == 0    ||
+          s.compare (0, (n = 6), "SELECT") == 0   ||
+          s.compare (0, (n = 6), "select") == 0   ||
           s.compare (0, (n = 8), "ORDER BY") == 0 ||
           s.compare (0, (n = 8), "order by") == 0 ||
           s.compare (0, (n = 8), "GROUP BY") == 0 ||
           s.compare (0, (n = 8), "group by") == 0 ||
-          s.compare (0, (n = 6), "HAVING") == 0 ||
-          s.compare (0, (n = 6), "having") == 0 ||
-          s.compare (0, (n = 4), "WITH") == 0 ||
-          s.compare (0, (n = 4), "with") == 0)
+          s.compare (0, (n = 6), "HAVING") == 0   ||
+          s.compare (0, (n = 6), "having") == 0   ||
+          s.compare (0, (n = 4), "WITH") == 0     ||
+          s.compare (0, (n = 4), "with") == 0     ||
+          s.compare (0, (n = 6), "PRAGMA") == 0   ||
+          s.compare (0, (n = 6), "pragma") == 0)
       {
         // It either has to be an exact match, or there should be
         // a whitespace following the keyword.
