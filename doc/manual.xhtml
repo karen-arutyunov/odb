@@ -9263,6 +9263,9 @@ namespace odb
     void
     unload ();
 
+    void
+    load ();
+
     // Change state.
     //
     bool
@@ -9282,11 +9285,14 @@ namespace odb
 }
   </pre>
 
-  <p>The <code>loaded()</code> accessor can be used to determine
-     whether a section is already loaded. The <code>unload()</code>
-     modifier marks a loaded section as not loaded. This, for example,
-     can be useful if you don't want the section to be reloaded during
-     the object reload.</p>
+  <p>The <code>loaded()</code> accessor can be used to determine whether a
+     section is already loaded. The <code>unload()</code> modifier marks a
+     loaded section as not loaded. This, for example, can be useful if you
+     don't want the section to be reloaded during the object reload. The
+     <code>load()</code> modifier marks an unloaded section as loaded
+     without actually loading any of its data members. This, for example,
+     can be useful if you don't want to load the old state before overwriting
+     it with <code>update()</code>.</p>
 
   <p>The <code>changed()</code> accessor can be used to query the
      section's change state. The <code>change()</code> modifier
