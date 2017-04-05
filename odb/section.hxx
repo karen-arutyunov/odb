@@ -32,6 +32,15 @@ namespace odb
       state_.restore = 0;
     }
 
+    // Mark an unloaded section as loaded. This, for example, can be useful if
+    // you don't want to load the old data before overwriting it with update().
+    //
+    void
+    load ()
+    {
+      state_.loaded = 1;
+    }
+
     // Change state.
     //
     bool
