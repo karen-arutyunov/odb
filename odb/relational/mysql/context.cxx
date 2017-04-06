@@ -50,7 +50,7 @@ namespace relational
         {"float", "FLOAT", 0, false},
         {"double", "DOUBLE", 0, false},
 
-        {"::std::string", "TEXT", "VARCHAR(255)", false},
+        {"::std::string", "TEXT", "VARCHAR(128)", false},
 
         {"::size_t", "BIGINT UNSIGNED", 0, false},
         {"::std::size_t", "BIGINT UNSIGNED", 0, false}

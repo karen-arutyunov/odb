@@ -6724,11 +6724,11 @@ class employee
 
   <pre class="sql">
 CREATE TABLE employer (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
+  name VARCHAR (128) NOT NULL PRIMARY KEY);
 
 CREATE TABLE employee (
   id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  employer VARCHAR (255) NOT NULL REFERENCES employer (name));
+  employer VARCHAR (128) NOT NULL REFERENCES employer (name));
   </pre>
 
   <h3><a name="6.1.2">6.1.2 To-Many Relationships</a></h3>
@@ -6765,14 +6765,14 @@ class employee
 
   <pre class="sql">
 CREATE TABLE project (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
+  name VARCHAR (128) NOT NULL PRIMARY KEY);
 
 CREATE TABLE employee (
   id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
 
 CREATE TABLE employee_projects (
   object_id BIGINT UNSIGNED NOT NULL,
-  value VARCHAR (255) NOT NULL REFERENCES project (name));
+  value VARCHAR (128) NOT NULL REFERENCES project (name));
   </pre>
 
   <p>To obtain a more canonical database schema, the names of tables
@@ -6797,7 +6797,7 @@ class employee
   <pre class="sql">
 CREATE TABLE employee_projects (
   employee_id BIGINT UNSIGNED NOT NULL,
-  project_name VARCHAR (255) NOT NULL REFERENCES project (name));
+  project_name VARCHAR (128) NOT NULL REFERENCES project (name));
   </pre>
 
 
@@ -7101,11 +7101,11 @@ class employee
 
   <pre class="sql">
 CREATE TABLE employer (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
+  name VARCHAR (128) NOT NULL PRIMARY KEY);
 
 CREATE TABLE employee (
   id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  employer VARCHAR (255) NOT NULL REFERENCES employer (name));
+  employer VARCHAR (128) NOT NULL REFERENCES employer (name));
   </pre>
 
   <p>If instead the <em>many</em> side (<code>employee</code>) of this
@@ -7114,10 +7114,10 @@ CREATE TABLE employee (
 
   <pre class="sql">
 CREATE TABLE employer (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
+  name VARCHAR (128) NOT NULL PRIMARY KEY);
 
 CREATE TABLE employer_employees (
-  object_id VARCHAR (255) NOT NULL REFERENCES employer (name),
+  object_id VARCHAR (128) NOT NULL REFERENCES employer (name),
   value BIGINT UNSIGNED NOT NULL REFERENCES employee (id));
 
 CREATE TABLE employee (
@@ -7163,14 +7163,14 @@ class employee
 
   <pre class="sql">
 CREATE TABLE project (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
+  name VARCHAR (128) NOT NULL PRIMARY KEY);
 
 CREATE TABLE employee (
   id BIGINT UNSIGNED NOT NULL PRIMARY KEY);
 
 CREATE TABLE employee_projects (
   object_id BIGINT UNSIGNED NOT NULL REFERENCES employee (id),
-  value VARCHAR (255) NOT NULL REFERENCES project (name));
+  value VARCHAR (128) NOT NULL REFERENCES project (name));
   </pre>
 
   <p>If instead the other side of this relationship is made inverse,
@@ -7178,10 +7178,10 @@ CREATE TABLE employee_projects (
 
   <pre class="sql">
 CREATE TABLE project (
-  name VARCHAR (255) NOT NULL PRIMARY KEY);
+  name VARCHAR (128) NOT NULL PRIMARY KEY);
 
 CREATE TABLE project_employees (
-  object_id VARCHAR (255) NOT NULL REFERENCES project (name),
+  object_id VARCHAR (128) NOT NULL REFERENCES project (name),
   value BIGINT UNSIGNED NOT NULL REFERENCES employee (id));
 
 CREATE TABLE employee (
@@ -8594,7 +8594,7 @@ CREATE TABLE temporary_employee (
 CREATE TABLE contractor (
   first TEXT NOT NULL,
   last TEXT NOT NULL,
-  email VARCHAR (255) NOT NULL PRIMARY KEY);
+  email VARCHAR (128) NOT NULL PRIMARY KEY);
   </pre>
 
   <p>The complete version of the code presented in this section is
@@ -8878,7 +8878,7 @@ t.commit ();
   <pre class="sql">
 CREATE TABLE person (
   id BIGINT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  typeid VARCHAR(255) NOT NULL,
+  typeid VARCHAR(128) NOT NULL,
   first TEXT NOT NULL,
   last TEXT NOT NULL);
 
@@ -15348,7 +15348,7 @@ class person
      example:</p>
 
   <pre class="cxx">
-#pragma db value(std::string) type("TEXT") id_type("VARCHAR(128)")
+#pragma db value(std::string) type("TEXT") id_type("VARCHAR(64)")
 
 #pragma db object
 class person
@@ -15356,7 +15356,7 @@ class person
   ...
 
   #pragma db id
-  std::string email_; // Mapped to VARCHAR(128) NOT NULL.
+  std::string email_; // Mapped to VARCHAR(64) NOT NULL.
 
   std::string name_;  // Mapped to TEXT NOT NULL.
 };
@@ -19962,7 +19962,7 @@ person.hxx
 
     <tr>
       <td><code>std::string</code></td>
-      <td><code>TEXT/VARCHAR(255)</code></td>
+      <td><code>TEXT/VARCHAR(128)</code></td>
       <td><code>NOT NULL</code></td>
     </tr>
 
@@ -19982,7 +19982,7 @@ person.hxx
      differently depending on whether a member of this type
      is an object id or not. If the member is an object id,
      then for this member <code>std::string</code> is mapped
-     to the <code>VARCHAR(255)</code> MySQL type. Otherwise,
+     to the <code>VARCHAR(128)</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT</code>.</p>
 
   <p>Additionally, by default, C++ enums and C++11 enum classes are
@@ -26105,7 +26105,7 @@ class object
 
     <tr>
       <td><code>QString</code></td>
-      <td><code>TEXT/VARCHAR(255)</code></td>
+      <td><code>TEXT/VARCHAR(128)</code></td>
       <td><code>NULL</code></td>
     </tr>
 
@@ -26130,7 +26130,7 @@ class object
      differently depending on whether a member of this type
      is an object id or not. If the member is an object id,
      then for this member <code>QString</code> is mapped
-     to the <code>VARCHAR(255)</code> MySQL type. Otherwise,
+     to the <code>VARCHAR(128)</code> MySQL type. Otherwise,
      it is mapped to <code>TEXT</code>.</p>
 
   <p>The <code>basic</code> sub-profile also provides support

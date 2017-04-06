@@ -461,7 +461,7 @@ namespace relational
           pre_statement ();
 
           os << "CREATE TABLE IF NOT EXISTS " << qt_ << " (" << endl
-             << "  " << qn_ << " VARCHAR(255) NOT NULL PRIMARY KEY," << endl
+             << "  " << qn_ << " VARCHAR(128) NOT NULL PRIMARY KEY," << endl
              << "  " << qv_ << " BIGINT UNSIGNED NOT NULL," << endl
              << "  " << qm_ << " TINYINT(1) NOT NULL)" << endl;
 
