@@ -95,10 +95,10 @@ details/shared-ptr/{hxx            }{ exception                   } \
 # For pre-releases use the complete version to make sure they cannot be used
 # in place of another pre-release or the final version.
 #
-if $abi_prerelease
-  lib{odb}: bin.lib.version = @-$version
+if $version.pre_release
+  lib{odb}: bin.lib.version = @"-$version.project_id"
 else
-  lib{odb}: bin.lib.version = @-$abi_major.$abi_minor
+  lib{odb}: bin.lib.version = @"-$version.major.$version.minor"
 
 cxx.poptions =+ "-I$src_root" -DLIBODB_BUILD2
 obja{*}: cxx.poptions += -DLIBODB_STATIC_BUILD
