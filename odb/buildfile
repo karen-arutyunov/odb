@@ -100,11 +100,11 @@ if $version.pre_release
 else
   lib{odb}: bin.lib.version = @"-$version.major.$version.minor"
 
-cxx.poptions =+ "-I$src_root" -DLIBODB_BUILD2
+cxx.poptions =+ "-I$out_root" "-I$src_root" -DLIBODB_BUILD2
 obja{*}: cxx.poptions += -DLIBODB_STATIC_BUILD
 objs{*}: cxx.poptions += -DLIBODB_SHARED_BUILD
 
-lib{odb}: cxx.export.poptions = "-I$src_root" -DLIBODB_BUILD2
+lib{odb}: cxx.export.poptions = "-I$out_root" "-I$src_root" -DLIBODB_BUILD2
 liba{odb}: cxx.export.poptions += -DLIBODB_STATIC
 libs{odb}: cxx.export.poptions += -DLIBODB_SHARED
 
