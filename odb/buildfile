@@ -56,6 +56,7 @@ lib{odb}:                                                           \
                    {hxx ixx     cxx}{ vector-impl                 } \
                    {hxx     txx    }{ vector-traits               } \
                    {hxx            }{ version                     } \
+                   {hxx            }{ version-build2              } \
                    {hxx            }{ view-image                  } \
                    {hxx     txx    }{ view-result                 } \
                    {hxx            }{ wrapper-traits              } \
@@ -92,6 +93,9 @@ details/shared-ptr/{hxx            }{ counter-type                } \
 details/shared-ptr/{hxx            }{ exception                   } \
      details/win32/{hxx            }{ windows                     }
 
+hxx{version-build2}: in{version-build2} $src_root/file{manifest}
+hxx{version-build2}: dist = true
+
 # For pre-releases use the complete version to make sure they cannot be used
 # in place of another pre-release or the final version.
 #
@@ -118,6 +122,9 @@ if ($cxx.target.class != "windows")
 
 # We want these to be picked up even when LIBODB_BUILD2 is not defined.
 #
+hxx{version}@./:     install = false
+hxx{version-build2}: install = $install.include/version.hxx
+
 details/build2/:
 {
   if ($cxx.id == "msvc")
