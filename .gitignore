@@ -27,3 +27,7 @@
 # Generated .gitignore files.
 #
 .gitignore
+
+# Temporarily here because of auto-generated odb/sqlite/.gitignore.
+#
+odb/sqlite/version-build2.hxx

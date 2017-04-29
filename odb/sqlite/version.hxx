@@ -2,6 +2,10 @@
 // copyright : Copyright (c) 2005-2017 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
+#ifdef LIBODB_SQLITE_BUILD2
+#  include <odb/sqlite/version-build2.hxx>
+#else
+
 #ifndef ODB_SQLITE_VERSION_HXX
 #define ODB_SQLITE_VERSION_HXX
 
@@ -41,3 +45,4 @@
 #include <odb/post.hxx>
 
 #endif // ODB_SQLITE_VERSION_HXX
+#endif // LIBODB_SQLITE_BUILD2
