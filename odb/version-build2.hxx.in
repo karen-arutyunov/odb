@@ -4,6 +4,10 @@
 
 #ifndef LIBODB_VERSION // Note: using the version macro itself.
 
+// For the ODB compiler (temporary).
+//
+#define ODB_VERSION     20451
+
 // Note: using build2 standard versioning scheme. The numeric version format
 // is AAABBBCCCDDDE where:
 //
