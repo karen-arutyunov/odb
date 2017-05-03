@@ -1,6 +1,6 @@
 : 1
 name: libodb
-version: 2.5.0-b.1.z
+version: 2.5.0-b.1
 summary: Common ODB runtime library
 license: GPLv2
 license: proprietary
