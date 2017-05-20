@@ -17,4 +17,4 @@ cxx{*}: extension = cxx
 # source file prerequisites instead of using the cli.cxx{} group (it won't
 # be there unless the module is configured).
 #
-using? cliusing? cli
+using? cli
