@@ -1758,8 +1758,14 @@ namespace relational
         if (container (mi))
           return false;
 
-        if (section_ != 0 && *section_ != section (mi.m))
-          return false;
+        // If we have a key prefix (container), then it can't be in a section
+        // (while mi.m can). The same for top-level -- if we got called, then
+        // we shouldn't ignore it. (Same logic as in has_grow_member).
+        //
+        if (!(!key_prefix_.empty () || top_level_ ||
+              (section_ == 0 && !separate_load (mi.m)) ||
+              (section_ != 0 && *section_ == section (mi.m))))
+            return false;
 
         // Ignore polymorphic id references; they are not returned by
         // the select statement.
