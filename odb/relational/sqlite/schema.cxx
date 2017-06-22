@@ -187,6 +187,21 @@ namespace relational
             os << " CONSTRAINT " << quote_id (afk->name ()) << " REFERENCES " <<
               quote_id (afk->referenced_table ().uname ()) << " (" <<
               quote_id (afk->referenced_columns ()[0]) << ")";
+
+            bool del (afk->on_delete () != sema_rel::foreign_key::no_action);
+            bool def (!afk->not_deferrable ());
+
+            if (del || def)
+            {
+              instance<relational::create_foreign_key> cfk (*this);
+
+              if (del)
+                cfk->on_delete (afk->on_delete ());
+
+              if (def)
+                cfk->deferrable (afk->deferrable ());
+            }
+
             afk->set ("sqlite-fk-defined", true); // Mark it as defined.
           }
 
