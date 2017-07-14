@@ -2,96 +2,14 @@
 # copyright : Copyright (c) 2009-2017 Code Synthesis Tools CC
 # license   : GNU GPL v2; see accompanying LICENSE file
 
-lib{odb}:                                                           \
-                   {hxx            }{ cache-traits                } \
-                   {hxx            }{ callback                    } \
-                   {hxx ixx txx cxx}{ connection                  } \
-                   {hxx            }{ container-traits            } \
-                   {hxx            }{ core                        } \
-                   {hxx ixx txx cxx}{ database                    } \
-                   {hxx            }{ exception                   } \
-                   {hxx         cxx}{ exceptions                  } \
-                   {hxx            }{ forward                     } \
-                   {hxx            }{ function-table              } \
-                   {hxx            }{ lazy-pointer-traits         } \
-                   {hxx ixx txx    }{ lazy-ptr                    } \
-                   {hxx ixx txx    }{ lazy-ptr-impl               } \
-                   {hxx            }{ nested-container            } \
-                   {hxx     txx    }{ no-id-object-result         } \
-                   {hxx            }{ no-op-cache-traits          } \
-                   {hxx            }{ nullable                    } \
-                   {hxx            }{ object-result               } \
-                   {hxx            }{ pointer-traits              } \
-                   {hxx            }{ polymorphic-info            } \
-                   {hxx ixx txx    }{ polymorphic-map             } \
-                   {hxx     txx    }{ polymorphic-object-result   } \
-                   {hxx            }{ post                        } \
-                   {hxx            }{ pre                         } \
-                   {hxx         cxx}{ prepared-query              } \
-                   {hxx ixx txx cxx}{ query-dynamic               } \
-                   {hxx            }{ query                       } \
-                   {hxx     txx cxx}{ result                      } \
-                   {hxx         cxx}{ schema-catalog              } \
-                   {hxx            }{ schema-catalog-impl         } \
-                   {hxx            }{ schema-version              } \
-                   {hxx         cxx}{ section                     } \
-                   {hxx ixx txx cxx}{ session                     } \
-                   {hxx     txx    }{ simple-object-result        } \
-                   {hxx         cxx}{ statement                   } \
-                   {hxx            }{ statement-processing-common } \
-                   {            cxx}{ statement-processing        } \
-                   {hxx            }{ std-array-traits            } \
-                   {hxx            }{ std-deque-traits            } \
-                   {hxx            }{ std-forward-list-traits     } \
-                   {hxx            }{ std-list-traits             } \
-                   {hxx            }{ std-map-traits              } \
-                   {hxx            }{ std-set-traits              } \
-                   {hxx            }{ std-unordered-map-traits    } \
-                   {hxx            }{ std-unordered-set-traits    } \
-                   {hxx            }{ std-vector-traits           } \
-                   {hxx         cxx}{ tracer                      } \
-                   {hxx            }{ traits                      } \
-                   {hxx ixx     cxx}{ transaction                 } \
-                   {hxx ixx        }{ vector                      } \
-                   {hxx ixx     cxx}{ vector-impl                 } \
-                   {hxx     txx    }{ vector-traits               } \
-                   {hxx            }{ version                     } \
-                   {hxx            }{ version-build2              } \
-                   {hxx            }{ view-image                  } \
-                   {hxx     txx    }{ view-result                 } \
-                   {hxx            }{ wrapper-traits              } \
-           details/{hxx         cxx}{ buffer                      } \
-           details/{hxx            }{ condition                   } \
-           details/{hxx            }{ config                      } \
-           details/{hxx            }{ c-string                    } \
-           details/{hxx            }{ exception                   } \
-           details/{hxx            }{ export                      } \
-           details/{hxx ixx txx    }{ function-wrapper            } \
-           details/{hxx            }{ lock                        } \
-           details/{hxx            }{ mutex                       } \
-           details/{hxx            }{ shared-ptr-fwd              } \
-           details/{hxx            }{ shared-ptr                  } \
-           details/{hxx         cxx}{ thread                      } \
-           details/{hxx            }{ tls                         } \
-           details/{hxx            }{ transfer-ptr                } \
-           details/{hxx            }{ type-info                   } \
-           details/{hxx            }{ unique-ptr                  } \
-           details/{hxx            }{ unused                      } \
-           details/{hxx            }{ wrapper-p                   } \
-    details/build2/{h              }{ config                      } \
-    details/build2/{h              }{ config-vc                   } \
-      details/meta/{hxx            }{ answer                      } \
-      details/meta/{hxx            }{ class-p                     } \
-      details/meta/{hxx            }{ polymorphic-p               } \
-      details/meta/{hxx            }{ remove-const                } \
-      details/meta/{hxx            }{ remove-const-volatile       } \
-      details/meta/{hxx            }{ remove-pointer              } \
-      details/meta/{hxx            }{ remove-volatile             } \
-      details/meta/{hxx            }{ static-assert               } \
-details/shared-ptr/{hxx ixx txx cxx}{ base                        } \
-details/shared-ptr/{hxx            }{ counter-type                } \
-details/shared-ptr/{hxx            }{ exception                   } \
-     details/win32/{hxx            }{ windows                     }
+lib{odb}:          {hxx ixx txx cxx}{* -version-build2} \
+                   {hxx}{version-build2}                \
+           details/{hxx ixx txx}{*}                     \
+           details/{cxx}{* -condition -lock -mutex}     \
+    details/build2/{h}{*}                               \
+      details/meta/{hxx}{*}                             \
+details/shared-ptr/{hxx ixx txx cxx}{*}                 \
+     details/win32/{hxx}{windows}
 
 hxx{version-build2}: in{version-build2} $src_root/file{manifest}
 hxx{version-build2}: dist = true
