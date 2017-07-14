@@ -4,4 +4,4 @@
 
 import libs = libodb-sqlite%lib{odb-sqlite}
 
-exe{driver}: cxx{driver} $libs
+exe{driver}: {hxx cxx}{*} $libs
