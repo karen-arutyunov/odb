@@ -30,10 +30,12 @@ lib{odb}: cxx.export.poptions = "-I$out_root" "-I$src_root" -DLIBODB_BUILD2
 liba{odb}: cxx.export.poptions += -DLIBODB_STATIC
 libs{odb}: cxx.export.poptions += -DLIBODB_SHARED
 
-# Install into the odb/ subdirectory of, say, /usr/include/.
+# Install into the odb/ subdirectory of, say, /usr/include/ recreating
+# subdirectories.
 #
-install.include = $install.include/odb/
-install.include.subdirs = true # Recreate subdirectories.
+install_include = include/odb/
+{hxx ixx txx}{*}: install         = $install_include
+{hxx ixx txx}{*}: install.subdirs = true
 
 if ($cxx.target.class != "windows")
   details/win32/*: install = false
@@ -41,18 +43,18 @@ if ($cxx.target.class != "windows")
 # We want these to be picked up even when LIBODB_BUILD2 is not defined.
 #
 hxx{version}@./:     install = false
-hxx{version-build2}: install = $install.include/version.hxx
+hxx{version-build2}: install = $install_include/version.hxx
 
 details/build2/:
 {
   if ($cxx.id == "msvc")
   {
     h{config}@./:    install = false
-    h{config-vc}@./: install = $install.include/details/
+    h{config-vc}@./: install = $install_include/details/
   }
   else
   {
-    h{config}@./:    install = $install.include/details/
+    h{config}@./:    install = $install_include/details/
     h{config-vc}@./: install = false
   }
 }
