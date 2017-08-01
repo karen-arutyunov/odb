@@ -33,7 +33,8 @@ libs{odb}: cxx.export.poptions += -DLIBODB_SHARED
 # Install into the odb/ subdirectory of, say, /usr/include/ recreating
 # subdirectories.
 #
-install_include = include/odb/
+install_include = [dir_path] include/odb/
+
 {hxx ixx txx}{*}: install         = $install_include
 {hxx ixx txx}{*}: install.subdirs = true
 
