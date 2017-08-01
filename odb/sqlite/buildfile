@@ -55,7 +55,8 @@ details/:
 # Install into the odb/sqlite/ subdirectory of, say, /usr/include/ recreating
 # subdirectories.
 #
-install_include = include/odb/sqlite/
+install_include = [dir_path] include/odb/sqlite/
+
 {hxx ixx txx}{*}: install         = $install_include
 {hxx ixx txx}{*}: install.subdirs = true
 
