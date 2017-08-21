@@ -12,7 +12,6 @@ details/shared-ptr/{hxx ixx txx cxx}{*}                 \
      details/win32/{hxx}{windows}
 
 hxx{version-build2}: in{version-build2} $src_root/file{manifest}
-hxx{version-build2}: dist = true
 
 # For pre-releases use the complete version to make sure they cannot be used
 # in place of another pre-release or the final version.
