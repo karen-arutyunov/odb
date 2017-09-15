@@ -2259,7 +2259,7 @@ namespace relational
           os << "bool is_null (ptr_traits::null_ptr (" << member << "));"
              << "if (!is_null)"
              << "{"
-             << "const " << type << "& id (" << endl;
+             << "const " << type << "& ptr_id (" << endl;
 
           if (lazy_pointer (pt))
             os << "ptr_traits::object_id< ptr_traits::element_type  > (" <<
@@ -2270,7 +2270,7 @@ namespace relational
           os << ");"
              << endl;
 
-          member = "id";
+          member = "ptr_id";
         }
         else if (comp != 0)
           type = mi.fq_type ();
@@ -2721,9 +2721,9 @@ namespace relational
           os << "else"
              << "{";
 
-          os << type << " id;";
+          os << type << " ptr_id;";
 
-          member = "id";
+          member = "ptr_id";
         }
         else
           type = mi.fq_type ();
@@ -2765,7 +2765,7 @@ namespace relational
 
           if (lazy_pointer (pt))
             os << member << " = ptr_traits::pointer_type (" << endl
-               << "*static_cast<" << db << "::database*> (db), id);";
+               << "*static_cast<" << db << "::database*> (db), ptr_id);";
           else
           {
             os << "// If a compiler error points to the line below, then" << endl
@@ -2774,7 +2774,7 @@ namespace relational
                << "//" << endl
                << member << " = ptr_traits::pointer_type (" << endl
                << "static_cast<" << db << "::database*> (db)->load<" << endl
-               << "  obj_traits::object_type > (id));";
+               << "  obj_traits::object_type > (ptr_id));";
 
             // If we are loading into an eager weak pointer, make sure there
             // is someone else holding a strong pointer to it (normally a
