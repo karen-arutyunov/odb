@@ -45,22 +45,38 @@ namespace odb
     inline void shared_base::
     _inc_ref ()
     {
-      counter_++;
+#ifdef ODB_CXX11
+      counter_.fetch_add (1, std::memory_order_relaxed);
+#else
+      ++counter_;
+#endif
     }
 
     inline bool shared_base::
     _dec_ref ()
     {
-      if (callback_ == 0)
-        return --counter_ == 0;
-      else
-        return _dec_ref_callback ();
+      // While there are ways to avoid acquire (which is unnecessary except
+      // when the counter drops to zero), for our use-cases we'd rather keep
+      // it simple.
+      //
+      return
+#ifdef ODB_CXX11
+        counter_.fetch_sub (1, std::memory_order_acq_rel) == 1
+#else
+        --counter_ == 0
+#endif
+        ? callback_ == 0 || callback_->zero_counter (callback_->arg)
+        : false;
     }
 
     inline std::size_t shared_base::
     _ref_count () const
     {
+#ifdef ODB_CXX11
+      return counter_.load (std::memory_order_relaxed);
+#else
       return counter_;
+#endif
     }
 
 #ifdef ODB_CXX11

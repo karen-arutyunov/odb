@@ -7,10 +7,15 @@
 
 #include <odb/pre.hxx>
 
+#include <odb/details/config.hxx> // ODB_CXX11, ODB_NOTHROW_NOEXCEPT
+
 #include <new>
 #include <cstddef>   // std::size_t
 
-#include <odb/details/config.hxx> // ODB_CXX11, ODB_NOTHROW_NOEXCEPT
+#ifdef ODB_CXX11
+#include <atomic>
+#endif
+
 #include <odb/details/export.hxx>
 #include <odb/details/shared-ptr/counter-type.hxx>
 
@@ -96,12 +101,12 @@ namespace odb
         bool (*zero_counter) (void*);
       };
 
-    private:
-      bool
-      _dec_ref_callback ();
-
     protected:
+#ifdef ODB_CXX11
+      std::atomic<std::size_t> counter_;
+#else
       std::size_t counter_;
+#endif
       refcount_callback* callback_;
     };
 

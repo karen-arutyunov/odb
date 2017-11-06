@@ -26,17 +26,6 @@ namespace odb
       return new not_shared (*this);
     }
 
-    bool shared_base::
-    _dec_ref_callback ()
-    {
-      bool r (--counter_ == 0);
-
-      if (r)
-        r = callback_->zero_counter (callback_->arg);
-
-      return r;
-    }
-
     namespace bits
     {
       size_t* locator_common::
