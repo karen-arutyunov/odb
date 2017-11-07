@@ -444,12 +444,17 @@ namespace
 
             // OVL_* macros work for both FUNCTION_DECL and OVERLOAD.
             //
-            for (tree o (BASELINK_FUNCTIONS (decl));
-                 o != 0;
-                 o = OVL_NEXT (o))
+#if BUILDING_GCC_MAJOR >= 8
+            for (ovl_iterator i (BASELINK_FUNCTIONS (decl)); i; ++i)
+#else
+            for (tree o (BASELINK_FUNCTIONS (decl)); o != 0; o = OVL_NEXT (o))
+#endif
             {
+#if BUILDING_GCC_MAJOR >= 8
+              tree f (*i);
+#else
               tree f (OVL_CURRENT (o));
-
+#endif
               // We are only interested in public non-static member
               // functions. Note that TREE_PUBLIC() returns something
               // other than what we need.
@@ -551,12 +556,17 @@ namespace
           {
             // OVL_* macros work for both FUNCTION_DECL and OVERLOAD.
             //
-            for (tree o (BASELINK_FUNCTIONS (decl));
-                 o != 0;
-                 o = OVL_NEXT (o))
+#if BUILDING_GCC_MAJOR >= 8
+            for (ovl_iterator i (BASELINK_FUNCTIONS (decl)); i; ++i)
+#else
+            for (tree o (BASELINK_FUNCTIONS (decl)); o != 0; o = OVL_NEXT (o))
+#endif
             {
+#if BUILDING_GCC_MAJOR >= 8
+              tree f (*i);
+#else
               tree f (OVL_CURRENT (o));
-
+#endif
               // We are only interested in non-static member functions.
               //
               if (!DECL_NONSTATIC_MEMBER_FUNCTION_P (f))
@@ -2880,7 +2890,11 @@ namespace
                   {
                     tree prev (CP_DECL_CONTEXT (scope));
 
+#if BUILDING_GCC_MAJOR >= 8
+                    if (!is_nested_namespace (prev, scope, true))
+#else
                     if (!is_associated_namespace (prev, scope))
+#endif
                       break;
 
                     scope = prev;

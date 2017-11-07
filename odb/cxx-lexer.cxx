@@ -93,7 +93,13 @@ next (string& token, tree* node)
   // See if this is a keyword using the C++ parser machinery and
   // the current C++ dialect.
   //
-  if (*type_ == CPP_NAME && C_IS_RESERVED_WORD (*token_))
+  if (*type_ == CPP_NAME &&
+#if BUILDING_GCC_MAJOR >= 8
+      IDENTIFIER_KEYWORD_P (*token_)
+#else
+      C_IS_RESERVED_WORD (*token_)
+#endif
+  )
     *type_ = CPP_KEYWORD;
 
   if (node != 0 && node != token_)
@@ -281,7 +287,13 @@ next (string& token, tree* node)
       //
       tree id (get_identifier (name));
 
-      if (C_IS_RESERVED_WORD (id))
+      if (
+#if BUILDING_GCC_MAJOR >= 8
+        IDENTIFIER_KEYWORD_P (id)
+#else
+        C_IS_RESERVED_WORD (id)
+#endif
+      )
         tt = CPP_KEYWORD;
 
       if (node != 0)

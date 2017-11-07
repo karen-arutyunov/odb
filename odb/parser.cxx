@@ -911,8 +911,23 @@ collect (tree ns)
 
   // Traverse namespaces.
   //
-  for (decl = level->namespaces; decl != NULL_TREE; decl = TREE_CHAIN (decl))
+  for (
+#if BUILDING_GCC_MAJOR >= 8
+    decl = level->names;
+#else
+    decl = level->namespaces;
+#endif
+    decl != NULL_TREE;
+    decl = TREE_CHAIN (decl))
   {
+#if BUILDING_GCC_MAJOR >= 8
+    // Now namespaces are interleaved with other declarations. In fact, we
+    // could probably collect everything in a single pass.
+    //
+    if (TREE_CODE (decl) != NAMESPACE_DECL)
+      continue;
+#endif
+
     if (!DECL_IS_BUILTIN (decl) || DECL_NAMESPACE_STD_P (decl))
     {
       if (trace)
@@ -986,9 +1001,15 @@ emit ()
         // approximation for this namespace origin. Also resolve
         // the tree node for this namespace.
         //
+#if BUILDING_GCC_MAJOR >= 8
+        tree tree_node (
+          get_namespace_binding (
+            scope_->tree_node (), get_identifier (n.c_str ())));
+#else
         tree tree_node (
           namespace_binding (
             get_identifier (n.c_str ()), scope_->tree_node ()));
+#endif
 
         namespace_& node (unit_->new_node<namespace_> (f, l, c, tree_node));
         unit_->new_edge<defines> (*scope_, node, n);
@@ -2244,7 +2265,11 @@ fq_scope (tree decl)
 
     // If this is an inline namespace, pretend it doesn't exist.
     //
+#if BUILDING_GCC_MAJOR >= 8
+    if (!is_nested_namespace (prev, scope, true))
+#else
     if (!is_associated_namespace (prev, scope))
+#endif
     {
       tree n = DECL_NAME (scope);
 

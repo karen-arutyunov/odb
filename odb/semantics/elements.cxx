@@ -143,7 +143,11 @@ namespace semantics
           {
             tree prev (CP_DECL_CONTEXT (s));
 
+#if BUILDING_GCC_MAJOR >= 8
+            if (!is_nested_namespace (prev, s, true))
+#else
             if (!is_associated_namespace (prev, s))
+#endif
               break;
 
             s = prev;
@@ -240,7 +244,11 @@ namespace semantics
             {
               // Check if this is an inline namespace and skip it if so.
               //
+#if BUILDING_GCC_MAJOR >= 8
+              if (is_nested_namespace (ns, new_ns, true))
+#else
               if (is_associated_namespace (ns, new_ns))
+#endif
               {
                 // Skip also the following scope operator. Strictly speaking
                 // there could be none (i.e., this is a name of an inline

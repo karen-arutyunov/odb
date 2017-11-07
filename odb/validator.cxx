@@ -560,9 +560,17 @@ namespace
           // Figure out if we have a const version of the callback. OVL_*
           // macros work for both FUNCTION_DECL and OVERLOAD.
           //
+#if BUILDING_GCC_MAJOR >= 8
+          for (ovl_iterator i (BASELINK_FUNCTIONS (decl)); i; ++i)
+#else
           for (tree o (BASELINK_FUNCTIONS (decl)); o != 0; o = OVL_NEXT (o))
+#endif
           {
+#if BUILDING_GCC_MAJOR >= 8
+            tree f (*i);
+#else
             tree f (OVL_CURRENT (o));
+#endif
             if (DECL_CONST_MEMFUNC_P (f))
             {
               c.set ("callback-const", true);
@@ -1504,7 +1512,7 @@ namespace
             compiler, get_identifier ("has_lt_operator"), false, false);
 
           if (has_lt_operator_ != error_mark_node)
-            has_lt_operator_ = OVL_CURRENT (has_lt_operator_);
+            has_lt_operator_ = OVL_FIRST (has_lt_operator_);
           else
           {
             os << unit.file () << ": error: unable to resolve has_lt_operator "
