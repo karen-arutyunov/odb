@@ -1512,7 +1512,13 @@ namespace
             compiler, get_identifier ("has_lt_operator"), false, false);
 
           if (has_lt_operator_ != error_mark_node)
+          {
+#if BUILDING_GCC_MAJOR >= 8
             has_lt_operator_ = OVL_FIRST (has_lt_operator_);
+#else
+            has_lt_operator_ = OVL_CURRENT (has_lt_operator_);
+#endif
+          }
           else
           {
             os << unit.file () << ": error: unable to resolve has_lt_operator "
