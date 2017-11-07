@@ -513,10 +513,9 @@ namespace relational
                 }
               }
 
-              // Fall through.
-              //
               s = parse_name;
             }
+            // Fall through.
           case parse_name:
             {
               if (tt == sql_token::t_identifier)
@@ -719,10 +718,9 @@ namespace relational
                   return error (ct, "expected MySQL type name");
               }
 
-              // Fall through.
-              //
               s = parse_range;
             }
+            // Fall through.
           case parse_range:
             {
               if (t.punctuation () == sql_token::p_lparen)
@@ -805,10 +803,9 @@ namespace relational
                 continue;
               }
 
-              // Fall through.
-              //
               s = parse_sign;
             }
+            // Fall through.
           case parse_sign:
             {
               if (tt == sql_token::t_identifier &&

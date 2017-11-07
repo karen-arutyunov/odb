@@ -1286,8 +1286,8 @@ namespace
         case ck_multimap:
           {
             kt = composite_wrapper (container_kt (m));
-            // Fall through.
           }
+          // Fall through.
         default:
           {
             vt = composite_wrapper (container_vt (m));

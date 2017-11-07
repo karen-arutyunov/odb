@@ -495,10 +495,9 @@ namespace relational
                 }
               }
 
-              // Fall through.
-              //
               s = parse_name;
             }
+            // Fall through.
           case parse_name:
             {
               if (tt == sql_token::t_identifier)
@@ -643,10 +642,9 @@ namespace relational
                   : "expected PostgreSQL type name");
               }
 
-              // Fall through.
-              //
               s = parse_range;
             }
+            // Fall through.
           case parse_range:
             {
               if (t.punctuation () == sql_token::p_lparen)
@@ -691,10 +689,9 @@ namespace relational
                 continue;
               }
 
-              // Fall through.
-              //
               s = parse_suffix;
             }
+            // Fall through.
           case parse_suffix:
             {
               if (r.type == sql_type::TIME || r.type == sql_type::TIMESTAMP)

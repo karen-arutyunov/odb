@@ -429,8 +429,8 @@ namespace
           {
             lex.clear ();
             s = parse_keyword;
-            // Fall through.
           }
+          // Fall through.
         case parse_keyword:
           {
             if (is_alpha (c))

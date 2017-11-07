@@ -2326,8 +2326,8 @@ handle_pragma (cxx_lexer& l,
           tt = l.next (tl, &tn);
           break;
         }
-        // Fall throught.
       }
+      // Fall through.
     case CPP_SCOPE:
       {
         // We have a potentially scopped enumerator name.
@@ -2356,9 +2356,8 @@ handle_pragma (cxx_lexer& l,
                     << p << endl;
           return;
         }
-
-        // Fall through.
       }
+      // Fall through.
     case CPP_NUMBER:
       {
         switch (TREE_CODE (tn))

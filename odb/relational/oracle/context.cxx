@@ -636,10 +636,8 @@ namespace relational
                 return error (ct, "unexepected '" + t.literal () +
                               "' in Oracle type declaration");
               }
-
-              // Fall through.
-              //
             }
+            // Fall through.
           case parse_prec:
             {
               if (t.punctuation () == sql_token::p_lparen)

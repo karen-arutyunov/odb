@@ -279,8 +279,8 @@ namespace semantics
       case CPP_SCOPE:
         {
           new_ns = ns; // Don't change the namespace.
-          // Fall through.
         }
+        // Fall through.
       default:
         {
           r += t;

@@ -6247,8 +6247,8 @@ namespace relational
                 continue; // We have already gotten the next token.
               }
             }
-            // Fall through.
           }
+          // Fall through.
         default:
           {
             // Handle CPP_KEYWORD here to avoid a warning (it is not

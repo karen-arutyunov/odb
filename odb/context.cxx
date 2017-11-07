@@ -213,8 +213,8 @@ translate (string const& val, const cxx_tokens& expr)
           }
           continue; // We have already gotten the next token.
         }
-        // Fall through.
       }
+      // Fall through.
     default:
       {
         // Handle CPP_KEYWORD here to avoid a warning (it is not
@@ -487,8 +487,8 @@ translate (string const& obj, string const& val, string const& db) const
           }
           continue; // We have already gotten the next token.
         }
-        // Fall through.
       }
+      // Fall through.
     default:
       {
         // Handle CPP_KEYWORD here to avoid a warning (it is not
