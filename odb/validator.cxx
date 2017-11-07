@@ -1816,7 +1816,7 @@ validate (options const& ops,
   if (!valid)
     throw validator_failed ();
 
-  auto_ptr<context> ctx (create_context (cerr, u, ops, f, 0));
+  unique_ptr<context> ctx (create_context (cerr, u, ops, f, 0));
 
   if (pass == 1)
   {

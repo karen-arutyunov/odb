@@ -9,6 +9,11 @@ plugin_LTLIBRARIES = odb.la
 
 AM_CPPFLAGS = -I'$(top_builddir)' -I'$(top_srcdir)'
 
+# Note: not passed by libtool when linking odb.so. Seems to be harmless for
+# now.
+#
+AM_CXXFLAGS = -std=c++0x
+
 EXTRA_DIST = __path__(headers) __path__(extra_dist)
 
 # Plugin.

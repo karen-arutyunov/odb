@@ -8,7 +8,7 @@
 #include <sys/types.h> // stat
 #include <sys/stat.h>  // stat
 
-#include <memory>  // std::auto_ptr
+#include <memory>  // std::unique_ptr
 #include <string>
 #include <vector>
 #include <cstring> // std::strcpy, std::strstr
@@ -39,7 +39,7 @@ using cutl::fs::invalid_path;
 typedef vector<path> paths;
 
 int plugin_is_GPL_compatible;
-auto_ptr<options const> options_;
+unique_ptr<options const> options_;
 paths profile_paths_;
 path file_;    // File being compiled.
 paths inputs_; // List of input files in at-once mode or just file_.
@@ -222,7 +222,7 @@ gate_callback (void*, void*)
     // Parse the GCC tree to semantic graph.
     //
     parser p (*options_, loc_pragmas_, ns_loc_pragmas_, decl_pragmas_);
-    auto_ptr<unit> u (p.parse (global_namespace, file_));
+    unique_ptr<unit> u (p.parse (global_namespace, file_));
 
     features f;
 
@@ -381,14 +381,14 @@ plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
       oi[2].arg = &pd;
 
       cli::argv_file_scanner scan (argc, &argv[0], oi, 3);
-      auto_ptr<options> ops (
+      unique_ptr<options> ops (
         new options (scan, cli::unknown_mode::fail, cli::unknown_mode::fail));
 
       // Process options.
       //
       process_options (*ops);
 
-      options_ = ops;
+      options_ = move (ops);
       pragma_db_ = db;
       pragma_multi_ = options_->multi_database ();
     }

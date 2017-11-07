@@ -13,7 +13,7 @@
 #include <stack>
 #include <vector>
 #include <string>
-#include <memory>  // std::auto_ptr
+#include <memory>  // std::unique_ptr
 #include <ostream>
 #include <cstddef> // std::size_t
 #include <iostream>
@@ -1899,7 +1899,7 @@ private:
 
 // Create concrete database context.
 //
-std::auto_ptr<context>
+std::unique_ptr<context>
 create_context (std::ostream&,
                 semantics::unit&,
                 options const&,

@@ -140,8 +140,8 @@ namespace
       // both the wrapper type and the wrapped type must be const.
       // To see why, consider these possibilities:
       //
-      // auto_ptr<const T> - can modify by setting a new pointer
-      // const auto_ptr<T> - can modify by changing the pointed-to value
+      // unique_ptr<const T> - can modify by setting a new pointer
+      // const unique_ptr<T> - can modify by changing the pointed-to value
       //
       if (const_member (m) && !(id (m) || version (m) || m.count ("inverse")))
       {
@@ -3148,7 +3148,7 @@ process1 (semantics::unit& u)
 static void
 process2 (options const& ops, features& f, semantics::unit& u)
 {
-  auto_ptr<context> ctx (create_context (cerr, u, ops, f, 0));
+  unique_ptr<context> ctx (create_context (cerr, u, ops, f, 0));
 
   // Common processing.
   //

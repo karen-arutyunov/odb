@@ -26,7 +26,7 @@ public:
 
   impl (options const&, loc_pragmas&, ns_loc_pragmas&, decl_pragmas&);
 
-  auto_ptr<unit>
+  unique_ptr<unit>
   parse (tree global_scope, path const& main_file);
 
 private:
@@ -750,10 +750,10 @@ impl (options const& ops,
 {
 }
 
-auto_ptr<unit> parser::impl::
+unique_ptr<unit> parser::impl::
 parse (tree global_scope, path const& main_file)
 {
-  auto_ptr<unit> u (new unit (main_file));
+  unique_ptr<unit> u (new unit (main_file));
   u->insert (global_namespace, *u);
   process_named_pragmas (global_namespace, *u);
 
@@ -2265,6 +2265,12 @@ fq_scope (tree decl)
 //
 
 parser::
+~parser ()
+{
+  // Needs parser::impl definition.
+}
+
+parser::
 parser (options const& ops,
         loc_pragmas& lp,
         ns_loc_pragmas& nslp,
@@ -2273,7 +2279,7 @@ parser (options const& ops,
 {
 }
 
-auto_ptr<unit> parser::
+unique_ptr<unit> parser::
 parse (tree global_scope, path const& main_file)
 {
   return impl_->parse (global_scope, main_file);

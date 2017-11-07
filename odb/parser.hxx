@@ -7,7 +7,7 @@
 
 #include <odb/gcc.hxx>
 
-#include <memory>  // std::auto_ptr
+#include <memory>  // std::unique_ptr
 
 #include <odb/pragma.hxx>
 #include <odb/options.hxx>
@@ -18,9 +18,10 @@ class parser
 public:
   class failed {};
 
+  ~parser ();
   parser (options const&, loc_pragmas&, ns_loc_pragmas&, decl_pragmas&);
 
-  std::auto_ptr<semantics::unit>
+  std::unique_ptr<semantics::unit>
   parse (tree global_scope, semantics::path const& main_file);
 
 private:
@@ -31,7 +32,7 @@ private:
 
 private:
   class impl;
-  std::auto_ptr<impl> impl_;
+  std::unique_ptr<impl> impl_;
 };
 
 #endif // ODB_PARSER_HXX

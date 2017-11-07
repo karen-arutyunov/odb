@@ -4,7 +4,7 @@
 
 #include <cctype>  // std::toupper, std::is{alpha,upper,lower}
 #include <string>
-#include <memory>  // std::auto_ptr
+#include <memory>  // std::unique_ptr
 #include <iomanip>
 #include <fstream>
 #include <sstream>
@@ -166,7 +166,7 @@ generate (options const& ops,
 
     if (gen_schema)
     {
-      auto_ptr<context> ctx (create_context (cerr, unit, ops, fts, 0));
+      unique_ptr<context> ctx (create_context (cerr, unit, ops, fts, 0));
 
       switch (db)
       {
@@ -496,7 +496,7 @@ generate (options const& ops,
     //
     if (gen_cxx)
     {
-      auto_ptr<context> ctx (
+      unique_ptr<context> ctx (
         create_context (hxx, unit, ops, fts, model.get ()));
 
       sloc_filter sloc (ctx->os);
@@ -606,7 +606,7 @@ generate (options const& ops,
     //
     if (gen_cxx)
     {
-      auto_ptr<context> ctx (
+      unique_ptr<context> ctx (
         create_context (ixx, unit, ops, fts, model.get ()));
 
       sloc_filter sloc (ctx->os);
@@ -666,7 +666,7 @@ generate (options const& ops,
     //
     if (gen_cxx && (db != database::common || md == multi_database::dynamic))
     {
-      auto_ptr<context> ctx (
+      unique_ptr<context> ctx (
         create_context (cxx, unit, ops, fts, model.get ()));
 
       sloc_filter sloc (ctx->os);
@@ -759,7 +759,7 @@ generate (options const& ops,
     //
     if (gen_sep_schema)
     {
-      auto_ptr<context> ctx (
+      unique_ptr<context> ctx (
         create_context (sch, unit, ops, fts, model.get ()));
 
       sloc_filter sloc (ctx->os);
@@ -824,7 +824,7 @@ generate (options const& ops,
     //
     if (gen_sql_schema)
     {
-      auto_ptr<context> ctx (
+      unique_ptr<context> ctx (
         create_context (sql, unit, ops, fts, model.get ()));
 
       switch (db)
@@ -890,7 +890,7 @@ generate (options const& ops,
         //
         {
           ofstream& mig (*mig_pre[i]);
-          auto_ptr<context> ctx (create_context (mig, unit, ops, fts, 0));
+          unique_ptr<context> ctx (create_context (mig, unit, ops, fts, 0));
 
           switch (db)
           {
@@ -933,7 +933,7 @@ generate (options const& ops,
         //
         {
           ofstream& mig (*mig_post[i]);
-          auto_ptr<context> ctx (create_context (mig, unit, ops, fts, 0));
+          unique_ptr<context> ctx (create_context (mig, unit, ops, fts, 0));
 
           switch (db)
           {

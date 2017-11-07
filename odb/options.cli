@@ -211,10 +211,10 @@ class options
      \cb{db pointer} pragma will use this pointer by default. The value
      of this option can be '\cb{*}' which denotes the raw pointer and is
      the default, or qualified name of a smart pointer class template,
-     for example, \cb{std::auto_ptr}. In the latter case, the ODB compiler
+     for example, \cb{std::shared_ptr}. In the latter case, the ODB compiler
      constructs the object or view pointer by adding a single template
      argument of the object or view type to the qualified name, for example
-     \cb{std::auto_ptr<object>}. The ODB runtime uses object and view
+     \cb{std::shared_ptr<object>}. The ODB runtime uses object and view
      pointers to return, and, in case of objects, pass and cache
      dynamically allocated instances of object and view types.
 

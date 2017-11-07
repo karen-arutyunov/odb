@@ -294,7 +294,13 @@ $(call include,$(bld_root)/cxx/o-e.make)
 #
 ifdef cxx_gnu
 
-$(cxx_pobj) $(cxx_cobj): cxx_pic_options := -fPIC
+$(odb) $(odb_so) \
+$(cxx_pobj) $(cxx_pod) \
+$(cxx_cobj) $(cxx_cod) \
+$(cxx_dobj) $(cxx_dod): cxx_extra_options += -std=c++0x
+
+$(cxx_pobj) $(cxx_pod) \
+$(cxx_cobj) $(cxx_cod): cxx_pic_options := -fPIC
 
 $(cxx_cobj) $(cxx_cod): cpp_options := -I$(src_root)
 $(cxx_dobj) $(cxx_dod): cpp_options := -I$(src_root) '-DODB_GXX_NAME="$(cxx_gnu)"'

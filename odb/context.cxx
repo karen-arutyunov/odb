@@ -796,14 +796,14 @@ namespace
   };
 }
 
-auto_ptr<context>
+unique_ptr<context>
 create_context (ostream& os,
                 semantics::unit& unit,
                 options const& ops,
                 features& f,
                 semantics::relational::model* m)
 {
-  auto_ptr<context> r;
+  unique_ptr<context> r;
 
   switch (ops.database ()[0])
   {
