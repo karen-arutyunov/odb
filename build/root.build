@@ -1,0 +1,18 @@
+# file      : build/root.build
+# copyright : Copyright (c) 2009-2017 Code Synthesis Tools CC
+# license   : GNU GPL v3; see accompanying LICENSE file
+
+cxx.std = 11
+
+using cxx
+
+hxx{*}: extension = hxx
+ixx{*}: extension = ixx
+txx{*}: extension = txx
+cxx{*}: extension = cxx
+
+cxx.poptions =+ "-I$out_root" "-I$src_root"
+
+# Specify the test target for cross-testing.
+#
+test.target = $cxx.target

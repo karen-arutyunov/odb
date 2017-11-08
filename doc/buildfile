@@ -1,0 +1,18 @@
+# file      : doc/buildfile
+# copyright : Copyright (c) 2009-2017 Code Synthesis Ltd
+# license   : GNU GPL v3; see accompanying LICENSE file
+
+define css: doc
+css{*}: extension = css
+
+define xhtml: doc
+xhtml{*}: extension = xhtml
+
+./: css{default}
+
+./: {man1 xhtml}{odb} file{odb-*.1} file{odb-*.xhtml}
+
+./: doc{manual.xhtml odb-manual.ps odb-manual.pdf} doc{*.png} \
+    file{*.svg +*.html2ps}
+
+./: file{doc.sh}
