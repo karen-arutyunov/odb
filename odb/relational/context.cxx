@@ -101,6 +101,7 @@ namespace relational
   convert_expr (string const&, semantics::data_member&, bool)
   {
     assert (false);
+    throw operation_failed ();
   }
 
   bool context::
