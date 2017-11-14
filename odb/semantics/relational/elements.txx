@@ -154,7 +154,7 @@ namespace semantics
         g.new_edge<alters> (*this, *base);
 
       using namespace xml;
-      p.content (parser::complex);
+      p.content (content::complex);
 
       for (parser::event_type e (p.peek ());
            e == parser::start_element;

@@ -94,7 +94,7 @@ namespace semantics
     drop_table (xml::parser& p, qscope&, graph& g)
         : qnameable (p, g)
     {
-      p.content (xml::parser::empty);
+      p.content (xml::content::empty);
     }
 
     drop_table& drop_table::

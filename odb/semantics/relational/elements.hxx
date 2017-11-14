@@ -15,8 +15,14 @@
 #include <cutl/container/pointer-iterator.hxx>
 #include <cutl/compiler/context.hxx>
 
+#ifdef ODB_BUILD2
+#include <libstudxml/parser.hxx>
+#include <libstudxml/serializer.hxx>
+#else
 #include <cutl/xml/parser.hxx>
 #include <cutl/xml/serializer.hxx>
+namespace cutl {namespace xml {typedef parser content;}}
+#endif
 
 #include <odb/semantics/relational/name.hxx>
 

@@ -38,7 +38,11 @@ using cutl::fs::invalid_path;
 
 typedef vector<path> paths;
 
+#if defined(_WIN32) && !defined(ODB_STATIC_PLUGIN)
+__declspec(dllexport)
+#endif
 int plugin_is_GPL_compatible;
+
 unique_ptr<options const> options_;
 paths profile_paths_;
 path file_;    // File being compiled.
@@ -290,7 +294,11 @@ static char const* const odb_version = ODB_COMPILER_VERSION_STR;
 
 typedef vector<string> strings;
 
-extern "C" int
+extern "C"
+#if defined(_WIN32) && !defined(ODB_STATIC_PLUGIN)
+__declspec(dllexport)
+#endif
+int
 plugin_init (plugin_name_args* plugin_info, plugin_gcc_version*)
 {
   int r (0);

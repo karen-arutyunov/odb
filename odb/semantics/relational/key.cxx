@@ -29,7 +29,7 @@ namespace semantics
         : unameable (p, g)
     {
       using namespace xml;
-      p.content (parser::complex);
+      p.content (content::complex);
 
       for (parser::event_type e (p.peek ());
            e == parser::start_element;
@@ -39,7 +39,7 @@ namespace semantics
           break; // Not our elements.
 
         p.next ();
-        p.content (parser::empty);
+        p.content (content::empty);
 
         uname n (p.attribute<uname> ("name"));
         column* c (s.lookup<column, drop_column> (n));

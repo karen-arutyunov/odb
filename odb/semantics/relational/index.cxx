@@ -83,7 +83,7 @@ namespace semantics
     drop_index (xml::parser& p, uscope&, graph& g)
         : unameable (p, g)
     {
-      p.content (xml::parser::empty);
+      p.content (xml::content::empty);
     }
 
     drop_index& drop_index::

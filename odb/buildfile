@@ -1,0 +1,50 @@
+# file      : odb/buildfile
+# copyright : Copyright (c) 2009-2017 Code Synthesis Tools CC
+# license   : GNU GPL v3; see accompanying LICENSE file
+
+define plugin: libs
+plugin{*}: bin.lib.prefix = # No lib prefix.
+plugin{*}: install =        # @@ TODO
+
+import libs  = libcutl%lib{cutl}
+import libs += libstudxml%lib{studxml}
+
+plugin_dir = $config.odb.plugin_dir
+
+./: exe{odb} plugin{odb}
+
+exe{odb}: cxx{odb}
+exe{odb}: libus{odb}: bin.whole = false
+
+plugin{odb}: libus{odb}
+
+if ($cxx.target.system == 'mingw32')
+  plugin{odb}: $plugin_dir/liba{cc1plus.exe.a}
+
+libus{odb}: {hxx ixx txx cxx}{** -odb -options} {hxx ixx cxx}{options} $libs
+
+cxx.poptions += -DODB_BUILD2 # @@ TMP while supporting other build systems.
+
+
+# Don't install any of the plugin's headers.
+#
+{hxx ixx txx}{*}: install = false
+
+# Generated options parser.
+#
+if $cli.configured
+{
+  cli.cxx{options}: cli{options}
+
+  cli.options += --include-with-brackets --include-prefix odb \
+--guard-prefix ODB --generate-file-scanner --generate-specifier \
+--generate-modifier --generate-description --suppress-undocumented \
+--cxx-prologue '#include <odb/option-parsers.hxx>'
+
+  # Include the generated cli files into the distribution and don't remove
+  # them when cleaning in src (so that clean results in a state identical to
+  # distributed).
+  #
+  cli.cxx{*}: dist  = true
+  cli.cxx{*}: clean = ($src_root != $out_root)
+}

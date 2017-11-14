@@ -30,7 +30,7 @@ namespace semantics
           default__ (p.attribute ("default", string ())),
           options_ (p.attribute ("options", string ()))
     {
-      p.content (xml::parser::empty);
+      p.content (xml::content::empty);
     }
 
     column& column::
@@ -84,7 +84,7 @@ namespace semantics
     drop_column (xml::parser& p, uscope&, graph& g)
         : unameable (p, g)
     {
-      p.content (xml::parser::empty);
+      p.content (xml::content::empty);
     }
 
     drop_column& drop_column::

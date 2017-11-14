@@ -77,16 +77,5 @@ $(clean):
 	$(call message,rm $$1,rm -f $$1,$(out_base)/odb-manual.ps)
 	$(call message,rm $$1,rm -f $$1,$(out_base)/odb-manual.pdf)
 
-# Generated .gitignore.
-#
-ifeq ($(out_base),$(src_base))
-$(out_base)/odb.xhtml $(out_base)/odb.1: | $(out_base)/.gitignore
-
-$(out_base)/.gitignore: files := odb.1 odb.xhtml odb-manual.ps odb-manual.pdf
-$(clean): $(out_base)/.gitignore.clean
-
-$(call include,$(bld_root)/git/gitignore.make)
-endif
-
 $(call include,$(bld_root)/dist.make)
 $(call include,$(bld_root)/meta/automake.make)

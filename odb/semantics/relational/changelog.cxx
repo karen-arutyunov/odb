@@ -24,7 +24,7 @@ namespace semantics
       using namespace xml;
 
       p.next_expect (parser::start_element, xmlns, "changelog");
-      p.content (parser::complex);
+      p.content (content::complex);
 
       if (p.attribute<unsigned int> ("version") != 1)
         throw parsing (p, "unsupported changelog format version");

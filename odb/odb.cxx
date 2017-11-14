@@ -1471,12 +1471,27 @@ plugin_path (path const& drv,
              string const&)
 #endif
 {
-  // Figure out the plugin base name which is just the driver name.
-  // If the driver name starts with 'lt-', then we are running through
-  // the libtool script. Strip this prefix -- the shared object should
-  // be in the same directory.
+#ifdef _WIN32
+  char const plugin_ext[] = ".dll";
+//@@ BUILD2: not clear how it works currently with build/autotools. Also
+//   note that GCC currently uses the .so extension on Mac OS.
+//#elif defined(__APPLE__)
+//  char const plugin_ext[] = ".dylib";
+#else
+  char const plugin_ext[] = ".so";
+#endif
+
+  // Figure out the plugin base name which is just the driver name (but
+  // without the .exe extension on Windows). If the driver name starts with
+  // 'lt-', then we are running through the libtool script. Strip this prefix
+  // -- the shared object should be in the same directory.
   //
+#ifdef _WIN32
+  string b (drv.leaf ().base ().string ());
+#else
   string b (drv.leaf ().string ());
+#endif
+
   bool lt (b.size () > 3 && b[0] == 'l' && b[1] == 't' && b[2] == '-');
   if (lt)
     b = string (b, 3, string::npos);
@@ -1496,6 +1511,8 @@ plugin_path (path const& drv,
   // the current directory for the .la file. This will make sure
   // running ODB from the build directory works as expected.
   //
+  // @@ BUILD2: not going to work for build2 build.
+  //
   path pp (dp / path (b + ".la"));
   if (stat (pp.string ().c_str (), &info) == 0)
   {
@@ -1513,6 +1530,8 @@ plugin_path (path const& drv,
   //
   if (!lt)
   {
+    //@@ BUILD2: if/when dropping old GCC should just get rid of this.
+#if 1
     // First get the default GCC plugin directory.
     //
     path d;
@@ -1547,7 +1566,7 @@ plugin_path (path const& drv,
 
     // See if the plugin is there.
     //
-    pp = d / path (b + ".so");
+    pp = d / path (b + plugin_ext);
     if (stat (pp.string ().c_str (), &info) != 0)
     {
       cerr << drv << ": error: no ODB plugin in GCC plugin directory '" <<
@@ -1556,6 +1575,9 @@ plugin_path (path const& drv,
     }
 
     return pp;
+#else
+    return path (b);
+#endif
   }
 #elif defined (ODB_PLUGIN_PATH)
   // If we were given a plugin path, use that unless we are running
@@ -1567,7 +1589,7 @@ plugin_path (path const& drv,
     if (!rp.empty ())
       dp /= path (rp);
 
-    pp = dp / path (b + ".so");
+    pp = dp / path (b + plugin_ext);
 
     if (stat (pp.string ().c_str (), &info) != 0)
     {
@@ -1579,9 +1601,9 @@ plugin_path (path const& drv,
   }
 #endif
 
-  // Try .so in the current directory.
+  // Try in the current directory.
   //
-  pp = dp / path (b + ".so");
+  pp = dp / path (b + plugin_ext);
   if (stat (pp.string ().c_str (), &info) != 0)
   {
     cerr << drv << ": error: unable to locate ODB plugin" << endl;

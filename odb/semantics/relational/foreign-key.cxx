@@ -67,7 +67,7 @@ namespace semantics
 
       p.next_expect (parser::start_element, xmlns, "references");
       referenced_table_ = p.attribute<qname> ("table");
-      p.content (parser::complex);
+      p.content (content::complex);
 
       for (parser::event_type e (p.peek ());
            e == parser::start_element;
@@ -78,7 +78,7 @@ namespace semantics
 
         p.next ();
         referenced_columns_.push_back (p.attribute<uname> ("name"));
-        p.content (parser::empty);
+        p.content (content::empty);
         p.next_expect (parser::end_element);
       }
 
@@ -156,7 +156,7 @@ namespace semantics
     drop_foreign_key (xml::parser& p, uscope&, graph& g)
         : unameable (p, g)
     {
-      p.content (xml::parser::empty);
+      p.content (xml::content::empty);
     }
 
     drop_foreign_key& drop_foreign_key::
