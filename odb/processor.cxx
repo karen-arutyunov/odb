@@ -969,7 +969,8 @@ namespace
         // The wrapped_type alias is a typedef in an instantiation
         // that we just instantiated dynamically. As a result there
         // is no semantic graph edges corresponding to this typedef
-        // since we haven't parsed it yet. So to get the tree node
+        // since we haven't parsed it yet (unless it was instantiated
+        // explicitly by the user; see below). So to get the tree node
         // that can actually be resolved to the graph node, we use
         // the source type of this typedef.
         //
@@ -1011,7 +1012,14 @@ namespace
 
         // Find the hint.
         //
+        // If we can't find any, then try to fallback to the wrapped_type
+        // alias inside wrapper_traits. This requires an explicit
+        // wrapper_traits instantiation (see above).
+        //
         semantics::names* wh (find_hint (unit, decl));
+
+        if (wh == nullptr)
+          wh = unit.find_hint (TREE_TYPE (decl));
 
         t.set ("wrapper-type", wt);
         t.set ("wrapper-hint", wh);
