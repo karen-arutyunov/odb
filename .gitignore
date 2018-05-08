@@ -25,7 +25,3 @@
 # Generated build system files.
 #
 *-dynamic.make
-
-# Generated .gitignore files.
-#
-.gitignore

@@ -38,6 +38,8 @@ cxx.poptions += -DODB_BUILD2 # @@ TMP while supporting other build systems.
 
 # Generated options parser.
 #
+# @@ TMP: currently generated code is committed to allow building from git.
+#
 if $cli.configured
 {
   cli.cxx{options}: cli{options}

@@ -270,14 +270,14 @@ $(clean):                             \
 
 # Generated .gitignore.
 #
-ifeq ($(out_base),$(src_base))
-$(odb): | $(out_base)/.gitignore
-
-$(out_base)/.gitignore: files := odb odb.so $(genf)
-$(clean): $(out_base)/.gitignore.clean
-
-$(call include,$(bld_root)/git/gitignore.make)
-endif
+#ifeq ($(out_base),$(src_base))
+#$(odb): | $(out_base)/.gitignore
+#
+#$(out_base)/.gitignore: files := odb odb.so $(genf)
+#$(clean): $(out_base)/.gitignore.clean
+#
+#$(call include,$(bld_root)/git/gitignore.make)
+#endif
 
 # Rules.
 #
