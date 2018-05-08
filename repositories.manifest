@@ -1,0 +1,6 @@
+: 1
+summary: ODB compiler repository
+
+:
+role: prerequisite
+location: https://git.codesynthesis.com/libcutl/libcutl.git##HEAD
