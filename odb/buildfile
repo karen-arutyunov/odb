@@ -25,7 +25,7 @@ exe{odb}: libus{odb}: bin.whole = false
 plugin{odb}: libus{odb}
 
 if ($cxx.target.system == 'mingw32')
-  plugin{odb}: $plugin_dir/liba{cc1plus.exe.a}
+  plugin{odb}: cxx.libs += $plugin_dir/cc1plus.exe.a
 
 libus{odb}: {hxx ixx txx cxx}{** -odb -options} {hxx ixx cxx}{options} $libs
 
