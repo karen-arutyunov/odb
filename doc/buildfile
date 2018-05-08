@@ -10,9 +10,12 @@ xhtml{*}: extension = xhtml
 
 ./: css{default}
 
-./: {man1 xhtml}{odb} file{odb-*.1} file{odb-*.xhtml}
+# @@ BUILD2 TMP: auto-generated and not in git (also odb-manual.* below)
+#
+./: file{odb-*.1} file{odb-*.xhtml}
+    # {man1 xhtml}{odb}
 
-./: doc{manual.xhtml odb-manual.ps odb-manual.pdf} doc{*.png} \
-    file{*.svg +*.html2ps}
+./: doc{manual.xhtml} doc{*.png} file{*.svg +*.html2ps}
+    #doc{odb-manual.ps odb-manual.pdf}
 
 ./: file{doc.sh}
