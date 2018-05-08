@@ -11,6 +11,9 @@ plugin{*}: bin.lib.prefix = # No lib prefix.
 # the driver (odb.exe) since failed that we won't be able to find libraries we
 # depend on.
 #
+# @@ It feels like we should also -DODB_GCC_PLUGIN_DIR when updating for
+#    install (but again not for Windows).
+#
 if ($cxx.target.system != 'mingw32')
   plugin{*}: install = $plugin_dir
 
@@ -29,7 +32,7 @@ if ($cxx.target.system == 'mingw32')
 
 libus{odb}: {hxx ixx txx cxx}{** -odb -options} {hxx ixx cxx}{options} $libs
 
-cxx.poptions += "-I$plugin_dir/include" -DODB_GCC_PLUGIN_DIR
+cxx.poptions += "-I$plugin_dir/include"
 cxx.poptions += -DODB_BUILD2 # @@ TMP while supporting other build systems.
 
 # Don't install any of the plugin's headers.
