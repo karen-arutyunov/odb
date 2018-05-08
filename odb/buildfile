@@ -2,14 +2,20 @@
 # copyright : Copyright (c) 2009-2017 Code Synthesis Tools CC
 # license   : GNU GPL v3; see accompanying LICENSE file
 
+plugin_dir = $config.odb.plugin_dir
+
 define plugin: libs
 plugin{*}: bin.lib.prefix = # No lib prefix.
-plugin{*}: install =        # @@ TODO
+
+# On Windows we want the plugin (odb.dll) to go into bin/ (default), next to
+# the driver (odb.exe) since failed that we won't be able to find libraries we
+# depend on.
+#
+if ($cxx.target.system != 'mingw32')
+  plugin{*}: install = $plugin_dir
 
 import libs  = libcutl%lib{cutl}
 import libs += libstudxml%lib{studxml}
-
-plugin_dir = $config.odb.plugin_dir
 
 ./: exe{odb} plugin{odb}
 
@@ -23,8 +29,8 @@ if ($cxx.target.system == 'mingw32')
 
 libus{odb}: {hxx ixx txx cxx}{** -odb -options} {hxx ixx cxx}{options} $libs
 
+cxx.poptions += "-I$plugin_dir/include" -DODB_GCC_PLUGIN_DIR
 cxx.poptions += -DODB_BUILD2 # @@ TMP while supporting other build systems.
-
 
 # Don't install any of the plugin's headers.
 #
