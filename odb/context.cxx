@@ -2289,13 +2289,19 @@ column_options (semantics::data_member& m)
 {
   // Accumulate options from both type and member.
   //
-  semantics::type& t (utype (m));
+  semantics::type* t (&utype (m));
+
+  if (semantics::class_* p = object_pointer (*t))
+    t = &utype (*id_member (*p));
+
+  if (semantics::type* w = wrapper (*t))
+    t = w;
 
   string r;
 
-  if (t.count ("options"))
+  if (t->count ("options"))
   {
-    strings const& o (t.get<strings> ("options"));
+    strings const& o (t->get<strings> ("options"));
 
     for (strings::const_iterator i (o.begin ()); i != o.end (); ++i)
     {
@@ -2343,13 +2349,19 @@ column_options (semantics::data_member& m, string const& kp)
   // Accumulate options from type, container, and member.
   //
   semantics::type& c (utype (m));
-  semantics::type& t (utype (m, kp));
+  semantics::type* t (&utype (m, kp));
+
+  if (semantics::class_* p = object_pointer (*t))
+    t = &utype (*id_member (*p));
+
+  if (semantics::type* w = wrapper (*t))
+    t = w;
 
   string r;
 
-  if (t.count ("options"))
+  if (t->count ("options"))
   {
-    strings const& o (t.get<strings> ("options"));
+    strings const& o (t->get<strings> ("options"));
 
     for (strings::const_iterator i (o.begin ()); i != o.end (); ++i)
     {
