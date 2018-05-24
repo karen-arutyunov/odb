@@ -6,6 +6,7 @@ plugin_dir = $config.odb.plugin_dir
 
 define plugin: libs
 plugin{*}: bin.lib.prefix = # No lib prefix.
+plugin{*}: backlink = true  # Backlink in forwarded configs (next to exe).
 
 # On Windows we want the plugin (odb.dll) to go into bin/ (default), next to
 # the driver (odb.exe) since failed that we won't be able to find libraries we
@@ -58,4 +59,9 @@ if $cli.configured
   #
   cli.cxx{*}: dist  = true
   cli.cxx{*}: clean = ($src_root != $out_root)
+
+  # We keep the generated code in the repository so copy it back to src in
+  # case of a forwarded configuration.
+  #
+  cli.cxx{*}: backlink = overwrite
 }
