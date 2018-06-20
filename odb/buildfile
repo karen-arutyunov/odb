@@ -27,6 +27,7 @@ plugin{*}: install = bin/
 # some point we should also make it configurable.
 #
 gxx_name = ($cxx.target != $build.host ? g++ : $recall($cxx.path))
+gxx_name = $regex.replace($gxx_name, '\\', '\\\\') # Escape back slashes.
 
 import libs  = libcutl%lib{cutl}
 import libs += libstudxml%lib{studxml}
