@@ -522,6 +522,36 @@ main (int argc, char* argv[])
       if (plugin.empty ())
         return 1; // Diagnostics has already been issued.
 
+#ifdef ODB_BUILD2
+#ifdef _WIN32
+      // Here is the problem: since the plugin is loaded by GCC (cc1plus.exe
+      // to be precise), the DLL assembly magic we have for executables won't
+      // help here.
+      //
+      // To allow executing the ODB compiler in-place we add the odb.exe.dll/
+      // directory to PATH. It is a bit of hack but then DLL assemblies for
+      // DLLs is whole new level of insanity that we are unlikely to ever
+      // touch.
+      //
+      {
+        path d (plugin.directory ());
+        d.complete ();
+        d.normalize ();
+        d /= path ("odb.exe.dll");
+
+        string s ("PATH=" + d.string ());
+
+        if (char const* p = getenv ("PATH"))
+        {
+          s += ';';
+          s += p;
+        }
+
+        _putenv (s.c_str ());
+      }
+#endif
+#endif
+
       args[7] = "-fplugin=" + plugin.string ();
     }
 
