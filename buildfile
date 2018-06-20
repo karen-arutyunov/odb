@@ -4,6 +4,7 @@
 
 ./: {*/ -build/ -m4/} doc{GPLv3 INSTALL LICENSE NEWS README} manifest
 
-# Don't install the INSTALL file.
+# Don't install tests or the INSTALL file.
 #
+tests/:          install = false
 doc{INSTALL}@./: install = false
