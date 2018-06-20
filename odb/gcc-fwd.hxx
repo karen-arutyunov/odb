@@ -5,6 +5,12 @@
 #ifndef ODB_GCC_FWD_HXX
 #define ODB_GCC_FWD_HXX
 
+#if __GNUC__ >= 5
+#  if !__has_include(<bversion.h>)
+#    error GCC plugin headers are not installed
+#  endif
+#endif
+
 #include <bversion.h>
 
 #if BUILDING_GCC_MAJOR >= 6
