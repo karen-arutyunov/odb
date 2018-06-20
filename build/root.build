@@ -6,6 +6,19 @@ cxx.std = 11
 
 using cxx
 
+if ($cxx.id != 'gcc')
+  fail 'ODB compiler can only be built with GCC'
+
+# Determine the GCC plugin directory.
+#
+# If plugin support is disabled, then -print-file-name will print the name we
+# have passed (the real plugin directory will always be absolute).
+#
+plugin_dir = [dir_path] $process.run($cxx.path -print-file-name=plugin)
+
+if ("$plugin_dir" == plugin)
+  fail "$recall($cxx.path) does not support plugins"
+
 hxx{*}: extension = hxx
 ixx{*}: extension = ixx
 txx{*}: extension = txx

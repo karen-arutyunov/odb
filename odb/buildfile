@@ -2,21 +2,31 @@
 # copyright : Copyright (c) 2009-2018 Code Synthesis Tools CC
 # license   : GNU GPL v3; see accompanying LICENSE file
 
-plugin_dir = $config.odb.plugin_dir
-
 define plugin: libs
 plugin{*}: bin.lib.prefix = # No lib prefix.
 plugin{*}: backlink = true  # Backlink in forwarded configs (next to exe).
 
-# On Windows we want the plugin (odb.dll) to go into bin/ (default), next to
-# the driver (odb.exe) since failed that we won't be able to find libraries we
+# By default install the plugin next to the driver.
+#
+# On Windows this is the only sane option where we want the plugin (odb.dll)
+# to go into bin/ since failed that we won't be able to find libraries we
 # depend on.
 #
-# @@ It feels like we should also -DODB_GCC_PLUGIN_DIR when updating for
-#    install (but again not for Windows).
+# On other platforms another option is to install into the GCC's plugin
+# directory. This way the same driver can be used with multiple GCC versions
+# and is something that distributions packagers sometimes want to do.
 #
-if ($cxx.target.system != 'mingw32')
-  plugin{*}: install = $plugin_dir
+# So at some point we should also make it configurable, including support for
+# installing into GCC's plugin directory.
+#
+# NOTE: see ODB_GCC_PLUGIN_DIR when adding this support.
+#
+plugin{*}: install = bin/
+
+# Unless cross-compiling, pass the C++ compiler's recall path as g++ name. At
+# some point we should also make it configurable.
+#
+gxx_name = ($cxx.target != $build.host ? g++ : $recall($cxx.path))
 
 import libs  = libcutl%lib{cutl}
 import libs += libstudxml%lib{studxml}
@@ -33,7 +43,7 @@ if ($cxx.target.system == 'mingw32')
 
 libus{odb}: {hxx ixx txx cxx}{** -odb -options} {hxx ixx cxx}{options} $libs
 
-cxx.poptions += "-I$plugin_dir/include"
+cxx.poptions += "-I$plugin_dir/include" "-DODB_GXX_NAME=\"$gxx_name\""
 cxx.poptions += -DODB_BUILD2 # @@ TMP while supporting other build systems.
 
 # Don't install any of the plugin's headers.
