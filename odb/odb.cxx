@@ -1849,6 +1849,8 @@ start_process (char const* args[], char const* name, bool err, bool out)
   //
   if (file.directory ().empty ())
     file = path_search (file);
+  else if (file.base () == file) // No extension
+    file += ".exe"; // Assume .exe.
 
   if (file.empty ())
   {
