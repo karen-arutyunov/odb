@@ -528,26 +528,34 @@ main (int argc, char* argv[])
       // to be precise), the DLL assembly magic we have for executables won't
       // help here.
       //
-      // To allow executing the ODB compiler in-place we add the odb.exe.dll/
+      // To allow executing the ODB compiler in-place we add the odb.exe.dlls/
       // directory to PATH. It is a bit of hack but then DLL assemblies for
       // DLLs is whole new level of insanity that we are unlikely to ever
       // touch.
+      //
+      // And it turns out we have the same problem in the installed case: if
+      // the installation directory is not in PATH, then GCC won't find the
+      // DLLs the plugin needs. So we handle both here.
       //
       {
         path d (plugin.directory ());
         d.complete ();
         d.normalize ();
-        d /= path ("odb.exe.dll");
+        d /= path ("odb.exe.dlls");
 
-        string s ("PATH=" + d.string ());
+        struct stat st;
+        if (stat (d.string ().c_str (), &st) != 0 || !S_ISDIR (st.st_mode))
+          d = d.directory ();
+
+        string v ("PATH=" + d.string ());
 
         if (char const* p = getenv ("PATH"))
         {
-          s += ';';
-          s += p;
+          v += ';';
+          v += p;
         }
 
-        _putenv (s.c_str ());
+        _putenv (v.c_str ());
       }
 #endif
 #endif
