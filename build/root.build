@@ -14,10 +14,15 @@ if ($cxx.id != 'gcc')
 # If plugin support is disabled, then -print-file-name will print the name we
 # have passed (the real plugin directory will always be absolute).
 #
+# It can also include '..' components (e.g., on Windows) so normalize it for
+# good measure.
+#
 plugin_dir = [dir_path] $process.run($cxx.path -print-file-name=plugin)
 
 if ("$plugin_dir" == plugin)
   fail "$recall($cxx.path) does not support plugins"
+
+plugin_dir = $normalize($plugin_dir)
 
 hxx{*}: extension = hxx
 ixx{*}: extension = ixx
