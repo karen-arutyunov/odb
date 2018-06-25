@@ -13,8 +13,8 @@ email: odb-users@codesynthesis.com
 build-email: odb-builds@codesynthesis.com
 build-include: windows*-mingw_w64_gcc*;
 build-exclude: windows*; Requires MinGW GCC
-build-exclude: *-gcc_4.*; Requires GCC 5 or later
-build-include: *-gcc_*
+build-exclude: *-*gcc_4.*; Requires GCC 5 or later
+build-include: *-*gcc_*
 build-exclude: *; Requires GCC with plugin support enabled
 requires: c++11
 depends: * build2 >= 0.8.0-
