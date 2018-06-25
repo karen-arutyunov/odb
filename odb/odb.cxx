@@ -1517,9 +1517,12 @@ plugin_path (path const& drv,
 {
 #ifdef _WIN32
   char const plugin_ext[] = ".dll";
-//@@ BUILD2: not clear how it works currently with build/autotools. Also
-//   note that GCC currently uses the .so extension on Mac OS.
-//#elif defined(__APPLE__)
+
+// While GCC 8 switched to using .dylib as the plugin extension, there is a
+// bug in the extension stripping code. So for now we use the .so extension
+// everywhere (see also buildfile if changing this).
+//
+//#elif defined(__APPLE__) && defined(ODB_BUILD2)
 //  char const plugin_ext[] = ".dylib";
 #else
   char const plugin_ext[] = ".so";

@@ -6,6 +6,12 @@ define plugin: libs
 plugin{*}: bin.lib.prefix = # No lib prefix.
 plugin{*}: backlink = true  # Backlink in forwarded configs (next to exe).
 
+# For now we use the .so extension everywhere except Windows (see
+# plugin_path() in odb.cxx for details).
+#
+if ($cxx.target.class != 'windows')
+  plugin{*}: extension = so
+
 # By default install the plugin next to the driver.
 #
 # On Windows this is the only sane option where we want the plugin (odb.dll)
@@ -32,6 +38,10 @@ gxx_name = $regex.replace($gxx_name, '\\', '\\\\') # Escape back slashes.
 import libs  = libcutl%lib{cutl}
 import libs += libstudxml%lib{studxml}
 
+# @@ We need to somehow make exe depend on plugin but not link it so that
+#    when, for example, exe is imported, plugin is updated as well. Feels
+#    related to those ad hoc inputs.
+
 ./: exe{odb} plugin{odb}
 
 exe{odb}: cxx{odb}
@@ -39,8 +49,15 @@ exe{odb}: libus{odb}: bin.whole = false
 
 plugin{odb}: libus{odb}
 
+# On Windows we have to link the import stub.
+#
 if ($cxx.target.system == 'mingw32')
   plugin{odb}: cxx.libs += $plugin_dir/cc1plus.exe.a
+#
+# On Mac OS we have to allow undefined symbols.
+#
+elif ($cxx.target.system == 'darwin')
+  plugin{odb}: cxx.loptions += -undefined dynamic_lookup
 
 libus{odb}: {hxx ixx txx cxx}{** -odb -options} {hxx ixx cxx}{options} $libs
 
