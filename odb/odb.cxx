@@ -1057,8 +1057,6 @@ main (int argc, char* argv[])
 
           if (!ops.trace ())
           {
-            bool tr1 (ops.std () == cxx_version::cxx98);
-
             // Add the standard epilogue at the end so that we see all
             // the declarations.
             //
@@ -1071,26 +1069,29 @@ main (int argc, char* argv[])
             //
             os << "#include <memory>" << endl;
 
-            if (tr1)
-              os << "#ifndef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
-                 << "#  include <tr1/memory>" << endl
-                 << "#endif" << endl;
-
             // Standard wrapper traits.
             //
             os << "#include <odb/wrapper-traits.hxx>" << endl;
-            if (tr1)
-              os << "#include <odb/tr1/wrapper-traits.hxx>" << endl;
 
             // Standard pointer traits.
             //
             os << "#include <odb/pointer-traits.hxx>" << endl;
-            if (tr1)
-              os << "#include <odb/tr1/pointer-traits.hxx>" << endl;
 
             // Standard container traits.
             //
             os << "#include <odb/container-traits.hxx>" << endl;
+
+            // TR1 wrapper/pointer traits.
+            //
+#ifndef ODB_BUILD2
+            if (ops.std () == cxx_version::cxx98)
+              os << endl
+                 << "#ifndef BOOST_TR1_MEMORY_HPP_INCLUDED" << endl
+                 << "#  include <tr1/memory>" << endl
+                 << "#endif" << endl
+                 << "#include <odb/tr1/wrapper-traits.hxx>" << endl
+                 << "#include <odb/tr1/pointer-traits.hxx>" << endl;
+#endif
           }
         }
 

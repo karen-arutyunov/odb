@@ -778,6 +778,7 @@ namespace header
        << "#include <odb/wrapper-traits.hxx>" << endl
        << "#include <odb/pointer-traits.hxx>" << endl;
 
+#ifndef ODB_BUILD2
     if (ctx.options.std () == cxx_version::cxx98)
     {
       // In case of a boost TR1 implementation, we cannot distinguish
@@ -798,6 +799,7 @@ namespace header
            << "#endif" << endl;
       }
     }
+#endif
 
     os << "#include <odb/container-traits.hxx>" << endl;
 
