@@ -38,14 +38,19 @@ gxx_name = $regex.replace($gxx_name, '\\', '\\\\') # Escape back slashes.
 import libs  = libcutl%lib{cutl}
 import libs += libstudxml%lib{studxml}
 
-# @@ We need to somehow make exe depend on plugin but not link it so that
-#    when, for example, exe is imported, plugin is updated as well. Feels
-#    related to those ad hoc inputs.
-
 ./: exe{odb} plugin{odb}
 
+# We need to make driver depend on plugin but not link it so that when, for
+# example, driver is imported, plugin is updated as well.
+#
+# We, however, don't want to install via the driver since the same driver
+# build could be used with multiple plugin builds (e.g., for different GCC
+# versions, which is something distribution packagers sometimes want to do).
+# @@ For this we will have to wait for operation-specific values support.
+#
 exe{odb}: cxx{odb}
 exe{odb}: libus{odb}: bin.whole = false
+exe{odb}: plugin{odb}: include = adhoc
 
 plugin{odb}: libus{odb}
 
