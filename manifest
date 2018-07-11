@@ -1,6 +1,7 @@
 : 1
 name: libodb-sqlite
 version: 2.5.0-b.8.z
+project: odb
 summary: SQLite ODB runtime library
 license: GPLv2
 license: proprietary
