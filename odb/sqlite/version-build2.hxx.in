@@ -24,18 +24,18 @@
 // 3.0.0-b.2    0029999995020
 // 2.2.0-a.1.z  0020019990011
 //
-#define LIBODB_SQLITE_VERSION       $libodb-sqlite.version.project_number$ULL
-#define LIBODB_SQLITE_VERSION_STR   "$libodb-sqlite.version.project$"
-#define LIBODB_SQLITE_VERSION_ID    "$libodb-sqlite.version.project_id$"
+#define LIBODB_SQLITE_VERSION       $libodb_sqlite.version.project_number$ULL
+#define LIBODB_SQLITE_VERSION_STR   "$libodb_sqlite.version.project$"
+#define LIBODB_SQLITE_VERSION_ID    "$libodb_sqlite.version.project_id$"
 
-#define LIBODB_SQLITE_VERSION_MAJOR $libodb-sqlite.version.major$
-#define LIBODB_SQLITE_VERSION_MINOR $libodb-sqlite.version.minor$
-#define LIBODB_SQLITE_VERSION_PATCH $libodb-sqlite.version.patch$
+#define LIBODB_SQLITE_VERSION_MAJOR $libodb_sqlite.version.major$
+#define LIBODB_SQLITE_VERSION_MINOR $libodb_sqlite.version.minor$
+#define LIBODB_SQLITE_VERSION_PATCH $libodb_sqlite.version.patch$
 
-#define LIBODB_SQLITE_PRE_RELEASE   $libodb-sqlite.version.pre_release$
+#define LIBODB_SQLITE_PRE_RELEASE   $libodb_sqlite.version.pre_release$
 
-#define LIBODB_SQLITE_SNAPSHOT      $libodb-sqlite.version.snapshot_sn$ULL
-#define LIBODB_SQLITE_SNAPSHOT_ID   "$libodb-sqlite.version.snapshot_id$"
+#define LIBODB_SQLITE_SNAPSHOT      $libodb_sqlite.version.snapshot_sn$ULL
+#define LIBODB_SQLITE_SNAPSHOT_ID   "$libodb_sqlite.version.snapshot_id$"
 
 #include <odb/version.hxx>
 
