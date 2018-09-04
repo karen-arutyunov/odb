@@ -5,7 +5,7 @@
 # Import the ODB compiler we will be testing.
 #
 import odb = odb%exe{odb}
-test{*}: test = $odb
+testscript{*}: test = $odb
 
 # Specify the test target for cross-testing.
 #
