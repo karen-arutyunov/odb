@@ -928,6 +928,11 @@ collect (tree ns)
       continue;
 #endif
 
+    // Ignore namespace aliases.
+    //
+    if (DECL_NAMESPACE_ALIAS (decl))
+      continue;
+
     if (!DECL_IS_BUILTIN (decl) || DECL_NAMESPACE_STD_P (decl))
     {
       if (trace)
