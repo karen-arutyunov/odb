@@ -16595,8 +16595,8 @@ class person
 
   std::string first_; // TEXT NOT NULL COLLATE binary
 
-  #pragma db options("CHECK(email != '')")
-  std::string last_;  // TEXT NOT NULL COLLATE binary CHECK(email != '')
+  #pragma db options("CHECK(last != '')")
+  std::string last_;  // TEXT NOT NULL COLLATE binary CHECK(last != '')
 
   #pragma db options()
   std::string title_; // TEXT NOT NULL
