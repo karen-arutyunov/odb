@@ -68,7 +68,9 @@ namespace relational
       };
 
       sql_type () :
-          type (invalid), has_prec (false), has_scale (false)
+          type (invalid),
+          has_prec (false), prec (0),
+          has_scale (false), scale (0)
       {
       }
 
