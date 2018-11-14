@@ -10,7 +10,7 @@ namespace odb
 
   inline lazy_ptr_base::
   lazy_ptr_base ()
-      : id_ (0), db_ (0), loader_ (0)
+      : id_ (0), db_ (0), loader_ (0), free_ (0), copy_ (0)
   {
   }
 
