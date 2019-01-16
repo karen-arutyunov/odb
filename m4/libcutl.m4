@@ -1,5 +1,5 @@
 dnl file      : m4/libcutl.m4
-dnl copyright : Copyright (c) 2009-2018 Code Synthesis Tools CC
+dnl copyright : Copyright (c) 2009-2019 Code Synthesis Tools CC
 dnl license   : MIT; see accompanying LICENSE file
 dnl
 dnl LIBCUTL([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])

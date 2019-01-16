@@ -1,5 +1,5 @@
 # file      : doc/buildfile
-# copyright : Copyright (c) 2009-2018 Code Synthesis Ltd
+# copyright : Copyright (c) 2009-2019 Code Synthesis Ltd
 # license   : GNU GPL v3; see accompanying LICENSE file
 
 define css: doc
