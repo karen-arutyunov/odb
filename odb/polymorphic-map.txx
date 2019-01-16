@@ -1,5 +1,5 @@
 // file      : odb/polymorphic-map.txx
-// copyright : Copyright (c) 2005-2018 Code Synthesis Tools CC
+// copyright : Copyright (c) 2005-2019 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #include <odb/exceptions.hxx> // no_type_info
