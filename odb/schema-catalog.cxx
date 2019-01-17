@@ -227,7 +227,7 @@ namespace odb
         else
         {
           typedef void (*caller) (const void*, database&);
-          reinterpret_cast<caller> (m.function) (m.std_function, db);
+          m.cast<caller> () (m.std_function, db);
         }
         r++;
       }

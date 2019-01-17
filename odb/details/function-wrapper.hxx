@@ -59,6 +59,11 @@ namespace odb
 
       void swap (function_wrapper<F>&);
 
+      // Cleanly cast to an incompatible function type.
+      //
+      template <typename R> R
+      cast () const;
+
       // Conversion to bool.
       //
     public:

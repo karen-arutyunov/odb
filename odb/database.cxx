@@ -67,7 +67,7 @@ namespace odb
     else
     {
       typedef void (*caller) (const void*, const char*, connection_type&);
-      reinterpret_cast<caller> (fw.function) (fw.std_function, name, c);
+      fw.cast<caller> () (fw.std_function, name, c);
     }
 
     return true;

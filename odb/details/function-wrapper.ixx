@@ -36,5 +36,15 @@ namespace odb
       swap (const_cast<function_wrapper<F>&> (x));
       return *this;
     }
+
+    template <typename F>
+    template <typename R>
+    inline R function_wrapper<F>::
+    cast () const
+    {
+      union { F* f; R r; } r;
+      r.f = function;
+      return r.r;
+    }
   }
 }
