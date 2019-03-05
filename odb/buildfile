@@ -3,8 +3,12 @@
 # license   : GNU GPL v3; see accompanying LICENSE file
 
 define plugin: libs
-plugin{*}: bin.lib.prefix = # No lib prefix.
-plugin{*}: backlink = true  # Backlink in forwarded configs (next to exe).
+
+plugin{*}:
+{
+  bin.lib.prefix = # No lib prefix.
+  backlink = true  # Backlink in forwarded configs (next to exe).
+}
 
 # For now we use the .so extension everywhere except Windows (see
 # plugin_path() in odb.cxx for details).
