@@ -66,12 +66,10 @@ elif ($cxx.target.system == 'darwin')
 
 libus{odb}: {hxx ixx txx cxx}{** -odb -options} {hxx ixx cxx}{options} $libs
 
+# Build options.
+#
 cxx.poptions += "-I$plugin_dir/include" "-DODB_GXX_NAME=\"$gxx_name\""
 cxx.poptions += -DODB_BUILD2 # @@ TMP while supporting other build systems.
-
-# Don't install any of the plugin's headers.
-#
-{hxx ixx txx}{*}: install = false
 
 # Generated options parser.
 #
@@ -86,15 +84,22 @@ if $cli.configured
 --generate-modifier --generate-description --suppress-undocumented \
 --cxx-prologue '#include <odb/option-parsers.hxx>'
 
-  # Include the generated cli files into the distribution and don't remove
-  # them when cleaning in src (so that clean results in a state identical to
-  # distributed).
-  #
-  cli.cxx{*}: dist  = true
-  cli.cxx{*}: clean = ($src_root != $out_root)
+  cli.cxx{*}:
+  {
+    # Include the generated cli files into the distribution and don't remove
+    # them when cleaning in src (so that clean results in a state identical to
+    # distributed).
+    #
+    dist  = true
+    clean = ($src_root != $out_root)
 
-  # We keep the generated code in the repository so copy it back to src in
-  # case of a forwarded configuration.
-  #
-  cli.cxx{*}: backlink = overwrite
+    # We keep the generated code in the repository so copy it back to src in
+    # case of a forwarded configuration.
+    #
+    backlink = overwrite
+  }
 }
+
+# Don't install any of the plugin's headers.
+#
+{hxx ixx txx}{*}: install = false
