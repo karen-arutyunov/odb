@@ -48,10 +48,15 @@ paths profile_paths_;
 path file_;    // File being compiled.
 paths inputs_; // List of input files in at-once mode or just file_.
 
-bool (*cpp_error_prev) (
+bool (*cpp_diagnostic_prev) (
   cpp_reader*,
+#if BUILDING_GCC_MAJOR >= 9
+  cpp_diagnostic_level,
+  cpp_warning_reason,
+#else
   int,
   int,
+#endif
 #if BUILDING_GCC_MAJOR >= 6
   rich_location*,
 #else
@@ -62,17 +67,22 @@ bool (*cpp_error_prev) (
   va_list*);
 
 static bool
-cpp_error_filter (cpp_reader* r,
-                  int level,
-                  int reason,
-#if BUILDING_GCC_MAJOR >= 6
-                  rich_location* l,
+cpp_diagnostic_filter (cpp_reader* r,
+#if BUILDING_GCC_MAJOR >= 9
+                       cpp_diagnostic_level level,
+                       cpp_warning_reason reason,
 #else
-                  location_t l,
-                  unsigned int column_override,
+                       int level,
+                       int reason,
 #endif
-                  const char* msg,
-                  va_list* ap)
+#if BUILDING_GCC_MAJOR >= 6
+                       rich_location* l,
+#else
+                       location_t l,
+                       unsigned int column_override,
+#endif
+                       const char* msg,
+                       va_list* ap)
 {
   // #pragma once in the main file. Note that the message that we get is
   // potentially translated so we search for the substring (there is
@@ -84,7 +94,7 @@ cpp_error_filter (cpp_reader* r,
   if (strstr (msg, "#pragma once") != 0)
     return true;
 
-  return cpp_error_prev (
+  return cpp_diagnostic_prev (
     r,
     level,
     reason,
@@ -123,14 +133,19 @@ start_unit_callback (void*, void*)
   //
   cpp_callbacks* cb (cpp_get_callbacks (parse_in));
 
-  if (cb->error == 0)
+#if BUILDING_GCC_MAJOR >= 9
+  cpp_diagnostic_prev = cb->diagnostic;
+  cb->diagnostic = &cpp_diagnostic_filter;
+#else
+  cpp_diagnostic_prev = cb->error;
+  cb->error = &cpp_diagnostic_filter;
+#endif
+
+  if (cpp_diagnostic_prev == 0)
   {
-    cerr << "ice: expected cpp error callback to be set" << endl;
+    cerr << "ice: expected cpp diagnostic callback to be set" << endl;
     exit (1);
   }
-
-  cpp_error_prev = cb->error;
-  cb->error = &cpp_error_filter;
 
   // Set the directory of the main file (stdin) to that of the orginal
   // file so that relative inclusion works. Also adjust the path and

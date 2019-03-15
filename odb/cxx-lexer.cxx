@@ -143,11 +143,19 @@ translate ()
 // Diagnostics callback.
 //
 extern "C" bool
-cpp_error_callback (
+cpp_diagnostic_callback (
   cpp_reader* reader,
+#if BUILDING_GCC_MAJOR >= 9
+  cpp_diagnostic_level level,
+#else
   int level,
+#endif
 #if BUILDING_GCC_MAJOR > 4 || BUILDING_GCC_MAJOR == 4 && BUILDING_GCC_MINOR > 5
+#if BUILDING_GCC_MAJOR >= 9
+  cpp_warning_reason,
+#else
   int /*reason*/, // Added in GCC 4.6.0.
+#endif
 #endif
 #if BUILDING_GCC_MAJOR <= 5
   location_t,
@@ -185,10 +193,14 @@ cpp_error_callback (
     vfprintf (stderr, msg, *ap);
     fprintf (stderr, "\n");
 
-    // By resetting the error callback we indicate to cxx_string_lexer
-    // that there was an error.
+    // By resetting the callback we indicate to cxx_string_lexer that there
+    // was an error.
     //
+#if BUILDING_GCC_MAJOR >= 9
+    cpp_get_callbacks (reader)->diagnostic = 0;
+#else
     cpp_get_callbacks (reader)->error = 0;
+#endif
     return true;
   }
 
@@ -247,7 +259,12 @@ start (string const& data)
   // The previous lexing session should have popped the buffer.
   //
   assert (cpp_get_buffer (reader_) == 0);
-  callbacks_->error = &cpp_error_callback;
+
+#if BUILDING_GCC_MAJOR >= 9
+  callbacks_->diagnostic = &cpp_diagnostic_callback;
+#else
+  callbacks_->error = &cpp_diagnostic_callback;
+#endif
 
   data_ = data;
   buf_ = data;
@@ -267,10 +284,14 @@ next (string& token, tree* node)
   token.clear ();
   cpp_token const* t (cpp_get_token (reader_));
 
-  // If there was an error, the error callback will be reset to 0.
-  // Diagnostics has already been issued.
+  // If there was an error, the callback will be reset to 0. Diagnostics has
+  // already been issued.
   //
+#if BUILDING_GCC_MAJOR >= 9
+  if (callbacks_->diagnostic == 0)
+#else
   if (callbacks_->error == 0)
+#endif
     throw invalid_input ();
 
   cpp_ttype tt (t->type);

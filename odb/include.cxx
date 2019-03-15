@@ -586,6 +586,9 @@ namespace
 
     for (include_map::iterator i (imap.begin ()), e (imap.end ()); i != e; ++i)
     {
+      // Note that the LAST_SOURCE_LINE value of a map that includes another
+      // map is the line of that include.
+
       /*
       cerr << endl
            << i->first << " included from" << endl;

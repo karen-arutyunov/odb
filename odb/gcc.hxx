@@ -158,4 +158,36 @@ gcc_tree_code_name (gcc_tree_code_type tc) {return tree_code_name[tc];}
 #  define anon_aggrname_p(X) ANON_AGGRNAME_P(X)
 #endif
 
+// In GCC 9:
+//
+// INCLUDED_FROM     Became linemap_included_from_linemap().
+// LAST_SOURCE_LINE  Was removed apparently as no longer used. Studying
+//                   the line-map.h diff from 8.3 suggests that the old
+//                   implementation should still work.
+//
+#if BUILDING_GCC_MAJOR >= 9
+
+inline const line_map_ordinary*
+INCLUDED_FROM (line_maps* set, const line_map_ordinary* map)
+{
+  return linemap_included_from_linemap (set, map);
+}
+
+inline source_location
+LAST_SOURCE_LINE_LOCATION (const line_map_ordinary* map)
+{
+  return (((map[1].start_location - 1
+	    - map->start_location)
+	   & ~((1 << map->m_column_and_range_bits) - 1))
+	  + map->start_location);
+}
+
+inline linenum_type
+LAST_SOURCE_LINE (const line_map_ordinary* map)
+{
+  return SOURCE_LINE (map, LAST_SOURCE_LINE_LOCATION (map));
+}
+
+#endif
+
 #endif // ODB_GCC_HXX
