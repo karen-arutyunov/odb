@@ -6,7 +6,7 @@
 
 // For the ODB compiler (temporary).
 //
-#define ODB_VERSION     20463
+#define ODB_VERSION     20464
 
 // Note: using build2 standard versioning scheme. The numeric version format
 // is AAABBBCCCDDDE where:
