@@ -5,7 +5,7 @@ project: odb
 summary: Common ODB runtime library
 license: GPLv2
 license: proprietary
-tags: c++, orm, database, relational, object, persistence, sql
+topics: C++, ORM, SQL, object persistence, relational database
 description-file: README
 changes-file: NEWS
 url: https://www.codesynthesis.com/products/odb/
