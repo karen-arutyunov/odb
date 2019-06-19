@@ -5,7 +5,7 @@ project: odb
 summary: SQLite ODB runtime library
 license: GPLv2
 license: proprietary
-tags: c++, orm, sqlite, database, relational, object, persistence, sql
+topics: C++, ORM, SQLite, SQL
 description-file: README
 changes-file: NEWS
 url: https://www.codesynthesis.com/products/odb/
