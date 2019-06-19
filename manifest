@@ -3,7 +3,8 @@ name: odb
 version: 2.5.0-b.16.z
 summary: ODB compiler
 license: GPLv3
-topics: C++, ORM, SQL, object persistence, relational database
+topics: C++, ORM, source code generation, object persistence, \
+  relational database
 description-file: README
 changes-file: NEWS
 url: https://www.codesynthesis.com/products/odb/
