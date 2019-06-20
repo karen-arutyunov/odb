@@ -457,7 +457,12 @@ namespace relational
 
             index::member& im (*j);
 
-            if (type* comp = composite_wrapper (utype (*im.path.back ())))
+            semantics::type* t (&utype (*im.path.back ()));
+
+            if (semantics::class_* ptr = object_pointer (*t))
+              t = &utype (*id_member (*ptr));
+
+            if (type* comp = composite_wrapper (*t))
             {
               // Composite value. Get the list of the columns. Note that
               // the column prefix needs to contain all the components.
