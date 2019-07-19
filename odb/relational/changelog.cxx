@@ -772,7 +772,14 @@ namespace relational
           if (l.contains_changeset_empty ())
           {
             model& m (l.model ());
-            assert (o.version () == m.version ());
+
+            // The changelog model version may also be equal to the new model
+            // version if the new base model version is greater than the
+            // latest changeset.
+            //
+            assert (m.version () == o.version () ||
+                    m.version () == n.version ());
+
             l.new_edge<alters> (r, m);
           }
           else
