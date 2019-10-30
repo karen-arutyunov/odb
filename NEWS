@@ -33,7 +33,36 @@ Version 2.5.0
  * The 'inverse' pragma now supports nested data members.
 
  * Helper header (<odb/nested-container.hxx>) for nested container emulation.
-   It is still fairly experimental and only supports vector<vector<T>>.
+   It is still fairly experimental and only supports vector<vector<T>>. For
+   example:
+
+   #include <odb/nested-container.hxx>
+
+   #pragma db object
+   class package
+   {
+     using licenses_type = std::vector<std::string>
+     using license_alternatives_type = std::vector<licenses_type>
+
+     license_alternatives_type license_alternatives;
+
+     // Database mapping.
+     //
+     using _license_key = odb::nested_key<licenses_type>;
+     using _licenses_type = std::map<_license_key, std::string>;
+
+     #pragma db value(_license_key)
+     #pragma db member(_license_key::outer) column("alternative_index")
+     #pragma db member(_license_key::inner) column("index")
+
+     #pragma db member(license_alternatives) id_column("") value_column("")
+     #pragma db member(licenses)                                       \
+       virtual(_licenses_type)                                         \
+       after(license_alternatives)                                     \
+       get(odb::nested_get (this.license_alternatives))                \
+       set(odb::nested_set (this.license_alternatives, std::move (?))) \
+       id_column("") key_column("") value_column("license")
+   };
 
  * Database classes are now move-constructible. This means they can be
    returned by value from a function in C++11.
