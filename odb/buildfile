@@ -68,15 +68,18 @@ exe{odb}: plugin{odb}: include = adhoc
 
 plugin{odb}: libus{odb}
 
-# On Windows we have to link the import stub.
-#
-if ($cxx.target.system == 'mingw32')
-  plugin{odb}: cxx.libs += $plugin_dir/cc1plus.exe.a
-#
-# On Mac OS we have to allow undefined symbols.
-#
-elif ($cxx.target.system == 'darwin')
-  plugin{odb}: cxx.loptions += -undefined dynamic_lookup
+switch $cxx.target.system
+{
+  # On Windows we have to link the import stub.
+  #
+  case 'mingw32'
+    plugin{odb}: cxx.libs += $plugin_dir/cc1plus.exe.a
+
+  # On Mac OS we have to allow undefined symbols.
+  #
+  case 'darwin'
+    plugin{odb}: cxx.loptions += -undefined dynamic_lookup
+}
 
 libus{odb}: {hxx ixx txx cxx}{** -odb -options} {hxx ixx cxx}{options} $libs
 
