@@ -1896,9 +1896,14 @@ public:
 private:
   static context* current_;
 
+#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
+  context&
+  operator= (context const&) = delete;
+#else
 private:
   context&
   operator= (context const&);
+#endif
 };
 
 // Create concrete database context.
