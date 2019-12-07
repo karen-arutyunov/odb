@@ -149,6 +149,9 @@ namespace odb
       cache_position (): map_ (0) {}
       cache_position (map& m, const iterator& p): map_ (&m), pos_ (p) {}
 
+      cache_position (const cache_position& p)
+          : map_ (p.map_), pos_ (p.pos_) {}
+
       cache_position&
       operator= (const cache_position& p)
       {
