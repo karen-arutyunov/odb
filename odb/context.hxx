@@ -714,21 +714,25 @@ public:
   // make_const is true, then add top-level const qualifier, unless
   // it is already there. If it is false, then strip it if it is
   // already there. If var is not empty, then embed the variable
-  // name into the type (e.g., char (*v)[3]).
+  // name into the type (e.g., char (*v)[3]). If decay_array is
+  // false then don't decay the (top-level) array to a pointer.
   //
   static string
   member_ref_type (semantics::data_member& m,
                    bool make_const,
-                   string const& var = "")
+                   string const& var = "",
+                   bool decay_array = true)
   {
-    return type_ref_type (m.type (), m.belongs ().hint (), make_const, var);
+    return type_ref_type (
+      m.type (), m.belongs ().hint (), make_const, var, decay_array);
   }
 
   static string
   type_ref_type (semantics::type&,
                  semantics::names* hint,
                  bool make_const,
-                 string const& var = "");
+                 string const& var = "",
+                 bool decay_array = true);
 
   // Form a value type for a not mapped, actual member type. If make_const
   // is true, then add top-level const qualifier, unless it is already

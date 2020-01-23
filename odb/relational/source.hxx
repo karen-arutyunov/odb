@@ -5327,9 +5327,14 @@ namespace relational
             if (!ma.synthesized)
               os << "// From " << location_string (ma.loc, true) << endl;
 
+            // Note that here we don't decay arrays.
+            //
+            const string& ref_type (
+              member_ref_type (m, call_ != load_call, "v", false /* decay */));
+
             // VC++ cannot grok the constructor syntax.
             //
-            os << member_ref_type (m, call_ != load_call, "v") << " =" << endl
+            os << ref_type << " =" << endl
                << "  ";
 
             // If this member is const and we have a synthesized direct
@@ -5338,7 +5343,7 @@ namespace relational
             //
             bool cast (call_ == load_call && ma.direct () && const_member (m));
             if (cast)
-              os << "const_cast< " << member_ref_type (m, false) <<
+              os << "const_cast< " << member_ref_type (m, false, "", false) <<
                 " > (" << endl;
 
             os << ma.translate (obj_prefix_);

@@ -1493,15 +1493,17 @@ string context::
 type_ref_type (semantics::type& t,
                semantics::names* hint,
                bool mc,
-               string const& var)
+               string const& var,
+               bool decay)
 {
   using semantics::array;
   string r;
 
   // Note that trailing const syntax is used for a reason (consider
-  // t == const foo*). We also have to decay top-level arrays.
+  // t == const foo*). We may also have to decay then top-level array.
   //
-  if (array* a = dynamic_cast<array*> (&utype (t)))
+  array* a;
+  if (decay && (a = dynamic_cast<array*> (&utype (t))) != 0)
   {
     semantics::type& bt (a->base_type ());
     hint = a->contains ().hint ();
