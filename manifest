@@ -16,6 +16,7 @@ builds: all
 builds: -( +windows -gcc ) ; Requires MinGW GCC.
 builds: &gcc               ; Requires GCC with plugin support enabled.
 builds: &gcc-5+            ; Requires GCC 5 or later.
+builds: -static            ; Implementation uses plugins and requires -fPIC.
 requires: c++11
 depends: * build2 >= 0.12.0
 depends: * bpkg >= 0.12.0
