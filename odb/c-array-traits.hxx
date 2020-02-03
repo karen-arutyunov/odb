@@ -88,12 +88,14 @@ namespace odb
 
   // Disable for char[N] and wchar_t[N].
   //
+#ifdef ODB_COMPILER
   template <std::size_t N>
   class access::container_traits<char[N]>;
 
 #ifdef _WIN32
   template <std::size_t N>
   class access::container_traits<wchar_t[N]>;
+#endif
 #endif
 }
 
