@@ -1,13 +1,15 @@
 #! /usr/bin/env bash
 
 version=2.5.0-b.6
-date="$(date +"%B %Y")"
 
 trap 'exit 1' ERR
 set -o errtrace # Trap in functions.
 
 function info () { echo "$*" 1>&2; }
 function error () { info "$*"; exit 1; }
+
+date="$(date +"%B %Y")"
+copyright="$(sed -n -re 's%^Copyright \(c\) (.+)\.$%\1%p' ../LICENSE)"
 
 while [ $# -gt 0 ]; do
   case $1 in
@@ -36,14 +38,22 @@ function compile () # <input-name> <output-name>
   done
 
   # --html-suffix .xhtml
-  cli -I .. -v project="odb" -v version="$version" -v date="$date" \
+  cli -I .. \
+-v project="odb" \
+-v version="$version" \
+-v date="$date" \
+-v copyright="$copyright" \
 "${ops[@]}" --generate-html  --stdout \
 --html-prologue-file odb-prologue.xhtml \
 --html-epilogue-file odb-epilogue.xhtml \
 "../odb/$i.cli" >"$o.xhtml"
 
   # --man-suffix .1
-    cli -I .. -v project="odb" -v version="$version" -v date="$date" \
+  cli -I .. \
+-v project="odb" \
+-v version="$version" \
+-v date="$date" \
+-v copyright="$copyright" \
 "${ops[@]}" --generate-man  --stdout \
 --man-prologue-file odb-prologue.1 \
 --man-epilogue-file odb-epilogue.1 \
