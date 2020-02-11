@@ -1,5 +1,4 @@
 # file      : build/hxx/hxx-cxx.make
-# copyright : Copyright (c) 2009-2019 Code Synthesis Tools CC
 # license   : GNU GPL v3; see accompanying LICENSE file
 
 # Get the C++ configuration (file extensions, and extra CPP options).

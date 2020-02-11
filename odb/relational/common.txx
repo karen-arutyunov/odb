@@ -1,5 +1,4 @@
 // file      : odb/relational/common.txx
-// copyright : Copyright (c) 2009-2019 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 namespace relational

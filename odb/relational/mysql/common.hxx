@@ -1,5 +1,4 @@
 // file      : odb/relational/mysql/common.hxx
-// copyright : Copyright (c) 2009-2019 Code Synthesis Tools CC
 // license   : GNU GPL v3; see accompanying LICENSE file
 
 #ifndef ODB_RELATIONAL_MYSQL_COMMON_HXX
