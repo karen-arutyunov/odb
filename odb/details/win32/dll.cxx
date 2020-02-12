@@ -1,5 +1,4 @@
 // file      : odb/details/win32/dll.cxx
-// copyright : Copyright (c) 2009-2019 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 // If we are building a static library from VC++ (LIBODB_STATIC_LIB) or

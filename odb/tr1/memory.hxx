@@ -1,5 +1,4 @@
 // file      : odb/tr1/memory.hxx
-// copyright : Copyright (c) 2009-2019 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #ifndef ODB_TR1_MEMORY_HXX

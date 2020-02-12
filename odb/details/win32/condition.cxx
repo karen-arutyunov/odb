@@ -1,5 +1,4 @@
 // file      : odb/details/win32/condition.cxx
-// copyright : Copyright (c) 2009-2019 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #include <odb/details/win32/windows.hxx>
