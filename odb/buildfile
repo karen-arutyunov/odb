@@ -87,6 +87,14 @@ libus{odb}: {hxx ixx txx cxx}{** -odb -options} {hxx ixx cxx}{options} $libs
 cxx.poptions += "-I$plugin_dir/include" "-DODB_GXX_NAME=\"$gxx_name\""
 cxx.poptions += -DODB_BUILD2 # @@ TMP while supporting other build systems.
 
+# Pass the copyright notice extracted from the LICENSE file.
+#
+copyright = $process.run_regex(cat $src_root/LICENSE,    \
+                               'Copyright \(c\) (.+)\.', \
+                               '\1')
+
+obj{odb}: cxx.poptions += -DODB_COPYRIGHT=\"$copyright\"
+
 # Generated options parser.
 #
 # @@ TMP: currently generated code is committed to allow building from git.

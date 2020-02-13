@@ -597,8 +597,11 @@ main (int argc, char* argv[])
       if (ops.version ())
       {
         cout << "ODB object-relational mapping (ORM) compiler for C++ "
-          ODB_COMPILER_VERSION_STR << endl
-             << "Copyright (c) 2009-2019 Code Synthesis Tools CC" << endl;
+          ODB_COMPILER_VERSION_STR << endl;
+
+#ifdef ODB_BUILD2
+        cout << "Copyright (c) " << ODB_COPYRIGHT << "." << endl;
+#endif
 
         cout << "This is free software; see the source for copying "
              << "conditions. There is NO\nwarranty; not even for "
