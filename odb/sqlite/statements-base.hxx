@@ -1,5 +1,4 @@
 // file      : odb/sqlite/statements-base.hxx
-// copyright : Copyright (c) 2005-2019 Code Synthesis Tools CC
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #ifndef ODB_SQLITE_STATEMENTS_BASE_HXX
