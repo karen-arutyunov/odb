@@ -23,6 +23,9 @@ if ("$plugin_dir" == plugin)
 
 plugin_dir = $normalize($plugin_dir)
 
+if ($build.version.number > 12000000000)
+  config [config.report] plugin_dir
+
 hxx{*}: extension = hxx
 ixx{*}: extension = ixx
 txx{*}: extension = txx
