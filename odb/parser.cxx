@@ -890,15 +890,23 @@ collect (tree ns)
     {
     case TYPE_DECL:
       {
-        if (DECL_NAME (decl) != NULL_TREE)
-          decls_.insert (decl);
+        // Skip special type declarations.
+        //
+        if (DECL_NAME (decl) == NULL_TREE)
+          continue;
 
+        tree type (TREE_TYPE (decl));
+        if (LAMBDA_TYPE_P (type))
+          continue;
+
+        decls_.insert (decl);
         break;
       }
     case TEMPLATE_DECL:
       {
         if (DECL_CLASS_TEMPLATE_P (decl))
           decls_.insert (decl);
+
         break;
       }
     default:
