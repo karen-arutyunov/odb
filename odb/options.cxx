@@ -589,9 +589,10 @@ namespace cli
         std::string vstr (ov, (p != std::string::npos ? p + 1 : ov.size ()));
 
         int ac (2);
-        char* av[] = 
+        char* av[] =
         {
-          const_cast<char*> (o), 0
+          const_cast<char*> (o),
+          0
         };
 
         bool dummy;
@@ -3355,339 +3356,339 @@ struct _cli_options_map_init
 {
   _cli_options_map_init ()
   {
-    _cli_options_map_["--help"] = 
+    _cli_options_map_["--help"] =
     &::cli::thunk< options, bool, &options::help_ >;
-    _cli_options_map_["--version"] = 
+    _cli_options_map_["--version"] =
     &::cli::thunk< options, bool, &options::version_ >;
-    _cli_options_map_["-I"] = 
+    _cli_options_map_["-I"] =
     &::cli::thunk< options, std::vector<std::string>, &options::I_,
       &options::I_specified_ >;
-    _cli_options_map_["-D"] = 
+    _cli_options_map_["-D"] =
     &::cli::thunk< options, std::vector<std::string>, &options::D_,
       &options::D_specified_ >;
-    _cli_options_map_["-U"] = 
+    _cli_options_map_["-U"] =
     &::cli::thunk< options, std::vector<std::string>, &options::U_,
       &options::U_specified_ >;
-    _cli_options_map_["--database"] = 
+    _cli_options_map_["--database"] =
     &::cli::thunk< options, std::vector< ::database>, &options::database_,
       &options::database_specified_ >;
-    _cli_options_map_["-d"] = 
+    _cli_options_map_["-d"] =
     &::cli::thunk< options, std::vector< ::database>, &options::database_,
       &options::database_specified_ >;
-    _cli_options_map_["--multi-database"] = 
+    _cli_options_map_["--multi-database"] =
     &::cli::thunk< options, ::multi_database, &options::multi_database_,
       &options::multi_database_specified_ >;
-    _cli_options_map_["-m"] = 
+    _cli_options_map_["-m"] =
     &::cli::thunk< options, ::multi_database, &options::multi_database_,
       &options::multi_database_specified_ >;
-    _cli_options_map_["--default-database"] = 
+    _cli_options_map_["--default-database"] =
     &::cli::thunk< options, ::database, &options::default_database_,
       &options::default_database_specified_ >;
-    _cli_options_map_["--generate-query"] = 
+    _cli_options_map_["--generate-query"] =
     &::cli::thunk< options, bool, &options::generate_query_ >;
-    _cli_options_map_["-q"] = 
+    _cli_options_map_["-q"] =
     &::cli::thunk< options, bool, &options::generate_query_ >;
-    _cli_options_map_["--generate-prepared"] = 
+    _cli_options_map_["--generate-prepared"] =
     &::cli::thunk< options, bool, &options::generate_prepared_ >;
-    _cli_options_map_["--omit-unprepared"] = 
+    _cli_options_map_["--omit-unprepared"] =
     &::cli::thunk< options, bool, &options::omit_unprepared_ >;
-    _cli_options_map_["--generate-session"] = 
+    _cli_options_map_["--generate-session"] =
     &::cli::thunk< options, bool, &options::generate_session_ >;
-    _cli_options_map_["-e"] = 
+    _cli_options_map_["-e"] =
     &::cli::thunk< options, bool, &options::generate_session_ >;
-    _cli_options_map_["--generate-schema"] = 
+    _cli_options_map_["--generate-schema"] =
     &::cli::thunk< options, bool, &options::generate_schema_ >;
-    _cli_options_map_["-s"] = 
+    _cli_options_map_["-s"] =
     &::cli::thunk< options, bool, &options::generate_schema_ >;
-    _cli_options_map_["--generate-schema-only"] = 
+    _cli_options_map_["--generate-schema-only"] =
     &::cli::thunk< options, bool, &options::generate_schema_only_ >;
-    _cli_options_map_["--suppress-migration"] = 
+    _cli_options_map_["--suppress-migration"] =
     &::cli::thunk< options, bool, &options::suppress_migration_ >;
-    _cli_options_map_["--suppress-schema-version"] = 
+    _cli_options_map_["--suppress-schema-version"] =
     &::cli::thunk< options, bool, &options::suppress_schema_version_ >;
-    _cli_options_map_["--schema-version-table"] = 
+    _cli_options_map_["--schema-version-table"] =
     &::cli::thunk< options, database_map<qname>, &options::schema_version_table_,
       &options::schema_version_table_specified_ >;
-    _cli_options_map_["--schema-format"] = 
+    _cli_options_map_["--schema-format"] =
     &::cli::thunk< options, database_map<std::set< ::schema_format> >, &options::schema_format_,
       &options::schema_format_specified_ >;
-    _cli_options_map_["--omit-drop"] = 
+    _cli_options_map_["--omit-drop"] =
     &::cli::thunk< options, bool, &options::omit_drop_ >;
-    _cli_options_map_["--omit-create"] = 
+    _cli_options_map_["--omit-create"] =
     &::cli::thunk< options, bool, &options::omit_create_ >;
-    _cli_options_map_["--schema-name"] = 
+    _cli_options_map_["--schema-name"] =
     &::cli::thunk< options, database_map<std::string>, &options::schema_name_,
       &options::schema_name_specified_ >;
-    _cli_options_map_["--fkeys-deferrable-mode"] = 
+    _cli_options_map_["--fkeys-deferrable-mode"] =
     &::cli::thunk< options, database_map<deferrable>, &options::fkeys_deferrable_mode_,
       &options::fkeys_deferrable_mode_specified_ >;
-    _cli_options_map_["--default-pointer"] = 
+    _cli_options_map_["--default-pointer"] =
     &::cli::thunk< options, std::string, &options::default_pointer_,
       &options::default_pointer_specified_ >;
-    _cli_options_map_["--session-type"] = 
+    _cli_options_map_["--session-type"] =
     &::cli::thunk< options, std::string, &options::session_type_,
       &options::session_type_specified_ >;
-    _cli_options_map_["--profile"] = 
+    _cli_options_map_["--profile"] =
     &::cli::thunk< options, std::string, &options::profile_,
       &options::profile_specified_ >;
-    _cli_options_map_["-p"] = 
+    _cli_options_map_["-p"] =
     &::cli::thunk< options, std::string, &options::profile_,
       &options::profile_specified_ >;
-    _cli_options_map_["--at-once"] = 
+    _cli_options_map_["--at-once"] =
     &::cli::thunk< options, bool, &options::at_once_ >;
-    _cli_options_map_["--schema"] = 
+    _cli_options_map_["--schema"] =
     &::cli::thunk< options, database_map<qname>, &options::schema_,
       &options::schema_specified_ >;
-    _cli_options_map_["--export-symbol"] = 
+    _cli_options_map_["--export-symbol"] =
     &::cli::thunk< options, database_map<std::string>, &options::export_symbol_,
       &options::export_symbol_specified_ >;
-    _cli_options_map_["--extern-symbol"] = 
+    _cli_options_map_["--extern-symbol"] =
     &::cli::thunk< options, database_map<std::string>, &options::extern_symbol_,
       &options::extern_symbol_specified_ >;
-    _cli_options_map_["--std"] = 
+    _cli_options_map_["--std"] =
     &::cli::thunk< options, cxx_version, &options::std_,
       &options::std_specified_ >;
-    _cli_options_map_["--warn-hard-add"] = 
+    _cli_options_map_["--warn-hard-add"] =
     &::cli::thunk< options, bool, &options::warn_hard_add_ >;
-    _cli_options_map_["--warn-hard-delete"] = 
+    _cli_options_map_["--warn-hard-delete"] =
     &::cli::thunk< options, bool, &options::warn_hard_delete_ >;
-    _cli_options_map_["--warn-hard"] = 
+    _cli_options_map_["--warn-hard"] =
     &::cli::thunk< options, bool, &options::warn_hard_ >;
-    _cli_options_map_["--output-dir"] = 
+    _cli_options_map_["--output-dir"] =
     &::cli::thunk< options, std::string, &options::output_dir_,
       &options::output_dir_specified_ >;
-    _cli_options_map_["-o"] = 
+    _cli_options_map_["-o"] =
     &::cli::thunk< options, std::string, &options::output_dir_,
       &options::output_dir_specified_ >;
-    _cli_options_map_["--input-name"] = 
+    _cli_options_map_["--input-name"] =
     &::cli::thunk< options, std::string, &options::input_name_,
       &options::input_name_specified_ >;
-    _cli_options_map_["--changelog"] = 
+    _cli_options_map_["--changelog"] =
     &::cli::thunk< options, database_map<std::string>, &options::changelog_,
       &options::changelog_specified_ >;
-    _cli_options_map_["--changelog-in"] = 
+    _cli_options_map_["--changelog-in"] =
     &::cli::thunk< options, database_map<std::string>, &options::changelog_in_,
       &options::changelog_in_specified_ >;
-    _cli_options_map_["--changelog-out"] = 
+    _cli_options_map_["--changelog-out"] =
     &::cli::thunk< options, database_map<std::string>, &options::changelog_out_,
       &options::changelog_out_specified_ >;
-    _cli_options_map_["--changelog-dir"] = 
+    _cli_options_map_["--changelog-dir"] =
     &::cli::thunk< options, database_map<std::string>, &options::changelog_dir_,
       &options::changelog_dir_specified_ >;
-    _cli_options_map_["--init-changelog"] = 
+    _cli_options_map_["--init-changelog"] =
     &::cli::thunk< options, bool, &options::init_changelog_ >;
-    _cli_options_map_["--odb-file-suffix"] = 
+    _cli_options_map_["--odb-file-suffix"] =
     &::cli::thunk< options, database_map<std::string>, &options::odb_file_suffix_,
       &options::odb_file_suffix_specified_ >;
-    _cli_options_map_["--sql-file-suffix"] = 
+    _cli_options_map_["--sql-file-suffix"] =
     &::cli::thunk< options, database_map<std::string>, &options::sql_file_suffix_,
       &options::sql_file_suffix_specified_ >;
-    _cli_options_map_["--schema-file-suffix"] = 
+    _cli_options_map_["--schema-file-suffix"] =
     &::cli::thunk< options, database_map<std::string>, &options::schema_file_suffix_,
       &options::schema_file_suffix_specified_ >;
-    _cli_options_map_["--changelog-file-suffix"] = 
+    _cli_options_map_["--changelog-file-suffix"] =
     &::cli::thunk< options, database_map<std::string>, &options::changelog_file_suffix_,
       &options::changelog_file_suffix_specified_ >;
-    _cli_options_map_["--hxx-suffix"] = 
+    _cli_options_map_["--hxx-suffix"] =
     &::cli::thunk< options, std::string, &options::hxx_suffix_,
       &options::hxx_suffix_specified_ >;
-    _cli_options_map_["--ixx-suffix"] = 
+    _cli_options_map_["--ixx-suffix"] =
     &::cli::thunk< options, std::string, &options::ixx_suffix_,
       &options::ixx_suffix_specified_ >;
-    _cli_options_map_["--cxx-suffix"] = 
+    _cli_options_map_["--cxx-suffix"] =
     &::cli::thunk< options, std::string, &options::cxx_suffix_,
       &options::cxx_suffix_specified_ >;
-    _cli_options_map_["--sql-suffix"] = 
+    _cli_options_map_["--sql-suffix"] =
     &::cli::thunk< options, std::string, &options::sql_suffix_,
       &options::sql_suffix_specified_ >;
-    _cli_options_map_["--changelog-suffix"] = 
+    _cli_options_map_["--changelog-suffix"] =
     &::cli::thunk< options, std::string, &options::changelog_suffix_,
       &options::changelog_suffix_specified_ >;
-    _cli_options_map_["--hxx-prologue"] = 
+    _cli_options_map_["--hxx-prologue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::hxx_prologue_,
       &options::hxx_prologue_specified_ >;
-    _cli_options_map_["--ixx-prologue"] = 
+    _cli_options_map_["--ixx-prologue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::ixx_prologue_,
       &options::ixx_prologue_specified_ >;
-    _cli_options_map_["--cxx-prologue"] = 
+    _cli_options_map_["--cxx-prologue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::cxx_prologue_,
       &options::cxx_prologue_specified_ >;
-    _cli_options_map_["--schema-prologue"] = 
+    _cli_options_map_["--schema-prologue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::schema_prologue_,
       &options::schema_prologue_specified_ >;
-    _cli_options_map_["--sql-prologue"] = 
+    _cli_options_map_["--sql-prologue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::sql_prologue_,
       &options::sql_prologue_specified_ >;
-    _cli_options_map_["--migration-prologue"] = 
+    _cli_options_map_["--migration-prologue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::migration_prologue_,
       &options::migration_prologue_specified_ >;
-    _cli_options_map_["--sql-interlude"] = 
+    _cli_options_map_["--sql-interlude"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::sql_interlude_,
       &options::sql_interlude_specified_ >;
-    _cli_options_map_["--hxx-epilogue"] = 
+    _cli_options_map_["--hxx-epilogue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::hxx_epilogue_,
       &options::hxx_epilogue_specified_ >;
-    _cli_options_map_["--ixx-epilogue"] = 
+    _cli_options_map_["--ixx-epilogue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::ixx_epilogue_,
       &options::ixx_epilogue_specified_ >;
-    _cli_options_map_["--cxx-epilogue"] = 
+    _cli_options_map_["--cxx-epilogue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::cxx_epilogue_,
       &options::cxx_epilogue_specified_ >;
-    _cli_options_map_["--schema-epilogue"] = 
+    _cli_options_map_["--schema-epilogue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::schema_epilogue_,
       &options::schema_epilogue_specified_ >;
-    _cli_options_map_["--sql-epilogue"] = 
+    _cli_options_map_["--sql-epilogue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::sql_epilogue_,
       &options::sql_epilogue_specified_ >;
-    _cli_options_map_["--migration-epilogue"] = 
+    _cli_options_map_["--migration-epilogue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::migration_epilogue_,
       &options::migration_epilogue_specified_ >;
-    _cli_options_map_["--hxx-prologue-file"] = 
+    _cli_options_map_["--hxx-prologue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::hxx_prologue_file_,
       &options::hxx_prologue_file_specified_ >;
-    _cli_options_map_["--ixx-prologue-file"] = 
+    _cli_options_map_["--ixx-prologue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::ixx_prologue_file_,
       &options::ixx_prologue_file_specified_ >;
-    _cli_options_map_["--cxx-prologue-file"] = 
+    _cli_options_map_["--cxx-prologue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::cxx_prologue_file_,
       &options::cxx_prologue_file_specified_ >;
-    _cli_options_map_["--schema-prologue-file"] = 
+    _cli_options_map_["--schema-prologue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::schema_prologue_file_,
       &options::schema_prologue_file_specified_ >;
-    _cli_options_map_["--sql-prologue-file"] = 
+    _cli_options_map_["--sql-prologue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::sql_prologue_file_,
       &options::sql_prologue_file_specified_ >;
-    _cli_options_map_["--migration-prologue-file"] = 
+    _cli_options_map_["--migration-prologue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::migration_prologue_file_,
       &options::migration_prologue_file_specified_ >;
-    _cli_options_map_["--sql-interlude-file"] = 
+    _cli_options_map_["--sql-interlude-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::sql_interlude_file_,
       &options::sql_interlude_file_specified_ >;
-    _cli_options_map_["--hxx-epilogue-file"] = 
+    _cli_options_map_["--hxx-epilogue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::hxx_epilogue_file_,
       &options::hxx_epilogue_file_specified_ >;
-    _cli_options_map_["--ixx-epilogue-file"] = 
+    _cli_options_map_["--ixx-epilogue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::ixx_epilogue_file_,
       &options::ixx_epilogue_file_specified_ >;
-    _cli_options_map_["--cxx-epilogue-file"] = 
+    _cli_options_map_["--cxx-epilogue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::cxx_epilogue_file_,
       &options::cxx_epilogue_file_specified_ >;
-    _cli_options_map_["--schema-epilogue-file"] = 
+    _cli_options_map_["--schema-epilogue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::schema_epilogue_file_,
       &options::schema_epilogue_file_specified_ >;
-    _cli_options_map_["--sql-epilogue-file"] = 
+    _cli_options_map_["--sql-epilogue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::sql_epilogue_file_,
       &options::sql_epilogue_file_specified_ >;
-    _cli_options_map_["--migration-epilogue-file"] = 
+    _cli_options_map_["--migration-epilogue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::migration_epilogue_file_,
       &options::migration_epilogue_file_specified_ >;
-    _cli_options_map_["--odb-prologue"] = 
+    _cli_options_map_["--odb-prologue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::odb_prologue_,
       &options::odb_prologue_specified_ >;
-    _cli_options_map_["--odb-prologue-file"] = 
+    _cli_options_map_["--odb-prologue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::odb_prologue_file_,
       &options::odb_prologue_file_specified_ >;
-    _cli_options_map_["--odb-epilogue"] = 
+    _cli_options_map_["--odb-epilogue"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::odb_epilogue_,
       &options::odb_epilogue_specified_ >;
-    _cli_options_map_["--odb-epilogue-file"] = 
+    _cli_options_map_["--odb-epilogue-file"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::odb_epilogue_file_,
       &options::odb_epilogue_file_specified_ >;
-    _cli_options_map_["--table-prefix"] = 
+    _cli_options_map_["--table-prefix"] =
     &::cli::thunk< options, database_map<std::string>, &options::table_prefix_,
       &options::table_prefix_specified_ >;
-    _cli_options_map_["--index-suffix"] = 
+    _cli_options_map_["--index-suffix"] =
     &::cli::thunk< options, database_map<std::string>, &options::index_suffix_,
       &options::index_suffix_specified_ >;
-    _cli_options_map_["--fkey-suffix"] = 
+    _cli_options_map_["--fkey-suffix"] =
     &::cli::thunk< options, database_map<std::string>, &options::fkey_suffix_,
       &options::fkey_suffix_specified_ >;
-    _cli_options_map_["--sequence-suffix"] = 
+    _cli_options_map_["--sequence-suffix"] =
     &::cli::thunk< options, database_map<std::string>, &options::sequence_suffix_,
       &options::sequence_suffix_specified_ >;
-    _cli_options_map_["--sql-name-case"] = 
+    _cli_options_map_["--sql-name-case"] =
     &::cli::thunk< options, database_map<name_case>, &options::sql_name_case_,
       &options::sql_name_case_specified_ >;
-    _cli_options_map_["--table-regex"] = 
+    _cli_options_map_["--table-regex"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::table_regex_,
       &options::table_regex_specified_ >;
-    _cli_options_map_["--column-regex"] = 
+    _cli_options_map_["--column-regex"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::column_regex_,
       &options::column_regex_specified_ >;
-    _cli_options_map_["--index-regex"] = 
+    _cli_options_map_["--index-regex"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::index_regex_,
       &options::index_regex_specified_ >;
-    _cli_options_map_["--fkey-regex"] = 
+    _cli_options_map_["--fkey-regex"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::fkey_regex_,
       &options::fkey_regex_specified_ >;
-    _cli_options_map_["--sequence-regex"] = 
+    _cli_options_map_["--sequence-regex"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::sequence_regex_,
       &options::sequence_regex_specified_ >;
-    _cli_options_map_["--statement-regex"] = 
+    _cli_options_map_["--statement-regex"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::statement_regex_,
       &options::statement_regex_specified_ >;
-    _cli_options_map_["--sql-name-regex"] = 
+    _cli_options_map_["--sql-name-regex"] =
     &::cli::thunk< options, database_map<std::vector<std::string> >, &options::sql_name_regex_,
       &options::sql_name_regex_specified_ >;
-    _cli_options_map_["--sql-name-regex-trace"] = 
+    _cli_options_map_["--sql-name-regex-trace"] =
     &::cli::thunk< options, bool, &options::sql_name_regex_trace_ >;
-    _cli_options_map_["--accessor-regex"] = 
+    _cli_options_map_["--accessor-regex"] =
     &::cli::thunk< options, std::vector<std::string>, &options::accessor_regex_,
       &options::accessor_regex_specified_ >;
-    _cli_options_map_["--accessor-regex-trace"] = 
+    _cli_options_map_["--accessor-regex-trace"] =
     &::cli::thunk< options, bool, &options::accessor_regex_trace_ >;
-    _cli_options_map_["--modifier-regex"] = 
+    _cli_options_map_["--modifier-regex"] =
     &::cli::thunk< options, std::vector<std::string>, &options::modifier_regex_,
       &options::modifier_regex_specified_ >;
-    _cli_options_map_["--modifier-regex-trace"] = 
+    _cli_options_map_["--modifier-regex-trace"] =
     &::cli::thunk< options, bool, &options::modifier_regex_trace_ >;
-    _cli_options_map_["--include-with-brackets"] = 
+    _cli_options_map_["--include-with-brackets"] =
     &::cli::thunk< options, bool, &options::include_with_brackets_ >;
-    _cli_options_map_["--include-prefix"] = 
+    _cli_options_map_["--include-prefix"] =
     &::cli::thunk< options, std::string, &options::include_prefix_,
       &options::include_prefix_specified_ >;
-    _cli_options_map_["--include-regex"] = 
+    _cli_options_map_["--include-regex"] =
     &::cli::thunk< options, std::vector<std::string>, &options::include_regex_,
       &options::include_regex_specified_ >;
-    _cli_options_map_["--include-regex-trace"] = 
+    _cli_options_map_["--include-regex-trace"] =
     &::cli::thunk< options, bool, &options::include_regex_trace_ >;
-    _cli_options_map_["--guard-prefix"] = 
+    _cli_options_map_["--guard-prefix"] =
     &::cli::thunk< options, std::string, &options::guard_prefix_,
       &options::guard_prefix_specified_ >;
-    _cli_options_map_["--show-sloc"] = 
+    _cli_options_map_["--show-sloc"] =
     &::cli::thunk< options, bool, &options::show_sloc_ >;
-    _cli_options_map_["--sloc-limit"] = 
+    _cli_options_map_["--sloc-limit"] =
     &::cli::thunk< options, std::size_t, &options::sloc_limit_,
       &options::sloc_limit_specified_ >;
-    _cli_options_map_["--options-file"] = 
+    _cli_options_map_["--options-file"] =
     &::cli::thunk< options, std::string, &options::options_file_,
       &options::options_file_specified_ >;
-    _cli_options_map_["-x"] = 
+    _cli_options_map_["-x"] =
     &::cli::thunk< options, std::vector<std::string>, &options::x_,
       &options::x_specified_ >;
-    _cli_options_map_["-v"] = 
+    _cli_options_map_["-v"] =
     &::cli::thunk< options, bool, &options::v_ >;
-    _cli_options_map_["--trace"] = 
+    _cli_options_map_["--trace"] =
     &::cli::thunk< options, bool, &options::trace_ >;
-    _cli_options_map_["--mysql-engine"] = 
+    _cli_options_map_["--mysql-engine"] =
     &::cli::thunk< options, std::string, &options::mysql_engine_,
       &options::mysql_engine_specified_ >;
-    _cli_options_map_["--sqlite-override-null"] = 
+    _cli_options_map_["--sqlite-override-null"] =
     &::cli::thunk< options, bool, &options::sqlite_override_null_ >;
-    _cli_options_map_["--sqlite-lax-auto-id"] = 
+    _cli_options_map_["--sqlite-lax-auto-id"] =
     &::cli::thunk< options, bool, &options::sqlite_lax_auto_id_ >;
-    _cli_options_map_["--pgsql-server-version"] = 
+    _cli_options_map_["--pgsql-server-version"] =
     &::cli::thunk< options, ::pgsql_version, &options::pgsql_server_version_,
       &options::pgsql_server_version_specified_ >;
-    _cli_options_map_["--oracle-client-version"] = 
+    _cli_options_map_["--oracle-client-version"] =
     &::cli::thunk< options, ::oracle_version, &options::oracle_client_version_,
       &options::oracle_client_version_specified_ >;
-    _cli_options_map_["--oracle-warn-truncation"] = 
+    _cli_options_map_["--oracle-warn-truncation"] =
     &::cli::thunk< options, bool, &options::oracle_warn_truncation_ >;
-    _cli_options_map_["--mssql-server-version"] = 
+    _cli_options_map_["--mssql-server-version"] =
     &::cli::thunk< options, ::mssql_version, &options::mssql_server_version_,
       &options::mssql_server_version_specified_ >;
-    _cli_options_map_["--mssql-short-limit"] = 
+    _cli_options_map_["--mssql-short-limit"] =
     &::cli::thunk< options, unsigned int, &options::mssql_short_limit_,
       &options::mssql_short_limit_specified_ >;
   }
@@ -3801,7 +3802,7 @@ _parse (::cli::scanner& s,
               cf[2] = '\0';
 
               int ac (1);
-              char* av[] = 
+              char* av[] =
               {
                 cf
               };
