@@ -592,20 +592,40 @@ main (int argc, char* argv[])
       cli::argv_file_scanner scan (ac, &av[0], oi, 3);
       options ops (scan);
 
+      // Handle --build2-metadata (see also buildfile).
+      //
+      if (ops.build2_metadata_specified ())
+      {
+        ostream& o (cout);
+
+        // Note that the export.metadata variable should be the first non-
+        // blank/comment line.
+        //
+        o << "# build2 buildfile odb" << endl
+          << "export.metadata = 1 odb" << endl
+          << "odb.name = [string] odb" << endl
+          << "odb.version = [string] '" << ODB_COMPILER_VERSION_STR << '\'' << endl
+          << "odb.checksum = [string] '" << ODB_COMPILER_VERSION_STR << '\'' << endl;
+
+        return 0;
+      }
+
       // Handle --version.
       //
       if (ops.version ())
       {
-        cout << "ODB object-relational mapping (ORM) compiler for C++ "
+        ostream& o (cout);
+
+        o << "ODB object-relational mapping (ORM) compiler for C++ "
           ODB_COMPILER_VERSION_STR << endl;
 
 #ifdef ODB_BUILD2
-        cout << "Copyright (c) " << ODB_COPYRIGHT << "." << endl;
+        o << "Copyright (c) " << ODB_COPYRIGHT << "." << endl;
 #endif
 
-        cout << "This is free software; see the source for copying "
-             << "conditions. There is NO\nwarranty; not even for "
-             << "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << endl;
+        o << "This is free software; see the source for copying conditions. "
+          << "There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS "
+          << "FOR A PARTICULAR PURPOSE." << endl;
 
         return 0;
       }
@@ -614,8 +634,10 @@ main (int argc, char* argv[])
       //
       if (ops.help ())
       {
-        cout << "Usage: " << argv[0] << " [options] file [file ...]" << endl
-             << "Options:" << endl;
+        ostream& o (cout);
+
+        o << "Usage: " << argv[0] << " [options] file [file ...]" << endl
+          << "Options:" << endl;
 
         options::print_usage (cout);
         return 0;

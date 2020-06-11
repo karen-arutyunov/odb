@@ -65,6 +65,16 @@ exe{odb}: cxx{odb}
 exe{odb}: libus{odb}: bin.whole = false
 exe{odb}: plugin{odb}: include = adhoc
 
+# Target metadata, see also --build2-metadata in odb.cxx.
+#
+exe{odb}:
+{
+  export.metadata = 1 odb
+  odb.name = [string] odb
+  odb.version  = $version
+  odb.checksum = $version
+}
+
 plugin{odb}: libus{odb}
 
 switch $cxx.target.system

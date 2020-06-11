@@ -28,6 +28,9 @@
 
 // ODB compiler version: interface version plus the bugfix version.
 //
+// NOTE: remember to update metadata to full version when switching to
+// version.hxx.in.
+//
 #define ODB_COMPILER_VERSION     2049968
 #define ODB_COMPILER_VERSION_STR "2.5.0-b.18"
 

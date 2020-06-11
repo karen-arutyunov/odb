@@ -448,6 +448,8 @@ namespace cli
 
 #include <cstddef>
 
+#include <cstdint>
+
 #include <odb/option-types.hxx>
 
 class options
@@ -489,6 +491,21 @@ class options
 
   // Option accessors and modifiers.
   //
+  const std::uint64_t&
+  build2_metadata () const;
+
+  std::uint64_t&
+  build2_metadata ();
+
+  void
+  build2_metadata (const std::uint64_t&);
+
+  bool
+  build2_metadata_specified () const;
+
+  void
+  build2_metadata_specified (bool);
+
   const bool&
   help () const;
 
@@ -2075,6 +2092,8 @@ class options
           ::cli::unknown_mode argument);
 
   public:
+  std::uint64_t build2_metadata_;
+  bool build2_metadata_specified_;
   bool help_;
   bool version_;
   std::vector<std::string> I_;

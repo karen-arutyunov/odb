@@ -300,6 +300,36 @@ namespace cli
 // options
 //
 
+inline const std::uint64_t& options::
+build2_metadata () const
+{
+  return this->build2_metadata_;
+}
+
+inline std::uint64_t& options::
+build2_metadata ()
+{
+  return this->build2_metadata_;
+}
+
+inline void options::
+build2_metadata(const std::uint64_t& x)
+{
+  this->build2_metadata_ = x;
+}
+
+inline bool options::
+build2_metadata_specified () const
+{
+  return this->build2_metadata_specified_;
+}
+
+inline void options::
+build2_metadata_specified(bool x)
+{
+  this->build2_metadata_specified_ = x;
+}
+
 inline const bool& options::
 help () const
 {

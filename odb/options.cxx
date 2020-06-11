@@ -642,7 +642,9 @@ namespace cli
 
 options::
 options ()
-: help_ (),
+: build2_metadata_ (),
+  build2_metadata_specified_ (false),
+  help_ (),
   version_ (),
   I_ (),
   I_specified_ (false),
@@ -853,7 +855,9 @@ options (int& argc,
          bool erase,
          ::cli::unknown_mode opt,
          ::cli::unknown_mode arg)
-: help_ (),
+: build2_metadata_ (),
+  build2_metadata_specified_ (false),
+  help_ (),
   version_ (),
   I_ (),
   I_specified_ (false),
@@ -1067,7 +1071,9 @@ options (int start,
          bool erase,
          ::cli::unknown_mode opt,
          ::cli::unknown_mode arg)
-: help_ (),
+: build2_metadata_ (),
+  build2_metadata_specified_ (false),
+  help_ (),
   version_ (),
   I_ (),
   I_specified_ (false),
@@ -1281,7 +1287,9 @@ options (int& argc,
          bool erase,
          ::cli::unknown_mode opt,
          ::cli::unknown_mode arg)
-: help_ (),
+: build2_metadata_ (),
+  build2_metadata_specified_ (false),
+  help_ (),
   version_ (),
   I_ (),
   I_specified_ (false),
@@ -1497,7 +1505,9 @@ options (int start,
          bool erase,
          ::cli::unknown_mode opt,
          ::cli::unknown_mode arg)
-: help_ (),
+: build2_metadata_ (),
+  build2_metadata_specified_ (false),
+  help_ (),
   version_ (),
   I_ (),
   I_specified_ (false),
@@ -1709,7 +1719,9 @@ options::
 options (::cli::scanner& s,
          ::cli::unknown_mode opt,
          ::cli::unknown_mode arg)
-: help_ (),
+: build2_metadata_ (),
+  build2_metadata_specified_ (false),
+  help_ (),
   version_ (),
   I_ (),
   I_specified_ (false),
@@ -2297,6 +2309,15 @@ static _cli_options_desc_type _cli_options_desc_;
 void options::
 fill (::cli::options& os)
 {
+  // --build2-metadata
+  //
+  {
+    ::cli::option_names a;
+    std::string dv;
+    ::cli::option o ("--build2-metadata", a, false, dv);
+    os.push_back (o);
+  }
+
   // --help
   //
   {
@@ -3356,6 +3377,9 @@ struct _cli_options_map_init
 {
   _cli_options_map_init ()
   {
+    _cli_options_map_["--build2-metadata"] =
+    &::cli::thunk< options, std::uint64_t, &options::build2_metadata_,
+      &options::build2_metadata_specified_ >;
     _cli_options_map_["--help"] =
     &::cli::thunk< options, bool, &options::help_ >;
     _cli_options_map_["--version"] =
