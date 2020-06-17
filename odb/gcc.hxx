@@ -151,10 +151,13 @@ gcc_tree_code_name (gcc_tree_code_type tc) {return tree_code_name[tc];}
 #define DECL_CHAIN(x) TREE_CHAIN(x)
 #endif
 
-// In GCC 6, ANON_AGGRNAME_P became anon_aggrname_p().
+// In GCC 6  ANON_AGGRNAME_P became anon_aggrname_p().
+// In GCC 10 anon_aggrname_p() became IDENTIFIER_ANON_P.
 //
 #if BUILDING_GCC_MAJOR < 6
-#  define anon_aggrname_p(X) ANON_AGGRNAME_P(X)
+#  define IDENTIFIER_ANON_P(X) ANON_AGGRNAME_P(X)
+#elif BUILDING_GCC_MAJOR < 10
+#  define IDENTIFIER_ANON_P(X) anon_aggrname_p(X)
 #endif
 
 // In GCC 9:

@@ -1103,14 +1103,14 @@ emit_type_decl (tree decl)
     // says that in typedef struct {} S; S becomes struct's
     // name.
     //
-    if (anon_aggrname_p (decl_name))
+    if (IDENTIFIER_ANON_P (decl_name))
     {
       tree d (TYPE_NAME (t));
 
       if (d != NULL_TREE &&
           !DECL_ARTIFICIAL (d) &&
           DECL_NAME (d) != NULL_TREE &&
-          !anon_aggrname_p (DECL_NAME (d)))
+          !IDENTIFIER_ANON_P (DECL_NAME (d)))
       {
         decl = d;
         decl_name = DECL_NAME (decl);
@@ -1727,7 +1727,7 @@ create_type (tree t,
             ts << "start anon/stub " << gcc_tree_code_name(tc) << " at "
                << file << ":" << line << endl;
 
-          if (d == NULL_TREE || anon_aggrname_p (DECL_NAME (d)))
+          if (d == NULL_TREE || IDENTIFIER_ANON_P (DECL_NAME (d)))
           {
             if (tc == RECORD_TYPE)
               r = &emit_class<class_> (t, file, line, clmn);
@@ -1824,7 +1824,7 @@ create_type (tree t,
         ts << "start anon/stub " << gcc_tree_code_name(tc) << " at "
            << file << ":" << line << endl;
 
-      if (d == NULL_TREE || anon_aggrname_p (DECL_NAME (d)))
+      if (d == NULL_TREE || IDENTIFIER_ANON_P (DECL_NAME (d)))
       {
         r = &emit_enum (t, access, file, line, clmn);
       }
