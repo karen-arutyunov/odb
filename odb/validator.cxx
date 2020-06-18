@@ -1655,6 +1655,9 @@ namespace
             // temporarily redirect diagnostics to /dev/null, which is
             // where asm_out_file points to (see plugin.cxx).
             //
+            // Needless to say, this is very hacky and we should quickly fail
+            // (as we do below) if there were errors.
+            //
             int ec (errorcount);
             FILE* s (global_dc->printer->buffer->stream);
             global_dc->printer->buffer->stream = asm_out_file;

@@ -25,11 +25,39 @@ namespace semantics
   {
     tree t (tree_node ());
 
-    // TYPE_HAS_DEFAULT_CONSTRUCTOR() returns true if we have a
-    // deleted default ctor. locate_ctor(), on the other hand,
-    // returns NULL_TREE in this case.
+    // TYPE_HAS_DEFAULT_CONSTRUCTOR() returns true if we have a deleted
+    // default ctor. locate_ctor(), on the other hand, returns NULL_TREE in
+    // this case.
     //
-    return TYPE_HAS_DEFAULT_CONSTRUCTOR (t) && locate_ctor (t) != NULL_TREE;
+    if (TYPE_HAS_DEFAULT_CONSTRUCTOR (t))
+    {
+#if BUILDING_GCC_MAJOR >= 8
+
+      // Work around GCC bug 86441. Essentially, we should not trigger an
+      // instantiation or completion of the default ctor. As a result, we will
+      // assume that if we have a lazy default ctor, it is not implicitly
+      // deleted.
+      //
+      if (CLASSTYPE_LAZY_DEFAULT_CTOR (t))
+        return true;
+
+      for (ovl_iterator i (CLASSTYPE_CONSTRUCTORS (t)); i; ++i)
+      {
+        tree f (*i);
+
+        if (TREE_CODE (f) == FUNCTION_DECL && DECL_DELETED_FN (f))
+          continue;
+
+        if (default_ctor_p (f))
+          return true;
+      }
+#else
+      return locate_ctor (t) != NULL_TREE;
+#endif
+
+    }
+
+    return false;
   }
 
   bool class_::
