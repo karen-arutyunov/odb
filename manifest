@@ -2,7 +2,7 @@
 name: odb
 version: 2.5.0-b.18.z
 summary: ODB compiler
-license: GPLv3
+license: GPL-3.0-only
 topics: C++, ORM, source code generation, object persistence, \
   relational database
 description-file: README
