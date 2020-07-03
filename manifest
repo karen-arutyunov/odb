@@ -3,8 +3,8 @@ name: libodb
 version: 2.5.0-b.18.z
 project: odb
 summary: Common ODB runtime library
-license: GPLv2
-license: proprietary
+license: GPL-2.0-only
+license: other: proprietary ; Not free/open source.
 topics: C++, ORM, SQL, object persistence, relational database
 description-file: README
 changes-file: NEWS
