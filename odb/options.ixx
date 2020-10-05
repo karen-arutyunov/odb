@@ -313,7 +313,7 @@ build2_metadata ()
 }
 
 inline void options::
-build2_metadata(const std::uint64_t& x)
+build2_metadata (const std::uint64_t& x)
 {
   this->build2_metadata_ = x;
 }
@@ -325,7 +325,7 @@ build2_metadata_specified () const
 }
 
 inline void options::
-build2_metadata_specified(bool x)
+build2_metadata_specified (bool x)
 {
   this->build2_metadata_specified_ = x;
 }
@@ -343,7 +343,7 @@ help ()
 }
 
 inline void options::
-help(const bool& x)
+help (const bool& x)
 {
   this->help_ = x;
 }
@@ -361,7 +361,7 @@ version ()
 }
 
 inline void options::
-version(const bool& x)
+version (const bool& x)
 {
   this->version_ = x;
 }
@@ -379,7 +379,7 @@ I ()
 }
 
 inline void options::
-I(const std::vector<std::string>& x)
+I (const std::vector<std::string>& x)
 {
   this->I_ = x;
 }
@@ -391,7 +391,7 @@ I_specified () const
 }
 
 inline void options::
-I_specified(bool x)
+I_specified (bool x)
 {
   this->I_specified_ = x;
 }
@@ -409,7 +409,7 @@ D ()
 }
 
 inline void options::
-D(const std::vector<std::string>& x)
+D (const std::vector<std::string>& x)
 {
   this->D_ = x;
 }
@@ -421,7 +421,7 @@ D_specified () const
 }
 
 inline void options::
-D_specified(bool x)
+D_specified (bool x)
 {
   this->D_specified_ = x;
 }
@@ -439,7 +439,7 @@ U ()
 }
 
 inline void options::
-U(const std::vector<std::string>& x)
+U (const std::vector<std::string>& x)
 {
   this->U_ = x;
 }
@@ -451,7 +451,7 @@ U_specified () const
 }
 
 inline void options::
-U_specified(bool x)
+U_specified (bool x)
 {
   this->U_specified_ = x;
 }
@@ -469,7 +469,7 @@ database ()
 }
 
 inline void options::
-database(const std::vector< ::database>& x)
+database (const std::vector< ::database>& x)
 {
   this->database_ = x;
 }
@@ -481,7 +481,7 @@ database_specified () const
 }
 
 inline void options::
-database_specified(bool x)
+database_specified (bool x)
 {
   this->database_specified_ = x;
 }
@@ -499,7 +499,7 @@ multi_database ()
 }
 
 inline void options::
-multi_database(const ::multi_database& x)
+multi_database (const ::multi_database& x)
 {
   this->multi_database_ = x;
 }
@@ -511,7 +511,7 @@ multi_database_specified () const
 }
 
 inline void options::
-multi_database_specified(bool x)
+multi_database_specified (bool x)
 {
   this->multi_database_specified_ = x;
 }
@@ -529,7 +529,7 @@ default_database ()
 }
 
 inline void options::
-default_database(const ::database& x)
+default_database (const ::database& x)
 {
   this->default_database_ = x;
 }
@@ -541,7 +541,7 @@ default_database_specified () const
 }
 
 inline void options::
-default_database_specified(bool x)
+default_database_specified (bool x)
 {
   this->default_database_specified_ = x;
 }
@@ -559,7 +559,7 @@ generate_query ()
 }
 
 inline void options::
-generate_query(const bool& x)
+generate_query (const bool& x)
 {
   this->generate_query_ = x;
 }
@@ -577,7 +577,7 @@ generate_prepared ()
 }
 
 inline void options::
-generate_prepared(const bool& x)
+generate_prepared (const bool& x)
 {
   this->generate_prepared_ = x;
 }
@@ -595,7 +595,7 @@ omit_unprepared ()
 }
 
 inline void options::
-omit_unprepared(const bool& x)
+omit_unprepared (const bool& x)
 {
   this->omit_unprepared_ = x;
 }
@@ -613,7 +613,7 @@ generate_session ()
 }
 
 inline void options::
-generate_session(const bool& x)
+generate_session (const bool& x)
 {
   this->generate_session_ = x;
 }
@@ -631,7 +631,7 @@ generate_schema ()
 }
 
 inline void options::
-generate_schema(const bool& x)
+generate_schema (const bool& x)
 {
   this->generate_schema_ = x;
 }
@@ -649,7 +649,7 @@ generate_schema_only ()
 }
 
 inline void options::
-generate_schema_only(const bool& x)
+generate_schema_only (const bool& x)
 {
   this->generate_schema_only_ = x;
 }
@@ -667,7 +667,7 @@ suppress_migration ()
 }
 
 inline void options::
-suppress_migration(const bool& x)
+suppress_migration (const bool& x)
 {
   this->suppress_migration_ = x;
 }
@@ -685,7 +685,7 @@ suppress_schema_version ()
 }
 
 inline void options::
-suppress_schema_version(const bool& x)
+suppress_schema_version (const bool& x)
 {
   this->suppress_schema_version_ = x;
 }
@@ -703,7 +703,7 @@ schema_version_table ()
 }
 
 inline void options::
-schema_version_table(const database_map<qname>& x)
+schema_version_table (const database_map<qname>& x)
 {
   this->schema_version_table_ = x;
 }
@@ -715,7 +715,7 @@ schema_version_table_specified () const
 }
 
 inline void options::
-schema_version_table_specified(bool x)
+schema_version_table_specified (bool x)
 {
   this->schema_version_table_specified_ = x;
 }
@@ -733,7 +733,7 @@ schema_format ()
 }
 
 inline void options::
-schema_format(const database_map<std::set< ::schema_format> >& x)
+schema_format (const database_map<std::set< ::schema_format> >& x)
 {
   this->schema_format_ = x;
 }
@@ -745,7 +745,7 @@ schema_format_specified () const
 }
 
 inline void options::
-schema_format_specified(bool x)
+schema_format_specified (bool x)
 {
   this->schema_format_specified_ = x;
 }
@@ -763,7 +763,7 @@ omit_drop ()
 }
 
 inline void options::
-omit_drop(const bool& x)
+omit_drop (const bool& x)
 {
   this->omit_drop_ = x;
 }
@@ -781,7 +781,7 @@ omit_create ()
 }
 
 inline void options::
-omit_create(const bool& x)
+omit_create (const bool& x)
 {
   this->omit_create_ = x;
 }
@@ -799,7 +799,7 @@ schema_name ()
 }
 
 inline void options::
-schema_name(const database_map<std::string>& x)
+schema_name (const database_map<std::string>& x)
 {
   this->schema_name_ = x;
 }
@@ -811,7 +811,7 @@ schema_name_specified () const
 }
 
 inline void options::
-schema_name_specified(bool x)
+schema_name_specified (bool x)
 {
   this->schema_name_specified_ = x;
 }
@@ -829,7 +829,7 @@ fkeys_deferrable_mode ()
 }
 
 inline void options::
-fkeys_deferrable_mode(const database_map<deferrable>& x)
+fkeys_deferrable_mode (const database_map<deferrable>& x)
 {
   this->fkeys_deferrable_mode_ = x;
 }
@@ -841,7 +841,7 @@ fkeys_deferrable_mode_specified () const
 }
 
 inline void options::
-fkeys_deferrable_mode_specified(bool x)
+fkeys_deferrable_mode_specified (bool x)
 {
   this->fkeys_deferrable_mode_specified_ = x;
 }
@@ -859,7 +859,7 @@ default_pointer ()
 }
 
 inline void options::
-default_pointer(const std::string& x)
+default_pointer (const std::string& x)
 {
   this->default_pointer_ = x;
 }
@@ -871,7 +871,7 @@ default_pointer_specified () const
 }
 
 inline void options::
-default_pointer_specified(bool x)
+default_pointer_specified (bool x)
 {
   this->default_pointer_specified_ = x;
 }
@@ -889,7 +889,7 @@ session_type ()
 }
 
 inline void options::
-session_type(const std::string& x)
+session_type (const std::string& x)
 {
   this->session_type_ = x;
 }
@@ -901,7 +901,7 @@ session_type_specified () const
 }
 
 inline void options::
-session_type_specified(bool x)
+session_type_specified (bool x)
 {
   this->session_type_specified_ = x;
 }
@@ -919,7 +919,7 @@ profile ()
 }
 
 inline void options::
-profile(const std::string& x)
+profile (const std::string& x)
 {
   this->profile_ = x;
 }
@@ -931,7 +931,7 @@ profile_specified () const
 }
 
 inline void options::
-profile_specified(bool x)
+profile_specified (bool x)
 {
   this->profile_specified_ = x;
 }
@@ -949,7 +949,7 @@ at_once ()
 }
 
 inline void options::
-at_once(const bool& x)
+at_once (const bool& x)
 {
   this->at_once_ = x;
 }
@@ -967,7 +967,7 @@ schema ()
 }
 
 inline void options::
-schema(const database_map<qname>& x)
+schema (const database_map<qname>& x)
 {
   this->schema_ = x;
 }
@@ -979,7 +979,7 @@ schema_specified () const
 }
 
 inline void options::
-schema_specified(bool x)
+schema_specified (bool x)
 {
   this->schema_specified_ = x;
 }
@@ -997,7 +997,7 @@ export_symbol ()
 }
 
 inline void options::
-export_symbol(const database_map<std::string>& x)
+export_symbol (const database_map<std::string>& x)
 {
   this->export_symbol_ = x;
 }
@@ -1009,7 +1009,7 @@ export_symbol_specified () const
 }
 
 inline void options::
-export_symbol_specified(bool x)
+export_symbol_specified (bool x)
 {
   this->export_symbol_specified_ = x;
 }
@@ -1027,7 +1027,7 @@ extern_symbol ()
 }
 
 inline void options::
-extern_symbol(const database_map<std::string>& x)
+extern_symbol (const database_map<std::string>& x)
 {
   this->extern_symbol_ = x;
 }
@@ -1039,7 +1039,7 @@ extern_symbol_specified () const
 }
 
 inline void options::
-extern_symbol_specified(bool x)
+extern_symbol_specified (bool x)
 {
   this->extern_symbol_specified_ = x;
 }
@@ -1057,7 +1057,7 @@ std ()
 }
 
 inline void options::
-std(const cxx_version& x)
+std (const cxx_version& x)
 {
   this->std_ = x;
 }
@@ -1069,7 +1069,7 @@ std_specified () const
 }
 
 inline void options::
-std_specified(bool x)
+std_specified (bool x)
 {
   this->std_specified_ = x;
 }
@@ -1087,7 +1087,7 @@ warn_hard_add ()
 }
 
 inline void options::
-warn_hard_add(const bool& x)
+warn_hard_add (const bool& x)
 {
   this->warn_hard_add_ = x;
 }
@@ -1105,7 +1105,7 @@ warn_hard_delete ()
 }
 
 inline void options::
-warn_hard_delete(const bool& x)
+warn_hard_delete (const bool& x)
 {
   this->warn_hard_delete_ = x;
 }
@@ -1123,7 +1123,7 @@ warn_hard ()
 }
 
 inline void options::
-warn_hard(const bool& x)
+warn_hard (const bool& x)
 {
   this->warn_hard_ = x;
 }
@@ -1141,7 +1141,7 @@ output_dir ()
 }
 
 inline void options::
-output_dir(const std::string& x)
+output_dir (const std::string& x)
 {
   this->output_dir_ = x;
 }
@@ -1153,7 +1153,7 @@ output_dir_specified () const
 }
 
 inline void options::
-output_dir_specified(bool x)
+output_dir_specified (bool x)
 {
   this->output_dir_specified_ = x;
 }
@@ -1171,7 +1171,7 @@ input_name ()
 }
 
 inline void options::
-input_name(const std::string& x)
+input_name (const std::string& x)
 {
   this->input_name_ = x;
 }
@@ -1183,7 +1183,7 @@ input_name_specified () const
 }
 
 inline void options::
-input_name_specified(bool x)
+input_name_specified (bool x)
 {
   this->input_name_specified_ = x;
 }
@@ -1201,7 +1201,7 @@ changelog ()
 }
 
 inline void options::
-changelog(const database_map<std::string>& x)
+changelog (const database_map<std::string>& x)
 {
   this->changelog_ = x;
 }
@@ -1213,7 +1213,7 @@ changelog_specified () const
 }
 
 inline void options::
-changelog_specified(bool x)
+changelog_specified (bool x)
 {
   this->changelog_specified_ = x;
 }
@@ -1231,7 +1231,7 @@ changelog_in ()
 }
 
 inline void options::
-changelog_in(const database_map<std::string>& x)
+changelog_in (const database_map<std::string>& x)
 {
   this->changelog_in_ = x;
 }
@@ -1243,7 +1243,7 @@ changelog_in_specified () const
 }
 
 inline void options::
-changelog_in_specified(bool x)
+changelog_in_specified (bool x)
 {
   this->changelog_in_specified_ = x;
 }
@@ -1261,7 +1261,7 @@ changelog_out ()
 }
 
 inline void options::
-changelog_out(const database_map<std::string>& x)
+changelog_out (const database_map<std::string>& x)
 {
   this->changelog_out_ = x;
 }
@@ -1273,7 +1273,7 @@ changelog_out_specified () const
 }
 
 inline void options::
-changelog_out_specified(bool x)
+changelog_out_specified (bool x)
 {
   this->changelog_out_specified_ = x;
 }
@@ -1291,7 +1291,7 @@ changelog_dir ()
 }
 
 inline void options::
-changelog_dir(const database_map<std::string>& x)
+changelog_dir (const database_map<std::string>& x)
 {
   this->changelog_dir_ = x;
 }
@@ -1303,7 +1303,7 @@ changelog_dir_specified () const
 }
 
 inline void options::
-changelog_dir_specified(bool x)
+changelog_dir_specified (bool x)
 {
   this->changelog_dir_specified_ = x;
 }
@@ -1321,7 +1321,7 @@ init_changelog ()
 }
 
 inline void options::
-init_changelog(const bool& x)
+init_changelog (const bool& x)
 {
   this->init_changelog_ = x;
 }
@@ -1339,7 +1339,7 @@ odb_file_suffix ()
 }
 
 inline void options::
-odb_file_suffix(const database_map<std::string>& x)
+odb_file_suffix (const database_map<std::string>& x)
 {
   this->odb_file_suffix_ = x;
 }
@@ -1351,7 +1351,7 @@ odb_file_suffix_specified () const
 }
 
 inline void options::
-odb_file_suffix_specified(bool x)
+odb_file_suffix_specified (bool x)
 {
   this->odb_file_suffix_specified_ = x;
 }
@@ -1369,7 +1369,7 @@ sql_file_suffix ()
 }
 
 inline void options::
-sql_file_suffix(const database_map<std::string>& x)
+sql_file_suffix (const database_map<std::string>& x)
 {
   this->sql_file_suffix_ = x;
 }
@@ -1381,7 +1381,7 @@ sql_file_suffix_specified () const
 }
 
 inline void options::
-sql_file_suffix_specified(bool x)
+sql_file_suffix_specified (bool x)
 {
   this->sql_file_suffix_specified_ = x;
 }
@@ -1399,7 +1399,7 @@ schema_file_suffix ()
 }
 
 inline void options::
-schema_file_suffix(const database_map<std::string>& x)
+schema_file_suffix (const database_map<std::string>& x)
 {
   this->schema_file_suffix_ = x;
 }
@@ -1411,7 +1411,7 @@ schema_file_suffix_specified () const
 }
 
 inline void options::
-schema_file_suffix_specified(bool x)
+schema_file_suffix_specified (bool x)
 {
   this->schema_file_suffix_specified_ = x;
 }
@@ -1429,7 +1429,7 @@ changelog_file_suffix ()
 }
 
 inline void options::
-changelog_file_suffix(const database_map<std::string>& x)
+changelog_file_suffix (const database_map<std::string>& x)
 {
   this->changelog_file_suffix_ = x;
 }
@@ -1441,7 +1441,7 @@ changelog_file_suffix_specified () const
 }
 
 inline void options::
-changelog_file_suffix_specified(bool x)
+changelog_file_suffix_specified (bool x)
 {
   this->changelog_file_suffix_specified_ = x;
 }
@@ -1459,7 +1459,7 @@ hxx_suffix ()
 }
 
 inline void options::
-hxx_suffix(const std::string& x)
+hxx_suffix (const std::string& x)
 {
   this->hxx_suffix_ = x;
 }
@@ -1471,7 +1471,7 @@ hxx_suffix_specified () const
 }
 
 inline void options::
-hxx_suffix_specified(bool x)
+hxx_suffix_specified (bool x)
 {
   this->hxx_suffix_specified_ = x;
 }
@@ -1489,7 +1489,7 @@ ixx_suffix ()
 }
 
 inline void options::
-ixx_suffix(const std::string& x)
+ixx_suffix (const std::string& x)
 {
   this->ixx_suffix_ = x;
 }
@@ -1501,7 +1501,7 @@ ixx_suffix_specified () const
 }
 
 inline void options::
-ixx_suffix_specified(bool x)
+ixx_suffix_specified (bool x)
 {
   this->ixx_suffix_specified_ = x;
 }
@@ -1519,7 +1519,7 @@ cxx_suffix ()
 }
 
 inline void options::
-cxx_suffix(const std::string& x)
+cxx_suffix (const std::string& x)
 {
   this->cxx_suffix_ = x;
 }
@@ -1531,7 +1531,7 @@ cxx_suffix_specified () const
 }
 
 inline void options::
-cxx_suffix_specified(bool x)
+cxx_suffix_specified (bool x)
 {
   this->cxx_suffix_specified_ = x;
 }
@@ -1549,7 +1549,7 @@ sql_suffix ()
 }
 
 inline void options::
-sql_suffix(const std::string& x)
+sql_suffix (const std::string& x)
 {
   this->sql_suffix_ = x;
 }
@@ -1561,7 +1561,7 @@ sql_suffix_specified () const
 }
 
 inline void options::
-sql_suffix_specified(bool x)
+sql_suffix_specified (bool x)
 {
   this->sql_suffix_specified_ = x;
 }
@@ -1579,7 +1579,7 @@ changelog_suffix ()
 }
 
 inline void options::
-changelog_suffix(const std::string& x)
+changelog_suffix (const std::string& x)
 {
   this->changelog_suffix_ = x;
 }
@@ -1591,7 +1591,7 @@ changelog_suffix_specified () const
 }
 
 inline void options::
-changelog_suffix_specified(bool x)
+changelog_suffix_specified (bool x)
 {
   this->changelog_suffix_specified_ = x;
 }
@@ -1609,7 +1609,7 @@ hxx_prologue ()
 }
 
 inline void options::
-hxx_prologue(const database_map<std::vector<std::string> >& x)
+hxx_prologue (const database_map<std::vector<std::string> >& x)
 {
   this->hxx_prologue_ = x;
 }
@@ -1621,7 +1621,7 @@ hxx_prologue_specified () const
 }
 
 inline void options::
-hxx_prologue_specified(bool x)
+hxx_prologue_specified (bool x)
 {
   this->hxx_prologue_specified_ = x;
 }
@@ -1639,7 +1639,7 @@ ixx_prologue ()
 }
 
 inline void options::
-ixx_prologue(const database_map<std::vector<std::string> >& x)
+ixx_prologue (const database_map<std::vector<std::string> >& x)
 {
   this->ixx_prologue_ = x;
 }
@@ -1651,7 +1651,7 @@ ixx_prologue_specified () const
 }
 
 inline void options::
-ixx_prologue_specified(bool x)
+ixx_prologue_specified (bool x)
 {
   this->ixx_prologue_specified_ = x;
 }
@@ -1669,7 +1669,7 @@ cxx_prologue ()
 }
 
 inline void options::
-cxx_prologue(const database_map<std::vector<std::string> >& x)
+cxx_prologue (const database_map<std::vector<std::string> >& x)
 {
   this->cxx_prologue_ = x;
 }
@@ -1681,7 +1681,7 @@ cxx_prologue_specified () const
 }
 
 inline void options::
-cxx_prologue_specified(bool x)
+cxx_prologue_specified (bool x)
 {
   this->cxx_prologue_specified_ = x;
 }
@@ -1699,7 +1699,7 @@ schema_prologue ()
 }
 
 inline void options::
-schema_prologue(const database_map<std::vector<std::string> >& x)
+schema_prologue (const database_map<std::vector<std::string> >& x)
 {
   this->schema_prologue_ = x;
 }
@@ -1711,7 +1711,7 @@ schema_prologue_specified () const
 }
 
 inline void options::
-schema_prologue_specified(bool x)
+schema_prologue_specified (bool x)
 {
   this->schema_prologue_specified_ = x;
 }
@@ -1729,7 +1729,7 @@ sql_prologue ()
 }
 
 inline void options::
-sql_prologue(const database_map<std::vector<std::string> >& x)
+sql_prologue (const database_map<std::vector<std::string> >& x)
 {
   this->sql_prologue_ = x;
 }
@@ -1741,7 +1741,7 @@ sql_prologue_specified () const
 }
 
 inline void options::
-sql_prologue_specified(bool x)
+sql_prologue_specified (bool x)
 {
   this->sql_prologue_specified_ = x;
 }
@@ -1759,7 +1759,7 @@ migration_prologue ()
 }
 
 inline void options::
-migration_prologue(const database_map<std::vector<std::string> >& x)
+migration_prologue (const database_map<std::vector<std::string> >& x)
 {
   this->migration_prologue_ = x;
 }
@@ -1771,7 +1771,7 @@ migration_prologue_specified () const
 }
 
 inline void options::
-migration_prologue_specified(bool x)
+migration_prologue_specified (bool x)
 {
   this->migration_prologue_specified_ = x;
 }
@@ -1789,7 +1789,7 @@ sql_interlude ()
 }
 
 inline void options::
-sql_interlude(const database_map<std::vector<std::string> >& x)
+sql_interlude (const database_map<std::vector<std::string> >& x)
 {
   this->sql_interlude_ = x;
 }
@@ -1801,7 +1801,7 @@ sql_interlude_specified () const
 }
 
 inline void options::
-sql_interlude_specified(bool x)
+sql_interlude_specified (bool x)
 {
   this->sql_interlude_specified_ = x;
 }
@@ -1819,7 +1819,7 @@ hxx_epilogue ()
 }
 
 inline void options::
-hxx_epilogue(const database_map<std::vector<std::string> >& x)
+hxx_epilogue (const database_map<std::vector<std::string> >& x)
 {
   this->hxx_epilogue_ = x;
 }
@@ -1831,7 +1831,7 @@ hxx_epilogue_specified () const
 }
 
 inline void options::
-hxx_epilogue_specified(bool x)
+hxx_epilogue_specified (bool x)
 {
   this->hxx_epilogue_specified_ = x;
 }
@@ -1849,7 +1849,7 @@ ixx_epilogue ()
 }
 
 inline void options::
-ixx_epilogue(const database_map<std::vector<std::string> >& x)
+ixx_epilogue (const database_map<std::vector<std::string> >& x)
 {
   this->ixx_epilogue_ = x;
 }
@@ -1861,7 +1861,7 @@ ixx_epilogue_specified () const
 }
 
 inline void options::
-ixx_epilogue_specified(bool x)
+ixx_epilogue_specified (bool x)
 {
   this->ixx_epilogue_specified_ = x;
 }
@@ -1879,7 +1879,7 @@ cxx_epilogue ()
 }
 
 inline void options::
-cxx_epilogue(const database_map<std::vector<std::string> >& x)
+cxx_epilogue (const database_map<std::vector<std::string> >& x)
 {
   this->cxx_epilogue_ = x;
 }
@@ -1891,7 +1891,7 @@ cxx_epilogue_specified () const
 }
 
 inline void options::
-cxx_epilogue_specified(bool x)
+cxx_epilogue_specified (bool x)
 {
   this->cxx_epilogue_specified_ = x;
 }
@@ -1909,7 +1909,7 @@ schema_epilogue ()
 }
 
 inline void options::
-schema_epilogue(const database_map<std::vector<std::string> >& x)
+schema_epilogue (const database_map<std::vector<std::string> >& x)
 {
   this->schema_epilogue_ = x;
 }
@@ -1921,7 +1921,7 @@ schema_epilogue_specified () const
 }
 
 inline void options::
-schema_epilogue_specified(bool x)
+schema_epilogue_specified (bool x)
 {
   this->schema_epilogue_specified_ = x;
 }
@@ -1939,7 +1939,7 @@ sql_epilogue ()
 }
 
 inline void options::
-sql_epilogue(const database_map<std::vector<std::string> >& x)
+sql_epilogue (const database_map<std::vector<std::string> >& x)
 {
   this->sql_epilogue_ = x;
 }
@@ -1951,7 +1951,7 @@ sql_epilogue_specified () const
 }
 
 inline void options::
-sql_epilogue_specified(bool x)
+sql_epilogue_specified (bool x)
 {
   this->sql_epilogue_specified_ = x;
 }
@@ -1969,7 +1969,7 @@ migration_epilogue ()
 }
 
 inline void options::
-migration_epilogue(const database_map<std::vector<std::string> >& x)
+migration_epilogue (const database_map<std::vector<std::string> >& x)
 {
   this->migration_epilogue_ = x;
 }
@@ -1981,7 +1981,7 @@ migration_epilogue_specified () const
 }
 
 inline void options::
-migration_epilogue_specified(bool x)
+migration_epilogue_specified (bool x)
 {
   this->migration_epilogue_specified_ = x;
 }
@@ -1999,7 +1999,7 @@ hxx_prologue_file ()
 }
 
 inline void options::
-hxx_prologue_file(const database_map<std::vector<std::string> >& x)
+hxx_prologue_file (const database_map<std::vector<std::string> >& x)
 {
   this->hxx_prologue_file_ = x;
 }
@@ -2011,7 +2011,7 @@ hxx_prologue_file_specified () const
 }
 
 inline void options::
-hxx_prologue_file_specified(bool x)
+hxx_prologue_file_specified (bool x)
 {
   this->hxx_prologue_file_specified_ = x;
 }
@@ -2029,7 +2029,7 @@ ixx_prologue_file ()
 }
 
 inline void options::
-ixx_prologue_file(const database_map<std::vector<std::string> >& x)
+ixx_prologue_file (const database_map<std::vector<std::string> >& x)
 {
   this->ixx_prologue_file_ = x;
 }
@@ -2041,7 +2041,7 @@ ixx_prologue_file_specified () const
 }
 
 inline void options::
-ixx_prologue_file_specified(bool x)
+ixx_prologue_file_specified (bool x)
 {
   this->ixx_prologue_file_specified_ = x;
 }
@@ -2059,7 +2059,7 @@ cxx_prologue_file ()
 }
 
 inline void options::
-cxx_prologue_file(const database_map<std::vector<std::string> >& x)
+cxx_prologue_file (const database_map<std::vector<std::string> >& x)
 {
   this->cxx_prologue_file_ = x;
 }
@@ -2071,7 +2071,7 @@ cxx_prologue_file_specified () const
 }
 
 inline void options::
-cxx_prologue_file_specified(bool x)
+cxx_prologue_file_specified (bool x)
 {
   this->cxx_prologue_file_specified_ = x;
 }
@@ -2089,7 +2089,7 @@ schema_prologue_file ()
 }
 
 inline void options::
-schema_prologue_file(const database_map<std::vector<std::string> >& x)
+schema_prologue_file (const database_map<std::vector<std::string> >& x)
 {
   this->schema_prologue_file_ = x;
 }
@@ -2101,7 +2101,7 @@ schema_prologue_file_specified () const
 }
 
 inline void options::
-schema_prologue_file_specified(bool x)
+schema_prologue_file_specified (bool x)
 {
   this->schema_prologue_file_specified_ = x;
 }
@@ -2119,7 +2119,7 @@ sql_prologue_file ()
 }
 
 inline void options::
-sql_prologue_file(const database_map<std::vector<std::string> >& x)
+sql_prologue_file (const database_map<std::vector<std::string> >& x)
 {
   this->sql_prologue_file_ = x;
 }
@@ -2131,7 +2131,7 @@ sql_prologue_file_specified () const
 }
 
 inline void options::
-sql_prologue_file_specified(bool x)
+sql_prologue_file_specified (bool x)
 {
   this->sql_prologue_file_specified_ = x;
 }
@@ -2149,7 +2149,7 @@ migration_prologue_file ()
 }
 
 inline void options::
-migration_prologue_file(const database_map<std::vector<std::string> >& x)
+migration_prologue_file (const database_map<std::vector<std::string> >& x)
 {
   this->migration_prologue_file_ = x;
 }
@@ -2161,7 +2161,7 @@ migration_prologue_file_specified () const
 }
 
 inline void options::
-migration_prologue_file_specified(bool x)
+migration_prologue_file_specified (bool x)
 {
   this->migration_prologue_file_specified_ = x;
 }
@@ -2179,7 +2179,7 @@ sql_interlude_file ()
 }
 
 inline void options::
-sql_interlude_file(const database_map<std::vector<std::string> >& x)
+sql_interlude_file (const database_map<std::vector<std::string> >& x)
 {
   this->sql_interlude_file_ = x;
 }
@@ -2191,7 +2191,7 @@ sql_interlude_file_specified () const
 }
 
 inline void options::
-sql_interlude_file_specified(bool x)
+sql_interlude_file_specified (bool x)
 {
   this->sql_interlude_file_specified_ = x;
 }
@@ -2209,7 +2209,7 @@ hxx_epilogue_file ()
 }
 
 inline void options::
-hxx_epilogue_file(const database_map<std::vector<std::string> >& x)
+hxx_epilogue_file (const database_map<std::vector<std::string> >& x)
 {
   this->hxx_epilogue_file_ = x;
 }
@@ -2221,7 +2221,7 @@ hxx_epilogue_file_specified () const
 }
 
 inline void options::
-hxx_epilogue_file_specified(bool x)
+hxx_epilogue_file_specified (bool x)
 {
   this->hxx_epilogue_file_specified_ = x;
 }
@@ -2239,7 +2239,7 @@ ixx_epilogue_file ()
 }
 
 inline void options::
-ixx_epilogue_file(const database_map<std::vector<std::string> >& x)
+ixx_epilogue_file (const database_map<std::vector<std::string> >& x)
 {
   this->ixx_epilogue_file_ = x;
 }
@@ -2251,7 +2251,7 @@ ixx_epilogue_file_specified () const
 }
 
 inline void options::
-ixx_epilogue_file_specified(bool x)
+ixx_epilogue_file_specified (bool x)
 {
   this->ixx_epilogue_file_specified_ = x;
 }
@@ -2269,7 +2269,7 @@ cxx_epilogue_file ()
 }
 
 inline void options::
-cxx_epilogue_file(const database_map<std::vector<std::string> >& x)
+cxx_epilogue_file (const database_map<std::vector<std::string> >& x)
 {
   this->cxx_epilogue_file_ = x;
 }
@@ -2281,7 +2281,7 @@ cxx_epilogue_file_specified () const
 }
 
 inline void options::
-cxx_epilogue_file_specified(bool x)
+cxx_epilogue_file_specified (bool x)
 {
   this->cxx_epilogue_file_specified_ = x;
 }
@@ -2299,7 +2299,7 @@ schema_epilogue_file ()
 }
 
 inline void options::
-schema_epilogue_file(const database_map<std::vector<std::string> >& x)
+schema_epilogue_file (const database_map<std::vector<std::string> >& x)
 {
   this->schema_epilogue_file_ = x;
 }
@@ -2311,7 +2311,7 @@ schema_epilogue_file_specified () const
 }
 
 inline void options::
-schema_epilogue_file_specified(bool x)
+schema_epilogue_file_specified (bool x)
 {
   this->schema_epilogue_file_specified_ = x;
 }
@@ -2329,7 +2329,7 @@ sql_epilogue_file ()
 }
 
 inline void options::
-sql_epilogue_file(const database_map<std::vector<std::string> >& x)
+sql_epilogue_file (const database_map<std::vector<std::string> >& x)
 {
   this->sql_epilogue_file_ = x;
 }
@@ -2341,7 +2341,7 @@ sql_epilogue_file_specified () const
 }
 
 inline void options::
-sql_epilogue_file_specified(bool x)
+sql_epilogue_file_specified (bool x)
 {
   this->sql_epilogue_file_specified_ = x;
 }
@@ -2359,7 +2359,7 @@ migration_epilogue_file ()
 }
 
 inline void options::
-migration_epilogue_file(const database_map<std::vector<std::string> >& x)
+migration_epilogue_file (const database_map<std::vector<std::string> >& x)
 {
   this->migration_epilogue_file_ = x;
 }
@@ -2371,7 +2371,7 @@ migration_epilogue_file_specified () const
 }
 
 inline void options::
-migration_epilogue_file_specified(bool x)
+migration_epilogue_file_specified (bool x)
 {
   this->migration_epilogue_file_specified_ = x;
 }
@@ -2389,7 +2389,7 @@ odb_prologue ()
 }
 
 inline void options::
-odb_prologue(const database_map<std::vector<std::string> >& x)
+odb_prologue (const database_map<std::vector<std::string> >& x)
 {
   this->odb_prologue_ = x;
 }
@@ -2401,7 +2401,7 @@ odb_prologue_specified () const
 }
 
 inline void options::
-odb_prologue_specified(bool x)
+odb_prologue_specified (bool x)
 {
   this->odb_prologue_specified_ = x;
 }
@@ -2419,7 +2419,7 @@ odb_prologue_file ()
 }
 
 inline void options::
-odb_prologue_file(const database_map<std::vector<std::string> >& x)
+odb_prologue_file (const database_map<std::vector<std::string> >& x)
 {
   this->odb_prologue_file_ = x;
 }
@@ -2431,7 +2431,7 @@ odb_prologue_file_specified () const
 }
 
 inline void options::
-odb_prologue_file_specified(bool x)
+odb_prologue_file_specified (bool x)
 {
   this->odb_prologue_file_specified_ = x;
 }
@@ -2449,7 +2449,7 @@ odb_epilogue ()
 }
 
 inline void options::
-odb_epilogue(const database_map<std::vector<std::string> >& x)
+odb_epilogue (const database_map<std::vector<std::string> >& x)
 {
   this->odb_epilogue_ = x;
 }
@@ -2461,7 +2461,7 @@ odb_epilogue_specified () const
 }
 
 inline void options::
-odb_epilogue_specified(bool x)
+odb_epilogue_specified (bool x)
 {
   this->odb_epilogue_specified_ = x;
 }
@@ -2479,7 +2479,7 @@ odb_epilogue_file ()
 }
 
 inline void options::
-odb_epilogue_file(const database_map<std::vector<std::string> >& x)
+odb_epilogue_file (const database_map<std::vector<std::string> >& x)
 {
   this->odb_epilogue_file_ = x;
 }
@@ -2491,7 +2491,7 @@ odb_epilogue_file_specified () const
 }
 
 inline void options::
-odb_epilogue_file_specified(bool x)
+odb_epilogue_file_specified (bool x)
 {
   this->odb_epilogue_file_specified_ = x;
 }
@@ -2509,7 +2509,7 @@ table_prefix ()
 }
 
 inline void options::
-table_prefix(const database_map<std::string>& x)
+table_prefix (const database_map<std::string>& x)
 {
   this->table_prefix_ = x;
 }
@@ -2521,7 +2521,7 @@ table_prefix_specified () const
 }
 
 inline void options::
-table_prefix_specified(bool x)
+table_prefix_specified (bool x)
 {
   this->table_prefix_specified_ = x;
 }
@@ -2539,7 +2539,7 @@ index_suffix ()
 }
 
 inline void options::
-index_suffix(const database_map<std::string>& x)
+index_suffix (const database_map<std::string>& x)
 {
   this->index_suffix_ = x;
 }
@@ -2551,7 +2551,7 @@ index_suffix_specified () const
 }
 
 inline void options::
-index_suffix_specified(bool x)
+index_suffix_specified (bool x)
 {
   this->index_suffix_specified_ = x;
 }
@@ -2569,7 +2569,7 @@ fkey_suffix ()
 }
 
 inline void options::
-fkey_suffix(const database_map<std::string>& x)
+fkey_suffix (const database_map<std::string>& x)
 {
   this->fkey_suffix_ = x;
 }
@@ -2581,7 +2581,7 @@ fkey_suffix_specified () const
 }
 
 inline void options::
-fkey_suffix_specified(bool x)
+fkey_suffix_specified (bool x)
 {
   this->fkey_suffix_specified_ = x;
 }
@@ -2599,7 +2599,7 @@ sequence_suffix ()
 }
 
 inline void options::
-sequence_suffix(const database_map<std::string>& x)
+sequence_suffix (const database_map<std::string>& x)
 {
   this->sequence_suffix_ = x;
 }
@@ -2611,7 +2611,7 @@ sequence_suffix_specified () const
 }
 
 inline void options::
-sequence_suffix_specified(bool x)
+sequence_suffix_specified (bool x)
 {
   this->sequence_suffix_specified_ = x;
 }
@@ -2629,7 +2629,7 @@ sql_name_case ()
 }
 
 inline void options::
-sql_name_case(const database_map<name_case>& x)
+sql_name_case (const database_map<name_case>& x)
 {
   this->sql_name_case_ = x;
 }
@@ -2641,7 +2641,7 @@ sql_name_case_specified () const
 }
 
 inline void options::
-sql_name_case_specified(bool x)
+sql_name_case_specified (bool x)
 {
   this->sql_name_case_specified_ = x;
 }
@@ -2659,7 +2659,7 @@ table_regex ()
 }
 
 inline void options::
-table_regex(const database_map<std::vector<std::string> >& x)
+table_regex (const database_map<std::vector<std::string> >& x)
 {
   this->table_regex_ = x;
 }
@@ -2671,7 +2671,7 @@ table_regex_specified () const
 }
 
 inline void options::
-table_regex_specified(bool x)
+table_regex_specified (bool x)
 {
   this->table_regex_specified_ = x;
 }
@@ -2689,7 +2689,7 @@ column_regex ()
 }
 
 inline void options::
-column_regex(const database_map<std::vector<std::string> >& x)
+column_regex (const database_map<std::vector<std::string> >& x)
 {
   this->column_regex_ = x;
 }
@@ -2701,7 +2701,7 @@ column_regex_specified () const
 }
 
 inline void options::
-column_regex_specified(bool x)
+column_regex_specified (bool x)
 {
   this->column_regex_specified_ = x;
 }
@@ -2719,7 +2719,7 @@ index_regex ()
 }
 
 inline void options::
-index_regex(const database_map<std::vector<std::string> >& x)
+index_regex (const database_map<std::vector<std::string> >& x)
 {
   this->index_regex_ = x;
 }
@@ -2731,7 +2731,7 @@ index_regex_specified () const
 }
 
 inline void options::
-index_regex_specified(bool x)
+index_regex_specified (bool x)
 {
   this->index_regex_specified_ = x;
 }
@@ -2749,7 +2749,7 @@ fkey_regex ()
 }
 
 inline void options::
-fkey_regex(const database_map<std::vector<std::string> >& x)
+fkey_regex (const database_map<std::vector<std::string> >& x)
 {
   this->fkey_regex_ = x;
 }
@@ -2761,7 +2761,7 @@ fkey_regex_specified () const
 }
 
 inline void options::
-fkey_regex_specified(bool x)
+fkey_regex_specified (bool x)
 {
   this->fkey_regex_specified_ = x;
 }
@@ -2779,7 +2779,7 @@ sequence_regex ()
 }
 
 inline void options::
-sequence_regex(const database_map<std::vector<std::string> >& x)
+sequence_regex (const database_map<std::vector<std::string> >& x)
 {
   this->sequence_regex_ = x;
 }
@@ -2791,7 +2791,7 @@ sequence_regex_specified () const
 }
 
 inline void options::
-sequence_regex_specified(bool x)
+sequence_regex_specified (bool x)
 {
   this->sequence_regex_specified_ = x;
 }
@@ -2809,7 +2809,7 @@ statement_regex ()
 }
 
 inline void options::
-statement_regex(const database_map<std::vector<std::string> >& x)
+statement_regex (const database_map<std::vector<std::string> >& x)
 {
   this->statement_regex_ = x;
 }
@@ -2821,7 +2821,7 @@ statement_regex_specified () const
 }
 
 inline void options::
-statement_regex_specified(bool x)
+statement_regex_specified (bool x)
 {
   this->statement_regex_specified_ = x;
 }
@@ -2839,7 +2839,7 @@ sql_name_regex ()
 }
 
 inline void options::
-sql_name_regex(const database_map<std::vector<std::string> >& x)
+sql_name_regex (const database_map<std::vector<std::string> >& x)
 {
   this->sql_name_regex_ = x;
 }
@@ -2851,7 +2851,7 @@ sql_name_regex_specified () const
 }
 
 inline void options::
-sql_name_regex_specified(bool x)
+sql_name_regex_specified (bool x)
 {
   this->sql_name_regex_specified_ = x;
 }
@@ -2869,7 +2869,7 @@ sql_name_regex_trace ()
 }
 
 inline void options::
-sql_name_regex_trace(const bool& x)
+sql_name_regex_trace (const bool& x)
 {
   this->sql_name_regex_trace_ = x;
 }
@@ -2887,7 +2887,7 @@ accessor_regex ()
 }
 
 inline void options::
-accessor_regex(const std::vector<std::string>& x)
+accessor_regex (const std::vector<std::string>& x)
 {
   this->accessor_regex_ = x;
 }
@@ -2899,7 +2899,7 @@ accessor_regex_specified () const
 }
 
 inline void options::
-accessor_regex_specified(bool x)
+accessor_regex_specified (bool x)
 {
   this->accessor_regex_specified_ = x;
 }
@@ -2917,7 +2917,7 @@ accessor_regex_trace ()
 }
 
 inline void options::
-accessor_regex_trace(const bool& x)
+accessor_regex_trace (const bool& x)
 {
   this->accessor_regex_trace_ = x;
 }
@@ -2935,7 +2935,7 @@ modifier_regex ()
 }
 
 inline void options::
-modifier_regex(const std::vector<std::string>& x)
+modifier_regex (const std::vector<std::string>& x)
 {
   this->modifier_regex_ = x;
 }
@@ -2947,7 +2947,7 @@ modifier_regex_specified () const
 }
 
 inline void options::
-modifier_regex_specified(bool x)
+modifier_regex_specified (bool x)
 {
   this->modifier_regex_specified_ = x;
 }
@@ -2965,7 +2965,7 @@ modifier_regex_trace ()
 }
 
 inline void options::
-modifier_regex_trace(const bool& x)
+modifier_regex_trace (const bool& x)
 {
   this->modifier_regex_trace_ = x;
 }
@@ -2983,7 +2983,7 @@ include_with_brackets ()
 }
 
 inline void options::
-include_with_brackets(const bool& x)
+include_with_brackets (const bool& x)
 {
   this->include_with_brackets_ = x;
 }
@@ -3001,7 +3001,7 @@ include_prefix ()
 }
 
 inline void options::
-include_prefix(const std::string& x)
+include_prefix (const std::string& x)
 {
   this->include_prefix_ = x;
 }
@@ -3013,7 +3013,7 @@ include_prefix_specified () const
 }
 
 inline void options::
-include_prefix_specified(bool x)
+include_prefix_specified (bool x)
 {
   this->include_prefix_specified_ = x;
 }
@@ -3031,7 +3031,7 @@ include_regex ()
 }
 
 inline void options::
-include_regex(const std::vector<std::string>& x)
+include_regex (const std::vector<std::string>& x)
 {
   this->include_regex_ = x;
 }
@@ -3043,7 +3043,7 @@ include_regex_specified () const
 }
 
 inline void options::
-include_regex_specified(bool x)
+include_regex_specified (bool x)
 {
   this->include_regex_specified_ = x;
 }
@@ -3061,7 +3061,7 @@ include_regex_trace ()
 }
 
 inline void options::
-include_regex_trace(const bool& x)
+include_regex_trace (const bool& x)
 {
   this->include_regex_trace_ = x;
 }
@@ -3079,7 +3079,7 @@ guard_prefix ()
 }
 
 inline void options::
-guard_prefix(const std::string& x)
+guard_prefix (const std::string& x)
 {
   this->guard_prefix_ = x;
 }
@@ -3091,7 +3091,7 @@ guard_prefix_specified () const
 }
 
 inline void options::
-guard_prefix_specified(bool x)
+guard_prefix_specified (bool x)
 {
   this->guard_prefix_specified_ = x;
 }
@@ -3109,7 +3109,7 @@ show_sloc ()
 }
 
 inline void options::
-show_sloc(const bool& x)
+show_sloc (const bool& x)
 {
   this->show_sloc_ = x;
 }
@@ -3127,7 +3127,7 @@ sloc_limit ()
 }
 
 inline void options::
-sloc_limit(const std::size_t& x)
+sloc_limit (const std::size_t& x)
 {
   this->sloc_limit_ = x;
 }
@@ -3139,7 +3139,7 @@ sloc_limit_specified () const
 }
 
 inline void options::
-sloc_limit_specified(bool x)
+sloc_limit_specified (bool x)
 {
   this->sloc_limit_specified_ = x;
 }
@@ -3157,7 +3157,7 @@ options_file ()
 }
 
 inline void options::
-options_file(const std::string& x)
+options_file (const std::string& x)
 {
   this->options_file_ = x;
 }
@@ -3169,7 +3169,7 @@ options_file_specified () const
 }
 
 inline void options::
-options_file_specified(bool x)
+options_file_specified (bool x)
 {
   this->options_file_specified_ = x;
 }
@@ -3187,7 +3187,7 @@ x ()
 }
 
 inline void options::
-x(const std::vector<std::string>& x)
+x (const std::vector<std::string>& x)
 {
   this->x_ = x;
 }
@@ -3199,7 +3199,7 @@ x_specified () const
 }
 
 inline void options::
-x_specified(bool x)
+x_specified (bool x)
 {
   this->x_specified_ = x;
 }
@@ -3217,7 +3217,7 @@ v ()
 }
 
 inline void options::
-v(const bool& x)
+v (const bool& x)
 {
   this->v_ = x;
 }
@@ -3235,7 +3235,7 @@ trace ()
 }
 
 inline void options::
-trace(const bool& x)
+trace (const bool& x)
 {
   this->trace_ = x;
 }
@@ -3253,7 +3253,7 @@ mysql_engine ()
 }
 
 inline void options::
-mysql_engine(const std::string& x)
+mysql_engine (const std::string& x)
 {
   this->mysql_engine_ = x;
 }
@@ -3265,7 +3265,7 @@ mysql_engine_specified () const
 }
 
 inline void options::
-mysql_engine_specified(bool x)
+mysql_engine_specified (bool x)
 {
   this->mysql_engine_specified_ = x;
 }
@@ -3283,7 +3283,7 @@ sqlite_override_null ()
 }
 
 inline void options::
-sqlite_override_null(const bool& x)
+sqlite_override_null (const bool& x)
 {
   this->sqlite_override_null_ = x;
 }
@@ -3301,7 +3301,7 @@ sqlite_lax_auto_id ()
 }
 
 inline void options::
-sqlite_lax_auto_id(const bool& x)
+sqlite_lax_auto_id (const bool& x)
 {
   this->sqlite_lax_auto_id_ = x;
 }
@@ -3319,7 +3319,7 @@ pgsql_server_version ()
 }
 
 inline void options::
-pgsql_server_version(const ::pgsql_version& x)
+pgsql_server_version (const ::pgsql_version& x)
 {
   this->pgsql_server_version_ = x;
 }
@@ -3331,7 +3331,7 @@ pgsql_server_version_specified () const
 }
 
 inline void options::
-pgsql_server_version_specified(bool x)
+pgsql_server_version_specified (bool x)
 {
   this->pgsql_server_version_specified_ = x;
 }
@@ -3349,7 +3349,7 @@ oracle_client_version ()
 }
 
 inline void options::
-oracle_client_version(const ::oracle_version& x)
+oracle_client_version (const ::oracle_version& x)
 {
   this->oracle_client_version_ = x;
 }
@@ -3361,7 +3361,7 @@ oracle_client_version_specified () const
 }
 
 inline void options::
-oracle_client_version_specified(bool x)
+oracle_client_version_specified (bool x)
 {
   this->oracle_client_version_specified_ = x;
 }
@@ -3379,7 +3379,7 @@ oracle_warn_truncation ()
 }
 
 inline void options::
-oracle_warn_truncation(const bool& x)
+oracle_warn_truncation (const bool& x)
 {
   this->oracle_warn_truncation_ = x;
 }
@@ -3397,7 +3397,7 @@ mssql_server_version ()
 }
 
 inline void options::
-mssql_server_version(const ::mssql_version& x)
+mssql_server_version (const ::mssql_version& x)
 {
   this->mssql_server_version_ = x;
 }
@@ -3409,7 +3409,7 @@ mssql_server_version_specified () const
 }
 
 inline void options::
-mssql_server_version_specified(bool x)
+mssql_server_version_specified (bool x)
 {
   this->mssql_server_version_specified_ = x;
 }
@@ -3427,7 +3427,7 @@ mssql_short_limit ()
 }
 
 inline void options::
-mssql_short_limit(const unsigned int& x)
+mssql_short_limit (const unsigned int& x)
 {
   this->mssql_short_limit_ = x;
 }
@@ -3439,7 +3439,7 @@ mssql_short_limit_specified () const
 }
 
 inline void options::
-mssql_short_limit_specified(bool x)
+mssql_short_limit_specified (bool x)
 {
   this->mssql_short_limit_specified_ = x;
 }
