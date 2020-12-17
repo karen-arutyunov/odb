@@ -1,7 +1,7 @@
 // file      : odb/semantics/enum.cxx
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <cutl/compiler/type-info.hxx>
+#include <libcutl/compiler/type-info.hxx>
 #include <odb/semantics/enum.hxx>
 
 namespace semantics

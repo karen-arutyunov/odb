@@ -3,7 +3,7 @@
 
 #include <odb/gcc.hxx>
 
-#include <cutl/compiler/type-info.hxx>
+#include <libcutl/compiler/type-info.hxx>
 #include <odb/semantics/fundamental.hxx>
 
 namespace semantics

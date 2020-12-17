@@ -5,7 +5,7 @@
 #define ODB_RELATIONAL_GENERATE_HXX
 
 #include <string>
-#include <cutl/shared-ptr.hxx>
+#include <libcutl/shared-ptr.hxx>
 
 #include <odb/context.hxx>
 #include <odb/semantics/relational/model.hxx>

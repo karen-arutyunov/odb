@@ -13,11 +13,11 @@
 #include <utility> // std::pair
 #include <cassert>
 
-#include <cutl/fs/path.hxx>
-#include <cutl/container/graph.hxx>
-#include <cutl/container/pointer-iterator.hxx>
-#include <cutl/compiler/type-id.hxx>
-#include <cutl/compiler/context.hxx>
+#include <libcutl/fs/path.hxx>
+#include <libcutl/container/graph.hxx>
+#include <libcutl/container/pointer-iterator.hxx>
+#include <libcutl/compiler/type-id.hxx>
+#include <libcutl/compiler/context.hxx>
 
 #include <odb/gcc-fwd.hxx>
 #include <odb/location.hxx>

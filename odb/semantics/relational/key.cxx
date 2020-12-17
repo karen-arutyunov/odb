@@ -1,7 +1,7 @@
 // file      : odb/semantics/relational/key.cxx
 // license   : GNU GPL v3; see accompanying LICENSE file
 
-#include <cutl/compiler/type-info.hxx>
+#include <libcutl/compiler/type-info.hxx>
 
 #include <odb/semantics/relational/key.hxx>
 #include <odb/semantics/relational/column.hxx>

@@ -9,18 +9,18 @@
 #include <sstream>
 #include <iostream>
 
-#include <cutl/fs/auto-remove.hxx>
+#include <libcutl/fs/auto-remove.hxx>
 
-#include <cutl/compiler/code-stream.hxx>
-#include <cutl/compiler/cxx-indenter.hxx>
-#include <cutl/compiler/sloc-counter.hxx>
+#include <libcutl/compiler/code-stream.hxx>
+#include <libcutl/compiler/cxx-indenter.hxx>
+#include <libcutl/compiler/sloc-counter.hxx>
 
 #ifdef ODB_BUILD2
 #include <libstudxml/parser.hxx>
 #include <libstudxml/serializer.hxx>
 #else
-#include <cutl/xml/parser.hxx>
-#include <cutl/xml/serializer.hxx>
+#include <libcutl/xml/parser.hxx>
+#include <libcutl/xml/serializer.hxx>
 #endif
 
 #include <odb/version.hxx>

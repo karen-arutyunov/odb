@@ -17,8 +17,8 @@
 #include <cstddef> // std::size_t
 #include <iostream>
 
-#include <cutl/re.hxx>
-#include <cutl/shared-ptr.hxx>
+#include <libcutl/re.hxx>
+#include <libcutl/shared-ptr.hxx>
 
 #include <odb/options.hxx>
 #include <odb/features.hxx>

@@ -10,16 +10,16 @@
 #include <string>
 #include <cassert>
 
-#include <cutl/container/graph.hxx>
-#include <cutl/container/pointer-iterator.hxx>
-#include <cutl/compiler/context.hxx>
+#include <libcutl/container/graph.hxx>
+#include <libcutl/container/pointer-iterator.hxx>
+#include <libcutl/compiler/context.hxx>
 
 #ifdef ODB_BUILD2
 #include <libstudxml/parser.hxx>
 #include <libstudxml/serializer.hxx>
 #else
-#include <cutl/xml/parser.hxx>
-#include <cutl/xml/serializer.hxx>
+#include <libcutl/xml/parser.hxx>
+#include <libcutl/xml/serializer.hxx>
 namespace cutl {namespace xml {typedef parser content;}}
 #endif
 

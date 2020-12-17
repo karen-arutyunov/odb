@@ -4,7 +4,7 @@
 #include <vector>
 #include <sstream>
 
-#include <cutl/compiler/type-info.hxx>
+#include <libcutl/compiler/type-info.hxx>
 
 #include <odb/semantics/relational/changelog.hxx>
 #include <odb/semantics/relational/model.hxx>

@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 
-#include <cutl/fs/path.hxx>
+#include <libcutl/fs/path.hxx>
 
 #include <odb/option-types.hxx>
 

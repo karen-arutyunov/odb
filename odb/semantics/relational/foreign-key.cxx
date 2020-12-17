@@ -4,7 +4,7 @@
 #include <ostream>
 #include <istream>
 
-#include <cutl/compiler/type-info.hxx>
+#include <libcutl/compiler/type-info.hxx>
 
 #include <odb/semantics/relational/foreign-key.hxx>
 

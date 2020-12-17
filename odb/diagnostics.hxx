@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <iostream>
 
-#include <cutl/fs/path.hxx>
+#include <libcutl/fs/path.hxx>
 
 #include <odb/location.hxx>
 

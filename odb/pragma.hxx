@@ -13,9 +13,9 @@
 
 #include <odb/option-types.hxx> // database
 
-#include <cutl/container/any.hxx>
-#include <cutl/container/multi-index.hxx>
-#include <cutl/compiler/context.hxx>
+#include <libcutl/container/any.hxx>
+#include <libcutl/container/multi-index.hxx>
+#include <libcutl/compiler/context.hxx>
 
 struct virt_declaration
 {

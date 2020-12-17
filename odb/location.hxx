@@ -7,7 +7,7 @@
 #include <odb/gcc-fwd.hxx>
 
 #include <cstddef>
-#include <cutl/fs/path.hxx>
+#include <libcutl/fs/path.hxx>
 
 struct location
 {

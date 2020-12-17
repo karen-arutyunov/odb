@@ -3,7 +3,7 @@
 
 #include <odb/gcc.hxx> // TYPE_HAS_DEFAULT_CONSTRUCTOR
 
-#include <cutl/compiler/type-info.hxx>
+#include <libcutl/compiler/type-info.hxx>
 #include <odb/semantics/class.hxx>
 
 namespace semantics

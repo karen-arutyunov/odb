@@ -14,8 +14,8 @@
 #include <cassert>
 #include <iostream>
 
-#include <cutl/re.hxx>
-#include <cutl/fs/path.hxx>
+#include <libcutl/re.hxx>
+#include <libcutl/fs/path.hxx>
 
 #include <odb/pragma.hxx>
 #include <odb/parser.hxx>

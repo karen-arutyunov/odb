@@ -31,7 +31,7 @@
 #include <iostream>
 #include <ext/stdio_filebuf.h>
 
-#include <cutl/fs/path.hxx>
+#include <libcutl/fs/path.hxx>
 
 #include <odb/version.hxx>
 #include <odb/options.hxx>

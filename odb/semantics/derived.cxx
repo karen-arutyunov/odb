@@ -3,7 +3,7 @@
 
 #include <sstream>
 
-#include <cutl/compiler/type-info.hxx>
+#include <libcutl/compiler/type-info.hxx>
 #include <odb/semantics/derived.hxx>
 
 using namespace std;
