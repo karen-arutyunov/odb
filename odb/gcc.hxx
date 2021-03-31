@@ -163,6 +163,7 @@ gcc_tree_code_name (gcc_tree_code_type tc) {return tree_code_name[tc];}
 // In GCC 9:
 //
 // INCLUDED_FROM     Became linemap_included_from_linemap().
+//
 // LAST_SOURCE_LINE  Was removed apparently as no longer used. Studying
 //                   the line-map.h diff from 8.3 suggests that the old
 //                   implementation should still work.
@@ -189,6 +190,25 @@ LAST_SOURCE_LINE (const line_map_ordinary* map)
 {
   return SOURCE_LINE (map, LAST_SOURCE_LINE_LOCATION (map));
 }
+
+#endif
+
+// In GCC 11:
+//
+// lookup_qualified_name() has a new interface.
+//
+// DECL_IS_BUILTIN became DECL_IS_UNDECLARED_BUILTIN.
+//
+#if BUILDING_GCC_MAJOR >= 11
+
+inline tree
+lookup_qualified_name (tree scope, tree name, bool type, bool complain)
+{
+  return lookup_qualified_name (
+    scope, name, (type ? LOOK_want::TYPE : LOOK_want::NORMAL), complain);
+}
+
+#define DECL_IS_BUILTIN(decl) DECL_IS_UNDECLARED_BUILTIN(decl)
 
 #endif
 
