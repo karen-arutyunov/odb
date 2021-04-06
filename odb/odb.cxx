@@ -598,6 +598,9 @@ main (int argc, char* argv[])
       {
         ostream& o (cout);
 
+        // While ODB itself doesn't use any environment variables, it uses GCC
+        // underneath which does (see "Environment Variables Affecting GCC").
+        //
         // Note that the export.metadata variable should be the first non-
         // blank/comment line.
         //
@@ -605,7 +608,8 @@ main (int argc, char* argv[])
           << "export.metadata = 1 odb" << endl
           << "odb.name = [string] odb" << endl
           << "odb.version = [string] '" << ODB_COMPILER_VERSION_STR << '\'' << endl
-          << "odb.checksum = [string] '" << ODB_COMPILER_VERSION_STR << '\'' << endl;
+          << "odb.checksum = [string] '" << ODB_COMPILER_VERSION_STR << '\'' << endl
+          << "odb.environment = [strings] CPATH CPLUS_INCLUDE_PATH GCC_EXEC_PREFIX COMPILER_PATH" << endl;
 
         return 0;
       }
