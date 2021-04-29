@@ -187,11 +187,19 @@ namespace odb
     {
       invalidate_results ();
 
-      // The current first active_object will remove itself from the list
-      // and make the second object (if any) the new first.
+      // The current first active_object may remove itself from the list and
+      // make the second object (if any) the new first.
       //
-      while (active_objects_ != 0)
-        active_objects_->clear ();
+      for (active_object** pp (&active_objects_); *pp != nullptr; )
+      {
+        active_object* p (*pp);
+        p->clear ();
+
+        // Move to the next object if this one decided to stay on the list.
+        //
+        if (*pp == p)
+          pp = &p->next_;
+      }
     }
 
     // connection_factory

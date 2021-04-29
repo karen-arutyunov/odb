@@ -41,8 +41,8 @@ namespace odb
     class LIBODB_SQLITE_EXPORT active_object
     {
     public:
-      // This function should remove the object from the list, since
-      // it shall no longer be "active".
+      // This function may remove the object from the list since it may no
+      // longer be "active".
       //
       virtual void
       clear () = 0;
@@ -57,6 +57,8 @@ namespace odb
       list_remove ();
 
     protected:
+      friend class connection;
+
       // prev_ == 0 means we are the first element.
       // next_ == 0 means we are the last element.
       // next_ == this means we are not on the list (prev_ should be 0).
