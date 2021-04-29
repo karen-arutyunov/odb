@@ -8,6 +8,7 @@
 
 #include <sqlite3.h>
 
+#include <odb/statement.hxx>
 #include <odb/connection.hxx>
 
 #include <odb/details/mutex.hxx>
@@ -29,6 +30,7 @@ namespace odb
   namespace sqlite
   {
     class statement_cache;
+    class generic_statement;
     class connection_factory;
 
     class connection;
@@ -164,6 +166,22 @@ namespace odb
       void
       clear ();
 
+    public:
+      generic_statement&
+      begin_statement ();
+
+      generic_statement&
+      begin_immediate_statement ();
+
+      generic_statement&
+      begin_exclusive_statement ();
+
+      generic_statement&
+      commit_statement ();
+
+      generic_statement&
+      rollback_statement ();
+
     private:
       connection (const connection&);
       connection& operator= (const connection&);
@@ -179,6 +197,15 @@ namespace odb
       // the connection is closed.
       //
       details::unique_ptr<statement_cache_type> statement_cache_;
+
+      // Note: using odb::statement in order to break the connection-statement
+      // dependency cycle.
+      //
+      details::shared_ptr<odb::statement> begin_;
+      details::shared_ptr<odb::statement> begin_immediate_;
+      details::shared_ptr<odb::statement> begin_exclusive_;
+      details::shared_ptr<odb::statement> commit_;
+      details::shared_ptr<odb::statement> rollback_;
 
       // Unlock notification machinery.
       //

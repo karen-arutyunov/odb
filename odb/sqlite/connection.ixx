@@ -5,7 +5,7 @@ namespace odb
 {
   namespace sqlite
   {
-    // active_objects
+    // active_object
     //
     inline void active_object::
     list_add ()

@@ -25,6 +25,8 @@ odb_sqlite_connection_unlock_callback (void**, int);
 
 namespace odb
 {
+  using namespace details;
+
   namespace sqlite
   {
     connection::
@@ -105,6 +107,12 @@ namespace odb
         db.foreign_keys () ? 22 : 23);
       st.execute ();
 
+      // String lengths include '\0', as per the SQLite manual suggestion.
+      //
+      begin_.reset (new (shared) generic_statement (*this, "BEGIN", 6));
+      commit_.reset (new (shared) generic_statement (*this, "COMMIT", 7));
+      rollback_.reset (new (shared) generic_statement (*this, "ROLLBACK", 9));
+
       // Create statement cache.
       //
       statement_cache_.reset (new statement_cache_type (*this));
@@ -117,6 +125,44 @@ namespace odb
       //
       recycle ();
       clear_prepared_map ();
+    }
+
+    generic_statement& connection::
+    begin_statement ()
+    {
+      return static_cast<generic_statement&> (*begin_);
+    }
+
+    generic_statement& connection::
+    begin_immediate_statement ()
+    {
+      if (!begin_immediate_)
+        begin_immediate_.reset (
+          new (shared) generic_statement (*this, "BEGIN IMMEDIATE", 16));
+
+      return static_cast<generic_statement&> (*begin_immediate_);
+    }
+
+    generic_statement& connection::
+    begin_exclusive_statement ()
+    {
+      if (!begin_exclusive_)
+        begin_exclusive_.reset (
+          new (shared) generic_statement (*this, "BEGIN EXCLUSIVE", 16));
+
+      return static_cast<generic_statement&> (*begin_exclusive_);
+    }
+
+    generic_statement& connection::
+    commit_statement ()
+    {
+      return static_cast<generic_statement&> (*commit_);
+    }
+
+    generic_statement& connection::
+    rollback_statement ()
+    {
+      return static_cast<generic_statement&> (*rollback_);
     }
 
     transaction_impl* connection::

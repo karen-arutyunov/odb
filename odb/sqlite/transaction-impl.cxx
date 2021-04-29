@@ -6,7 +6,6 @@
 #include <odb/sqlite/database.hxx>
 #include <odb/sqlite/connection.hxx>
 #include <odb/sqlite/statement.hxx>
-#include <odb/sqlite/statement-cache.hxx>
 #include <odb/sqlite/transaction-impl.hxx>
 
 namespace odb
@@ -43,23 +42,21 @@ namespace odb
         odb::transaction_impl::connection_ = connection_.get ();
       }
 
-      statement_cache& sc (connection_->statement_cache ());
-
       switch (lock_)
       {
       case deferred:
         {
-          sc.begin_statement ().execute ();
+          connection_->begin_statement ().execute ();
           break;
         }
       case immediate:
         {
-          sc.begin_immediate_statement ().execute ();
+          connection_->begin_immediate_statement ().execute ();
           break;
         }
       case exclusive:
         {
-          sc.begin_exclusive_statement ().execute ();
+          connection_->begin_exclusive_statement ().execute ();
           break;
         }
       }
@@ -82,7 +79,7 @@ namespace odb
           //
           try
           {
-            c_->statement_cache ().rollback_statement ().execute ();
+            c_->rollback_statement ().execute ();
           }
           catch (...) {}
         }
@@ -106,7 +103,7 @@ namespace odb
 
       {
         commit_guard cg (*connection_);
-        connection_->statement_cache ().commit_statement ().execute ();
+        connection_->commit_statement ().execute ();
         cg.release ();
       }
 
@@ -123,7 +120,7 @@ namespace odb
       //
       connection_->clear ();
 
-      connection_->statement_cache ().rollback_statement ().execute ();
+      connection_->rollback_statement ().execute ();
 
       // Release the connection.
       //
