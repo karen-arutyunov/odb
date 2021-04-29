@@ -4363,16 +4363,15 @@ traverse_object (type& c)
          << "static_cast<select_statement*> (pq.stmt.get ())));"
          << endl;
 
-      os << db << "::connection& conn (" << endl
-         << db << "::transaction::current ().connection ());"
+      os << db << "::transaction& tr (" << db << "::transaction::current ());"
          << endl
          << "// The connection used by the current transaction and the" << endl
          << "// one used to prepare this statement must be the same." << endl
          << "//" << endl
-         << "assert (&conn == &st->connection ());"
+         << "assert (q.verify_connection (tr));"
          << endl
          << "statements_type& sts (" << endl
-         << "conn.statement_cache ().find_object<object_type> ());";
+         << "st->connection ().statement_cache ().find_object<object_type> ());";
 
       if (versioned)
         os << "const schema_version_migration& svm (" <<
@@ -5662,16 +5661,15 @@ traverse_view (type& c)
        << "static_cast<select_statement*> (pq.stmt.get ())));"
        << endl;
 
-    os << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
+    os << db << "::transaction& tr (" << db << "::transaction::current ());"
        << endl
        << "// The connection used by the current transaction and the" << endl
        << "// one used to prepare this statement must be the same." << endl
        << "//" << endl
-       << "assert (&conn == &st->connection ());"
+       << "assert (q.verify_connection (tr));"
        << endl
        << "statements_type& sts (" << endl
-       << "conn.statement_cache ().find_view<view_type> ());";
+       << "st->connection ().statement_cache ().find_view<view_type> ());";
 
     if (versioned)
       os << "const schema_version_migration& svm (" <<
