@@ -17,6 +17,40 @@ namespace odb
   namespace sqlite
   {
     //
+    // serial_connection_factory
+    //
+
+    serial_connection_factory::
+    ~serial_connection_factory ()
+    {
+      // We should hold the last reference to the connection.
+      //
+      if (connection_ != 0)
+        assert (connection_.count () == 1);
+    }
+
+    connection_ptr serial_connection_factory::
+    create ()
+    {
+      return connection_ptr (new (shared) connection (*this));
+    }
+
+    connection_ptr serial_connection_factory::
+    connect ()
+    {
+      return connection_;
+    }
+
+    void serial_connection_factory::
+    database (database_type& db)
+    {
+      connection_factory::database (db);
+
+      if (!connection_)
+        connection_ = create ();
+    }
+
+    //
     // single_connection_factory
     //
 

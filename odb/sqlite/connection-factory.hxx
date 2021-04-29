@@ -23,7 +23,42 @@ namespace odb
 {
   namespace sqlite
   {
-    // Share a single connection.
+    // Share a single connection in a guaranteed serial database access.
+    //
+    // For example, a single-threaded application that executes all the
+    // operations via the database instance without messing with multiple
+    // connections/transactions would qualify.
+    //
+    class LIBODB_SQLITE_EXPORT serial_connection_factory:
+      public connection_factory
+    {
+    public:
+      serial_connection_factory () {}
+
+      virtual connection_ptr
+      connect ();
+
+      virtual void
+      database (database_type&);
+
+      virtual
+      ~serial_connection_factory ();
+
+    private:
+      serial_connection_factory (const serial_connection_factory&);
+      serial_connection_factory& operator= (const serial_connection_factory&);
+
+    protected:
+      // This function is called when the factory needs to create the
+      // connection.
+      //
+      virtual connection_ptr
+      create ();
+
+      connection_ptr connection_;
+    };
+
+    // Share a single connection potentially between multiple threads.
     //
     class LIBODB_SQLITE_EXPORT single_connection_factory:
       public connection_factory
