@@ -156,7 +156,8 @@ namespace odb
       wait ();
 
     public:
-      // Reset active statements.
+      // Reset active statements. Also invalidates query results by first
+      // calling invalidate_results().
       //
       void
       clear ();

@@ -185,6 +185,8 @@ namespace odb
     void connection::
     clear ()
     {
+      invalidate_results ();
+
       // The current first active_object will remove itself from the list
       // and make the second object (if any) the new first.
       //

@@ -95,15 +95,12 @@ namespace odb
     void transaction_impl::
     commit ()
     {
-      // Invalidate query results.
+      // Invalidate query results and reset active statements.
       //
-      connection_->invalidate_results ();
-
-      // Reset active statements. Active statements will prevent COMMIT
-      // from completing (write statements) or releasing the locks (read
-      // statements). Normally, a statement is automatically reset on
-      // completion, however, if an exception is thrown, that may not
-      // happen.
+      // Active statements will prevent COMMIT from completing (write
+      // statements) or releasing the locks (read statements). Normally, a
+      // statement is automatically reset on completion, however, if an
+      // exception is thrown, that may not happen.
       //
       connection_->clear ();
 
@@ -121,15 +118,8 @@ namespace odb
     void transaction_impl::
     rollback ()
     {
-      // Invalidate query results.
-      //
-      connection_->invalidate_results ();
-
-      // Reset active statements. Active statements will prevent ROLLBACK
-      // from completing (write statements) or releasing the locks (read
-      // statements). Normally, a statement is automatically reset on
-      // completion, however, if an exception is thrown, that may not
-      // happen.
+      // Invalidate query results and reset active statements (the same
+      // reasoning as in commit()).
       //
       connection_->clear ();
 
