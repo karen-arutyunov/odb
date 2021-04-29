@@ -32,13 +32,14 @@ namespace odb
     class statement_cache;
     class generic_statement;
     class connection_factory;
+    class attached_connection_factory;
 
     class connection;
     typedef details::shared_ptr<connection> connection_ptr;
 
     // SQLite "active object", i.e., an object that needs to be
     // "cleared" before the transaction can be committed and the
-    // connection release. These form a doubly-linked list.
+    // connection released. These form a doubly-linked list.
     //
     class LIBODB_SQLITE_EXPORT active_object
     {
@@ -77,14 +78,41 @@ namespace odb
       typedef sqlite::statement_cache statement_cache_type;
       typedef sqlite::database database_type;
 
+      // Translate the database schema in statement text (used to implement
+      // attached databases). If the result is empty, then no translation is
+      // required and the original text should be used as is.
+      //
+      typedef void (statement_translator) (std::string& result,
+                                           const char* text,
+                                           std::size_t text_size,
+                                           connection&);
       virtual
       ~connection ();
 
-      connection (connection_factory&, int extra_flags = 0);
-      connection (connection_factory&, sqlite3* handle);
+      connection (connection_factory&,
+                  int extra_flags = 0,
+                  statement_translator* = 0);
+
+      connection (connection_factory&,
+                  sqlite3* handle,
+                  statement_translator* = 0);
+
+      // Create an attached connection (see the attached database constructor
+      // for details).
+      //
+      connection (attached_connection_factory&, statement_translator*);
 
       database_type&
       database ();
+
+      // Return the main connection of an attached connection. If this
+      // connection is main, return itself.
+      //
+      connection&
+      main_connection ();
+
+      static connection_ptr
+      main_connection (const connection_ptr&);
 
     public:
       virtual transaction_impl*
@@ -142,10 +170,7 @@ namespace odb
 
     public:
       sqlite3*
-      handle ()
-      {
-        return handle_;
-      }
+      handle ();
 
       statement_cache_type&
       statement_cache ()
@@ -167,6 +192,8 @@ namespace odb
       clear ();
 
     public:
+      // Note: only available on main connection.
+      //
       generic_statement&
       begin_statement ();
 
@@ -182,6 +209,12 @@ namespace odb
       generic_statement&
       rollback_statement ();
 
+    protected:
+      friend class attached_connection_factory;
+
+      connection_factory&
+      factory ();
+
     private:
       connection (const connection&);
       connection& operator= (const connection&);
@@ -191,7 +224,12 @@ namespace odb
       init ();
 
     private:
+      // Note that we use NULL handle as an indication of an attached
+      // connection.
+      //
       auto_handle<sqlite3> handle_;
+
+      statement_translator* statement_translator_;
 
       // Keep statement_cache_ after handle_ so that it is destroyed before
       // the connection is closed.
@@ -218,6 +256,7 @@ namespace odb
       connection_unlock_callback (void**, int);
 
     private:
+      friend class statement;        // statement_translator_
       friend class transaction_impl; // invalidate_results()
 
       // Linked list of active objects currently associated
@@ -248,11 +287,67 @@ namespace odb
 
       connection_factory (): db_ (0) {}
 
+      // Attach/detach additional databases. Connection is one of the main
+      // connections created by this factory. Note: not called for "main" and
+      // "temp" schemas.
+      //
+      // The default implementations simply execute the ATTACH DATABASE and
+      // DETACH DATABASE SQLite statements.
+      //
+      virtual void
+      attach_database (const connection_ptr&,
+                       const std::string& name,
+                       const std::string& schema);
+
+      virtual void
+      detach_database (const connection_ptr&, const std::string& schema);
+
       // Needed to break the circular connection_factory-database dependency
       // (odb::connection_factory has the odb::database member).
       //
     protected:
       database_type* db_;
+    };
+
+    // The call to database() should cause ATTACH DATABASE (or otherwise make
+    // sure the database is attached). Destruction of the factory should cause
+    // DETACH DATABASE (or otherwise notice that this factory no longer needs
+    // the database attached).
+    //
+    // Note that attached_connection_factory is an active object that
+    // registers itself with the main connection in order to get notified on
+    // transaction finalization.
+    //
+    class LIBODB_SQLITE_EXPORT attached_connection_factory:
+      public connection_factory,
+      public active_object
+    {
+    public:
+      explicit
+      attached_connection_factory (const connection_ptr& main)
+          : active_object (*main), main_connection_ (main) {}
+
+      virtual void
+      detach () = 0;
+
+    protected:
+      friend class database;
+      friend class connection;
+      friend class transaction_impl;
+
+      connection_factory&
+      main_factory ()
+      {
+        return main_connection_->factory ();
+      }
+
+      // Note that this essentially establishes a "protocol" for all the
+      // attached connection factory implementations: they hold a counted
+      // reference to the main connection and they maintain a single shared
+      // attached connection.
+      //
+      connection_ptr main_connection_;
+      connection_ptr attached_connection_;
     };
   }
 }

@@ -151,8 +151,35 @@ namespace odb
       factory_->database (*this);
     }
 
+    database::
+    database (const connection_ptr& conn,
+              const string& name,
+              const string& schema,
+              transfer_ptr<attached_connection_factory> factory)
+        : odb::database (id_sqlite),
+          name_ (name),
+          schema_ (schema),
+          flags_ (0),
+          factory_ (factory.transfer ())
+    {
+      assert (!schema_.empty ());
+
+      // Copy some things over from the connection's database.
+      //
+      database& db (conn->database ());
+
+      tracer_ = db.tracer_;
+      foreign_keys_ = db.foreign_keys_;
+
+      if (!factory_)
+        factory_.reset (new default_attached_connection_factory (
+                          connection::main_connection (conn)));
+
+      factory_->database (*this);
+    }
+
     void database::
-    print_usage (std::ostream& os)
+    print_usage (ostream& os)
     {
       details::options::print_usage (os);
     }
@@ -196,7 +223,7 @@ namespace odb
       else if (!schema_version_table_.empty ())
         text += schema_version_table_; // Already quoted.
       else
-        text += "\"schema_version\"";
+        text += "\"main\".\"schema_version\"";
 
       text += " WHERE \"name\" = ?";
 

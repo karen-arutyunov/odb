@@ -16,7 +16,6 @@ query-const-expr.cxx         \
 simple-object-statements.cxx \
 statement.cxx                \
 statements-base.cxx          \
-statement-cache.cxx          \
 stream.cxx                   \
 tracer.cxx                   \
 traits.cxx                   \

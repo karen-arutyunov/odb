@@ -233,6 +233,38 @@ namespace odb
       details::mutex mutex_;
       details::condition cond_;
     };
+
+    class LIBODB_SQLITE_EXPORT default_attached_connection_factory:
+      public attached_connection_factory
+    {
+    public:
+      explicit
+      default_attached_connection_factory (const connection_ptr& main)
+          : attached_connection_factory (main) {}
+
+      using attached_connection_factory::database; // Accessor.
+
+      virtual void
+      database (database_type&);
+
+      virtual connection_ptr
+      connect ();
+
+      // Active object interface.
+      //
+      virtual void
+      clear ();
+
+      virtual void
+      detach ();
+
+      virtual
+      ~default_attached_connection_factory ();
+
+    protected:
+      static void
+      translate_statement (std::string&, const char*, std::size_t, connection&);
+    };
   }
 }
 

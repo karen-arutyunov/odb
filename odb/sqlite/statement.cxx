@@ -27,7 +27,7 @@ namespace odb
       {
         {
           odb::tracer* t;
-          if ((t = conn_.transaction_tracer ()) ||
+          if ((t = conn_.main_connection ().transaction_tracer ()) ||
               (t = conn_.tracer ()) ||
               (t = conn_.database ().tracer ()))
             t->deallocate (conn_, *this);
@@ -55,27 +55,27 @@ namespace odb
     {
       active_ = false;
 
-      string tmp;
+      string tmp1;
       if (proc != 0)
       {
         switch (sk)
         {
         case statement_select:
-          process_select (tmp,
+          process_select (tmp1,
                           text,
                           &proc->bind->buffer, proc->count, sizeof (bind),
                           '"', '"',
                           optimize);
           break;
         case statement_insert:
-          process_insert (tmp,
+          process_insert (tmp1,
                           text,
                           &proc->bind->buffer, proc->count, sizeof (bind),
                           '?',
                           '$');
           break;
         case statement_update:
-          process_update (tmp,
+          process_update (tmp1,
                           text,
                           &proc->bind->buffer, proc->count, sizeof (bind),
                           '?',
@@ -86,8 +86,20 @@ namespace odb
           assert (false);
         }
 
-        text = tmp.c_str ();
-        text_size = tmp.size ();
+        text = tmp1.c_str ();
+        text_size = tmp1.size ();
+      }
+
+      string tmp2;
+      if (conn_.statement_translator_ != 0)
+      {
+        conn_.statement_translator_ (tmp2, text, text_size, conn_);
+
+        if (!tmp2.empty ())
+        {
+          text = tmp2.c_str ();
+          text_size = tmp2.size ();
+        }
       }
 
 #if SQLITE_VERSION_NUMBER < 3005003
@@ -101,7 +113,7 @@ namespace odb
 
       {
         odb::tracer* t;
-        if ((t = conn_.transaction_tracer ()) ||
+        if ((t = conn_.main_connection ().transaction_tracer ()) ||
             (t = conn_.tracer ()) ||
             (t = conn_.database ().tracer ()))
         {
@@ -477,7 +489,7 @@ namespace odb
 
       {
         odb::tracer* t;
-        if ((t = conn_.transaction_tracer ()) ||
+        if ((t = conn_.main_connection ().transaction_tracer ()) ||
             (t = conn_.tracer ()) ||
             (t = conn_.database ().tracer ()))
           t->execute (conn_, *this);
@@ -618,7 +630,7 @@ namespace odb
 
       {
         odb::tracer* t;
-        if ((t = conn_.transaction_tracer ()) ||
+        if ((t = conn_.main_connection ().transaction_tracer ()) ||
             (t = conn_.tracer ()) ||
             (t = conn_.database ().tracer ()))
           t->execute (conn_, *this);
@@ -738,7 +750,7 @@ namespace odb
     {
       {
         odb::tracer* t;
-        if ((t = conn_.transaction_tracer ()) ||
+        if ((t = conn_.main_connection ().transaction_tracer ()) ||
             (t = conn_.tracer ()) ||
             (t = conn_.database ().tracer ()))
           t->execute (conn_, *this);
@@ -845,7 +857,7 @@ namespace odb
     {
       {
         odb::tracer* t;
-        if ((t = conn_.transaction_tracer ()) ||
+        if ((t = conn_.main_connection ().transaction_tracer ()) ||
             (t = conn_.tracer ()) ||
             (t = conn_.database ().tracer ()))
           t->execute (conn_, *this);
@@ -931,7 +943,7 @@ namespace odb
     {
       {
         odb::tracer* t;
-        if ((t = conn_.transaction_tracer ()) ||
+        if ((t = conn_.main_connection ().transaction_tracer ()) ||
             (t = conn_.tracer ()) ||
             (t = conn_.database ().tracer ()))
           t->execute (conn_, *this);

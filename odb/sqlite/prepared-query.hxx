@@ -24,6 +24,9 @@ namespace odb
 
       prepared_query_impl (odb::connection& c): odb::prepared_query_impl (c) {}
 
+      virtual bool
+      verify_connection (odb::transaction&);
+
       sqlite::query_base query;
     };
   }

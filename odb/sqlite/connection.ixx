@@ -37,6 +37,36 @@ namespace odb
       return static_cast<connection_factory&> (factory_).database ();
     }
 
+    inline connection& connection::
+    main_connection ()
+    {
+      return handle_ != 0
+        ? *this
+        : *static_cast<attached_connection_factory&> (factory_).main_connection_;
+    }
+
+    inline connection_ptr connection::
+    main_connection (const connection_ptr& c)
+    {
+      return c->handle_ != 0
+        ? c
+        : static_cast<attached_connection_factory&> (c->factory_).main_connection_;
+    }
+
+    inline sqlite3* connection::
+    handle ()
+    {
+      return handle_ != 0
+        ? handle_
+        : static_cast<attached_connection_factory&> (factory_).main_connection_->handle_;
+    }
+
+    inline connection_factory& connection::
+    factory ()
+    {
+      return static_cast<connection_factory&> (factory_);
+    }
+
     template <typename T>
     inline prepared_query<T> connection::
     prepare_query (const char* n, const char* q)

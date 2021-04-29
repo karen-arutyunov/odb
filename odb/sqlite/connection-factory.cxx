@@ -1,6 +1,8 @@
 // file      : odb/sqlite/connection-factory.cxx
 // license   : GNU GPL v2; see accompanying LICENSE file
 
+#include <cassert>
+
 #include <odb/details/lock.hxx>
 
 #include <odb/sqlite/database.hxx>
@@ -294,6 +296,122 @@ namespace odb
     {
       pooled_connection* c (static_cast<pooled_connection*> (arg));
       return static_cast<connection_pool_factory&> (c->factory_).release (c);
+    }
+
+    //
+    // default_attached_connection_factory
+    //
+
+    void default_attached_connection_factory::
+    detach ()
+    {
+      // Note that this function may be called several times, for example, in
+      // case of detach_database() failure.
+      //
+      if (attached_connection_ != 0)
+      {
+        // We should hold the last reference to the attached connection.
+        //
+        assert (attached_connection_.count () == 1);
+
+        // While it may seem like a good idea to also invalidate query results
+        // and reset active statements, if any such result/statement is still
+        // alive, then there would be bigger problems since it would have a
+        // dangling reference to the connection. In a way, this's the same
+        // reason we don't do it in the connection destructor.
+
+        // Remove ourselves from the active object list of the main
+        // connection.
+        //
+        if (next_ != this) // Might have already been done.
+          list_remove ();
+
+        const string& s (database ().schema ());
+
+        if (s != "main" && s != "temp")
+          main_factory ().detach_database (main_connection_, s);
+
+        // Explicitly free the attached connection so that we don't try to
+        // redo this.
+        //
+        attached_connection_.reset ();
+      }
+    }
+
+    default_attached_connection_factory::
+    ~default_attached_connection_factory ()
+    {
+      if (attached_connection_ != 0)
+      {
+        // This can throw. Ignoring the failure to detach seems like the most
+        // sensible thing to do here.
+        //
+        try{ detach (); } catch (...) {}
+      }
+    }
+
+    connection_ptr default_attached_connection_factory::
+    connect ()
+    {
+      return attached_connection_;
+    }
+
+    void default_attached_connection_factory::
+    database (database_type& db)
+    {
+      attached_connection_factory::database (db);
+
+      if (!attached_connection_)
+      {
+        const string& s (db.schema ());
+
+        if (s != "main" && s != "temp")
+          main_factory ().attach_database (main_connection_, db.name (), s);
+
+        attached_connection_.reset (
+          new (shared) connection (*this,
+                                   s != "main" ? &translate_statement : 0));
+
+        // Add ourselves to the active object list of the main connection.
+        //
+        list_add ();
+      }
+    }
+
+    void default_attached_connection_factory::
+    clear ()
+    {
+      attached_connection_->clear ();
+    }
+
+    void default_attached_connection_factory::
+    translate_statement (string& r,
+                         const char* text,
+                         size_t text_size,
+                         connection& conn)
+    {
+      r.assign (text, text_size);
+
+      // Things will fall apart if any of the statements we translate use
+      // "main" as a table alias. So we have this crude check even though it
+      // means we cannot use "main" for other aliases (e.g., column).
+      //
+      assert (r.find ("AS \"main\"") == string::npos);
+
+      const string& s (conn.database ().schema ());
+      for (size_t p (0); (p = r.find ("\"main\".", p, 7)) != string::npos; )
+      {
+        // Verify the preceding character.
+        //
+        if (p != 0 && r[p - 1] == '.')
+        {
+          p += 7;
+          continue;
+        }
+
+        r.replace (p + 1, 4, s);
+        p += s.size () + 3;
+      }
     }
   }
 }

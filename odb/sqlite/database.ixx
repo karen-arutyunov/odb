@@ -14,6 +14,7 @@ namespace odb
     database (database&& db) // Has to be inline.
         : odb::database (std::move (db)),
           name_ (std::move (db.name_)),
+          schema_ (std::move (db.schema_)),
           flags_ (db.flags_),
           foreign_keys_ (db.foreign_keys_),
           vfs_ (std::move (db.vfs_)),
@@ -22,6 +23,21 @@ namespace odb
       factory_->database (*this); // New database instance.
     }
 #endif
+
+    inline void database::
+    detach ()
+    {
+      if (!schema_.empty ())
+        static_cast<attached_connection_factory&> (*factory_).detach ();
+    }
+
+    inline database& database::
+    main_database ()
+    {
+      return schema_.empty ()
+        ? *this
+        : static_cast<attached_connection_factory&> (*factory_).main_connection_->database ();
+    }
 
     inline connection_ptr database::
     connection ()

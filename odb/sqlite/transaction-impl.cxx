@@ -42,21 +42,23 @@ namespace odb
         odb::transaction_impl::connection_ = connection_.get ();
       }
 
+      connection_type& mc (connection_->main_connection ());
+
       switch (lock_)
       {
       case deferred:
         {
-          connection_->begin_statement ().execute ();
+          mc.begin_statement ().execute ();
           break;
         }
       case immediate:
         {
-          connection_->begin_immediate_statement ().execute ();
+          mc.begin_immediate_statement ().execute ();
           break;
         }
       case exclusive:
         {
-          connection_->begin_exclusive_statement ().execute ();
+          mc.begin_exclusive_statement ().execute ();
           break;
         }
       }
@@ -92,6 +94,8 @@ namespace odb
     void transaction_impl::
     commit ()
     {
+      connection_type& mc (connection_->main_connection ());
+
       // Invalidate query results and reset active statements.
       //
       // Active statements will prevent COMMIT from completing (write
@@ -99,11 +103,13 @@ namespace odb
       // statement is automatically reset on completion, however, if an
       // exception is thrown, that may not happen.
       //
-      connection_->clear ();
+      // Note: must be done via the main connection.
+      //
+      mc.clear ();
 
       {
-        commit_guard cg (*connection_);
-        connection_->commit_statement ().execute ();
+        commit_guard cg (mc);
+        mc.commit_statement ().execute ();
         cg.release ();
       }
 
@@ -115,16 +121,52 @@ namespace odb
     void transaction_impl::
     rollback ()
     {
+      connection_type& mc (connection_->main_connection ());
+
       // Invalidate query results and reset active statements (the same
       // reasoning as in commit()).
       //
-      connection_->clear ();
+      // Note: must be done via the main connection.
+      //
+      mc.clear ();
 
-      connection_->rollback_statement ().execute ();
+      mc.rollback_statement ().execute ();
 
       // Release the connection.
       //
       connection_.reset ();
+    }
+
+    odb::connection& transaction_impl::
+    connection (odb::database* pdb)
+    {
+      if (pdb == 0)
+        return *connection_;
+
+      // Pick the corresponding connection for main/attached database.
+      //
+      database_type& db (static_cast<database_type&> (*pdb));
+
+      assert (&db.main_database () ==
+              &static_cast<database_type&> (database_).main_database ());
+
+      return db.schema ().empty ()
+        ? connection_->main_connection ()
+        : *static_cast<attached_connection_factory&> (*db.factory_).attached_connection_;
+    }
+
+    // Store transaction tracer in the main database.
+    //
+    void transaction_impl::
+    tracer (odb::tracer* t)
+    {
+      connection_->main_connection ().transaction_tracer_ = t;
+    }
+
+    odb::tracer* transaction_impl::
+    tracer () const
+    {
+      return connection_->main_connection ().transaction_tracer_;
     }
   }
 }

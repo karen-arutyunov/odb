@@ -83,6 +83,69 @@ namespace odb
                 details::transfer_ptr<connection_factory> =
                   details::transfer_ptr<connection_factory> ());
 
+      // Attach to the specified connection a database with the specified name
+      // as the specified schema. Good understanding of SQLite ATTACH/DETACH
+      // DATABASE semantics and ODB connection management is recommended when
+      // using this mechanism.
+      //
+      // The resulting database instance is referred to as an "attached
+      // database" and the connection it returns as an "attached connection"
+      // (which is just a proxy for the main connection). Database operations
+      // executed on the attached database or attached connection are
+      // automatically translated to refer to the specified schema rather than
+      // "main". For uniformity attached databases can also be created for the
+      // pre-attached "main" and "temp" schemas (in this case name can be
+      // anything).
+      //
+      // The main connection and attached to it databases and connections are
+      // all meant to be used withing the same thread. In particular, the
+      // attached database holds a counted reference to the main connection
+      // which means the connection will not be released until all the
+      // attached to this connection databases are destroyed.
+      //
+      // Note that in this model the attached databases are attached to the
+      // main connection, not to the (main) database, which mimics the
+      // underlying semantics of SQLite. An alternative model would have been
+      // to notionally attach the databases to the main database and under the
+      // hood automatically attach them to each returned connecton. While this
+      // may seem like a more convenient model in some cases, it is also less
+      // flexible: the current model allows attaching a different set of
+      // databases to different connections, attaching them on demand as the
+      // transaction progresses, etc. Also, the more convenient model can be
+      // implemented on top this model by deriving an aplication-specific
+      // database class and/or providing custom connection factories.
+      //
+      // Note also that unless the name is a URI with appropriate mode, it is
+      // opened with the SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE flags. So if
+      // you want just SQLITE_OPEN_READWRITE, then you will need to verify its
+      // existence manually prior to calling this constructor.
+      //
+      // The automatic translation of the statements relies on all the
+      // statements text having references to top-level database entities
+      // (tables, indexes, etc) qualified with the "main" schema. To achieve
+      // this, compile your headers with `--schema main` and, if using schema
+      // migration, with `--schema-version-table main.schema_version`. You
+      // must also not use "main" as a table alias.
+      //
+      database (const connection_ptr&,
+                const std::string& name,
+                const std::string& schema,
+                details::transfer_ptr<attached_connection_factory> =
+                  details::transfer_ptr<attached_connection_factory> ());
+
+      // The database is automatically detached on destruction but a failure
+      // to detach is ignored. To detect such a failure perform explicit
+      // detach. For uniformity detaching a main database is a no-op.
+      //
+      void
+      detach ();
+
+      // Return the main database of an attached database. If this database
+      // is main, return itself.
+      //
+      database&
+      main_database ();
+
       // Move-constructible but not move-assignable.
       //
 #ifdef ODB_CXX11
@@ -97,6 +160,15 @@ namespace odb
       name () const
       {
         return name_;
+      }
+
+      // Schema name under which this database was attached or empty for the
+      // main database.
+      //
+      const std::string&
+      schema () const
+      {
+        return schema_;
       }
 
       int
@@ -463,12 +535,19 @@ namespace odb
       connection_ ();
 
     private:
+      friend class transaction_impl; // factory_
+
       // Note: remember to update move ctor if adding any new members.
       //
       std::string name_;
+      std::string schema_;
       int flags_;
       bool foreign_keys_;
       std::string vfs_;
+
+      // Note: keep last so that all other database members are still valid
+      // during factory's destruction.
+      //
       details::unique_ptr<connection_factory> factory_;
     };
   }

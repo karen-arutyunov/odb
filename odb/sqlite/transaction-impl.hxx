@@ -45,6 +45,15 @@ namespace odb
       virtual void
       rollback ();
 
+      virtual odb::connection&
+      connection (odb::database*);
+
+      virtual void
+      tracer (odb::tracer*);
+
+      virtual odb::tracer*
+      tracer () const;
+
     private:
       connection_ptr connection_;
       lock lock_;

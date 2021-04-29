@@ -30,8 +30,11 @@ namespace odb
   namespace sqlite
   {
     connection::
-    connection (connection_factory& cf, int extra_flags)
+    connection (connection_factory& cf,
+                int extra_flags,
+                statement_translator* st)
         : odb::connection (cf),
+          statement_translator_ (st),
           unlock_cond_ (unlock_mutex_),
           active_objects_ (0)
     {
@@ -83,9 +86,12 @@ namespace odb
     }
 
     connection::
-    connection (connection_factory& cf, sqlite3* handle)
+    connection (connection_factory& cf,
+                sqlite3* handle,
+                statement_translator* st)
         : odb::connection (cf),
           handle_ (handle),
+          statement_translator_ (st),
           unlock_cond_ (unlock_mutex_),
           active_objects_ (0)
     {
@@ -112,6 +118,25 @@ namespace odb
       begin_.reset (new (shared) generic_statement (*this, "BEGIN", 6));
       commit_.reset (new (shared) generic_statement (*this, "COMMIT", 7));
       rollback_.reset (new (shared) generic_statement (*this, "ROLLBACK", 9));
+
+      // Create statement cache.
+      //
+      statement_cache_.reset (new statement_cache_type (*this));
+    }
+
+    connection::
+    connection (attached_connection_factory& cf, statement_translator* st)
+        : odb::connection (cf),
+          handle_ (0),
+          statement_translator_ (st),
+          unlock_cond_ (unlock_mutex_),
+          active_objects_ (0)
+    {
+      // Copy some things over from the main connection.
+      //
+      connection& main (*cf.main_connection_);
+
+      tracer_ = main.tracer_;
 
       // Create statement cache.
       //
@@ -213,7 +238,7 @@ namespace odb
 
       // unlock_notify() returns SQLITE_OK or SQLITE_LOCKED (deadlock).
       //
-      int e (sqlite3_unlock_notify (handle_,
+      int e (sqlite3_unlock_notify (handle (),
                                     &odb_sqlite_connection_unlock_callback,
                                     this));
       if (e == SQLITE_LOCKED)
@@ -260,6 +285,20 @@ namespace odb
     {
       odb::connection_factory::db_ = &db;
       db_ = &db;
+    }
+
+    void connection_factory::
+    attach_database (const connection_ptr& conn,
+                     const std::string& name,
+                     const std::string& schema)
+    {
+      conn->execute ("ATTACH DATABASE '" + name + "' AS \"" + schema + '"');
+    }
+
+    void connection_factory::
+    detach_database (const connection_ptr& conn, const std::string& schema)
+    {
+      conn->execute ("DETACH DATABASE \"" + schema + '"');
     }
   }
 }
