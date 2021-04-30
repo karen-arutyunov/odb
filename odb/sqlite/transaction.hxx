@@ -40,6 +40,9 @@ namespace odb
       connection_type&
       connection ();
 
+      connection_type&
+      connection (odb::database&);
+
       // Return current transaction or throw if there is no transaction
       // in effect.
       //

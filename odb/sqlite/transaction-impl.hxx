@@ -45,17 +45,12 @@ namespace odb
       virtual void
       rollback ();
 
-      connection_type&
-      connection ();
-
     private:
       connection_ptr connection_;
       lock lock_;
     };
   }
 }
-
-#include <odb/sqlite/transaction-impl.ixx>
 
 #include <odb/post.hxx>
 

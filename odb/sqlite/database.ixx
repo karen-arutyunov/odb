@@ -590,7 +590,7 @@ namespace odb
     {
       // Throws if not in transaction.
       //
-      sqlite::connection& c (transaction::current ().connection ());
+      sqlite::connection& c (transaction::current ().connection (*this));
       return c.prepare_query<T> (n, q);
     }
 
