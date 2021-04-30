@@ -1169,8 +1169,7 @@ traverse_object (type& c)
     os << ", bool top, bool dyn";
 
   os << ")"
-     << "{"
-     << "ODB_POTENTIALLY_UNUSED (db);";
+     << "{";
 
   if (poly)
     os << "ODB_POTENTIALLY_UNUSED (top);";
@@ -1201,7 +1200,7 @@ traverse_object (type& c)
        << endl;
 
   os << db << "::connection& conn (" << endl
-     << db << "::transaction::current ().connection ());"
+     << db << "::transaction::current ().connection (db));"
      << "statements_type& sts (" << endl
      << "conn.statement_cache ().find_object<object_type> ());";
 
@@ -1441,13 +1440,11 @@ traverse_object (type& c)
        << "std::size_t n," << endl
        << "multiple_exceptions& mex)"
        << "{"
-       << "ODB_POTENTIALLY_UNUSED (db);"
-       << endl
        << "using namespace " << db << ";"
        << endl;
 
     os << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
+       << db << "::transaction::current ().connection (db));"
        << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_object<object_type> ());";
 
@@ -1692,7 +1689,7 @@ traverse_object (type& c)
         sts = true;
         os << db << "::transaction& tr (" << db <<
           "::transaction::current ());"
-           << db << "::connection& conn (tr.connection ());"
+           << db << "::connection& conn (tr.connection (db));"
            << "statements_type& sts (" << endl
            << "conn.statement_cache ().find_object<object_type> ());"
            << endl;
@@ -1787,7 +1784,7 @@ traverse_object (type& c)
         {
           os << db << "::transaction& tr (" << db <<
             "::transaction::current ());"
-             << db << "::connection& conn (tr.connection ());"
+             << db << "::connection& conn (tr.connection (db));"
              << "statements_type& sts (" << endl
              << "conn.statement_cache ().find_object<object_type> ());"
              << endl;
@@ -1877,7 +1874,7 @@ traverse_object (type& c)
         if (!sts)
           os << db << "::transaction& tr (" << db <<
             "::transaction::current ());"
-             << db << "::connection& conn (tr.connection ());"
+             << db << "::connection& conn (tr.connection (db));"
              << "statements_type& sts (" << endl
              << "conn.statement_cache ().find_object<object_type> ());"
              << endl;
@@ -1976,7 +1973,7 @@ traverse_object (type& c)
         if (!sts)
           os << db << "::transaction& tr (" << db <<
             "::transaction::current ());"
-             << db << "::connection& conn (tr.connection ());"
+             << db << "::connection& conn (tr.connection (db));"
              << "statements_type& sts (" << endl
              << "conn.statement_cache ().find_object<object_type> ());"
              << endl;
@@ -2194,13 +2191,11 @@ traverse_object (type& c)
        << "std::size_t n," << endl
        << "multiple_exceptions& mex)"
        << "{"
-       << "ODB_POTENTIALLY_UNUSED (db);"
-       << endl
        << "using namespace " << db << ";"
        << "using " << db << "::update_statement;"
        << endl
        << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
+       << db << "::transaction::current ().connection (db));"
        << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_object<object_type> ());";
 
@@ -2321,16 +2316,15 @@ traverse_object (type& c)
 
     os << ")"
        << "{"
-       << "using namespace " << db << ";"
-       << endl
-       << "ODB_POTENTIALLY_UNUSED (db);";
+       << "using namespace " << db << ";";
 
     if (poly)
-      os << "ODB_POTENTIALLY_UNUSED (top);";
+      os << endl
+         << "ODB_POTENTIALLY_UNUSED (top);";
 
     os << endl
        << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
+       << db << "::transaction::current ().connection (db));"
        << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_object<object_type> ());"
        << endl;
@@ -2449,10 +2443,8 @@ traverse_object (type& c)
        << "{"
        << "using namespace " << db << ";"
        << endl
-       << "ODB_POTENTIALLY_UNUSED (db);"
-       << endl
        << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
+       << db << "::transaction::current ().connection (db));"
        << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_object<object_type> ());"
        << endl
@@ -2542,7 +2534,7 @@ traverse_object (type& c)
       os << "using namespace " << db << ";"
          << endl
          << db << "::connection& conn (" << endl
-         << db << "::transaction::current ().connection ());"
+         << db << "::transaction::current ().connection (db));"
          << "statements_type& sts (" << endl
          << "conn.statement_cache ().find_object<object_type> ());";
 
@@ -2830,10 +2822,8 @@ traverse_object (type& c)
     {
       os << "using namespace " << db << ";"
          << endl
-         << "ODB_POTENTIALLY_UNUSED (db);"
-         << endl
          << db << "::connection& conn (" << endl
-         << db << "::transaction::current ().connection ());"
+         << db << "::transaction::current ().connection (db));"
          << "statements_type& sts (" << endl
          << "conn.statement_cache ().find_object<object_type> ());"
          << endl
@@ -2917,7 +2907,7 @@ traverse_object (type& c)
     os << "}";
 
     os << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
+       << db << "::transaction::current ().connection (db));"
        << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_object<object_type> ());";
 
@@ -3110,7 +3100,7 @@ traverse_object (type& c)
     if (!abst)
     {
       os << db << "::connection& conn (" << endl
-         << db << "::transaction::current ().connection ());"
+         << db << "::transaction::current ().connection (db));"
          << "statements_type& sts (" << endl
          << "conn.statement_cache ().find_object<object_type> ());";
 
@@ -3217,7 +3207,7 @@ traverse_object (type& c)
     if (!abst)
     {
       os << db << "::connection& conn (" << endl
-         << db << "::transaction::current ().connection ());"
+         << db << "::transaction::current ().connection (db));"
          << "statements_type& sts (" << endl
          << "conn.statement_cache ().find_object<object_type> ());";
 
@@ -3909,7 +3899,7 @@ traverse_object (type& c)
        << endl
        << "object_type& obj (static_cast<object_type&> (r));"
        << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
+       << db << "::transaction::current ().connection (db));"
        << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_object<object_type> ());"
        << endl
@@ -4135,7 +4125,7 @@ traverse_object (type& c)
       //
       os << "result< " << traits << "::object_type >" << endl
          << traits << "::" << endl
-         << "query (database&, const query_base_type& q)"
+         << "query (database& db, const query_base_type& q)"
          << "{"
          << "using namespace " << db << ";"
          << "using odb::details::shared;"
@@ -4143,7 +4133,7 @@ traverse_object (type& c)
          << endl;
 
       os << db << "::connection& conn (" << endl
-         << db << "::transaction::current ().connection ());"
+         << db << "::transaction::current ().connection (db));"
          << endl
          << "statements_type& sts (" << endl
          << "conn.statement_cache ().find_object<object_type> ());";
@@ -4224,12 +4214,12 @@ traverse_object (type& c)
     // erase_query
     //
     os << "unsigned long long " << traits << "::" << endl
-       << "erase_query (database&, const query_base_type& q)"
+       << "erase_query (database& db, const query_base_type& q)"
        << "{"
        << "using namespace " << db << ";"
        << endl
        << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
+       << db << "::transaction::current ().connection (db));"
        << endl
        << "std::string text (erase_query_statement);"
        << "if (!q.empty ())"
@@ -5264,9 +5254,11 @@ traverse_view (type& c)
          << "throw session_required ();"
          << endl;
 
+    // Note: db must be not NULL in order to load pointers.
+    //
     if (has_a (c, test_pointer))
       os << db << "::connection& conn (" << endl
-         << db << "::transaction::current ().connection ());"
+         << db << "::transaction::current ().connection (*db));"
          << endl;
 
     names (c, init_view_pointer_member_pre_names_);
@@ -5513,7 +5505,7 @@ traverse_view (type& c)
   {
     os << "result< " << traits << "::view_type >" << endl
        << traits << "::" << endl
-       << "query (database&, const query_base_type& q)"
+       << "query (database& db, const query_base_type& q)"
        << "{"
        << "using namespace " << db << ";"
        << "using odb::details::shared;"
@@ -5521,7 +5513,7 @@ traverse_view (type& c)
        << endl;
 
     os << db << "::connection& conn (" << endl
-       << db << "::transaction::current ().connection ());"
+       << db << "::transaction::current ().connection (db));"
        << "statements_type& sts (" << endl
        << "conn.statement_cache ().find_view<view_type> ());";
 
