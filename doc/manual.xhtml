@@ -5591,11 +5591,11 @@ for (age = 90; age > 40; age -= 10)
 
   template &lt;typename T>
   prepared_query&lt;T>
-  lookup_query (const char* name) const;
+  lookup_query (const char* name);
 
   template &lt;typename T, typename P>
   prepared_query&lt;T>
-  lookup_query (const char* name, P*&amp; params) const;
+  lookup_query (const char* name, P*&amp; params);
   </pre>
 
   <p>The <code>cache_query()</code> function caches the passed prepared
