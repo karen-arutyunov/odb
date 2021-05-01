@@ -261,7 +261,7 @@ namespace odb
       // The current first active_object may remove itself from the list and
       // make the second object (if any) the new first.
       //
-      for (active_object** pp (&active_objects_); *pp != nullptr; )
+      for (active_object** pp (&active_objects_); *pp != 0; )
       {
         active_object* p (*pp);
         p->clear ();
