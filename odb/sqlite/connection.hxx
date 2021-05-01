@@ -78,9 +78,9 @@ namespace odb
       typedef sqlite::statement_cache statement_cache_type;
       typedef sqlite::database database_type;
 
-      // Translate the database schema in statement text (used to implement
-      // attached databases). If the result is empty, then no translation is
-      // required and the original text should be used as is.
+      // Translate the database schema in the statement text (used to
+      // implement attached databases). If the result is empty, then no
+      // translation is required and the original text should be used as is.
       //
       typedef void (statement_translator) (std::string& result,
                                            const char* text,
@@ -341,7 +341,7 @@ namespace odb
         return main_connection_->factory ();
       }
 
-      // Note that this essentially establishes a "protocol" for all the
+      // Note that this essentially establishes a "framework" for all the
       // attached connection factory implementations: they hold a counted
       // reference to the main connection and they maintain a single shared
       // attached connection.

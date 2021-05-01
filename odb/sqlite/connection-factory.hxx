@@ -250,13 +250,13 @@ namespace odb
       virtual connection_ptr
       connect ();
 
+      virtual void
+      detach ();
+
       // Active object interface.
       //
       virtual void
       clear ();
-
-      virtual void
-      detach ();
 
       virtual
       ~default_attached_connection_factory ();

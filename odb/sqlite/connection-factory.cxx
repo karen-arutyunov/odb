@@ -317,7 +317,7 @@ namespace odb
         // While it may seem like a good idea to also invalidate query results
         // and reset active statements, if any such result/statement is still
         // alive, then there would be bigger problems since it would have a
-        // dangling reference to the connection. In a way, this's the same
+        // dangling reference to the connection. In a way, that's the same
         // reason we don't do it in the connection destructor.
 
         // Remove ourselves from the active object list of the main

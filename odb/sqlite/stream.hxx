@@ -23,6 +23,10 @@ namespace odb
     class LIBODB_SQLITE_EXPORT stream: public active_object
     {
     public:
+      // @@ TODO: db is actually what we now (and SQLite in other places)
+      //    call schema (see database::schema(), ATTACH DATABASE). So we
+      //    should probably rename this at some point for consistency.
+      //
       stream (const char* db,
               const char* table,
               const char* column,

@@ -85,8 +85,8 @@ namespace odb
 
       // Attach to the specified connection a database with the specified name
       // as the specified schema. Good understanding of SQLite ATTACH/DETACH
-      // DATABASE semantics and ODB connection management is recommended when
-      // using this mechanism.
+      // DATABASE statements semantics and ODB connection management is
+      // strongly recommended when using this mechanism.
       //
       // The resulting database instance is referred to as an "attached
       // database" and the connection it returns as an "attached connection"
@@ -96,6 +96,14 @@ namespace odb
       // "main". For uniformity attached databases can also be created for the
       // pre-attached "main" and "temp" schemas (in this case name can be
       // anything).
+      //
+      // The automatic translation of the statements relies on their text
+      // having references to top-level database entities (tables, indexes,
+      // etc) qualified with the "main" schema. To achieve this, compile your
+      // headers with `--schema main` and, if using schema migration, with
+      // `--schema-version-table main.schema_version`. You must also not use
+      // "main" as an object/table alias in views of native statements. For
+      // optimal translation performance use 4-character schema names.
       //
       // The main connection and attached to it databases and connections are
       // all meant to be used withing the same thread. In particular, the
@@ -107,25 +115,21 @@ namespace odb
       // main connection, not to the (main) database, which mimics the
       // underlying semantics of SQLite. An alternative model would have been
       // to notionally attach the databases to the main database and under the
-      // hood automatically attach them to each returned connecton. While this
-      // may seem like a more convenient model in some cases, it is also less
-      // flexible: the current model allows attaching a different set of
+      // hood automatically attach them to each returned connection. While
+      // this may seem like a more convenient model in some cases, it is also
+      // less flexible: the current model allows attaching a different set of
       // databases to different connections, attaching them on demand as the
       // transaction progresses, etc. Also, the more convenient model can be
-      // implemented on top this model by deriving an aplication-specific
+      // implemented on top this model by deriving an application-specific
       // database class and/or providing custom connection factories.
       //
-      // Note also that unless the name is a URI with appropriate mode, it is
+      // Note that unless the name is a URI with appropriate mode, it is
       // opened with the SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE flags. So if
       // you want just SQLITE_OPEN_READWRITE, then you will need to verify its
       // existence manually prior to calling this constructor.
       //
-      // The automatic translation of the statements relies on all the
-      // statements text having references to top-level database entities
-      // (tables, indexes, etc) qualified with the "main" schema. To achieve
-      // this, compile your headers with `--schema main` and, if using schema
-      // migration, with `--schema-version-table main.schema_version`. You
-      // must also not use "main" as a table alias.
+      // Note that attaching/detaching databases withing a transaction is only
+      // supported since SQLite 3.21.0.
       //
       database (const connection_ptr&,
                 const std::string& name,

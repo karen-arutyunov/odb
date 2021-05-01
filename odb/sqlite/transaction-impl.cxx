@@ -155,7 +155,7 @@ namespace odb
         : *static_cast<attached_connection_factory&> (*db.factory_).attached_connection_;
     }
 
-    // Store transaction tracer in the main database.
+    // Store transaction tracer in the main connection.
     //
     void transaction_impl::
     tracer (odb::tracer* t)
