@@ -10890,7 +10890,7 @@ unsigned short v_min = ...
 unsigned short l_min = ...
 
 result r (db.query&lt;employee_leave> (
-  "vacation_days > " + query::_val(v_min) + "AND"
+  "vacation_days > " + query::_val(v_min) + "AND" +
   "sick_leave_days > " + query::_val(l_min)));
 
 t.commit ();
