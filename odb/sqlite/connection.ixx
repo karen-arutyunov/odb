@@ -96,5 +96,13 @@ namespace odb
       //
       return prepare_query<T> (n, sqlite::query_base (q));
     }
+
+    // attached_connection_factory
+    //
+    inline connection_factory& attached_connection_factory::
+    main_factory ()
+    {
+      return main_connection_->factory ();
+    }
   }
 }

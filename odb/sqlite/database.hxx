@@ -106,7 +106,7 @@ namespace odb
       // optimal translation performance use 4-character schema names.
       //
       // The main connection and attached to it databases and connections are
-      // all meant to be used withing the same thread. In particular, the
+      // all meant to be used within the same thread. In particular, the
       // attached database holds a counted reference to the main connection
       // which means the connection will not be released until all the
       // attached to this connection databases are destroyed.
@@ -120,7 +120,7 @@ namespace odb
       // less flexible: the current model allows attaching a different set of
       // databases to different connections, attaching them on demand as the
       // transaction progresses, etc. Also, the more convenient model can be
-      // implemented on top this model by deriving an application-specific
+      // implemented on top of this model by deriving an application-specific
       // database class and/or providing custom connection factories.
       //
       // Note that unless the name is a URI with appropriate mode, it is

@@ -336,10 +336,7 @@ namespace odb
       friend class transaction_impl;
 
       connection_factory&
-      main_factory ()
-      {
-        return main_connection_->factory ();
-      }
+      main_factory ();
 
       // Note that this essentially establishes a "framework" for all the
       // attached connection factory implementations: they hold a counted
