@@ -67,6 +67,9 @@ Version 2.5.0
  * Database classes are now move-constructible. This means they can be
    returned by value from a function in C++11.
 
+ * Support for SQLite ATTACH DATABASE. Attached databases are represented as
+   special odb::sqlite::database instances. @@ TODO: doc ref.
+
  * Support for SQLite incremental BLOB/TEXT I/O (the sqlite3_blob_open()
    functionality). For details, refer to Section 18.1.3, "Incremental
    BLOB/TEXT I/O" in the ODB manual.
