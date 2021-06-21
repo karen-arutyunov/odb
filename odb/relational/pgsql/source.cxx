@@ -203,7 +203,7 @@ namespace relational
         traverse_numeric (member_info& mi)
         {
           os << b << ".type = pgsql::bind::numeric;"
-             << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
+             << b << ".buffer = " << arg << "." << mi.var << "value.data_ptr ();"
              << b << ".capacity = " << arg << "." << mi.var <<
             "value.capacity ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"
@@ -224,7 +224,7 @@ namespace relational
         {
           os << b << ".type = " <<
             char_bin_buffer_types[mi.st->type - sql_type::CHAR] << ";"
-             << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
+             << b << ".buffer = " << arg << "." << mi.var << "value.data_ptr ();"
              << b << ".capacity = " << arg << "." << mi.var <<
             "value.capacity ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"
@@ -245,7 +245,7 @@ namespace relational
         traverse_varbit (member_info& mi)
         {
           os << b << ".type = pgsql::bind::varbit;"
-             << b << ".buffer = " << arg << "." << mi.var << "value.data ();"
+             << b << ".buffer = " << arg << "." << mi.var << "value.data_ptr ();"
              << b << ".capacity = " << arg << "." << mi.var <<
             "value.capacity ();"
              << b << ".size = &" << arg << "." << mi.var << "size;"

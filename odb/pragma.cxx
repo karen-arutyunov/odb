@@ -1643,8 +1643,6 @@ handle_pragma (cxx_lexer& l,
       return;
     }
 
-    // base
-    //
     if (l.next (tl, &tn) != CPP_NUMBER || TREE_CODE (tn) != INTEGER_CST)
     {
       error (l) << "unsigned integer expected as batch size" << endl;

@@ -87,6 +87,20 @@ namespace relational
           }
 
           os << endl;
+
+          if (poly_derived)
+            return;
+
+          // Bulk operations batch size.
+          //
+          {
+            unsigned long long b (c.count ("bulk")
+                                  ? c.get<unsigned long long> ("bulk")
+                                  : 1);
+
+            os << "static const std::size_t batch = " << b << "UL;"
+               << endl;
+          }
         }
 
         virtual void

@@ -85,7 +85,7 @@ namespace relational
       insert_send_auto_id = false;
       delay_freeing_statement_result = false;
       need_image_clone = false;
-      generate_bulk = false;
+      generate_bulk = true;
       global_index = true;
       global_fkey = false;
       data_->bind_vector_ = "pgsql::bind*";

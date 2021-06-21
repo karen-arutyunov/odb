@@ -1172,10 +1172,10 @@ traverse_object (type& c)
      << "{";
 
   if (poly)
-    os << "ODB_POTENTIALLY_UNUSED (top);";
+    os << "ODB_POTENTIALLY_UNUSED (top);"
+       << endl;
 
-  os << endl
-     << "using namespace " << db << ";"
+  os << "using namespace " << db << ";"
      << endl;
 
   if (poly)
@@ -1461,13 +1461,25 @@ traverse_object (type& c)
        << "{"
        << "const object_type& obj (*objs[i]);"
        << "callback (db, obj, callback_event::pre_persist);"
-      //@@ assumption: generate_grow is false
+      //@@ assumption: generate_grow is false or it only affects select (like
+      //               in pgsql) so all we have to do is to increment image
+      //               version if it grew.
       //@@ assumption: insert_send_auto_id is false
-       << "init (sts.image (i), obj, statement_insert" <<
-      (versioned ? ", svm" : "") << ");"
+       << "image_type& im (sts.image (i));";
+
+    if (generate_grow)
+      os << "if (";
+
+    os << "init (im, obj, statement_insert" << (versioned ? ", svm" : "") << ")";
+
+    if (generate_grow)
+      os << " && i == 0)" << endl
+         << "im.version++";
+
+    os << ";"
        << "}";
 
-    //@@ assumption: generate_grow is false
+    //@@ assumption: generate_grow: as above
     os << "binding& imb (sts.insert_image_binding ());"
        << "if (imb.version == 0)"
        << "{"
@@ -1483,7 +1495,7 @@ traverse_object (type& c)
     if (bv || auto_id)
     {
       os << "binding& idb (sts.id_image_binding ());"
-        //@@ assumption: generate_grow is false
+        //@@ assumption: generate_grow: as above
          << "if (idb.version == 0)"
          << "{"
          << "bind (idb.bind, sts.id_image ());"
@@ -2212,9 +2224,24 @@ traverse_object (type& c)
     if (opt != 0)
       os << "const version_type& v (version (obj));";
 
-    os << "init (sts.id_image (i), id (obj)" << (opt != 0 ? ", &v" : "") << ");"
-      //@@ assumption: generate_grow false
-       << "init (sts.image (i), obj, statement_update);"
+    os << "init (sts.id_image (i), id (obj)" << (opt != 0 ? ", &v" : "") << ");";
+
+    //@@ assumption: generate_grow is false or it only affects select (like
+    //               in pgsql) so all we have to do is to increment image
+    //               version if it grew.
+
+    os << "image_type& im (sts.image (i));";
+
+    if (generate_grow)
+      os << "if (";
+
+    os << "init (im, obj, statement_update" << (versioned ? ", svm" : "") << ")";
+
+    if (generate_grow)
+      os << " && i == 0)" << endl
+         << "im.version++";
+
+    os << ";"
        << "}";
 
     // Update bindings.
@@ -2223,7 +2250,7 @@ traverse_object (type& c)
        << "binding& imb (sts.update_image_binding ());"
        << endl;
 
-    //@@ assumption: generate_grow false
+    //@@ assumption: generate_grow: as above
     //
     os << "bool u (false);" // Avoid incrementing version twice.
        << "if (imb.version == 0)"
@@ -2234,7 +2261,7 @@ traverse_object (type& c)
        << "u = true;"
        << "}";
 
-    //@@ assumption: generate_grow false
+    //@@ assumption: generate_grow: as above
     //
     os << "if (idb.version == 0)"
        << "{"
@@ -2452,7 +2479,8 @@ traverse_object (type& c)
        << "init (sts.id_image (i), *ids[i]);"
        << endl
        << "binding& idb (sts.id_image_binding ());"
-      //@@ assumption: generate_grow false
+      //@@ assumption: generate_grow is false or it only affects select (like
+      //               in pgsql).
        << "if (idb.version == 0)"
        << "{"
        << "bind (idb.bind, sts.id_image ());"
@@ -2836,7 +2864,8 @@ traverse_object (type& c)
          << "}";
 
       os << "binding& idb (sts.id_image_binding ());"
-        //@@ assumption: generate_grow false
+        //@@ assumption: generate_grow is false or it only affects select
+        //               (like in pgsql).
          << "if (idb.version == 0)"
          << "{"
          << "bind (idb.bind, sts.id_image ());"

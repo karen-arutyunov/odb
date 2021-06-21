@@ -774,6 +774,7 @@ for consistency.
 		<tr><th>19.5.4</th><td><a href="#19.5.4">Date-Time Format</a></td></tr>
 		<tr><th>19.5.5</th><td><a href="#19.5.5">Timezones</a></td></tr>
 		<tr><th>19.5.6</th><td><a href="#19.5.6"><code>NUMERIC</code> Type Support</a></td></tr>
+		<tr><th>19.5.7</th><td><a href="#19.5.7">Bulk Operations Support</a></td></tr>
               </table>
             </td>
           </tr>
@@ -18705,23 +18706,24 @@ class derived: public string_base
 
   <h2><a name="15.3">15.3 Bulk Database Operations</a></h2>
 
-  <p>Some database systems supported by ODB provide a mechanism, often
-     called bulk or batch statement execution, that allows us to execute
-     the same SQL statement on multiple sets of data at once and with a
-     single database API call. This often results in significantly
-     better performance if we need to execute the same statement for a
-     large number of data sets (thousands to millions).</p>
+  <p>Some database systems supported by ODB provide a mechanism, often called
+     bulk or batch statement execution, that allows us to execute the same SQL
+     statement on multiple sets of data at once and with a single database API
+     call (or equivalent). This often results in significantly better
+     performance if we need to execute the same statement for a large number
+     of data sets (thousands to millions).</p>
 
-  <p>ODB translates this mechanism to bulk operations which allow
-     us to persist, update, or erase a range of objects in the database.
-     Currently, from all the database systems supported by ODB, only
-     Oracle and Microsoft SQL Server are capable of bulk operations.
-     There is also currently no emulation of the bulk API for other
-     databases nor dynamic multi-database support. As a result, if
-     you are using dynamic multi-database support, you will need to
-     "drop down" to static support in order to access the bulk API.
-     Refer to <a href="#16">Chapter 16, "Multi-Database Support"</a>
-     for details.</p>
+  <p>ODB translates this mechanism to bulk operations which allow us to
+     persist, update, or erase a range of objects in the database. Currently,
+     from all the database systems supported by ODB, only Oracle, Microsoft
+     SQL Server, and PostgreSQL are capable of bulk operations (but
+     see <a href="#19.5.7">Section 19.5.7, "Bulk Operations Support"</a> for
+     PostgreSQL limitations). There is also currently no emulation of the bulk
+     API for other databases nor dynamic multi-database support. As a result,
+     if you are using dynamic multi-database support, you will need to "drop
+     down" to static support in order to access the bulk API.  Refer
+     to <a href="#16">Chapter 16, "Multi-Database Support"</a> for
+     details.</p>
 
   <p>As we will discuss later in this section, bulk operations have
      complex failure semantics that is dictated by the underlying
@@ -18755,15 +18757,15 @@ class person
   </pre>
 
   <p>The single argument to the <code>bulk</code> pragma is the batch
-     size. The batch size specifies the maximum number of data sets
-     that should be handled with a single underlying statement execution.
-     If the range that we want to perform the bulk operation on contains
-     more objects than the batch size, then ODB will split this operation
-     into multiple underlying statement executions (batches). To illustrate
-     this point with an example, suppose we want to persist 53,000 objects
-     and the batch size is 5,000. ODB will then execute the statement
-     11 times, the first 10 times with 5,000 data sets each, and the
-     last time with the remaining 3,000 data sets.</p>
+     size. The batch size specifies the maximum number of data sets that
+     should be handled with a single underlying statement execution (or
+     equivalent). If the range that we want to perform the bulk operation on
+     contains more objects than the batch size, then ODB will split this
+     operation into multiple underlying statement executions (batches). To
+     illustrate this point with an example, suppose we want to persist 53,000
+     objects and the batch size is 5,000. ODB will then execute the statement
+     11 times, the first 10 times with 5,000 data sets each, and the last time
+     with the remaining 3,000 data sets.</p>
 
   <p>The commonly used batch sizes are in the 2,000-5,000 range, though
      smaller or larger batches could provide better performance,
@@ -18780,7 +18782,7 @@ class person
      by using the database prefix, for example:</p>
 
   <pre class="cxx">
-#pragma db object mssql:bulk(3000) oracle:bulk(4000)
+#pragma db object mssql:bulk(3000) oracle:bulk(4000) pgsql:bulk(2000)
 class person
 {
   ...
@@ -18911,11 +18913,11 @@ db.erase&lt;person> (ids.begin (), ids.end ());
 
   <p>Conceptually, a bulk operation is equivalent to performing the
      corresponding non-bulk version in a loop, except when it comes to the
-     failure semantics. Both databases that currently are capable of
-     bulk operations (Oracle and SQL Server) do not stop when a data
+     failure semantics. Some databases that currently are capable of bulk
+     operations (specifically, Oracle and SQL Server) do not stop when a data
      set in a batch fails (for example, because of a unique constraint
-     violation). Instead, they continue executing subsequent data
-     sets until every element in the batch has been attempted. The
+     violation). Instead, they continue executing subsequent data sets until
+     every element in the batch has been attempted. The
      <code>continue_failed</code> argument in the bulk functions listed
      above specifies whether ODB should extend this behavior and continue
      with subsequent batches if the one it has tried to execute has failed
@@ -19042,20 +19044,19 @@ multiple exceptions, 4 elements attempted, 2 failed:
 [3] 1: ORA-00001: unique constraint (ODB_TEST.person_last_i) violated
   </pre>
 
-  <p>Both databases that currently are capable of bulk operations return
-     a total count of affected rows rather than individual counts for
-     each data set. This limitation prevents ODB from being able to
-     always determine which elements in the batch haven't affected
-     any rows and, for the update and erase operations, translate
-     this to the <code>object_not_persistent</code> exceptions. As
-     a result, if some elements in the batch haven't affected any
-     rows and ODB is unable to determine exactly which ones, it will mark
-     all the elements in this batch as "maybe not persistent". That
-     is, it will insert the <code>object_not_persistent</code> exception
-     and set the <code>maybe</code> flag for every position in the
-     batch. The diagnostics string returned by <code>what()</code>
-     will also reflect this situation, for example (assuming batch
-     size of 3):</p>
+  <p>Some databases that currently are capable of bulk operations
+     (specifically, Oracle and SQL Server) return a total count of affected
+     rows rather than individual counts for each data set. This limitation
+     prevents ODB from being able to always determine which elements in the
+     batch haven't affected any rows and, for the update and erase operations,
+     translate this to the <code>object_not_persistent</code> exceptions. As a
+     result, if some elements in the batch haven't affected any rows and ODB
+     is unable to determine exactly which ones, it will mark all the elements
+     in this batch as "maybe not persistent". That is, it will insert
+     the <code>object_not_persistent</code> exception and set
+     the <code>maybe</code> flag for every position in the batch. The
+     diagnostics string returned by <code>what()</code> will also reflect this
+     situation, for example (assuming batch size of 3):</p>
 
   <pre class="terminal">
 multiple exceptions, 4 elements attempted, 4 failed:
@@ -22847,6 +22848,13 @@ SHOW integer_datetimes
      values is to map this type to one of the natively supported
      ones, as discussed in <a href="#14.8">Section 14.8, "Database
      Type Mapping Pragmas"</a>.</p>
+
+  <h3><a name="19.5.7">19.5.7 Bulk Operations Support</a></h3>
+
+  <p>Support for bulk operations (<a href="#15.3">Section 15.3, "Bulk
+     Database Operations"</a>) requires PostgreSQL client library
+     (<code>libpq</code>) version 14 or later and PostgreSQL server
+     version 7.4 or later.</p>
 
 
   <h2><a name="19.6">19.6 PostgreSQL Index Definitions</a></h2>
