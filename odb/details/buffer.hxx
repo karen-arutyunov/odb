@@ -64,6 +64,18 @@ namespace odb
       {
         return static_cast<T*> (data_);
       }
+
+      void**
+      data_ptr ()
+      {
+        return &data_;
+      }
+
+      const void**
+      data_ptr () const
+      {
+        return &data_;
+      }
     };
 
     typedef basic_buffer<char> buffer;
