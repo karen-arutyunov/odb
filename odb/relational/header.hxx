@@ -47,6 +47,8 @@ namespace relational
 
       typedef typename member_base_impl<T>::member_info member_info;
 
+      using member_base_impl<T>::container;
+
       virtual bool
       pre (member_info& mi)
       {

@@ -1370,6 +1370,8 @@ namespace relational
 
       typedef typename member_base_impl<T>::member_info member_info;
 
+      using member_base_impl<T>::container;
+
       virtual bool
       pre (member_info& mi)
       {
@@ -1751,6 +1753,8 @@ namespace relational
 
       typedef typename member_base_impl<T>::member_info member_info;
 
+      using member_base_impl<T>::container;
+
       virtual bool
       pre (member_info& mi)
       {
@@ -2024,6 +2028,8 @@ namespace relational
       }
 
       typedef typename member_base_impl<T>::member_info member_info;
+
+      using member_base_impl<T>::container;
 
       virtual void
       set_null (member_info&) = 0;
@@ -2495,6 +2501,8 @@ namespace relational
       }
 
       typedef typename member_base_impl<T>::member_info member_info;
+
+      using member_base_impl<T>::container;
 
       virtual void
       get_null (string const& var) const = 0;
