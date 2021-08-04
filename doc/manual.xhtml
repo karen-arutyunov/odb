@@ -4578,9 +4578,9 @@ namespace odb
   <p>The <code>unknown_schema</code> exception is thrown by the
      <code>odb::schema_catalog</code> class if a schema with the specified
      name is not found. Refer to <a href="#3.4">Section 3.4, "Database"</a>
-     for details. The <code>unknown_schema_version</code> exception is
-     thrown by the <code>schema_catalog</code> functions that deal with
-     database schema evolution if the passed version is unknow. Refer
+     for details. The <code>unknown_schema_version</code> exception is thrown
+     by the <code>schema_catalog</code> functions that deal with database
+     schema evolution if the passed or current version is unknow. Refer
      to <a href="#13">Chapter 13, "Database Schema Evolution"</a> for
      details.</p>
 
@@ -12841,7 +12841,7 @@ namespace odb
   <ol>
     <li>The database administrator determines the current database version.
         If migration is required, then for each migration step (that
-        is, from one version to the next), he performs the following:</li>
+        is, from one version to the next), they perform the following:</li>
 
     <li>Execute the pre-migration file.</li>
 
@@ -13003,12 +13003,12 @@ t.commit ();
      process is directed by an external entity, such as a database
      administrator or a script.</p>
 
-  <p>Most <code>schema_catalog</code> functions presented above also
-     accept the optional schema name argument. If the passed schema
-     name is not found, then the <code>odb::unknown_schema</code> exception
-     is thrown. Similarly, functions that accept the schema version
-     argument will throw the <code>odb::unknown_schema_version</code> exception
-     if the passed version is invalid. Refer to <a href="#3.14">Section
+  <p>Most <code>schema_catalog</code> functions presented above also accept
+     the optional schema name argument. If the passed schema name is not
+     found, then the <code>odb::unknown_schema</code> exception is
+     thrown. Similarly, functions that accept the schema version argument will
+     throw the <code>odb::unknown_schema_version</code> exception if the
+     passed or current version is invalid. Refer to <a href="#3.14">Section
      3.14, "ODB Exceptions"</a> for more information on these exceptions.</p>
 
   <p>To illustrate how all these parts fit together, consider the
