@@ -271,9 +271,7 @@ main (int argc, char* argv[])
           file = dd / file; // For diagnostics.
       }
 
-      int ac (3);
-      const char* av[4] = {argv[0], "--file", file.string ().c_str (), 0};
-      cli::argv_file_scanner s (ac, const_cast<char**> (av), "--file");
+      cli::argv_file_scanner s (file.string ());
 
       bool first_x (true);
 
