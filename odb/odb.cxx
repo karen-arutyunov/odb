@@ -391,11 +391,15 @@ main (int argc, char* argv[])
 
     // Parse driver options.
     //
+    // We scan expanding --options-file in order to allow specifying ad hoc
+    // options (-I, etc) in options files.
+    //
     bool first_x (true);
 
-    for (int i = 1; i < argc; ++i)
+    for (cli::argv_file_scanner scan (argc, argv, "--options-file");
+         scan.more (); )
     {
-      string a (argv[i]);
+      string a (scan.next ());
       size_t n (a.size ());
 
       // -v
@@ -409,13 +413,13 @@ main (int argc, char* argv[])
       //
       else if (a == "-x")
       {
-        if (++i == argc || argv[i][0] == '\0')
+        const char* v;
+        if (!scan.more () || (v = scan.next ())[0] == '\0')
         {
-          e << argv[0] << ": error: expected argument for the -x option" << endl;
+          e << argv[0] << ": error: expected argument for the -x option"
+            << endl;
           return 1;
         }
-
-        a = argv[i];
 
         if (first_x)
         {
@@ -424,13 +428,13 @@ main (int argc, char* argv[])
           // If it doesn't start with '-', then it must be the g++
           // executable name. Update the first argument with it.
           //
-          if (a[0] != '-')
-            args[0] = a;
+          if (v[0] != '-')
+            args[0] = v;
           else
-            args.push_back (a);
+            args.push_back (v);
         }
         else
-          args.push_back (a);
+          args.push_back (v);
       }
       // -I
       //
@@ -440,14 +444,15 @@ main (int argc, char* argv[])
 
         if (n == 2) // -I /path
         {
-          if (++i == argc || argv[i][0] == '\0')
+          const char* v;
+          if (!scan.more () || (v = scan.next ())[0] == '\0')
           {
             e << argv[0] << ": error: expected argument for the -I option"
               << endl;
             return 1;
           }
 
-          args.push_back (argv[i]);
+          args.push_back (v);
         }
       }
       // -isystem, -iquote, -idirafter, and -framework (Mac OS X)
@@ -459,14 +464,15 @@ main (int argc, char* argv[])
       {
         args.push_back (a);
 
-        if (++i == argc || argv[i][0] == '\0')
+        const char* v;
+        if (!scan.more () || (v = scan.next ())[0] == '\0')
         {
           e << argv[0] << ": error: expected argument for the " << a
             << " option" << endl;
           return 1;
         }
 
-        args.push_back (argv[i]);
+        args.push_back (v);
       }
       // -D
       //
@@ -476,14 +482,15 @@ main (int argc, char* argv[])
 
         if (n == 2) // -D macro
         {
-          if (++i == argc || argv[i][0] == '\0')
+          const char* v;
+          if (!scan.more () || (v = scan.next ())[0] == '\0')
           {
             e << argv[0] << ": error: expected argument for the -D option"
               << endl;
             return 1;
           }
 
-          args.push_back (argv[i]);
+          args.push_back (v);
         }
       }
       // -U
@@ -494,14 +501,15 @@ main (int argc, char* argv[])
 
         if (n == 2) // -U macro
         {
-          if (++i == argc || argv[i][0] == '\0')
+          const char* v;
+          if (!scan.more () || (v = scan.next ())[0] == '\0')
           {
             e << argv[0] << ": error: expected argument for the -U option"
               << endl;
             return 1;
           }
 
-          args.push_back (argv[i]);
+          args.push_back (v);
         }
       }
       // Store everything else in a list so that we can parse it with the
@@ -587,7 +595,7 @@ main (int argc, char* argv[])
     int ac (static_cast<int> (av.size ()));
 
     cli::argv_file_scanner::option_info oi[3];
-    oi[0].option = "--options-file";
+    oi[0].option = "--options-file"; // Keep in case profile uses it.
     oi[0].search_func = 0;
     oi[1].option = "-p";
     oi[2].option = "--profile";
