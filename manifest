@@ -12,11 +12,12 @@ doc-url: https://www.codesynthesis.com/products/odb/doc/manual.xhtml
 src-url: https://git.codesynthesis.com/cgit/odb/odb/
 email: odb-users@codesynthesis.com
 build-warning-email: odb-builds@codesynthesis.com
-builds: host
+builds: default
 builds: -( +windows -gcc ) ; Requires MinGW GCC.
 builds: &gcc               ; Requires GCC with plugin support enabled.
 builds: &gcc-5+            ; Requires GCC 5 or later.
 builds: -static            ; Implementation uses plugins and requires -fPIC.
+requires: host
 requires: c++11
 depends: * build2 >= 0.13.0
 depends: * bpkg >= 0.13.0
