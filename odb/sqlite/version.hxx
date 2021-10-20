@@ -31,15 +31,15 @@
 
 // Check that we have compatible ODB version.
 //
-#if ODB_VERSION != 20471
+#if ODB_VERSION != 20472
 #  error incompatible odb interface version detected
 #endif
 
 // libodb-sqlite version: odb interface version plus the bugfix
 // version.
 //
-#define LIBODB_SQLITE_VERSION     2049971
-#define LIBODB_SQLITE_VERSION_STR "2.5.0-b.21"
+#define LIBODB_SQLITE_VERSION     2049972
+#define LIBODB_SQLITE_VERSION_STR "2.5.0-b.22"
 
 #include <odb/post.hxx>
 
