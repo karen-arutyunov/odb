@@ -616,9 +616,6 @@ main (int argc, char* argv[])
       {
         ostream& o (cout);
 
-        // While ODB itself doesn't use any environment variables, it uses GCC
-        // underneath which does (see "Environment Variables Affecting GCC").
-        //
         // Note that the export.metadata variable should be the first non-
         // blank/comment line.
         //

@@ -67,12 +67,16 @@ exe{odb}: plugin{odb}: include = adhoc
 
 # Target metadata, see also --build2-metadata in odb.cxx.
 #
+# While ODB itself doesn't use any environment variables, it uses GCC
+# underneath which does (see "Environment Variables Affecting GCC").
+#
 exe{odb}:
 {
   export.metadata = 1 odb
   odb.name = [string] odb
-  odb.version  = $version
-  odb.checksum = $version
+  odb.version = [string] $version
+  odb.checksum = [string] $version
+  odb.environment = [strings] CPATH CPLUS_INCLUDE_PATH GCC_EXEC_PREFIX COMPILER_PATH
 }
 
 plugin{odb}: libus{odb}
