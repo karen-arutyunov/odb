@@ -8,7 +8,7 @@ using cxx.config
 
 # Import the ODB compiler we will be testing.
 #
-import odb = odb%exe{odb}
+import! [metadata] odb = odb%exe{odb}
 testscript{*}: test = $odb
 
 # Specify the test target for cross-testing.
