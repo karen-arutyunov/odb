@@ -707,6 +707,11 @@ main (int argc, char* argv[])
           args[3] = "-std=c++1z";
           break;
         }
+      case cxx_version::cxx20:
+        {
+          args[3] = "-std=c++2a";
+          break;
+        }
       }
     }
 

@@ -309,11 +309,15 @@ class options
 
   // Language.
   //
+  // @@ TODO: perhaps we should switch to latest to match how we build
+  //          runtime by default?
+  //
   cxx_version --std = cxx_version::cxx98
   {
     "<version>",
     "Specify the C++ standard that should be used during compilation.
-     Valid values are \cb{c++98} (default), \cb{c++11}, and \cb{c++14}."
+     Valid values are \cb{c++98} (default), \cb{c++11}, \cb{c++14},
+     \cb{c++17}, and \cb{c++20}."
   };
 
   // Diagnostics.
