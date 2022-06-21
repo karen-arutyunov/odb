@@ -1395,8 +1395,6 @@ namespace
                              string const& prefix,
                              bool obj_ptr)
     {
-      process_wrapper (t);
-
       if (composite_wrapper (t))
         return;
 
@@ -1665,6 +1663,16 @@ namespace
           }
         }
 
+        // Determine if container value/index/key types are wrappers.
+        //
+        process_wrapper (*vt);
+
+        if (it != 0)
+          process_wrapper (*it);
+
+        if (kt != 0)
+          process_wrapper (*kt);
+
         // Check if we are versioned. For now we are not allowing for
         // soft-add/delete in container keys (might be used in WHERE,
         // primary key).
@@ -1675,16 +1683,16 @@ namespace
           {
           case ck_ordered:
             {
-              comp = composite (*vt);
+              comp = composite_wrapper (*vt);
               break;
             }
           case ck_map:
           case ck_multimap:
             {
-              comp = composite (*kt);
+              comp = composite_wrapper (*kt);
               if (comp == 0 || column_count (*comp).soft == 0)
               {
-                comp = composite (*vt);
+                comp = composite_wrapper (*vt);
                 break;
               }
 
@@ -1696,7 +1704,7 @@ namespace
           case ck_set:
           case ck_multiset:
             {
-              comp = composite (*vt);
+              comp = composite_wrapper (*vt);
               if (comp == 0 || column_count (*comp).soft == 0)
               {
                 comp = 0;
