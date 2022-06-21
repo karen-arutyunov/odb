@@ -678,6 +678,10 @@ namespace relational
       virtual void
       generate ()
       {
+        if (versioned ())
+          os << "#include <odb/schema-version.hxx>" << endl
+             << endl;
+
         if (features.polymorphic_object && options.generate_query ())
           os << "#include <odb/details/unique-ptr.hxx>" << endl
              << endl;
