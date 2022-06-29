@@ -5,27 +5,6 @@ cxx.std = latest
 
 using cxx
 
-if ($cxx.id != 'gcc')
-  fail 'ODB compiler can only be built with GCC'
-
-# Determine the GCC plugin directory.
-#
-# If plugin support is disabled, then -print-file-name will print the name we
-# have passed (the real plugin directory will always be absolute).
-#
-# It can also include '..' components (e.g., on Windows) so normalize it for
-# good measure.
-#
-plugin_dir = [dir_path] $process.run($cxx.path -print-file-name=plugin)
-
-if ("$plugin_dir" == plugin)
-  fail "$recall($cxx.path) does not support plugins"
-
-plugin_dir = $normalize($plugin_dir)
-
-if ($build.version.number > 12000000000)
-  config [config.report] plugin_dir
-
 hxx{*}: extension = hxx
 ixx{*}: extension = ixx
 txx{*}: extension = txx
@@ -39,14 +18,39 @@ if ($cxx.class == 'msvc')
 
 cxx.poptions =+ "-I$out_root" "-I$src_root"
 
-# Load the cli module but only if it's available. This way a distribution
-# that includes pre-generated files can be built without installing cli.
-# This is also the reason why we need to explicitly spell out individual
-# source file prerequisites instead of using the cli.cxx{} group (it won't
-# be there unless the module is configured).
-#
-using? cli
-
 # Specify the test target for cross-testing.
 #
 test.target = $cxx.target
+
+# Omit the rest during the skeleton load.
+#
+if ($build.mode != 'skeleton')
+{
+  if ($cxx.id != 'gcc')
+    fail 'ODB compiler can only be built with GCC'
+
+  # Determine the GCC plugin directory.
+  #
+  # If plugin support is disabled, then -print-file-name will print the name
+  # we have passed (the real plugin directory will always be absolute).
+  #
+  # It can also include '..' components (e.g., on Windows) so normalize it for
+  # good measure.
+  #
+  plugin_dir = [dir_path] $process.run($cxx.path -print-file-name=plugin)
+
+  if ("$plugin_dir" == plugin)
+    fail "$recall($cxx.path) does not support plugins"
+
+  plugin_dir = $normalize($plugin_dir)
+
+  config [config.report] plugin_dir
+
+  # Load the cli module but only if it's available. This way a distribution
+  # that includes pre-generated files can be built without installing cli.
+  # This is also the reason why we need to explicitly spell out individual
+  # source file prerequisites instead of using the cli.cxx{} group (it won't
+  # be there unless the module is configured).
+  #
+  using? cli
+}
