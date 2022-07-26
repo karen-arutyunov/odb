@@ -1,6 +1,6 @@
 : 1
 name: odb
-version: 2.5.0-b.22.z
+version: 2.5.0-b.23
 summary: ODB compiler
 license: GPL-3.0-only
 topics: C++, ORM, source code generation, object persistence, \
@@ -21,5 +21,9 @@ requires: host
 requires: c++11
 depends: * build2 >= 0.15.0-
 depends: * bpkg >= 0.15.0-
-depends: libstudxml ^1.1.0-
-depends: libcutl ^1.11.0-
+
+#depends: libstudxml ^1.1.0-
+#depends: libcutl ^1.11.0-
+
+depends: libstudxml == 1.1.0-b.10
+depends: libcutl == 1.11.0-b.9
