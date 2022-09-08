@@ -1,6 +1,13 @@
 # file      : build/root.build
 # license   : GNU GPL v3; see accompanying LICENSE file
 
+config [bool] config.odb.develop ?= false
+
+develop = $config.odb.develop
+
+define cli: file
+cli{*}: extension = cli
+
 cxx.std = latest
 
 using cxx
@@ -46,11 +53,11 @@ if ($build.mode != 'skeleton')
 
   config [config.report] plugin_dir
 
-  # Load the cli module but only if it's available. This way a distribution
-  # that includes pre-generated files can be built without installing cli.
-  # This is also the reason why we need to explicitly spell out individual
-  # source file prerequisites instead of using the cli.cxx{} group (it won't
-  # be there unless the module is configured).
+  # Extract the copyright notice from the LICENSE file.
   #
-  using? cli
+  # Note that cat is a builtin which means this is both portable and fast.
+  #
+  copyright = $process.run_regex(cat $src_root/LICENSE,    \
+                                 'Copyright \(c\) (.+)\.', \
+                                 '\1')
 }

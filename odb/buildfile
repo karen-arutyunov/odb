@@ -94,49 +94,80 @@ switch $cxx.target.system
     plugin{odb}: cxx.loptions += -undefined dynamic_lookup
 }
 
-libus{odb}: {hxx ixx txx cxx}{** -odb -options} {hxx ixx cxx}{options} $libs
+libus{odb}: {hxx ixx txx cxx}{** -odb -options -pregenerated/**} $libs
 
 # Build options.
 #
 cxx.poptions += "-I$plugin_dir/include" "-DODB_GXX_NAME=\"$gxx_name\""
 cxx.poptions += -DODB_BUILD2 # @@ TMP while supporting other build systems.
 
+## Consumption build ($develop == false).
+#
+
+# Use pregenerated versions in the consumption build.
+#
+libus{odb}: pregenerated/{hxx ixx cxx}{**}: include = (!$develop)
+
+if! $develop
+  cxx.poptions =+ "-I($src_base/pregenerated)" # Note: must come first.
+
+# Distribute pregenerated versions only in the consumption build.
+#
+pregenerated/{hxx ixx cxx}{*}: dist = (!$develop)
+
+#
+##
+
+## Development build ($develop == true).
+#
+
+libus{odb}: {hxx ixx cxx}{options}: include = $develop
+
+if $develop
+  import! [metadata] cli = cli%exe{cli}
+
+# In the development build distribute regenerated {hxx ixx cxx}{options},
+# remapping their locations to the paths of the pregenerated versions (which
+# are only distributed in the consumption build; see above). This way we make
+# sure that the distributed files are always up-to-date.
+#
+<{hxx ixx cxx}{options}>: cli{options} $cli
+{
+  dist = ($develop ? pregenerated/odb/ : false)
+
+  # Symlink the generated code in src for convenience of development.
+  #
+  backlink = true
+}
+%
+if $develop
+{{
+  options = --include-with-brackets --include-prefix odb --guard-prefix ODB  \
+            --generate-file-scanner --generate-specifier --generate-modifier \
+            --generate-description --suppress-undocumented                   \
+            --cxx-prologue '#include <odb/option-parsers.hxx>'
+
+  $cli $options -o $out_base $path($<[0])
+
+  # If the result differs from the pregenerated version, copy it over.
+  #
+  if diff $src_base/pregenerated/odb/options.hxx $path($>[0]) >- && \
+     diff $src_base/pregenerated/odb/options.ixx $path($>[1]) >- && \
+     diff $src_base/pregenerated/odb/options.cxx $path($>[2]) >-
+    exit
+  end
+
+  cp $path($>[0]) $src_base/pregenerated/odb/options.hxx
+  cp $path($>[1]) $src_base/pregenerated/odb/options.ixx
+  cp $path($>[2]) $src_base/pregenerated/odb/options.cxx
+}}
+
+#
+##
+
 # Pass the copyright notice extracted from the LICENSE file.
 #
-copyright = $process.run_regex(cat $src_root/LICENSE,    \
-                               'Copyright \(c\) (.+)\.', \
-                               '\1')
-
 obj{odb}: cxx.poptions += -DODB_COPYRIGHT=\"$copyright\"
-
-# Generated options parser.
-#
-# @@ TMP: currently generated code is committed to allow building from git.
-#
-if $cli.configured
-{
-  cli.cxx{options}: cli{options}
-
-  cli.options += --include-with-brackets --include-prefix odb \
---guard-prefix ODB --generate-file-scanner --generate-specifier \
---generate-modifier --generate-description --suppress-undocumented \
---cxx-prologue '#include <odb/option-parsers.hxx>'
-
-  cli.cxx{*}:
-  {
-    # Include the generated cli files into the distribution and don't remove
-    # them when cleaning in src (so that clean results in a state identical to
-    # distributed).
-    #
-    dist  = true
-    clean = ($src_root != $out_root)
-
-    # We keep the generated code in the repository so copy it back to src in
-    # case of a forwarded configuration.
-    #
-    backlink = overwrite
-  }
-}
 
 # Don't install any of the plugin's headers.
 #
