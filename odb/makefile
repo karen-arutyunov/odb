@@ -136,7 +136,7 @@ libodb-vc10.vcxproj libodb-vc10.vcxproj.filters \
 libodb-vc11.vcxproj libodb-vc11.vcxproj.filters \
 libodb-vc12.vcxproj libodb-vc12.vcxproj.filters
 $(dist): export interface_version = $(shell sed -e \
-'s/^\([0-9]*\.[0-9]*\).*/\1/' $(src_root)/version)
+'s/^\([0-9]*\.[0-9]*\).*/\1/' $(src_root)/version.txt)
 
 $(dist):
 	$(call dist-data,$(sources) $(posix_threads_sources) \
