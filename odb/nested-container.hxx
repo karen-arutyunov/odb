@@ -23,13 +23,18 @@ namespace odb
   // vector<vector<V>>, as map<nested_key, V> where nested_key is a composite
   // key consisting of the outer and inner container indexes.
   //
-  // Note that the outer key in the inner container should strictly speaking
-  // be a foreign key pointing to the key of the outer container. The only way
-  // to achieve this currently is to manually add the constraint via ALTER
-  // TABLE ADD CONSTRAINT. Note, however, that as long as we only modify these
-  // tables via the ODB container interface, not having the foreign key (and
-  // not having ON DELETE CASCADE) should be harmless (since we have a foreign
-  // key pointing to the object id).
+  // Note that with this approach the empty trailing entries of the outer
+  // container will not be added on load. It is assumed that the user handles
+  // that on their own, for example, by pre-loading the outer container entry
+  // members if there are any.
+  //
+  // Also note that the outer key in the inner container should strictly
+  // speaking be a foreign key pointing to the key of the outer container. The
+  // only way to achieve this currently is to manually add the constraint via
+  // ALTER TABLE ADD CONSTRAINT. Note, however, that as long as we only modify
+  // these tables via the ODB container interface, not having the foreign key
+  // (and not having ON DELETE CASCADE) should be harmless (since we have a
+  // foreign key pointing to the object id).
 
   // Map key that is used to emulate 1-level nested container mapping (for
   // example, vector<vector<V>>). Template parameter IC is a tag that allows
@@ -144,8 +149,11 @@ namespace odb
       size_t i (p.first.inner);
       V& v (p.second);
 
-      assert (o < oc.size ());
+      if (o >= oc.size ())
+        oc.resize (o + 1);
+
       assert (i == oc[o].size ());
+
       oc[o].push_back (move (v));
     }
   }
@@ -190,7 +198,8 @@ namespace odb
       size_t i (p.first.inner);
       V& v (p.second);
 
-      assert (o < oc.size ());
+      if (o >= oc.size ())
+        oc.resize (o + 1);
 
       auto& mc (oc[o]);
 
