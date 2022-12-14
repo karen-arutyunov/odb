@@ -45,7 +45,7 @@ namespace odb
     vector_impl (const vector_impl&);
 
 #ifdef ODB_CXX11
-    vector_impl (vector_impl&&);
+    vector_impl (vector_impl&&) noexcept;
 #endif
 
     void
@@ -195,7 +195,7 @@ namespace odb
     vector_base (const vector_base&);
 
 #ifdef ODB_CXX11
-    vector_base (vector_base&&);
+    vector_base (vector_base&&) noexcept;
 #endif
 
     void

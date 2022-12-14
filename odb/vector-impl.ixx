@@ -20,7 +20,7 @@ namespace odb
 
 #ifdef ODB_CXX11
   inline vector_impl::
-  vector_impl (vector_impl&& x)
+  vector_impl (vector_impl&& x) noexcept
       : state_ (state_not_tracking),
         size_ (0), tail_ (0), capacity_ (0), data_ (0)
   {
@@ -167,12 +167,19 @@ namespace odb
 
 #ifdef ODB_CXX11
   inline vector_base::
-  vector_base (vector_base&& x)
+  vector_base (vector_base&& x) noexcept
       : impl_ (std::move (x.impl_)), tran_ (0)
   {
     if (x.tran_ != 0)
     {
       x.tran_->callback_unregister (&x);
+
+      // Note that _arm() can potentially throw bad_alloc while adding a new
+      // callback to the callbacks list of the transaction object. However, we
+      // assume that this will not happen since the new callback should be
+      // saved into an existing slot, freed by the above callback_unregister()
+      // call.
+      //
       _arm (*x.tran_);
     }
   }

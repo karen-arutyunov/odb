@@ -44,10 +44,10 @@ namespace odb
     //
   public:
 #ifdef ODB_CXX11
-    lazy_ptr_base (lazy_ptr_base&&);
+    lazy_ptr_base (lazy_ptr_base&&) noexcept;
 
     lazy_ptr_base&
-    operator= (lazy_ptr_base&&);
+    operator= (lazy_ptr_base&&) noexcept;
 #endif
 
   public:
@@ -139,13 +139,13 @@ namespace odb
     //
   public:
 #ifdef ODB_CXX11
-    lazy_ptr_impl (lazy_ptr_impl&&);
+    lazy_ptr_impl (lazy_ptr_impl&&) noexcept;
 
     template <typename Y>
     lazy_ptr_impl (lazy_ptr_impl<Y>&&);
 
     lazy_ptr_impl&
-    operator= (lazy_ptr_impl&&);
+    operator= (lazy_ptr_impl&&) noexcept;
 
     template <typename Y>
     lazy_ptr_impl&

@@ -48,6 +48,8 @@ namespace odb
 #ifdef ODB_CXX11
     //database (database&&) = default; // VC 2013
 
+    // Note: noexcept is not specified since *_map_ (std::map) can throw.
+    //
     database (database&& d)
         : id_ (d.id_),
           tracer_ (d.tracer_),

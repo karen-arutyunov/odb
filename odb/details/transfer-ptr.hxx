@@ -49,7 +49,7 @@ namespace odb
       transfer_ptr& operator= (const transfer_ptr&);
 
     public:
-      transfer_ptr (transfer_ptr&& p): p_ (p.transfer ()) {}
+      transfer_ptr (transfer_ptr&& p) noexcept: p_ (p.transfer ()) {}
 #endif
 
       ~transfer_ptr () {delete p_;}

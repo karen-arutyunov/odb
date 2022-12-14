@@ -31,7 +31,7 @@ namespace odb
 
 #ifdef ODB_CXX11
   inline lazy_ptr_base::
-  lazy_ptr_base (lazy_ptr_base&& r)
+  lazy_ptr_base (lazy_ptr_base&& r) noexcept
       : id_ (r.id_), db_ (r.db_), loader_ (r.loader_),
         free_ (r.free_), copy_ (r.copy_)
   {
@@ -78,7 +78,7 @@ namespace odb
 
 #ifdef ODB_CXX11
   inline lazy_ptr_base& lazy_ptr_base::
-  operator= (lazy_ptr_base&& r)
+  operator= (lazy_ptr_base&& r) noexcept
   {
     if (id_ != r.id_)
     {
@@ -272,7 +272,7 @@ namespace odb
 #ifdef ODB_CXX11
   template <typename T>
   inline lazy_ptr_impl<T>::
-  lazy_ptr_impl (lazy_ptr_impl&& r)
+  lazy_ptr_impl (lazy_ptr_impl&& r) noexcept
       : lazy_ptr_base (std::move (r))
   {
   }
@@ -287,7 +287,7 @@ namespace odb
 
   template <typename T>
   inline lazy_ptr_impl<T>& lazy_ptr_impl<T>::
-  operator= (lazy_ptr_impl&& r)
+  operator= (lazy_ptr_impl&& r) noexcept
   {
     lazy_ptr_base& b (*this);
     b = std::move (r);

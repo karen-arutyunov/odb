@@ -22,8 +22,8 @@ namespace odb
       ~unique_ptr () {delete p_;}
 
 #ifdef ODB_CXX11
-      unique_ptr (unique_ptr&& p): p_ (p.p_) {p.p_ = 0;}
-      unique_ptr& operator= (unique_ptr&& p)
+      unique_ptr (unique_ptr&& p) noexcept: p_ (p.p_) {p.p_ = 0;}
+      unique_ptr& operator= (unique_ptr&& p) noexcept
       {
         if (this != &p)
         {
