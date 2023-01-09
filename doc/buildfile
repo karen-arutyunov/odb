@@ -42,11 +42,9 @@ pregenerated/{man1 xhtml}{*}: dist = (!$develop)
 
 if $develop
 {
-  doc_version = [string] "$version.major\.$version.minor\.$version.patch"
+  doc_version = [string] "$version.major.$version.minor.$version.patch"
   if $version.pre_release
     doc_version += "-$version.pre_release_string"
-
-  doc_version = "3.0.0"
 
   # Let's take the last four-digit number to cover 2000-2021,2022.
   #
