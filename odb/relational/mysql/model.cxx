@@ -110,10 +110,23 @@ namespace relational
         member_create (base const& x): base (x) {}
 
         virtual string
-        table_options (semantics::data_member&, semantics::type&)
+        table_options (semantics::data_member& m, semantics::type& c)
         {
+          string r (relational::member_create::table_options (m, c));
+
           string const& engine (options.mysql_engine ());
-          return engine != "default" ? "ENGINE=" + engine : "";
+          if (engine != "default")
+          {
+            // Note: MySQL table options can be separated with spaces.
+            //
+            if (!r.empty ())
+              r += ' ';
+
+            r += "ENGINE=";
+            r += engine;
+          }
+
+          return r;
         }
       };
       entry<member_create> member_create_;
@@ -123,10 +136,23 @@ namespace relational
         class_ (base const& x): base (x) {}
 
         virtual string
-        table_options (type&)
+        table_options (type& c)
         {
+          string r (relational::class_::table_options (c));
+
           string const& engine (options.mysql_engine ());
-          return engine != "default" ? "ENGINE=" + engine : "";
+          if (engine != "default")
+          {
+            // Note: MySQL table options can be separated with spaces.
+            //
+            if (!r.empty ())
+              r += ' ';
+
+            r += "ENGINE=";
+            r += engine;
+          }
+
+          return r;
         }
       };
       entry<class_> class__;

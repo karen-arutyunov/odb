@@ -555,9 +555,9 @@ namespace relational
       }
 
       virtual string
-      table_options (semantics::data_member&, semantics::type&)
+      table_options (semantics::data_member& m, semantics::type& ct)
       {
-        return "";
+        return context::table_options (m, ct);
       }
 
       virtual void
@@ -784,9 +784,9 @@ namespace relational
       class_ (sema_rel::model& model): model_ (model) {}
 
       virtual string
-      table_options (type&)
+      table_options (type& c)
       {
-        return "";
+        return context::table_options (c);
       }
 
       virtual void

@@ -2130,6 +2130,90 @@ table_name (semantics::data_member& m, table_prefix const& p) const
   return r;
 }
 
+string context::
+table_options (semantics::class_& c)
+{
+  string r;
+
+  // Accumulate options from class.
+  //
+  // @@ Should we also get them from bases?
+  //
+  // @@ Note for some databases (like SQLite), options are seperated with
+  //    comma, not space. Likely the same issue in the column_options().
+  //
+  if (c.count ("options"))
+  {
+    strings const& o (c.get<strings> ("options"));
+
+    for (strings::const_iterator i (o.begin ()); i != o.end (); ++i)
+    {
+      if (i->empty ())
+        r.clear ();
+      else
+      {
+        if (!r.empty ())
+          r += ' ';
+
+        r += *i;
+      }
+    }
+  }
+
+  return r;
+}
+
+string context::
+table_options (semantics::data_member& m, semantics::type& c)
+{
+  string r;
+
+  // Accumulate options from container and member.
+  //
+  // @@ Currently there is no way to assign options to the container type. If
+  //    we use the value specifier, then it ends up being treated as a value
+  //    type. To support this we will probably need to invent the container
+  //    specifier.
+  //
+  if (c.count ("options"))
+  {
+    strings const& o (c.get<strings> ("options"));
+
+    for (strings::const_iterator i (o.begin ()); i != o.end (); ++i)
+    {
+      if (i->empty ())
+        r.clear ();
+      else
+      {
+        if (!r.empty ())
+          r += ' ';
+
+        r += *i;
+      }
+    }
+  }
+
+  if (m.count ("options"))
+  {
+    strings const& o (m.get<strings> ("options"));
+
+    for (strings::const_iterator i (o.begin ()); i != o.end (); ++i)
+    {
+      if (i->empty ())
+        r.clear ();
+      else
+      {
+        if (!r.empty ())
+          r += ' ';
+
+        r += *i;
+      }
+    }
+  }
+
+  return r;
+}
+
 // context::column_prefix
 //
 context::column_prefix::

@@ -1342,6 +1342,14 @@ public:
   qname
   table_name (semantics::data_member&, table_prefix const&) const;
 
+  string
+  table_options (semantics::class_&);
+
+  // Table options for the container member.
+  //
+  string
+  table_options (semantics::data_member&, semantics::type& ct);
+
   //
   //
   struct column_prefix

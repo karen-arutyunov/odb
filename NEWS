@@ -7,6 +7,10 @@ Version 2.5.0
 
    @@ Ref to the manual.
 
+ * Support for custom table definition options in addition to column
+   definition options. For details, refer to Section 14.1.16, "options" in
+   the ODB manual.
+
  * Support for nested object ids. Now the 'id' pragma specifier can optionally
    include the data member path to the id inside a composite value. For
    example:

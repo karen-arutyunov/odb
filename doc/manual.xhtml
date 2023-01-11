@@ -538,6 +538,7 @@ for consistency.
 		<tr><th>14.1.13</th><td><a href="#14.1.13"><code>sectionable</code></a></td></tr>
 		<tr><th>14.1.14</th><td><a href="#14.1.14"><code>deleted</code></a></td></tr>
 		<tr><th>14.1.15</th><td><a href="#14.1.15"><code>bulk</code></a></td></tr>
+		<tr><th>14.1.16</th><td><a href="#14.1.16"><code>options</code></a></td></tr>
               </table>
             </td>
           </tr>
@@ -14360,6 +14361,12 @@ class person
       <td><a href="#14.1.15">14.1.15</a></td>
     </tr>
 
+    <tr>
+      <td><code>options</code></td>
+      <td>database options for a persistent class</td>
+      <td><a href="#14.1.16">14.1.16</a></td>
+    </tr>
+
   </table>
 
   <h3><a name="14.1.1">14.1.1 <code>table</code></a></h3>
@@ -15001,6 +15008,39 @@ class employer
      the persistent class. The single required argument to this specifier
      is the batch size. For more information on this functionality, refer
      to <a href="#15.3">Section 15.3, "Bulk Database Operations"</a>.</p>
+
+  <h3><a name="14.1.16">14.1.16 <code>options</code></a></h3>
+
+    <p>The <code>options</code> specifier specifies additional table
+       definition options that should be used for the persistent class. For
+       example:</p>
+
+  <pre class="cxx">
+#pragma db object options("PARTITION BY RANGE (age)")
+class person
+{
+  ...
+
+  unsigned short age_;
+};
+  </pre>
+
+    <p>Table definition options for a container table can be specified with
+       the <code>options</code> data member specifier
+       (<a href="#14.4.8">Section 14.4.8, "<code>options</code>"</a>). For
+       example:</p>
+
+  <pre class="cxx">
+#pragma db object
+class person
+{
+  ...
+
+  #pragma db options("PARTITION BY RANGE (index)")
+  std::vector&lt;std::string> aliases_;
+};
+  </pre>
+
 
   <h2><a name="14.2">14.2 View Type Pragmas</a></h2>
 
@@ -16577,6 +16617,11 @@ class person
   std::string email_; // Mapped to TEXT NOT NULL CHECK(email != '').
 };
   </pre>
+
+  <p>Note that if specified for the container member, then instead of the
+     column definition options it specifies the table definition options for
+     the container table (<a href="#14.1.16">Section 14.1.16,
+     "<code>options</code>"</a>).</p>
 
   <p>Options can also be specified on the per-type basis
      (<a href="#14.3.5">Section 14.3.5, "<code>options</code>"</a>).
