@@ -669,6 +669,53 @@ namespace odb
           }
         };
 
+        template <typename K, typename V, typename C>
+        struct parser<std::multimap<K, V, C> >
+        {
+          static void
+          parse (std::multimap<K, V, C>& m, scanner& s)
+          {
+            const char* o (s.next ());
+
+            if (s.more ())
+            {
+              std::size_t pos (s.position ());
+              std::string ov (s.next ());
+              std::string::size_type p = ov.find ('=');
+
+              K k = K ();
+              V v = V ();
+              std::string kstr (ov, 0, p);
+              std::string vstr (ov, (p != std::string::npos ? p + 1 : ov.size ()));
+
+              int ac (2);
+              char* av[] =
+              {
+                const_cast<char*> (o),
+                0
+              };
+
+              if (!kstr.empty ())
+              {
+                av[1] = const_cast<char*> (kstr.c_str ());
+                argv_scanner s (0, ac, av, false, pos);
+                parser<K>::parse (k, s);
+              }
+
+              if (!vstr.empty ())
+              {
+                av[1] = const_cast<char*> (vstr.c_str ());
+                argv_scanner s (0, ac, av, false, pos);
+                parser<V>::parse (v, s);
+              }
+
+              m.insert (typename std::multimap<K, V, C>::value_type (k, v));
+            }
+            else
+              throw missing_value (o);
+          }
+        };
+
         template <typename X, typename T, T X::*M>
         void
         thunk (X& x, scanner& s)
