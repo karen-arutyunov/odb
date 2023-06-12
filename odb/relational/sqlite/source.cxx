@@ -399,7 +399,8 @@ namespace relational
 
         virtual void
         process_statement_columns (relational::statement_columns& cols,
-                                   statement_kind sk)
+                                   statement_kind sk,
+                                   bool)
         {
           statement_columns_common::process (cols, sk);
         }
