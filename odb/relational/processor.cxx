@@ -1456,6 +1456,8 @@ namespace relational
           object_members_base::traverse (*pointer.obj);
         }
 
+        using object_members_base::traverse; // Unhide.
+
         virtual void
         traverse_pointer (semantics::data_member& m, semantics::class_& c)
         {

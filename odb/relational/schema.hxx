@@ -442,6 +442,9 @@ namespace relational
         traverse (*t, true);
       }
 
+      using add_table::traverse;   // Unhide.
+      using alter_table::traverse; // Unhide.
+
       using table::names;
 
       void

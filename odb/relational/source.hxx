@@ -6481,6 +6481,8 @@ namespace relational
           rs->base = 0;
       }
 
+      using class_::traverse; // Unhide.
+
     protected:
       semantics::class_& c_;
       string scope_;

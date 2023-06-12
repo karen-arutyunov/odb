@@ -416,6 +416,8 @@ namespace semantics
     string
     fq_name (names*, string& trailer) const;
 
+    using derived_type::fq_name; // Unhide.
+
   public:
     array (path const&,
            size_t line,
