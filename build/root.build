@@ -101,3 +101,10 @@ config.odb.gxx_name when cross-compiling"
                                  'Copyright \(c\) (.+)\.', \
                                  '\1')
 }
+else
+{
+  # Set for report.
+  #
+  plugin_dir = [null]
+  gxx_name = [null]
+}
