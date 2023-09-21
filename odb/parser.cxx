@@ -942,9 +942,10 @@ collect (tree ns)
 
     if (!DECL_IS_BUILTIN (decl) || DECL_NAMESPACE_STD_P (decl))
     {
+      tree dn (DECL_NAME (decl));
+
       if (trace)
       {
-        tree dn (DECL_NAME (decl));
         char const* name (dn ? IDENTIFIER_POINTER (dn) : "<anonymous>");
 
         ts << "namespace " << name << " at "
@@ -952,7 +953,12 @@ collect (tree ns)
            << DECL_SOURCE_LINE (decl) << endl;
       }
 
-      collect (decl);
+      // Skip anonymous namespaces (there could be nothing of interest to us
+      // inside but they wreck havoc with our attempts to sort declarations
+      // into namespaces).
+      //
+      if (dn != 0)
+        collect (decl);
     }
   }
 }
