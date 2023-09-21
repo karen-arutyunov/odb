@@ -2053,9 +2053,12 @@ emit_type_name (tree type, bool direct)
           if (i != 0)
             id += ", ";
 
-          // Assume type-only arguments.
+          // Assume integer and type-only arguments.
           //
-          id += emit_type_name (a);
+          if (TREE_CODE (a) == INTEGER_CST)
+            id += to_string (integer_value (a));
+          else
+            id += emit_type_name (a);
         }
 
         id += '>';
