@@ -5777,6 +5777,11 @@ db.query_factory (
   });
   </pre>
 
+  Note that the <code>database::query_factory()</code> function is not
+  thread-safe and should be called before starting any threads that may
+  require this functionality. Normally, all the prepared query factories
+  are registered as part of the database instance creation.
+
   <!-- CHAPTER -->
 
   <hr class="page-break"/>
