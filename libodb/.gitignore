@@ -32,6 +32,3 @@
 #
 *-dynamic.make
 
-# Generated .gitignore files.
-#
-.gitignore
